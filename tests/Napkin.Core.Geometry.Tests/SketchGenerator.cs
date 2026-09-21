@@ -322,14 +322,26 @@ internal sealed class SketchGenerator
 
     private BoxCorner RandomCorner() => (BoxCorner)_random.Next(0, 4);
 
-    /// <summary>A coordinate on a 1/16&#x2033; grid, within a few feet of the origin.</summary>
-    private Length NextCoordinate() => new(_random.Next(-96, 97) * (Length.UnitsPerInch / 16));
+    /// <summary>A coordinate within a few feet of the origin.</summary>
+    private Length NextCoordinate() => new((_random.Next(-96, 97) * (Length.UnitsPerInch / 16)) + Jitter());
 
-    /// <summary>A size from 1&#x2033; to 40&#x2033;, on a 1/16&#x2033; grid.</summary>
-    private Length NextSize() => new(_random.Next(16, 641) * (Length.UnitsPerInch / 16));
+    /// <summary>A size from 1&#x2033; to 40&#x2033;.</summary>
+    private Length NextSize() => new((_random.Next(16, 641) * (Length.UnitsPerInch / 16)) + Jitter());
 
-    /// <summary>A movement of up to a foot either way, on a 1/16&#x2033; grid.</summary>
-    private Length NextDelta() => new(_random.Next(-192, 193) * (Length.UnitsPerInch / 16));
+    /// <summary>A movement of up to a foot either way.</summary>
+    private Length NextDelta() => new((_random.Next(-192, 193) * (Length.UnitsPerInch / 16)) + Jitter());
+
+    /// <summary>
+    /// A few raw units on top of the 1/16&#x2033; grid, some of the time.
+    /// </summary>
+    /// <remarks>
+    /// Without this, every coordinate, size and delta is a multiple of 64 units, no span is ever
+    /// an odd number of units, and nothing the generator produces can reach the
+    /// <see cref="Centered"/> half-unit case at all — which is how a real defect hid from P1 and
+    /// P6. Decimal entry (3.505&#x2033; is 3589 units) and the centre of an odd-width box both
+    /// make odd values ordinary in practice.
+    /// </remarks>
+    private long Jitter() => _random.Next(4) == 0 ? _random.Next(-3, 4) : 0;
 
     private EntityId NextEntityId() => new(Id("0000", _nextEntity++));
 

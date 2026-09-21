@@ -7,6 +7,8 @@ public class LengthTests
 {
     [Theory]
     // The table from issue #4 that ruled out integer millimetres (design §1.1).
+    [Trait("Feature", "GEO-001")]
+    [Trait("Feature", "GEO-002")]
     [InlineData(0, 1, 16, 64)]              // 1/16"
     [InlineData(3, 1, 2, 3584)]             // 3 1/2" — a 2x4's width
     [InlineData(0, 23, 32, 736)]            // 23/32" — 3/4" nominal plywood
@@ -24,6 +26,7 @@ public class LengthTests
         Assert.Equal(whole + (double)numerator / denominator, value.ToInches(), 12);
     }
 
+    [Trait("Feature", "GEO-002")]
     [Fact]
     public void SixFeetIsExactAndComparesAtTheHeaderSpanThreshold()
     {
@@ -41,6 +44,7 @@ public class LengthTests
         Assert.Equal(0, sixFeet.CompareTo(Length.Inches(72)));
     }
 
+    [Trait("Feature", "GEO-001")]
     [Fact]
     public void FeetInchesSumsItsComponents()
     {
@@ -74,6 +78,7 @@ public class LengthTests
         Assert.Equal(b, Length.Min(a, b));
     }
 
+    [Trait("Feature", "GEO-003")]
     [Fact]
     public void DivideRoundsAndTryDivideExactRefuses()
     {
@@ -93,6 +98,7 @@ public class LengthTests
 
     [Theory]
     // value, divisor, HalfToEven result, HalfAwayFromZero result. Both tie directions, both signs.
+    [Trait("Feature", "GEO-003")]
     [InlineData(3, 2, 2, 2)]        // 1.5 -> 2 either way (2 is even)
     [InlineData(5, 2, 2, 3)]        // 2.5 -> 2 (even) or 3 (away)
     [InlineData(-3, 2, -2, -2)]     // -1.5 -> -2 either way
@@ -107,6 +113,7 @@ public class LengthTests
         Assert.Equal(awayFromZero, new Length(units).Divide(divisor, Rounding.HalfAwayFromZero).Units);
     }
 
+    [Trait("Feature", "GEO-003")]
     [Fact]
     public void ScaleAppliesARatio()
     {
@@ -148,6 +155,7 @@ public class LengthTests
         Assert.Equal(2.0, Length.Inches(7) / Length.Inches(3, 1, 2));
     }
 
+    [Trait("Feature", "GEO-003")]
     [Fact]
     public void CheckedOverflowThrows()
     {

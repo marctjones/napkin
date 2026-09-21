@@ -56,6 +56,7 @@ public class SketchTests
             reordered.RelationshipsInOrder.Select(relationship => relationship.Id).ToArray());
     }
 
+    [Trait("Feature", "GEO-008")]
     [Fact]
     public void Invariant1_ADanglingReferenceIsReported()
     {
@@ -73,6 +74,7 @@ public class SketchTests
         Assert.Contains(result.Errors, error => error.Kind == ValidationErrorKind.DanglingReference);
     }
 
+    [Trait("Feature", "GEO-008")]
     [Fact]
     public void Invariant1_ASegmentWithoutItsNodesIsReported()
     {
@@ -110,6 +112,7 @@ public class SketchTests
             error => error.Kind == ValidationErrorKind.DanglingReference);
     }
 
+    [Trait("Feature", "GEO-008")]
     [Theory]
     [InlineData(0, 10)]
     [InlineData(10, 0)]
@@ -124,6 +127,7 @@ public class SketchTests
             error => error.Kind == ValidationErrorKind.NonPositiveSize);
     }
 
+    [Trait("Feature", "GEO-008")]
     [Fact]
     public void Invariant4_TwoRelationshipsSayingTheSameThingAreReported()
     {

@@ -103,7 +103,8 @@ public readonly partial record struct Length(long Units) : IComparable<Length>
     /// <see cref="Zero"/> — when the division is not exact or the divisor is zero.</returns>
     public bool TryDivideExact(long divisor, out Length result)
     {
-        if (divisor == 0 || Units % divisor != 0)
+        // long.MinValue / -1 has no representable answer, so it is not an exact division either.
+        if (divisor == 0 || (divisor == -1 && Units == long.MinValue) || Units % divisor != 0)
         {
             result = Zero;
             return false;

@@ -14,6 +14,7 @@ public class EntityTests
         Length.Inches(8),
         Angle.Zero.Rotate90(quarterTurns));
 
+    [Trait("Feature", "GEO-007")]
     [Theory]
     [InlineData(0, 10, 20, 40, 20, 40, 28, 10, 28)]
     [InlineData(1, 10, 20, 10, 50, 2, 50, 2, 20)]
@@ -34,6 +35,7 @@ public class EntityTests
         Assert.Equal(box.Anchor, box.Corner(BoxCorner.SouthWest));
     }
 
+    [Trait("Feature", "GEO-007")]
     [Theory]
     [InlineData(0, 25, 24)]
     [InlineData(1, 6, 35)]
@@ -44,6 +46,7 @@ public class EntityTests
         Assert.Equal(Point2.Inches(centreX, centreY), At(quarterTurns).Center);
     }
 
+    [Trait("Feature", "GEO-007")]
     [Fact]
     public void CentreRoundsByAtMostHalfAUnitOnAnOddSide()
     {

@@ -24,6 +24,7 @@ public class LengthTextTests
     [InlineData("23/32 inch", 736)]
     [InlineData("  6'-3\"  ", 76800)]
     // The typographic marks a user may paste.
+    [Trait("Feature", "GEO-004")]
     [InlineData("6′-3″", 76800)]
     [InlineData("6'–3\"", 76800)]
     public void ParsesEverySyntaxTheDesignLists(string text, long expectedUnits)
@@ -34,6 +35,7 @@ public class LengthTextTests
         Assert.Equal(value, Length.Parse(text));
     }
 
+    [Trait("Feature", "GEO-004")]
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
@@ -55,6 +57,7 @@ public class LengthTextTests
         Assert.Throws<FormatException>(() => Length.Parse(text!));
     }
 
+    [Trait("Feature", "GEO-004")]
     [Theory]
     [InlineData("1/3", true, 341)]
     [InlineData("3.505", true, 3589)]
@@ -67,6 +70,7 @@ public class LengthTextTests
         Assert.Equal(expectedRounded, wasRounded);
     }
 
+    [Trait("Feature", "GEO-004")]
     [Theory]
     [InlineData(77120, 16, "6'-3 5/16\"")]
     [InlineData(12288, 16, "1'-0\"")]
@@ -109,6 +113,7 @@ public class LengthTextTests
         Assert.Equal("4\"", new Length(3584).Format(new DecimalInchesFormat(0)).Text);
     }
 
+    [Trait("Feature", "GEO-004")]
     [Fact]
     public void DisplayRoundingIsHalfAwayFromZeroAndSaysWhenItIsInexact()
     {
@@ -143,6 +148,7 @@ public class LengthTextTests
         Assert.Equal("0\"", Length.Zero.ToString());
     }
 
+    [Trait("Feature", "GEO-015")]
     [Theory]
     [InlineData(1)]
     [InlineData(2)]

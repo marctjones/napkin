@@ -6,6 +6,7 @@ namespace Napkin.Core.Geometry.Tests;
 /// </summary>
 public class RelationshipCheckerTests
 {
+    [Trait("Feature", "GEO-009")]
     [Fact]
     public void ThePositionalToleranceIsDerivedFromTheGrid()
     {
@@ -19,6 +20,26 @@ public class RelationshipCheckerTests
         Assert.True(Tolerances.Default.Position < Length.Inches(0, 1, 64));
     }
 
+    [Trait("Feature", "GEO-009")]
+    [Fact]
+    public void AnExactClassRelationshipIsCheckedAtZeroToleranceWhateverIsPassed()
+    {
+        SketchBuilder builder = new();
+        EntityId box = builder.AddBox(0, 0, 10, 10);
+        EntityId node = builder.AddNode(10, 10);
+        builder.Add(id => new Coincident(id, new CornerRef(box, BoxCorner.NorthEast), new NodeRef(node)));
+
+        Sketch moved = builder.Sketch.WithEntity(
+            builder.NodeOf(node) with { Position = new Point2(Length.Inches(10) + new Length(1), Length.Inches(10)) });
+
+        // A whole inch of slack, and one unit out is still one unit too far: the tolerances are
+        // for the kinds that cannot hold exactly on any grid, and this is not one of them.
+        Tolerances generous = new(Length.Inches(1), Angle.Degrees(10));
+
+        Assert.Single(RelationshipChecker.Check(moved, generous).Violations);
+        Assert.True(RelationshipChecker.Check(builder.Sketch, generous).AllHold);
+    }
+
     [Fact]
     public void AnchoredIsNeverAViolationBecauseItConstrainsUpdatesNotState()
     {
@@ -28,6 +49,7 @@ public class RelationshipCheckerTests
         Assert.True(RelationshipChecker.Check(builder.Sketch).AllHold);
     }
 
+    [Trait("Feature", "GEO-009")]
     [Fact]
     public void CoincidentHoldsExactlyOrNotAtAll()
     {
@@ -47,6 +69,7 @@ public class RelationshipCheckerTests
         Assert.Equal(1, violation.Residual.Units);
     }
 
+    [Trait("Feature", "GEO-009")]
     [Fact]
     public void CoincidentOnARotatedCornerIsToleranceClass()
     {
@@ -68,6 +91,7 @@ public class RelationshipCheckerTests
             coincident with { A = new CornerRef(square, BoxCorner.SouthWest) }));
     }
 
+    [Trait("Feature", "GEO-009")]
     [Fact]
     public void ToleranceClassViolationsAreJudgedAgainstTheTolerance()
     {
@@ -123,6 +147,7 @@ public class RelationshipCheckerTests
         Assert.Equal(Length.Inches(2), violation.Residual);
     }
 
+    [Trait("Feature", "GEO-009")]
     [Fact]
     public void ParamValueOnAnAxisAlignedSegmentIsExactAndOnADiagonalIsNot()
     {
@@ -140,22 +165,39 @@ public class RelationshipCheckerTests
         Assert.False(RelationshipChecker.IsExactClass(builder.Sketch, inexact));
     }
 
-    [Fact]
-    public void CenteredIsMeasuredAgainstTheSameRoundedMidpointThePropagatorProduces()
+    [Theory]
+    // The true midpoint of 0 and 3 units is 1.5u, so both 1u and 2u centre the span to within the
+    // half unit design §3.2 allows; 0u and 3u are a whole unit out and do not.
+    [InlineData(0, false)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    [InlineData(3, false)]
+    public void CenteredOnAnOddSpanHoldsOnEitherSideOfTheTie(long middle, bool holds)
     {
         SketchBuilder builder = new();
         EntityId left = builder.AddNode(0, 0);
-
-        // An odd span: 0 to 3 units, whose midpoint rounds half to even to 2.
         EntityId right = builder.AddNode(Point2.Origin with { X = new Length(3) });
-        EntityId middle = builder.AddNode(Point2.Origin with { X = new Length(2) });
-        builder.Add(id => new Centered(id, new NodeRef(middle), new NodeRef(left), new NodeRef(right), Axis.X));
+        EntityId centre = builder.AddNode(Point2.Origin with { X = new Length(middle) });
+        builder.Add(id => new Centered(id, new NodeRef(centre), new NodeRef(left), new NodeRef(right), Axis.X));
 
-        Assert.True(RelationshipChecker.Check(builder.Sketch).AllHold);
+        Assert.Equal(holds, RelationshipChecker.Check(builder.Sketch).AllHold);
+    }
 
-        // The other side of the tie is not where the midpoint is.
-        Sketch off = builder.Sketch.WithEntity(builder.NodeOf(middle) with { Position = Point2.Origin with { X = new Length(1) } });
-        Assert.Single(RelationshipChecker.Check(off).Violations);
+    [Fact]
+    public void CenteredSurvivesBeingTranslatedByAnOddNumberOfUnits()
+    {
+        // Measuring against the half-to-even midpoint rather than the nearer of the two would make
+        // this a violation, because an odd shift lands on the other side of the tie.
+        for (long shift = 0; shift < 6; shift++)
+        {
+            SketchBuilder builder = new();
+            EntityId left = builder.AddNode(Point2.Origin with { X = new Length(shift) });
+            EntityId right = builder.AddNode(Point2.Origin with { X = new Length(3 + shift) });
+            EntityId centre = builder.AddNode(Point2.Origin with { X = new Length(2 + shift) });
+            builder.Add(id => new Centered(id, new NodeRef(centre), new NodeRef(left), new NodeRef(right), Axis.X));
+
+            Assert.True(RelationshipChecker.Check(builder.Sketch).AllHold, $"shifted by {shift} units");
+        }
     }
 
     [Fact]
@@ -170,6 +212,7 @@ public class RelationshipCheckerTests
         Assert.True(RelationshipChecker.Check(builder.Sketch).AllHold);
     }
 
+    [Trait("Feature", "GEO-009")]
     [Fact]
     public void PerpendicularBetweenTwoBoxEdgesIsExactClass()
     {
@@ -195,6 +238,7 @@ public class RelationshipCheckerTests
         Assert.Single(RelationshipChecker.Check(builder.Sketch.WithRelationship(parallel)).Violations);
     }
 
+    [Trait("Feature", "GEO-009")]
     [Fact]
     public void ParallelInvolvingASegmentIsToleranceClass()
     {

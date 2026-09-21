@@ -5,6 +5,7 @@ namespace Napkin.Core.Geometry.Tests;
 /// </summary>
 public class AngleTests
 {
+    [Trait("Feature", "GEO-006")]
     [Fact]
     public void DegreesMinutesSecondsAddExactly()
     {
@@ -30,6 +31,7 @@ public class AngleTests
         Assert.Equal(degrees, angle.ToDegrees());
     }
 
+    [Trait("Feature", "GEO-006")]
     [Fact]
     public void RightAngleMultiplesAreRecognisedExactly()
     {
@@ -75,6 +77,9 @@ public class AngleTests
         Assert.True(tenFeetInUnits * halfArcsecondInRadians < 0.5);
     }
 
+    // Untagged on purpose: GEO-003's acceptance sentence is about Length's Divide, Scale and
+    // TryDivideExact. Angle's arithmetic is checked for the same reason, but that is not what the
+    // sentence says.
     [Fact]
     public void CheckedOverflowThrows()
     {
