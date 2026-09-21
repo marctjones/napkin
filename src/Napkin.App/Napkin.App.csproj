@@ -23,4 +23,16 @@
     <ProjectReference Include="..\Napkin.Interop.Pdf\Napkin.Interop.Pdf.csproj" />
     <ProjectReference Include="..\Napkin.Core.Project\Napkin.Core.Project.csproj" />
   </ItemGroup>
+
+  <!-- The samples ship inside the build. They are the app's samples, not test data: the Samples
+       menu opens these files through the scene reader, so a machine that has never seen this
+       repository gets the same two drawings from the same bytes the fixtures are checked against
+       (samples/README.md). CopyToPublishDirectory is stated rather than left to the default so
+       that a `dotnet publish` layout is covered as explicitly as the build output is. -->
+  <ItemGroup>
+    <Content Include="..\..\samples\*.scene.json"
+             Link="samples\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
