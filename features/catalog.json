@@ -436,8 +436,17 @@
     {
       "id": "RUL-007",
       "area": "rules-engine",
-      "title": "Changing the project's code recomputes everything",
-      "acceptance": "The picker lists exactly the installed packs by jurisdiction and in-force date, the choice is stored in the project manifest, and changing it recomputes every rules result in the project and re-flags any that no longer holds, with nothing stale carried over.",
+      "title": "The code picker is built from the installed packs",
+      "acceptance": "The picker lists exactly the installed packs, each by jurisdiction, base model code and in-force date, with no list hardcoded in the app, and the chosen pack is stored in the project manifest and survives save and reopen.",
+      "milestone": "M4",
+      "issue": 19,
+      "kind": "unit"
+    },
+    {
+      "id": "RUL-008",
+      "area": "rules-engine",
+      "title": "Changing the project's code recomputes every result",
+      "acceptance": "Switching a project from one installed pack to another recomputes every rules result in the project against the new pack and re-flags any result that no longer holds, with no stale result or stale citation carried over.",
       "milestone": "M5",
       "issue": 19,
       "kind": "unit"
