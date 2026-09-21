@@ -8,6 +8,7 @@ public class DirectUpdaterDragTests
 {
     private static readonly DirectUpdater Updater = DirectUpdater.Instance;
 
+    [Trait("Feature", "GEO-012")]
     [Fact]
     public void Case7_DraggingABoxFlushAgainstAnAnchoredOneSlidesAlongTheFreeAxis()
     {
@@ -28,6 +29,7 @@ public class DirectUpdaterDragTests
         SketchAssert.IsConsistent(result.Sketch);
     }
 
+    [Trait("Feature", "GEO-012")]
     [Fact]
     public void Case8_ADragThatGoesNowhereIsStillSolved()
     {
@@ -169,6 +171,7 @@ public class DirectUpdaterDragTests
         SketchAssert.IsConsistent(west.Sketch);
     }
 
+    [Trait("Feature", "GEO-013")]
     [Fact]
     public void DragEdgeNeverOverridesANumberTheUserTyped()
     {

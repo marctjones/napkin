@@ -22,7 +22,15 @@ internal enum ScalarKind
 internal readonly record struct ScalarKey(EntityId Entity, ScalarKind Kind);
 
 /// <summary>A value the propagator decided on, and the chain of relationships it came through.</summary>
-internal sealed record Assignment(Length Value, ImmutableList<RelationshipId> Via);
+/// <param name="Value">The value the scalar now has.</param>
+/// <param name="Via">The relationships the value came through, in the order it came through them.</param>
+/// <param name="Changed">
+/// Whether this differs from what the sketch already said. An assignment that changed nothing —
+/// a <see cref="ParamValue"/> restating the size a box already has, or an <see cref="Anchored"/>
+/// holding an entity where it already is — still <em>pins</em> the scalar, but it is not a reason
+/// for anything else to move and it does not belong in a conflict report.
+/// </param>
+internal sealed record Assignment(Length Value, ImmutableList<RelationshipId> Via, bool Changed);
 
 /// <summary>What the propagator worked out, or why it could not.</summary>
 internal abstract record PropagationResult;
@@ -76,13 +84,26 @@ internal sealed class Propagator
     /// is what the solver's repair pass needs.
     /// </param>
     /// <param name="honoured">The relationships to honour, in any order; they are sorted by id here.</param>
+    /// <param name="requestOwns">
+    /// The scalars the user is editing directly. <see cref="Anchored"/> means "does not move or
+    /// resize <em>in response to other entities</em>" (design &#xA7;3.2), so it pins an anchored
+    /// entity against propagation but stands aside for what the request itself is setting: the
+    /// size behind a dimension being typed, or the size and anchor corner behind a resize handle
+    /// being dragged. A caller passes nothing to keep an anchored entity completely still, which
+    /// is what <see cref="SetPosition"/> does — asking an anchored entity to move somewhere is
+    /// exactly what <see cref="Anchored"/> refuses.
+    /// </param>
     internal static PropagationResult Run(
         Sketch sketch,
         IReadOnlyDictionary<ScalarKey, Length> seeds,
-        IEnumerable<Relationship> honoured)
+        IEnumerable<Relationship> honoured,
+        IReadOnlySet<ScalarKey>? requestOwns = null)
     {
         Propagator propagator = new(sketch);
-        return propagator.Propagate(seeds, [.. honoured.OrderBy(relationship => relationship.Id)]);
+        return propagator.Propagate(
+            seeds,
+            [.. honoured.OrderBy(relationship => relationship.Id)],
+            requestOwns ?? ImmutableHashSet<ScalarKey>.Empty);
     }
 
     /// <summary>The value a scalar has now: what was assigned, or what the sketch says.</summary>
@@ -117,16 +138,32 @@ internal sealed class Propagator
 
     private static ScalarKind KindOf(Axis axis) => axis == Axis.X ? ScalarKind.X : ScalarKind.Y;
 
-    private PropagationResult Propagate(IReadOnlyDictionary<ScalarKey, Length> seeds, List<Relationship> honoured)
+    private PropagationResult Propagate(
+        IReadOnlyDictionary<ScalarKey, Length> seeds,
+        List<Relationship> honoured,
+        IReadOnlySet<ScalarKey> requestOwns)
     {
-        // Anchored entities' positions are pre-assigned to their current values with an Anchored
-        // derivation, so any attempt to move them is a contradiction with a nameable cause.
+        // An anchored entity's scalars are pre-assigned to their current values with an Anchored
+        // derivation, so any attempt to move or resize it in response to another entity is a
+        // contradiction with a nameable cause. The one size the request is itself editing is
+        // exempt: that is not a response to another entity.
         foreach (Relationship relationship in honoured)
         {
-            if (relationship is Anchored anchored)
+            if (relationship is not Anchored anchored)
             {
-                Assign(new ScalarKey(anchored.Entity, ScalarKind.X), CurrentOf(new ScalarKey(anchored.Entity, ScalarKind.X)), [anchored.Id]);
-                Assign(new ScalarKey(anchored.Entity, ScalarKind.Y), CurrentOf(new ScalarKey(anchored.Entity, ScalarKind.Y)), [anchored.Id]);
+                continue;
+            }
+
+            bool hasSizes = _sketch.Find(anchored.Entity) is Box;
+            foreach (ScalarKind kind in new[] { ScalarKind.X, ScalarKind.Y, ScalarKind.Width, ScalarKind.Height })
+            {
+                ScalarKey key = new(anchored.Entity, kind);
+                if (requestOwns.Contains(key) || (!hasSizes && kind is ScalarKind.Width or ScalarKind.Height))
+                {
+                    continue;
+                }
+
+                Assign(key, CurrentOf(key), [anchored.Id]);
             }
         }
 
@@ -301,12 +338,15 @@ internal sealed class Propagator
         Side first = PointSide(centered.A, centered.Axis);
         Side second = PointSide(centered.B, centered.Axis);
 
-        Length target = RelationshipChecker.Midpoint(first.Value, second.Value);
-        if (middle.Value == target)
+        // Already centred to within the half unit design §3.2 allows on an odd span: leave it
+        // alone. Insisting on the half-to-even midpoint here would "correct" a middle that is
+        // perfectly good, and would undo an odd-unit translation on the next unrelated request.
+        if (RelationshipChecker.IsCentred(middle.Value, first.Value, second.Value))
         {
             return;
         }
 
+        Length target = RelationshipChecker.Midpoint(first.Value, second.Value);
         bool middleFree = Adjustable(middle);
         if (middleFree && (Driving(first) || Driving(second) || !Driving(middle)))
         {
@@ -331,7 +371,10 @@ internal sealed class Propagator
             return;
         }
 
-        ReportConflict(middle, first, centered);
+        // Neither the middle nor both ends can move. Name the end that is actually blocked, so the
+        // report carries whatever is holding it — an Anchored on that end, say — rather than the
+        // free end, which is not why this failed (Fable review of #35, finding 7).
+        ReportConflict(middle, Adjustable(first) ? second : first, centered);
     }
 
     /// <summary>
@@ -386,30 +429,66 @@ internal sealed class Propagator
         ReportConflict(first, second, through);
     }
 
+    /// <summary>
+    /// Whether this side is free to move: none of the position scalars it is built on has been
+    /// assigned. Pinning is about being assigned at all, not about having changed — an
+    /// <see cref="Anchored"/> entity is held where it already is.
+    /// </summary>
     private bool Adjustable(Side side)
         => side.Bases.Length > 0 && !side.Bases.Any(_assigned.ContainsKey);
 
+    /// <summary>
+    /// Whether this side is a <em>reason</em> for the other one to move: something it reads has
+    /// actually changed. An assignment that restated a value the sketch already had — a
+    /// <see cref="ParamValue"/> on a size nobody edited — pins its scalar but drives nothing, so
+    /// it must not decide which of two otherwise-free sides follows the other.
+    /// </summary>
     private bool Driving(Side side)
-        => side.Bases.Any(_assigned.ContainsKey) || side.SizeDeps.Any(_assigned.ContainsKey);
+        => side.Bases.Any(HasChanged) || side.SizeDeps.Any(HasChanged);
 
+    private bool HasChanged(ScalarKey key)
+        => _assigned.TryGetValue(key, out Assignment? assignment) && assignment.Changed;
+
+    /// <summary>
+    /// How this side's value was arrived at. A position scalar's derivation always counts, so an
+    /// <see cref="Anchored"/> that is holding something still is named in a conflict; a size
+    /// scalar's counts only when the size changed, so an unrelated dimension on a neighbour is
+    /// never blamed for a move.
+    /// </summary>
     private ImmutableList<RelationshipId> Via(Side side)
     {
         List<RelationshipId> chain = [];
-        foreach (ScalarKey key in side.Bases.Concat(side.SizeDeps))
+
+        foreach (ScalarKey key in side.Bases)
         {
-            if (_assigned.TryGetValue(key, out Assignment? assignment))
+            AddVia(key, chain);
+        }
+
+        foreach (ScalarKey key in side.SizeDeps)
+        {
+            if (HasChanged(key))
             {
-                foreach (RelationshipId id in assignment.Via)
-                {
-                    if (!chain.Contains(id))
-                    {
-                        chain.Add(id);
-                    }
-                }
+                AddVia(key, chain);
             }
         }
 
         return [.. chain];
+    }
+
+    private void AddVia(ScalarKey key, List<RelationshipId> chain)
+    {
+        if (!_assigned.TryGetValue(key, out Assignment? assignment))
+        {
+            return;
+        }
+
+        foreach (RelationshipId id in assignment.Via)
+        {
+            if (!chain.Contains(id))
+            {
+                chain.Add(id);
+            }
+        }
     }
 
     private void Adjust(Side side, Length value, IEnumerable<RelationshipId> via, RelationshipId through)
@@ -447,7 +526,7 @@ internal sealed class Propagator
             return;
         }
 
-        _assigned[key] = new Assignment(value, via);
+        _assigned[key] = new Assignment(value, via, value != StoredValueOf(_sketch, key));
 
         if (_byEntity.TryGetValue(key.Entity, out List<Relationship>? affected))
         {

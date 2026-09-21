@@ -999,11 +999,17 @@ decision above without saying so.
   sketch is the same value in every process and an entity always has a layer to be on.
 - **`Validate()` also checks layers and entity kinds.** §2.5's invariant 1 says "every id
   referenced … exists"; a layer id and the kind of the entity an id names (a `CornerRef` on a
-  node) are the same class of referential error, so they are reported too.
-- **`Centered` is checked against the same rounded midpoint the propagator produces**, with zero
-  tolerance, rather than §3.2's "within half a unit". Both sides use `Midpoint`, so the two can
-  never disagree; this is strictly stricter than the design and needs no tolerance at all. The
-  first beta therefore has no tolerance anywhere, which §5.3 hoped for.
+  node) are the same class of referential error, so they are reported too — for every relationship
+  kind and for a dimension's measurand, not just for a segment's endpoints. §6's loader validates
+  and then checks, so a reference of the wrong kind has to be a load error rather than an
+  exception out of the checker. (Fable review of #35, finding 4.)
+- **`Centered` follows §3.2's half-unit rule**, and the checker measures a middle point to the
+  nearer of the two units the true midpoint of an odd span falls between. An earlier draft of this
+  implementation checked against the half-to-even midpoint with zero tolerance, which looked
+  stricter and was wrong: it is not translation-invariant, so moving a centred span by an odd
+  number of units landed on the other side of the tie and turned an ordinary drag into a thrown
+  exception. `ResolveCentered` uses the same test, so the propagator never "corrects" a middle
+  that is already good. (Fable review of #35, finding 2.)
 - **Angular kinds are judged against `Tolerances.Angle`**, and the `Length` in their `Violation`
   is the positional deviation that angular error produces at the far end of the longer edge.
   §3.4's `Violation` carries only a `Length`, so one number has to be comparable across kinds.
@@ -1018,13 +1024,17 @@ decision above without saying so.
 
 ### 10.3 The direct updater and the propagator
 
-- **`Anchored` pins position, not size.** §3.2 says an anchored entity "does not move or resize in
-  response to other entities", but §7.1 case 4 requires a `SetParameter` on an anchored box's
-  width to reach the `Flush` and report *that* conflict, which it cannot do if `Anchored` has
-  already refused the resize. So the propagator pre-assigns an anchored entity's X and Y and
-  leaves its sizes to `ParamValue` and `EqualParam`. The visible consequence is that an
-  `EqualParam` can resize an anchored box. **Open question for Marc** — the alternative is to drop
-  case 4's expected report.
+- **`Anchored` pins position and size, as §3.2 says, and stands aside for the number the user is
+  editing.** The emphasis in "does not move or resize *in response to other entities*" is on the
+  last clause: the propagator pre-assigns an anchored entity's X, Y, width and height, and skips
+  whichever scalars the request is itself setting — the size behind a dimension being typed, and
+  for `DragEdge` the anchor corner that a west or south handle necessarily drags with it. So an
+  `EqualParam` cannot quietly resize an anchored part, `SetPosition` on one is still a conflict
+  naming the anchor, §7.1 case 4 still reports both anchors and the `Flush` (the request's seed
+  carries an empty derivation, so the `ParamValue` drops out of it), and all four resize handles
+  behave the same way. An earlier draft pinned position only, which made case 4's report work but
+  let an `EqualParam` resize an anchored box and made the east handle work while the west one
+  silently refused. (Marc's decision on open question (a); Fable review of #35, finding 8.)
 - **The propagator runs in two phases**: size relationships (`ParamValue`, `EqualParam`) to a
   fixed point, then positional ones. No positional relationship ever assigns a size, and a corner
   offset depends on the box's size, so a single pass could compute a corner from a size a later
@@ -1035,15 +1045,24 @@ decision above without saying so.
   anchor rule, its seeding rule for `AddRelationship(Coincident(p, q))`, and "the *to* point
   follows" for `AxisDistance` all fall out of that one rule plus one tie-break: when neither side
   is driving, the second side follows the first.
-- **`RejectionReason.DuplicateEntity` was added** to §4.2's enum. `AddEntity` with an id the sketch
-  already holds is not a dangling reference and not a geometric state, and every other value in the
-  enum would have named the wrong thing.
+- **`RejectionReason.DuplicateEntity` and `RejectionReason.UnsupportedRequest` were added** to
+  §4.2's enum. `AddEntity` with an id the sketch already holds is not a dangling reference and not
+  a geometric state; `UnsupportedRequest` covers the unreachable arm for a request kind this
+  updater does not implement, which `UnsupportedRelationship` described wrongly. `SetPosition` and
+  `Drag` against something with no coordinates of its own — a dimension — say `DanglingReference`,
+  whose meaning already covers a reference "of the wrong kind". (Fable review of #35, finding 9.)
 - **`RejectionReason.ReferenceDimension` is unreachable from §4.1's requests.** §3.3 says editing a
   reference dimension's value is `Rejected(ReferenceDimension)`, but no request in §4.1 identifies a
   dimension: `SetParameter` takes a `RelationshipId`, and a reference dimension has none. The canvas
   therefore cannot form the request at all. The value is kept in the enum because #10 may add a
   request that can reach it. §7.1 case 12 is implemented as `SetParameter` against an id the sketch
-  does not have, which is `Rejected(UnknownRelationship)`.
+  does not have, which is `Rejected(UnknownRelationship)`. The feature catalog's GEO-013 says
+  "editing a reference dimension … returns Rejected with the named reason"; that is true of the
+  result but not of the reason, and it will stay that way until #10 adds a request that names a
+  dimension.
+- **`Anchored` requires a box or a node.** Nothing else has a position of its own to hold still,
+  and an anchor on a segment or a dimension was accepted and then did nothing at all: the drag
+  group never saw it. (Fable review of #35, finding 3.)
 - **`Horizontal` and `Vertical` apply to segments only**, as §3.2's own parenthetical says. On a
   `BoxEdgeRef` they are check-only — the checker evaluates them geometrically — and the direct
   updater refuses a sketch containing one, because a box edge's direction is a property of
@@ -1053,6 +1072,18 @@ decision above without saying so.
   §4.4 does not answer. The checker still evaluates them, so the file format and #28 keep them.
   The direct updater refuses a sketch that contains one, the way §6 says it refuses a file holding a
   relationship kind it cannot handle.
+- **Segment-based relationships stay check-only in the first beta**, confirmed as Marc's decision
+  on open question (c). `ParamValue`/`EqualParam` over a `SegmentLengthRef`, and
+  `Horizontal`/`Vertical` on a `BoxEdgeRef`, are evaluated by the checker but never propagated,
+  and the direct updater refuses a sketch that contains one. The rule that would match the rest of
+  the design, when segment lengths are wanted, is: for an axis-aligned segment the end follows the
+  start along the axis, as `AxisDistance` does; a diagonal length is Euclidean and belongs to the
+  solver.
+- **`IGeometryUpdater.SupportedRelationships` is a set of `Type`s, but actual support is by kind
+  *and reference kind*.** A canvas that "only offers these" (§4.3) will offer `ParamValue` on a
+  segment length, or `Horizontal` on a box edge, and get `Rejected(UnsupportedRelationship)`. The
+  API is left as §4.3 specifies; #10 needs to know that the set is an upper bound rather than an
+  exact answer. (Fable review of #35, finding 10.)
 - **The precondition applies to geometry requests only.** §4.4 states it for `Apply`, but a sketch
   holding a kind the updater cannot propagate would then be a dead end: the user could not remove
   the offending relationship. `AddEntity`, `RemoveEntity`, `RemoveRelationship` and `SetLayer` move
@@ -1074,10 +1105,11 @@ decision above without saying so.
   checks referential integrity, rotations and supported kinds, because those decide whether the
   request is in its domain, but it does not re-run the checker on the input: that is the loader's
   job (§6).
-- **A layer change and a dimension demotion are not in the `ChangeSet`.** §4.2's `ChangeSet` has
-  `Added`, `Removed`, `Moved` and `Resized`, and neither of these is any of those. Rather than add a
-  set the design did not ask for, they are left out and recorded here. **Open question for Marc /
-  #10** — whether `ChangeSet` should gain a `Modified` set.
+- **`ChangeSet` gains a `Modified` set**, beyond §4.2's `Added`, `Removed`, `Moved` and `Resized`,
+  for what is none of those: a layer change, a rotation about the anchor, and a dimension demoted
+  to a reference dimension. #10 and #11 are the consumers, #5 owns the type, and a canvas that
+  could not tell a dimension had stopped driving would draw it wrong. (Marc's decision on open
+  question (b).)
 
 ### 10.4 The test plan
 
@@ -1102,3 +1134,41 @@ decision above without saying so.
   xUnit theories; every assertion prints the seed and the iteration. A further test counts the
   outcomes the generator reaches across all seeds and fails if conflicts, rejections or blocked
   drags never occur, so the properties cannot pass by never reaching the cases they are about.
+
+### 10.5 Known follow-ups
+
+Findings from Fable's review of PR #35 that are deliberately not addressed in #5, so that the next
+person to touch this code does not have to rediscover them.
+
+- **Chains of three or more parts resolve `OverConstrained` when a solution exists** — filed as
+  #49. A, B and C in a row, flush to each other, with C anchored and A dimensioned: resizing A
+  moves B east, and the second `Flush` then finds both sides assigned. Moving A's anchor west
+  would satisfy everything. The implementation is faithful to §4.4's rule as written ("pins the
+  opposite side … to something that is anchored or already assigned"), so this is a design
+  decision for Marc rather than a defect. The cheap route, if he wants the friendlier answer, is a
+  pinned closure per axis over `Coincident`/`Flush`/`AxisDistance`/`Centered` — `DirectUpdater`'s
+  `RigidGroup` already computes exactly that shape for `Drag` — treating a side as not adjustable
+  when its base is in an anchored closure.
+- **The `Propagator`'s state is narrower than §5.2 step 4 implies.** `ScalarKind` covers X, Y,
+  width and height, so the repair pass cannot perform `rotationB := rotationA + 90°` for
+  exact-class `Parallel`/`Perpendicular`/`AngleBetween`. That is #28's extension by this design's
+  own scoping — the two-phase structure and the `Side` model accommodate a rotation scalar without
+  a rewrite — but the seam is narrower than §5.2 reads.
+- **`Angle.FromDegrees` rounds a product that is not exact in binary.** `degrees * 3600` can land
+  either side of a true tie. This is inherent to the double boundary and it still rounds exactly
+  once, as §5.2 requires; noted rather than fixed.
+- **A fully blocked drag does not offer the dimension to edit.** §7.1 case 13's opening will not
+  slide while a driving `AxisDistance` fixes it, and the result is a zero applied delta with
+  nothing to act on. #10 should turn a drag blocked by a driving relationship into an offer to
+  edit that dimension, the way `Rejected(DrivenSize)` points at one.
+- **Propagation order can decide the answer for equal-width chains** (Fable's second review of
+  #35; pre-existing, not a regression of the review fixes; belongs with #49). Three boxes flush in a
+  row with equal widths (`ParamValue(A.Width)`, two `EqualParam`s, two `Flush`es): after
+  `SetParameter(A.Width, 10 → 20)` the result depends on relationship ids and argument order. One
+  ordering gives `OverConstrained` on a solvable sketch; another gives `Solved` with A grown west
+  and C unmoved, which satisfies every relationship but is not what the user expected. The root
+  cause is the id-ordered initial worklist plus single assignment, so a candidate fix is to order
+  the initial enqueue breadth-first from the changed scalars. That candidate is untested. Pin
+  today's four outcomes in a test, or skip it against #49, before changing anything.
+- **A `Centered` conflict with both ends anchored names only the first end's anchor** (LOW).
+  Removing the relationship the report names still leaves a conflict; the report should name both.

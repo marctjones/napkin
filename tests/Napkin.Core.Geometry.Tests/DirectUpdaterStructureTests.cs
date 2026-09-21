@@ -8,6 +8,7 @@ public class DirectUpdaterStructureTests
 {
     private static readonly DirectUpdater Updater = DirectUpdater.Instance;
 
+    [Trait("Feature", "GEO-014")]
     [Fact]
     public void Case9_RemovingABoxTakesItsRelationshipsAndItsDimensionWithIt()
     {
@@ -32,6 +33,7 @@ public class DirectUpdaterStructureTests
         SketchAssert.IsConsistent(result.Sketch);
     }
 
+    [Trait("Feature", "GEO-014")]
     [Fact]
     public void Case10_RemovingADrivingRelationshipLeavesAReferenceDimensionAndTheGeometryAlone()
     {
@@ -53,6 +55,7 @@ public class DirectUpdaterStructureTests
         SketchAssert.IsConsistent(result.Sketch);
     }
 
+    [Trait("Feature", "GEO-013")]
     [Fact]
     public void Case11_ARelationshipKindTheDirectUpdaterDoesNotImplementIsRejected()
     {
@@ -70,6 +73,7 @@ public class DirectUpdaterStructureTests
         Assert.Contains(typeof(Flush), Updater.SupportedRelationships);
     }
 
+    [Trait("Feature", "GEO-013")]
     [Fact]
     public void Case12_EditingANumberThatNoRelationshipOwnsIsRejected()
     {

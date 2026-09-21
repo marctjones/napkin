@@ -104,7 +104,7 @@
       "id": "GEO-013",
       "area": "geometry",
       "title": "A malformed request is rejected, not reported as a conflict",
-      "acceptance": "Adding a Parallel relationship, editing a reference dimension, dragging an edge whose size a ParamValue drives, and rotating a box that carries relationships each return Rejected with the named reason and an unchanged sketch.",
+      "acceptance": "Adding a Parallel relationship, dragging an edge whose size a ParamValue drives, and rotating a box that carries relationships each return Rejected with the named reason and an unchanged sketch; a SetParameter naming a relationship the sketch does not have returns Rejected(UnknownRelationship).",
       "milestone": "M1",
       "issue": 5,
       "kind": "unit"

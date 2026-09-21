@@ -204,15 +204,56 @@ public static class RelationshipChecker
         Length middle = sketch.PointOf(centered.Middle).Component(centered.Axis);
 
         return Residual.FromDistance(
-            Length.Abs(middle - Midpoint(a, b)),
+            MiddleResidual(middle, a, b),
             ExactPoint(sketch, centered.Middle) && ExactPoint(sketch, centered.A) && ExactPoint(sketch, centered.B));
     }
 
     /// <summary>
-    /// The midpoint of a span, rounded half to even. The only rounding the direct updater ever
-    /// does, and the value the checker measures against, so the two can never disagree.
+    /// The midpoint of a span, rounded half to even. What the propagator puts a middle point at.
     /// </summary>
     internal static Length Midpoint(Length a, Length b) => (a + b).Divide(2, Rounding.HalfToEven);
+
+    /// <summary>
+    /// How far a middle point is from the nearest position that centres it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// When the span is an even number of units there is one such position and the relationship is
+    /// exact. When it is odd the true midpoint falls between two units, and <em>either</em>
+    /// neighbour centres it to within half a unit — which is the only tolerance the direct updater
+    /// ever needs (design &#xA7;3.2).
+    /// </para>
+    /// <para>
+    /// Measuring against the nearest of the two, rather than against the half-to-even one the
+    /// propagator happens to pick, is what makes the relationship survive being translated: a
+    /// group moved by an odd number of units lands on the other side of the tie, and a rule that
+    /// insisted on half-to-even would call that a violation.
+    /// </para>
+    /// </remarks>
+    internal static Length MiddleResidual(Length middle, Length a, Length b)
+    {
+        Int128 sum = (Int128)a.Units + b.Units;
+        Int128 low = sum >= 0 ? sum / 2 : (sum - 1) / 2;
+        Int128 high = low * 2 == sum ? low : low + 1;
+        Int128 toLow = middle.Units - low;
+        Int128 toHigh = middle.Units - high;
+
+        if (toLow < 0)
+        {
+            toLow = -toLow;
+        }
+
+        if (toHigh < 0)
+        {
+            toHigh = -toHigh;
+        }
+
+        return new Length(checked((long)(toLow < toHigh ? toLow : toHigh)));
+    }
+
+    /// <summary>Whether a middle point centres a span, to within the half unit of design &#xA7;3.2.</summary>
+    internal static bool IsCentred(Length middle, Length a, Length b)
+        => MiddleResidual(middle, a, b) == Length.Zero;
 
     private static Residual DistanceResidual(Sketch sketch, Distance distance)
     {
