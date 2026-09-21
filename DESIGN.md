@@ -339,15 +339,68 @@ no longer wants are simply removed. What the scene stores is set out in
 
 ### 6.5 Testing strategy
 
-- **Golden-value tests are non-negotiable for the rules engine.** Every table row implemented
-  should have a unit test asserting the exact published value from the IRC table it encodes.
-  This is the one area of the codebase where "looks reasonable" is not an acceptable bar.
-- Geometry/constraint solver: property-based tests (a dimension change should never silently
-  produce a geometrically inconsistent state) plus regression tests against saved project files.
-  The concrete golden cases and properties are in
-  [`docs/design/geometry-model.md`](./docs/design/geometry-model.md) §7.
-- Interop (DXF/SketchUp): round-trip tests against QCAD/FreeCAD/SketchUp's own outputs where
-  practical, since fidelity here is empirical, not purely spec-derived.
+Five layers, each answering a different question. Two of them are pull-request gates; one of them
+is deliberately *not* a gate; the last does not exist yet.
+
+**1. Unit tests — does this code do what it says?**
+
+Ordinary tests over `Core.*` and `Modules.*`, which have no UI dependency and are therefore
+testable without an app around them. Geometry in particular gets **property-based** tests: a
+dimension change should never silently produce a geometrically inconsistent state, whatever the
+sketch. The concrete properties and golden cases are in
+[`docs/design/geometry-model.md`](./docs/design/geometry-model.md) §7.
+
+**2. Golden tests — does this match the source it claims to come from?**
+
+For anything whose correct answer comes from *outside* napkin. **Non-negotiable for the rules
+engine**: every encoded table row has a test asserting it matches the state's published adopted
+text, citing the page or section it was read from. This is the one area of the codebase where
+"looks reasonable" is not an acceptable bar, and where the expected value must never be derived
+from napkin's own output. The same discipline covers the materials library (authored from primary
+standards, §5.6) and the sample fixtures, whose expected cut lists and shopping lists are computed
+by hand before the code that produces them exists.
+
+Interop (DXF, PDF, SketchUp) is golden in a looser, empirical sense: round-trip against
+QCAD, FreeCAD or SketchUp's own output, because fidelity there is established by experiment rather
+than derived from a spec.
+
+**3. The feature scorecard — how much of the design actually works?**
+
+[`features/*.json`](./features/README.md) catalogues the features napkin intends to have, each
+with one concrete acceptance sentence, the milestone it belongs to and the issue that delivers it.
+Tests claim a feature with a trait; the scorecard reads the test results and reports what is
+passing, planned, partial or not started, by area and by milestone.
+
+**The scorecard measures progress and never gates anything** — not a build, not a pull request,
+not a tag. Its job is to make "how far along is napkin?" answerable from the test suite instead of
+from a status report, and to show what to build next. A metric that can block a merge stops being
+an honest measurement. Tracked in #34; see
+[`docs/testing/scorecard.md`](./docs/testing/scorecard.md).
+
+**4. The coverage ratchet — a gate, and it only goes up.**
+
+A committed baseline records each assembly's line and branch coverage. CI fails a pull request
+whose coverage falls below its floor, and the baseline is raised as coverage improves — never
+silently lowered. It gates pull requests and nothing else: it does not gate a tag or a release,
+because the beta policy says nothing is scheduled and a release is a snapshot of whatever is
+there. Tracked in #32; see [`docs/testing/ratchet.md`](./docs/testing/ratchet.md).
+
+**5. The GUI workflow suite — a gate, and it only goes up.**
+
+A separate suite drives the real Avalonia UI headlessly with simulated pointer, key, text and
+wheel events through the visual tree, so hit-testing, focus, shortcuts and routed events are
+actually exercised — no shortcut that pokes a view model directly. A scenario is a **workflow**,
+not a click: it uses several input actions and both keyboard and pointer, and asserts an
+observable outcome after a state-changing sequence. Scenarios grow with each milestone, and their
+count and their ids may not fall. Tracked in #33; see
+[`docs/testing/gui-automation.md`](./docs/testing/gui-automation.md).
+
+**Later: a small real-OS smoke layer.** Headless cannot cover what only a real desktop has —
+window-manager focus, input methods, native menus, drag-and-drop from Finder or Explorer, and
+whether an unsigned build gets past Gatekeeper or SmartScreen at all. That is a handful of tests
+on a real machine, added once there is a downloadable build worth smoke-testing. It is deliberately
+kept small: it is the slowest and most fragile layer, and everything that can be proven one layer
+down should be.
 
 ### 6.6 Packaging and distribution
 
@@ -380,26 +433,48 @@ no longer wants are simply removed. What the scene stores is set out in
 - **License**: AGPL-3.0 for the project, permissive/weak-copyleft-only for dependencies — decided,
   see §2.1.
 
-## 8. Phased roadmap
+## 8. Roadmap: five milestones
 
-1. **Phase 1 — Furniture module + cut lists.** No rules engine needed; fastest path to a genuinely
-   useful tool (coffee table, shop projects). Validates the geometry/constraint kernel and the
-   project file format before the harder building-module work starts.
-2. **Phase 2 — Building module core: walls, openings, header/bracing rules engine.** The actual
-   differentiator. Build and golden-test the 2026 CT code first, then add the three
-   2021-IRC-based adopted codes (§11); all four are beta scope.
-3. **Phase 3 — Deck module** (span/footing tables, ledger, guard rails) reusing Phase 1's cut-list
-   machinery, plus site plan (lot lines, setbacks, survey underlay).
-4. **Phase 4 — Interop**: DXF export, SketchUp read-only import.
-5. **Phase 5 — Polish**: true-scale PDF sheet output with title blocks, packaging/installers,
-   adopted codes beyond the first four.
+Set by Marc on 2026-09-21, replacing the earlier phase list. **The milestones are an order of
+work**, each one defined by what a person can see and play with rather than by which layer of the
+architecture it fills. A milestone earns a tagged pre-release when it is done, and its version
+number is assigned at that moment rather than planned in advance — which is why they have names.
+Nothing is scheduled toward a date (see "Versioning and releases" below).
 
-Alongside the phases, off the critical path: the **constraint solver workstream** (§11, #28),
-which starts once Core.Geometry (#5) has landed and must not delay the first working beta.
+1. **M1 Look.** A read-only viewer: download an unsigned build, open a hand-crafted sample design
+   from a file, pan, zoom, zoom to fit, and read dimension labels in feet, inches and fractions.
+   Nothing editable, nothing saved. It proves the foundation — exact lengths (§5.1), the geometry
+   model, a strict scene reader (§6.4), hand-computed fixtures, and a pipeline that turns a tag
+   into something downloadable.
+2. **M2 Draw.** The viewer becomes a drawing tool: draw by dragging, move and resize, resize by
+   *typing* a dimension, snap parts together and see the relationship the snap created, undo and
+   redo, save a design and reopen it. Invalid input is explained; two dimensions that cannot both
+   hold produce a named conflict rather than a wrong number.
+3. **M3 Cut.** Furniture and its two distinct outputs (§5.2): build the coffee table, assign
+   materials from the reference library (§5.6), and get both a cut list and a shopping list, on
+   screen and as CSV, checked against expectations computed by hand.
+4. **M4 Check.** The differentiator, one answer at a time: a wall, an opening, a header size and
+   stud count with the code edition, table and row behind it (§5.3, §5.4), and a hard out-of-scope
+   result the moment the inputs leave what the table covers. One adopted code pack — **Connecticut
+   2026** — plus the per-project picker (§5.4).
+5. **M5 Brace and compare.** The wall-bracing check (§5.3 — the check most DIY openings miss),
+   and a **second** pack, Connecticut 2022. The second pack is the point: locking a project to the
+   code in force at permit application, and recomputing every result when that changes, is only
+   demonstrable once there are two codes to move between.
 
-The phases are an order of work, not release milestones. napkin is a pre-1.0 beta indefinitely
-(see "Versioning and releases" below); the first working beta is whichever release first does
-Phase 1 usefully, whatever its number turns out to be.
+**Backlog**, wanted but not scheduled: the deck module in its pieces (ledger, joists and beams,
+footings, guards and stairs) reusing M3's cut-list machinery; the site plan; DXF and PDF export;
+the Massachusetts and Pennsylvania packs and municipal amendment overlays; sheet-goods nesting;
+SketchUp import; installers.
+
+Alongside all five, off the critical path: the **constraint solver workstream** (§11, #28), which
+starts once Core.Geometry (#5) has landed and **gates no milestone**. If it proves hard, it waits;
+§11's seams mean deferring it costs nothing. The test infrastructure of §6.5 — the coverage
+ratchet, the GUI workflow suite and the feature scorecard — likewise starts in M1 and grows with
+every milestone rather than belonging to one.
+
+The issue-by-issue breakdown, and which model leads each step, is in
+[`PLAN.md`](./PLAN.md).
 
 ## 9. Decided
 
@@ -437,7 +512,7 @@ Phase 1 usefully, whatever its number turns out to be.
 
 Decided by Marc on 2026-09-21, after the project moved from the cloud session to a local one.
 
-### The first beta ships four adopted codes, not one
+### Four adopted codes, not one
 
 | Adopted code | Base model code | In force | Primary source |
 |---|---|---|---|
@@ -450,6 +525,11 @@ CT 2022 matters even though it is superseded: §5.4 locks a project to the code 
 application, so a CT project applied for before Sept 18, 2026 is governed by the 2022 code. The PA
 transition rule comes from a secondary source (a law-firm summary); verify it against the
 regulation text in 34 Pa. Code before encoding it.
+
+All four are wanted, and they arrive one at a time (§8): **CT 2026 in M4**, **CT 2022 in M5**, and
+Massachusetts and Pennsylvania in the backlog after that. Four packs remains the commitment; a
+single pack in M4 is the order of work, not a narrowing of scope. The second pack is what makes
+code locking demonstrable rather than merely designed, which is why it arrives as early as M5.
 
 ### Consequences for the design
 
@@ -518,8 +598,9 @@ regulation text in 34 Pa. Code before encoding it.
 Set by Marc on 2026-09-21.
 
 - **napkin is a pre-1.0 beta indefinitely.** Nothing is working toward a 1.0. Every release is a
-  pre-release beta. The first "working" version could be 0.2, 0.5, 0.20 or 0.75 — it is whichever
-  release first does Phase 1 usefully, and nobody is guessing the number in advance.
+  pre-release beta. The first "working" version could be 0.2, 0.5, 0.20 or 0.75 — a milestone
+  (§8) is tagged when it is done and its number is assigned at that moment, not guessed in
+  advance. That is why the milestones have names rather than numbers.
 - **Breaking changes are always allowed.** There is no backwards-compatibility concern, no
   deprecation period, no migration shims. Things the project no longer wants are removed. This
   includes the project file format (§6.4): a format-version stamp gives an old file a clear
