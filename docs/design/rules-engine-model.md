@@ -864,3 +864,253 @@ All problems are collected, not just the first, so a transcriber fixes a pack in
   Decision 5. The recommendation is that they are listed with a persistent "UNREVIEWED — values
   not yet checked against the source" label and every result carries the same label, in the
   betas; a build flag can hide them entirely for a tagged release.
+
+## 10. Sharing the fastener catalog with the fastener schedule
+
+DESIGN.md §5.6 wants one fastener catalog feeding both the materials list (#7, #9) and the
+fastener-schedule table (R602.3(1)). The dependency direction decides where it lives:
+`Core.RulesEngine` cannot reference `Modules.Furniture` (the module consumes the engine, not the
+reverse), and `Modules.Furniture` should not reference the rules engine to get at nail sizes.
+
+- **The catalog is its own assembly, `Napkin.Core.Materials`**, referenced by
+  `Modules.Furniture`, `Core.RulesEngine` and `Modules.Building`. It holds the #7 data (lumber,
+  sheet goods, decking, fasteners) as embedded data files with sources, using `Length`. This is
+  a change to the solution layout in DESIGN.md §6.2 (not this document's section; reported).
+- Fasteners have stable ids (`nail.common.16d`, `screw.wood.8x2in` — naming per #7) with their
+  actual dimensions and their source. A `fastener-schedule` table row references fasteners by
+  id, plus spacing as `Length` and a connection description; the pack loader (§9.1 step 7)
+  refuses an id the catalog does not have.
+- The engine never stores a fastener's dimensions; it stores the id and asks the catalog. So a
+  correction to a nail's length in #7 corrects both the shopping list and the schedule display,
+  and a schedule row can never disagree with the catalog about what a 16d is.
+- Whether the adopted text's fastener designations map one-to-one onto catalog ids, or a row
+  needs a list of acceptable fasteners, is unverified until R602.3(1) is read; the schema for the
+  `fastener-schedule` kind is finalised then. It is not in M4 or M5.
+
+## 11. Test plan
+
+### 11.1 Fixture packs (synthetic values)
+
+The evaluator's *semantics* are tested against packs whose numbers are made up, so that a
+semantics bug and a transcription error can never be confused, and so that the engine's tests
+pass before any real table has been read. `tests/.../Fixtures/` holds:
+
+- `fx-base` — a base layer with one `header-sizing` table: two `supports` groups, three snow
+  bands, two width bands, three capacity rows per group, all values obviously fake (99s and
+  77s), footnotes of each `encodedAs` kind.
+- `fx-state` — a pack over `fx-base` with one overlay per operation kind: an `add`, an `amend`,
+  a `delete`, and an `amend` of a table's `inputs`.
+- `fx-town` — a municipal pack over `fx-state` with one row amended stricter and one looser
+  (the lint must warn on the second).
+- `fx-bad-*` — one invalid pack per validation rule in §9.1 and §6.3: unknown field, `6.0`,
+  off-grid length, duplicate bound, decreasing bound, hole at the bottom without a declared
+  `min`, unknown `kind`, unknown enum, missing `location`, unclassified footnote, conflicting
+  operations, `amend` of a missing id, `add` of an existing id, dangling `source`, wrong
+  `schemaVersion`, sign-off without a checklist, checklist hash mismatch.
+
+### 11.2 Golden cases
+
+Loader and composition, on fixtures:
+
+1. `fx-base` loads; composed tables equal the files (no overlay = identity).
+2. `fx-state` composes: the added row is present with `Layer = StateAmendment`; the amended row
+   has the new values and cites the overlay's location; the deleted row is absent; the amended
+   `inputs` change what the evaluator requires.
+3. `fx-town` composes over `fx-state`; the no-change assertion (§6.2) holds for untouched
+   tables; the loosening lint reports exactly the looser row.
+4. Every `fx-bad-*` is `Invalid` with a problem naming the file and, where applicable, the row or
+   operation; all problems are collected, not just the first.
+5. Every real embedded pack is `Loaded` (this is the CI gate for #14-#17).
+
+Evaluator, on `fx-base`/`fx-state`:
+
+6. A request in the middle of every band → `Sized`, citing the expected row, with a `Trace`
+   entry per banded input.
+7. Span exactly at a capacity → `Sized` that row; one unit over → the next row in the group, or
+   `OutOfScope(SpanExceedsTable)` citing the last row as `Limit` when there is none.
+8. Snow load one unit over the top band → `OutOfScope(InputAboveTableBands)` citing the top
+   band's row set; a table with declared `min > 0` and an input below it →
+   `InputBelowTableBands`.
+9. A `supports` value with no rows → `ConditionNotCovered`.
+10. A footnote encoded `as-limit` excludes a case → `NarrowedByFootnote` citing the footnote id.
+11. The same request against `fx-state`'s amended row returns the amended values with
+    `Layer = StateAmendment`; against the deleted row's inputs, the result is whatever the
+    remaining rows give — never the deleted values.
+12. A `HeaderRequest` cannot be built without `SiteInputs` (compile-time: no such constructor;
+    the test asserts by reflection that no optional or nullable hazard field exists).
+
+Recompute (M4 types, M5 behaviour):
+
+13. Two engines (`fx-base` and `fx-state`) over the same elements: the report lists exactly the
+    elements whose results differ, with the right `ChangeKind`, and `Unchanged` counts the rest.
+14. A snapshot recorded under revision 1, reopened with a pack at revision 2 whose data differs
+    for one row: the report has one change and the snapshot is rewritten at revision 2.
+15. Site inputs change: every element is re-evaluated (a spy engine counts calls = elements).
+
+Real packs (#14 onward): the golden files of §8, the coverage test, the checklist tests of
+§8.3 step 3 and 4.
+
+### 11.3 Properties
+
+Generated over `fx-base`-shaped random tables (valid by construction: bounds drawn increasing)
+and random requests, with the same property-testing library #5 chooses:
+
+- **P1 — Monotone in demand.** Increasing `headerSpan`, `groundSnowLoad` or `buildingWidth`
+  never turns an `OutOfScope` into a `Sized`, and never selects a row with a smaller capacity or
+  a lower band than before.
+- **P2 — Every `Sized` is a real row.** The cited `RowId` exists in the composed table and the
+  row's inputs cover the request's inputs under §4.1's rules; the result's outputs equal that
+  row's outputs.
+- **P3 — Every `OutOfScope` cites a real limit**, and no row in the table covers the request
+  (the negative of P2: the evaluator never says "out of scope" when a row would have matched).
+- **P4 — Determinism and purity.** Same pack, same request, same result by value; the pack is
+  unchanged; the result does not depend on row order in the file (rows shuffled before load give
+  the same composed table after sorting by id).
+- **P5 — Composition is exact.** For random overlays of valid operations, composing then
+  validating equals validating a hand-composed table; an overlay with zero operations is the
+  identity.
+- **P6 — Load round trip.** Serialising a loaded pack back to JSON and loading again gives an
+  equal `LoadedPack` (so the format has no hidden state).
+- **P7 — Recompute is total.** For random element sets and two engines, every element appears
+  in `Changes` or is counted in `Unchanged`; nothing is dropped.
+
+### 11.4 Not tested here
+
+Canvas behaviour and the picker's layout (#19/#10), span computation from geometry (#18 tests
+it against the definition read from the text), the project container beyond `results.json`
+round trip (#6).
+
+## 12. Implementation plan
+
+### 12.1 #13 — evaluator, out-of-scope results and citations (Opus, Fable review)
+
+Everything in `src/Napkin.Core.RulesEngine` and `tests/Napkin.Core.RulesEngine.Tests`; no
+Avalonia references; `Class1.cs` and `UnitTest1.cs` are deleted. Steps leave the build green.
+
+**Step 1 — References and numbers.** Add a project reference from `Napkin.Core.RulesEngine` to
+`Napkin.Core.Geometry` (it has none today) for `Length`. If `Length.TryParse` does not accept the
+pack syntax in §1.5 (`"3-1/2in"`), add it in `Core.Geometry` with tests. Add a strict
+`System.Text.Json` options factory: unknown members rejected, `JsonNumberHandling.Strict`, a
+`Length` converter that fails on `wasRounded`, closed-enum converters.
+
+**Step 2 — Pack model.** `PackManifest`, `LayerManifest`, `SourceRef`, `Review`, `TableFile`
+(abstract, by `kind`), `HeaderSizingTable` with `InputColumn`/`OutputColumn`/`Footnote`/`Row`,
+`OverlayFile` with `Operation` (`Add`/`Amend`/`Delete`). Records, immutable. Commit the JSON
+Schema files under `Packs/schema/` as documentation; validating against them at test time with a
+permissively-licensed JSON Schema library is optional (JsonSchema.Net is believed MIT —
+unverified; must pass the #2 gate) and never a runtime dependency.
+
+**Step 3 — Loader and validation.** `PackLoader.Load(IPackSource) → PackLoadResult` with every
+check in §9.1 and §6.3, collecting `PackProblem`s. `EmbeddedPackSource` enumerates
+`Packs/layers/*` and `Packs/packs/*` resources; `DirectoryPackSource` reads a folder (tests and
+future user packs). Tests: §11.2 cases 1, 4 with the `fx-bad-*` fixtures.
+
+**Step 4 — Composition.** `Composer.Compose(layers) → ComposedPack`, tables keyed by
+designation, rows keyed by id, each row tagged with its `CitationLayer` and the `SourceRef` of
+the operation that produced it. Band validation (§4.3) runs on the composed table. Tests: cases
+2, 3, property P5.
+
+**Step 5 — Band selection.** `BandSelector` over declared `inputs`: group by `exact`, match
+`upper-bound` and `capacity` per §4.1, produce `BandMatch` traces. Pure, generic, no IRC
+knowledge. Tests: unit tests on tiny tables; properties P1–P3 are written here against a stub
+that wraps the selector.
+
+**Step 6 — Results and citations.** `Citation`, `AdoptedCodeRef`, `BandMatch`, `HeaderResult`,
+`OutOfScopeReason`, `BracingResult` (type only; evaluator is M5), the closed-union reflection
+test.
+
+**Step 7 — Header evaluator.** `HeaderEvaluator.Size(ComposedPack, HeaderRequest) →
+HeaderResult`, choosing the table by `WallKind`, applying `as-limit` footnotes, building the
+citation with trace. `RulesEngine.For(LoadedPack)` returning an `IRulesEngine`. Tests: cases
+6–12, P4.
+
+**Step 8 — Catalog.** `PackCatalog.Discover(IPackSource) → ImmutableList<PackLoadResult>`, with
+`Selectable` = `Loaded` and (per Decision 5) the review-status rule. Tests: fixtures appear
+with the right status; invalid ones are reported, not dropped.
+
+**Step 9 — Golden harness.** The `[Theory]` per table kind over `Golden/**/*.golden.json`, the
+coverage test, the checklist-consistency tests (§8.3 steps 3–4). Runs green with zero real
+packs; #14 makes it meaningful.
+
+**Step 10 — Recompute types.** `RecomputeReport`, `ResultChange`, `ChangeKind`,
+`RuleResultSnapshot` and `Recompute.Diff(before, after)`. Tests: case 13, P7. The snapshot
+file and the open-time diff (cases 14, 15) are wired by #6/#18 in M5.
+
+**Step 11 — Documentation.** XML docs on every public type; this document updated where the
+implementation had to deviate, the deviation recorded here.
+
+Definition of done: all fixture goldens and properties pass on both CI platforms; the loader
+refuses every `fx-bad-*`; no package references beyond the BCL and the test project's
+property-testing library; Fable review.
+
+### 12.2 #14 — the minimal M4 slice of Connecticut 2026 (Opus, Fable review vs. source)
+
+Scope for M4 is **R602.7(1) and R602.7(2) only**. R602.10 moves to M5 (with the bracing
+evaluator), R602.3(1) waits for the fastener catalog (§10).
+
+1. Obtain the 2026 CSBC document from DAS; record title, URL, printing/errata state, retrieval
+   date and SHA-256 in `pack.json`'s `sources`. Confirm from its introduction which model code
+   it adopts and how its amendment list is organised (the 2022 document uses Add/Amd/Del — §0;
+   confirm the 2026 one does the same).
+2. Read the two tables *as adopted*: the IRC 2024 table text (obtain it lawfully — Decision 7)
+   and the CT amendment list for chapter 6. Encode `layers/irc-2024/tables/r602.7-1.json` and
+   `r602.7-2.json` including every footnote, classified. Encode the CT overlay for both tables —
+   an empty `operations` list with a `location` stating where the amendment list was checked,
+   or the amendments, whichever the text says.
+3. Write `Golden/us-ct-2026/r602.7-1.golden.json` and `r602.7-2.golden.json` from the source.
+   Generate and commit the boundary cases.
+4. Read the table's definition of header span and of building width; record both in the table
+   file's `title`/`notes` and hand them to #18 as the computation it must perform.
+5. Record which `SiteInputs` fields the two tables actually consume; the UI (#18) asks for those.
+6. Open the PR with `review.status = "in-review"`. Fable reviews every row against the source
+   and commits `docs/code-packs/reviews/us-ct-2026/r602.7-1.md` and `r602.7-2.md`; the PR flips
+   to `signed-off`.
+
+M5 adds, in the same shape: `layers/irc-2021` (the tables needed), `packs/us-ct-2022` from the
+2022 document already read in §0, the `wall-bracing` kind and evaluator, `results.json`, and the
+first real before/after comparison between two packs.
+
+## 13. Decisions for Marc
+
+Short, and only what is genuinely a preference or a legal call. Everything else above is
+decided by the design and can be overridden the same way.
+
+1. **Layered packs (model-code base + state overlay + municipal overlay) — recommended — or a
+   flat, self-contained pack per state.** The state document is literally an amendment list over
+   the model code (§0), so the layered form mirrors the source, makes "what CT changed" a
+   reviewable diff, shares one transcription across the three 2021-based packs, and is the
+   mechanism the municipal layer needs anyway. Flat packs would avoid composition code in M4 (a
+   small function) at the cost of three transcriptions of the same rows and an invisible
+   composition step. Recommendation: layered.
+2. **Lengths in pack files as strict-parsed feet-inch strings (`"6ft 0in"`) — recommended — or
+   integer 1/1024″ units as in the project file.** Strings are what a reviewer can check against
+   a PDF by eye; the parse is exact or the pack is refused. Integers would keep one rule across
+   both file kinds. Recommendation: strings, for the review surface.
+3. **When a footnote permits interpolation, still do not interpolate; use the next more
+   demanding band and show the footnote.** This is always at least as safe for a monotone table
+   and keeps "no interpolation anywhere" true without exception. The alternative is to
+   implement the footnote's interpolation as a named, tested rule. Recommendation: no
+   interpolation in the betas; revisit only if a real case is over-conservative enough to matter.
+4. **Municipal scope for the first betas: the mechanism plus zero real municipalities**, with a
+   UI note pointing PA users at the DLI register (§6.4). The register has no ordinance texts, so
+   each town is a document hunt plus a full transcribe-and-review cycle. Recommendation: none
+   until a real user in a real town needs one.
+5. **Unreviewed packs in the picker: listed with a persistent UNREVIEWED label on the pack and
+   on every result (recommended), or hidden until signed off.** Labelled keeps the packs
+   exercisable in betas and honest; hidden is stricter. A build flag for tagged releases can
+   give both. Recommendation: labelled in betas, hidden in tagged pre-releases.
+6. **User-installed packs from disk: not in the first betas** (recommended). The loader has a
+   `DirectoryPackSource` for tests, so enabling it later is a settings toggle, but a pack
+   dropped into a folder bypasses the review process in §8, and the label in Decision 5 would be
+   the only guard. Recommendation: embedded only until there is a reason.
+7. **Copyright of transcribed model-code tables.** The base layer transcribes rows that
+   originate in ICC's copyrighted IRC, as incorporated by reference into state law. DESIGN.md
+   §5.6 already says "not copied verbatim from any single publisher's compiled table". This
+   document assumes that encoding the adopted values, cited to the adopting state's document,
+   with the model-code text obtained lawfully, is acceptable — but that is a legal judgement
+   for the project's owner, not a design decision. Recommendation: Marc confirms the stance
+   before #14 transcribes, and records it in DESIGN.md §2.1.
+8. **`results.json` in the project container** (§7.3): a stored snapshot used only to diff
+   against after a pack revision change, never displayed as current. Alternative: no snapshot,
+   and a revision change simply recomputes with no before/after. Recommendation: store it —
+   "the data changed and here is what moved" is the point of recording the revision at all.

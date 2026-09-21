@@ -181,25 +181,32 @@ constants, and not copied verbatim from any single publisher's compiled table:
   band only (§2 non-goals).
 - Every rules-engine result: shows code edition + table + row used; never a bare number.
 
-### 5.4 Rules engine (the differentiator — detailed in §7)
-- Versioned by code edition (2015/2018/2021 IRC, etc. — user-selectable, not hardcoded to latest).
+### 5.4 Rules engine (the differentiator — detailed in §6.3 and
+[`docs/design/rules-engine-model.md`](./docs/design/rules-engine-model.md))
+- Keyed by **adopted code** — a jurisdiction's adoption of a model-code edition with its
+  amendments ("CT 2026 — IRC 2024", "CT 2022 — IRC 2021"), user-selectable per project, never
+  hardcoded to the latest. The model-code year is an attribute of a pack, not its identity (§11).
 - Data-driven: tables live as structured data files, not embedded in code logic, so adding an
-  edition or a local amendment is a data change, not a code change.
-- Every calculation traceable to a specific table/row for audit.
+  adopted code, a state amendment or a municipal amendment is a data change with its own golden
+  tests, not a code change.
+- Every calculation traceable to a specific adopted code, table and row for audit, with the
+  source document and where in it the row was read.
 - Explicit, first-class "outside prescriptive scope" result type — this is not an error state to
-  suppress, it's a correct and expected answer the UI must surface clearly.
-- **Code edition is a per-project setting, chosen from a dropdown, not an app-wide default.** The
-  dropdown is populated dynamically from whatever adopted-code data packs (§6.3) are installed —
-  four entries in the first beta (§11), growing for free as packs are added later, no UI change
-  required. This
-  matters beyond future multi-jurisdiction support: many jurisdictions govern a project by the
-  code edition in effect at permit *application* (sometimes issuance), not whichever edition is
-  current when the app happens to be opened, so a project may legitimately need to stay locked to
-  an older edition even after a newer one ships. Set at project creation, stored in the project
-  manifest (§6.4), and changeable later — but changing it forces a full recompute of every
-  rules-engine result in the project and re-flags anything that no longer holds under the new
-  edition's tables. A silent carryover of stale results across an edition change is exactly the
-  class of quiet error this design is meant to prevent.
+  suppress, it's a correct and expected answer the UI must surface clearly, and it cites the
+  limit that excluded the input.
+- **The adopted code is a per-project setting, chosen from a dropdown, not an app-wide default.**
+  The dropdown is populated dynamically from whatever adopted-code data packs (§6.3) are
+  installed — four entries across the first betas (§11), growing for free as packs are added
+  later, no UI change required. This matters beyond future multi-jurisdiction support: many
+  jurisdictions govern a project by the code in effect at permit *application* (sometimes
+  issuance; Connecticut's 2022 code states the application-date rule in its own introduction),
+  not whichever code is current when the app happens to be opened, so a project may legitimately
+  need to stay locked to a superseded adoption even after a newer one is in force. Set at
+  project creation, stored in the project manifest (§6.4), and changeable later — but changing
+  it forces a full recompute of every rules-engine result in the project and shows the user a
+  before/after report of everything that changed, so nothing that no longer holds under the new
+  pack's tables survives unflagged. A silent carryover of stale results across a code change is
+  exactly the class of quiet error this design is meant to prevent.
 
 ### 5.5 Import / export
 - **Native project file**: documented, versioned, zip container (JSON scene graph + thumbnail +
@@ -264,35 +271,47 @@ keeps the safety-critical code (rules engine) testable in isolation from UI conc
 
 ### 6.3 Rules engine data model (sketch)
 
+Designed in full in [`docs/design/rules-engine-model.md`](./docs/design/rules-engine-model.md)
+(#12, draft awaiting sign-off). The shape, with **synthetic values** — nothing here is a code
+value:
+
 ```json
-{
-  "adoptedCode": "PA-UCC-2021",
-  "baseCode": "IRC-2021",
-  "table": "R602.7(1)",
-  "description": "Header spans for exterior bearing walls",
-  "rows": [
-    {
-      "supports": "roof-ceiling",
-      "groundSnowLoadMax": 30,
-      "buildingWidthFt": 28,
-      "headerSpanMaxFt": 6.0,
-      "header": "(2) 2x8",
-      "jackStuds": 1,
-      "kingStuds": 1
-    }
-  ]
-}
+// packs/us-ct-2026/pack.json — identity is the adoption, not the IRC year
+{ "id": "us-ct-2026", "revision": 1,
+  "adoption": { "name": "2026 Connecticut State Building Code", "shortName": "CT 2026",
+                "inForce": { "from": "2026-09-18", "to": null },
+                "appliesTo": "permit-application-date" },
+  "baseCode": { "publisher": "ICC", "code": "IRC", "year": 2024 },
+  "layers": [ "irc-2024", "amendments" ],
+  "sources": [ { "id": "csbc-2026", "title": "…", "url": "…", "retrievedOn": "…", "sha256": "…" } ],
+  "review": { "status": "unreviewed", "checklist": null } }
+
+// layers/irc-2024/tables/r602.7-1.json — a table as data; lengths are exact strings, never doubles
+{ "kind": "header-sizing", "table": "R602.7(1)",
+  "inputs": [ { "name": "groundSnowLoad", "type": "psf", "band": "upper-bound" },
+              { "name": "headerSpan", "type": "length", "band": "capacity" } ],
+  "rows": [ { "id": "…", "groundSnowLoad": 99, "headerSpan": "99ft 9in",
+              "header": { "plies": 9, "nominal": "2x99" }, "jackStuds": 9, "kingStuds": 9,
+              "location": "page …" } ] }
+
+// packs/us-ct-2026/amendments/r602.7-1.json — the state's Add / Amd / Del, as an overlay
+{ "table": "R602.7(1)", "source": "csbc-2026", "location": "…", "operations": [] }
 ```
 
-- `RulesEngine.Evaluate(WallContext, OpeningSpec) -> RuleResult` where `RuleResult` is a
-  discriminated union: `Sized(header, studs, citation)` or `OutOfScope(reason, citation-of-limit)`.
-  Never a third silent-failure case.
-- Bracing check is a separate evaluator over the wall line's total opening length vs. required
-  braced panel length from §R602.10, run whenever an opening on that wall changes.
-- Tables are data files under version control, one directory per **adopted code** (a state's
-  adoption of a model-code edition, with its amendments), so a new adoption, a state amendment or
-  a municipal amendment is an additive data change with its own golden tests. The IRC year is an
-  attribute of the pack, never its identity — see §11.
+- `IRulesEngine.SizeHeader(HeaderRequest) -> HeaderResult` where `HeaderResult` is a closed
+  union: `Sized(header, studs, citation)` or `OutOfScope(reason, citation-of-limit)`. Never a
+  third silent-failure case; missing site inputs are a project state that prevents the request
+  from being built, not a result.
+- Bracing check is a separate evaluator (`CheckBracing`) over the wall line's provided bracing
+  vs. the required braced length from §R602.10, run whenever an opening on that wall changes;
+  its results are `Passes`, `Fails` (with the shortfall) or `OutOfScope`, each cited.
+- Tables are data files under version control: model-code base layers are ingredients, and one
+  directory per **adopted code** (a state's adoption of a model-code edition, with its
+  amendments) holds the overlay that makes it a selectable pack. A new adoption, a state
+  amendment or a municipal amendment is an additive data change with its own golden tests and a
+  signed-off row-by-row review against the primary source. The IRC year is an attribute of the
+  pack, never its identity — see §11.
+- Thresholds are `Length` (1/1024″, exact) and integers; no double is ever read from a pack.
 
 ### 6.4 Project file format (sketch)
 
