@@ -1,0 +1,215 @@
+using Napkin.Core.Geometry;
+
+namespace Napkin.Core.Project.Tests;
+
+/// <summary>
+/// The two hand-crafted designs in <c>samples/</c>, loaded by the reader and compared with the
+/// expectations that were worked out by hand and committed before the reader existed (issue #37).
+/// </summary>
+/// <remarks>
+/// When one of these fails, the first question is which side is wrong. An expectation is changed
+/// only after the arithmetic has been re-done by hand and the new derivation written into the
+/// expectations file — never by copying what napkin printed.
+/// </remarks>
+public sealed class SampleFixtureTests
+{
+    [Theory]
+    [InlineData("coffee-table")]
+    [InlineData("wall-with-window")]
+    [Trait("Feature", "PRJ-001")]
+    public void Sample_loads_with_the_entities_the_expectations_state(string fixture)
+    {
+        (Sketch sketch, Expectations expected) = Load(fixture);
+
+        Assert.Equal(expected.FormatVersion, SceneReader.FormatVersion);
+        Assert.Equal(Length.UnitsPerInch, expected.UnitsPerInch);
+
+        Assert.Equal(expected.Counts.Entities, sketch.Entities.Count);
+        Assert.Equal(expected.Counts.Relationships, sketch.Relationships.Count);
+        Assert.Equal(expected.Counts.Layers, sketch.Layers.Count);
+        Assert.Equal(expected.Counts.Boxes, sketch.Entities.Values.OfType<Box>().Count());
+        Assert.Equal(expected.Counts.Dimensions, sketch.Entities.Values.OfType<Dimension>().Count());
+    }
+
+    [Theory]
+    [InlineData("coffee-table")]
+    [InlineData("wall-with-window")]
+    [Trait("Feature", "PRJ-001")]
+    public void Every_part_is_where_and_what_the_expectations_say(string fixture)
+    {
+        (Sketch sketch, Expectations expected) = Load(fixture);
+
+        foreach (ExpectedBox part in expected.Boxes)
+        {
+            Box box = Assert.IsType<Box>(sketch.Find(new EntityId(Guid.Parse(part.Id))));
+
+            // Integer units throughout: a part's size and position are compared exactly, never as
+            // inches and never with a tolerance.
+            Assert.Equal(part.AnchorXUnits, box.Anchor.X.Units);
+            Assert.Equal(part.AnchorYUnits, box.Anchor.Y.Units);
+            Assert.Equal(part.WidthUnits, box.Width.Units);
+            Assert.Equal(part.HeightUnits, box.Height.Units);
+            Assert.Equal(part.RotationArcseconds, box.Rotation.Arcseconds);
+        }
+
+        Assert.Equal(expected.Boxes.Count, sketch.Entities.Values.OfType<Box>().Count());
+    }
+
+    [Theory]
+    [InlineData("coffee-table")]
+    [InlineData("wall-with-window")]
+    [Trait("Feature", "PRJ-001")]
+    public void The_design_measures_what_the_expectations_say_overall(string fixture)
+    {
+        (Sketch sketch, Expectations expected) = Load(fixture);
+
+        IReadOnlyList<Box> boxes = [.. sketch.Entities.Values.OfType<Box>()];
+        Length west = boxes.Min(box => box.Anchor.X);
+        Length south = boxes.Min(box => box.Anchor.Y);
+        Length east = boxes.Max(box => box.Anchor.X + box.Width);
+        Length north = boxes.Max(box => box.Anchor.Y + box.Height);
+
+        Assert.Equal(expected.Overall.WidthUnits, (east - west).Units);
+        Assert.Equal(expected.Overall.DepthUnits, (north - south).Units);
+        Assert.Equal(expected.Overall.WidthText, (east - west).Format(LengthFormat.Default).Text);
+        Assert.Equal(expected.Overall.DepthText, (north - south).Format(LengthFormat.Default).Text);
+    }
+
+    [Theory]
+    [InlineData("coffee-table")]
+    [InlineData("wall-with-window")]
+    [Trait("Feature", "PRJ-001")]
+    public void The_parts_list_has_the_quantities_the_expectations_say(string fixture)
+    {
+        (Sketch sketch, Expectations expected) = Load(fixture);
+
+        Dictionary<(long Width, long Height), int> actual = [];
+        foreach (Box box in sketch.Entities.Values.OfType<Box>())
+        {
+            (long, long) size = (box.Width.Units, box.Height.Units);
+            actual[size] = actual.TryGetValue(size, out int count) ? count + 1 : 1;
+        }
+
+        Assert.Equal(expected.PartsList.Count, actual.Count);
+
+        foreach (ExpectedPart part in expected.PartsList)
+        {
+            (long, long) size = (part.PlanWidthUnits, part.PlanHeightUnits);
+            Assert.True(
+                actual.TryGetValue(size, out int quantity),
+                $"{part.Name}: no part in the file is {part.PlanWidthUnits} by {part.PlanHeightUnits} units.");
+            Assert.Equal(part.Quantity, quantity);
+
+            Assert.Equal(part.PlanWidthText, new Length(part.PlanWidthUnits).Format(LengthFormat.Default).Text);
+            Assert.Equal(part.PlanHeightText, new Length(part.PlanHeightUnits).Format(LengthFormat.Default).Text);
+        }
+    }
+
+    [Theory]
+    [InlineData("coffee-table")]
+    [InlineData("wall-with-window")]
+    [Trait("Feature", "PRJ-001")]
+    public void The_relationships_are_the_kinds_and_counts_the_expectations_say(string fixture)
+    {
+        (Sketch sketch, Expectations expected) = Load(fixture);
+
+        Dictionary<string, int> actual = [];
+        foreach (Relationship relationship in sketch.RelationshipsInOrder)
+        {
+            string kind = KindOf(relationship);
+            actual[kind] = actual.TryGetValue(kind, out int count) ? count + 1 : 1;
+        }
+
+        Assert.Equal(expected.RelationshipKinds.OrderBy(pair => pair.Key), actual.OrderBy(pair => pair.Key));
+    }
+
+    [Theory]
+    [InlineData("coffee-table")]
+    [InlineData("wall-with-window")]
+    [Trait("Feature", "PRJ-001")]
+    public void Every_dimension_label_reads_as_the_expectations_say(string fixture)
+    {
+        (Sketch sketch, Expectations expected) = Load(fixture);
+
+        Assert.Equal(expected.DimensionLabels.Count, sketch.Entities.Values.OfType<Dimension>().Count());
+
+        foreach (ExpectedLabel label in expected.DimensionLabels)
+        {
+            Dimension dimension = Assert.IsType<Dimension>(sketch.Find(new EntityId(Guid.Parse(label.Id))));
+
+            // A dimension never stores a number: its value is computed from what it measures
+            // (geometry design §3.3), which is what the expectations file states.
+            Length measured = Measure(sketch, dimension);
+            Assert.Equal(label.ValueUnits, measured.Units);
+
+            FormattedLength text = measured.Format(LengthFormat.Default);
+            Assert.Equal(label.Text, text.Text);
+            Assert.True(text.IsExact, $"{label.Name} does not display exactly at 1/16 inch.");
+
+            Assert.Equal(label.Driving, dimension.Drives is not null);
+        }
+    }
+
+    [Theory]
+    [InlineData("coffee-table")]
+    [InlineData("wall-with-window")]
+    [Trait("Feature", "PRJ-003")]
+    public void A_sample_satisfies_its_own_relationships_and_validates(string fixture)
+    {
+        (Sketch sketch, _) = Load(fixture);
+
+        Assert.True(sketch.Validate().IsValid, sketch.Validate().ToString());
+        Assert.True(RelationshipChecker.Check(sketch).AllHold, RelationshipChecker.Check(sketch).ToString());
+    }
+
+    [Theory]
+    [InlineData("coffee-table")]
+    [InlineData("wall-with-window")]
+    [Trait("Feature", "PRJ-001")]
+    public void Reading_a_sample_twice_gives_the_same_value(string fixture)
+    {
+        (Sketch first, _) = Load(fixture);
+        (Sketch second, _) = Load(fixture);
+
+        Assert.Equal(first, second);
+    }
+
+    internal static string SampleDirectory => Path.Combine(AppContext.BaseDirectory, "samples");
+
+    private static (Sketch Sketch, Expectations Expected) Load(string fixture)
+    {
+        LoadResult result = SceneReader.ReadFile(Path.Combine(SampleDirectory, $"{fixture}.scene.json"));
+        Loaded loaded = Assert.IsType<Loaded>(result);
+        Expectations expected = Expectations.Read(Path.Combine(SampleDirectory, $"{fixture}.expected.json"));
+
+        Assert.Equal(fixture, expected.Fixture);
+        return (loaded.Sketch, expected);
+    }
+
+    private static Length Measure(Sketch sketch, Dimension dimension) => dimension.Measures switch
+    {
+        ParamMeasurand param => sketch.ValueOf(param.Param),
+        AxisMeasurand axis => sketch.PointOf(axis.To).Component(axis.Axis)
+                              - sketch.PointOf(axis.From).Component(axis.Axis),
+        _ => throw new InvalidOperationException($"Unknown measurand {dimension.Measures}."),
+    };
+
+    /// <summary>
+    /// The relationship kind names the expectations use. Spelled out here rather than read from
+    /// the reader's own table, so that the fixtures check the format's names rather than agreeing
+    /// with whatever the reader happens to call them.
+    /// </summary>
+    private static string KindOf(Relationship relationship) => relationship switch
+    {
+        Anchored => "anchored",
+        Coincident => "coincident",
+        Horizontal => "horizontal",
+        Vertical => "vertical",
+        Flush => "flush",
+        AxisDistance => "axisDistance",
+        ParamValue => "paramValue",
+        EqualParam => "equalParam",
+        Centered => "centered",
+        _ => relationship.GetType().Name,
+    };
+}
