@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Real coverlet output for an assembly that holds only an empty placeholder class: the package is
+  present, so the assembly was instrumented, and it has no classes at all. Captured on 2026-09-21
+  from a coverage run of tests/Napkin.Core.Geometry.Tests against the placeholder Class1.
+-->
+<coverage line-rate="1" branch-rate="1" version="1.9" timestamp="1790024410" lines-covered="0" lines-valid="0" branches-covered="0" branches-valid="0">
+  <sources />
+  <packages>
+    <package name="Napkin.Core.Geometry" line-rate="1" branch-rate="1" complexity="0">
+      <classes />
+    </package>
+  </packages>
+</coverage>

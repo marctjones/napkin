@@ -1,0 +1,35 @@
+// The xunit 2.5.3 probe whose run produced Fixtures/probe.trx. Kept as it was compiled, except
+// that the feature ids were rewritten into the catalog's real style (features/catalog.json uses
+// GEO-001, RUL-004, GUI-SHELL-02). TRX carries no ids at all, only class and method names, so
+// rewriting them does not break the pairing between this file and that TRX.
+namespace TraitProbe;
+
+[Trait("Feature", "GEO-010")]
+public class Probe
+{
+    [Fact, Trait("Feature", "GEO-001")]
+    [Trait("Feature", "GEO-002")]
+    public void Passes()
+    {
+        Assert.Equal(-1, Napkin.Probe.Branchy.Branchy.Classify(-5));
+        Assert.Equal(1, Napkin.Probe.Branchy.Branchy.Classify(1));
+        Assert.True(Napkin.Probe.Branchy.Branchy.Both(true, true));
+    }
+
+    [Fact(Skip = "planned: GEO-004 - points")]
+    [Trait("Feature", "GEO-004")]
+    public void Skipped() { }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [Trait("Feature", "GEO-003")]
+    public void TheoryCase(int i) { Assert.True(i > 0); }
+
+    public class Nested
+    {
+        [Fact]
+        [Trait("Feature", "GEO-NEST-001")]
+        public void Inner() { }
+    }
+}

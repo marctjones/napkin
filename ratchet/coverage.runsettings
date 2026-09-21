@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Coverage settings for the ratchet (issue #32). docs/testing/ratchet.md gives the exact
+  `dotnet test` command that uses this file.
+
+  What is measured is the shippable library code and nothing else:
+
+    * Include only Napkin.* assemblies, so the BCL, Avalonia and xunit never dilute a percentage.
+    * Napkin.App is excluded: a GUI shell is not usefully covered by unit tests, and its ratchet
+      is the passing-workflow count from the GUI automation suite (issue #33), not a line rate.
+    * Test and tooling assemblies are excluded; covering the tests would measure nothing.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[Napkin.*]*</Include>
+          <Exclude>[Napkin.App]*,[Napkin.Tools]*,[*.Tests]*</Exclude>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

@@ -36,5 +36,60 @@ jobs:
       - name: Build (Release)
         run: dotnet build napkin.sln --configuration Release --no-restore
 
+      # Coverage is collected on both platforms so the artifact is there to compare when they
+      # disagree; only one of them gates (see the next step).
       - name: Test
-        run: dotnet test napkin.sln --configuration Debug --no-build
+        run: >
+          dotnet test napkin.sln --configuration Debug --no-build
+          --settings ratchet/coverage.runsettings
+          --collect:"XPlat Code Coverage"
+          --logger trx
+          --results-directory artifacts/test-results
+
+      # The coverage gate (#32). It runs on macOS only, for one reason: coverage can differ
+      # between platforms, and the baseline is generated locally on a Mac with
+      # `ratchet update`. Gating where the numbers are produced means a floor that passes
+      # locally passes in CI, with no OS-conditional entries in baseline.json and no second
+      # opinion to reconcile. If the project ever gains platform-specific code, this becomes a
+      # per-platform baseline instead of a single one.
+      #
+      # This step failing is meant to fail the pull request. Making it *required* is a branch
+      # protection setting on the repository, not something a workflow file can declare.
+      - name: Coverage ratchet
+        if: matrix.os == 'macos-latest'
+        run: dotnet run --project tools/Napkin.Tools --configuration Debug --no-build -- ratchet check
+
+      # The scorecard (#34) measures progress and must never gate anything: continue-on-error
+      # keeps a red scorecard from failing the job, and always() keeps it reporting even when
+      # the tests above failed, which is exactly when knowing what regressed is worth most.
+      - name: Feature scorecard
+        if: always() && matrix.os == 'macos-latest'
+        continue-on-error: true
+        run: >
+          dotnet run --project tools/Napkin.Tools --configuration Debug --no-build --
+          scorecard report --summary --json artifacts/scorecard.json
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            artifacts/
+            !artifacts/gui-frames/
+          if-no-files-found: warn
+          retention-days: 14
+
+      # The GUI workflow suite (issue #33) renders real frames; rendering them is only worth it
+      # if they can be looked at. Their own artifact keeps them findable, and out of the one
+      # above. Absent on a run without the GUI suite, hence if-no-files-found: ignore.
+      - name: Upload GUI frames and metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-frames-${{ matrix.os }}
+          path: |
+            artifacts/gui-frames/
+            artifacts/gui-metrics.json
+          if-no-files-found: ignore
+          retention-days: 14
