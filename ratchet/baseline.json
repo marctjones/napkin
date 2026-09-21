@@ -1,9 +1,19 @@
 {
   "schema": 1,
-  "coverage": {},
+  "coverage": {
+    "Napkin.Core.Geometry": {
+      "line": 90.38,
+      "branch": 83.57
+    }
+  },
   "gui": {
-    "workflowsPassed": 0,
-    "workflowIds": []
+    "workflowsPassed": 4,
+    "workflowIds": [
+      "GUI-SHELL-01",
+      "GUI-SHELL-02",
+      "GUI-SHELL-03",
+      "GUI-SHELL-04"
+    ]
   },
   "log": []
 }
