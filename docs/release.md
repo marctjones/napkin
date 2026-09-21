@@ -100,7 +100,8 @@ stops signing the bundle, the arm64 check fails, and the fix is an ad-hoc `codes
 Both of these run the whole pipeline up to and including the checksums and notes, and create no tag,
 no release and nothing public:
 
-- **Actions → Release → Run workflow** (`workflow_dispatch`), on any branch. Or
+- **Actions → Release → Run workflow** (`workflow_dispatch`), on any branch, once this workflow is
+  on `main` (GitHub offers a manual run only for a workflow the default branch has). Or
   `gh workflow run release.yml --ref <branch>`.
 - **Any pull request that changes `.github/workflows/release.yml`** runs it automatically, and
   only such a pull request does. (A change to the notes template or to `first-run.md` does not, on
