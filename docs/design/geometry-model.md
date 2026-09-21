@@ -1015,3 +1015,90 @@ decision above without saying so.
   the residual measured as the furthest of the second edge's ends from the first edge's line. §3.2
   assumes two parallel axis-aligned edges; this is what the checker does when a solver-written
   sketch does not have them.
+
+### 10.3 The direct updater and the propagator
+
+- **`Anchored` pins position, not size.** §3.2 says an anchored entity "does not move or resize in
+  response to other entities", but §7.1 case 4 requires a `SetParameter` on an anchored box's
+  width to reach the `Flush` and report *that* conflict, which it cannot do if `Anchored` has
+  already refused the resize. So the propagator pre-assigns an anchored entity's X and Y and
+  leaves its sizes to `ParamValue` and `EqualParam`. The visible consequence is that an
+  `EqualParam` can resize an anchored box. **Open question for Marc** — the alternative is to drop
+  case 4's expected report.
+- **The propagator runs in two phases**: size relationships (`ParamValue`, `EqualParam`) to a
+  fixed point, then positional ones. No positional relationship ever assigns a size, and a corner
+  offset depends on the box's size, so a single pass could compute a corner from a size a later
+  relationship changes and then read the stale derivation as a contradiction. §4.4's algorithm does
+  not say this; it is an implementation requirement of it.
+- **The anchor rule is not special-cased.** A constraint moves whichever side is free to move,
+  where "free" means none of the position scalars the side is built on has been assigned. §4.4's
+  anchor rule, its seeding rule for `AddRelationship(Coincident(p, q))`, and "the *to* point
+  follows" for `AxisDistance` all fall out of that one rule plus one tie-break: when neither side
+  is driving, the second side follows the first.
+- **`RejectionReason.DuplicateEntity` was added** to §4.2's enum. `AddEntity` with an id the sketch
+  already holds is not a dangling reference and not a geometric state, and every other value in the
+  enum would have named the wrong thing.
+- **`RejectionReason.ReferenceDimension` is unreachable from §4.1's requests.** §3.3 says editing a
+  reference dimension's value is `Rejected(ReferenceDimension)`, but no request in §4.1 identifies a
+  dimension: `SetParameter` takes a `RelationshipId`, and a reference dimension has none. The canvas
+  therefore cannot form the request at all. The value is kept in the enum because #10 may add a
+  request that can reach it. §7.1 case 12 is implemented as `SetParameter` against an id the sketch
+  does not have, which is `Rejected(UnknownRelationship)`.
+- **`Horizontal` and `Vertical` apply to segments only**, as §3.2's own parenthetical says. On a
+  `BoxEdgeRef` they are check-only — the checker evaluates them geometrically — and the direct
+  updater refuses a sketch containing one, because a box edge's direction is a property of
+  `Box.Rotation` and not something to propagate.
+- **`ParamValue` and `EqualParam` over a `SegmentLengthRef` are not propagated.** A segment's
+  length is not one number the updater can assign; which of its two nodes should move is a question
+  §4.4 does not answer. The checker still evaluates them, so the file format and #28 keep them.
+  The direct updater refuses a sketch that contains one, the way §6 says it refuses a file holding a
+  relationship kind it cannot handle.
+- **The precondition applies to geometry requests only.** §4.4 states it for `Apply`, but a sketch
+  holding a kind the updater cannot propagate would then be a dead end: the user could not remove
+  the offending relationship. `AddEntity`, `RemoveEntity`, `RemoveRelationship` and `SetLayer` move
+  nothing, so they are allowed on any sketch.
+- **`Drag`'s rigid group includes `Horizontal` and `Vertical`.** §4.4's list of coupling kinds omits
+  them, but they tie a segment's two nodes together along one axis just as firmly, and a drag that
+  ignored them would leave the relationship broken.
+- **`DragEdge` is all-or-nothing, and positive means outward.** §4.1 says the edge moves "as much of
+  the delta as the relationships allow"; in the rectilinear set an edge is either free or pinned, so
+  there is no partial case to find, and §4.4's own example ("a `Flush` to an anchored box blocks it
+  entirely") is the whole story. The sign convention — positive grows the box — is not stated in the
+  design; this is the choice.
+- **The post-write check throws rather than asserting.** §4.4 step 5 calls for a debug-mode
+  assertion. On .NET a failed `Debug.Assert` with no debugger attached fail-fasts the process, which
+  would kill the test host and leave CI with an opaque log. `DirectUpdater` throws an
+  `InvalidOperationException` listing the violations instead, in every configuration. It is still a
+  bug, not a result.
+- **`Apply` assumes its input sketch already satisfies its own relationships** (invariant 3). It
+  checks referential integrity, rotations and supported kinds, because those decide whether the
+  request is in its domain, but it does not re-run the checker on the input: that is the loader's
+  job (§6).
+- **A layer change and a dimension demotion are not in the `ChangeSet`.** §4.2's `ChangeSet` has
+  `Added`, `Removed`, `Moved` and `Resized`, and neither of these is any of those. Rather than add a
+  set the design did not ask for, they are left out and recorded here. **Open question for Marc /
+  #10** — whether `ChangeSet` should gain a `Modified` set.
+
+### 10.4 The test plan
+
+- **§7.1 case 13's drag clause contradicts §4.4 and was resolved toward §4.4.** Case 13 expects
+  dragging the opening along its wall to zero the Y component and apply X. But the opening is fixed
+  along the wall by an `AxisDistance` on X, and §4.4's rule is that an `AxisDistance` along X blocks
+  X; the two `Flush` relationships on the wall's long edges block Y. So the applied delta is (0, 0)
+  while that number exists. This is the same principle as `Rejected(DrivenSize)`: a drag never
+  overrides a number the user typed. The test asserts (0, 0) with the `AxisDistance` in place and
+  (dx, 0) once it is removed.
+- **P7's last clause is a loop, not a single removal.** §7.2 says removing all the named
+  relationships makes the same request succeed. That cannot hold in general: a sketch can hold two
+  independent conflicts with the same request, and a report that names "the smallest set found"
+  names only the one it hit. The property is tested as: the report always names something that can
+  be removed, removing it strictly reduces the relationship count, and repeating resolves the
+  request. P7's other clauses — two derivations, every named id present, a non-empty summary — are
+  tested as written. Two carve-outs, both forced by §4.1: the relationship a `SetParameter` is
+  about is never removed (there would be nothing left to ask for), and an `AddRelationship`'s own
+  new relationship is not expected to be in the sketch already.
+- **No property-testing package.** FsCheck and CsCheck both have unverified licences for the #2
+  gate, and §7.2 allows a hand-rolled seeded generator. The properties are seeded loops under
+  xUnit theories; every assertion prints the seed and the iteration. A further test counts the
+  outcomes the generator reaches across all seeds and fails if conflicts, rejections or blocked
+  drags never occur, so the properties cannot pass by never reaching the cases they are about.
