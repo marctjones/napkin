@@ -668,8 +668,8 @@
       "kind": "unit"
     },
     {
-      "id": "IOP-005",
-      "area": "interop",
+      "id": "CUT-007",
+      "area": "furniture",
       "title": "Sheet-goods nesting reports the sheets a project needs",
       "acceptance": "Given a stock panel size and a cut list of sheet parts, the layout places every part inside the panels without overlap and reports the number of sheets needed.",
       "milestone": "backlog",
@@ -797,7 +797,7 @@
       "id": "GUI-VIEW-05",
       "area": "ui",
       "title": "A file the app cannot read fails visibly",
-      "acceptance": "With a design already open, try to open a file whose format version differs; a message names the file's version and the app's, and the design already on screen is untouched.",
+      "acceptance": "With a design already open, try to open a scene file carrying an unknown field, a dangling id and an unsupported relationship kind; a message names what was wrong, and the design already on screen is untouched.",
       "milestone": "M1",
       "issue": 36,
       "kind": "workflow"
