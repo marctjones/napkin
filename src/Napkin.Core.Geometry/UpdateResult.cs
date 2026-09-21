@@ -67,6 +67,11 @@ public sealed record Rejected(RejectionReason Reason) : UpdateResult;
 /// <param name="Removed">Entities removed, including everything the cascade took with them.</param>
 /// <param name="Moved">Entities whose position changed.</param>
 /// <param name="Resized">Entities whose size changed.</param>
+/// <param name="Modified">
+/// Entities that changed in some other way: a layer, a rotation, or a dimension that stopped
+/// driving and became a reference dimension. The canvas has to redraw these too, and a canvas
+/// that could not tell a dimension had been demoted would draw it wrong.
+/// </param>
 /// <param name="RelationshipsAdded">Relationships added.</param>
 /// <param name="RelationshipsRemoved">Relationships removed.</param>
 /// <param name="AppliedDelta">For a drag, what actually happened; <see langword="null"/> otherwise.</param>
@@ -75,12 +80,14 @@ public sealed record ChangeSet(
     ImmutableHashSet<EntityId> Removed,
     ImmutableHashSet<EntityId> Moved,
     ImmutableHashSet<EntityId> Resized,
+    ImmutableHashSet<EntityId> Modified,
     ImmutableHashSet<RelationshipId> RelationshipsAdded,
     ImmutableHashSet<RelationshipId> RelationshipsRemoved,
     Vector2? AppliedDelta)
 {
     /// <summary>Nothing changed.</summary>
     public static readonly ChangeSet Empty = new(
+        ImmutableHashSet<EntityId>.Empty,
         ImmutableHashSet<EntityId>.Empty,
         ImmutableHashSet<EntityId>.Empty,
         ImmutableHashSet<EntityId>.Empty,
@@ -98,6 +105,7 @@ public sealed record ChangeSet(
            && Removed.IsEmpty
            && Moved.IsEmpty
            && Resized.IsEmpty
+           && Modified.IsEmpty
            && RelationshipsAdded.IsEmpty
            && RelationshipsRemoved.IsEmpty;
 
@@ -111,6 +119,7 @@ public sealed record ChangeSet(
             Removed.Union(other.Removed),
             Moved.Union(other.Moved),
             Resized.Union(other.Resized),
+            Modified.Union(other.Modified),
             RelationshipsAdded.Union(other.RelationshipsAdded),
             RelationshipsRemoved.Union(other.RelationshipsRemoved),
             other.AppliedDelta ?? AppliedDelta);
@@ -222,4 +231,10 @@ public enum RejectionReason
 
     /// <summary>A <see cref="ParamValue"/> drives that size, so a drag must not override it.</summary>
     DrivenSize,
+
+    /// <summary>
+    /// This updater does not implement that kind of request at all. See
+    /// docs/design/geometry-model.md &#xA7;10.
+    /// </summary>
+    UnsupportedRequest,
 }

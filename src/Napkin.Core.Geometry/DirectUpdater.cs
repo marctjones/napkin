@@ -67,7 +67,11 @@ public sealed class DirectUpdater : IGeometryUpdater
             DragEdge dragEdge => ApplyDragEdge(sketch, dragEdge),
 
             Batch batch => ApplyBatch(sketch, batch),
-            _ => new Rejected(RejectionReason.UnsupportedRelationship),
+
+            // Request's constructor is private protected, so nothing outside this assembly can
+            // add a kind; this arm exists so that adding one here and forgetting to handle it is
+            // a result rather than a crash.
+            _ => new Rejected(RejectionReason.UnsupportedRequest),
         };
     }
 
@@ -179,11 +183,16 @@ public sealed class DirectUpdater : IGeometryUpdater
             result = result.WithoutRelationship(id);
         }
 
-        result = DemoteDimensions(result, removedRelationships.Contains);
+        result = DemoteDimensions(result, removedRelationships.Contains, out ImmutableHashSet<EntityId> demoted);
 
         return new Solved(
             result,
-            ChangeSet.Empty with { Removed = [.. removed], RelationshipsRemoved = [.. removedRelationships] });
+            ChangeSet.Empty with
+            {
+                Removed = [.. removed],
+                Modified = demoted,
+                RelationshipsRemoved = [.. removedRelationships],
+            });
     }
 
     private static UpdateResult ApplyRemoveRelationship(Sketch sketch, RemoveRelationship request)
@@ -195,9 +204,14 @@ public sealed class DirectUpdater : IGeometryUpdater
 
         // Removing a relationship never moves anything: the geometry stays where it is, it is
         // simply no longer held there. A dimension it drove becomes a reference dimension.
-        Sketch result = DemoteDimensions(sketch.WithoutRelationship(request.Id), id => id == request.Id);
+        Sketch result = DemoteDimensions(
+            sketch.WithoutRelationship(request.Id),
+            id => id == request.Id,
+            out ImmutableHashSet<EntityId> demoted);
 
-        return new Solved(result, ChangeSet.Empty with { RelationshipsRemoved = [request.Id] });
+        return new Solved(
+            result,
+            ChangeSet.Empty with { Modified = demoted, RelationshipsRemoved = [request.Id] });
     }
 
     private static UpdateResult ApplySetLayer(Sketch sketch, SetLayer request)
@@ -212,7 +226,9 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.DanglingReference);
         }
 
-        return new Solved(sketch.WithEntity(entity.OnLayer(request.Layer)), ChangeSet.Empty);
+        return new Solved(
+            sketch.WithEntity(entity.OnLayer(request.Layer)),
+            ChangeSet.Empty with { Modified = [request.Id] });
     }
 
     // ---------------------------------------------------------------------------------------
@@ -255,7 +271,11 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.UnsupportedRelationship);
         }
 
-        return Propagate(target, NoSeeds, ChangeSet.Empty with { RelationshipsAdded = [relationship.Id] });
+        return Propagate(
+            target,
+            NoSeeds,
+            ChangeSet.Empty with { RelationshipsAdded = [relationship.Id] },
+            SizeOwnedBy(relationship));
     }
 
     private UpdateResult ApplySetParameter(Sketch sketch, SetParameter request)
@@ -292,8 +312,20 @@ public sealed class DirectUpdater : IGeometryUpdater
                 return new Rejected(RejectionReason.UnsupportedRelationship);
         }
 
-        return Propagate(sketch.WithRelationship(updated), NoSeeds, ChangeSet.Empty);
+        return Propagate(sketch.WithRelationship(updated), NoSeeds, ChangeSet.Empty, SizeOwnedBy(updated));
     }
+
+    /// <summary>
+    /// The size scalar a request is directly editing, which <see cref="Anchored"/> stands aside
+    /// for: setting a dimension on an anchored part is not the part resizing "in response to other
+    /// entities" (design &#xA7;3.2).
+    /// </summary>
+    private static IReadOnlySet<ScalarKey> SizeOwnedBy(Relationship relationship) => relationship switch
+    {
+        ParamValue { Param: BoxWidthRef width } => new HashSet<ScalarKey> { new(width.Box, ScalarKind.Width) },
+        ParamValue { Param: BoxHeightRef height } => new HashSet<ScalarKey> { new(height.Box, ScalarKind.Height) },
+        _ => ImmutableHashSet<ScalarKey>.Empty,
+    };
 
     private UpdateResult ApplySetPosition(Sketch sketch, SetPosition request)
     {
@@ -309,7 +341,9 @@ public sealed class DirectUpdater : IGeometryUpdater
 
         if (entity is not (Box or Node))
         {
-            return new Rejected(RejectionReason.UnsupportedRelationship);
+            // Only a box or a node carries coordinates of its own. This is a reference of the
+            // wrong kind, not a relationship this updater cannot hold.
+            return new Rejected(RejectionReason.DanglingReference);
         }
 
         Dictionary<ScalarKey, Length> seeds = new()
@@ -363,7 +397,9 @@ public sealed class DirectUpdater : IGeometryUpdater
         Sketch result = sketch.WithEntity(box with { Rotation = request.Rotation });
         AssertHolds(result);
 
-        return new Solved(result, ChangeSet.Empty with { Moved = [request.Box] });
+        // A rotation leaves the anchor where it is and moves everything else about the box, so it
+        // is neither a move nor a resize: the canvas has to redraw it all the same.
+        return new Solved(result, ChangeSet.Empty with { Modified = [request.Box] });
     }
 
     // ---------------------------------------------------------------------------------------
@@ -391,7 +427,8 @@ public sealed class DirectUpdater : IGeometryUpdater
 
         if (seed.Count == 0)
         {
-            return new Rejected(RejectionReason.UnsupportedRelationship);
+            // A dimension has no coordinates of its own; its placement is canvas data.
+            return new Rejected(RejectionReason.DanglingReference);
         }
 
         // The rigid group is per axis, because a Flush on a vertical edge blocks X and not Y, and
@@ -461,14 +498,26 @@ public sealed class DirectUpdater : IGeometryUpdater
             : Vector2.Zero;
         Point2 anchor = box.Anchor + anchorShift;
 
+        ScalarKey sizeKey = new(request.Box, alongWidth ? ScalarKind.Width : ScalarKind.Height);
         Dictionary<ScalarKey, Length> seeds = new()
         {
-            [new ScalarKey(request.Box, alongWidth ? ScalarKind.Width : ScalarKind.Height)] = newSize,
+            [sizeKey] = newSize,
             [new ScalarKey(request.Box, ScalarKind.X)] = anchor.X,
             [new ScalarKey(request.Box, ScalarKind.Y)] = anchor.Y,
         };
 
-        if (Propagator.Run(sketch, seeds, sketch.Relationships.Values) is not Propagated propagated)
+        // The handle the user grabbed is what they are editing, so Anchored stands aside for
+        // everything this request seeds: the size, and the anchor corner that a west or south
+        // handle necessarily drags with it. Without the anchor, the east handle of an anchored box
+        // would work and the west one would silently refuse (Fable review of #35, finding 8).
+        HashSet<ScalarKey> owned =
+        [
+            sizeKey,
+            new ScalarKey(request.Box, ScalarKind.X),
+            new ScalarKey(request.Box, ScalarKind.Y),
+        ];
+
+        if (Propagator.Run(sketch, seeds, sketch.Relationships.Values, owned) is not Propagated propagated)
         {
             // Best effort: a Flush to an anchored box blocks the edge entirely, and the edge then
             // does not move at all.
@@ -515,9 +564,11 @@ public sealed class DirectUpdater : IGeometryUpdater
     private static UpdateResult Propagate(
         Sketch target,
         IReadOnlyDictionary<ScalarKey, Length> seeds,
-        ChangeSet changes)
+        ChangeSet changes,
+        IReadOnlySet<ScalarKey>? requestOwns = null)
     {
-        PropagationResult propagation = Propagator.Run(target, seeds, target.Relationships.Values);
+        PropagationResult propagation
+            = Propagator.Run(target, seeds, target.Relationships.Values, requestOwns);
         if (propagation is not Propagated propagated)
         {
             // The working table was never written back, so the caller's sketch is untouched by
@@ -753,18 +804,24 @@ public sealed class DirectUpdater : IGeometryUpdater
         _ => sketch,
     };
 
-    private static Sketch DemoteDimensions(Sketch sketch, Func<RelationshipId, bool> wasRemoved)
+    private static Sketch DemoteDimensions(
+        Sketch sketch,
+        Func<RelationshipId, bool> wasRemoved,
+        out ImmutableHashSet<EntityId> demoted)
     {
         Sketch result = sketch;
+        ImmutableHashSet<EntityId>.Builder builder = ImmutableHashSet.CreateBuilder<EntityId>();
 
         foreach (Entity entity in sketch.Entities.Values.OrderBy(entity => entity.Id))
         {
             if (entity is Dimension dimension && dimension.Drives is { } driving && wasRemoved(driving))
             {
                 result = result.WithEntity(dimension with { Drives = null });
+                builder.Add(dimension.Id);
             }
         }
 
+        demoted = builder.ToImmutable();
         return result;
     }
 
@@ -784,7 +841,10 @@ public sealed class DirectUpdater : IGeometryUpdater
 
     private static bool ReferencesResolve(Sketch sketch, Relationship relationship) => relationship switch
     {
-        Anchored anchored => sketch.Find(anchored.Entity) is not null,
+        // Only a box or a node has a position of its own to hold still. Anchoring a segment or a
+        // dimension would be inert, and an anchor that silently does nothing is worse than a
+        // refusal (Fable review of #35, finding 3).
+        Anchored anchored => sketch.Find(anchored.Entity) is Box or Node,
         Coincident coincident => ReferenceResolves(sketch, coincident.A) && ReferenceResolves(sketch, coincident.B),
         Horizontal horizontal => ReferenceResolves(sketch, horizontal.Edge),
         Vertical vertical => ReferenceResolves(sketch, vertical.Edge),

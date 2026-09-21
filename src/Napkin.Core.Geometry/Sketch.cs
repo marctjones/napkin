@@ -242,14 +242,9 @@ public sealed record Sketch(
         List<Relationship> inOrder = [.. RelationshipsInOrder];
         foreach (Relationship relationship in inOrder)
         {
-            foreach (EntityId referenced in relationship.References)
+            foreach (ValidationError error in ReferenceErrors(relationship))
             {
-                if (!Entities.ContainsKey(referenced))
-                {
-                    errors.Add(new ValidationError(
-                        ValidationErrorKind.DanglingReference,
-                        $"Relationship {relationship.Id} references entity {referenced}, which the sketch does not have."));
-                }
+                errors.Add(error);
             }
         }
 
@@ -328,21 +323,92 @@ public sealed record Sketch(
 
     private IEnumerable<ValidationError> MeasurandErrors(Dimension dimension)
     {
-        IEnumerable<EntityId> referenced = dimension.Measures switch
+        string what = $"Dimension {dimension.Id} measures";
+
+        return dimension.Measures switch
         {
-            ParamMeasurand param => [param.Param.Owner],
-            AxisMeasurand axis => [axis.From.Owner, axis.To.Owner],
+            ParamMeasurand param => ReferenceErrors(param.Param, what),
+            AxisMeasurand axis => ReferenceErrors(axis.From, what).Concat(ReferenceErrors(axis.To, what)),
             _ => [],
         };
+    }
 
-        foreach (EntityId id in referenced)
+    /// <summary>
+    /// Every way a relationship's references can fail to resolve: an id the sketch does not have,
+    /// or an id that names the wrong kind of entity — a <see cref="CornerRef"/> on a node, say.
+    /// Both are referential integrity, and #6's loader needs both, because
+    /// <see cref="RelationshipChecker"/> runs straight after <see cref="Validate"/> and would
+    /// throw rather than report.
+    /// </summary>
+    private IEnumerable<ValidationError> ReferenceErrors(Relationship relationship)
+    {
+        string what = $"Relationship {relationship.Id} references";
+
+        return relationship switch
         {
-            if (!Entities.ContainsKey(id))
-            {
-                yield return new ValidationError(
-                    ValidationErrorKind.DanglingReference,
-                    $"Dimension {dimension.Id} measures entity {id}, which the sketch does not have.");
-            }
+            // Only a box or a node has a position of its own to hold still.
+            Anchored anchored => KindErrors(anchored.Entity, what, entity => entity is Box or Node, "Box or Node"),
+            Coincident coincident => ReferenceErrors(coincident.A, what).Concat(ReferenceErrors(coincident.B, what)),
+            Horizontal horizontal => ReferenceErrors(horizontal.Edge, what),
+            Vertical vertical => ReferenceErrors(vertical.Edge, what),
+            Flush flush => ReferenceErrors(flush.A, what).Concat(ReferenceErrors(flush.B, what)),
+            AxisDistance distance => ReferenceErrors(distance.From, what).Concat(ReferenceErrors(distance.To, what)),
+            ParamValue paramValue => ReferenceErrors(paramValue.Param, what),
+            EqualParam equalParam => ReferenceErrors(equalParam.A, what).Concat(ReferenceErrors(equalParam.B, what)),
+            Centered centered => ReferenceErrors(centered.Middle, what)
+                .Concat(ReferenceErrors(centered.A, what))
+                .Concat(ReferenceErrors(centered.B, what)),
+            Parallel parallel => ReferenceErrors(parallel.A, what).Concat(ReferenceErrors(parallel.B, what)),
+            Perpendicular perpendicular => ReferenceErrors(perpendicular.A, what).Concat(ReferenceErrors(perpendicular.B, what)),
+            AngleBetween angle => ReferenceErrors(angle.A, what).Concat(ReferenceErrors(angle.B, what)),
+            Distance distance => ReferenceErrors(distance.A, what).Concat(ReferenceErrors(distance.B, what)),
+            PointOnEdge onEdge => ReferenceErrors(onEdge.Point, what).Concat(ReferenceErrors(onEdge.Edge, what)),
+            Symmetric symmetric => ReferenceErrors(symmetric.A, what)
+                .Concat(ReferenceErrors(symmetric.B, what))
+                .Concat(ReferenceErrors(symmetric.Mirror, what)),
+            Tangent tangent => ReferenceErrors(tangent.A, what).Concat(ReferenceErrors(tangent.B, what)),
+
+            // Radius names an arc, and there are no arcs yet; any entity it names must at least exist.
+            _ => relationship.References.SelectMany(id => KindErrors(id, what, _ => true, "Entity")),
+        };
+    }
+
+    private IEnumerable<ValidationError> ReferenceErrors(PointRef reference, string what) => reference switch
+    {
+        NodeRef node => KindErrors(node.Node, what, entity => entity is Node, nameof(Node)),
+        CornerRef corner => KindErrors(corner.Box, what, entity => entity is Box, nameof(Box)),
+        CenterRef centre => KindErrors(centre.Box, what, entity => entity is Box, nameof(Box)),
+        _ => [],
+    };
+
+    private IEnumerable<ValidationError> ReferenceErrors(EdgeRef reference, string what) => reference switch
+    {
+        BoxEdgeRef boxEdge => KindErrors(boxEdge.Box, what, entity => entity is Box, nameof(Box)),
+        SegmentRef segmentRef => KindErrors(segmentRef.Segment, what, entity => entity is Segment, nameof(Segment)),
+        _ => [],
+    };
+
+    private IEnumerable<ValidationError> ReferenceErrors(ParamRef reference, string what) => reference switch
+    {
+        BoxWidthRef width => KindErrors(width.Box, what, entity => entity is Box, nameof(Box)),
+        BoxHeightRef height => KindErrors(height.Box, what, entity => entity is Box, nameof(Box)),
+        SegmentLengthRef length => KindErrors(length.Segment, what, entity => entity is Segment, nameof(Segment)),
+        _ => [],
+    };
+
+    private IEnumerable<ValidationError> KindErrors(EntityId id, string what, Func<Entity, bool> expected, string kind)
+    {
+        if (!Entities.TryGetValue(id, out Entity? entity))
+        {
+            yield return new ValidationError(
+                ValidationErrorKind.DanglingReference,
+                $"{what} entity {id}, which the sketch does not have.");
+        }
+        else if (!expected(entity))
+        {
+            yield return new ValidationError(
+                ValidationErrorKind.WrongEntityKind,
+                $"{what} entity {id} as a {kind}, but it is a {entity.GetType().Name}.");
         }
     }
 
