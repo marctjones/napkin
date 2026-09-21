@@ -28,7 +28,8 @@ Early scaffold. The solution structure builds; almost none of the actual functio
 
 ## Building
 
-Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (LTS, supported
+through November 2028) — pinned in `global.json`.
 
 ```sh
 dotnet build

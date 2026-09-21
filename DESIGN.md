@@ -213,8 +213,14 @@ constants, and not copied verbatim from any single publisher's compiled table:
 
 ## 6. Software architecture
 
-### 6.1 Stack: .NET + Avalonia
+### 6.1 Stack: .NET 10 + Avalonia 12
 
+- **Target .NET 10 (LTS, released Nov 2025, supported through Nov 2028), not .NET 8.** .NET 8 and
+  9 both reach end of support on November 10, 2026 — starting a new project on a runtime with two
+  months of life left is the wrong call regardless of familiarity. .NET 10 is the current LTS and
+  the right target for something meant to last years. Pinned via `global.json`.
+- **Avalonia 12**, matching .NET 10 — a real stable release, not a preview, and the pairing the
+  Avalonia project templates default to as of this decision.
 - **Avalonia UI**, not .NET MAUI. MAUI's desktop story runs through Mac Catalyst on macOS, which
   is weaker than Avalonia's single Skia-rendered codebase for a canvas-heavy precision app; MAUI's
   graphics stack is also less mature for custom drawing surfaces. Avalonia gives pixel-consistent
