@@ -46,5 +46,10 @@ six dimensions and thirty-three relationships. Thickness and leg length are in t
 in `coffee-table.expected.json` marked `statedNotInScene`, so that nothing tests napkin for a
 number the scene does not carry.
 
+The dimensions are placed so that every one of them is drawn outside the part it measures: the
+apron lengths sit just beyond the top's south and west edges, and the overall width and depth
+further out again. What `side` and `offset` mean to the viewer is in
+[`docs/file-format.md`](../docs/file-format.md).
+
 There is no cut list and no materials list here. Those expectations belong with #8/#9 and the
 materials library (#7); this fixture is the geometry they will be computed from.

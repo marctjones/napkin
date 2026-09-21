@@ -107,7 +107,31 @@ than quietly normalised.
   `null` for a reference dimension. **A dimension never stores a length of its own**: its value is
   always computed from the geometry it measures (geometry design §3.3).
 - `placement` is canvas-only: `offset` (integer units) and `side` (`north`, `south`, `east`,
-  `west`). It never affects geometry.
+  `west`). It never affects geometry — getting it wrong moves a line, never a part.
+
+**What `side` means to the viewer.** `src/Napkin.App/Viewing/DimensionLayout.cs` reads it twice,
+and a file's placements are worth writing with that in mind:
+
+1. **Which corners a size is measured between.** A `boxWidth` placed `north` measures the box's two
+   *north* corners and otherwise its two south corners; a `boxHeight` placed `east` measures the
+   east corners and otherwise the west ones. The extension lines then run from the near edge
+   outwards instead of across the part. The number is the same either way — a box's width is what
+   it stores — so this is about the drawing, not the value.
+2. **Where the dimension line sits.** For a measurement running along X, `south` puts the line
+   `offset` below the lower end and any other side puts it `offset` above the upper end; along Y,
+   `west` puts it `offset` left of the leftmost end and any other side `offset` right of the
+   rightmost. A side parallel to the measurement falls back to that axis's default rather than
+   drawing the line through the geometry.
+
+Both samples are placed against that reading. In `wall-with-window` the opening's width carries
+`"offset": 512` on `north`, so its line lands at y = 5632 + 512 = 6144 — the same height as the two
+reference dimensions either side of it, which measure from corners at y = 0 with `"offset": 6144`.
+The three then read as one dimension string: 4'-6" | 3'-0" | 4'-6".
+
+**There is no display name on an entity.** The format stores ids, geometry and relationships; what
+a part is *called* ("Leg, south-west") lives in the fixture's expectations file and, in the app, in
+the viewer's own side table. If a name ever belongs in the file it is a new field on the entity and
+a `formatVersion` bump, because it changes what the file means.
 
 ### References
 

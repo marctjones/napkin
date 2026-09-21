@@ -30,6 +30,12 @@ wall, Y runs up the page across its thickness, the origin is the wall's south-we
 three driving, two reference — and eight relationships, one of which is the `centered` that puts
 the opening in the middle.
 
+The three dimensions across the top are placed to land on one line: the opening's width is offset
+512 units from its north edge at 5632, and the two reference dimensions are offset 6144 from the
+wall's south corners at 0, so all three sit at y = 6144 and read as a dimension string,
+4'-6" | 3'-0" | 4'-6". How `side` and `offset` are read is in
+[`docs/file-format.md`](../docs/file-format.md).
+
 For **M1 this is a geometry and labelling fixture only**. Its expectations are entity positions
 and the exact feet-inch-fraction text each dimension label should read.
 
