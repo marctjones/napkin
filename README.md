@@ -19,12 +19,21 @@ deliberately to the prescriptive-code band of projects — the moment a project'
 outside what a published table covers, the tool says so and stops, rather than guessing.
 
 See [`DESIGN.md`](./DESIGN.md) for the full design and implementation document: vision, scope,
-architecture, and the decisions made so far.
+architecture, and the decisions made so far. Detailed designs live under
+[`docs/design/`](./docs/design/), starting with the
+[geometry model](./docs/design/geometry-model.md) (lengths, entities, relationships, the update
+interface).
 
 ## Status
 
-Early scaffold. The solution structure builds; almost none of the actual functionality
-(geometry, the rules engine, the UI) exists yet. See the issue tracker for what's planned.
+Early scaffold, pre-1.0 beta. The solution structure builds; almost none of the actual
+functionality (geometry, the rules engine, the UI) exists yet. See the issue tracker and
+[`PLAN.md`](./PLAN.md) for what's planned and in what order.
+
+napkin is a **beta indefinitely**: every release is a pre-release, breaking changes are always
+allowed, and there is no migration path between betas (an older project file gets a clear
+"unsupported version" error, not a conversion). See
+[`DESIGN.md` §12](./DESIGN.md#12-versioning-and-releases-beta-policy).
 
 ## Building
 
@@ -66,10 +75,12 @@ kept to permissive (MIT/Apache-2.0/BSD) or weak-copyleft (LGPL/MPL) licenses onl
 
 ## Scope note
 
-v1 targets the **IRC 2024 edition, as adopted in the 2026 Connecticut State Building Code**
-(effective September 18, 2026). The rules engine is data-driven and versioned by code edition
-specifically so additional editions or jurisdictions can be added later without a code change —
-see `DESIGN.md` for details.
+The first beta targets four adopted codes (DESIGN.md §11): the **2026 Connecticut State Building
+Code** (IRC 2024 base, effective September 18, 2026, encoded first), the 2022 Connecticut code,
+Massachusetts 780 CMR 10th edition, and the Pennsylvania Uniform Construction Code. A project is
+locked to the code in force when its permit was applied for. The rules engine is data-driven and
+keyed by adopted code specifically so further jurisdictions can be added later without a code
+change — see `DESIGN.md` for details. Imperial units only; 2D only.
 
 This is not legal or engineering advice, and it is not a substitute for your local building
 department's review or a licensed professional's judgment about site-specific conditions a

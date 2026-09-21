@@ -1,5 +1,11 @@
 # napkin — handoff from cloud session
 
+> **Status note, 2026-09-21.** This file is settled history and is not kept current. The issue
+> backlog it says was "drafted but not filed" has since been filed (#1–#28 and #30, see
+> [`PLAN.md`](./PLAN.md)). Current decisions — including the beta policy (pre-1.0 indefinitely,
+> breaking changes always allowed, no migration code) and the constraint-solver workstream — are
+> in [`DESIGN.md` §11–§12](./DESIGN.md). Where this file says "v1", read "the first betas".
+
 Written by the cloud Claude session that designed and scaffolded this project, for the local
 session picking it up. Everything below reflects decisions actually made and reasoning actually
 worked through in that conversation, not a fresh take — treat it as a design record, not a
