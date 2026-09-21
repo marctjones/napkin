@@ -84,19 +84,6 @@ public sealed record Sketch(
         return this with { Entities = Entities.SetItem(entity.Id, entity) };
     }
 
-    /// <summary>This sketch with several entities added or replaced.</summary>
-    public Sketch WithEntities(IEnumerable<Entity> entities)
-    {
-        ArgumentNullException.ThrowIfNull(entities);
-        ImmutableDictionary<EntityId, Entity> updated = Entities;
-        foreach (Entity entity in entities)
-        {
-            updated = updated.SetItem(entity.Id, entity);
-        }
-
-        return updated == Entities ? this : this with { Entities = updated };
-    }
-
     /// <summary>This sketch without an entity. Does not cascade; see the direct updater.</summary>
     public Sketch WithoutEntity(EntityId id) => this with { Entities = Entities.Remove(id) };
 
