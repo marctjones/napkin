@@ -60,9 +60,10 @@ public sealed class AppDriver
     public string FrameNamePrefix { get; }
 
     /// <summary>
-    /// The modifier this platform uses for menu shortcuts — Control on Windows and Linux, Meta
-    /// (Command) on macOS. Read from Avalonia's platform settings rather than hardcoded, so a
-    /// workflow can write <c>Chord(Key.Z)</c> and mean "the undo shortcut on this machine".
+    /// The modifier this platform uses for menu shortcuts. Read from Avalonia's platform settings
+    /// rather than hardcoded, so a workflow can write <c>Chord(Key.Z)</c> and mean "the undo
+    /// shortcut on this machine". Note that the headless platform reports Control on macOS as well
+    /// as on Windows: real Cmd-key behaviour is for the real-OS smoke layer, not for this suite.
     /// </summary>
     public static KeyModifiers CommandModifier =>
         Application.Current?.PlatformSettings?.HotkeyConfiguration.CommandModifiers
@@ -167,8 +168,8 @@ public sealed class AppDriver
     }
 
     /// <summary>
-    /// Presses a key with this platform's command modifier held — Ctrl+key on Windows, Cmd+key on
-    /// macOS. See <see cref="CommandModifier"/>.
+    /// Presses a key with this platform's command modifier held. See
+    /// <see cref="CommandModifier"/>.
     /// </summary>
     public void Chord(Key key, KeyModifiers extraModifiers = KeyModifiers.None) =>
         Press(key, CommandModifier | extraModifiers);

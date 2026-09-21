@@ -43,6 +43,26 @@ public static class GuiMetrics
         NewLine = "\n",
     };
 
+    /// <summary>
+    /// Called before the first workflow of a run. It discards whatever a previous run left behind
+    /// and writes an empty document, so that a run in which every workflow fails leaves a file
+    /// saying nothing passed rather than a stale file claiming the opposite.
+    /// </summary>
+    public static void BeginRun()
+    {
+        lock (Gate)
+        {
+            if (_startedThisRun)
+            {
+                return;
+            }
+
+            _startedThisRun = true;
+            Workflows.Clear();
+            Write();
+        }
+    }
+
     /// <summary>Records a workflow that passed, and rewrites the metrics file.</summary>
     /// <param name="featureId">The feature the workflow claims, e.g. <c>GUI-SHELL-01</c>.</param>
     /// <param name="inputActions">How many simulated input actions it performed.</param>
@@ -50,14 +70,7 @@ public static class GuiMetrics
     {
         lock (Gate)
         {
-            // The first record of a process discards whatever a previous run left behind, so a
-            // stale file can never inflate the ratchet.
-            if (!_startedThisRun)
-            {
-                _startedThisRun = true;
-                Workflows.Clear();
-            }
-
+            BeginRun();
             Workflows[featureId] = inputActions;
             Write();
         }

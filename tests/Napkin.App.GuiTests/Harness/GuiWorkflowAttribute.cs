@@ -63,6 +63,7 @@ public sealed class GuiWorkflowRuleAttribute : BeforeAfterTestAttribute
         var workflow = methodUnderTest.GetCustomAttribute<GuiWorkflowAttribute>();
         if (workflow is not null)
         {
+            GuiMetrics.BeginRun();
             GuiWorkflowContext.Begin(workflow.FeatureId, methodUnderTest.Name);
         }
     }
@@ -76,15 +77,24 @@ public sealed class GuiWorkflowRuleAttribute : BeforeAfterTestAttribute
         }
 
         var ranAScenario = GuiWorkflowContext.ScenarioCompleted;
+        var inputActions = GuiWorkflowContext.InputActionCount;
         GuiWorkflowContext.End();
 
-        // Only add a failure to a test that would otherwise have passed — never mask the real one.
-        if (TestContext.Current.TestState?.Result == TestResult.Passed && !ranAScenario)
+        // Never mask a real failure: a test that already failed is left alone, and it is not
+        // recorded, so only workflows that genuinely passed can move the ratchet.
+        if (TestContext.Current.TestState?.Result != TestResult.Passed)
+        {
+            return;
+        }
+
+        if (!ranAScenario)
         {
             throw new GuiWorkflowRuleException(
                 $"{workflow.FeatureId} ({methodUnderTest.Name}) is marked [GuiWorkflow] but never " +
                 "ran a scenario. The body of a workflow test is a call to GuiWorkflow.Run(...).");
         }
+
+        GuiMetrics.RecordPassed(workflow.FeatureId, inputActions);
     }
 }
 
@@ -101,19 +111,27 @@ static class GuiWorkflowContext
 
     public static bool ScenarioCompleted { get; private set; }
 
+    public static int InputActionCount { get; private set; }
+
     public static void Begin(string featureId, string testName)
     {
         FeatureId = featureId;
         TestName = testName;
         ScenarioCompleted = false;
+        InputActionCount = 0;
     }
 
-    public static void MarkScenarioCompleted() => ScenarioCompleted = true;
+    public static void MarkScenarioCompleted(int inputActions)
+    {
+        ScenarioCompleted = true;
+        InputActionCount = inputActions;
+    }
 
     public static void End()
     {
         FeatureId = null;
         TestName = null;
         ScenarioCompleted = false;
+        InputActionCount = 0;
     }
 }

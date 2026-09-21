@@ -56,8 +56,9 @@ public static class GuiWorkflow
             }
         }, CancellationToken.None).GetAwaiter().GetResult();
 
-        GuiWorkflowContext.MarkScenarioCompleted();
-        GuiMetrics.RecordPassed(featureId, inputActions);
+        // The metrics are written by GuiWorkflowRuleAttribute once xunit has decided the test
+        // passed, so a workflow cannot be counted because of work it did before failing later.
+        GuiWorkflowContext.MarkScenarioCompleted(inputActions);
     }
 
     /// <summary>
