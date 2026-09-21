@@ -268,7 +268,7 @@
       "title": "The coffee-table cut list matches hand-computed expectations",
       "acceptance": "The coffee-table fixture's cut list equals, row for row, the expectations file computed by hand from the fixture's dimensions independently of the implementation.",
       "milestone": "M3",
-      "issue": null,
+      "issue": 37,
       "kind": "golden"
     },
     {
@@ -277,7 +277,7 @@
       "title": "The shopping list matches hand-computed expectations",
       "acceptance": "The coffee-table fixture aggregates to the expectations file's stock counts (boards, sheets and fasteners), and a part that fits within one board still reports one board to buy while the cut list reports each part.",
       "milestone": "M3",
-      "issue": null,
+      "issue": 37,
       "kind": "golden"
     },
     {
@@ -295,7 +295,7 @@
       "title": "Pan the view without moving anything",
       "acceptance": "Panning by wheel, by drag and by keyboard changes the view transform only; every entity's stored coordinates are byte-identical before and after.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 36,
       "kind": "unit"
     },
     {
@@ -304,7 +304,7 @@
       "title": "Zoom about the cursor, and zoom to fit",
       "acceptance": "A wheel tick keeps the model point under the pointer fixed to within one pixel, and the fit command frames every entity's bounding box with a visible margin for both a single entity and the sample design.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 36,
       "kind": "unit"
     },
     {
@@ -313,7 +313,7 @@
       "title": "Y is up in model space",
       "acceptance": "A model point with the larger Y draws higher on screen, and the screen flip appears in the view transform and nowhere else in the drawing code.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 36,
       "kind": "unit"
     },
     {
@@ -322,7 +322,7 @@
       "title": "Dimension labels are computed, never cached",
       "acceptance": "A dimension renders its value from the geometry it measures, formatted as feet, inches and fractions by Core.Geometry's Format, and the rendered text changes when that geometry changes.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 36,
       "kind": "unit"
     },
     {
@@ -421,7 +421,7 @@
       "title": "The bracing evaluator runs over a whole wall line",
       "acceptance": "Given a wall line's bracing inputs and all its openings, the evaluator reports whether the required braced length is met, cites the section it applied, and re-runs whenever an opening on that line changes.",
       "milestone": "M5",
-      "issue": null,
+      "issue": 39,
       "kind": "unit"
     },
     {
@@ -547,7 +547,7 @@
       "title": "Enlarging an opening rechecks the wall line's bracing",
       "acceptance": "With the wall line's existing sheathing type and braced length entered by the user, enlarging an opening past what the line can carry flags the wall, naming the section applied and the shortfall.",
       "milestone": "M5",
-      "issue": null,
+      "issue": 39,
       "kind": "unit"
     },
     {
@@ -583,7 +583,7 @@
       "title": "Ledger attachment is sized from the project's pack",
       "acceptance": "Given the ledger size, the band joist it attaches to and the tributary load inputs, the fastener type and spacing come from the loaded pack's adopted provisions with a citation, or out of scope when the connection is outside them.",
       "milestone": "backlog",
-      "issue": null,
+      "issue": 40,
       "kind": "unit"
     },
     {
@@ -592,7 +592,7 @@
       "title": "Joist and beam spans come from the adopted tables",
       "acceptance": "Given species, size, spacing and span, the result is the matching row of the loaded pack's adopted span provisions with a citation, or out of scope, and every encoded row matches that state's published adopted text.",
       "milestone": "backlog",
-      "issue": null,
+      "issue": 41,
       "kind": "golden"
     },
     {
@@ -601,7 +601,7 @@
       "title": "Footings are sized from tributary area and entered soil bearing",
       "acceptance": "Given a tributary area and a user-entered soil bearing value, the footing size comes from the loaded pack's adopted table with a citation, or out of scope; the soil value is never defaulted.",
       "milestone": "backlog",
-      "issue": null,
+      "issue": 42,
       "kind": "unit"
     },
     {
@@ -610,7 +610,7 @@
       "title": "Guards and stairs follow the adopted provisions",
       "acceptance": "A deck surface above the pack's guard trigger height requires a guard with the section cited, and a stair layout from deck height to grade either satisfies the pack's rise and run provisions or returns out of scope.",
       "milestone": "backlog",
-      "issue": null,
+      "issue": 43,
       "kind": "unit"
     },
     {
@@ -691,7 +691,7 @@
       "title": "A tag produces downloadable macOS and Windows artifacts",
       "acceptance": "Pushing a tag matching the release pattern builds a macOS artifact and a Windows artifact and attaches both to a GitHub release created for that tag.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 38,
       "kind": "unit"
     },
     {
@@ -700,7 +700,7 @@
       "title": "Every release is a pre-release",
       "acceptance": "The release the pipeline creates has the pre-release flag set and is not marked latest, and a test over the workflow definition fails if that flag is ever removed.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 38,
       "kind": "unit"
     },
     {
@@ -709,7 +709,7 @@
       "title": "The arm64 macOS artifact carries its ad-hoc signature only",
       "acceptance": "The published macOS arm64 binary verifies as carrying the toolchain's automatic ad-hoc signature, which arm64 code needs to run at all, and carries no Developer ID signature or notarization ticket.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 38,
       "kind": "unit"
     },
     {
@@ -754,7 +754,7 @@
       "title": "Open a sample design and see it drawn",
       "acceptance": "Launch the app, open the coffee-table sample through the file dialog, and every part in the fixture appears on the canvas at the fixture's expected positions.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 36,
       "kind": "workflow"
     },
     {
@@ -763,7 +763,7 @@
       "title": "Pan with the wheel, a drag and the keyboard",
       "acceptance": "With the sample open, scroll the wheel, drag with the pan tool and press the arrow keys; the view origin readout changes for each and no entity's stored coordinates change.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 36,
       "kind": "workflow"
     },
     {
@@ -772,7 +772,7 @@
       "title": "Zoom about the cursor, then zoom to fit",
       "acceptance": "Wheel-zoom in over one corner of the sample so that most of it leaves the viewport, press the zoom-to-fit shortcut, and every entity is framed again with a margin.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 36,
       "kind": "workflow"
     },
     {
@@ -781,7 +781,7 @@
       "title": "Read dimension labels in feet, inches and fractions",
       "acceptance": "Open the wall-with-window sample, zoom in on the opening, and the dimension labels read the exact feet-inch-fraction strings the fixture's expectations file gives.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 36,
       "kind": "workflow"
     },
     {
@@ -790,7 +790,7 @@
       "title": "A file the app cannot read fails visibly",
       "acceptance": "With a design already open, try to open a file whose format version differs; a message names the file's version and the app's, and the design already on screen is untouched.",
       "milestone": "M1",
-      "issue": null,
+      "issue": 36,
       "kind": "workflow"
     },
     {
@@ -925,7 +925,7 @@
       "title": "Enlarge an opening until the bracing check flags it",
       "acceptance": "With the wall line's existing sheathing and braced length entered, widen the opening step by step until the wall line is flagged, and the flag names the section applied and the shortfall.",
       "milestone": "M5",
-      "issue": null,
+      "issue": 39,
       "kind": "workflow"
     },
     {
