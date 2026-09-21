@@ -20,14 +20,15 @@
             <MenuItem Name="FileMenu" Header="_File">
                 <MenuItem Name="OpenMenuItem"
                           Header="_Open…"
-                          IsEnabled="False"
-                          ToolTip.Tip="Opening a project file arrives with the scene reader (#6). M1 ships its samples in the build." />
+                          Click="OnOpenClicked"
+                          ToolTip.Tip="Open a napkin scene file. A file this build cannot read is refused, and whatever is on screen stays." />
                 <Separator />
                 <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
             </MenuItem>
 
-            <!-- Samples are built from BuiltInDesigns.All in the code-behind, so adding one is
-                 a line in that list and nothing here. -->
+            <!-- Samples are built from SampleFiles.All in the code-behind: one item per scene file
+                 that shipped beside the executable, opened through the same reader as any other
+                 file. -->
             <MenuItem Name="SamplesMenu" Header="_Samples" />
 
             <MenuItem Name="ViewMenu" Header="_View">
@@ -65,7 +66,40 @@
             </Grid>
         </Border>
 
-        <viewing:CanvasView Name="DrawingCanvas" />
+        <!--
+            The canvas fills what is left, and the refusal panel floats over the top of it rather
+            than docking beside it. That is deliberate: a docked panel would change the canvas's
+            arranged size, which would move the view transform, and "the drawing you had is exactly
+            as you left it" is the whole promise of a refusal.
+        -->
+        <Panel>
+            <viewing:CanvasView Name="DrawingCanvas" />
+
+            <!-- Its colours come from the canvas palette in the code-behind, not from a theme
+                 resource: the panel sits on the drawing, so it should be lit the same way, and a
+                 resource name that failed to resolve would leave it with no background at all —
+                 unreadable, and not even clickable to dismiss. -->
+            <Border Name="RefusalPanel"
+                    IsVisible="False"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Margin="16"
+                    Padding="14,11"
+                    CornerRadius="4"
+                    BorderThickness="1">
+                <StackPanel Spacing="6">
+                    <TextBlock Name="RefusalHeadline"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap" />
+                    <StackPanel Name="RefusalProblemList" Spacing="3" />
+                    <TextBlock Name="RefusalDismissHint"
+                               Text="Press Escape, or click this message, to dismiss it."
+                               FontSize="11"
+                               Opacity="0.7"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Panel>
 
     </DockPanel>
 </Window>
