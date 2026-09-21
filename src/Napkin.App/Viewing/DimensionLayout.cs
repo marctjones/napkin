@@ -132,8 +132,11 @@ public static class DimensionLayout
                     return false;
                 }
 
-                from = box.Corner(BoxCorner.SouthWest);
-                to = box.Corner(BoxCorner.SouthEast);
+                // Measured along whichever edge the dimension sits beside, so its extension lines
+                // run from the near edge outwards instead of across the part.
+                bool above = dimension.Placement.Side == DimensionSide.North;
+                from = box.Corner(above ? BoxCorner.NorthWest : BoxCorner.SouthWest);
+                to = box.Corner(above ? BoxCorner.NorthEast : BoxCorner.SouthEast);
                 value = box.Width;
                 break;
             }
@@ -145,8 +148,9 @@ public static class DimensionLayout
                     return false;
                 }
 
-                from = box.Corner(BoxCorner.SouthWest);
-                to = box.Corner(BoxCorner.NorthWest);
+                bool right = dimension.Placement.Side == DimensionSide.East;
+                from = box.Corner(right ? BoxCorner.SouthEast : BoxCorner.SouthWest);
+                to = box.Corner(right ? BoxCorner.NorthEast : BoxCorner.NorthWest);
                 value = box.Height;
                 break;
             }

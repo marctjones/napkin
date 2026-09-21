@@ -130,9 +130,13 @@ public readonly record struct ViewTransform(
         CenterYInches = CenterYInches + (screenDelta.Y / PixelsPerInch),
     };
 
-    /// <summary>The view after panning by a fraction of the viewport — what an arrow key does.</summary>
+    /// <summary>
+    /// The view after panning by a fraction of the viewport — what an arrow key does. Positive
+    /// moves the view right and up, so the drawing moves left and down, as pressing an arrow key
+    /// should.
+    /// </summary>
     public ViewTransform PanByViewportFraction(double fractionX, double fractionY) =>
-        PanByPixels(new Vector(-fractionX * Viewport.Width, -fractionY * Viewport.Height));
+        PanByPixels(new Vector(-fractionX * Viewport.Width, fractionY * Viewport.Height));
 
     /// <summary>
     /// The view after zooming about a screen point: the model point under that point is still under

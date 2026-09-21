@@ -5,7 +5,7 @@
       "id": "GUI-SHELL-01",
       "area": "gui-shell",
       "title": "The shell opens, shows its content and renders after real input",
-      "acceptance": "After the main window is shown and driven with pointer, wheel, text and key input, every kind of input has reached the application, its content is still in the visual tree, and a frame is rendered at the window's client size.",
+      "acceptance": "After the main window is shown and driven with pointer, wheel, text and key input, every kind of input has reached the application, the window is titled for the design it has open, its menu, canvas and status line are still in the visual tree, and a frame is rendered at the window's client size.",
       "milestone": "M1",
       "issue": 33,
       "kind": "workflow"
@@ -14,7 +14,7 @@
       "id": "GUI-SHELL-02",
       "area": "gui-shell",
       "title": "Resizing the shell re-lays-out and re-renders its content",
-      "acceptance": "After the main window is resized twice with input in between, its content is laid out to the new client size each time and the next rendered frame has that size.",
+      "acceptance": "After the main window is resized twice with input in between, the canvas fills what the menu and the status line leave of the new client size each time, the view transform is told the new viewport, the model point at the centre of the view stays at the centre, and the next rendered frame has that size.",
       "milestone": "M1",
       "issue": 33,
       "kind": "workflow"
@@ -22,8 +22,8 @@
     {
       "id": "GUI-SHELL-03",
       "area": "gui-shell",
-      "title": "Keyboard traversal of the shell finds no focusable controls yet",
-      "acceptance": "After a click, three Tabs, a Shift-Tab, a command chord and typed text, nothing in the shell holds focus and every key reached the window in the order it was pressed.",
+      "title": "Keyboard traversal of the shell reaches its controls",
+      "acceptance": "After a click on the drawing, three Tabs, a Shift-Tab, an unbound command chord and typed text, focus is on a focusable control of the shell, every key reached the window in the order it was pressed, and neither the open design nor the view transform changed.",
       "milestone": "M1",
       "issue": 33,
       "kind": "workflow"
@@ -32,7 +32,7 @@
       "id": "GUI-SHELL-04",
       "area": "gui-shell",
       "title": "A pointer session is delivered to the shell in order",
-      "acceptance": "A hover, a drag along a four-point path, a double click, a wheel turn and a key press arrive at the window in order, with the left button held on every drag move and a click count of two on the second press.",
+      "acceptance": "A hover, a drag along a four-point path, a double click, a wheel turn and a key press arrive at the window in order, with the left button held on every drag move and a click count of two on the second press, and the drag the window received is the drag that moved the view.",
       "milestone": "M1",
       "issue": 33,
       "kind": "workflow"

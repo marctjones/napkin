@@ -65,6 +65,9 @@ public partial class MainWindow : Window
     /// <summary>The Samples menu, whose items are one per <see cref="Samples"/> entry.</summary>
     public MenuItem SamplesMenuItem => SamplesMenu;
 
+    /// <summary>The status line at the foot of the window.</summary>
+    public Border StatusLine => StatusBar;
+
     /// <summary>The status line's description of the open design.</summary>
     public TextBlock DesignReadout => DesignText;
 
