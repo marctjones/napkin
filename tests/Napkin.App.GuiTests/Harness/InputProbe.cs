@@ -10,12 +10,18 @@ namespace Napkin.App.GuiTests.Harness;
 /// The routed event that arrived: <c>move</c>, <c>press</c>, <c>release</c>, <c>wheel</c>,
 /// <c>keydown</c>, <c>keyup</c> or <c>text</c>.
 /// </param>
-/// <param name="Position">Pointer position in the top level's coordinates; zero for key events.</param>
+/// <param name="Position">
+/// Pointer position in the top level's coordinates; zero for key events.
+/// </param>
 /// <param name="ClickCount">Click count reported by Avalonia for a press; zero otherwise.</param>
 /// <param name="LeftButtonPressed">Whether the left button was held when the event arrived.</param>
-/// <param name="Key">The key for keyboard events, <see cref="Avalonia.Input.Key.None"/> otherwise.</param>
+/// <param name="Key">
+/// The key for keyboard events, <see cref="Avalonia.Input.Key.None"/> otherwise.
+/// </param>
 /// <param name="Modifiers">Modifier keys reported with the event.</param>
-/// <param name="Text">Text for a text-input event or a wheel delta rendered as text; else null.</param>
+/// <param name="Text">
+/// Text for a text-input event or a wheel delta rendered as text; else null.
+/// </param>
 public sealed record ObservedInput(
     string Kind,
     Point Position = default,
@@ -46,32 +52,59 @@ public sealed class InputProbe
         _target = target;
         const RoutingStrategies Route = RoutingStrategies.Tunnel;
 
-        target.AddHandler(InputElement.PointerMovedEvent, (object? _, PointerEventArgs e) =>
-            Add("move", e), Route);
-        target.AddHandler(InputElement.PointerPressedEvent, (object? _, PointerPressedEventArgs e) =>
-            _events.Add(new ObservedInput("press", e.GetPosition(_target), e.ClickCount,
-                e.GetCurrentPoint(_target).Properties.IsLeftButtonPressed, Modifiers: e.KeyModifiers)),
+        target.AddHandler(
+            InputElement.PointerMovedEvent,
+            (object? _, PointerEventArgs e) => Add("move", e),
             Route);
-        target.AddHandler(InputElement.PointerReleasedEvent, (object? _, PointerReleasedEventArgs e) =>
-            Add("release", e), Route);
-        target.AddHandler(InputElement.PointerWheelChangedEvent, (object? _, PointerWheelEventArgs e) =>
-            _events.Add(new ObservedInput("wheel", e.GetPosition(_target),
-                Modifiers: e.KeyModifiers, WheelDelta: e.Delta)), Route);
-        target.AddHandler(InputElement.KeyDownEvent, (object? _, KeyEventArgs e) =>
-            _events.Add(new ObservedInput("keydown", Key: e.Key, Modifiers: e.KeyModifiers)), Route);
-        target.AddHandler(InputElement.KeyUpEvent, (object? _, KeyEventArgs e) =>
-            _events.Add(new ObservedInput("keyup", Key: e.Key, Modifiers: e.KeyModifiers)), Route);
-        target.AddHandler(InputElement.TextInputEvent, (object? _, TextInputEventArgs e) =>
-            _events.Add(new ObservedInput("text", Text: e.Text)), Route);
+        target.AddHandler(
+            InputElement.PointerPressedEvent,
+            (object? _, PointerPressedEventArgs e) => _events.Add(new ObservedInput(
+                "press",
+                e.GetPosition(_target),
+                e.ClickCount,
+                e.GetCurrentPoint(_target).Properties.IsLeftButtonPressed,
+                Modifiers: e.KeyModifiers)),
+            Route);
+        target.AddHandler(
+            InputElement.PointerReleasedEvent,
+            (object? _, PointerReleasedEventArgs e) => Add("release", e),
+            Route);
+        target.AddHandler(
+            InputElement.PointerWheelChangedEvent,
+            (object? _, PointerWheelEventArgs e) => _events.Add(new ObservedInput(
+                "wheel",
+                e.GetPosition(_target),
+                Modifiers: e.KeyModifiers,
+                WheelDelta: e.Delta)),
+            Route);
+        target.AddHandler(
+            InputElement.KeyDownEvent,
+            (object? _, KeyEventArgs e) => _events.Add(
+                new ObservedInput("keydown", Key: e.Key, Modifiers: e.KeyModifiers)),
+            Route);
+        target.AddHandler(
+            InputElement.KeyUpEvent,
+            (object? _, KeyEventArgs e) => _events.Add(
+                new ObservedInput("keyup", Key: e.Key, Modifiers: e.KeyModifiers)),
+            Route);
+        target.AddHandler(
+            InputElement.TextInputEvent,
+            (object? _, TextInputEventArgs e) => _events.Add(
+                new ObservedInput("text", Text: e.Text)),
+            Route);
     }
 
     /// <summary>Every input event the application received, oldest first.</summary>
     public IReadOnlyList<ObservedInput> Events => _events;
 
-    /// <summary>The kinds of the received events, in order — handy for one-line assertions.</summary>
+    /// <summary>
+    /// The kinds of the received events, in order — handy for one-line assertions.
+    /// </summary>
     public IReadOnlyList<string> Kinds => _events.Select(e => e.Kind).ToList();
 
-    /// <summary>Forgets everything recorded so far, so a workflow can assert one phase at a time.</summary>
+    /// <summary>
+    /// Forgets everything recorded so far, so a workflow can assert one phase at a time.
+    /// </summary>
     public void Clear() => _events.Clear();
 
     void Add(string kind, PointerEventArgs e) => _events.Add(new ObservedInput(

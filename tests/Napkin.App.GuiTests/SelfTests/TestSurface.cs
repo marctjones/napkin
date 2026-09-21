@@ -51,7 +51,9 @@ public sealed class PointerPad : Control, ICustomHitTest
     /// <summary>The fill drawn behind the pad.</summary>
     public IBrush? Background { get; set; }
 
-    /// <summary>Everything inside the pad's bounds is hit-testable, so the pointer lands on it.</summary>
+    /// <summary>
+    /// Everything inside the pad's bounds is hit-testable, so the pointer lands on it.
+    /// </summary>
     public bool HitTest(Point point) => new Rect(Bounds.Size).Contains(point);
 
     public override void Render(DrawingContext context)

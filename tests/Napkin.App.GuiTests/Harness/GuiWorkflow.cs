@@ -8,7 +8,9 @@ namespace Napkin.App.GuiTests.Harness;
 /// <summary>Runs a workflow scenario against the real application.</summary>
 public static class GuiWorkflow
 {
-    /// <summary>The size every workflow's window starts at, so frames and layout are comparable.</summary>
+    /// <summary>
+    /// The size every workflow's window starts at, so frames and layout are comparable.
+    /// </summary>
     public static readonly Size DefaultWindowSize = new(900, 600);
 
     /// <summary>

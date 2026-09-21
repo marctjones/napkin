@@ -24,7 +24,9 @@ public enum GuiActionKind
     /// <summary>Waiting for layout, rendering or the dispatcher to settle.</summary>
     Wait,
 
-    /// <summary>An assertion about observable state, made through <see cref="AppDriver.Expect"/>.</summary>
+    /// <summary>
+    /// An assertion about observable state, made through <see cref="AppDriver.Expect"/>.
+    /// </summary>
     Expect,
 }
 

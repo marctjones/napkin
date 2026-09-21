@@ -54,7 +54,9 @@ public sealed class AppDriver
     /// <summary>How many simulated input actions have been performed.</summary>
     public int InputActionCount => _actions.Count(a => a.IsInput);
 
-    /// <summary>Prefix used for the PNG files this driver writes under artifacts/gui-frames/.</summary>
+    /// <summary>
+    /// Prefix used for the PNG files this driver writes under artifacts/gui-frames/.
+    /// </summary>
     public string FrameNamePrefix { get; }
 
     /// <summary>
@@ -88,8 +90,10 @@ public sealed class AppDriver
         Target.MouseDown(point, button, raw);
         Target.MouseUp(point, button, raw);
         Settle();
-        Record(GuiActionKind.Pointer, $"{button.ToString().ToLowerInvariant()} click at {Format(point)}"
-            + (modifiers == KeyModifiers.None ? "" : $" with {modifiers}"));
+        Record(
+            GuiActionKind.Pointer,
+            $"{button.ToString().ToLowerInvariant()} click at {Format(point)}"
+                + (modifiers == KeyModifiers.None ? "" : $" with {modifiers}"));
     }
 
     /// <summary>Right-clicks at a point — the gesture that opens a context menu.</summary>
@@ -138,7 +142,9 @@ public sealed class AppDriver
             $"drag along {string.Join(" -> ", path.Select(Format))}");
     }
 
-    /// <summary>Turns the mouse wheel at a point. Positive Y scrolls up, as Avalonia reports it.</summary>
+    /// <summary>
+    /// Turns the mouse wheel at a point. Positive Y scrolls up, as Avalonia reports it.
+    /// </summary>
     public void Wheel(Point point, Vector delta, KeyModifiers modifiers = KeyModifiers.None)
     {
         Target.MouseMove(point, ToRaw(modifiers));
@@ -246,7 +252,9 @@ public sealed class AppDriver
     /// Frames are CI artifacts for a human to look at; nothing compares them pixel by pixel,
     /// because fonts and theme resolution differ between the Windows and macOS runners.
     /// </summary>
-    /// <param name="step">A short name for this moment in the scenario, used in the file name.</param>
+    /// <param name="step">
+    /// A short name for this moment in the scenario, used in the file name.
+    /// </param>
     /// <returns>The full path of the file written.</returns>
     public string SaveFrame(string step)
     {
