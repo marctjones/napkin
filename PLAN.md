@@ -16,8 +16,8 @@ compatibility concern between betas; a project file from an older beta gets a cl
 version" error. Scope is unchanged by this — all four adopted codes and permit-date code locking
 are features, not legacy; they simply arrive one at a time (M4 ships Connecticut 2026, M5 adds
 Connecticut 2022, and Massachusetts and Pennsylvania come after that). Nothing is scheduled
-toward a date. Versioning and release tagging are
-proposed in DESIGN.md §12 and tracked in #30, awaiting Marc's confirmation.
+toward a date. Versioning and release tagging are proposed in DESIGN.md §12 and tracked in #30,
+awaiting Marc's confirmation.
 
 ## Milestones: what you can see and play with
 
@@ -31,7 +31,7 @@ architecture — that is the point of them. Every release is a tagged pre-releas
 | **M3 Cut** | Build the coffee table end to end — top, four legs, aprons — assign materials, then open two different outputs: a cut list of what you actually cut, with a 2×4 resolved to its true size, and a shopping list of the stock to buy with board feet and sheet counts. Both on screen and as CSV, both checked against expectations computed by hand. | #7, #8, #9 |
 | **M4 Check** | Draw an exterior wall, enter what it supports and the site hazard values yourself, place a window on it, and see a header size and stud count **with the code edition, table and row it came from**. Resize the opening and the answer follows. Push it past what the table covers and napkin says so and stops, citing the limit. **One** adopted code pack — Connecticut 2026 — and the per-project picker that selects it; the other three packs come later. Designed in [`docs/design/rules-engine-model.md`](./docs/design/rules-engine-model.md). | #12, #13, #14, #18, #19 (the picker) |
 | **M5 Brace and compare** | Enter the bracing that already exists along a wall line, widen an opening step by step, and watch napkin flag the wall when the line runs short — naming the section and the shortfall. Then switch the project to a second pack (Connecticut 2022) and watch every result recompute, with anything that no longer holds re-flagged instead of quietly carrying over. Two packs is what turns code locking from an assertion into something you can see happen. | #15, #19 (recompute), #39 |
-| **Backlog** | Wanted, not scheduled: the deck in five pieces, the site plan, PDF and DXF export, the Massachusetts and Pennsylvania packs and municipal overlays, sheet-goods nesting, SketchUp import (blocked on a licence decision), installers, and the solver spike. | #16, #17, #20–#26, #28, #40–#43 |
+| **Backlog** | Wanted, not scheduled: the deck in its four prescriptive pieces under an umbrella issue, the site plan, PDF and DXF export, the Massachusetts and Pennsylvania packs and municipal overlays, sheet-goods nesting, SketchUp import (blocked on a license decision), installers, and the solver spike. | #16, #17, #20–#26, #28, #40–#43 |
 
 ### Alongside the milestones, not inside them
 
