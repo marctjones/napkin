@@ -2,7 +2,49 @@
 
 How the work is sequenced, and which Claude model leads each step. The issues on GitHub are the
 work items; this file is the reasoning behind their `model/*` and `review/*` labels. Design
-decisions themselves live in [`DESIGN.md`](./DESIGN.md).
+decisions themselves live in [`DESIGN.md`](./DESIGN.md); detailed designs under
+[`docs/design/`](./docs/design/) — the first is the
+[geometry model](./docs/design/geometry-model.md) for #4.
+
+## Beta policy: no 1.0, no compatibility, no rush
+
+napkin is a pre-1.0 beta indefinitely (DESIGN.md §12). Nothing below works toward a 1.0. The
+milestones are an order of work; each earns a tagged pre-release when it is done, and the version
+number is assigned at that moment rather than planned — which is why the milestones have names
+and not numbers. Breaking changes are always allowed: no deprecation, no migration shims, no
+compatibility concern between betas; a project file from an older beta gets a clear "unsupported
+version" error. Scope is unchanged by this — all four adopted codes and permit-date code locking
+are features, not legacy; they simply arrive one at a time (M4 ships Connecticut 2026, M5 adds
+Connecticut 2022, and Massachusetts and Pennsylvania come after that). Nothing is scheduled
+toward a date. Versioning is decided (DESIGN.md §12, #30): the minor number is bumped in each merged pull
+request and a release is tagged when features improve significantly.
+
+## Milestones: what you can see and play with
+
+Approved by Marc on 2026-09-21. Each milestone is a thing a person can hold, not a layer of the
+architecture — that is the point of them. Every release is a tagged pre-release.
+
+| Milestone | What you can see and play with | Issues |
+|---|---|---|
+| **M1 Look** | Download an unsigned build, open a hand-crafted sample design from a file, and look at it: pan with the wheel, a drag or the keyboard, zoom about the cursor, zoom to fit, and read dimension labels in feet, inches and fractions. Read-only — nothing is editable and nothing is saved. Underneath it: exact lengths, the geometry model, a strict scene reader, hand-computed fixtures, and a tag-to-download pipeline. | #2, #3, #4, #5, #6 (stage 1), #27 (first-run docs), #30, #32, #33, #34, #36, #37, #38 |
+| **M2 Draw** | Draw a rectangle by dragging, select, move and resize parts, type a dimension as feet-inch-fraction text, snap one part flush to another and see the relationship that snap created, watch live dimensions while you drag, undo and redo a long chain, and save a design and reopen it to find the same design. Bad dimension text is explained, not guessed at; two dimensions that cannot both be true produce a named conflict, not a wrong number. | #6 (stage 2), #10, #11 |
+| **M3 Cut** | Build the coffee table end to end — top, four legs, aprons — assign materials, then open two different outputs: a cut list of what you actually cut, with a 2×4 resolved to its true size, and a shopping list of the stock to buy with board feet and sheet counts. Both on screen and as CSV, both checked against expectations computed by hand. | #7, #8, #9 |
+| **M4 Check** | Draw an exterior wall, enter what it supports and the site hazard values yourself, place a window on it, and see a header size and stud count **with the code edition, table and row it came from**. Resize the opening and the answer follows. Push it past what the table covers and napkin says so and stops, citing the limit. **One** adopted code pack — Connecticut 2026 — and the per-project picker that selects it; the other three packs come later. Designed in [`docs/design/rules-engine-model.md`](./docs/design/rules-engine-model.md). | #12, #13, #14, #18, #19 (the picker) |
+| **M5 Brace and compare** | Enter the bracing that already exists along a wall line, widen an opening step by step, and watch napkin flag the wall when the line runs short — naming the section and the shortfall. Then switch the project to a second pack (Connecticut 2022) and watch every result recompute, with anything that no longer holds re-flagged instead of quietly carrying over. Two packs is what turns code locking from an assertion into something you can see happen. | #15, #19 (recompute), #39 |
+| **Backlog** | Wanted, not scheduled: the deck in its four prescriptive pieces under an umbrella issue, the site plan, PDF and DXF export, the Massachusetts and Pennsylvania packs and municipal overlays, sheet-goods nesting, SketchUp import (blocked on a license decision), installers, and the solver spike. | #16, #17, #20–#26, #28, #40–#43 |
+
+### Alongside the milestones, not inside them
+
+Two lines of work run underneath all five and belong to no one milestone:
+
+- **The constraint-solver spike (#28).** It starts once Core.Geometry (#5) has landed, runs in
+  parallel, and **gates no milestone**. #4 fixed the seams it plugs into, so it can be deferred at
+  any point without a rewrite. If it is hard, it waits.
+- **Test infrastructure**: the coverage ratchet (#32), the GUI workflow suite (#33) and the
+  feature scorecard (#34). The first two are pull-request gates whose floors only ever go up; the
+  scorecard measures progress and gates nothing. See [`features/README.md`](./features/README.md)
+  for the catalog those tools read, and DESIGN.md §6.5 for how the layers fit together. All three
+  start in M1 and grow with every milestone after it.
 
 ## The rule: assign models by step type, not by issue
 
@@ -33,9 +75,12 @@ few issues, shift reviews down a tier.
 
 ## Workflow per issue
 
-1. **Design** (where needed): a design document committed to the repo, with a step-by-step
-   implementation plan and test cases. For the two foundational designs (#4, #12), Marc signs off
-   before implementation starts.
+1. **Design** (where needed): a design document committed to the repo under `docs/design/`, with
+   a step-by-step implementation plan and test cases. For the two foundational designs (#4, #12),
+   Marc signs off before implementation starts. #4's document is drafted
+   ([`docs/design/geometry-model.md`](./docs/design/geometry-model.md)); Marc authorized
+   implementation on 2026-09-21 without answering its §9 decisions one by one, so their
+   recommendations stand as working choices until he says otherwise.
 2. **Implement**: code and tests on a branch, one pull request per issue.
 3. **Review**: the reviewing model reviews the pull request. For `code-data` issues, the review
    checks every encoded row against the primary source.
@@ -44,57 +89,94 @@ few issues, shift reviews down a tier.
 
 | # | Issue | Design | Implement | Review |
 |---|---|---|---|---|
-| **Phase 1 — Furniture and cut lists** |||||
+| **M1 Look** |||||
 | 1 | CI: build and test on Windows and macOS | — | Sonnet | Opus |
 | 2 | CI: dependency license gate | — | Opus | Opus |
 | 3 | Normalize line endings | — | Sonnet | Opus |
-| 4 | **Design: lengths, geometry model, update interface** | **Fable** | — | Marc |
+| 4 | **Design: lengths, geometry model, update interface** — drafted, implementation authorized | **Fable** | — | Marc |
 | 5 | Core.Geometry implementation | (#4) | Opus | **Fable** |
-| 6 | Core.Project file format | (#4) | Opus | **Fable** |
-| 7 | Materials and hardware reference library | — | Opus | Opus |
-| 8 | Furniture: parts and cut list | — | Opus | Opus |
-| 9 | Furniture: materials list and takeoff | — | Opus | Opus |
+| 6 | Core.Project file format — stage 1, the reader | (#4) | Opus | **Fable** |
+| 27 | First-run documentation and the source offer | — | Sonnet | Opus |
+| 30 | Versioning: beta numbering and pre-release tags | Marc confirms | Sonnet | Opus |
+| 32 | Coverage ratchet | — | Opus | Opus |
+| 33 | GUI automation suite and its workflow ratchet | — | Opus | Opus |
+| 34 | Feature catalog and progress scorecard | — | Opus | Opus |
+| 36 | Read-only viewer: open, pan, zoom, dimension labels | — | Opus | Opus |
+| 37 | Sample fixtures with hand-computed expectations | — | Opus | Opus, re-checking the arithmetic |
+| 38 | Release pipeline: tag to pre-release artifacts | — | Sonnet | Opus |
+| **M2 Draw** |||||
+| 6 | Core.Project file format — stage 2, writer and container | (#4) | Opus | **Fable** |
 | 10 | Canvas: drawing, snapping, live dimensions | — | Opus | Opus |
 | 11 | Canvas: undo/redo, layers, fraction display | — | Opus | Opus |
-| **Phase 2 — Building core and rules engine** |||||
+| **M3 Cut** |||||
+| 7 | Materials and hardware reference library | — | Opus | Opus vs. the cited standards |
+| 8 | Furniture: parts and cut list | — | Opus | Opus |
+| 9 | Furniture: materials list and takeoff | — | Opus | Opus |
+| **M4 Check** |||||
 | 12 | **Design: rules-engine data model and overlays** | **Fable** | — | Marc |
 | 13 | Rules engine: evaluator and citations | (#12) | Opus | **Fable** |
 | 14 | Code pack: Connecticut 2026 | (#12) | Opus | **Fable** vs. source |
+| 18 | Building: walls and openings with header sizing | — | Opus | Opus |
+| 19 | Per-project adopted-code picker | — | Opus | Opus |
+| **M5 Brace and compare** |||||
 | 15 | Code pack: Connecticut 2022 | (#12) | Opus | **Fable** vs. source |
+| 39 | Building: wall-bracing check after an opening changes | (#12) | Opus | **Fable** vs. source |
+| **Backlog** |||||
 | 16 | Code pack: Massachusetts 780 CMR 10th ed. | (#12) | Opus | **Fable** vs. source |
 | 17 | Code pack: Pennsylvania UCC | (#12) | Opus | **Fable** vs. source |
-| 18 | Building: walls, openings, header and bracing | — | Opus | Opus |
-| 19 | Per-project adopted-code picker | — | Opus | Opus |
-| **Phase 3 — Decks and site plan** |||||
-| 20 | Deck module | (#12) | Opus | **Fable** vs. source |
+| 20 | Deck module (umbrella) | (#12) | Opus | **Fable** |
+| 40 | Deck: ledger attachment | (#12) | Opus | **Fable** vs. source |
+| 41 | Deck: joist and beam spans | (#12) | Opus | **Fable** vs. source |
+| 42 | Deck: footings | (#12) | Opus | **Fable** vs. source |
+| 43 | Deck: guards and stairs | (#12) | Opus | **Fable** vs. source |
 | 21 | Site plan with survey underlay | — | Opus | Opus |
 | 22 | Pennsylvania municipal amendments | **Fable** | Opus | Marc |
-| **Phase 4 — Interop** |||||
 | 23 | DXF export | — | Opus | Opus |
 | 24 | SketchUp import — license conflict | Opus researches | Opus | **Marc decides** |
-| **Phase 5 — Polish and packaging** |||||
 | 25 | PDF sheets with title blocks | — | Opus | Opus |
 | 26 | Sheet-goods nesting | — | Opus | Opus |
-| 27 | Unsigned installers and first-run docs | — | Sonnet | Opus |
-| **Post-v1** |||||
-| 28 | Constraint solver workstream | **Fable** | Opus | **Fable** |
+| 27 | Installers proper | — | Sonnet | Opus |
+| 28 | Constraint solver: time-boxed spike behind the #4 interface | **Fable** | Opus | **Fable** |
+
+Two issues appear twice because they are staged across milestones: **#6** (the scene reader in M1,
+the writer and container in M2) and **#27** (first-run documentation in M1, installers later). The
+`features/catalog.json` entries carry the per-milestone truth for both. **#19** is likewise one
+issue delivering the picker in M4 and the recompute-on-change in M5.
 
 ## Sequencing
 
 The two Fable designs are the critical path, and they don't depend on each other:
 
 ```
-#1 CI ──► #2 license gate
-#4 geometry design (Fable) ──► #5 geometry ──► #7 materials ──► #8 cut list ──► #9 materials list
-                                    │                                  
-                                    ├──► #6 file format                
-                                    └──► #10 canvas ──► #11 undo/layers
-#12 rules design (Fable) ──► #13 evaluator ──► #14 CT 2026 first ──► #15–#17 other states
+#1 CI ──► #2 license gate                                   #30 version ──► #38 release pipeline
+#4 geometry design (Fable) ──► #5 geometry ──► #6 reader ──► #37 fixtures ──► #36 viewer   [M1]
+                                    │              └──► #6 writer/container                [M2]
+                                    ├──► #10 canvas ──► #11 undo/layers                    [M2]
+                                    │       └──► #7 materials ──► #8 cut list ──► #9 lists [M3]
+                                    │
+                                    └╌╌► #28 solver spike (off the critical path; time-boxed;
+                                          gates no milestone; nothing waits for it)
+#12 rules design (Fable) ──► #13 evaluator ──► #14 CT 2026 ──► #18 headers, #19 picker     [M4]
+                                                     └──► #15 CT 2022, #39 bracing         [M5]
+                                                            └──► #16, #17, decks, overlays [backlog]
 ```
 
-- **#4 and #12 can be designed in parallel now.** #12 is Phase 2 work, but designing it early
-  means the file format (#6) and the geometry model (#5) are built knowing what the rules engine
-  will need from them.
+- **#4 and #12 can be designed in parallel now.** #12 is M4 work, but designing it early means
+  the file format (#6) and the geometry model (#5) are built knowing what the rules engine will
+  need from them.
 - **CI and the license gate (#1, #2) come first**, because they protect everything after them and
   depend on no design decision.
-- **Connecticut 2026 is encoded first**, then the three 2021-IRC-based packs (DESIGN.md §8).
+- **Connecticut 2026 is encoded first** (M4). Connecticut 2022 follows in M5 — a second pack is
+  what makes code locking and recompute something you can watch happen rather than something the
+  design asserts. Massachusetts and Pennsylvania come after that (DESIGN.md §8, §11).
+- **The header check and the bracing check are separate work.** #18 sizes a header over one
+  opening; #39 checks a whole wall line's bracing after that opening changes. DESIGN.md §5.3 notes
+  the bracing check is the one most DIY openings miss, and it is deliberately not bundled into the
+  header issue.
+- **The solver (#28) starts after #5 lands and gates no milestone.** #4 delivers the seams
+  (relationships as data, one update interface, explicit result types, the fixed-point/double
+  boundary); #5 builds them; the solver is a second implementation behind them. The spike has a
+  time box and continue/defer criteria in #28. If it is hard, it waits.
+- **Test infrastructure (#32, #33, #34) starts in M1 and grows with every milestone.** The
+  coverage ratchet and the GUI workflow ratchet are pull-request gates whose floors only go up;
+  the feature scorecard measures and gates nothing (DESIGN.md §6.5).

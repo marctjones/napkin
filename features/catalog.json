@@ -1,0 +1,959 @@
+{
+  "schema": 1,
+  "features": [
+    {
+      "id": "GEO-001",
+      "area": "geometry",
+      "title": "Exact fixed-point length on a 1/1024-inch grid",
+      "acceptance": "Length.Inches(3, 1, 2) has Units == 3584, equals Length.FeetInches(0, 3, 1, 2), and Length.UnitsPerInch is 1024.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-002",
+      "area": "geometry",
+      "title": "Every tape, lumber and table value the design names is exact",
+      "acceptance": "1/16in, 3 1/2in, 23/32in, 15/32in, 5/4 decking at 1in, 16in and 24in on-centre and 6ft-0in each construct, read back unchanged, and 6ft-0in <= 6ft-0in is true (the comparison integer millimetres broke in issue #4).",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "golden"
+    },
+    {
+      "id": "GEO-003",
+      "area": "geometry",
+      "title": "Rounding is always explicit and arithmetic is checked",
+      "acceptance": "Divide and Scale take a Rounding argument; 1in Divide 3 gives 341 units, TryDivideExact(3) returns false and TryDivideExact(4) returns 1/4in; a sum past long.MaxValue throws OverflowException instead of wrapping.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-004",
+      "area": "geometry",
+      "title": "Feet-inch-fraction text parses and formats, reporting any rounding",
+      "acceptance": "6'-3 5/16\", 6' 3-5/16\", 6ft 3in, 75 5/16, 75.3125, 3/4 and -1/2 parse to the expected Length while mm, cm, empty and malformed text are rejected; 1/3 and 3.505 parse with wasRounded true and 3.5 with it false; formatting reduces 8/16 to 1/2, carries 12in to 1'-0\", keeps a negative sign, and reports IsExact false for a 1/32in value shown at 1/16in.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-006",
+      "area": "geometry",
+      "title": "Angles are integer arcseconds with exact right angles",
+      "acceptance": "Angle.Degrees(22, 30) equals Degrees(22) + Degrees(0, 30); Angle.Right rotated three times has IsRightAngleMultiple true and QuarterTurns 3; Degrees(45) has IsRightAngleMultiple false.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-007",
+      "area": "geometry",
+      "title": "Box corners derive exactly from stored parameters",
+      "acceptance": "For each of the four right-angle rotations, a Box with a given anchor, width and height derives all four corners and its centre by integer arithmetic, with no value off the grid except an odd-span centre.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-008",
+      "area": "geometry",
+      "title": "A sketch validates its own referential integrity",
+      "acceptance": "Sketch.Validate() reports a dangling entity or relationship reference, a box with zero or negative width or height, and two structurally identical relationships, each naming the offending id.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-009",
+      "area": "geometry",
+      "title": "One relationship checker decides exact versus tolerance",
+      "acceptance": "RelationshipChecker classifies every relationship kind and computes its residual; exact-class kinds are checked at zero tolerance whatever Tolerances is passed, and a test recomputes Tolerances.Position from Length.UnitsPerInch so a change to the grid cannot leave it stale.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-010",
+      "area": "geometry",
+      "title": "An exact request propagates through the relationship graph",
+      "acceptance": "SetParameter on a box's driving width relationship keeps the anchor and moves the far edge, and a box held Flush against that edge translates by the same delta with its own size unchanged.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "golden"
+    },
+    {
+      "id": "GEO-011",
+      "area": "geometry",
+      "title": "The anchor rule, and conflicts that name their cause",
+      "acceptance": "Resizing a box whose far side is Flush to an anchored box moves the anchor side instead; when both sides are pinned the result is OverConstrained naming both Anchored relationships and the Flush, and the input sketch is returned unchanged.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "golden"
+    },
+    {
+      "id": "GEO-012",
+      "area": "geometry",
+      "title": "Drag is best effort and reports what it applied",
+      "acceptance": "Dragging a box held Flush on a vertical edge to an anchored box returns Solved with AppliedDelta zero in X and the full requested Y; a drag blocked on both axes is Solved with a zero delta, never OverConstrained.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "golden"
+    },
+    {
+      "id": "GEO-013",
+      "area": "geometry",
+      "title": "A malformed request is rejected, not reported as a conflict",
+      "acceptance": "Adding a Parallel relationship, dragging an edge whose size a ParamValue drives, and rotating a box that carries relationships each return Rejected with the named reason and an unchanged sketch; a SetParameter naming a relationship the sketch does not have returns Rejected(UnknownRelationship).",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-014",
+      "area": "geometry",
+      "title": "Structural edits cascade, demote and batch atomically",
+      "acceptance": "Removing a box removes the relationships referencing it and the dimensions measuring it and lists all of them in the change set; removing a driving relationship leaves its dimension in place with Drives null; a Batch whose second request conflicts applies nothing and returns that request's report.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-015",
+      "area": "geometry",
+      "title": "The updater is never silently inconsistent",
+      "acceptance": "Over generated rectilinear sketches, properties P1-P8 and P10 of the design doc hold: every result is Rejected or OverConstrained with the input unchanged, or Succeeded with a sketch that passes Validate and the checker with no violations.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "PRJ-001",
+      "area": "project-file",
+      "title": "Read a plain scene file into a sketch",
+      "acceptance": "Loading a sample scene.json produces a Sketch whose entities, relationships and layers equal the file's contents by value, with lengths and angles read as integers in the declared units.",
+      "milestone": "M1",
+      "issue": 6,
+      "kind": "unit"
+    },
+    {
+      "id": "PRJ-002",
+      "area": "project-file",
+      "title": "Loading is strict and never repairs",
+      "acceptance": "A file with an unknown field, a dangling id, a decimal length, or a relationship kind the running updater does not support is refused with a message naming the field, id or kind; nothing is opened approximately.",
+      "milestone": "M1",
+      "issue": 6,
+      "kind": "unit"
+    },
+    {
+      "id": "PRJ-003",
+      "area": "project-file",
+      "title": "Loading re-checks the file's own relationships",
+      "acceptance": "A file whose stored geometry does not satisfy its stored relationships is refused with the violating relationship ids listed.",
+      "milestone": "M1",
+      "issue": 6,
+      "kind": "unit"
+    },
+    {
+      "id": "PRJ-004",
+      "area": "project-file",
+      "title": "Exact format-version match, no migration",
+      "acceptance": "The loader accepts only the formatVersion the app writes; a file one version older and a file one version newer both fail before the scene is parsed, with a message naming the file's version and the app's.",
+      "milestone": "M2",
+      "issue": 6,
+      "kind": "unit"
+    },
+    {
+      "id": "PRJ-005",
+      "area": "project-file",
+      "title": "The manifest records what the file means",
+      "acceptance": "A saved project's manifest.json carries formatVersion, the app version, the storage units (inch/1024 and arcsecond) and the project's adopted code, which is null when none is chosen.",
+      "milestone": "M2",
+      "issue": 6,
+      "kind": "unit"
+    },
+    {
+      "id": "PRJ-006",
+      "area": "project-file",
+      "title": "The project is a documented zip container",
+      "acceptance": "A saved project opens with a standard zip tool and contains manifest.json, scene.json, a thumbnail and an assets directory, matching the format document committed in the repository.",
+      "milestone": "M2",
+      "issue": 6,
+      "kind": "unit"
+    },
+    {
+      "id": "PRJ-007",
+      "area": "project-file",
+      "title": "Save then load is an identity",
+      "acceptance": "For every sketch the generator produces, Load(Save(sketch)) equals sketch by value (property P9 of the design doc).",
+      "milestone": "M2",
+      "issue": 6,
+      "kind": "unit"
+    },
+    {
+      "id": "MAT-001",
+      "area": "materials",
+      "title": "Nominal lumber resolves to actual dimensions",
+      "acceptance": "Looking up 2x4 returns 1 1/2in by 3 1/2in as exact Length values and 4x4 returns 3 1/2in by 3 1/2in, alongside the stock lengths and stud spacings the library carries for each size.",
+      "milestone": "M3",
+      "issue": 7,
+      "kind": "unit"
+    },
+    {
+      "id": "MAT-002",
+      "area": "materials",
+      "title": "Sheet goods resolve to actual thickness and sheet size",
+      "acceptance": "A nominal 3/4in sheet resolves to the actual thickness its cited source gives, and the standard sheet size is returned as two exact Lengths.",
+      "milestone": "M3",
+      "issue": 7,
+      "kind": "unit"
+    },
+    {
+      "id": "MAT-003",
+      "area": "materials",
+      "title": "Decking and fasteners resolve from data",
+      "acceptance": "Decking nominal-to-actual sizes and fastener entries (gauge, length, penny size) are returned from the shipped data files, with no value hardcoded in the lookup code.",
+      "milestone": "M3",
+      "issue": 7,
+      "kind": "unit"
+    },
+    {
+      "id": "MAT-004",
+      "area": "materials",
+      "title": "Every reference table cites the standard it was authored from",
+      "acceptance": "Each table in the library carries a source citation naming the standard or specification consulted (for example ALSC PS 20 for softwood lumber sizes), and a test fails any table whose citation is missing or empty.",
+      "milestone": "M3",
+      "issue": 7,
+      "kind": "unit"
+    },
+    {
+      "id": "MAT-005",
+      "area": "materials",
+      "title": "Adding a material is a data change",
+      "acceptance": "The shipped data files load through the same reader the app uses, a malformed or duplicate entry fails the load with the file and entry named, and no code change is needed to add a nominal size.",
+      "milestone": "M3",
+      "issue": 7,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-001",
+      "area": "furniture",
+      "title": "A part resolves its stock through the materials library",
+      "acceptance": "A part declared as 2x4 reports cut dimensions of 1 1/2in by 3 1/2in taken from the materials library, never the nominal name.",
+      "milestone": "M3",
+      "issue": 8,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-002",
+      "area": "furniture",
+      "title": "The cut list reads stored parameters, not derived corners",
+      "acceptance": "A part typed as 10in wide and then rotated lists as 10in in the cut list, read from Box.Width rather than from the distance between derived corners.",
+      "milestone": "M3",
+      "issue": 8,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-003",
+      "area": "furniture",
+      "title": "The cut list groups identical parts",
+      "acceptance": "Four identical legs appear as one row with quantity 4, and every row carries final dimensions, quantity and material.",
+      "milestone": "M3",
+      "issue": 8,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-004",
+      "area": "furniture",
+      "title": "The coffee-table cut list matches hand-computed expectations",
+      "acceptance": "The coffee-table fixture's cut list equals, row for row, the expectations file computed by hand from the fixture's dimensions independently of the implementation.",
+      "milestone": "M3",
+      "issue": 37,
+      "kind": "golden"
+    },
+    {
+      "id": "CUT-005",
+      "area": "furniture",
+      "title": "The shopping list matches hand-computed expectations",
+      "acceptance": "The coffee-table fixture aggregates to the expectations file's stock counts (boards, sheets and fasteners), and a part that fits within one board still reports one board to buy while the cut list reports each part.",
+      "milestone": "M3",
+      "issue": 37,
+      "kind": "golden"
+    },
+    {
+      "id": "CUT-006",
+      "area": "furniture",
+      "title": "Takeoff totals are grouped and rounded once",
+      "acceptance": "Board feet and sheet counts are grouped by material and thickness, computed from exact lengths and rounded once at the end rather than per part.",
+      "milestone": "M3",
+      "issue": 9,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-001",
+      "area": "ui",
+      "title": "Pan the view without moving anything",
+      "acceptance": "Panning by wheel, by drag and by keyboard changes the view transform only; every entity's stored coordinates are byte-identical before and after.",
+      "milestone": "M1",
+      "issue": 36,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-002",
+      "area": "ui",
+      "title": "Zoom about the cursor, and zoom to fit",
+      "acceptance": "A wheel tick keeps the model point under the pointer fixed to within one pixel, and the fit command frames every entity's bounding box with a visible margin for both a single entity and the sample design.",
+      "milestone": "M1",
+      "issue": 36,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-003",
+      "area": "ui",
+      "title": "Y is up in model space",
+      "acceptance": "A model point with the larger Y draws higher on screen, and the screen flip appears in the view transform and nowhere else in the drawing code.",
+      "milestone": "M1",
+      "issue": 36,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-004",
+      "area": "ui",
+      "title": "Dimension labels are computed, never cached",
+      "acceptance": "A dimension renders its value from the geometry it measures, formatted as feet, inches and fractions by Core.Geometry's Format, and the rendered text changes when that geometry changes.",
+      "milestone": "M1",
+      "issue": 36,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-005",
+      "area": "ui",
+      "title": "Every edit goes through the update interface",
+      "acceptance": "A pointer drag issues Drag or DragEdge, a typed value issues SetParameter or AddRelationship(ParamValue), a compound gesture issues one Batch, and no UI code path constructs a Sketch directly.",
+      "milestone": "M2",
+      "issue": 10,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-006",
+      "area": "ui",
+      "title": "A snap creates a stored relationship the canvas can show",
+      "acceptance": "Snapping to a grid, endpoint, midpoint, intersection, perpendicular or parallel target creates the corresponding stored relationship and displays it; the canvas offers only the kinds in the updater's SupportedRelationships and infers nothing from position.",
+      "milestone": "M2",
+      "issue": 10,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-007",
+      "area": "ui",
+      "title": "Live dimensions follow the geometry while dragging",
+      "acceptance": "While a drag is in progress the dimension bound to the dragged edge updates on each pointer move and reads the same value as the geometry when the drag ends.",
+      "milestone": "M2",
+      "issue": 10,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-008",
+      "area": "ui",
+      "title": "Every update result has a place on screen",
+      "acceptance": "OverConstrained shows the conflict report's summary and highlights the named relationships, Rejected explains its reason in plain words, and UnderConstrained appears at most as a hint and never as an error.",
+      "milestone": "M2",
+      "issue": 10,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-009",
+      "area": "ui",
+      "title": "Undo, redo and layers over immutable sketch values",
+      "acceptance": "Undo restores the previous Sketch value exactly, one Batch is one undo step, entity ids survive so the selection is preserved, and a SetLayer change is undoable like any other.",
+      "milestone": "M2",
+      "issue": 11,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-010",
+      "area": "ui",
+      "title": "Display precision is per project, and inexact display is marked",
+      "acceptance": "Lengths display at the project's chosen denominator from 1 to 64, rounding half away from zero, and a value whose displayed text is not the stored value is marked (for example with a leading approximation sign).",
+      "milestone": "M2",
+      "issue": 11,
+      "kind": "unit"
+    },
+    {
+      "id": "RUL-001",
+      "area": "rules-engine",
+      "title": "Adopted-code packs load from data",
+      "acceptance": "The engine loads a pack from its data directory and reports its jurisdiction, base model code and in-force date, with no pack named in the engine's code.",
+      "milestone": "M4",
+      "issue": 13,
+      "kind": "unit"
+    },
+    {
+      "id": "RUL-002",
+      "area": "rules-engine",
+      "title": "Every result carries a full citation",
+      "acceptance": "A sized result carries the state, adopted code, table and row it came from, and a test fails any result whose citation is missing a part.",
+      "milestone": "M4",
+      "issue": 13,
+      "kind": "unit"
+    },
+    {
+      "id": "RUL-003",
+      "area": "rules-engine",
+      "title": "Out of scope is a first-class result",
+      "acceptance": "Inputs past a table's limits return OutOfScope carrying the citation of the limit that was exceeded; the result type is a closed union with no third case, so no silent failure is representable.",
+      "milestone": "M4",
+      "issue": 13,
+      "kind": "unit"
+    },
+    {
+      "id": "RUL-004",
+      "area": "rules-engine",
+      "title": "The header evaluator returns the matching row",
+      "acceptance": "Given a wall context and an opening spec that the loaded pack's header table covers, the evaluator returns that row's header and jack and king stud counts, identified by the row it used.",
+      "milestone": "M4",
+      "issue": 13,
+      "kind": "unit"
+    },
+    {
+      "id": "RUL-005",
+      "area": "rules-engine",
+      "title": "The bracing evaluator runs over a whole wall line",
+      "acceptance": "Given a wall line's bracing inputs and all its openings, the evaluator reports whether the required braced length is met, cites the section it applied, and re-runs whenever an opening on that line changes.",
+      "milestone": "M5",
+      "issue": 39,
+      "kind": "unit"
+    },
+    {
+      "id": "RUL-006",
+      "area": "rules-engine",
+      "title": "Overlays compose, and the citation names the layer",
+      "acceptance": "A state amendment overlaid on a base model code produces a result whose citation names the layer that supplied the value, and a row the state did not amend cites the base layer.",
+      "milestone": "M4",
+      "issue": 13,
+      "kind": "unit"
+    },
+    {
+      "id": "RUL-007",
+      "area": "rules-engine",
+      "title": "The code picker is built from the installed packs",
+      "acceptance": "The picker lists exactly the installed packs, each by jurisdiction, base model code and in-force date, with no list hardcoded in the app, and the chosen pack is stored in the project manifest and survives save and reopen.",
+      "milestone": "M4",
+      "issue": 19,
+      "kind": "unit"
+    },
+    {
+      "id": "RUL-008",
+      "area": "rules-engine",
+      "title": "Changing the project's code recomputes every result",
+      "acceptance": "Switching a project from one installed pack to another recomputes every rules result in the project against the new pack and re-flags any result that no longer holds, with no stale result or stale citation carried over.",
+      "milestone": "M5",
+      "issue": 19,
+      "kind": "unit"
+    },
+    {
+      "id": "CODE-001",
+      "area": "code-packs",
+      "title": "Connecticut 2026 header and fastener tables",
+      "acceptance": "Every row encoded for the header-span and fastener-schedule tables matches the state's published adopted text, and each test names the page or section it was read from.",
+      "milestone": "M4",
+      "issue": 14,
+      "kind": "golden"
+    },
+    {
+      "id": "CODE-002",
+      "area": "code-packs",
+      "title": "Connecticut 2026 boundary rows flip cleanly",
+      "acceptance": "For each limit in the encoded tables, an input just inside returns a sized result and an input just outside returns out of scope citing that limit, with the boundary values taken from the state's published adopted text.",
+      "milestone": "M4",
+      "issue": 14,
+      "kind": "golden"
+    },
+    {
+      "id": "CODE-003",
+      "area": "code-packs",
+      "title": "Connecticut 2026 bracing provisions",
+      "acceptance": "Every row encoded for the wall-bracing provisions matches the state's published adopted text, cited by page or section.",
+      "milestone": "M5",
+      "issue": 14,
+      "kind": "golden"
+    },
+    {
+      "id": "CODE-004",
+      "area": "code-packs",
+      "title": "Connecticut 2022 pack",
+      "acceptance": "Every row encoded for the header-span, bracing and fastener tables matches the 2022 state code's published adopted text, cited by page or section, and differs from the 2026 pack wherever that text does.",
+      "milestone": "M5",
+      "issue": 15,
+      "kind": "golden"
+    },
+    {
+      "id": "CODE-005",
+      "area": "code-packs",
+      "title": "Massachusetts 780 CMR residential pack",
+      "acceptance": "Every encoded row matches the state's published adopted text, including the site criteria the state sets for itself, cited by page or section.",
+      "milestone": "backlog",
+      "issue": 16,
+      "kind": "golden"
+    },
+    {
+      "id": "CODE-006",
+      "area": "code-packs",
+      "title": "Pennsylvania Uniform Construction Code pack",
+      "acceptance": "Every encoded row matches the state's published adopted text, cited by page or section, and the older-code transition rule is encoded only after it has been read in the Pennsylvania Code itself.",
+      "milestone": "backlog",
+      "issue": 17,
+      "kind": "golden"
+    },
+    {
+      "id": "CODE-007",
+      "area": "code-packs",
+      "title": "A municipal overlay changes only what it amends",
+      "acceptance": "A municipal amendment overlaid on the state pack changes exactly the rows the ordinance amends, leaves every other row identical to the state pack, and its citation names the ordinance.",
+      "milestone": "backlog",
+      "issue": 22,
+      "kind": "golden"
+    },
+    {
+      "id": "BLD-001",
+      "area": "building",
+      "title": "Wall attributes are entered, never defaulted",
+      "acceptance": "A wall with no ground snow load, wind speed or seismic design category entered cannot be evaluated; the app asks for the missing input and names it, rather than substituting a value.",
+      "milestone": "M4",
+      "issue": 18,
+      "kind": "unit"
+    },
+    {
+      "id": "BLD-002",
+      "area": "building",
+      "title": "An opening is geometrically bound to its wall",
+      "acceptance": "An opening is a box held Flush on the wall's two long edges with an AxisDistance from a wall corner, so moving or resizing the wall moves the opening with it and the opening slides when the AxisDistance changes.",
+      "milestone": "M4",
+      "issue": 18,
+      "kind": "unit"
+    },
+    {
+      "id": "BLD-003",
+      "area": "building",
+      "title": "The header result is live",
+      "acceptance": "Resizing or moving an opening re-runs the header lookup, and the displayed header, stud counts and citation change with it rather than keeping the previous result.",
+      "milestone": "M4",
+      "issue": 18,
+      "kind": "unit"
+    },
+    {
+      "id": "BLD-004",
+      "area": "building",
+      "title": "Out of scope routes to an engineer, never to a number",
+      "acceptance": "An opening whose span or site inputs fall outside the loaded pack's tables shows the out-of-scope message with the limit's citation and shows no header size at all.",
+      "milestone": "M4",
+      "issue": 18,
+      "kind": "unit"
+    },
+    {
+      "id": "BLD-005",
+      "area": "building",
+      "title": "Enlarging an opening rechecks the wall line's bracing",
+      "acceptance": "With the wall line's existing sheathing type and braced length entered by the user, enlarging an opening past what the line can carry flags the wall, naming the section applied and the shortfall.",
+      "milestone": "M5",
+      "issue": 39,
+      "kind": "unit"
+    },
+    {
+      "id": "SITE-001",
+      "area": "site-plan",
+      "title": "A survey underlay calibrates from two known points",
+      "acceptance": "After placing an image, clicking two points a known distance apart and entering that distance, a measurement between those two points on the canvas reads the entered value.",
+      "milestone": "backlog",
+      "issue": 21,
+      "kind": "unit"
+    },
+    {
+      "id": "SITE-002",
+      "area": "site-plan",
+      "title": "Property lines and setbacks measure against structures",
+      "acceptance": "Property lines and their setback offsets draw over the underlay, and the distance from a placed structure to each line is reported in feet, inches and fractions.",
+      "milestone": "backlog",
+      "issue": 21,
+      "kind": "unit"
+    },
+    {
+      "id": "SITE-003",
+      "area": "site-plan",
+      "title": "North arrow and sheet orientation are stored with the project",
+      "acceptance": "The site plan's north direction is stored as an exact Angle in the project file and survives save and reopen.",
+      "milestone": "backlog",
+      "issue": 21,
+      "kind": "unit"
+    },
+    {
+      "id": "DECK-001",
+      "area": "deck",
+      "title": "Ledger attachment is sized from the project's pack",
+      "acceptance": "Given the ledger size, the band joist it attaches to and the tributary load inputs, the fastener type and spacing come from the loaded pack's adopted provisions with a citation, or out of scope when the connection is outside them.",
+      "milestone": "backlog",
+      "issue": 40,
+      "kind": "unit"
+    },
+    {
+      "id": "DECK-002",
+      "area": "deck",
+      "title": "Joist and beam spans come from the adopted tables",
+      "acceptance": "Given species, size, spacing and span, the result is the matching row of the loaded pack's adopted span provisions with a citation, or out of scope, and every encoded row matches that state's published adopted text.",
+      "milestone": "backlog",
+      "issue": 41,
+      "kind": "golden"
+    },
+    {
+      "id": "DECK-003",
+      "area": "deck",
+      "title": "Footings are sized from tributary area and entered soil bearing",
+      "acceptance": "Given a tributary area and a user-entered soil bearing value, the footing size comes from the loaded pack's adopted table with a citation, or out of scope; the soil value is never defaulted.",
+      "milestone": "backlog",
+      "issue": 42,
+      "kind": "unit"
+    },
+    {
+      "id": "DECK-004",
+      "area": "deck",
+      "title": "Guards and stairs follow the adopted provisions",
+      "acceptance": "A deck surface above the pack's guard trigger height requires a guard with the section cited, and a stair layout from deck height to grade either satisfies the pack's rise and run provisions or returns out of scope.",
+      "milestone": "backlog",
+      "issue": 43,
+      "kind": "unit"
+    },
+    {
+      "id": "DECK-005",
+      "area": "deck",
+      "title": "A deck produces a cut list through the furniture machinery",
+      "acceptance": "A framed deck produces a cut list and a materials list through the same code path as a furniture project, with framing and decking members resolved through the materials library.",
+      "milestone": "backlog",
+      "issue": 20,
+      "kind": "unit"
+    },
+    {
+      "id": "IOP-001",
+      "area": "interop",
+      "title": "Exported DXF opens in another CAD tool",
+      "acceptance": "An exported AC1015 file opens in at least one of QCAD, LibreCAD or FreeCAD with every entity at the same model coordinates it had in napkin, and an R12 fallback export opens likewise.",
+      "milestone": "backlog",
+      "issue": 23,
+      "kind": "unit"
+    },
+    {
+      "id": "IOP-002",
+      "area": "interop",
+      "title": "Exported dimensions are literal geometry",
+      "acceptance": "The exported file contains dimension lines, arrowheads and text as ordinary entities and contains no associative DIMENSION entity.",
+      "milestone": "backlog",
+      "issue": 23,
+      "kind": "unit"
+    },
+    {
+      "id": "IOP-003",
+      "area": "interop",
+      "title": "PDF sheets are vector and true scale, with a title block",
+      "acceptance": "A part 24in long measures 24in at the sheet's stated scale when measured in a PDF reader, the page contains vector path operators rather than an embedded raster image, and every sheet carries the project name, scale, date and the tool's disclaimer.",
+      "milestone": "backlog",
+      "issue": 25,
+      "kind": "unit"
+    },
+    {
+      "id": "IOP-004",
+      "area": "interop",
+      "title": "No proprietary import dependency enters without a recorded decision",
+      "acceptance": "The dependency gate fails the build if a package outside the license policy, including a proprietary SketchUp SDK, is referenced without a committed exception carrying a written justification.",
+      "milestone": "backlog",
+      "issue": 24,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-007",
+      "area": "furniture",
+      "title": "Sheet-goods nesting reports the sheets a project needs",
+      "acceptance": "Given a stock panel size and a cut list of sheet parts, the layout places every part inside the panels without overlap and reports the number of sheets needed.",
+      "milestone": "backlog",
+      "issue": 26,
+      "kind": "unit"
+    },
+    {
+      "id": "PKG-001",
+      "area": "packaging",
+      "title": "Self-contained builds start on a clean machine",
+      "acceptance": "The published Windows and macOS builds launch on a machine with no .NET runtime installed and open the sample design.",
+      "milestone": "backlog",
+      "issue": 27,
+      "kind": "unit"
+    },
+    {
+      "id": "PKG-002",
+      "area": "packaging",
+      "title": "First-run instructions and the source offer ship with every build",
+      "acceptance": "The README documents the macOS System Settings path for opening an unsigned app and the Windows SmartScreen path with every URL reachable, and each published artifact contains the AGPL-3.0 text and a written offer of source naming the commit it was built from.",
+      "milestone": "M1",
+      "issue": 27,
+      "kind": "unit"
+    },
+    {
+      "id": "REL-001",
+      "area": "release",
+      "title": "A tag produces downloadable macOS and Windows artifacts",
+      "acceptance": "Pushing a tag matching the release pattern builds a macOS artifact and a Windows artifact and attaches both to a GitHub release created for that tag.",
+      "milestone": "M1",
+      "issue": 38,
+      "kind": "unit"
+    },
+    {
+      "id": "REL-002",
+      "area": "release",
+      "title": "Every release is a pre-release",
+      "acceptance": "The release the pipeline creates has the pre-release flag set and is not marked latest, and a test over the workflow definition fails if that flag is ever removed.",
+      "milestone": "M1",
+      "issue": 38,
+      "kind": "unit"
+    },
+    {
+      "id": "REL-003",
+      "area": "release",
+      "title": "The arm64 macOS artifact carries its ad-hoc signature only",
+      "acceptance": "The published macOS arm64 binary verifies as carrying the toolchain's automatic ad-hoc signature, which arm64 code needs to run at all, and carries no Developer ID signature or notarization ticket.",
+      "milestone": "M1",
+      "issue": 38,
+      "kind": "unit"
+    },
+    {
+      "id": "REL-004",
+      "area": "release",
+      "title": "One version string, set in one place",
+      "acceptance": "Every assembly and the running app report the same version, taken from a single property in the repository, with the commit SHA present in the informational version.",
+      "milestone": "M1",
+      "issue": 30,
+      "kind": "unit"
+    },
+    {
+      "id": "SOLV-001",
+      "area": "solver",
+      "title": "Angled golden cases solve and verify",
+      "acceptance": "A mitered frame, a 45-degree brace between two rectilinear parts and a tapered leg each solve, are rounded once, repaired through the propagator and pass the relationship checker before the sketch is returned.",
+      "milestone": "backlog",
+      "issue": 28,
+      "kind": "golden"
+    },
+    {
+      "id": "SOLV-002",
+      "area": "solver",
+      "title": "The solver is no worse on the direct updater's own domain",
+      "acceptance": "Property P1 holds under the solver over the same generated rectilinear sketches the direct updater is tested on.",
+      "milestone": "backlog",
+      "issue": 28,
+      "kind": "unit"
+    },
+    {
+      "id": "SOLV-003",
+      "area": "solver",
+      "title": "Solver conflict reports name relationships worth removing",
+      "acceptance": "For each conflicting golden case the report names a set of relationships whose removal makes the same request succeed, and distinguishes a contradiction from a failure to converge.",
+      "milestone": "backlog",
+      "issue": 28,
+      "kind": "unit"
+    },
+    {
+      "id": "GUI-VIEW-01",
+      "area": "ui",
+      "title": "Open a sample design and see it drawn",
+      "acceptance": "Launch the app, open the coffee-table sample through the file dialog, and every part in the fixture appears on the canvas at the fixture's expected positions.",
+      "milestone": "M1",
+      "issue": 36,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-02",
+      "area": "ui",
+      "title": "Pan with the wheel, a drag and the keyboard",
+      "acceptance": "With the sample open, scroll the wheel, drag with the pan tool and press the arrow keys; the view origin readout changes for each and no entity's stored coordinates change.",
+      "milestone": "M1",
+      "issue": 36,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-03",
+      "area": "ui",
+      "title": "Zoom about the cursor, then zoom to fit",
+      "acceptance": "Wheel-zoom in over one corner of the sample so that most of it leaves the viewport, press the zoom-to-fit shortcut, and every entity is framed again with a margin.",
+      "milestone": "M1",
+      "issue": 36,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-04",
+      "area": "ui",
+      "title": "Read dimension labels in feet, inches and fractions",
+      "acceptance": "Open the wall-with-window sample, zoom in on the opening, and the dimension labels read the exact feet-inch-fraction strings the fixture's expectations file gives.",
+      "milestone": "M1",
+      "issue": 36,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-05",
+      "area": "ui",
+      "title": "A file the app cannot read fails visibly",
+      "acceptance": "With a design already open, try to open a scene file carrying an unknown field, a dangling id and an unsupported relationship kind; a message names what was wrong, and the design already on screen is untouched.",
+      "milestone": "M1",
+      "issue": 36,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DRAW-01",
+      "area": "ui",
+      "title": "Draw a rectangle by dragging",
+      "acceptance": "Press, drag and release on empty canvas; a part appears, its live dimensions track the pointer during the drag, and its final size equals the distance dragged.",
+      "milestone": "M2",
+      "issue": 10,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DRAW-02",
+      "area": "ui",
+      "title": "Type a dimension in feet-inch-fraction text",
+      "acceptance": "Select the part, focus the width field by keyboard, type 2'-6 1/2\" and press Enter; the part resizes to exactly that value, the anchor corner stays put, and the label reads back the same text.",
+      "milestone": "M2",
+      "issue": 10,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DRAW-03",
+      "area": "ui",
+      "title": "Recover from invalid dimension text",
+      "acceptance": "Type 250mm into the same field and press Enter; an error appears, the part is unchanged, and typing a valid value immediately afterwards resizes it as normal.",
+      "milestone": "M2",
+      "issue": 10,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DRAW-04",
+      "area": "ui",
+      "title": "Move a part until it snaps, and see the relationship",
+      "acceptance": "Drag one part towards another until the flush snap engages and release; the parts are flush and a stored Flush relationship appears in the relationship list.",
+      "milestone": "M2",
+      "issue": 10,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DRAW-05",
+      "area": "ui",
+      "title": "Undo and redo a chain of edits",
+      "acceptance": "After five edits mixing drags and typed dimensions, five undo presses return the design to its starting state and five redo presses return it to the last state, with the selection preserved throughout.",
+      "milestone": "M2",
+      "issue": 11,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DRAW-06",
+      "area": "ui",
+      "title": "Save a design, reopen it and find the same design",
+      "acceptance": "Save the design to a new file, close it, reopen it from the file dialog, and every part, dimension and relationship matches what was saved.",
+      "milestone": "M2",
+      "issue": 6,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DRAW-07",
+      "area": "ui",
+      "title": "See a conflict explained rather than a wrong number",
+      "acceptance": "Pin two parts so their widths cannot both change, type a width that cannot hold, and the conflict summary appears naming the relationships involved while the design stays as it was.",
+      "milestone": "M2",
+      "issue": 10,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CUT-01",
+      "area": "ui",
+      "title": "Build the coffee table end to end",
+      "acceptance": "Draw the top, four legs and the aprons using drags, snapping and typed dimensions, ending with geometry that matches the coffee-table fixture.",
+      "milestone": "M3",
+      "issue": 8,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CUT-02",
+      "area": "ui",
+      "title": "Assign materials to parts",
+      "acceptance": "Select the four legs, choose a nominal stock size from the materials picker, and each part's reported stock changes to that size's actual dimensions.",
+      "milestone": "M3",
+      "issue": 7,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CUT-03",
+      "area": "ui",
+      "title": "Open the cut list and check it",
+      "acceptance": "Open the cut list window and read every row; the rows equal the coffee-table fixture's hand-computed expectations, with identical parts grouped by quantity.",
+      "milestone": "M3",
+      "issue": 8,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CUT-04",
+      "area": "ui",
+      "title": "Open the shopping list and export it",
+      "acceptance": "Open the materials list window, read the stock counts against the fixture's expectations, export it as CSV, and the exported rows match the table on screen.",
+      "milestone": "M3",
+      "issue": 9,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CHECK-01",
+      "area": "ui",
+      "title": "Place a window on a wall and get a cited header",
+      "acceptance": "Draw a wall, enter what it supports and its site hazard inputs, place an opening on it, and a header size with its code edition, table and row appears.",
+      "milestone": "M4",
+      "issue": 18,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CHECK-02",
+      "area": "ui",
+      "title": "Resize the window and watch the header result update",
+      "acceptance": "Drag the opening's edge to widen it across a table row boundary and the displayed header size and citation change to the new row without reopening anything.",
+      "milestone": "M4",
+      "issue": 18,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CHECK-03",
+      "area": "ui",
+      "title": "Hit an out-of-scope case",
+      "acceptance": "Keep widening the opening past what the loaded pack's table covers; the result becomes the out-of-scope message with the exceeded limit's citation and no header size is shown at all.",
+      "milestone": "M4",
+      "issue": 18,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-BRACE-01",
+      "area": "ui",
+      "title": "Enlarge an opening until the bracing check flags it",
+      "acceptance": "With the wall line's existing sheathing and braced length entered, widen the opening step by step until the wall line is flagged, and the flag names the section applied and the shortfall.",
+      "milestone": "M5",
+      "issue": 39,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-BRACE-02",
+      "area": "ui",
+      "title": "Change the project's adopted code and see results recomputed",
+      "acceptance": "Open the project's code picker, switch it to the other installed pack, and every rules result on screen recomputes with citations naming the newly chosen code.",
+      "milestone": "M5",
+      "issue": 19,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-BRACE-03",
+      "area": "ui",
+      "title": "A result that no longer holds is re-flagged, not carried over",
+      "acceptance": "After the code change, an opening the previous pack sized but the new pack does not cover shows as out of scope rather than keeping the number the old pack produced.",
+      "milestone": "M5",
+      "issue": 19,
+      "kind": "workflow"
+    }
+  ]
+}

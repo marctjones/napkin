@@ -13,9 +13,18 @@ obj/
 .DS_Store
 Thumbs.db
 
-## Test results
+## Test results and coverage
+# `dotnet test --results-directory artifacts/test-results` writes TRX and Cobertura here, and the
+# tools under tools/Napkin.Tools read them back. Everything under artifacts/ is reproducible.
+artifacts/
 TestResults/
 *.trx
+coverage.cobertura.xml
+coverage.opencover.xml
+coverage.json
+
+# ...except the captured toolchain output the tools are tested against, which is source.
+!tests/Napkin.Tools.Tests/Fixtures/*.trx
 
 ## Avalonia/local publish output
 publish/

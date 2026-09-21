@@ -40,9 +40,10 @@ the finished wall.
 - Not a licensed-engineer replacement. No full structural analysis, no load-path calculation
   beyond what a table already prescribes.
 - Not a permit-submission platform. No jurisdiction integration, no e-filing.
-- Not a multi-user / collaboration tool in v1. Single user, local files.
-- **Not 3D in v1.** 2D plan/elevation with live dimensions ships first, deep and solid; 3D
-  visualization is an explicit later phase (see §8), not a v1 requirement.
+- Not a multi-user / collaboration tool in the first betas. Single user, local files.
+- **Not 3D in the first betas.** 2D plan/elevation with live dimensions ships first, deep and
+  solid; 3D visualization is an explicit later phase (see §8), not a requirement of the first
+  working beta.
 
 ### 2.1 License and dependency policy (decided)
 
@@ -59,10 +60,11 @@ the finished wall.
     revenue-gated, not a clean permissive license, and would violate this policy the moment the
     project (or a fork) crossed its threshold.
   - DXF import/export: **netDxf** or **ACadSharp** (both MIT).
-  - Constraint solver: see §5.1 — SolveSpace's own solver is GPL-3.0 and is excluded by this
-    policy despite being license-*compatible* with AGPL. PlaneGCS (FreeCAD's derivative) is LGPL
-    and would clear the bar, but is a C++ library requiring native interop; v1 avoids the
-    question entirely (§5.1).
+  - Constraint solver: see §5.1 and §11 — SolveSpace's own solver is GPL-3.0 and is excluded by
+    this policy despite being license-*compatible* with AGPL. PlaneGCS (FreeCAD's derivative) is
+    LGPL and would clear the license bar, but is a C++ library requiring native interop, which
+    §11's .NET-native rule excludes. The first betas use direct geometry (§5.1); the solver is
+    its own workstream (#28).
 
 ## 3. Target use cases (drawn from the actual project list)
 
@@ -102,20 +104,22 @@ list or a dimensioned sheet. Rather than building two apps, the architecture sho
 ## 5. Feature list
 
 ### 5.1 Shared drawing canvas
-- Real-world units internally (store as integer millimeters or fixed-point; display in
-  feet/inches/fractions or metric per user preference — never float inches as the source of
-  truth).
+- Real-world units internally: an exact fixed-point length (integer 1/1024ths of an inch — see
+  [`docs/design/geometry-model.md`](./docs/design/geometry-model.md) §1; integer millimetres were
+  ruled out in #4 because they cannot represent imperial values exactly), displayed as
+  feet/inches/fractions — never float inches as the source of truth, and imperial only (§10).
 - Snapping: grid, endpoint, midpoint, intersection, perpendicular, parallel.
-- Constraint handling for v1: **no general nonlinear constraint solver.** The actual v1 object set
-  (walls, openings, rectangular furniture parts) is overwhelmingly rectilinear, so coincident,
-  parallel, perpendicular, and dimension-driven resize are handled as **direct, explicit geometric
-  relationships** written in-house (a wall stays a rectangle; a dimension change updates the
-  bound edge directly) — no dependency, no interop, fully permissively-clean by construction. This
-  also sidesteps the licensing dead end in §2.1 (SolveSpace is GPL, its LGPL derivative PlaneGCS is
-  C++-only). Revisit a real constraint graph solver only if/when freeform, non-rectilinear shapes
-  are needed — likely a post-3D-phase problem.
+- Constraint handling in the first betas: **no general nonlinear constraint solver.** The
+  first-beta object set (walls, openings, rectangular furniture parts) is overwhelmingly
+  rectilinear, so coincident, flush, dimension-driven resize and the rest of the rectilinear set
+  are handled as **direct, explicit geometric relationships** written in-house (a wall stays a
+  rectangle; a dimension change updates the bound edge directly) — no dependency, no interop,
+  fully permissively-clean by construction. This also sidesteps the licensing dead end in §2.1
+  (SolveSpace is GPL, its LGPL derivative PlaneGCS is C++-only). A .NET-native solver is its own
+  workstream (§11, #28), slotted in behind the same update interface; it is not on the critical
+  path to the first working beta.
 - Live dimension objects bound to geometry, not floating text.
-- Layers, per-project unit setting, undo/redo.
+- Layers, per-project display precision (which fraction of an inch to show), undo/redo.
 - Print/export to true-scale PDF (vector, not a rasterized screenshot) with a title block.
 
 ### 5.2 Furniture / structure module
@@ -128,7 +132,7 @@ list or a dimensioned sheet. Rather than building two apps, the architecture sho
 - **Parts / materials list**: a distinct output from the cut list — aggregated raw stock to buy
   (how many 2x4x8s, how many sheets of ¾" plywood, how many #8×2" screws), derived from the cut
   list plus §5.6. Cut list drives the shop; materials list drives the store run. Both are core
-  v1 outputs, not one-or-the-other.
+  outputs of the first beta, not one-or-the-other.
 - **Material takeoff**: board-footage or sheet count, grouped by material/thickness.
 - Sheet-goods nesting/layout (given panel stock size, lay out parts to minimize waste) — this is
   a solved, boundable problem (bin-packing heuristic), and a natural place to reuse an existing
@@ -177,24 +181,32 @@ constants, and not copied verbatim from any single publisher's compiled table:
   band only (§2 non-goals).
 - Every rules-engine result: shows code edition + table + row used; never a bare number.
 
-### 5.4 Rules engine (the differentiator — detailed in §7)
-- Versioned by code edition (2015/2018/2021 IRC, etc. — user-selectable, not hardcoded to latest).
+### 5.4 Rules engine (the differentiator — detailed in §6.3 and
+[`docs/design/rules-engine-model.md`](./docs/design/rules-engine-model.md))
+- Keyed by **adopted code** — a jurisdiction's adoption of a model-code edition with its
+  amendments ("CT 2026 — IRC 2024", "CT 2022 — IRC 2021"), user-selectable per project, never
+  hardcoded to the latest. The model-code year is an attribute of a pack, not its identity (§11).
 - Data-driven: tables live as structured data files, not embedded in code logic, so adding an
-  edition or a local amendment is a data change, not a code change.
-- Every calculation traceable to a specific table/row for audit.
+  adopted code, a state amendment or a municipal amendment is a data change with its own golden
+  tests, not a code change.
+- Every calculation traceable to a specific adopted code, table and row for audit, with the
+  source document and where in it the row was read.
 - Explicit, first-class "outside prescriptive scope" result type — this is not an error state to
-  suppress, it's a correct and expected answer the UI must surface clearly.
-- **Code edition is a per-project setting, chosen from a dropdown, not an app-wide default.** The
-  dropdown is populated dynamically from whatever edition data packs (§6.3) are installed — one
-  entry at v1 launch, growing for free as editions are added later, no UI change required. This
-  matters beyond future multi-jurisdiction support: many jurisdictions govern a project by the
-  code edition in effect at permit *application* (sometimes issuance), not whichever edition is
-  current when the app happens to be opened, so a project may legitimately need to stay locked to
-  an older edition even after a newer one ships. Set at project creation, stored in the project
-  manifest (§6.4), and changeable later — but changing it forces a full recompute of every
-  rules-engine result in the project and re-flags anything that no longer holds under the new
-  edition's tables. A silent carryover of stale results across an edition change is exactly the
-  class of quiet error this design is meant to prevent.
+  suppress, it's a correct and expected answer the UI must surface clearly, and it cites the
+  limit that excluded the input.
+- **The adopted code is a per-project setting, chosen from a dropdown, not an app-wide default.**
+  The dropdown is populated dynamically from whatever adopted-code data packs (§6.3) are
+  installed — four entries across the first betas (§11), growing for free as packs are added
+  later, no UI change required. This matters beyond future multi-jurisdiction support: many
+  jurisdictions govern a project by the code in effect at permit *application* (sometimes
+  issuance; Connecticut's 2022 code states the application-date rule in its own introduction),
+  not whichever code is current when the app happens to be opened, so a project may legitimately
+  need to stay locked to a superseded adoption even after a newer one is in force. Set at
+  project creation, stored in the project manifest (§6.4), and changeable later — but changing
+  it forces a full recompute of every rules-engine result in the project and shows the user a
+  before/after report of everything that changed, so nothing that no longer holds under the new
+  pack's tables survives unflagged. A silent carryover of stale results across a code change is
+  exactly the class of quiet error this design is meant to prevent.
 
 ### 5.5 Import / export
 - **Native project file**: documented, versioned, zip container (JSON scene graph + thumbnail +
@@ -236,7 +248,10 @@ constants, and not copied verbatim from any single publisher's compiled table:
 
 ```
 /src
-  /Core.Geometry        // platform-agnostic: points, lines, arcs, constraints, units, solver
+  /Core.Geometry        // platform-agnostic: lengths, points, lines, relationships, the update
+                         // interface and its direct updater (docs/design/geometry-model.md)
+  /Core.Solver           // the .NET-native constraint solver (#28): a second implementation of
+                         // Core.Geometry's update interface; Core.Geometry never references it
   /Core.RulesEngine      // code-edition-versioned prescriptive tables + evaluation, no UI deps
   /Core.Project          // project file format: scene graph, serialization, versioning
   /Modules.Furniture     // parts, joinery, cut list, nesting
@@ -256,35 +271,47 @@ keeps the safety-critical code (rules engine) testable in isolation from UI conc
 
 ### 6.3 Rules engine data model (sketch)
 
+Designed in full in [`docs/design/rules-engine-model.md`](./docs/design/rules-engine-model.md)
+(#12, draft awaiting sign-off). The shape, with **synthetic values** — nothing here is a code
+value:
+
 ```json
-{
-  "adoptedCode": "PA-UCC-2021",
-  "baseCode": "IRC-2021",
-  "table": "R602.7(1)",
-  "description": "Header spans for exterior bearing walls",
-  "rows": [
-    {
-      "supports": "roof-ceiling",
-      "groundSnowLoadMax": 30,
-      "buildingWidthFt": 28,
-      "headerSpanMaxFt": 6.0,
-      "header": "(2) 2x8",
-      "jackStuds": 1,
-      "kingStuds": 1
-    }
-  ]
-}
+// packs/us-ct-2026/pack.json — identity is the adoption, not the IRC year
+{ "id": "us-ct-2026", "revision": 1,
+  "adoption": { "name": "2026 Connecticut State Building Code", "shortName": "CT 2026",
+                "inForce": { "from": "2026-09-18", "to": null },
+                "appliesTo": "permit-application-date" },
+  "baseCode": { "publisher": "ICC", "code": "IRC", "year": 2024 },
+  "layers": [ "irc-2024", "amendments" ],
+  "sources": [ { "id": "csbc-2026", "title": "…", "url": "…", "retrievedOn": "…", "sha256": "…" } ],
+  "review": { "status": "unreviewed", "checklist": null } }
+
+// layers/irc-2024/tables/r602.7-1.json — a table as data; lengths are exact strings, never doubles
+{ "kind": "header-sizing", "table": "R602.7(1)",
+  "inputs": [ { "name": "groundSnowLoad", "type": "psf", "band": "upper-bound" },
+              { "name": "headerSpan", "type": "length", "band": "capacity" } ],
+  "rows": [ { "id": "…", "groundSnowLoad": 99, "headerSpan": "99ft 9in",
+              "header": { "plies": 9, "nominal": "2x99" }, "jackStuds": 9, "kingStuds": 9,
+              "location": "page …" } ] }
+
+// packs/us-ct-2026/amendments/r602.7-1.json — the state's Add / Amd / Del, as an overlay
+{ "table": "R602.7(1)", "source": "csbc-2026", "location": "…", "operations": [] }
 ```
 
-- `RulesEngine.Evaluate(WallContext, OpeningSpec) -> RuleResult` where `RuleResult` is a
-  discriminated union: `Sized(header, studs, citation)` or `OutOfScope(reason, citation-of-limit)`.
-  Never a third silent-failure case.
-- Bracing check is a separate evaluator over the wall line's total opening length vs. required
-  braced panel length from §R602.10, run whenever an opening on that wall changes.
-- Tables are data files under version control, one directory per **adopted code** (a state's
-  adoption of a model-code edition, with its amendments), so a new adoption, a state amendment or
-  a municipal amendment is an additive data change with its own golden tests. The IRC year is an
-  attribute of the pack, never its identity — see §11.
+- `IRulesEngine.SizeHeader(HeaderRequest) -> HeaderResult` where `HeaderResult` is a closed
+  union: `Sized(header, studs, citation)` or `OutOfScope(reason, citation-of-limit)`. Never a
+  third silent-failure case; missing site inputs are a project state that prevents the request
+  from being built, not a result.
+- Bracing check is a separate evaluator (`CheckBracing`) over the wall line's provided bracing
+  vs. the required braced length from §R602.10, run whenever an opening on that wall changes;
+  its results are `Passes`, `Fails` (with the shortfall) or `OutOfScope`, each cited.
+- Tables are data files under version control: model-code base layers are ingredients, and one
+  directory per **adopted code** (a state's adoption of a model-code edition, with its
+  amendments) holds the overlay that makes it a selectable pack. A new adoption, a state
+  amendment or a municipal amendment is an additive data change with its own golden tests and a
+  signed-off row-by-row review against the primary source. The IRC year is an attribute of the
+  pack, never its identity — see §11.
+- Thresholds are `Length` (1/1024″, exact) and integers; no double is ever read from a pack.
 
 ### 6.4 Project file format (sketch)
 
@@ -302,15 +329,78 @@ project.hcad/
 Document the schema publicly regardless of the app's own license — an open, documented format is
 what keeps a project file readable independent of whether the project is maintained in ten years.
 
+**Format versioning during the beta: a stamp, no migration.** `manifest.json` carries an integer
+`formatVersion`, bumped on every change to what the file means. The loader accepts exactly the
+version the app writes; any other version — older or newer — fails before the scene is parsed,
+with a message naming the file's version and the app's. There is no migration code and no
+compatibility shim, per the beta policy (see "Versioning and releases" below); things the format
+no longer wants are simply removed. What the scene stores is set out in
+[`docs/design/geometry-model.md`](./docs/design/geometry-model.md) §6.
+
 ### 6.5 Testing strategy
 
-- **Golden-value tests are non-negotiable for the rules engine.** Every table row implemented
-  should have a unit test asserting the exact published value from the IRC table it encodes.
-  This is the one area of the codebase where "looks reasonable" is not an acceptable bar.
-- Geometry/constraint solver: property-based tests (a dimension change should never silently
-  produce a geometrically inconsistent state) plus regression tests against saved project files.
-- Interop (DXF/SketchUp): round-trip tests against QCAD/FreeCAD/SketchUp's own outputs where
-  practical, since fidelity here is empirical, not purely spec-derived.
+Five layers, each answering a different question. Two of them are pull-request gates; one of them
+is deliberately *not* a gate; the last does not exist yet.
+
+**1. Unit tests — does this code do what it says?**
+
+Ordinary tests over `Core.*` and `Modules.*`, which have no UI dependency and are therefore
+testable without an app around them. Geometry in particular gets **property-based** tests: a
+dimension change should never silently produce a geometrically inconsistent state, whatever the
+sketch. The concrete properties and golden cases are in
+[`docs/design/geometry-model.md`](./docs/design/geometry-model.md) §7.
+
+**2. Golden tests — does this match the source it claims to come from?**
+
+For anything whose correct answer comes from *outside* napkin. **Non-negotiable for the rules
+engine**: every encoded table row has a test asserting it matches the state's published adopted
+text, citing the page or section it was read from. This is the one area of the codebase where
+"looks reasonable" is not an acceptable bar, and where the expected value must never be derived
+from napkin's own output. The same discipline covers the materials library (authored from primary
+standards, §5.6) and the sample fixtures, whose expected cut lists and shopping lists are computed
+by hand before the code that produces them exists.
+
+Interop (DXF, PDF, SketchUp) is golden in a looser, empirical sense: round-trip against
+QCAD, FreeCAD or SketchUp's own output, because fidelity there is established by experiment rather
+than derived from a spec.
+
+**3. The feature scorecard — how much of the design actually works?**
+
+[`features/*.json`](./features/README.md) catalogues the features napkin intends to have, each
+with one concrete acceptance sentence, the milestone it belongs to and the issue that delivers it.
+Tests claim a feature with a trait; the scorecard reads the test results and reports what is
+passing, planned, partial or not started, by area and by milestone.
+
+**The scorecard measures progress and never gates anything** — not a build, not a pull request,
+not a tag. Its job is to make "how far along is napkin?" answerable from the test suite instead of
+from a status report, and to show what to build next. A metric that can block a merge stops being
+an honest measurement. Tracked in #34; see
+[`docs/testing/scorecard.md`](./docs/testing/scorecard.md).
+
+**4. The coverage ratchet — a gate, and it only goes up.**
+
+A committed baseline records each assembly's line and branch coverage. CI fails a pull request
+whose coverage falls below its floor, and the baseline is raised as coverage improves — never
+silently lowered. It gates pull requests and nothing else: it does not gate a tag or a release,
+because the beta policy says nothing is scheduled and a release is a snapshot of whatever is
+there. Tracked in #32; see [`docs/testing/ratchet.md`](./docs/testing/ratchet.md).
+
+**5. The GUI workflow suite — a gate, and it only goes up.**
+
+A separate suite drives the real Avalonia UI headlessly with simulated pointer, key, text and
+wheel events through the visual tree, so hit-testing, focus, shortcuts and routed events are
+actually exercised — no shortcut that pokes a view model directly. A scenario is a **workflow**,
+not a click: it uses several input actions and both keyboard and pointer, and asserts an
+observable outcome after a state-changing sequence. Scenarios grow with each milestone, and their
+count and their ids may not fall. Tracked in #33; see
+[`docs/testing/gui-automation.md`](./docs/testing/gui-automation.md).
+
+**Later: a small real-OS smoke layer.** Headless cannot cover what only a real desktop has —
+window-manager focus, input methods, native menus, drag-and-drop from Finder or Explorer, and
+whether an unsigned build gets past Gatekeeper or SmartScreen at all. That is a handful of tests
+on a real machine, added once there is a downloadable build worth smoke-testing. It is deliberately
+kept small: it is the slowest and most fragile layer, and everything that can be proven one layer
+down should be.
 
 ### 6.6 Packaging and distribution
 
@@ -343,55 +433,86 @@ what keeps a project file readable independent of whether the project is maintai
 - **License**: AGPL-3.0 for the project, permissive/weak-copyleft-only for dependencies — decided,
   see §2.1.
 
-## 8. Phased roadmap
+## 8. Roadmap: five milestones
 
-1. **Phase 1 — Furniture module + cut lists.** No rules engine needed; fastest path to a genuinely
-   useful tool (coffee table, shop projects). Validates the geometry/constraint kernel and the
-   project file format before the harder building-module work starts.
-2. **Phase 2 — Building module core: walls, openings, header/bracing rules engine.** The actual
-   differentiator. Build and golden-test the 2026 CT code first, then add the three
-   2021-IRC-based adopted codes (§11) before v1 ships.
-3. **Phase 3 — Deck module** (span/footing tables, ledger, guard rails) reusing Phase 1's cut-list
-   machinery, plus site plan (lot lines, setbacks, survey underlay).
-4. **Phase 4 — Interop**: DXF export, SketchUp read-only import.
-5. **Phase 5 — Polish**: true-scale PDF sheet output with title blocks, packaging/installers,
-   code editions beyond the v1 four.
+Set by Marc on 2026-09-21, replacing the earlier phase list. **The milestones are an order of
+work**, each one defined by what a person can see and play with rather than by which layer of the
+architecture it fills. A milestone earns a tagged pre-release when it is done, and its version
+number is assigned at that moment rather than planned in advance — which is why they have names.
+Nothing is scheduled toward a date (see "Versioning and releases" below).
+
+1. **M1 Look.** A read-only viewer: download an unsigned build, open a hand-crafted sample design
+   from a file, pan, zoom, zoom to fit, and read dimension labels in feet, inches and fractions.
+   Nothing editable, nothing saved. It proves the foundation — exact lengths (§5.1), the geometry
+   model, a strict scene reader (§6.4), hand-computed fixtures, and a pipeline that turns a tag
+   into something downloadable.
+2. **M2 Draw.** The viewer becomes a drawing tool: draw by dragging, move and resize, resize by
+   *typing* a dimension, snap parts together and see the relationship the snap created, undo and
+   redo, save a design and reopen it. Invalid input is explained; two dimensions that cannot both
+   hold produce a named conflict rather than a wrong number.
+3. **M3 Cut.** Furniture and its two distinct outputs (§5.2): build the coffee table, assign
+   materials from the reference library (§5.6), and get both a cut list and a shopping list, on
+   screen and as CSV, checked against expectations computed by hand.
+4. **M4 Check.** The differentiator, one answer at a time: a wall, an opening, a header size and
+   stud count with the code edition, table and row behind it (§5.3, §5.4), and a hard out-of-scope
+   result the moment the inputs leave what the table covers. One adopted code pack — **Connecticut
+   2026** — plus the per-project picker (§5.4).
+5. **M5 Brace and compare.** The wall-bracing check (§5.3 — the check most DIY openings miss),
+   and a **second** pack, Connecticut 2022. The second pack is the point: locking a project to the
+   code in force at permit application, and recomputing every result when that changes, is only
+   demonstrable once there are two codes to move between.
+
+**Backlog**, wanted but not scheduled: the deck module in its pieces (ledger, joists and beams,
+footings, guards and stairs) reusing M3's cut-list machinery; the site plan; DXF and PDF export;
+the Massachusetts and Pennsylvania packs and municipal amendment overlays; sheet-goods nesting;
+SketchUp import; installers.
+
+Alongside all five, off the critical path: the **constraint solver workstream** (§11, #28), which
+starts once Core.Geometry (#5) has landed and **gates no milestone**. If it proves hard, it waits;
+§11's seams mean deferring it costs nothing. The test infrastructure of §6.5 — the coverage
+ratchet, the GUI workflow suite and the feature scorecard — likewise starts in M1 and grows with
+every milestone rather than belonging to one.
+
+The issue-by-issue breakdown, and which model leads each step, is in
+[`PLAN.md`](./PLAN.md).
 
 ## 9. Decided
 
 - **License**: AGPL-3.0 for the project; dependencies permissive or weak-copyleft only (§2.1).
-- **v1 scope is 2D only**, deep and solid, with 3D as an explicit later phase (§2, §8).
-- **v1 constraint handling is direct/explicit geometry**, no general nonlinear solver dependency
-  (§5.1) — sidesteps the SolveSpace(GPL)/PlaneGCS(LGPL, C++) licensing and interop trade-off
-  entirely for now.
-- **Cut list and parts/materials list are both core v1 outputs** (§5.2), backed by a
-  materials & hardware reference library (§5.6).
+- **Beta scope is 2D only**, deep and solid, with 3D as an explicit later phase (§2, §8).
+- **First-beta constraint handling is direct/explicit geometry**, no general nonlinear solver
+  dependency (§5.1) — sidesteps the SolveSpace(GPL)/PlaneGCS(LGPL, C++) licensing and interop
+  trade-off entirely for now. The solver is a separate workstream (§11).
+- **Cut list and parts/materials list are both core outputs of the first beta** (§5.2), backed
+  by a materials & hardware reference library (§5.6).
 
 ## 10. Decided (round 2)
 
-- **No metric support in v1.** Imperial only, matching the source tables directly — no
+- **No metric support in the betas.** Imperial only, matching the source tables directly — no
   conversion layer to get wrong. Revisit only if a future edition/jurisdiction genuinely needs it,
   and if so, as a display-only layer over the imperial source of truth (never convert a table's
   own thresholds into metric and evaluate against the converted value).
-- **v1 launch code edition: IRC 2024, as adopted in the 2026 Connecticut State Building Code.**
+- **First code edition: IRC 2024, as adopted in the 2026 Connecticut State Building Code.**
+  (Superseded in part by §11, which adds three more adopted codes to the first beta; the
+  reasoning below still stands for why CT 2026 is encoded first.)
   The 2026 CSBC became effective **September 18, 2026** — current law, not a pending draft, and
   therefore what Bloomfield (and every CT town — see below) enforces today. Also worth noting:
   on June 9, 2026 Connecticut extended its code adoption cycle from 3 years to 6 and paused
   further model-code adoption between the 2024 and 2030 cycles, so this edition should stay
   Connecticut's governing code for years, not get superseded on the usual 3-year clock. Adding
   IRC 2021 or another edition later (for a different state, or an older jurisdiction) is a
-  data-file addition plus its own golden tests per §6.3 — no reason to hedge the v1 target because
-  of that.
+  data-file addition plus its own golden tests per §6.3 — no reason to hedge the first target
+  because of that.
 - Connecticut runs a single uniform state building code with **no local amendments permitted**,
   so Bloomfield (and every CT town) simply enforces the current CSBC — no jurisdiction-amendment
-  layer is needed for a CT-only v1. Other states do allow municipal amendments on top of a state
+  layer is needed for CT alone. Other states do allow municipal amendments on top of a state
   base code, so that mechanism stays a real requirement if the tool ever expands beyond CT.
 
 ## 11. Decided (round 3)
 
 Decided by Marc on 2026-09-21, after the project moved from the cloud session to a local one.
 
-### v1 ships four adopted codes, not one
+### Four adopted codes, not one
 
 | Adopted code | Base model code | In force | Primary source |
 |---|---|---|---|
@@ -405,6 +526,11 @@ application, so a CT project applied for before Sept 18, 2026 is governed by the
 transition rule comes from a secondary source (a law-firm summary); verify it against the
 regulation text in 34 Pa. Code before encoding it.
 
+All four are wanted, and they arrive one at a time (§8): **CT 2026 in M4**, **CT 2022 in M5**, and
+Massachusetts and Pennsylvania in the backlog after that. Four packs remains the commitment; a
+single pack in M4 is the order of work, not a narrowing of scope. The second pack is what makes
+code locking demonstrable rather than merely designed, which is why it arrives as early as M5.
+
 ### Consequences for the design
 
 - **The rules engine is keyed by adopted code, not IRC edition.** Three of the four packs share
@@ -413,13 +539,13 @@ regulation text in 34 Pa. Code before encoding it.
   the tables themselves; which rows survive is only knowable from each state's adopted text. So
   golden tests are written against each state's *published adopted code*, never against the base
   IRC. §6.3 is updated accordingly.
-- **The amendment layer is now in scope for v1.** §10 noted that CT permits no municipal
+- **The amendment layer is now beta scope.** §10 noted that CT permits no municipal
   amendments and that the layer would become real "if the tool ever expands beyond CT." It has:
   Pennsylvania municipalities may adopt stricter amendments with Department of Labor and Industry
   approval under Act 45 §503 (see DLI's [register of municipal code-change
   ordinances](https://www.pa.gov/agencies/dli/programs-services/labor-management-relations/bureau-of-occupational-and-industrial-safety/uniform-construction-code-home/ucc-municipal-code-change-ordinances)).
-  Its shape follows §6.3: an additive data overlay on the state pack. How far v1 goes in encoding
-  specific municipalities is not yet decided.
+  Its shape follows §6.3: an additive data overlay on the state pack. How far the first betas go
+  in encoding specific municipalities is not yet decided (#22).
 - **The per-project picker lists adopted codes by jurisdiction** ("Pennsylvania UCC — 2021
   ICC, in force Jan 1, 2026"), not bare IRC years.
 
@@ -428,27 +554,73 @@ regulation text in 34 Pa. Code before encoding it.
 - **No code signing and no notarization**, on either platform. See §6.6 for the first-run
   documentation this requires.
 
-### Constraint solver: wanted, .NET-native, a separate workstream
+### Constraint solver: wanted, .NET-native, a separate workstream off the critical path
 
 - **napkin will get a geometric constraint solver**, because furniture with angled or curved
-  parts needs relationships that direct geometry can't maintain. v1 still ships on direct,
-  explicit geometry (§10); the solver is its own line of work, not a v1 blocker.
+  parts needs relationships that direct geometry can't maintain. The first working beta ships on
+  direct, explicit geometry (§5.1) regardless; the solver is its own line of work and must not
+  delay that beta. If it proves hard, it waits — nothing else depends on it.
 - **It must be .NET-native** — managed C#, no native interop. That rules out both mature open
   solvers: SolveSpace (C, GPL, which also fails §2.1) and PlaneGCS (C++, LGPL). The workstream
-  starts by evaluating existing pure-.NET solvers against §2.1's license policy, and writes one
-  in-house if none qualifies.
-- **Build `Core.Geometry` so the solver slots in later without a rewrite:**
-  - Store relationships explicitly as data (a dimension bound to the edge it measures, a part
-    anchored to another) — never implied by where the UI happens to place things.
-  - Route every geometry update through one interface, with v1's direct updater as the first
-    implementation. A solver then becomes a second implementation of the same contract.
-  - Model the states a solver produces — under-constrained, over-constrained/conflicting, solved
-    — as explicit result types now, even though the direct updater only ever returns "solved".
-    The UI then already has somewhere to show "this shape has no solution" when the solver
-    arrives, the same principle as §5.4's first-class out-of-scope result.
+  (#28) starts by evaluating existing pure-.NET solvers against §2.1's license policy, and writes
+  one in-house if none qualifies. It is run as a **time-boxed spike** in its own assembly
+  (`Core.Solver`, §6.2), started after Core.Geometry (#5) lands, with explicit continue/defer
+  criteria recorded in #28.
+- **`Core.Geometry` is built so the solver slots in later without a rewrite** — designed in
+  [`docs/design/geometry-model.md`](./docs/design/geometry-model.md) and delivered by #5:
+  - Relationships are stored explicitly as data (a dimension bound to the edge it measures, a
+    part anchored to another) — never implied by where the UI happens to place things.
+  - Every geometry update goes through one interface, `IGeometryUpdater`, with the direct
+    updater as the first implementation. A solver is a second implementation of the same
+    contract; no caller changes.
+  - The states a solver produces are explicit result types from day one: `Solved`,
+    `UnderConstrained` (a success — a part that is free to move is the normal state of a
+    drag-and-drop drawing, not an error), and `OverConstrained` carrying a conflict report that
+    names the relationships that cannot all hold. The design adds a fourth, `Rejected`, for
+    requests that are not geometric states at all (an unknown id, a zero-width part, a
+    relationship kind the current updater does not implement), so that the conflict report never
+    has to cover for a malformed request. The direct updater does no degree-of-freedom analysis
+    and therefore only ever returns `Solved`, `OverConstrained` or `Rejected`. The UI then already
+    has somewhere to show "this shape has no solution" when the solver arrives — the same
+    principle as §5.4's first-class out-of-scope result.
+  - Lengths stay exact fixed-point; the solver works in `double` on a copy and its result is
+    rounded once, repaired through the direct updater's exact propagation, and verified against
+    every relationship before it is accepted — never silently (design doc §5).
 
 ### Where the work happens
 
 - All development now happens in the local repository and local Claude sessions. The cloud
   session that designed the project is retired; its final state is preserved unchanged on the
   `claude/cloud-handoff` branch.
+
+## 12. Versioning and releases (beta policy)
+
+Set by Marc on 2026-09-21.
+
+- **napkin is a pre-1.0 beta indefinitely.** Nothing is working toward a 1.0. Every release is a
+  pre-release beta. The first "working" version could be 0.2, 0.5, 0.20 or 0.75 — a milestone
+  (§8) is tagged when it is done and its number is assigned at that moment, not guessed in
+  advance. That is why the milestones have names rather than numbers.
+- **Breaking changes are always allowed.** There is no backwards-compatibility concern, no
+  deprecation period, no migration shims. Things the project no longer wants are removed. This
+  includes the project file format (§6.4): a format-version stamp gives an old file a clear
+  "unsupported version" error, and no migration code is ever written.
+- **Nothing is scheduled toward a release date.** Do not rush.
+- **This does not shrink product scope.** Four adopted codes (§11) and locking a project to its
+  permit-date code edition (§5.4) are features, not legacy. "Beta scope" in this document means
+  what the betas are meant to do, not what is provisional.
+- **Version numbers:** the minor number increments with each merged pull request; a release is tagged
+  when features improve significantly.
+
+**Mechanism — decided by Marc on 2026-09-21: the minor number is bumped per merged pull request**
+(tracked as #30):
+
+- A single `<VersionPrefix>0.N.0</VersionPrefix>` in a `Directory.Build.props` at the repository
+  root, with `<VersionSuffix>beta</VersionSuffix>`, so every assembly and the app report the same
+  `0.N.0-beta`. The file exists; the first pull request of the beta line set it to `0.1.0-beta`.
+- The minor number `N` is bumped in the pull request that lands the work, by its author, as part
+  of that PR. Patch stays 0.
+- CI passes the commit SHA into the informational version, so a running beta can say exactly
+  which commit it is.
+- When a milestone is worth naming, a `v0.N.0-beta` tag and a GitHub pre-release with the
+  unsigned installers (#27). No "latest" release is ever marked stable.

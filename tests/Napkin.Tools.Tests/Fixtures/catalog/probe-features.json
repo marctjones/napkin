@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "features": [
+    {
+      "id": "GEO-001",
+      "area": "geometry",
+      "title": "Lengths are exact",
+      "acceptance": "A length round-trips through the file format without loss.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-010",
+      "area": "geometry",
+      "title": "The whole fixture class claims this",
+      "acceptance": "Every test in the fixture class carries the id.",
+      "milestone": "M1",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-004",
+      "area": "geometry",
+      "title": "Points are exact",
+      "acceptance": "A point round-trips through the file format without loss.",
+      "milestone": "M2",
+      "issue": 5,
+      "kind": "unit"
+    },
+    {
+      "id": "DECK-001",
+      "area": "decks",
+      "title": "Joist spans come from the adopted code",
+      "acceptance": "A span matches the published table row it cites.",
+      "milestone": "M3",
+      "issue": 20,
+      "kind": "golden"
+    }
+  ]
+}
