@@ -74,7 +74,10 @@ napkin-0.N.0-beta-<rid>/
 ```
 
 The build logs print the exact layout of each folder. Anything the publish leaves beside the
-executable, other than `*.pdb` symbols, is shipped too; the listing is where to notice that.
+executable, other than `*.pdb` symbols, is shipped too; the listing is where to notice that. In the
+first dry run (2026-09-21) the publish left nothing else: the executable is one file of about
+100 MB, because `IncludeNativeLibrariesForSelfExtract` folds the native libraries (Skia, HarfBuzz,
+Avalonia's own) into it.
 
 ### The signature check
 
@@ -85,6 +88,12 @@ executable as it comes out of the finished zip (`codesign -dvv`), that
 
 - the arm64 binary is ad-hoc signed (`Signature=adhoc`) and the signature verifies;
 - no macOS binary has an `Authority=` line (a certificate chain) or a notarization ticket.
+
+Observed in the first dry run: both `osx-arm64` and `osx-x64` come out of the SDK's single-file
+publish with `Signature=adhoc`, `flags=0x2(adhoc)`, `TeamIdentifier=not set`, and `codesign --verify
+--strict` reports the arm64 file valid. Nothing in the pipeline signs; the SDK does. If a future SDK
+stops signing the bundle, the arm64 check fails, and the fix is an ad-hoc `codesign --sign -` step
+(which the workflow test permits) rather than any other identity.
 
 ## Rehearsing without publishing
 
@@ -133,6 +142,12 @@ tested and cannot quietly stop checking.
   builds have to be launched by a person on a real Windows machine and a real Mac (Apple silicon
   and, ideally, Intel) that has never run napkin, and opened against a sample design. That
   is issue #27's acceptance (PKG-001) and part of #38's.
+- **What a first launch does with the bundled native libraries.** Per the
+  [.NET docs](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview), a
+  single-file app that embeds native libraries extracts them at start-up, to a directory under
+  `$HOME/.net` on macOS and `%TEMP%/.net` on Windows. Whether that extraction, or the extracted
+  libraries' signatures, changes what Gatekeeper or antivirus software says has not been seen on a
+  real machine.
 - **What Gatekeeper and SmartScreen show.** `first-run.md` marks every piece of wording that was
   not taken from Apple's or Microsoft's own documentation as unverified. When someone does the
   above, they should correct the page to match what they saw, and remove the markers.
