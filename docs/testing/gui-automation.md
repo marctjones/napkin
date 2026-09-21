@@ -180,18 +180,33 @@ never shrink.
 `acceptance` is one testable sentence, and the test that claims it carries the matching
 `[Trait("Feature", …)]` through its `[GuiWorkflow]` attribute.
 
-## What the shell workflows can honestly assert today
+## What the shell workflows assert today
 
-napkin's application is still the Avalonia scaffold: one window whose content is a line of text,
-with no menus, no canvas and no focusable controls. The four `GUI-SHELL-*` workflows drive real
-input into that real window and assert what is really observable — that it opens and renders at its
-client size, that resizing re-lays-out its content, that every kind of input reaches it in the
-right order, and that nothing in it takes focus.
+napkin's application is the M1 viewer (#36): a menu, a canvas drawing a design in plan view, and a
+status line showing the zoom and where the pointer is. The four `GUI-SHELL-*` workflows drive real
+input into that real window and assert what is really observable — that it opens with a drawing in
+it and renders at its client size, that resizing re-lays-out the canvas and tells the view
+transform its new viewport, that keyboard traversal lands on a focusable control and typing changes
+nothing in a read-only viewer, and that a pointer session arrives in order and moves the view it
+was aimed at.
 
-That last one, `GUI-SHELL-03`, is deliberately a guard: it asserts that a full Tab traversal focuses
-nothing, so it **fails the moment the shell gains its first focusable control**. That is not a
-nuisance, it is the signal to replace it with a real traversal workflow. A suite that has to be
-rewritten as the product grows is doing its job.
+Three of the four had to be rewritten when the viewer landed, because they asserted the scaffold:
+its single `TextBlock` filling the window, and its literal text. `GUI-SHELL-03` was the most
+deliberate of them — a guard that asserted a full Tab traversal focused *nothing*, written to fail
+the moment the shell gained its first focusable control. It failed exactly then, and has been
+replaced by the real traversal it was waiting for. **That is the pattern to repeat**: when a
+workflow's acceptance sentence stops being true of the product, rewrite the sentence in
+`features/gui-shell.json` and the scenario together, in the change that made it untrue. A suite
+that has to be rewritten as the product grows is doing its job.
+
+The viewer's own workflows, `GUI-VIEW-01` to `GUI-VIEW-04`, live in
+`tests/Napkin.App.GuiTests/Workflows/ViewerWorkflows.cs` and are catalogued in
+`features/catalog.json`. Two of them deviate from the catalogue's wording while the scene reader
+(#6) and the sample files (#37) are still being written: they open a sample through the Samples
+menu rather than through a file dialog, and state their expected dimension strings inline rather
+than reading a fixture's expectations file. `GUI-VIEW-05`, a file the application cannot read
+failing visibly, waits for the reader. Both deviations are recorded in that file's own
+documentation comment.
 
 ## Planned workflows
 

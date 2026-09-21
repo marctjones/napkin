@@ -2,29 +2,33 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using Napkin.App;
 using Napkin.App.GuiTests.Harness;
+using Napkin.App.Viewing;
+using Napkin.Core.Geometry;
 using Xunit;
+using Design = Napkin.App.Designs.Design;
 
 namespace Napkin.App.GuiTests.Workflows;
 
 /// <summary>
-/// Workflows against napkin's application shell as it exists today.
+/// Workflows against napkin's application shell: the menu, the drawing and the status line.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The shell is still the Avalonia scaffold: one window whose content is a line of text, with no
-/// menus, no canvas and no focusable controls. These workflows say so honestly — they drive real
-/// keyboard and mouse input into the real window and assert what can truthfully be observed: that
-/// the window opens, that its content lays out and re-lays-out when the window is resized, that
-/// every kind of input reaches the application in order, and that nothing in the shell takes focus
-/// yet.
+/// These four were written against the Avalonia scaffold — one window whose content was a line of
+/// text — and are rewritten here against the shell the M1 viewer ships (#36). Three of them had to
+/// be: they asserted the scaffold's single <c>TextBlock</c> filling the window, and
+/// <see cref="Keyboard_traversal_reaches_the_shells_controls"/> was a deliberate guard that
+/// asserted a full Tab traversal focused <em>nothing</em>, so that it would fail the moment the
+/// shell gained its first focusable control. It has. The guard has done its job and is replaced by
+/// the real traversal it was waiting for.
 /// </para>
 /// <para>
-/// Several of them are deliberately written as guards that will fail when the application grows.
-/// <see cref="Keyboard_traversal_finds_no_focusable_controls_yet"/> fails the moment a focusable
-/// control appears in the shell, which is exactly when a real traversal workflow should replace
-/// it. The suite's job is to grow with the product, and a test that has to be rewritten when the
-/// product changes is doing its job.
+/// What they assert now is what is really observable in the new shell: that it opens with a
+/// drawing in it, that resizing re-lays-out the canvas and the view follows, that keyboard
+/// traversal lands somewhere sensible and typing changes nothing in a read-only viewer, and that a
+/// pointer session arrives in order and moves the view it was aimed at.
 /// </para>
 /// </remarks>
 public class ShellWorkflows
@@ -32,12 +36,12 @@ public class ShellWorkflows
     [GuiWorkflow("GUI-SHELL-01")]
     public void Shell_opens_shows_its_content_and_renders_after_input() => GuiWorkflow.Run(app =>
     {
-        var window = (Window)app.Target;
+        MainWindow window = (MainWindow)app.Target;
 
-        app.Expect("the shell window is open with napkin's title", () =>
+        app.Expect("the shell window is open, titled for what it has open", () =>
         {
             Assert.True(window.IsVisible);
-            Assert.Equal("Napkin.App", window.Title);
+            Assert.StartsWith("napkin — ", window.Title!, StringComparison.Ordinal);
         });
 
         app.MoveTo(new Point(450, 300));
@@ -48,7 +52,7 @@ public class ShellWorkflows
 
         app.Expect("every kind of input reached the application", () =>
         {
-            var kinds = app.Probe.Kinds;
+            IReadOnlyList<string> kinds = app.Probe.Kinds;
             Assert.Contains("move", kinds);
             Assert.Contains("press", kinds);
             Assert.Contains("release", kinds);
@@ -57,11 +61,13 @@ public class ShellWorkflows
             Assert.Contains("wheel", kinds);
         });
 
-        app.Expect("the shell still shows its content after the sequence", () =>
+        app.Expect("the shell still has its menu, its drawing and its status line", () =>
         {
-            var text = window.GetVisualDescendants().OfType<TextBlock>().Single();
-            Assert.Equal(window.Content, text.Text);
-            Assert.False(string.IsNullOrWhiteSpace(text.Text));
+            Assert.Single(window.GetVisualDescendants().OfType<Menu>());
+            Assert.Same(window.Canvas, window.GetVisualDescendants().OfType<CanvasView>().Single());
+            Assert.NotNull(window.CurrentDesign);
+            Assert.False(string.IsNullOrWhiteSpace(window.DesignReadout.Text));
+            Assert.False(string.IsNullOrWhiteSpace(window.ZoomReadout.Text));
         });
 
         app.Expect("a frame was rendered at the window's size", () =>
@@ -79,55 +85,67 @@ public class ShellWorkflows
     public void Resizing_the_shell_re_lays_out_and_re_renders_its_content() =>
         GuiWorkflow.Run(app =>
         {
-            var window = (Window)app.Target;
-            var text = window.GetVisualDescendants().OfType<TextBlock>().Single();
+            MainWindow window = (MainWindow)app.Target;
+            CanvasView canvas = window.Canvas;
 
-            app.Click(new Point(200, 150));
+            app.Click(new Point(450, 300));
             app.Type("before the resize");
 
             app.ResizeWindow(640, 400);
-            app.Expect("content fills the smaller window and the frame follows it",
-                () => AssertLaidOutAt(app, window, text, 640, 400));
+            app.Expect("the canvas fills the smaller window and the frame follows it",
+                () => AssertLaidOutAt(app, window, 640, 400));
             app.SaveFrame("640x400");
 
             app.MoveTo(new Point(320, 200));
             app.Press(Key.Tab);
 
+            (double centreX, double centreY) = (canvas.View.CenterXInches, canvas.View.CenterYInches);
             app.ResizeWindow(1024, 720);
-            app.Expect("content fills the larger window and the frame follows it",
-                () => AssertLaidOutAt(app, window, text, 1024, 720));
-            app.SaveFrame("1024x720");
+            app.Expect("the canvas fills the larger window and the frame follows it",
+                () => AssertLaidOutAt(app, window, 1024, 720));
+            app.Expect("the model point at the centre of the view stayed at the centre", () =>
+            {
+                Assert.Equal(centreX, canvas.View.CenterXInches, 6);
+                Assert.Equal(centreY, canvas.View.CenterYInches, 6);
+            });
 
             app.Wheel(new Point(500, 360), new Vector(0, 1));
-            app.Expect("the content survived both resizes and the input in between", () =>
+            app.Expect("the drawing survived both resizes and the input in between", () =>
             {
-                Assert.Same(text, window.GetVisualDescendants().OfType<TextBlock>().Single());
-                Assert.Equal(window.Content, text.Text);
+                Assert.Same(canvas, window.GetVisualDescendants().OfType<CanvasView>().Single());
+                Assert.NotNull(window.CurrentDesign);
+                Assert.False(canvas.Extents.IsEmpty);
             });
         });
 
     [GuiWorkflow("GUI-SHELL-03")]
-    public void Keyboard_traversal_finds_no_focusable_controls_yet() => GuiWorkflow.Run(app =>
+    public void Keyboard_traversal_reaches_the_shells_controls() => GuiWorkflow.Run(app =>
     {
-        var window = (Window)app.Target;
+        MainWindow window = (MainWindow)app.Target;
 
         app.Click(new Point(450, 300));
-        app.Expect("clicking the shell focuses nothing, because there is nothing to focus",
-            () => Assert.Null(window.FocusManager?.GetFocusedElement()));
+        app.Expect("clicking the drawing gives it the keyboard", () =>
+            Assert.IsType<CanvasView>(window.FocusManager?.GetFocusedElement()));
+
+        Design opened = window.CurrentDesign!;
+        ViewTransform view = window.Canvas.View;
 
         app.Tab(3);
         app.ShiftTab();
         app.Chord(Key.Z);
         app.Type("24");
 
-        app.Expect("focus is still nowhere after a full traversal", () =>
-            // This is a scaffold guard. When the shell gains its first focusable control this
-            // assertion fails, and the workflow above it should be replaced by a real traversal.
-            Assert.Null(window.FocusManager?.GetFocusedElement()));
+        app.Expect("focus is on a control of the shell, not nowhere and not outside it", () =>
+        {
+            object? focused = window.FocusManager?.GetFocusedElement();
+            Assert.NotNull(focused);
+            Assert.Contains(window.GetVisualDescendants(), visual => ReferenceEquals(visual, focused));
+            Assert.True(((InputElement)focused!).Focusable);
+        });
 
         app.Expect("every key still reached the window in the order it was pressed", () =>
         {
-            var keys = app.Probe.Events
+            List<(Key, KeyModifiers)> keys = app.Probe.Events
                 .Where(e => e.Kind == "keydown")
                 .Select(e => (e.Key, e.Modifiers))
                 .ToList();
@@ -141,10 +159,12 @@ public class ShellWorkflows
                 keys);
         });
 
-        app.Expect("typing with nothing focused changes nothing in the shell", () =>
+        app.Expect("typing and an unbound chord change nothing in a read-only viewer", () =>
         {
             Assert.Contains("text", app.Probe.Kinds);
-            Assert.Equal("Welcome to Avalonia!", window.Content);
+            Assert.Same(opened, window.CurrentDesign);
+            Assert.Same(opened.Sketch, window.CurrentDesign!.Sketch);
+            Assert.Equal(view, window.Canvas.View);
         });
 
         app.SaveFrame("after-traversal");
@@ -153,17 +173,18 @@ public class ShellWorkflows
     [GuiWorkflow("GUI-SHELL-04")]
     public void A_pointer_session_is_delivered_to_the_shell_in_order() => GuiWorkflow.Run(app =>
     {
-        var window = (Window)app.Target;
+        MainWindow window = (MainWindow)app.Target;
 
         app.MoveTo(new Point(100, 100));
         app.Expect("a hover arrives with no button held", () =>
         {
-            var move = Assert.Single(app.Probe.Events);
+            ObservedInput move = Assert.Single(app.Probe.Events);
             Assert.Equal("move", move.Kind);
             Assert.False(move.LeftButtonPressed);
         });
 
         app.Probe.Clear();
+        ViewTransform beforeDrag = window.Canvas.View;
         app.Drag(
             new Point(120, 140),
             new Point(240, 200),
@@ -176,7 +197,7 @@ public class ShellWorkflows
                 Assert.Equal(["move", "press", "move", "move", "move", "release"],
                     app.Probe.Kinds);
 
-                var moves = app.Probe.Events.Where(e => e.Kind == "move").ToList();
+                List<ObservedInput> moves = app.Probe.Events.Where(e => e.Kind == "move").ToList();
                 Assert.Equal(
                     [new Point(120, 140), new Point(240, 200), new Point(360, 260),
                      new Point(480, 320)],
@@ -184,11 +205,19 @@ public class ShellWorkflows
                 Assert.All(moves.Skip(1), m => Assert.True(m.LeftButtonPressed));
             });
 
+        app.Expect("the drag the window received is the drag that moved the view", () =>
+        {
+            Point wasAt = beforeDrag.ToScreen(Point2.Origin);
+            Point isAt = window.Canvas.View.ToScreen(Point2.Origin);
+            Assert.Equal(wasAt.X + 360, isAt.X, 6);
+            Assert.Equal(wasAt.Y + 180, isAt.Y, 6);
+        });
+
         app.Probe.Clear();
         app.DoubleClick(new Point(300, 300));
         app.Expect("the second press is reported as a double click", () =>
         {
-            var presses = app.Probe.Events.Where(e => e.Kind == "press").ToList();
+            List<ObservedInput> presses = app.Probe.Events.Where(e => e.Kind == "press").ToList();
             Assert.Equal(2, presses.Count);
             Assert.Equal(1, presses[0].ClickCount);
             Assert.Equal(2, presses[1].ClickCount);
@@ -200,7 +229,7 @@ public class ShellWorkflows
         app.Expect("the wheel delta arrived unchanged, and the keyboard still works after it",
             () =>
             {
-                var wheel = Assert.Single(app.Probe.Events, e => e.Kind == "wheel");
+                ObservedInput wheel = Assert.Single(app.Probe.Events, e => e.Kind == "wheel");
                 Assert.Equal(new Vector(0, 4), wheel.WheelDelta);
                 Assert.Contains(app.Probe.Events, e => e.Kind == "keydown" && e.Key == Key.Escape);
             });
@@ -212,16 +241,24 @@ public class ShellWorkflows
     });
 
     /// <summary>
-    /// Asserts that the window really took the requested size, that its content was laid out to
-    /// fill it, and that the next rendered frame is that size.
+    /// Asserts that the window took the requested size, that the canvas was laid out to fill what
+    /// the menu and the status line leave of it, that the view transform followed, and that the
+    /// next rendered frame is that size.
     /// </summary>
-    static void AssertLaidOutAt(AppDriver app, Window window, TextBlock text,
-        double width, double height)
+    static void AssertLaidOutAt(AppDriver app, MainWindow window, double width, double height)
     {
         Assert.Equal(width, window.ClientSize.Width);
         Assert.Equal(height, window.ClientSize.Height);
-        Assert.Equal(width, text.Bounds.Width);
-        Assert.Equal(height, text.Bounds.Height);
+
+        CanvasView canvas = window.Canvas;
+        Assert.Equal(width, canvas.Bounds.Width);
+        Assert.Equal(
+            height - window.MenuBar.Bounds.Height - window.StatusLine.Bounds.Height,
+            canvas.Bounds.Height);
+
+        // The view transform is what the drawing is painted through, so it has to have been told
+        // about the new size, not merely the control.
+        Assert.Equal(canvas.Bounds.Size, canvas.View.Viewport);
 
         var frame = app.CaptureFrame();
         Assert.NotNull(frame);
