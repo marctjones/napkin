@@ -148,12 +148,21 @@ Full comparison in [`RESEARCH.md`](./RESEARCH.md). Summary of the actual conclus
 
 ## Open questions for Marc
 
+*Status as of 2026-09-21 — the answers are recorded as decisions in [DESIGN.md §11](./DESIGN.md).*
+
 - Whether to ship IRC 2021 (the outgoing CT edition) or another state's edition alongside 2024 in
   v1, or defer all multi-edition work — architecture supports it cheaply either way.
+  **→ Answered: v1 ships four adopted codes** — CT 2026, CT 2022, Massachusetts 780 CMR 10th
+  edition and the Pennsylvania UCC. This also moves the amendment layer into v1 scope, because
+  Pennsylvania permits municipal amendments.
 - macOS notarization (needs an Apple developer account) and Windows code-signing (ongoing
   certificate cost) — budget/plan this before Phase 5 packaging, not during it.
+  **→ Answered: neither.** Installers ship unsigned, with documented first-run steps.
 - When to invest in a real constraint solver (PlaneGCS via native interop) versus staying on
   direct/explicit geometry — only once freeform, non-rectilinear furniture shapes are actually
   needed.
+  **→ Still open.** Marc wants to discuss solvers further before deciding; v1 stays on direct
+  geometry meanwhile.
 - Confirm whether GitHub issue/project-tracking work now happens entirely from the local session
   going forward, since the cloud session couldn't get write access to `napkin` this round.
+  **→ Answered: yes.** All work happens locally; the cloud session is retired.
