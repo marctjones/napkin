@@ -8,9 +8,10 @@ public readonly partial record struct Length
     /// <remarks>
     /// <para>
     /// Accepts <c>6'-3 5/16"</c>, <c>6' 3-5/16"</c>, <c>6ft 3in</c>, <c>75 5/16</c>,
-    /// <c>75.3125</c>, <c>3/4</c> and <c>-1/2</c>. Rejects units it does not know (mm, cm), empty
-    /// text and malformed text (design &#xA7;1.5). Metric never enters: per DESIGN.md &#xA7;10 a
-    /// future metric layer is display-only.
+    /// <c>75.3125</c>, <c>.75</c>, <c>3/4</c> and <c>-1/2</c>. Rejects units it does not know
+    /// (mm, cm), empty text and malformed text, including a half-typed number like <c>5.</c>
+    /// (design &#xA7;1.5). Metric never enters: per DESIGN.md &#xA7;10 a future metric layer is
+    /// display-only.
     /// </para>
     /// <para>
     /// Parsing is exact rational arithmetic, never <see cref="double"/>. A value that does not
@@ -26,6 +27,22 @@ public readonly partial record struct Length
     /// </param>
     /// <returns>Whether the text was understood.</returns>
     public static bool TryParse(string? text, out Length value, out bool wasRounded)
+    {
+        try
+        {
+            return TryParseChecked(text, out value, out wasRounded);
+        }
+        catch (OverflowException)
+        {
+            // A numeral long enough to overflow Int128 is not a length; §1.3's promise is that
+            // arithmetic is checked, so this is a refusal and never a wrapped-around answer.
+            value = Zero;
+            wasRounded = false;
+            return false;
+        }
+    }
+
+    private static bool TryParseChecked(string? text, out Length value, out bool wasRounded)
     {
         value = Zero;
         wasRounded = false;
@@ -196,11 +213,14 @@ public readonly partial record struct Length
         int start = i;
         while (i < s.Length && char.IsAsciiDigit(s[i]))
         {
-            numerator = numerator * 10 + (s[i] - '0');
+            numerator = checked((numerator * 10) + (s[i] - '0'));
             i++;
         }
 
-        if (i == start)
+        // ".75" is a common keystroke, so a number may start at the point. "5." is not, and stays
+        // malformed: a trailing point is a half-typed number, not a value.
+        bool anyDigits = i > start;
+        if (!anyDigits && (i == s.Length || s[i] != '.'))
         {
             return false;
         }
@@ -217,8 +237,8 @@ public readonly partial record struct Length
             i = afterPoint;
             while (i < s.Length && char.IsAsciiDigit(s[i]))
             {
-                numerator = numerator * 10 + (s[i] - '0');
-                denominator *= 10;
+                numerator = checked((numerator * 10) + (s[i] - '0'));
+                denominator = checked(denominator * 10);
                 i++;
             }
         }
@@ -302,8 +322,8 @@ public readonly partial record struct Length
     /// <summary>Adds <paramref name="n"/>/<paramref name="d"/> inches to the running total.</summary>
     private static void Add(ref Int128 numerator, ref Int128 denominator, Int128 n, Int128 d)
     {
-        numerator = numerator * d + n * denominator;
-        denominator *= d;
+        numerator = checked((numerator * d) + (n * denominator));
+        denominator = checked(denominator * d);
     }
 
     private static bool Finish(int sign, Int128 numerator, Int128 denominator, out Length value, out bool wasRounded)
@@ -311,9 +331,9 @@ public readonly partial record struct Length
         value = Zero;
         wasRounded = false;
 
-        Int128 scaled = numerator * UnitsPerInch;
+        Int128 scaled = checked(numerator * UnitsPerInch);
         wasRounded = scaled % denominator != 0;
-        Int128 units = DivideRounded(scaled, denominator, Rounding.HalfAwayFromZero) * sign;
+        Int128 units = checked(DivideRounded(scaled, denominator, Rounding.HalfAwayFromZero) * sign);
 
         if (units > long.MaxValue || units < long.MinValue)
         {
