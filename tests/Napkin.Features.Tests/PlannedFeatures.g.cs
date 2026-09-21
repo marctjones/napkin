@@ -558,12 +558,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: REL-004 — One version string, set in one place")]
-    [Trait("Feature", "REL-004")]
-    public void REL_004()
-    {
-    }
-
     [Fact(Skip = "planned: RUL-001 — Adopted-code packs load from data")]
     [Trait("Feature", "RUL-001")]
     public void RUL_001()

@@ -75,6 +75,13 @@ tests/
 `Core.*` and `Modules.*` have no UI dependency — the rules engine in particular is meant to be
 testable and auditable independent of the app around it.
 
+## Versioning
+
+napkin is a pre-1.0 beta indefinitely. Every version is `0.N.0-beta`: the minor number goes up with
+each merged pull request, and nothing is promised to stay compatible between betas. The version is
+set in one place, [`Directory.Build.props`](./Directory.Build.props); see
+[`DESIGN.md` §12](./DESIGN.md#12-versioning-and-releases-beta-policy).
+
 ## License
 
 [GNU Affero General Public License v3.0](./LICENSE) for this project's own code. Dependencies are

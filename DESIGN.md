@@ -609,16 +609,15 @@ Set by Marc on 2026-09-21.
 - **This does not shrink product scope.** Four adopted codes (§11) and locking a project to its
   permit-date code edition (§5.4) are features, not legacy. "Beta scope" in this document means
   what the betas are meant to do, not what is provisional.
-- **Version numbers:** the minor number increments as work is committed; a release is tagged when
-  features improve significantly.
+- **Version numbers:** the minor number increments with each merged pull request; a release is tagged
+  when features improve significantly.
 
-**Mechanism — PROPOSED, awaiting Marc's confirmation** (tracked as its own issue; the exact
-per-commit rule is unconfirmed):
+**Mechanism — decided by Marc on 2026-09-21: the minor number is bumped per merged pull request**
+(tracked as #30):
 
 - A single `<VersionPrefix>0.N.0</VersionPrefix>` in a `Directory.Build.props` at the repository
   root, with `<VersionSuffix>beta</VersionSuffix>`, so every assembly and the app report the same
-  `0.N.0-beta`. The file does not exist yet; creating it is implementation work, not a decision
-  made here.
+  `0.N.0-beta`. The file exists; the first pull request of the beta line set it to `0.1.0-beta`.
 - The minor number `N` is bumped in the pull request that lands the work, by its author, as part
   of that PR. Patch stays 0.
 - CI passes the commit SHA into the informational version, so a running beta can say exactly

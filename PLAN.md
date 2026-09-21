@@ -16,8 +16,8 @@ compatibility concern between betas; a project file from an older beta gets a cl
 version" error. Scope is unchanged by this — all four adopted codes and permit-date code locking
 are features, not legacy; they simply arrive one at a time (M4 ships Connecticut 2026, M5 adds
 Connecticut 2022, and Massachusetts and Pennsylvania come after that). Nothing is scheduled
-toward a date. Versioning and release tagging are proposed in DESIGN.md §12 and tracked in #30,
-awaiting Marc's confirmation.
+toward a date. Versioning is decided (DESIGN.md §12, #30): the minor number is bumped in each merged pull
+request and a release is tagged when features improve significantly.
 
 ## Milestones: what you can see and play with
 

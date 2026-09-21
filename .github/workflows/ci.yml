@@ -31,10 +31,10 @@ jobs:
 
       # Both configurations: package wiring can differ between them.
       - name: Build (Debug)
-        run: dotnet build napkin.sln --configuration Debug --no-restore
+        run: dotnet build napkin.sln --configuration Debug --no-restore -p:SourceRevisionId=${{ github.sha }}
 
       - name: Build (Release)
-        run: dotnet build napkin.sln --configuration Release --no-restore
+        run: dotnet build napkin.sln --configuration Release --no-restore -p:SourceRevisionId=${{ github.sha }}
 
       # Coverage is collected on both platforms so the artifact is there to compare when they
       # disagree; only one of them gates (see the next step).
