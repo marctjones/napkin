@@ -335,7 +335,25 @@ public class ViewerWorkflows
                 AssertUntouched(window, opened, asOpened, asFramed, title, status);
             });
 
-            // A second refusal, of a different kind, dismissed with the mouse this time.
+            // The second of the three faults the catalogue names: a relationship kind the format
+            // defines but this build's updater cannot hold.
+            string unsupported = BadScenes.Write(
+                "solver-only.scene.json",
+                BadScenes.UnsupportedRelationshipKind);
+            OpenThroughTheFileDialog(app, window, unsupported);
+            app.Expect("a relationship kind this build cannot hold is refused, and named", () =>
+            {
+                Assert.True(window.IsRefusalShowing);
+                Assert.Contains(
+                    "distance",
+                    string.Join(" ", window.RefusalProblems),
+                    StringComparison.OrdinalIgnoreCase);
+                AssertUntouched(window, opened, asOpened, asFramed, title, status);
+            });
+
+            app.Press(Key.Escape);
+
+            // And the third, dismissed with the mouse this time.
             string dangling = BadScenes.Write("dangling.scene.json", BadScenes.DanglingReference);
             OpenThroughTheFileDialog(app, window, dangling);
             app.Expect("a dangling id is refused too, and named", () =>

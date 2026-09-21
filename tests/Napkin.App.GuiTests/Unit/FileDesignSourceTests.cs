@@ -62,6 +62,16 @@ public class FileDesignSourceTests
     }
 
     [Fact]
+    public void A_relationship_kind_this_build_cannot_hold_is_refused_naming_the_kind()
+    {
+        DesignLoadException failure = Refuse(
+            "solver-only.scene.json",
+            BadScenes.UnsupportedRelationshipKind);
+
+        Assert.Contains("distance", Assert.Single(failure.Problems), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Every_problem_the_reader_found_reaches_the_window_not_just_the_first()
     {
         string path = BadScenes.Write("several-faults.scene.json", BadScenes.SeveralFaults);
