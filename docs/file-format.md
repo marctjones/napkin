@@ -145,6 +145,11 @@ two corners at the same coordinates are not coincident unless a `coincident` say
 | `equalParam` | `a`, `b`: sizes | Two sizes are equal — four identical legs. |
 | `centered` | `middle`, `a`, `b`: points; `axis` | `middle` is midway between `a` and `b` along the axis. |
 
+Two of those load but are not editable: the direct updater treats `horizontal` and `vertical` on a
+box edge, and `paramValue`/`equalParam` over a `segmentLength`, as things it can check but not
+propagate, and it refuses a *geometry request* on a sketch holding one (geometry design §10.3).
+M1 is read-only, so such a file opens and draws; M2's editing has to say so.
+
 **Reserved for the constraint solver** (#28). These kinds are part of the format so that files and
 the UI have names for them, but a build without the solver refuses a file containing one, naming
 the kind rather than crashing: `parallel` and `perpendicular` (`a`, `b`: edges), `angleBetween`
