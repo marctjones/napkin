@@ -29,8 +29,8 @@ merged pull request does **not** publish anything.
    git push origin v0.4.0-beta
    ```
 3. **Watch the Release workflow.** If the tag and `Directory.Build.props` disagree, it stops in its
-   first job with an error naming both, before anything is built. Delete the tag (below) and tag
-   again.
+   first job with an error naming both, before anything is built. Nothing was published, so
+   delete the tag (`git push --delete origin <tag>` and `git tag -d <tag>`) and tag the right commit.
 4. **Read the release page** when it finishes, and follow [`first-run.md`](./first-run.md) on a
    real Windows machine and a real Mac from the artifacts, as a person who has never seen napkin
    would. Issue #38 is not done until that has happened; the checks in the pipeline cannot
