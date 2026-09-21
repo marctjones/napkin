@@ -1,0 +1,31 @@
+namespace TraitProbe;
+
+[Trait("Feature", "CLS-LEVEL-001")]
+public class Probe
+{
+    [Fact, Trait("Feature", "GEO-LEN-001")]
+    [Trait("Feature", "GEO-LEN-002")]
+    public void Passes()
+    {
+        Assert.Equal(-1, Napkin.Probe.Branchy.Branchy.Classify(-5));
+        Assert.Equal(1, Napkin.Probe.Branchy.Branchy.Classify(1));
+        Assert.True(Napkin.Probe.Branchy.Branchy.Both(true, true));
+    }
+
+    [Fact(Skip = "planned: GEO-PT-001 - points")]
+    [Trait("Feature", "GEO-PT-001")]
+    public void Skipped() { }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [Trait("Feature", "GEO-LEN-003")]
+    public void TheoryCase(int i) { Assert.True(i > 0); }
+
+    public class Nested
+    {
+        [Fact]
+        [Trait("Feature", "GEO-NEST-001")]
+        public void Inner() { }
+    }
+}

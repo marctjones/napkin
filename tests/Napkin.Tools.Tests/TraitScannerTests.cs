@@ -1,0 +1,188 @@
+using Napkin.Tools.Features;
+
+namespace Napkin.Tools.Tests;
+
+/// <summary>
+/// The evidence that the source scan is a sound substitute for traits in the test results: the
+/// fixture source and the fixture TRX are the same probe run, so the ids found here join onto the
+/// outcomes found there. <see cref="ScorecardTests"/> closes that loop.
+/// </summary>
+public class TraitScannerTests
+{
+    [Fact]
+    public void TrxCarriesNoTraitsAtAll()
+    {
+        // This is why the scanner exists. If a future toolchain starts writing traits into TRX,
+        // this test fails and the design can be revisited.
+        Assert.DoesNotContain("Feature", Fixture.Text("probe.trx"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FindsEveryClaimInTheProbeSource()
+    {
+        var claims = Scan();
+
+        Assert.Equal(
+            [
+                "CLS-LEVEL-001",
+                "GEO-LEN-001",
+                "GEO-LEN-002",
+                "GEO-LEN-003",
+                "GEO-NEST-001",
+                "GEO-PT-001",
+            ],
+            claims.Select(claim => claim.FeatureId).Distinct().OrderBy(id => id).ToArray());
+    }
+
+    [Fact]
+    public void AMethodCanClaimSeveralFeatures()
+    {
+        var ids = Scan()
+            .Where(claim => claim.MethodName == "Passes")
+            .Select(claim => claim.FeatureId)
+            .ToList();
+
+        Assert.Contains("GEO-LEN-001", ids);
+        Assert.Contains("GEO-LEN-002", ids);
+    }
+
+    [Fact]
+    public void ATraitInTheSameAttributeGroupAsAFactIsFound() =>
+        // `[Fact, Trait("Feature", "GEO-LEN-001")]` in the fixture.
+        Assert.Contains(Scan(), claim => claim.FeatureId == "GEO-LEN-001");
+
+    [Fact]
+    public void AClassLevelTraitAppliesToEveryMethodInTheClass()
+    {
+        var claimed = Scan()
+            .Where(claim => claim.FeatureId == "CLS-LEVEL-001")
+            .Select(claim => claim.MethodName)
+            .ToHashSet();
+
+        Assert.Contains("Passes", claimed);
+        Assert.Contains("Skipped", claimed);
+        Assert.Contains("TheoryCase", claimed);
+    }
+
+    [Fact]
+    public void NestedTypesAreNamedTheWayVsTestNamesThem()
+    {
+        var claim = Assert.Single(Scan(), item => item.FeatureId == "GEO-NEST-001");
+
+        // Exactly the className the fixture TRX carries for that test.
+        Assert.Equal("TraitProbe.Probe+Nested", claim.TypeName);
+        Assert.Equal("TraitProbe.Probe+Nested.Inner", claim.TestId);
+        Assert.Contains($"className=\"{claim.TypeName}\" name=\"Inner\"", Fixture.Text("probe.trx"));
+    }
+
+    [Fact]
+    public void FileScopedAndBlockNamespacesBothWork()
+    {
+        var blockScoped = TraitScanner.ScanSource(
+            """
+            namespace Napkin.Sample.Tests
+            {
+                public class Thing
+                {
+                    [Fact]
+                    [Trait("Feature", "SAMPLE-001")]
+                    public void Works() { }
+                }
+            }
+            """,
+            "Thing.cs");
+
+        Assert.Equal("Napkin.Sample.Tests.Thing.Works", Assert.Single(blockScoped).TestId);
+    }
+
+    [Fact]
+    public void ATraitInACommentOrAStringIsNotAClaim()
+    {
+        var claims = TraitScanner.ScanSource(
+            """
+            namespace Napkin.Sample.Tests;
+
+            public class Thing
+            {
+                // [Trait("Feature", "COMMENTED-001")]
+                /* [Trait("Feature", "BLOCK-001")] */
+                [Fact]
+                public void Works()
+                {
+                    var text = "[Trait(\"Feature\", \"STRING-001\")]";
+                    Assert.NotNull(text);
+                }
+            }
+            """,
+            "Thing.cs");
+
+        Assert.Empty(claims);
+    }
+
+    [Fact]
+    public void StatementsInsideAMethodBodyAreNotMistakenForMethods()
+    {
+        var claims = TraitScanner.ScanSource(
+            """
+            namespace Napkin.Sample.Tests;
+
+            public class Thing
+            {
+                [Fact]
+                [Trait("Feature", "SAMPLE-001")]
+                public void Works()
+                {
+                    Assert.Equal(1, Compute(1));
+                    if (true) { Assert.True(Compute(2) > 0); }
+                }
+
+                private static int Compute(int value) => value;
+            }
+            """,
+            "Thing.cs");
+
+        var claim = Assert.Single(claims);
+        Assert.Equal("Works", claim.MethodName);
+    }
+
+    [Fact]
+    public void AGenericMethodIsStillRecognised()
+    {
+        var claims = TraitScanner.ScanSource(
+            """
+            namespace Napkin.Sample.Tests;
+
+            public class Thing
+            {
+                [Fact]
+                [Trait("Feature", "SAMPLE-001")]
+                public void Works<TValue>() where TValue : class { }
+            }
+            """,
+            "Thing.cs");
+
+        Assert.Equal("Works", Assert.Single(claims).MethodName);
+    }
+
+    [Fact]
+    public void BuildOutputIsNotScanned()
+    {
+        using var scratch = Fixture.NewDirectory();
+        scratch.Write("Project/Real.cs", "// real");
+        scratch.Write("Project/obj/Debug/Generated.cs", "// generated");
+        scratch.Write("Project/bin/Debug/Copied.cs", "// copied");
+
+        var files = TraitScanner.FindSourceFiles(scratch.Path);
+
+        Assert.Equal("Real.cs", Path.GetFileName(Assert.Single(files)));
+    }
+
+    [Theory]
+    [InlineData("PlannedFeatures.g.cs", true)]
+    [InlineData("LengthTests.cs", false)]
+    public void GeneratedFilesAreRecognisedByName(string name, bool generated) =>
+        Assert.Equal(generated, TraitScanner.IsGenerated(name));
+
+    private static IReadOnlyList<FeatureClaim> Scan() =>
+        TraitScanner.ScanSource(Fixture.Text("Probe.cs.txt"), "Probe.cs");
+}
