@@ -55,6 +55,41 @@ public class CoverageMergerTests
         Assert.Equal(2, assembly.LinesCovered);
     }
 
+    [Theory]
+    [InlineData("Napkin.Test.Sample/Thing.cs")]
+    [InlineData("src/Napkin.Test.Sample/Thing.cs")]
+    [InlineData(@"C:\src\Napkin.Test.Sample\Thing.cs")]
+    public void TheSameLinesUnderDifferentFilenameRootsAreOneLine(string otherFilename)
+    {
+        // coverlet writes `filename` relative to a root it computes per report, so a solution-wide
+        // run holds the same source file under several spellings. Keyed on the spelling, the lines
+        // never matched: the union became an average (Core.Geometry read 59% instead of 90%).
+        using var scratch = Fixture.NewDirectory();
+        var first = scratch.Write("a/coverage.cobertura.xml", Report(firstHit: 1, secondHit: 0));
+        var second = scratch.Write(
+            "b/coverage.cobertura.xml", Report(firstHit: 0, secondHit: 3, filename: otherFilename));
+
+        var assembly = Assert.Single(CoverageMerger.Merge([first, second]));
+
+        Assert.Equal(2, assembly.LinesCoverable);
+        Assert.Equal(2, assembly.LinesCovered);
+    }
+
+    [Fact]
+    public void ThePartialClassInTwoFilesKeepsItsFilesApart()
+    {
+        // The class name is in the key, but the same class spread over two files must not merge
+        // lines that merely share a number.
+        using var scratch = Fixture.NewDirectory();
+        var one = scratch.Write("a/coverage.cobertura.xml", Report(firstHit: 1, secondHit: 1, filename: "Thing.cs"));
+        var other = scratch.Write("b/coverage.cobertura.xml", Report(firstHit: 0, secondHit: 0, filename: "Thing.Part.cs"));
+
+        var assembly = Assert.Single(CoverageMerger.Merge([one, other]));
+
+        Assert.Equal(4, assembly.LinesCoverable);
+        Assert.Equal(2, assembly.LinesCovered);
+    }
+
     [Fact]
     public void AnAssemblyWithNoCoverableLinesIsNotApplicable()
     {
@@ -93,14 +128,14 @@ public class CoverageMergerTests
     public void FindReportsReturnsNothingForADirectoryThatDoesNotExist() =>
         Assert.Empty(CoverageMerger.FindReports(Path.Combine(Path.GetTempPath(), "no-such-dir-xyz")));
 
-    private static string Report(int firstHit, int secondHit) =>
+    private static string Report(int firstHit, int secondHit, string filename = "Thing.cs") =>
         $"""
         <?xml version="1.0" encoding="utf-8"?>
         <coverage line-rate="0" branch-rate="0" version="1.9">
           <packages>
             <package name="Napkin.Test.Sample">
               <classes>
-                <class name="Napkin.Test.Sample.Thing" filename="Thing.cs">
+                <class name="Napkin.Test.Sample.Thing" filename="{filename}">
                   <lines>
                     <line number="10" hits="{firstHit}" branch="False" />
                     <line number="11" hits="{secondHit}" branch="False" />
