@@ -92,8 +92,12 @@ never the model-code year:
 }
 ```
 
-- `id` is the stable key stored in project manifests (#6). Lower-case, country-state-year; a
-  municipal pack (§6.4) appends the municipality: `us-pa-2026-<municipality>`.
+- `id` is the stable key stored in project manifests (#6). Lower-case: country, state, then the
+  **adoption's own designation** where it has one (`us-ct-2022`, `us-ct-2026`,
+  `us-ma-780cmr-10`) and otherwise the year the adoption came into force (`us-pa-2026` for the
+  PA UCC in force Jan 1, 2026). Never the model-code year: `us-pa-2021` would be the IRC year
+  masquerading as identity. A municipal pack (§6.4) appends the municipality:
+  `us-pa-2026-<municipality>`.
 - `revision` is an integer bumped on **any** change to the pack's data — a corrected row, a new
   table, a changed citation. It is stored in the project manifest alongside `id` so that a
   project can say which data its results were computed against, and so that a revision change
@@ -156,8 +160,8 @@ src/Napkin.Core.RulesEngine/
         pack.json
         amendments/...
       us-ma-780cmr-10/              // later
-      us-pa-ucc-2021/               // later
-      us-pa-ucc-2021-<municipality>/   // later; a pack whose layers add a municipal overlay
+      us-pa-2026/                   // later
+      us-pa-2026-<municipality>/    // later; a pack whose layers add a municipal overlay
 docs/code-packs/
   reviews/
     us-ct-2026/
@@ -308,6 +312,72 @@ tests. This divergence from #6's "integers in stored units" rule is deliberate a
 A load-like quantity with a fractional published value (unverified whether any table in scope has
 one) would be handled by changing that column's `type` to a finer integer unit (`psf/10`), a data
 change plus a schema bump — never by admitting a double.
+
+### 1.6 Schema for `pack.json`
+
+The pack manifest's schema, JSON Schema draft 2020-12, abbreviated to the constraints that
+matter (`additionalProperties: false` everywhere — unknown fields are a load error, §9.1). The
+per-kind table schemas, `layer.schema.json` and `overlay.schema.json` follow the same style and
+are #13 step 2 deliverables; the shapes they encode are §1.3 and §1.4.
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "napkin:pack.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "id", "revision", "jurisdiction", "adoption", "baseCode",
+               "layers", "sources", "review"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id":            { "type": "string", "pattern": "^[a-z]{2}-[a-z]{2}-[a-z0-9-]+$" },
+    "revision":      { "type": "integer", "minimum": 1 },
+    "jurisdiction":  { "type": "object", "additionalProperties": false,
+                       "required": ["country", "state", "municipality"],
+                       "properties": { "country": { "const": "US" },
+                                       "state": { "type": "string", "pattern": "^[A-Z]{2}$" },
+                                       "municipality": { "type": ["string", "null"] } } },
+    "adoption":      { "type": "object", "additionalProperties": false,
+                       "required": ["name", "shortName", "adoptedBy", "inForce", "appliesTo",
+                                    "transitionNotes"],
+                       "properties": {
+                         "name": { "type": "string" }, "shortName": { "type": "string" },
+                         "adoptedBy": { "type": "string" },
+                         "inForce": { "type": "object", "additionalProperties": false,
+                                      "required": ["from", "to"],
+                                      "properties": { "from": { "type": "string", "format": "date" },
+                                                      "to": { "type": ["string", "null"], "format": "date" } } },
+                         "appliesTo": { "enum": ["permit-application-date", "permit-issuance-date",
+                                                 "see-notes"] },
+                         "transitionNotes": { "type": ["string", "null"] } } },
+    "baseCode":      { "type": "object", "additionalProperties": false,
+                       "required": ["publisher", "code", "year"],
+                       "properties": { "publisher": { "const": "ICC" }, "code": { "const": "IRC" },
+                                       "year": { "type": "integer" } } },
+    "layers":        { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "sources":       { "type": "array", "minItems": 1,
+                       "items": { "type": "object", "additionalProperties": false,
+                                  "required": ["id", "title", "publisher", "url", "printing",
+                                               "retrievedOn", "sha256"],
+                                  "properties": { "id": { "type": "string" }, "title": { "type": "string" },
+                                                  "publisher": { "type": "string" }, "url": { "type": "string" },
+                                                  "printing": { "type": "string" },
+                                                  "retrievedOn": { "type": "string", "format": "date" },
+                                                  "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } } } },
+    "review":        { "type": "object", "additionalProperties": false,
+                       "required": ["status", "checklist"],
+                       "properties": { "status": { "enum": ["unreviewed", "in-review", "signed-off"] },
+                                       "checklist": { "type": ["string", "null"] } },
+                       "if": { "properties": { "status": { "const": "signed-off" } } },
+                       "then": { "properties": { "checklist": { "type": "string" } } } }
+  }
+}
+```
+
+Two things the schema cannot say and the loader checks instead (§9.1): that every `layers`
+entry resolves and every `source` id is referenced correctly, and that `sha256` matches the
+checklist's recorded hash when `status` is `signed-off`. The `UNVERIFIED — …` placeholders in
+§1.1's example would fail this schema's `sha256` pattern, which is the point: a pack cannot
+ship with a placeholder where a hash belongs.
 
 ## 2. The citation model
 
@@ -578,8 +648,8 @@ and review requirements. A municipal pack differs from a state pack only in its 
 
 ```
 layers/irc-2021            ← model code (ingredient; transcribed once; no golden tests of its own)
-  + packs/us-pa-ucc-2021/amendments       ← state overlay      → pack "us-pa-ucc-2021"
-      + packs/us-pa-ucc-2021-<town>/amendments  ← municipal overlay → pack "us-pa-ucc-2021-<town>"
+  + packs/us-pa-2026/amendments           ← state overlay      → pack "us-pa-2026"
+      + packs/us-pa-2026-<town>/amendments  ← municipal overlay → pack "us-pa-2026-<town>"
 ```
 
 A municipal pack's `layers` names the state pack's overlay by path rather than copying it, so a
