@@ -7,6 +7,7 @@ public class DirectUpdaterPropagationTests
 {
     private static readonly DirectUpdater Updater = DirectUpdater.Instance;
 
+    [Trait("Feature", "GEO-010")]
     [Fact]
     public void Case1_ResizingALoneBoxKeepsItsAnchorAndMovesItsFarCorner()
     {
@@ -24,6 +25,7 @@ public class DirectUpdaterPropagationTests
         SketchAssert.IsConsistent(result.Sketch);
     }
 
+    [Trait("Feature", "GEO-010")]
     [Fact]
     public void Case2_ABoxFlushAgainstAResizedOneTranslatesAndKeepsItsSize()
     {
@@ -39,6 +41,7 @@ public class DirectUpdaterPropagationTests
         SketchAssert.IsConsistent(result.Sketch);
     }
 
+    [Trait("Feature", "GEO-011")]
     [Fact]
     public void Case3_WhenTheFarSideIsPinnedTheAnchorMovesInstead()
     {
@@ -55,6 +58,7 @@ public class DirectUpdaterPropagationTests
         SketchAssert.IsConsistent(result.Sketch);
     }
 
+    [Trait("Feature", "GEO-011")]
     [Fact]
     public void Case4_WhenBothSidesArePinnedTheResizeIsAContradictionThatNamesThePins()
     {
@@ -156,6 +160,7 @@ public class DirectUpdaterPropagationTests
         SketchAssert.IsConsistent(slid.Sketch);
     }
 
+    [Trait("Feature", "GEO-014")]
     [Fact]
     public void Case14_ABatchWhoseSecondRequestConflictsAppliesNothing()
     {
@@ -241,6 +246,7 @@ public class DirectUpdaterPropagationTests
         SketchAssert.IsConsistent(result.Sketch);
     }
 
+    [Trait("Feature", "GEO-013")]
     [Fact]
     public void SetRotationIsRefusedWhenTheBoxHasRelationshipsRotatingWouldReinterpret()
     {

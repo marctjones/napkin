@@ -8,6 +8,7 @@ public class ReviewRegressionTests
 {
     private static readonly DirectUpdater Updater = DirectUpdater.Instance;
 
+    [Trait("Feature", "GEO-010")]
     [Fact]
     public void Finding1_AnUnrelatedDimensionOnANeighbourDoesNotDecideWhichPartMoves()
     {
@@ -51,6 +52,7 @@ public class ReviewRegressionTests
         SketchAssert.BoxIs(result.Sketch, box, 5, 5, 10, 4);
     }
 
+    [Trait("Feature", "GEO-011")]
     [Fact]
     public void Finding1_AConflictReportDoesNotBlameAnUnchangedDimension()
     {

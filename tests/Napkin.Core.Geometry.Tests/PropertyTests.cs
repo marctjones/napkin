@@ -21,6 +21,7 @@ public class PropertyTests
     /// <summary>The seeds every property runs against. A failure names the one to rerun.</summary>
     public static IEnumerable<object[]> Seeds => Enumerable.Range(1, 8).Select(seed => new object[] { seed });
 
+    [Trait("Feature", "GEO-015")]
     [Theory]
     [MemberData(nameof(Seeds))]
     public void P1_ApplyNeverProducesAnInconsistentSketch(int seed)
@@ -65,6 +66,7 @@ public class PropertyTests
         }
     }
 
+    [Trait("Feature", "GEO-015")]
     [Theory]
     [MemberData(nameof(Seeds))]
     public void P2_ASetParameterThatSucceedsHoldsExactly(int seed)
@@ -106,6 +108,7 @@ public class PropertyTests
         }
     }
 
+    [Trait("Feature", "GEO-015")]
     [Theory]
     [MemberData(nameof(Seeds))]
     public void P3_ApplyIsPureAndDeterministicWhateverOrderTheDictionariesWereBuiltIn(int seed)
@@ -128,6 +131,7 @@ public class PropertyTests
         }
     }
 
+    [Trait("Feature", "GEO-015")]
     [Theory]
     [MemberData(nameof(Seeds))]
     public void P4_EntitiesNotConnectedToTheRequestAreUntouched(int seed)
@@ -164,6 +168,7 @@ public class PropertyTests
         }
     }
 
+    [Trait("Feature", "GEO-015")]
     [Theory]
     [MemberData(nameof(Seeds))]
     public void P5_ApplyingTheSameSetParameterTwiceChangesNothingTheSecondTime(int seed)
@@ -187,6 +192,7 @@ public class PropertyTests
         }
     }
 
+    [Trait("Feature", "GEO-015")]
     [Theory]
     [MemberData(nameof(Seeds))]
     public void P6_ADragAppliesEachComponentInFullOrNotAtAll(int seed)
@@ -217,6 +223,7 @@ public class PropertyTests
         }
     }
 
+    [Trait("Feature", "GEO-015")]
     [Theory]
     [MemberData(nameof(Seeds))]
     public void P7_EveryConflictReportNamesSomethingTheUserCanRemove(int seed)
@@ -288,6 +295,7 @@ public class PropertyTests
         }
     }
 
+    [Trait("Feature", "GEO-015")]
     [Theory]
     [MemberData(nameof(Seeds))]
     public void P8_LengthAlgebraHolds(int seed)
@@ -312,6 +320,7 @@ public class PropertyTests
         }
     }
 
+    [Trait("Feature", "GEO-015")]
     [Theory]
     [MemberData(nameof(Seeds))]
     public void P10_EachSketchOnTheUndoStackIsStillExactlyWhatItWas(int seed)

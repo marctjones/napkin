@@ -1056,7 +1056,10 @@ decision above without saying so.
   dimension: `SetParameter` takes a `RelationshipId`, and a reference dimension has none. The canvas
   therefore cannot form the request at all. The value is kept in the enum because #10 may add a
   request that can reach it. §7.1 case 12 is implemented as `SetParameter` against an id the sketch
-  does not have, which is `Rejected(UnknownRelationship)`.
+  does not have, which is `Rejected(UnknownRelationship)`. The feature catalog's GEO-013 says
+  "editing a reference dimension … returns Rejected with the named reason"; that is true of the
+  result but not of the reason, and it will stay that way until #10 adds a request that names a
+  dimension.
 - **`Anchored` requires a box or a node.** Nothing else has a position of its own to hold still,
   and an anchor on a segment or a dimension was accepted and then did nothing at all: the drag
   group never saw it. (Fable review of #35, finding 3.)
