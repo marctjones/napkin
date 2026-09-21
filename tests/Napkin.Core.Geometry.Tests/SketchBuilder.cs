@@ -16,8 +16,14 @@ internal sealed class SketchBuilder
     /// <summary>The sketch built so far.</summary>
     public Sketch Sketch { get; private set; } = Sketch.Empty;
 
-    /// <summary>The next entity id that will be handed out, without handing it out.</summary>
+    /// <summary>The entity id this builder hands out at a given position, without handing it out.</summary>
     public static EntityId EntityIdAt(int index) => new(Id("0000", index));
+
+    /// <summary>
+    /// A relationship id at a given position in the same order this builder hands them out, for a
+    /// relationship a test adds through the updater rather than through the builder.
+    /// </summary>
+    public static RelationshipId RelationshipIdAt(int index) => new(Id("0001", index));
 
     /// <summary>Adds a box, in whole inches, rotated by whole quarter turns.</summary>
     public EntityId AddBox(long x, long y, long width, long height, int quarterTurns = 0)
