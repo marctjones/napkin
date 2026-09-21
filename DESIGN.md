@@ -428,11 +428,24 @@ regulation text in 34 Pa. Code before encoding it.
 - **No code signing and no notarization**, on either platform. See §6.6 for the first-run
   documentation this requires.
 
-### Still open
+### Constraint solver: wanted, .NET-native, a separate workstream
 
-- **Constraint solver.** Not decided. Marc wants to understand solvers and their implications
-  before choosing. Until then v1 continues on direct, explicit geometry (§10), which needs no
-  solver dependency.
+- **napkin will get a geometric constraint solver**, because furniture with angled or curved
+  parts needs relationships that direct geometry can't maintain. v1 still ships on direct,
+  explicit geometry (§10); the solver is its own line of work, not a v1 blocker.
+- **It must be .NET-native** — managed C#, no native interop. That rules out both mature open
+  solvers: SolveSpace (C, GPL, which also fails §2.1) and PlaneGCS (C++, LGPL). The workstream
+  starts by evaluating existing pure-.NET solvers against §2.1's license policy, and writes one
+  in-house if none qualifies.
+- **Build `Core.Geometry` so the solver slots in later without a rewrite:**
+  - Store relationships explicitly as data (a dimension bound to the edge it measures, a part
+    anchored to another) — never implied by where the UI happens to place things.
+  - Route every geometry update through one interface, with v1's direct updater as the first
+    implementation. A solver then becomes a second implementation of the same contract.
+  - Model the states a solver produces — under-constrained, over-constrained/conflicting, solved
+    — as explicit result types now, even though the direct updater only ever returns "solved".
+    The UI then already has somewhere to show "this shape has no solution" when the solver
+    arrives, the same principle as §5.4's first-class out-of-scope result.
 
 ### Where the work happens
 

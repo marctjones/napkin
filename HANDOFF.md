@@ -161,8 +161,8 @@ Full comparison in [`RESEARCH.md`](./RESEARCH.md). Summary of the actual conclus
 - When to invest in a real constraint solver (PlaneGCS via native interop) versus staying on
   direct/explicit geometry — only once freeform, non-rectilinear furniture shapes are actually
   needed.
-  **→ Still open.** Marc wants to discuss solvers further before deciding; v1 stays on direct
-  geometry meanwhile.
+  **→ Answered: yes, eventually — and .NET-native.** A solver is wanted for furniture, as its own
+  workstream after v1; no native-interop solvers. `Core.Geometry` is designed so it slots in later.
 - Confirm whether GitHub issue/project-tracking work now happens entirely from the local session
   going forward, since the cloud session couldn't get write access to `napkin` this round.
   **→ Answered: yes.** All work happens locally; the cloud session is retired.
