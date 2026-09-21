@@ -55,9 +55,30 @@ after re-doing the arithmetic by hand and writing the new derivation down.
 - **No nominal-to-actual lumber sizes.** Every dimension in these fixtures is a finished dimension
   the design itself states.
 
-## Shipping with the app
+## Opening these in the app
 
-Issue #37 asks that these fixtures ship inside the app build so the viewer's file dialog can open
-them on a machine that has never seen this repository. That is a change to
-`src/Napkin.App/Napkin.App.csproj` (a `Content` item over `samples/*.scene.json` with
-`CopyToOutputDirectory`), which belongs to the viewer (#36); it is not done here.
+The viewer (#36) builds its M1 samples in code, because the reader and these files were written in
+parallel. Wiring it to open these instead is one implementation of its own `IDesignSource`:
+
+```csharp
+LoadResult result = SceneReader.ReadFile(path);          // Napkin.Core.Project
+return result switch
+{
+    Loaded loaded => Design.Unlabelled(name, loaded.Sketch),
+    Refused refused => throw new DesignLoadException(refused.Summary),
+    _ => throw new InvalidOperationException(),
+};
+```
+
+`Refused.Summary` is written to be shown to a person as it is: one line per problem, each naming
+the field, id, kind or value that was wrong.
+
+Issue #37 also asks that these fixtures ship inside the app build, so the file dialog can open them
+on a machine that has never seen this repository. That is a `Content` item over
+`samples/*.scene.json` with `CopyToOutputDirectory` in `src/Napkin.App/Napkin.App.csproj`, which
+belongs to the viewer; it is not done here.
+
+**Entities carry no name.** `Design.Labels` — the viewer's part names — has nothing to read from
+the file: the format stores ids, geometry and relationships only. The names in these fixtures live
+in their `*.expected.json`. Putting a name in the scene file is a new field and a `formatVersion`
+bump, which the cut list (#8) may well want; see `docs/file-format.md`.
