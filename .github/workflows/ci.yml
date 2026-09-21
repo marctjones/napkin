@@ -74,6 +74,22 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.os }}
-          path: artifacts/
+          path: |
+            artifacts/
+            !artifacts/gui-frames/
           if-no-files-found: warn
+          retention-days: 14
+
+      # The GUI workflow suite (issue #33) renders real frames; rendering them is only worth it
+      # if they can be looked at. Their own artifact keeps them findable, and out of the one
+      # above. Absent on a run without the GUI suite, hence if-no-files-found: ignore.
+      - name: Upload GUI frames and metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-frames-${{ matrix.os }}
+          path: |
+            artifacts/gui-frames/
+            artifacts/gui-metrics.json
+          if-no-files-found: ignore
           retention-days: 14

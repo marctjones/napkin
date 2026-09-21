@@ -24,12 +24,12 @@ public class TraitScannerTests
 
         Assert.Equal(
             [
-                "CLS-LEVEL-001",
-                "GEO-LEN-001",
-                "GEO-LEN-002",
-                "GEO-LEN-003",
+                "GEO-001",
+                "GEO-002",
+                "GEO-003",
+                "GEO-004",
+                "GEO-010",
                 "GEO-NEST-001",
-                "GEO-PT-001",
             ],
             claims.Select(claim => claim.FeatureId).Distinct().OrderBy(id => id).ToArray());
     }
@@ -42,20 +42,20 @@ public class TraitScannerTests
             .Select(claim => claim.FeatureId)
             .ToList();
 
-        Assert.Contains("GEO-LEN-001", ids);
-        Assert.Contains("GEO-LEN-002", ids);
+        Assert.Contains("GEO-001", ids);
+        Assert.Contains("GEO-002", ids);
     }
 
     [Fact]
     public void ATraitInTheSameAttributeGroupAsAFactIsFound() =>
-        // `[Fact, Trait("Feature", "GEO-LEN-001")]` in the fixture.
-        Assert.Contains(Scan(), claim => claim.FeatureId == "GEO-LEN-001");
+        // `[Fact, Trait("Feature", "GEO-001")]` in the fixture.
+        Assert.Contains(Scan(), claim => claim.FeatureId == "GEO-001");
 
     [Fact]
     public void AClassLevelTraitAppliesToEveryMethodInTheClass()
     {
         var claimed = Scan()
-            .Where(claim => claim.FeatureId == "CLS-LEVEL-001")
+            .Where(claim => claim.FeatureId == "GEO-010")
             .Select(claim => claim.MethodName)
             .ToHashSet();
 
@@ -76,6 +76,66 @@ public class TraitScannerTests
     }
 
     [Fact]
+    public void XunitV3AlsoCarriesNoTraitsIntoTheResults()
+    {
+        // tests/Napkin.App.GuiTests runs on xunit v3 (Avalonia.Headless.XUnit requires it) while
+        // the other test projects stay on 2.5.3, so the mechanism has to work for both. It does,
+        // because neither version's TRX carries traits and both write the same className + name.
+        Assert.DoesNotContain("Feature", Fixture.Text("v3probe.trx"), StringComparison.Ordinal);
+        Assert.Contains(
+            "className=\"V3Probe.ShellWorkflows+Nested\" name=\"Inner\"",
+            Fixture.Text("v3probe.trx"),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AGuiWorkflowAttributeClaimsItsFeatureToo()
+    {
+        // `[GuiWorkflow("GUI-SHELL-01")]` (issue #33) takes the id as its first argument rather
+        // than spelling out a Feature trait, and publishes the trait at run time — where nothing
+        // can read it. The scanner therefore knows the shorthand.
+        var claims = ScanV3();
+
+        var workflow = Assert.Single(claims, claim => claim.FeatureId == "GUI-SHELL-01");
+        Assert.Equal("V3Probe.ShellWorkflows.Shell_opens_and_renders", workflow.TestId);
+    }
+
+    [Fact]
+    public void APlainFeatureTraitStillWorksInAV3Project() =>
+        Assert.Contains(ScanV3(), claim => claim.FeatureId == "GUI-SHELL-99");
+
+    [Fact]
+    public void TheClaimsFoundInV3SourceJoinOntoTheV3Results()
+    {
+        var results = TestResults.Load([Fixture.Path("v3probe.trx")]);
+
+        foreach (var claim in ScanV3())
+        {
+            Assert.Equal(TestOutcome.Passed, results.OutcomeOf(claim.TestId));
+        }
+    }
+
+    [Fact]
+    public void DeclaringTheWorkflowAttributeIsNotItselfAClaim()
+    {
+        var claims = TraitScanner.ScanSource(
+            """
+            namespace Napkin.App.GuiTests.Harness;
+
+            [AttributeUsage(AttributeTargets.Method)]
+            public sealed class GuiWorkflowAttribute : FactAttribute
+            {
+                public GuiWorkflowAttribute(string featureId) => FeatureId = featureId;
+
+                public string FeatureId { get; }
+            }
+            """,
+            "GuiWorkflowAttribute.cs");
+
+        Assert.Empty(claims);
+    }
+
+    [Fact]
     public void FileScopedAndBlockNamespacesBothWork()
     {
         var blockScoped = TraitScanner.ScanSource(
@@ -85,7 +145,7 @@ public class TraitScannerTests
                 public class Thing
                 {
                     [Fact]
-                    [Trait("Feature", "SAMPLE-001")]
+                    [Trait("Feature", "SMPL-001")]
                     public void Works() { }
                 }
             }
@@ -129,7 +189,7 @@ public class TraitScannerTests
             public class Thing
             {
                 [Fact]
-                [Trait("Feature", "SAMPLE-001")]
+                [Trait("Feature", "SMPL-001")]
                 public void Works()
                 {
                     Assert.Equal(1, Compute(1));
@@ -155,7 +215,7 @@ public class TraitScannerTests
             public class Thing
             {
                 [Fact]
-                [Trait("Feature", "SAMPLE-001")]
+                [Trait("Feature", "SMPL-001")]
                 public void Works<TValue>() where TValue : class { }
             }
             """,
@@ -185,4 +245,7 @@ public class TraitScannerTests
 
     private static IReadOnlyList<FeatureClaim> Scan() =>
         TraitScanner.ScanSource(Fixture.Text("Probe.cs.txt"), "Probe.cs");
+
+    private static IReadOnlyList<FeatureClaim> ScanV3() =>
+        TraitScanner.ScanSource(Fixture.Text("V3Probe.cs.txt"), "V3Probe.cs");
 }

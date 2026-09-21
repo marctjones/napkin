@@ -1,0 +1,37 @@
+using System.Runtime.CompilerServices;
+using Xunit;
+using Xunit.v3;
+
+namespace V3Probe;
+
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class GuiWorkflowAttribute : FactAttribute, ITraitAttribute
+{
+    public GuiWorkflowAttribute(
+        string featureId,
+        [CallerFilePath] string? sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber) =>
+        FeatureId = featureId;
+
+    public string FeatureId { get; }
+
+    public IReadOnlyCollection<KeyValuePair<string, string>> GetTraits() =>
+        [new KeyValuePair<string, string>("Feature", FeatureId)];
+}
+
+public class ShellWorkflows
+{
+    [GuiWorkflow("GUI-SHELL-01")]
+    public void Shell_opens_and_renders() => Assert.True(true);
+
+    [Fact]
+    [Trait("Feature", "GUI-SHELL-99")]
+    public void PlainTraitOnV3() => Assert.True(true);
+
+    public class Nested
+    {
+        [Fact]
+        public void Inner() => Assert.True(true);
+    }
+}

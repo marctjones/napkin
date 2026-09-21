@@ -10,12 +10,12 @@ public class StubGeneratorTests
         var source = StubGenerator.Render(TwoFeatures(), []);
 
         Assert.Contains(
-            "[Fact(Skip = \"planned: GEO-LEN-001 — Lengths are exact\")]",
+            "[Fact(Skip = \"planned: GEO-001 — Lengths are exact\")]",
             source,
             StringComparison.Ordinal);
-        Assert.Contains("[Trait(\"Feature\", \"GEO-LEN-001\")]", source, StringComparison.Ordinal);
-        Assert.Contains("public void GEO_LEN_001()", source, StringComparison.Ordinal);
-        Assert.Contains("public void DECK_SPAN_001()", source, StringComparison.Ordinal);
+        Assert.Contains("[Trait(\"Feature\", \"GEO-001\")]", source, StringComparison.Ordinal);
+        Assert.Contains("public void GEO_001()", source, StringComparison.Ordinal);
+        Assert.Contains("public void DECK_001()", source, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -23,14 +23,14 @@ public class StubGeneratorTests
     {
         var claims = new[]
         {
-            new FeatureClaim("Napkin.Core.Geometry.Tests.LengthTests", "Exact", "GEO-LEN-001",
+            new FeatureClaim("Napkin.Core.Geometry.Tests.LengthTests", "Exact", "GEO-001",
                 "LengthTests.cs", 12),
         };
 
         var source = StubGenerator.Render(TwoFeatures(), claims);
 
-        Assert.DoesNotContain("GEO-LEN-001", source, StringComparison.Ordinal);
-        Assert.Contains("DECK-SPAN-001", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("GEO-001", source, StringComparison.Ordinal);
+        Assert.Contains("DECK-001", source, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -68,8 +68,8 @@ public class StubGeneratorTests
 
         Assert.Equal(forwards, StubGenerator.Render(backwards, []));
         Assert.True(
-            forwards.IndexOf("DECK_SPAN_001", StringComparison.Ordinal) <
-            forwards.IndexOf("GEO_LEN_001", StringComparison.Ordinal));
+            forwards.IndexOf("DECK_001", StringComparison.Ordinal) <
+            forwards.IndexOf("GEO_001", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -114,13 +114,13 @@ public class StubGeneratorTests
         var claims = TraitScanner.ScanSource(source, "PlannedFeatures.g.cs");
 
         Assert.Equal(
-            ["DECK-SPAN-001", "GEO-LEN-001"],
+            ["DECK-001", "GEO-001"],
             claims.Select(claim => claim.FeatureId).OrderBy(id => id, StringComparer.Ordinal).ToArray());
-        Assert.Equal("Napkin.Features.Tests.PlannedFeatures.GEO_LEN_001", claims[1].TestId);
+        Assert.Equal("Napkin.Features.Tests.PlannedFeatures.GEO_001", claims[1].TestId);
     }
 
     [Theory]
-    [InlineData("GEO-LEN-001", "GEO_LEN_001")]
+    [InlineData("GEO-001", "GEO_001")]
     [InlineData("geo.len/001", "geo_len_001")]
     [InlineData("001-A", "_001_A")]
     public void IdsBecomeValidMethodNames(string id, string expected) =>
@@ -151,14 +151,14 @@ public class StubGeneratorTests
         [
             new Feature
             {
-                Id = "GEO-LEN-001",
+                Id = "GEO-001",
                 Area = "geometry",
                 Title = "Lengths are exact",
                 Milestone = "M1",
             },
             new Feature
             {
-                Id = "DECK-SPAN-001",
+                Id = "DECK-001",
                 Area = "decks",
                 Title = "Joist spans come from the adopted code",
                 Milestone = "M3",

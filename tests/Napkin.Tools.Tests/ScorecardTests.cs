@@ -23,12 +23,12 @@ public class ScorecardTests
     {
         var scorecard = BuildFromProbe();
 
-        Assert.Equal(FeatureStatus.Passing, StatusOf(scorecard, "GEO-LEN-001"));
-        Assert.Equal(FeatureStatus.Planned, StatusOf(scorecard, "GEO-PT-001"));
-        Assert.Equal(FeatureStatus.NotStarted, StatusOf(scorecard, "DECK-SPAN-001"));
+        Assert.Equal(FeatureStatus.Passing, StatusOf(scorecard, "GEO-001"));
+        Assert.Equal(FeatureStatus.Planned, StatusOf(scorecard, "GEO-004"));
+        Assert.Equal(FeatureStatus.NotStarted, StatusOf(scorecard, "DECK-001"));
 
         // Two passing tests and one skipped test carry the class-level id.
-        Assert.Equal(FeatureStatus.Partial, StatusOf(scorecard, "CLS-LEVEL-001"));
+        Assert.Equal(FeatureStatus.Partial, StatusOf(scorecard, "GEO-010"));
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public class ScorecardTests
         var scorecard = BuildFromProbe();
 
         Assert.Equal(
-            ["GEO-LEN-002", "GEO-LEN-003", "GEO-NEST-001"],
+            ["GEO-002", "GEO-003", "GEO-NEST-001"],
             scorecard.Orphans.Select(orphan => orphan.FeatureId).ToArray());
         Assert.Equal(
             "TraitProbe.Probe+Nested.Inner",
@@ -75,11 +75,11 @@ public class ScorecardTests
         var trx = scratch.Write("run.trx", FailingRun());
         var catalog = new Catalog
         {
-            Features = [new Feature { Id = "GEO-LEN-001", Area = "geometry", Milestone = "M1" }],
+            Features = [new Feature { Id = "GEO-001", Area = "geometry", Milestone = "M1" }],
         };
         var claims = new[]
         {
-            new FeatureClaim("Napkin.Sample.Thing", "Works", "GEO-LEN-001", "Thing.cs", 1),
+            new FeatureClaim("Napkin.Sample.Thing", "Works", "GEO-001", "Thing.cs", 1),
         };
 
         var scorecard = Scorecard.Build(catalog, claims, TestResults.Load([trx]), []);
@@ -93,7 +93,7 @@ public class ScorecardTests
         var markdown = ScorecardWriter.ToMarkdown(BuildFromProbe());
 
         Assert.Contains("## Feature scorecard", markdown, StringComparison.Ordinal);
-        Assert.Contains("`DECK-SPAN-001`", markdown, StringComparison.Ordinal);
+        Assert.Contains("`DECK-001`", markdown, StringComparison.Ordinal);
         Assert.Contains("Not started", markdown, StringComparison.Ordinal);
         Assert.Contains("never gates", markdown, StringComparison.Ordinal);
         Assert.Contains("absent from the catalog", markdown, StringComparison.Ordinal);
@@ -106,7 +106,7 @@ public class ScorecardTests
 
         var json = ScorecardWriter.ToJson(scorecard);
 
-        Assert.Contains("\"id\": \"GEO-LEN-001\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"id\": \"GEO-001\"", json, StringComparison.Ordinal);
         Assert.Contains("\"status\": \"Passing\"", json, StringComparison.Ordinal);
         Assert.Contains("\"orphans\"", json, StringComparison.Ordinal);
     }
@@ -130,7 +130,7 @@ public class ScorecardTests
 
         // Sorted by id, so the report is stable whatever order the files are read in.
         Assert.Equal(
-            ["CLS-LEVEL-001", "DECK-SPAN-001", "GEO-LEN-001", "GEO-PT-001"],
+            ["DECK-001", "GEO-001", "GEO-004", "GEO-010"],
             catalog.Features.Select(feature => feature.Id).ToArray());
     }
 
@@ -138,13 +138,42 @@ public class ScorecardTests
     public void ADuplicateIdIsAWarningRatherThanAFailure()
     {
         using var scratch = Fixture.NewDirectory();
-        scratch.Write("a.json", One("GEO-LEN-001"));
-        scratch.Write("b.json", One("GEO-LEN-001"));
+        scratch.Write("a.json", One("GEO-001"));
+        scratch.Write("b.json", One("GEO-001"));
 
         var catalog = Catalog.Load(scratch.Path, out var warnings);
 
         Assert.Single(catalog.Features);
         Assert.Contains("already defined", Assert.Single(warnings), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("GEO-001")]
+    [InlineData("RUL-004")]
+    [InlineData("CODE-003")]
+    [InlineData("GUI-SHELL-02")]
+    [InlineData("GUI-BRACE-02")]
+    public void TheCatalogsIdStylesAreBothAccepted(string id)
+    {
+        using var scratch = Fixture.NewDirectory();
+        scratch.Write("a.json", One(id));
+
+        var catalog = Catalog.Load(scratch.Path, out var warnings);
+
+        Assert.Equal(id, Assert.Single(catalog.Features).Id);
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void AnIdThatDoesNotLookLikeAnIdIsAWarningButStillWorks()
+    {
+        using var scratch = Fixture.NewDirectory();
+        scratch.Write("a.json", One("geometry lengths"));
+
+        var catalog = Catalog.Load(scratch.Path, out var warnings);
+
+        Assert.Single(catalog.Features);
+        Assert.Contains("does not look like an id", Assert.Single(warnings), StringComparison.Ordinal);
     }
 
     [Fact]

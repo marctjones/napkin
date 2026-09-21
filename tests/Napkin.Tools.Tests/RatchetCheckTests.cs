@@ -123,7 +123,7 @@ public class RatchetCheckTests
         var result = RatchetCheck.Run(
             baseline,
             [],
-            new GuiMetrics { WorkflowsPassed = 2, WorkflowIds = ["GUI-A", "GUI-B"] });
+            new GuiMetrics { WorkflowsPassed = 2, WorkflowIds = ["GUI-SHELL-01", "GUI-SHELL-02"] });
 
         Assert.False(result.Passed);
         Assert.Contains("below the floor", Assert.Single(result.Failures), StringComparison.Ordinal);
@@ -134,15 +134,33 @@ public class RatchetCheckTests
     {
         var baseline = new Baseline();
         baseline.Gui.WorkflowsPassed = 2;
-        baseline.Gui.WorkflowIds = ["GUI-DRAW-001", "GUI-SAVE-001"];
+        baseline.Gui.WorkflowIds = ["GUI-SHELL-01", "GUI-SHELL-02"];
 
         var result = RatchetCheck.Run(
             baseline,
             [],
-            new GuiMetrics { WorkflowsPassed = 2, WorkflowIds = ["GUI-DRAW-001", "GUI-NEW-001"] });
+            new GuiMetrics { WorkflowsPassed = 2, WorkflowIds = ["GUI-SHELL-01", "GUI-SHELL-03"] });
 
         Assert.False(result.Passed);
-        Assert.Contains("GUI-SAVE-001", Assert.Single(result.Failures), StringComparison.Ordinal);
+        Assert.Contains("GUI-SHELL-02", Assert.Single(result.Failures), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AGuiRunThatPassedNothingIsAFailureRatherThanASilentZero()
+    {
+        // The GUI suite rewrites its metrics file on every run and resets it to zero when
+        // everything failed, so "the file is here and says zero" has to fail against a floor.
+        var baseline = new Baseline();
+        baseline.Gui.WorkflowsPassed = 4;
+        baseline.Gui.WorkflowIds = ["GUI-SHELL-01", "GUI-SHELL-02"];
+
+        var result = RatchetCheck.Run(
+            baseline,
+            [],
+            new GuiMetrics { WorkflowsPassed = 0, WorkflowIds = [] });
+
+        Assert.False(result.Passed);
+        Assert.Equal(2, result.Failures.Count);
     }
 
     [Fact]
@@ -150,12 +168,12 @@ public class RatchetCheckTests
     {
         var baseline = new Baseline();
         baseline.Gui.WorkflowsPassed = 1;
-        baseline.Gui.WorkflowIds = ["GUI-DRAW-001"];
+        baseline.Gui.WorkflowIds = ["GUI-SHELL-01"];
 
         var result = RatchetCheck.Run(
             baseline,
             [],
-            new GuiMetrics { WorkflowsPassed = 4, WorkflowIds = ["GUI-DRAW-001", "GUI-NEW-001"] });
+            new GuiMetrics { WorkflowsPassed = 4, WorkflowIds = ["GUI-SHELL-01", "GUI-SHELL-03"] });
 
         Assert.True(result.Passed);
     }

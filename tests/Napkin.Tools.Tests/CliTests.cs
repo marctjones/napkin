@@ -177,7 +177,7 @@ public class CliTests
         var run = Run("scorecard", "report", "--root", repo.Path, "--json", json);
 
         Assert.Equal(ExitCode.Ok, run.Code);
-        Assert.Contains("`DECK-SPAN-001`", run.Output, StringComparison.Ordinal);
+        Assert.Contains("`DECK-001`", run.Output, StringComparison.Ordinal);
         Assert.Contains("\"status\": \"Passing\"", File.ReadAllText(json), StringComparison.Ordinal);
     }
 
@@ -213,7 +213,7 @@ public class CliTests
 
         Assert.Equal(ExitCode.Ok, Run("scorecard", "stubs", "--root", repo.Path).Code);
         var first = File.ReadAllBytes(output);
-        Assert.Contains("GEO-LEN-001", System.Text.Encoding.UTF8.GetString(first),
+        Assert.Contains("GEO-001", System.Text.Encoding.UTF8.GetString(first),
             StringComparison.Ordinal);
 
         var again = Run("scorecard", "stubs", "--root", repo.Path);
@@ -234,7 +234,7 @@ public class CliTests
             public class LengthTests
             {
                 [Fact]
-                [Trait("Feature", "GEO-LEN-001")]
+                [Trait("Feature", "GEO-001")]
                 public void Exact() { }
             }
             """);
@@ -243,8 +243,8 @@ public class CliTests
 
         var generated = File.ReadAllText(
             Path.Combine(repo.Path, "tests", "Napkin.Features.Tests", "PlannedFeatures.g.cs"));
-        Assert.DoesNotContain("GEO-LEN-001", generated, StringComparison.Ordinal);
-        Assert.Contains("DECK-SPAN-001", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("GEO-001", generated, StringComparison.Ordinal);
+        Assert.Contains("DECK-001", generated, StringComparison.Ordinal);
     }
 
     /// <summary>A scratch directory that looks enough like the repository to run a command in.</summary>

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace Napkin.Tools.Features;
 
@@ -40,6 +41,19 @@ public sealed class Catalog
 
     [JsonPropertyName("features")]
     public List<Feature> Features { get; set; } = [];
+
+    /// <summary>
+    /// The shape a feature id is expected to take: an upper-case area, optionally qualified, then
+    /// a two- or three-digit number — `GEO-001`, `RUL-004`, `GUI-SHELL-02`.
+    /// </summary>
+    /// <remarks>
+    /// Nothing is rejected for failing to match. An id is an opaque key everywhere else in the
+    /// tool, so an unusual one still works end to end; the shape is checked only so that a typo
+    /// is visible in the report rather than silently producing a feature nothing can claim.
+    /// </remarks>
+    public static readonly Regex IdShape = new(
+        @"^[A-Z]+(-[A-Z]+)*-\d{2,3}$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static JsonSerializerOptions Options { get; } = new()
     {
@@ -109,6 +123,13 @@ public sealed class Catalog
                         $"{name}: feature {feature.Id} is already defined in {firstFile}; the " +
                         "first definition wins.");
                     continue;
+                }
+
+                if (!IdShape.IsMatch(feature.Id))
+                {
+                    notes.Add(
+                        $"{name}: feature id `{feature.Id}` does not look like an id " +
+                        "(AREA-001 or AREA-PART-01). It still works; check it is not a typo.");
                 }
 
                 seen[feature.Id] = name;

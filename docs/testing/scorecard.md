@@ -17,7 +17,7 @@ Every `features/*.json` file is merged into one catalog, in file-name order.
   "schema": 1,
   "features": [
     {
-      "id": "GEO-LEN-001",
+      "id": "GEO-001",
       "area": "geometry",
       "title": "Lengths are exact",
       "acceptance": "A length round-trips through the file format without loss.",
@@ -32,6 +32,7 @@ Every `features/*.json` file is merged into one catalog, in file-name order.
 | Field | Meaning |
 |---|---|
 | `id` | The identifier a test claims. Stable: renaming one orphans its tests. |
+| | Shaped `AREA-001` or `AREA-PART-01` — `GEO-001`, `RUL-004`, `GUI-SHELL-02`. |
 | `area` | Rollup grouping — `geometry`, `rules`, `furniture`, `interop`, … |
 | `title` | One short line, shown in the report and in generated stubs. |
 | `acceptance` | One sentence: what a passing test has to demonstrate. |
@@ -39,9 +40,13 @@ Every `features/*.json` file is merged into one catalog, in file-name order.
 | `issue` | The GitHub issue that delivers it. |
 | `kind` | `unit`, `golden` or `workflow`. |
 
+An id is an opaque key everywhere in the tool, so an unusual one still works end to end; the shape
+is only checked so that a typo shows up in the report as a warning rather than silently producing
+a feature nothing can claim. A duplicate id across files is a warning too, not an error — the
+first definition wins.
+
 Splitting the catalog across several files is deliberate: the GUI workflows live in their own
-file, and a growing catalog stays reviewable. A duplicate id across files is a warning in the
-report, not an error — the first definition wins.
+file, and a growing catalog stays reviewable.
 
 ## Claiming a feature
 
@@ -49,12 +54,23 @@ A test claims a feature with a trait:
 
 ```csharp
 [Fact]
-[Trait("Feature", "GEO-LEN-001")]
+[Trait("Feature", "GEO-001")]
 public void ALengthRoundTrips() { }
 ```
 
 The attribute repeats, so one test can claim several features, and it works on the class as well
 as on a method — a class-level trait applies to every test in it.
+
+The GUI workflow suite has a shorthand for the same thing, because its tests are always workflows
+claiming exactly one feature:
+
+```csharp
+[GuiWorkflow("GUI-SHELL-01")]
+public void Shell_opens_shows_its_content_and_renders_after_input() => GuiWorkflow.Run(...);
+```
+
+`[GuiWorkflow]` takes the id as its first argument and publishes it as a `Feature` trait at run
+time. Both forms are read the same way.
 
 Claim from the test project for the code being exercised. `tests/Napkin.Features.Tests` is for
 generated stubs only; a real test never belongs there.
@@ -104,9 +120,9 @@ This regenerates `tests/Napkin.Features.Tests/PlannedFeatures.g.cs` with one ski
 catalogued feature that no hand-written test claims yet:
 
 ```csharp
-[Fact(Skip = "planned: GEO-LEN-001 — Lengths are exact")]
-[Trait("Feature", "GEO-LEN-001")]
-public void GEO_LEN_001()
+[Fact(Skip = "planned: GEO-001 — Lengths are exact")]
+[Trait("Feature", "GEO-001")]
+public void GEO_001()
 {
 }
 ```
@@ -123,16 +139,21 @@ clean. Run it after every catalog change and commit the result.
 ## How trait values reach the report
 
 xunit traits do not survive into test results. This was measured, not assumed: a probe project
-with `[Trait("Feature", "GEO-LEN-001")]` on a passing fact produced a TRX whose
+with `[Trait("Feature", "GEO-001")]` on a passing fact produced a TRX whose
 `<TestDefinitions>` carry only `className` and `name` — the string `Feature` does not occur
-anywhere in the file. The VSTest TRX logger discards arbitrary traits, and xunit 2.5.3 offers no
+anywhere in the file. The VSTest TRX logger discards arbitrary traits, and xunit offers no
 supported way to put them back.
 
-So the tool reads the traits from the test **source** and joins them to the TRX on
-`className` + method name, which TRX does carry (including the `Outer+Nested` spelling for nested
-classes). A small purpose-built tokenizer handles comments, string literals and brace depth, so a
-`[Trait(...)]` inside a comment or a string is not mistaken for a claim, and a statement inside a
-method body is not mistaken for a method.
+The same probe was run again on **xunit v3**, because `tests/Napkin.App.GuiTests` needs v3 while
+the other test projects stay on 2.5.3. v3's TRX carries no traits either — not from `[Trait]` and
+not from a custom `ITraitAttribute` — and writes the same `className` and `name`, including the
+`Outer+Nested` spelling. Both captured TRX files are fixtures, and both are asserted on.
+
+So the tool reads the claims from the test **source** and joins them to the TRX on
+`className` + method name. A small purpose-built tokenizer handles comments, string literals and
+brace depth, so a `[Trait(...)]` inside a comment or a string is not mistaken for a claim, and a
+statement inside a method body is not mistaken for a method. Reading source is also what makes the
+mechanism indifferent to the xunit version.
 
 This is the same scan `scorecard stubs` needs in order to know which features a hand-written test
 already claims, so the repository has one mechanism rather than two — and the trait attribute

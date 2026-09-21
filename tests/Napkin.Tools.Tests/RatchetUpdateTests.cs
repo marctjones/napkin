@@ -116,13 +116,13 @@ public class RatchetUpdateTests
         RatchetUpdate.Apply(
             baseline,
             [],
-            new GuiMetrics { WorkflowsPassed = 2, WorkflowIds = ["GUI-B", "GUI-A"] },
+            new GuiMetrics { WorkflowsPassed = 2, WorkflowIds = ["GUI-SHELL-02", "GUI-SHELL-01"] },
             allowLower: false,
             reason: null,
             Today);
 
         Assert.Equal(2, baseline.Gui.WorkflowsPassed);
-        Assert.Equal(["GUI-A", "GUI-B"], baseline.Gui.WorkflowIds);
+        Assert.Equal(["GUI-SHELL-01", "GUI-SHELL-02"], baseline.Gui.WorkflowIds);
     }
 
     [Fact]
@@ -130,18 +130,18 @@ public class RatchetUpdateTests
     {
         var baseline = new Baseline();
         baseline.Gui.WorkflowsPassed = 2;
-        baseline.Gui.WorkflowIds = ["GUI-A", "GUI-B"];
+        baseline.Gui.WorkflowIds = ["GUI-SHELL-01", "GUI-SHELL-02"];
 
         var result = RatchetUpdate.Apply(
             baseline,
             [],
-            new GuiMetrics { WorkflowsPassed = 2, WorkflowIds = ["GUI-A", "GUI-C"] },
+            new GuiMetrics { WorkflowsPassed = 2, WorkflowIds = ["GUI-SHELL-01", "GUI-SHELL-03"] },
             allowLower: false,
             reason: null,
             Today);
 
         Assert.True(result.Blocked);
-        Assert.Equal(["GUI-A", "GUI-B"], baseline.Gui.WorkflowIds);
+        Assert.Equal(["GUI-SHELL-01", "GUI-SHELL-02"], baseline.Gui.WorkflowIds);
     }
 
     [Fact]
@@ -149,12 +149,12 @@ public class RatchetUpdateTests
     {
         var baseline = new Baseline();
         baseline.Gui.WorkflowsPassed = 5;
-        baseline.Gui.WorkflowIds = ["GUI-A"];
+        baseline.Gui.WorkflowIds = ["GUI-SHELL-01"];
 
         RatchetUpdate.Apply(baseline, [], null, allowLower: false, reason: null, Today);
 
         Assert.Equal(5, baseline.Gui.WorkflowsPassed);
-        Assert.Equal(["GUI-A"], baseline.Gui.WorkflowIds);
+        Assert.Equal(["GUI-SHELL-01"], baseline.Gui.WorkflowIds);
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public class RatchetUpdateTests
         var path = Path.Combine(scratch.Path, "baseline.json");
         var baseline = WithFloor(82.45, 61.5);
         baseline.Gui.WorkflowsPassed = 1;
-        baseline.Gui.WorkflowIds = ["GUI-A"];
+        baseline.Gui.WorkflowIds = ["GUI-SHELL-01"];
         baseline.Log.Add(new Baseline.LogEntry { Date = "2026-09-21", Reason = "because" });
 
         baseline.Save(path);
@@ -173,7 +173,7 @@ public class RatchetUpdateTests
         Assert.Equal(82.45, reloaded.Coverage["Napkin.Sample"].Line);
         Assert.Equal(61.5, reloaded.Coverage["Napkin.Sample"].Branch);
         Assert.Equal(1, reloaded.Gui.WorkflowsPassed);
-        Assert.Equal(["GUI-A"], reloaded.Gui.WorkflowIds);
+        Assert.Equal(["GUI-SHELL-01"], reloaded.Gui.WorkflowIds);
         Assert.Equal("because", Assert.Single(reloaded.Log).Reason);
         Assert.EndsWith("\n", File.ReadAllText(path), StringComparison.Ordinal);
     }

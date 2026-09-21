@@ -45,6 +45,13 @@ public static class TraitScanner
     /// <summary>The trait name that claims a feature.</summary>
     public const string TraitName = "Feature";
 
+    /// <summary>
+    /// The GUI suite's own claiming attribute (issue #33): `[GuiWorkflow("GUI-SHELL-01")]` takes
+    /// the feature id as its first argument and publishes it as a `Feature` trait at run time.
+    /// The scanner reads source, so it has to know the shorthand as well as the plain trait.
+    /// </summary>
+    public const string WorkflowAttributeName = "GuiWorkflow";
+
     /// <summary>Generated files are excluded when asking what a *hand-written* test claims.</summary>
     public const string GeneratedSuffix = ".g.cs";
 
@@ -258,37 +265,59 @@ public static class TraitScanner
     }
 
     /// <summary>
-    /// Pulls every `Trait("Feature", "<ID>")` out of one attribute group — which may hold several
-    /// attributes, as in `[Fact, Trait("Feature", "X")]`, and may repeat the trait.
+    /// Pulls every claim out of one attribute group — which may hold several attributes, as in
+    /// `[Fact, Trait("Feature", "X")]`, and may repeat the claim. Two forms are recognised:
+    /// `Trait("Feature", "<ID>")` and the GUI suite's `GuiWorkflow("<ID>")`.
     /// </summary>
     private static IEnumerable<string> ReadFeatureIds(IReadOnlyList<Token> tokens, int start, int end)
     {
         for (var index = start; index < end; index++)
         {
-            if (tokens[index] is not { Kind: TokenKind.Word, Value: "Trait" or "TraitAttribute" })
+            if (tokens[index].Kind != TokenKind.Word)
             {
                 continue;
             }
 
-            if (index + 5 >= end ||
-                tokens[index + 1] is not { Kind: TokenKind.Punctuation, Value: "(" } ||
-                tokens[index + 2] is not { Kind: TokenKind.Text } ||
-                tokens[index + 2].Value != TraitName ||
-                tokens[index + 3] is not { Kind: TokenKind.Punctuation, Value: "," } ||
-                tokens[index + 4] is not { Kind: TokenKind.Text })
+            var idIndex = tokens[index].Value switch
+            {
+                "Trait" or "TraitAttribute" => TraitArgument(tokens, index, end),
+                WorkflowAttributeName or WorkflowAttributeName + "Attribute" =>
+                    WorkflowArgument(tokens, index, end),
+                _ => -1,
+            };
+
+            if (idIndex < 0)
             {
                 continue;
             }
 
-            var id = tokens[index + 4].Value.Trim();
+            var id = tokens[idIndex].Value.Trim();
             if (id.Length > 0)
             {
                 yield return id;
             }
 
-            index += 4;
+            index = idIndex;
         }
     }
+
+    /// <summary>`Trait("Feature", "<ID>")`: the id is the second argument, after the trait name.</summary>
+    private static int TraitArgument(IReadOnlyList<Token> tokens, int index, int end) =>
+        index + 4 < end &&
+        tokens[index + 1] is { Kind: TokenKind.Punctuation, Value: "(" } &&
+        tokens[index + 2] is { Kind: TokenKind.Text, Value: TraitName } &&
+        tokens[index + 3] is { Kind: TokenKind.Punctuation, Value: "," } &&
+        tokens[index + 4].Kind == TokenKind.Text
+            ? index + 4
+            : -1;
+
+    /// <summary>`GuiWorkflow("<ID>")`: the id is the first argument.</summary>
+    private static int WorkflowArgument(IReadOnlyList<Token> tokens, int index, int end) =>
+        index + 2 < end &&
+        tokens[index + 1] is { Kind: TokenKind.Punctuation, Value: "(" } &&
+        tokens[index + 2].Kind == TokenKind.Text
+            ? index + 2
+            : -1;
 
     private static int MatchBracket(IReadOnlyList<Token> tokens, int open) =>
         Match(tokens, open, "[", "]");

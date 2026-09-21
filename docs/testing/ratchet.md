@@ -66,9 +66,11 @@ assembly is a coverage regression, not a way out of one.
 
 **GUI workflows ratchet too.** If `artifacts/gui-metrics.json` exists — written by the GUI
 automation suite (issue #33) — the check fails when fewer workflows passed than the baseline
-requires, or when a workflow named in the baseline is no longer among those that passed. If the
-file is absent and the baseline requires no workflows, the check says so and moves on; if the
-baseline does require workflows, their absence is a failure.
+requires, or when a workflow named in the baseline is no longer among those that passed. The suite
+rewrites that file on every run and resets it to zero when everything failed, so a file saying
+`"workflowsPassed": 0` against a non-zero floor is a failure, not a no-op. If the file is absent
+and the baseline requires no workflows, the check says so and moves on; if the baseline does
+require workflows, their absence is a failure.
 
 ## Updating the baseline
 
