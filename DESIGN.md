@@ -347,7 +347,7 @@ than derived from a spec.
 
 **3. The feature scorecard — how much of the design actually works?**
 
-[`features/*.json`](../features/README.md) catalogues the features napkin intends to have, each
+[`features/*.json`](./features/README.md) catalogues the features napkin intends to have, each
 with one concrete acceptance sentence, the milestone it belongs to and the issue that delivers it.
 Tests claim a feature with a trait; the scorecard reads the test results and reports what is
 passing, planned, partial or not started, by area and by milestone.
