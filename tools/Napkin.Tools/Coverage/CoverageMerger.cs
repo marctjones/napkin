@@ -81,7 +81,12 @@ public static class CoverageMerger
                 foreach (var type in package.Elements("classes").Elements("class"))
                 {
                     var typeName = (string?)type.Attribute("name") ?? string.Empty;
-                    var file = (string?)type.Attribute("filename") ?? string.Empty;
+                    // coverlet writes `filename` relative to a root it works out per report, so the
+                    // same source file appears as `Foo.cs` in one report and `Napkin.Core/Foo.cs` in
+                    // another. Keyed as written, the same line never matches across reports and the
+                    // union degrades into an average. The bare file name is stable, and the class
+                    // name in the key keeps partial classes spread over several files apart.
+                    var file = FileNameOnly((string?)type.Attribute("filename") ?? string.Empty);
 
                     // The <class><lines> block already aggregates every method's lines, so reading
                     // it (and not <methods>) counts each line exactly once.
@@ -168,6 +173,16 @@ public static class CoverageMerger
         {
             lines[key] = new LineTally(hits, branchesCovered, branchesTotal);
         }
+    }
+
+    /// <summary>
+    /// The last path segment, whichever separator the reporting machine used (a Windows runner
+    /// writes backslashes, which <see cref="Path.GetFileName(string)"/> does not split on macOS).
+    /// </summary>
+    private static string FileNameOnly(string file)
+    {
+        var separator = file.LastIndexOfAny(['/', '\\']);
+        return separator < 0 ? file : file[(separator + 1)..];
     }
 
     private readonly record struct LineKey(string Assembly, string Type, string File, int Number);
