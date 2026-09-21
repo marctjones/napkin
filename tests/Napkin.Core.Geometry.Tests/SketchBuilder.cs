@@ -9,8 +9,9 @@ namespace Napkin.Core.Geometry.Tests;
 /// </summary>
 internal sealed class SketchBuilder
 {
-    private int _nextEntity;
-    private int _nextRelationship;
+    // Ids start at 1 so that no id is Guid.Empty, which nothing real should ever equal.
+    private int _nextEntity = 1;
+    private int _nextRelationship = 1;
 
     /// <summary>The sketch built so far.</summary>
     public Sketch Sketch { get; private set; } = Sketch.Empty;
