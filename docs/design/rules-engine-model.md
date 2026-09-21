@@ -564,3 +564,303 @@ definition; #18 computes or asks for it accordingly).
 - Jurisdiction-provided site values (a state table of snow loads by town, if one exists in an
   adopted text) would be a table kind of their own, offered to the user as a *suggestion with a
   citation* that they accept explicitly — never applied silently. Not in scope for M4/M5.
+
+## 6. Amendment overlays
+
+### 6.1 One mechanism, three layers
+
+The overlay format of §1.3 is the only amendment mechanism. It is used identically for a state's
+amendments over the model code and for a municipality's amendments over the state — the same
+`add`/`amend`/`delete` operations, the same schema, the same validation, the same golden-test
+and review requirements. A municipal pack differs from a state pack only in its `layers` list
+(one more entry) and its `jurisdiction.municipality`.
+
+```
+layers/irc-2021            ← model code (ingredient; transcribed once; no golden tests of its own)
+  + packs/us-pa-ucc-2021/amendments       ← state overlay      → pack "us-pa-ucc-2021"
+      + packs/us-pa-ucc-2021-<town>/amendments  ← municipal overlay → pack "us-pa-ucc-2021-<town>"
+```
+
+A municipal pack's `layers` names the state pack's overlay by path rather than copying it, so a
+correction to the state overlay flows through, and the state pack's `revision` is recorded in
+the municipal pack's manifest and checked at load (a mismatch is a build/test failure, not a
+runtime surprise — packs ship together).
+
+### 6.2 Golden tests per layer
+
+Golden tests are written against **packs**, i.e. composed results, because that is what the
+state (or town) published. Each layer's tests are additive:
+
+- The state pack's golden file covers every composed row (§8.2) — including the unamended ones,
+  because the claim under test is "this is the value in force in Connecticut", not "this is what
+  the IRC says".
+- A municipal pack's golden file covers every row its overlay touches, plus a **no-change
+  assertion**: for every table the overlay does not touch, the composed table equals the state
+  pack's composed table (a structural equality test, generated, not hand-written). That is how
+  an overlay that accidentally drops a row is caught.
+- The model-code base layer has no golden tests of its own. It is not a selectable code and
+  nothing cites it directly; its rows are tested through every pack that includes it.
+
+### 6.3 Conflict detection
+
+At load, and therefore in CI for every shipped pack:
+
+| Condition | Result |
+|---|---|
+| two operations in one overlay target the same row or table id | invalid pack |
+| `amend`/`delete` of an id that does not exist in the composed layer below | invalid pack |
+| `add` of an id that already exists below | invalid pack |
+| composed table fails band validation (§4.3) | invalid pack |
+| overlay `amend`s a table's `inputs` so a golden case's inputs no longer match the declaration | golden test failure |
+| municipal overlay loosens a numeric limit relative to the state layer (a larger max span, a heavier snow bound for the same member) | **warning**, reported by a lint test, not a load error |
+
+The last row is deliberate. DESIGN.md §11 says Pennsylvania municipalities may adopt *stricter*
+amendments (unverified against Act 45 §503 in this task). The engine can notice a loosening on a
+monotone column, and should say so loudly, but whether an amendment is "stricter" is a legal
+determination the reviewer makes; the lint points, the human decides, and the decision is
+recorded in the review checklist (§8.3).
+
+### 6.4 Scope for the first betas: the mechanism, zero municipalities
+
+The [PA DLI register of municipal code-change
+ordinances](https://www.pa.gov/agencies/dli/programs-services/labor-management-relations/bureau-of-occupational-and-industrial-safety/uniform-construction-code-home/ucc-municipal-code-change-ordinances)
+was fetched in this task. What it is: an alphabetical register of well over two hundred
+municipalities, each entry giving the municipality, county, a phone number, a narrative
+description of the proposed changes and a narrative status (under review, approved, enacted,
+with dates in prose). What it is not: a set of ordinance PDFs, ordinance numbers or structured
+dates. Encoding a municipality therefore means obtaining and reading the enacted ordinance from
+the municipality itself, then transcribing and reviewing it like any table.
+
+Recommendation for #22 (Decision 4): the first betas ship the overlay mechanism, exercised by a
+synthetic municipal fixture in tests (§11.1), and **zero real municipal packs**. In the UI, a
+Pennsylvania project shows a persistent note: "Pennsylvania towns may adopt stricter amendments;
+check the DLI register for <your municipality> and ask your building department" with the
+register link. A real municipal pack is added when a user with a permit in a specific town needs
+one, encoded from that town's enacted ordinance, and it goes through §8 like any other pack.
+This keeps the honest-scope principle: the app never implies a town has no amendments.
+
+## 7. Code locking, recompute and stale results
+
+### 7.1 What the project stores
+
+`manifest.json` (#6, geometry-model §6) gains:
+
+```json
+"adoptedCode": { "pack": "us-ct-2026", "revision": 1 },
+"permit": { "applicationDate": "2026-10-02", "notes": "Bloomfield, applied in person" }
+```
+
+`adoptedCode` is `null` for a project that has not chosen a code — the state a new project is in
+and the state a project falls into when its pack is unavailable (§9.3). `permit` is optional
+free data the user may fill in; it drives guidance (§7.2), never selection.
+
+### 7.2 Locking is a user choice, guided by dates, never automatic
+
+The picker (#19) lists every valid, selectable pack as "<shortName> — <baseCode>, in force
+<from>[ to <to>]" (DESIGN.md §11's wording), sorted by jurisdiction then date. If the project
+has a `permit.applicationDate`, packs whose `inForce` window contains it are marked "matches
+your permit date" and the others are not hidden. If the chosen pack's window does not contain
+the date, a warning is shown on the picker and beside every result; the choice stands. Reasons
+this is guidance and not automation: transition rules exist that are not pure date windows
+(DESIGN.md §11 records one for PA, unverified), a user may know the town's practice, and a wrong
+automatic choice would be exactly the silent error the design exists to prevent. The picker's
+copy makes the rule explicit: "napkin applies the code you choose; the code that governs your
+permit is set by your building department."
+
+### 7.3 Results are derived; recompute is total; changes are shown
+
+Results are never authoritative in the file. The building module (#18) holds an `IRulesEngine`
+for the project's pack and every wall's and opening's result is a function of (geometry, site
+inputs, pack). Three events cause a **total recompute** — every element, no incremental
+shortcut — followed by a diff shown to the user:
+
+1. The user changes the adopted code in the picker.
+2. The project opens and the installed pack's `revision` differs from the manifest's.
+3. Site inputs change (no pack change, but every result may move).
+
+```csharp
+public sealed record RecomputeReport(
+    AdoptedCodeRef Before, AdoptedCodeRef After,
+    ImmutableList<ResultChange> Changes,          // one per element whose result differs
+    int Unchanged);
+
+public sealed record ResultChange(EntityId Element, string ElementLabel,
+    RuleResultSnapshot Before, RuleResultSnapshot After, ChangeKind Kind);
+
+public enum ChangeKind { SizedToSized, SizedToOutOfScope, OutOfScopeToSized, PassToFail,
+                         FailToPass, ToOutOfScope, FromOutOfScope, CitationOnly }
+```
+
+For event 1 the "before" results are computed in memory under the old engine at the moment of
+the switch, so nothing needs to have been stored. For event 2 the old data is no longer
+available, which is the reason the project file stores a **result snapshot**: `results.json`,
+one entry per element with the result, its citation and the pack id/revision it was computed
+under. The snapshot exists only to be diffed against; on open it is never displayed as current.
+The app recomputes, compares, shows the report ("the CT 2026 data was revised (rev 1 → 2): 2 of
+14 results changed"), and rewrites the snapshot. This is a #6 format matter and is flagged there;
+`results.json` is a small addition to the container in DESIGN.md §6.4.
+
+**Nothing stale survives.** There is no path by which a result computed under one pack is shown
+under another: the manifest records the pack, the snapshot records the pack, and a mismatch
+between either and the running engine forces the recompute before anything is drawn. `ChangeKind`
+exists so the UI can rank the report — a `SizedToOutOfScope` is shown first and in red; a
+`CitationOnly` (same member, same studs, different row label after a table was renumbered) is
+listed last. Every change is listed; none is collapsed.
+
+**M4 / M5.** M4 ships the picker with one pack and total recompute on events 3 (site inputs)
+and, trivially, 1 (re-selecting the same pack). M5 ships the second pack, which is what makes
+event 1 a real comparison, and `results.json` for event 2. The report type exists in M4 so M5
+adds a pack, not a mechanism.
+
+## 8. The golden-test format and the two-role process
+
+### 8.1 What a golden test asserts
+
+One test case per encoded row, asserting the value published in the state's adopted text —
+not "the pack says what the pack says". A case names its row by `RowId`, gives the inputs that
+land in that row, gives the expected output, and cites where in the source the transcriber read
+the expected output. The test constructs the request from the inputs, runs the real evaluator
+over the real pack, and asserts the result *and* that the result's citation names the expected
+row. A case therefore tests transcription, band selection and citation together.
+
+Per row, additionally, **boundary pairs**: for each `capacity` column, a case exactly at the
+limit (→ `Sized`, this row) and a case one unit (1/1024″) over (→ either the next row in the
+same group or `OutOfScope(SpanExceedsTable)` citing this row as the limit). For each
+`upper-bound` column the same at the top of the band. These are where a result flips, and they
+are generated from the row's own bounds (so they do not need a source citation of their own),
+but the generator's output is committed as data, not recomputed at test time, so a reviewer
+sees it.
+
+### 8.2 File format
+
+```json
+// tests/Napkin.Core.RulesEngine.Tests/Golden/us-ct-2026/r602.7-1.golden.json
+// Authored by the transcriber FROM THE SOURCE, never by exporting the pack. (Synthetic values.)
+{
+  "pack": "us-ct-2026",
+  "table": "R602.7(1)",
+  "source": "csbc-2026",
+  "transcriber": { "who": "Opus (session id or PR number)", "on": "2026-10-01" },
+  "cases": [
+    {
+      "row": "rc.snow-le-99.width-le-77ft.hdr-999",
+      "inputs": { "supports": "roof-ceiling", "groundSnowLoad": 99,
+                  "buildingWidth": "77ft 0in", "headerSpan": "99ft 9in" },
+      "expect": { "sized": { "header": { "plies": 9, "nominal": "2x99" },
+                             "jackStuds": 9, "kingStuds": 9 } },
+      "location": "UNVERIFIED — page, column heading and row label as printed"
+    },
+    {
+      "row": "rc.snow-le-99.width-le-77ft.hdr-999",
+      "inputs": { "supports": "roof-ceiling", "groundSnowLoad": 99,
+                  "buildingWidth": "77ft 0in", "headerSpan": "99ft 9-1/1024in" },
+      "expect": { "outOfScope": { "reason": "SpanExceedsTable", "limitRow": "rc.snow-le-99.width-le-77ft.hdr-999" } },
+      "generated": "boundary"
+    }
+  ]
+}
+```
+
+The test project has one xunit `[Theory]` per table kind, fed by `[MemberData]` that enumerates
+every golden file for every pack; the test display name is `pack/table/row/case` so a failure
+names the row. A **coverage test** asserts, per pack and table, that every `RowId` in the
+composed table appears in at least one hand-authored (non-`generated`) case, and that every
+case's `row` exists — an orphan case is a failure, because it means a row was renamed without
+the golden file being re-read. Every golden case also carries `[Trait("Feature", ...)]` for the
+scorecard (#34) via the theory, not per case.
+
+Independence: the golden file lives under `tests/`, is written by reading the source, and is
+never generated from the pack. If the transcriber copies the pack's values into the golden file,
+the file is worthless and the reviewer's checklist (§8.3) is the only defence — which is why the
+checklist is row-by-row against the source and not "the tests pass".
+
+### 8.3 The two-role process
+
+PLAN.md assigns Opus to transcribe and Fable to review, for independence. The process:
+
+1. **Transcriber** (the implementer of #14-#17): obtains the primary document, records it in
+   `sources` with URL, printing/errata state, retrieval date and SHA-256; encodes the base layer
+   rows (if new) and the overlay; writes the golden file from the source; classifies every
+   footnote (§1.4); opens the pull request with `review.status = "in-review"`.
+2. **Reviewer** (independent; Fable per PLAN.md): with the same document open, walks the
+   checklist below and commits it to `docs/code-packs/reviews/<pack>/<table>.md` with their name,
+   date, and the source hash they reviewed against. Only then does the PR set
+   `review.status = "signed-off"` and `review.checklist` to that path.
+3. A test asserts that every pack whose `review.status` is `signed-off` has a checklist file at
+   the path it names, that the checklist's source hash equals the pack's, and that the checklist
+   lists every `RowId` in the composed table. A pack cannot claim sign-off it does not have.
+4. Any later change to the pack's data bumps `revision`, resets `review.status` to `in-review`,
+   and requires a new (possibly delta-scoped, but committed) checklist. A test enforces the
+   reset: a pack whose data hash differs from the one recorded in its checklist is not
+   `signed-off`.
+
+Checklist file, one per table per pack:
+
+```markdown
+# Review: us-ct-2026 / R602.7(1)
+Reviewer: <name/model>  Date: 2026-10-08  Source: csbc-2026 sha256 <…>  Pack data hash: <…>
+Read against: <document title, printing/errata, page range>
+
+| RowId | Source location | Inputs match source | Outputs match source | Footnotes classified | Golden case present | OK |
+|---|---|---|---|---|---|---|
+| rc.snow-le-99.width-le-77ft.hdr-999 | p. N | yes | yes | a: not-encoded | yes | ✔ |
+...
+Overlay operations checked against the amendment list: <count>, all located.
+Tables in scope the state does NOT amend, confirmed from the amendment list: R602.7(2).
+Loosening lint warnings reviewed (municipal only): none.
+Sign-off: <name>, <date>
+```
+
+"Looks reasonable" is not a row in this table. Every row is a yes or the PR does not merge.
+
+## 9. Pack validation at load
+
+### 9.1 What is checked
+
+Loading is strict and total; a pack is valid entirely or not at all. In order:
+
+1. `schemaVersion` of every file equals the loader's; otherwise `UnsupportedPackSchema(found,
+   supported)` naming the file.
+2. Every file deserialises with unknown fields **rejected** (strict, same policy as the project
+   file), numbers strict, lengths parsed exactly (§1.5), enums closed.
+3. `pack.json` references: every `layers` entry resolves; every `source` id used by a table,
+   row or operation exists in `sources`; `review.checklist`, if set, exists.
+4. Each table file's `kind` is known and the file validates against that kind's schema.
+5. Composition (§1.3) succeeds with no conflicts (§6.3).
+6. Every composed table passes band validation (§4.3) and has a `location` on every row and a
+   classification on every footnote.
+7. Fastener references resolve against the materials catalog (§10), once that kind exists.
+
+A CI test loads every embedded pack and fixture and asserts validity, so an invalid shipped
+pack is a red build, never a runtime discovery. The same loader runs at app start; it is cheap
+(the data is small) and it is the only way a pack enters memory.
+
+### 9.2 Errors are values
+
+```csharp
+public abstract record PackLoadResult
+{
+    private PackLoadResult() { }
+    public sealed record Loaded(LoadedPack Pack) : PackLoadResult;
+    public sealed record Invalid(string PackId, ImmutableList<PackProblem> Problems) : PackLoadResult;
+}
+public sealed record PackProblem(string File, string? Table, string? RowOrOperation, string Message);
+```
+
+All problems are collected, not just the first, so a transcriber fixes a pack in one pass.
+
+### 9.3 What the app does with an invalid or unsupported pack
+
+- **Catalog.** `PackCatalog.Discover()` returns every pack as `Loaded` or `Invalid`. The picker
+  lists only `Loaded` packs. Invalid ones are listed in a diagnostics panel with their problems
+  — visible, because a pack that silently vanishes from the picker would look like "napkin
+  doesn't support CT".
+- **A project whose pack is missing or invalid** (a pack was removed, or this build's loader
+  refuses it) opens with its geometry intact and `adoptedCode` treated as unselected: no results
+  are drawn, a banner says which pack the file named and why it is unavailable, and the picker
+  is offered. The project is not modified until the user chooses; if they cancel, the manifest
+  keeps naming the unavailable pack, so nothing is lost by opening the file to look.
+- **Unreviewed packs** (`review.status != "signed-off"`): what the picker does with them is
+  Decision 5. The recommendation is that they are listed with a persistent "UNREVIEWED — values
+  not yet checked against the source" label and every result carries the same label, in the
+  betas; a build flag can hide them entirely for a tagged release.
