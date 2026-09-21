@@ -7,9 +7,9 @@ Design document for issue #12, written by Fable per [`PLAN.md`](../../PLAN.md). 
 #13 (evaluator, out-of-scope results, citations), #14-#17 (the four adopted-code packs), #19 (the
 per-project code picker with recompute) and #22 (Pennsylvania municipal overlays) build on, and
 what #6 (project file) and #18 (walls and openings) need to know about the rules engine. Settled
-decisions from [`DESIGN.md`](../../DESIGN.md) are taken as given: packs keyed by adopted code, not
-IRC year (§11); every result cites edition, table and row (§2, §7); "out of prescriptive scope" is
-a first-class result, never an extrapolation (§5.4); site hazards are user-entered, never
+decisions from [`DESIGN.md`](../../DESIGN.md) are taken as given: packs keyed by adopted code,
+not IRC year (§11); every result cites edition, table and row (§2, §7); "out of prescriptive
+scope" is a first-class result, never an extrapolation (§5.4); site hazards are user-entered, never
 defaulted (§5.3); imperial only (§10); exact fixed-point lengths, never doubles
 ([`geometry-model.md`](./geometry-model.md) §1); and the beta policy — breaking changes always
 allowed, no migration code (§12).
@@ -406,8 +406,9 @@ reflection test asserts that `HeaderResult` has exactly these two subtypes, so a
 a visible act. Pattern matching in the UI is exhaustive by convention and checked by that test.
 
 `Sized` and `OutOfScope` both carry a citation. A `Sized` result also carries the `Trace` in its
-citation, so "(2) 2×10, 1 jack, 1 king — IRC 2024 Table R602.7(1) row X, as adopted by CT 2026;
-snow 35 psf → ≤ 50 column; width 26 ft → ≤ 28 column; span 5′-6″ ≤ 6′-0″" is one value.
+citation, so (synthetic values) "(9) 2×99, 9 jack, 9 king — IRC 2024 Table R602.7(1) row X, as
+adopted by CT 2026; snow 98 psf → ≤ 99 column; width 70 ft → ≤ 77 ft column; span 99′-0″ ≤
+99′-9″" is one value.
 
 ### 3.3 Wall bracing (M5)
 
