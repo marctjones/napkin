@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # napkin's two target platforms (DESIGN.md §2).
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # The SDK comes from global.json, the single source of truth, not from this file.
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore napkin.sln
+
+      # Both configurations: package wiring can differ between them.
+      - name: Build (Debug)
+        run: dotnet build napkin.sln --configuration Debug --no-restore
+
+      - name: Build (Release)
+        run: dotnet build napkin.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test napkin.sln --configuration Debug --no-build
