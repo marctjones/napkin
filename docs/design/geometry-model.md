@@ -988,3 +988,30 @@ decision above without saying so.
   assertion shows the stored value rather than a rounded one.
 - **In feet-inch mode, whole inches are always shown when feet are shown**: `6'-0 5/16"`, not
   `6'-5/16"`. §1.5 does not say, and the drawing convention is to show the zero.
+
+### 10.2 The sketch and the checker
+
+- **`Sketch` has structural equality.** Record equality alone compares `ImmutableDictionary`
+  fields by reference, which would make §6's `Load(Save(s)) == s` round-trip assertion — and P3's
+  determinism check — quietly false. `Equals` and `GetHashCode` are written by hand to compare
+  contents.
+- **`Sketch.Empty` carries one layer**, `Layer.Default`, with a well-known id, so that an empty
+  sketch is the same value in every process and an entity always has a layer to be on.
+- **`Validate()` also checks layers and entity kinds.** §2.5's invariant 1 says "every id
+  referenced … exists"; a layer id and the kind of the entity an id names (a `CornerRef` on a
+  node) are the same class of referential error, so they are reported too.
+- **`Centered` is checked against the same rounded midpoint the propagator produces**, with zero
+  tolerance, rather than §3.2's "within half a unit". Both sides use `Midpoint`, so the two can
+  never disagree; this is strictly stricter than the design and needs no tolerance at all. The
+  first beta therefore has no tolerance anywhere, which §5.3 hoped for.
+- **Angular kinds are judged against `Tolerances.Angle`**, and the `Length` in their `Violation`
+  is the positional deviation that angular error produces at the far end of the longer edge.
+  §3.4's `Violation` carries only a `Length`, so one number has to be comparable across kinds.
+- **`Tangent` and `Radius` exist as records but cannot hold.** §3.2 specifies them "with arcs,
+  when arcs exist", and #5 has no arc entity. The checker reports them as violations rather than
+  passing over them, so a sketch cannot quietly claim to satisfy a relationship nothing evaluated.
+  The solver workstream (#28) gives them meaning when it adds `Arc`.
+- **`Flush` between edges that are not both axis-aligned the same way** is tolerance class, with
+  the residual measured as the furthest of the second edge's ends from the first edge's line. §3.2
+  assumes two parallel axis-aligned edges; this is what the checker does when a solver-written
+  sketch does not have them.
