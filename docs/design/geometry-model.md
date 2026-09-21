@@ -1161,3 +1161,14 @@ person to touch this code does not have to rediscover them.
   slide while a driving `AxisDistance` fixes it, and the result is a zero applied delta with
   nothing to act on. #10 should turn a drag blocked by a driving relationship into an offer to
   edit that dimension, the way `Rejected(DrivenSize)` points at one.
+- **Propagation order can decide the answer for equal-width chains** (Fable's second review of
+  #35; pre-existing, not a regression of the review fixes; belongs with #49). Three boxes flush in a
+  row with equal widths (`ParamValue(A.Width)`, two `EqualParam`s, two `Flush`es): after
+  `SetParameter(A.Width, 10 → 20)` the result depends on relationship ids and argument order. One
+  ordering gives `OverConstrained` on a solvable sketch; another gives `Solved` with A grown west
+  and C unmoved, which satisfies every relationship but is not what the user expected. The root
+  cause is the id-ordered initial worklist plus single assignment, so a candidate fix is to order
+  the initial enqueue breadth-first from the changed scalars. That candidate is untested. Pin
+  today's four outcomes in a test, or skip it against #49, before changing anything.
+- **A `Centered` conflict with both ends anchored names only the first end's anchor** (LOW).
+  Removing the relationship the report names still leaves a conflict; the report should name both.
