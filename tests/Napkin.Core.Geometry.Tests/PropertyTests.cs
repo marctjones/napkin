@@ -363,6 +363,63 @@ public class PropertyTests
         }
     }
 
+    [Fact]
+    public void TheGeneratorReachesEveryOutcomeThesePropertiesRelyOn()
+    {
+        // Without this, a generator that only ever produced easy sketches would make P1, P6 and
+        // P7 pass by never reaching the cases they are about.
+        int succeeded = 0;
+        int overConstrained = 0;
+        int rejected = 0;
+        int dragsBlocked = 0;
+        int dragsApplied = 0;
+
+        foreach (int seed in Enumerable.Range(1, 8))
+        {
+            SketchGenerator generator = new(seed);
+
+            for (int iteration = 0; iteration < Iterations; iteration++)
+            {
+                Sketch sketch = generator.NextSketch();
+
+                switch (Updater.Apply(sketch, generator.NextRequest(sketch)))
+                {
+                    case Succeeded:
+                        succeeded++;
+                        break;
+
+                    case OverConstrained:
+                        overConstrained++;
+                        break;
+
+                    case Rejected:
+                        rejected++;
+                        break;
+                }
+
+                Drag drag = generator.NextDrag(sketch);
+                Solved result = Assert.IsType<Solved>(Updater.Apply(sketch, drag));
+                if (result.Changes.AppliedDelta == drag.Delta)
+                {
+                    dragsApplied++;
+                }
+                else
+                {
+                    dragsBlocked++;
+                }
+            }
+        }
+
+        string counts = $"succeeded {succeeded}, over-constrained {overConstrained}, rejected {rejected}, "
+                        + $"drags applied {dragsApplied}, drags blocked {dragsBlocked}";
+
+        Assert.True(succeeded > 100, counts);
+        Assert.True(overConstrained > 0, counts);
+        Assert.True(rejected > 0, counts);
+        Assert.True(dragsApplied > 0, counts);
+        Assert.True(dragsBlocked > 0, counts);
+    }
+
     private static string Because(int seed, int iteration, Request request)
         => $"seed {seed}, iteration {iteration}, request {request.GetType().Name}";
 
