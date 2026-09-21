@@ -43,6 +43,18 @@ allowed, and there is no migration path between betas (an older project file get
 is done, and its version number is assigned then rather than planned. See
 [`DESIGN.md` §12](./DESIGN.md#12-versioning-and-releases-beta-policy).
 
+## Download
+
+**There is no stable release, and there will not be one.** napkin publishes pre-releases only, one
+each time a milestone is worth it, from the
+[Releases page](https://github.com/marctjones/napkin/releases). If that page is empty, nothing has
+been published yet; you can [build it yourself](#building) in the meantime.
+
+The builds are **unsigned and not notarized**, so Windows and macOS will warn you the first time
+you open one. [`docs/first-run.md`](./docs/first-run.md) walks you past the warning on both, and
+shows how to check your download against `SHA256SUMS.txt`. How releases are made is in
+[`docs/release.md`](./docs/release.md).
+
 ## Building
 
 Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (LTS, supported
