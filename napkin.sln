@@ -36,6 +36,7 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Napkin.Tools.Tests", "tests\Napkin.Tools.Tests\Napkin.Tools.Tests.csproj", "{6E2FD234-7909-4F08-AFD6-E05D9AB1B0B0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Napkin.Features.Tests", "tests\Napkin.Features.Tests\Napkin.Features.Tests.csproj", "{B1099DBE-823A-4A75-A527-6F56208D800F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Napkin.App.GuiTests", "tests\Napkin.App.GuiTests\Napkin.App.GuiTests.csproj", "{00B94719-2B7E-4AE7-99E2-D50453FCABAA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -215,6 +216,18 @@ Global
 		{B1099DBE-823A-4A75-A527-6F56208D800F}.Release|x64.Build.0 = Release|Any CPU
 		{B1099DBE-823A-4A75-A527-6F56208D800F}.Release|x86.ActiveCfg = Release|Any CPU
 		{B1099DBE-823A-4A75-A527-6F56208D800F}.Release|x86.Build.0 = Release|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Debug|x64.Build.0 = Debug|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Debug|x86.Build.0 = Debug|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Release|x64.ActiveCfg = Release|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Release|x64.Build.0 = Release|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Release|x86.ActiveCfg = Release|Any CPU
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -234,5 +247,6 @@ Global
 		{8608CE27-3A66-41F9-8E61-B6C155FE5FE9} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 		{6E2FD234-7909-4F08-AFD6-E05D9AB1B0B0} = {34139B51-CB65-4768-91E6-8FBF5E3C4BDB}
 		{B1099DBE-823A-4A75-A527-6F56208D800F} = {34139B51-CB65-4768-91E6-8FBF5E3C4BDB}
+		{00B94719-2B7E-4AE7-99E2-D50453FCABAA} = {34139B51-CB65-4768-91E6-8FBF5E3C4BDB}
 	EndGlobalSection
 EndGlobal
