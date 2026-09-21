@@ -126,30 +126,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: CVS-001 — Pan the view without moving anything")]
-    [Trait("Feature", "CVS-001")]
-    public void CVS_001()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-002 — Zoom about the cursor, and zoom to fit")]
-    [Trait("Feature", "CVS-002")]
-    public void CVS_002()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-003 — Y is up in model space")]
-    [Trait("Feature", "CVS-003")]
-    public void CVS_003()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-004 — Dimension labels are computed, never cached")]
-    [Trait("Feature", "CVS-004")]
-    public void CVS_004()
-    {
-    }
-
     [Fact(Skip = "planned: CVS-005 — Every edit goes through the update interface")]
     [Trait("Feature", "CVS-005")]
     public void CVS_005()
@@ -315,30 +291,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: GUI-DRAW-07 — See a conflict explained rather than a wrong number")]
     [Trait("Feature", "GUI-DRAW-07")]
     public void GUI_DRAW_07()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-VIEW-01 — Open a sample design and see it drawn")]
-    [Trait("Feature", "GUI-VIEW-01")]
-    public void GUI_VIEW_01()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-VIEW-02 — Pan with the wheel, a drag and the keyboard")]
-    [Trait("Feature", "GUI-VIEW-02")]
-    public void GUI_VIEW_02()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-VIEW-03 — Zoom about the cursor, then zoom to fit")]
-    [Trait("Feature", "GUI-VIEW-03")]
-    public void GUI_VIEW_03()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-VIEW-04 — Read dimension labels in feet, inches and fractions")]
-    [Trait("Feature", "GUI-VIEW-04")]
-    public void GUI_VIEW_04()
     {
     }
 

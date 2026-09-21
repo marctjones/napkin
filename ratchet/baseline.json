@@ -11,12 +11,16 @@
     }
   },
   "gui": {
-    "workflowsPassed": 4,
+    "workflowsPassed": 8,
     "workflowIds": [
       "GUI-SHELL-01",
       "GUI-SHELL-02",
       "GUI-SHELL-03",
-      "GUI-SHELL-04"
+      "GUI-SHELL-04",
+      "GUI-VIEW-01",
+      "GUI-VIEW-02",
+      "GUI-VIEW-03",
+      "GUI-VIEW-04"
     ]
   },
   "log": []

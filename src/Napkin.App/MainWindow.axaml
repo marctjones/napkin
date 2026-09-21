@@ -2,8 +2,70 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        xmlns:viewing="clr-namespace:Napkin.App.Viewing"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="740"
         x:Class="Napkin.App.MainWindow"
-        Title="Napkin.App">
-    Welcome to Avalonia!
+        Title="napkin"
+        Width="1100" Height="740"
+        MinWidth="560" MinHeight="380">
+
+    <!--
+        The shell is three things and no more: a menu, the drawing, and a line saying where you
+        are. M1 is a viewer, so there is nothing else a person could do here, and a toolbar of
+        disabled buttons would be a promise rather than a tool.
+    -->
+    <DockPanel>
+
+        <Menu Name="MainMenu" DockPanel.Dock="Top">
+            <MenuItem Name="FileMenu" Header="_File">
+                <MenuItem Name="OpenMenuItem"
+                          Header="_Open…"
+                          IsEnabled="False"
+                          ToolTip.Tip="Opening a project file arrives with the scene reader (#6). M1 ships its samples in the build." />
+                <Separator />
+                <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
+            </MenuItem>
+
+            <!-- Samples are built from BuiltInDesigns.All in the code-behind, so adding one is
+                 a line in that list and nothing here. -->
+            <MenuItem Name="SamplesMenu" Header="_Samples" />
+
+            <MenuItem Name="ViewMenu" Header="_View">
+                <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
+                <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />
+                <MenuItem Name="ZoomOutMenuItem" Header="Zoom _Out" Click="OnZoomOutClicked" />
+            </MenuItem>
+        </Menu>
+
+        <Border Name="StatusBar"
+                DockPanel.Dock="Bottom"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                Padding="12,5">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Name="DesignText"
+                           Grid.Column="0"
+                           FontSize="12"
+                           Opacity="0.75"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Name="CursorText"
+                           Grid.Column="1"
+                           FontSize="12"
+                           Margin="16,0"
+                           MinWidth="190"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center" />
+                <TextBlock Name="ZoomText"
+                           Grid.Column="2"
+                           FontSize="12"
+                           MinWidth="86"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <viewing:CanvasView Name="DrawingCanvas" />
+
+    </DockPanel>
 </Window>
