@@ -370,9 +370,10 @@ public class PropertyTests
         // P7 pass by never reaching the cases they are about.
         int succeeded = 0;
         int overConstrained = 0;
-        int rejected = 0;
         int dragsBlocked = 0;
         int dragsApplied = 0;
+        int oddSpans = 0;
+        HashSet<RejectionReason> reasons = [];
 
         foreach (int seed in Enumerable.Range(1, 8))
         {
@@ -381,6 +382,7 @@ public class PropertyTests
             for (int iteration = 0; iteration < Iterations; iteration++)
             {
                 Sketch sketch = generator.NextSketch();
+                oddSpans += CentredOddSpans(sketch);
 
                 switch (Updater.Apply(sketch, generator.NextRequest(sketch)))
                 {
@@ -392,8 +394,8 @@ public class PropertyTests
                         overConstrained++;
                         break;
 
-                    case Rejected:
-                        rejected++;
+                    case Rejected refused:
+                        reasons.Add(refused.Reason);
                         break;
                 }
 
@@ -410,15 +412,28 @@ public class PropertyTests
             }
         }
 
-        string counts = $"succeeded {succeeded}, over-constrained {overConstrained}, rejected {rejected}, "
-                        + $"drags applied {dragsApplied}, drags blocked {dragsBlocked}";
+        string counts = $"succeeded {succeeded}, over-constrained {overConstrained}, "
+                        + $"rejection reasons [{string.Join(", ", reasons.Order())}], "
+                        + $"drags applied {dragsApplied}, drags blocked {dragsBlocked}, "
+                        + $"odd centred spans {oddSpans}";
 
         Assert.True(succeeded > 100, counts);
         Assert.True(overConstrained > 0, counts);
-        Assert.True(rejected > 0, counts);
         Assert.True(dragsApplied > 0, counts);
         Assert.True(dragsBlocked > 0, counts);
+        Assert.True(reasons.Count >= 3, counts);
+
+        // The half-unit Centered case (Fable review of #35, finding 2) is only reachable when a
+        // span is an odd number of units, which a 1/16" grid can never produce.
+        Assert.True(oddSpans > 0, counts);
     }
+
+    /// <summary>How many Centered relationships in this sketch span an odd number of units.</summary>
+    private static int CentredOddSpans(Sketch sketch)
+        => sketch.RelationshipsInOrder
+            .OfType<Centered>()
+            .Count(centred => (sketch.PointOf(centred.A).Component(centred.Axis)
+                               + sketch.PointOf(centred.B).Component(centred.Axis)).Units % 2 != 0);
 
     private static string Because(int seed, int iteration, Request request)
         => $"seed {seed}, iteration {iteration}, request {request.GetType().Name}";
