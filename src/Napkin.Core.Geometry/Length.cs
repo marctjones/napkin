@@ -18,7 +18,7 @@ namespace Napkin.Core.Geometry;
 /// </para>
 /// </remarks>
 /// <param name="Units">The count of 1/1024-inch units.</param>
-public readonly record struct Length(long Units) : IComparable<Length>
+public readonly partial record struct Length(long Units) : IComparable<Length>
 {
     /// <summary>Units in one inch. The grid is 1/1024&#x2033;.</summary>
     public const long UnitsPerInch = 1024;
@@ -37,8 +37,7 @@ public readonly record struct Length(long Units) : IComparable<Length>
     /// Components are summed, so a negative length is written with negative components
     /// (<c>Inches(-3, -1, 2)</c> is -3&#xBD;&#x2033;). This constructor never rounds: a fraction
     /// that does not land on the grid — a third of an inch — throws. Use
-    /// <see cref="FromInches"/> or <see cref="LengthText.TryParse(string, out Length, out bool)"/>
-    /// for values that may need rounding.
+    /// <see cref="FromInches"/> or <see cref="TryParse"/> for values that may need rounding.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The denominator is not positive.</exception>
     /// <exception cref="ArgumentException">The fraction does not land on the 1/1024&#x2033; grid.</exception>

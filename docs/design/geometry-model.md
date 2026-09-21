@@ -959,3 +959,32 @@ Short, and only what is genuinely a preference. Everything else above is decided
    after #5 lands, off the critical path to the first working beta, with the gate criteria in
    #28. Confirm the box, or that the spike waits until furniture with angled parts is actually on
    the roadmap.
+
+## 10. Implementation notes (#5)
+
+Where the implementation had to deviate from the design above, or had to decide something the
+design left open. Per §8 step 11 and #5's acceptance criteria, the deviation is recorded here,
+not left in a commit message. Written by the Opus implementer of #5; nothing here overrides a
+decision above without saying so.
+
+### 10.1 Lengths, angles, parsing and formatting
+
+- **`Angle` declares its `Arcseconds` property explicitly** rather than taking the synthesised
+  positional one, so that the constructor normalises into [0°, 360°). The type is still the
+  positional `readonly record struct Angle(long Arcseconds)` of §1.6; the property is get-only,
+  which means `with` cannot be used to write an un-normalised angle.
+- **`Length.Inches(whole, numerator, denominator)` throws** when the fraction does not land on the
+  grid (a third of an inch). §1.4 says rounding happens in exactly four places, and this
+  constructor is not one of them, so it cannot round silently; `FromInches` and `TryParse` are the
+  entry points for values that may need rounding.
+- **Format precision accepts 1024, not only §1.5's 1…64.** Property P8 (§7.2) asks for
+  `Parse(Format(a, precision: 1/1024))` to round trip for every `a`, which the tape-measure
+  precisions cannot express. The denominator is validated as a power of two from 1 to 1024.
+- **Parsing rounds half away from zero.** §1.4 names two rounding rules but does not say which one
+  `Parse` uses. User input is display-side, so it follows the display rule. Parsing accumulates an
+  exact rational and never goes through `double`, so `wasRounded` reports the grid, not floating
+  point.
+- **`Length.ToString()` renders inches at 1/1024″**, which is always exact, so that a failing
+  assertion shows the stored value rather than a rounded one.
+- **In feet-inch mode, whole inches are always shown when feet are shown**: `6'-0 5/16"`, not
+  `6'-5/16"`. §1.5 does not say, and the drawing convention is to show the zero.
