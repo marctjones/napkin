@@ -23,5 +23,8 @@ coverage.cobertura.xml
 coverage.opencover.xml
 coverage.json
 
+# ...except the captured toolchain output the tools are tested against, which is source.
+!tests/Napkin.Tools.Tests/Fixtures/*.trx
+
 ## Avalonia/local publish output
 publish/
