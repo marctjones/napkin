@@ -258,7 +258,8 @@ keeps the safety-critical code (rules engine) testable in isolation from UI conc
 
 ```json
 {
-  "codeEdition": "IRC-2021",
+  "adoptedCode": "PA-UCC-2021",
+  "baseCode": "IRC-2021",
   "table": "R602.7(1)",
   "description": "Header spans for exterior bearing walls",
   "rows": [
@@ -280,8 +281,10 @@ keeps the safety-critical code (rules engine) testable in isolation from UI conc
   Never a third silent-failure case.
 - Bracing check is a separate evaluator over the wall line's total opening length vs. required
   braced panel length from §R602.10, run whenever an opening on that wall changes.
-- Tables are data files under version control, one directory per code edition, so a future local
-  amendment or newer IRC edition is an additive data change with its own golden tests.
+- Tables are data files under version control, one directory per **adopted code** (a state's
+  adoption of a model-code edition, with its amendments), so a new adoption, a state amendment or
+  a municipal amendment is an additive data change with its own golden tests. The IRC year is an
+  attribute of the pack, never its identity — see §11.
 
 ### 6.4 Project file format (sketch)
 
@@ -317,6 +320,12 @@ what keeps a project file readable independent of whether the project is maintai
 - Windows: expect SmartScreen friction similarly for an unsigned binary; a code-signing
   certificate removes this but is an ongoing cost for an OSS project — worth deciding early
   whether to budget for it or document the workaround.
+- **Decided: no code signing and no notarization** (§11). Installers ship unsigned; the README
+  must document the first-run steps on both platforms. On macOS 15 and later the old
+  Control-click → Open bypass is gone, so the instructions must point to System Settings →
+  Privacy & Security → Open Anyway. Note that Apple-silicon binaries still carry an automatic
+  *ad-hoc* signature applied by the build toolchain — that is required for arm64 code to run at
+  all, costs nothing, and is not the Developer ID signing this decision declines.
 
 ## 7. Non-functional requirements
 
@@ -340,12 +349,13 @@ what keeps a project file readable independent of whether the project is maintai
    useful tool (coffee table, shop projects). Validates the geometry/constraint kernel and the
    project file format before the harder building-module work starts.
 2. **Phase 2 — Building module core: walls, openings, header/bracing rules engine.** The actual
-   differentiator. Ship with one IRC edition and golden tests before adding others.
+   differentiator. Build and golden-test the 2026 CT code first, then add the three
+   2021-IRC-based adopted codes (§11) before v1 ships.
 3. **Phase 3 — Deck module** (span/footing tables, ledger, guard rails) reusing Phase 1's cut-list
    machinery, plus site plan (lot lines, setbacks, survey underlay).
 4. **Phase 4 — Interop**: DXF export, SketchUp read-only import.
 5. **Phase 5 — Polish**: true-scale PDF sheet output with title blocks, packaging/installers,
-   additional code editions and jurisdictional data.
+   code editions beyond the v1 four.
 
 ## 9. Decided
 
@@ -376,3 +386,56 @@ what keeps a project file readable independent of whether the project is maintai
   so Bloomfield (and every CT town) simply enforces the current CSBC — no jurisdiction-amendment
   layer is needed for a CT-only v1. Other states do allow municipal amendments on top of a state
   base code, so that mechanism stays a real requirement if the tool ever expands beyond CT.
+
+## 11. Decided (round 3)
+
+Decided by Marc on 2026-09-21, after the project moved from the cloud session to a local one.
+
+### v1 ships four adopted codes, not one
+
+| Adopted code | Base model code | In force | Primary source |
+|---|---|---|---|
+| **CT 2026** State Building Code | IRC 2024 + CT amendments | Sept 18, 2026 | Conn. DAS, Office of State Building Inspector |
+| **CT 2022** State Building Code | IRC 2021 + CT amendments | Oct 1, 2022 (permit applications on or after); superseded by the 2026 code | [2022 CSBC](https://portal.ct.gov/-/media/DAS/Office-of-State-Building-Inspector/2022-State-Codes/2022-CSBC-Final.pdf) |
+| **MA** 780 CMR, 10th ed., Residential Volume (Ch. 51) | IRC 2021 + MA amendments | Oct 11, 2024; concurrent with the 9th edition until June 30, 2025, sole code since | [Mass.gov — 780 CMR](https://www.mass.gov/massachusetts-state-building-code-780-cmr) |
+| **PA** Uniform Construction Code | 2021 ICC codes + PA amendments | Jan 1, 2026; the 2018 code remains usable where a contract was signed before Jan 1, 2026 and the permit applied for by June 30, 2026 | [Pa. DLI — UCC](https://www.pa.gov/agencies/dli/programs-services/labor-management-relations/bureau-of-occupational-and-industrial-safety/uniform-construction-code-home) |
+
+CT 2022 matters even though it is superseded: §5.4 locks a project to the code in force at permit
+application, so a CT project applied for before Sept 18, 2026 is governed by the 2022 code. The PA
+transition rule comes from a secondary source (a law-firm summary); verify it against the
+regulation text in 34 Pa. Code before encoding it.
+
+### Consequences for the design
+
+- **The rules engine is keyed by adopted code, not IRC edition.** Three of the four packs share
+  the 2021 IRC base but not its numbers, because each state amends it differently. Amendments can
+  change site inputs to a table (Massachusetts sets its own snow and frost criteria) and can change
+  the tables themselves; which rows survive is only knowable from each state's adopted text. So
+  golden tests are written against each state's *published adopted code*, never against the base
+  IRC. §6.3 is updated accordingly.
+- **The amendment layer is now in scope for v1.** §10 noted that CT permits no municipal
+  amendments and that the layer would become real "if the tool ever expands beyond CT." It has:
+  Pennsylvania municipalities may adopt stricter amendments with Department of Labor and Industry
+  approval under Act 45 §503 (see DLI's [register of municipal code-change
+  ordinances](https://www.pa.gov/agencies/dli/programs-services/labor-management-relations/bureau-of-occupational-and-industrial-safety/uniform-construction-code-home/ucc-municipal-code-change-ordinances)).
+  Its shape follows §6.3: an additive data overlay on the state pack. How far v1 goes in encoding
+  specific municipalities is not yet decided.
+- **The per-project picker lists adopted codes by jurisdiction** ("Pennsylvania UCC — 2021
+  ICC, in force Jan 1, 2026"), not bare IRC years.
+
+### Packaging
+
+- **No code signing and no notarization**, on either platform. See §6.6 for the first-run
+  documentation this requires.
+
+### Still open
+
+- **Constraint solver.** Not decided. Marc wants to understand solvers and their implications
+  before choosing. Until then v1 continues on direct, explicit geometry (§10), which needs no
+  solver dependency.
+
+### Where the work happens
+
+- All development now happens in the local repository and local Claude sessions. The cloud
+  session that designed the project is retired; its final state is preserved unchanged on the
+  `claude/cloud-handoff` branch.
