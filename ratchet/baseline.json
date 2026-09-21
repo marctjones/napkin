@@ -4,6 +4,10 @@
     "Napkin.Core.Geometry": {
       "line": 90.71,
       "branch": 83.86
+    },
+    "Napkin.Core.Project": {
+      "line": 87.45,
+      "branch": 77.27
     }
   },
   "gui": {

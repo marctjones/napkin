@@ -1,0 +1,102 @@
+{
+  "fixture": "coffee-table",
+  "scene": "coffee-table.scene.json",
+  "design": "coffee-table.design.md",
+  "derivedBy": "hand, from the stated dimensions in coffee-table.design.md; never regenerated from napkin's output",
+  "formatVersion": 1,
+  "unitsPerInch": 1024,
+
+  "counts": { "layers": 1, "entities": 15, "boxes": 9, "dimensions": 6, "relationships": 33 },
+
+  "overall": {
+    "widthUnits": 49152,
+    "depthUnits": 24576,
+    "widthText": "4'-0\"",
+    "depthText": "2'-0\"",
+    "derivation": "The top's stated plan size, 48\" x 24\": 48 x 1024 = 49152 and 24 x 1024 = 24576. Nothing overhangs the top, so the table's extent is the top's."
+  },
+
+  "boxes": [
+    { "id": "10000000-0000-4000-8000-000000000001", "name": "Top",
+      "anchorXUnits": 0, "anchorYUnits": 0, "widthUnits": 49152, "heightUnits": 24576, "rotationArcseconds": 0,
+      "derivation": "Origin of the design. 48\" x 1024 = 49152; 24\" x 1024 = 24576." },
+
+    { "id": "10000000-0000-4000-8000-000000000002", "name": "Leg, south-west",
+      "anchorXUnits": 1536, "anchorYUnits": 1536, "widthUnits": 2560, "heightUnits": 2560, "rotationArcseconds": 0,
+      "derivation": "Inset 1 1/2\" from the top's west and south edges: 1.5 x 1024 = 1536 in both axes. 2 1/2\" square = 2.5 x 1024 = 2560. Occupies x 1536..4096, y 1536..4096." },
+    { "id": "10000000-0000-4000-8000-000000000003", "name": "Leg, south-east",
+      "anchorXUnits": 45056, "anchorYUnits": 1536, "widthUnits": 2560, "heightUnits": 2560, "rotationArcseconds": 0,
+      "derivation": "Its east face is inset 1 1/2\" from the top's east edge, so the face is at 48 - 1.5 = 46.5\" and the anchor (the west face) at 46.5 - 2.5 = 44\": 44 x 1024 = 45056. Same y as the south-west leg. Occupies x 45056..47616." },
+    { "id": "10000000-0000-4000-8000-000000000004", "name": "Leg, north-west",
+      "anchorXUnits": 1536, "anchorYUnits": 20480, "widthUnits": 2560, "heightUnits": 2560, "rotationArcseconds": 0,
+      "derivation": "North face inset 1 1/2\" from the top's north edge: face at 24 - 1.5 = 22.5\", anchor at 22.5 - 2.5 = 20\": 20 x 1024 = 20480. Same x as the south-west leg. Occupies y 20480..23040." },
+    { "id": "10000000-0000-4000-8000-000000000005", "name": "Leg, north-east",
+      "anchorXUnits": 45056, "anchorYUnits": 20480, "widthUnits": 2560, "heightUnits": 2560, "rotationArcseconds": 0,
+      "derivation": "The east x of the south-east leg with the north y of the north-west leg: (45056, 20480)." },
+
+    { "id": "10000000-0000-4000-8000-000000000006", "name": "Apron, long, south",
+      "anchorXUnits": 4096, "anchorYUnits": 1536, "widthUnits": 40960, "heightUnits": 768, "rotationArcseconds": 0,
+      "derivation": "Runs between the legs along X: from the south-west leg's east face at 1.5 + 2.5 = 4\" (4 x 1024 = 4096) to the south-east leg's west face at 44\". Length 44 - 4 = 40\" = 40960. Its south face is flush with the legs' south faces at y = 1.5\" = 1536; thickness 3/4\" = 768, so it occupies y 1536..2304." },
+    { "id": "10000000-0000-4000-8000-000000000007", "name": "Apron, long, north",
+      "anchorXUnits": 4096, "anchorYUnits": 22272, "widthUnits": 40960, "heightUnits": 768, "rotationArcseconds": 0,
+      "derivation": "Same length and thickness as the south long apron. Its north face is flush with the legs' north faces at y = 22.5\", so the anchor (the south face) is at 22.5 - 0.75 = 21.75\": 21.75 x 1024 = 22272. Occupies y 22272..23040." },
+    { "id": "10000000-0000-4000-8000-000000000008", "name": "Apron, short, west",
+      "anchorXUnits": 1536, "anchorYUnits": 4096, "widthUnits": 768, "heightUnits": 16384, "rotationArcseconds": 0,
+      "derivation": "Runs between the legs along Y: from the south-west leg's north face at 1.5 + 2.5 = 4\" to the north-west leg's south face at 20\". Length 20 - 4 = 16\" = 16 x 1024 = 16384. Its west face is flush with the legs' west faces at x = 1.5\" = 1536; thickness 3/4\" = 768, so it occupies x 1536..2304." },
+    { "id": "10000000-0000-4000-8000-000000000009", "name": "Apron, short, east",
+      "anchorXUnits": 46848, "anchorYUnits": 4096, "widthUnits": 768, "heightUnits": 16384, "rotationArcseconds": 0,
+      "derivation": "Same length and thickness as the west short apron. Its east face is flush with the legs' east faces at x = 46.5\", so the anchor (the west face) is at 46.5 - 0.75 = 45.75\": 45.75 x 1024 = 46848. Occupies x 46848..47616." }
+  ],
+
+  "partsList": [
+    { "name": "Top", "quantity": 1, "planWidthUnits": 49152, "planHeightUnits": 24576,
+      "planWidthText": "4'-0\"", "planHeightText": "2'-0\"" },
+    { "name": "Leg", "quantity": 4, "planWidthUnits": 2560, "planHeightUnits": 2560,
+      "planWidthText": "2 1/2\"", "planHeightText": "2 1/2\"" },
+    { "name": "Apron, long", "quantity": 2, "planWidthUnits": 40960, "planHeightUnits": 768,
+      "planWidthText": "3'-4\"", "planHeightText": "3/4\"" },
+    { "name": "Apron, short", "quantity": 2, "planWidthUnits": 768, "planHeightUnits": 16384,
+      "planWidthText": "3/4\"", "planHeightText": "1'-4\"" }
+  ],
+
+  "relationshipKinds": {
+    "anchored": 1,
+    "paramValue": 8,
+    "equalParam": 10,
+    "axisDistance": 6,
+    "flush": 6,
+    "coincident": 2
+  },
+
+  "dimensionLabels": [
+    { "id": "10000000-0000-4000-8000-00000000000a", "name": "Top width", "driving": true,
+      "valueUnits": 49152, "text": "4'-0\"",
+      "derivation": "49152 / 1024 = 48\"; 48 / 12 = 4 feet, 0 inches." },
+    { "id": "10000000-0000-4000-8000-00000000000b", "name": "Top depth", "driving": true,
+      "valueUnits": 24576, "text": "2'-0\"",
+      "derivation": "24576 / 1024 = 24\"; 24 / 12 = 2 feet, 0 inches." },
+    { "id": "10000000-0000-4000-8000-00000000000c", "name": "Leg width", "driving": true,
+      "valueUnits": 2560, "text": "2 1/2\"",
+      "derivation": "2560 / 1024 = 2.5\"; under a foot, so no feet are shown: 2 and 8/16 reduced to 1/2." },
+    { "id": "10000000-0000-4000-8000-00000000000d", "name": "Long apron length", "driving": true,
+      "valueUnits": 40960, "text": "3'-4\"",
+      "derivation": "40960 / 1024 = 40\"; 40 = 3 x 12 + 4." },
+    { "id": "10000000-0000-4000-8000-00000000000e", "name": "Short apron length", "driving": true,
+      "valueUnits": 16384, "text": "1'-4\"",
+      "derivation": "16384 / 1024 = 16\"; 16 = 1 x 12 + 4." },
+    { "id": "10000000-0000-4000-8000-00000000000f", "name": "Leg inset from the top's west edge", "driving": false,
+      "valueUnits": 1536, "text": "1 1/2\"",
+      "derivation": "The south-west leg's south-west corner is at x = 1536 and the top's at x = 0, so the signed distance along X is 1536 - 0 = 1536 = 1.5\"." }
+  ],
+
+  "statedNotInScene": [
+    { "what": "Top thickness", "text": "3/4\"" },
+    { "what": "Leg length", "text": "16 1/4\"" },
+    { "what": "Apron width (vertical face)", "text": "3 1/2\"" }
+  ],
+
+  "notes": [
+    "Plan view only: the scene carries no third dimension, so no test asserts one.",
+    "No cut list or materials list is expected here. Those arrive with #8, #9 and the materials library (#7); this fixture is the geometry they will be computed from."
+  ]
+}

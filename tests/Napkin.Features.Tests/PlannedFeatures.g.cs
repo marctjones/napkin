@@ -366,30 +366,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: PRJ-001 — Read a plain scene file into a sketch")]
-    [Trait("Feature", "PRJ-001")]
-    public void PRJ_001()
-    {
-    }
-
-    [Fact(Skip = "planned: PRJ-002 — Loading is strict and never repairs")]
-    [Trait("Feature", "PRJ-002")]
-    public void PRJ_002()
-    {
-    }
-
-    [Fact(Skip = "planned: PRJ-003 — Loading re-checks the file's own relationships")]
-    [Trait("Feature", "PRJ-003")]
-    public void PRJ_003()
-    {
-    }
-
-    [Fact(Skip = "planned: PRJ-004 — Exact format-version match, no migration")]
-    [Trait("Feature", "PRJ-004")]
-    public void PRJ_004()
-    {
-    }
-
     [Fact(Skip = "planned: PRJ-005 — The manifest records what the file means")]
     [Trait("Feature", "PRJ-005")]
     public void PRJ_005()

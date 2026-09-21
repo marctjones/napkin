@@ -1,0 +1,67 @@
+{
+  "fixture": "wall-with-window",
+  "scene": "wall-with-window.scene.json",
+  "design": "wall-with-window.design.md",
+  "derivedBy": "hand, from the stated dimensions in wall-with-window.design.md; never regenerated from napkin's output",
+  "formatVersion": 1,
+  "unitsPerInch": 1024,
+
+  "counts": { "layers": 1, "entities": 7, "boxes": 2, "dimensions": 5, "relationships": 8 },
+
+  "overall": {
+    "widthUnits": 147456,
+    "depthUnits": 5632,
+    "widthText": "12'-0\"",
+    "depthText": "5 1/2\"",
+    "derivation": "The wall's stated length and thickness: 12 x 12 = 144\", 144 x 1024 = 147456; 5.5 x 1024 = 5632. The opening lies inside the wall, so the extent is the wall's."
+  },
+
+  "boxes": [
+    { "id": "30000000-0000-4000-8000-000000000001", "name": "Wall",
+      "anchorXUnits": 0, "anchorYUnits": 0, "widthUnits": 147456, "heightUnits": 5632, "rotationArcseconds": 0,
+      "derivation": "Origin of the design. Length 12'-0\" = 144\" = 147456; thickness 5 1/2\" = 5.5 x 1024 = 5632. Occupies x 0..147456, y 0..5632." },
+    { "id": "30000000-0000-4000-8000-000000000002", "name": "Opening",
+      "anchorXUnits": 55296, "anchorYUnits": 0, "widthUnits": 36864, "heightUnits": 5632, "rotationArcseconds": 0,
+      "derivation": "Width 3'-0\" = 36\" = 36864. Centred on the wall: the wall's centre is at 144 / 2 = 72\", the opening's half-width is 36 / 2 = 18\", so its west edge is at 72 - 18 = 54\" = 54 x 1024 = 55296 and its east edge at 54 + 36 = 90\" = 92160. It runs the full thickness of the wall, so its height equals the wall's, 5632, and its anchor y is the wall's, 0." }
+  ],
+
+  "partsList": [
+    { "name": "Wall", "quantity": 1, "planWidthUnits": 147456, "planHeightUnits": 5632,
+      "planWidthText": "12'-0\"", "planHeightText": "5 1/2\"" },
+    { "name": "Opening", "quantity": 1, "planWidthUnits": 36864, "planHeightUnits": 5632,
+      "planWidthText": "3'-0\"", "planHeightText": "5 1/2\"" }
+  ],
+
+  "relationshipKinds": {
+    "anchored": 1,
+    "paramValue": 3,
+    "equalParam": 1,
+    "flush": 2,
+    "centered": 1
+  },
+
+  "dimensionLabels": [
+    { "id": "30000000-0000-4000-8000-000000000003", "name": "Wall length", "driving": true,
+      "valueUnits": 147456, "text": "12'-0\"",
+      "derivation": "147456 / 1024 = 144\"; 144 / 12 = 12 feet, 0 inches." },
+    { "id": "30000000-0000-4000-8000-000000000004", "name": "Wall thickness", "driving": true,
+      "valueUnits": 5632, "text": "5 1/2\"",
+      "derivation": "5632 / 1024 = 5.5\"; under a foot, so no feet are shown: 5 and 8/16 reduced to 1/2." },
+    { "id": "30000000-0000-4000-8000-000000000005", "name": "Opening width", "driving": true,
+      "valueUnits": 36864, "text": "3'-0\"",
+      "derivation": "36864 / 1024 = 36\"; 36 / 12 = 3 feet, 0 inches." },
+    { "id": "30000000-0000-4000-8000-000000000006", "name": "Wall west end to opening", "driving": false,
+      "valueUnits": 55296, "text": "4'-6\"",
+      "derivation": "The opening's south-west corner is at x = 55296 and the wall's at x = 0: 55296 - 0 = 55296 = 54\" = 4 x 12 + 6." },
+    { "id": "30000000-0000-4000-8000-000000000007", "name": "Opening to wall east end", "driving": false,
+      "valueUnits": 55296, "text": "4'-6\"",
+      "derivation": "The wall's south-east corner is at x = 147456 and the opening's at 55296 + 36864 = 92160: 147456 - 92160 = 55296 = 54\". The two reference dimensions and the opening add up: 54 + 36 + 54 = 144\", which is the wall's length." }
+  ],
+
+  "statedNotInScene": [],
+
+  "notes": [
+    "M1 is a geometry and labelling fixture only: entity positions and the exact feet-inch-fraction text of each dimension label.",
+    "No header size, stud count or bracing length is expected here. Those arrive in M4 and M5, read by a person from Connecticut's published adopted text with the page cited, never from memory and never from napkin's own output."
+  ]
+}
