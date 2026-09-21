@@ -294,12 +294,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: GUI-VIEW-05 — A file the app cannot read fails visibly")]
-    [Trait("Feature", "GUI-VIEW-05")]
-    public void GUI_VIEW_05()
-    {
-    }
-
     [Fact(Skip = "planned: IOP-001 — Exported DXF opens in another CAD tool")]
     [Trait("Feature", "IOP-001")]
     public void IOP_001()

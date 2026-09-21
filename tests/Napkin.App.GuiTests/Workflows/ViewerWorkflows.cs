@@ -7,39 +7,44 @@ using Napkin.App.Designs;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
+using Napkin.Core.Project;
 using Xunit;
 using Design = Napkin.App.Designs.Design;
 
 namespace Napkin.App.GuiTests.Workflows;
 
 /// <summary>
-/// The M1 viewer, driven the way a person drives it: open a sample, move around it, and read what
-/// the drawing says.
+/// The M1 viewer, driven the way a person drives it: open a design, move around it, read what the
+/// drawing says, and be told plainly when a file cannot be opened.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>Two honest deviations from the catalogue's wording, both because of what M1 ships
-/// with.</strong> The catalogue describes opening a sample "through the file dialog" and comparing
-/// labels against "the fixture's expectations file". The scene reader (#6) and the sample files
-/// (#37) are being written in parallel with this viewer, so M1's samples are built in code behind
-/// <see cref="IDesignSource"/> and are opened through the Samples menu — with the mouse, through
-/// the real menu, not by calling a method. The expected strings are stated inline here, computed by
-/// hand from the same shop numbers the samples are built from. When the reader lands, these two
-/// workflows gain a file-dialog step and read their expectations from the fixture; nothing else
-/// about them changes.
+/// <strong>The deviations these workflows used to carry are gone.</strong> They opened samples that
+/// the viewer built in code and stated their expected dimension strings inline, because the scene
+/// reader (#6) and the sample files (#37) were being written in parallel with the viewer. Both have
+/// landed: the samples are the files in <c>samples/</c>, shipped inside the build, and the expected
+/// strings are read from each fixture's <c>*.expected.json</c> — which is what GUI-VIEW-04's
+/// acceptance sentence asked for all along.
 /// </para>
 /// <para>
-/// GUI-VIEW-05 — a file the application cannot read failing visibly — is not implemented here at
-/// all, because there is no file to fail on yet. <see cref="MainWindow.ShowDesign"/> already has
-/// the failure path it needs.
+/// <strong>The one thing still substituted is the dialog itself.</strong> A native open dialog
+/// cannot be driven headless (<c>docs/testing/gui-automation.md</c>, "What headless cannot cover"),
+/// so a workflow puts a picker that answers with a path behind
+/// <see cref="MainWindow.FilePicker"/> and then presses the real shortcut. Everything after that —
+/// the key binding, the command, the reader, the refusal panel, the canvas — is the shipped code.
+/// Two load paths are exercised between them: <see cref="Open_a_design_from_a_file_and_move_around_it"/>
+/// goes through <em>File &#x2192; Open&#x2026;</em>, and the others through the Samples menu, with
+/// the mouse.
 /// </para>
 /// </remarks>
 public class ViewerWorkflows
 {
     [GuiWorkflow("GUI-VIEW-01")]
-    public void Open_a_sample_design_and_see_it_drawn() => GuiWorkflow.Run(app =>
+    public void Open_a_design_from_a_file_and_move_around_it() => GuiWorkflow.Run(app =>
     {
         MainWindow window = (MainWindow)app.Target;
+        CanvasView canvas = window.Canvas;
+        SampleExpectations expected = SampleExpectations.For("coffee-table");
 
         // Open the wall first, through the menu, so that opening the coffee table afterwards is
         // really an open and not just "what was already on screen".
@@ -50,31 +55,52 @@ public class ViewerWorkflows
             Assert.Equal("napkin — Wall with window", window.Title);
         });
 
-        OpenThroughTheMenu(app, window, "Coffee table");
-        app.Expect("every part of the coffee table is drawn where the design says it is", () =>
+        // Now the coffee table, the way a person opens a file they were sent: the shortcut, the
+        // dialog, the file.
+        OpenThroughTheFileDialog(app, window, SampleExpectations.SceneFile("coffee-table"));
+
+        app.Expect("every part of the coffee table is drawn where the fixture says it is", () =>
         {
             Design design = window.CurrentDesign!;
-            Assert.Equal("Coffee table", design.Name);
-            Assert.Equal(9, design.Sketch.Entities.Values.OfType<Box>().Count());
+            Assert.Equal("coffee-table.scene.json", design.Name);
+            Assert.Equal("napkin — coffee-table.scene.json", window.Title);
+            Assert.Contains(
+                "coffee-table.scene.json",
+                window.DesignReadout.Text!,
+                StringComparison.Ordinal);
 
-            AssertPartDrawn(window, design, "Top", 0, 0, 48, 20);
-            AssertPartDrawn(window, design, "Leg, front left", 1, 1, 2.5, 2.5);
-            AssertPartDrawn(window, design, "Leg, front right", 44.5, 1, 2.5, 2.5);
-            AssertPartDrawn(window, design, "Leg, back left", 1, 16.5, 2.5, 2.5);
-            AssertPartDrawn(window, design, "Leg, back right", 44.5, 16.5, 2.5, 2.5);
-            AssertPartDrawn(window, design, "Apron, front", 3.5, 1.75, 41, 0.75);
-            AssertPartDrawn(window, design, "Apron, back", 3.5, 17.5, 41, 0.75);
-            AssertPartDrawn(window, design, "Apron, left", 1.75, 3.5, 0.75, 13);
-            AssertPartDrawn(window, design, "Apron, right", 45.5, 3.5, 0.75, 13);
+            Assert.Equal(
+                expected.Counts.Boxes,
+                design.Sketch.Entities.Values.OfType<Box>().Count());
+            foreach (ExpectedBox part in expected.Boxes)
+            {
+                AssertPartDrawn(window, design, part);
+            }
         });
 
-        app.Press(Key.Down);
+        Sketch asOpened = window.CurrentDesign!.Sketch;
         app.Chord(Key.D0);
-        app.Expect("the status line says what is open and how far in the view is", () =>
+        ViewTransform fitted = canvas.View;
+        Point2 under = fitted.ToWorld(OnCanvas(window, new Point(450, 300)));
+
+        app.Wheel(new Point(450, 300), new Vector(0, 3));
+        app.Expect("the wheel zoomed in about the pointer", () =>
         {
-            Assert.Contains("Coffee table", window.DesignReadout.Text!, StringComparison.Ordinal);
+            Assert.True(canvas.View.PixelsPerInch > fitted.PixelsPerInch);
+            Point after = canvas.View.ToScreen(under);
+            Point wanted = OnCanvas(window, new Point(450, 300));
+            Assert.True(
+                Math.Abs(after.X - wanted.X) < 1 && Math.Abs(after.Y - wanted.Y) < 1,
+                $"the point under the pointer moved to {after}, not {wanted}.");
+        });
+
+        app.Drag(new Point(450, 300), new Point(500, 340), new Point(540, 380));
+        app.Press(Key.Left);
+        app.Expect("moving around the drawing moved nothing in it", () =>
+        {
+            Assert.Same(asOpened, window.CurrentDesign!.Sketch);
+            Assert.Equal(FreshlyRead("coffee-table"), window.CurrentDesign!.Sketch);
             Assert.Matches(@"^Zoom \d+(\.\d)?%$", window.ZoomReadout.Text!);
-            Assert.True(window.Canvas.View.PixelsPerInch > 1);
         });
 
         app.SaveFrame("coffee-table");
@@ -154,8 +180,13 @@ public class ViewerWorkflows
         app.Chord(Key.D0);
 
         // A corner of the table, rather than the middle of the viewport, so that zooming in about
-        // it really does push the rest of the drawing out of sight.
-        Point2 corner = new(Length.Inches(48), Length.Inches(20));
+        // it really does push the rest of the drawing out of sight. The top is 48" x 24", anchored
+        // at the origin (samples/coffee-table.expected.json).
+        SampleExpectations expected = SampleExpectations.For("coffee-table");
+        ExpectedBox top = expected.Box("Top");
+        Point2 corner = new(
+            new Length(top.AnchorXUnits + top.WidthUnits),
+            new Length(top.AnchorYUnits + top.HeightUnits));
         Point onCanvas = canvas.View.ToScreen(corner);
         Point inWindow = InWindow(window, onCanvas);
         ViewTransform fitted = canvas.View;
@@ -193,51 +224,152 @@ public class ViewerWorkflows
     {
         MainWindow window = (MainWindow)app.Target;
         CanvasView canvas = window.Canvas;
+        SampleExpectations expected = SampleExpectations.For("wall-with-window");
 
         OpenThroughTheMenu(app, window, "Wall with window");
         app.Chord(Key.D0);
 
-        app.Expect("the wall's dimensions read the numbers it was built from", () =>
+        app.Expect("every dimension reads the string the fixture's expectations file gives", () =>
         {
-            Dictionary<string, string> labels = LabelsByKey(window);
-            Assert.Equal("12'-0\"", labels["Wall length"]);
-            Assert.Equal("3'-0\"", labels["Opening width"]);
-            Assert.Equal("4'-2 1/2\"", labels["To opening"]);
-            Assert.Equal("4'-9 1/2\"", labels["Past opening"]);
-            Assert.Equal("3 1/2\"", labels["Wall thickness"]);
+            Dictionary<string, string> labels = LabelsByName(window, expected);
+            Assert.Equal(expected.DimensionLabels.Count, labels.Count);
+            foreach (ExpectedLabel label in expected.DimensionLabels)
+            {
+                Assert.Equal(label.Text, labels[label.Name]);
+            }
         });
 
         app.SaveFrame("wall-fitted");
 
         // Zoom in on the opening, about its own centre, the way a person checks a rough opening.
-        Point2 middleOfOpening = new(Length.FeetInches(5, 8, 1, 2), Length.Inches(1, 3, 4));
-        Point inWindow = InWindow(window, canvas.View.ToScreen(middleOfOpening));
-        app.Wheel(inWindow, new Vector(0, 6));
+        ExpectedBox opening = expected.Box("Opening");
+        Point2 middleOfOpening = new(
+            new Length(opening.AnchorXUnits + (opening.WidthUnits / 2)),
+            new Length(opening.AnchorYUnits + (opening.HeightUnits / 2)));
+        app.Wheel(InWindow(window, canvas.View.ToScreen(middleOfOpening)), new Vector(0, 6));
         app.Press(Key.Up);
 
-        app.Expect("zoomed in, the opening's dimension still reads 3'-0\" and is on screen", () =>
+        ExpectedLabel openingWidth = expected.Label("Opening width");
+        app.Expect("zoomed in, the opening's dimension still reads its own number and is on screen", () =>
         {
-            Dictionary<string, string> labels = LabelsByKey(window);
-            Assert.Equal("3'-0\"", labels["Opening width"]);
+            Assert.Equal(openingWidth.Text, LabelsByName(window, expected)["Opening width"]);
 
-            DimensionMeasurement opening = Measurement(window, "Opening width");
-            Point label = canvas.View.ToScreen(opening.LabelAnchor);
+            DimensionMeasurement measured = Measurement(window, openingWidth);
+            Point label = canvas.View.ToScreen(measured.LabelAnchor);
             Assert.True(
                 new Rect(canvas.Bounds.Size).Contains(label),
-                $"the 3'-0\" label is drawn at {label}, outside the canvas.");
+                $"the {openingWidth.Text} label is drawn at {label}, outside the canvas.");
         });
 
-        app.Expect("the labels are the same strings Core.Geometry's Format produces", () =>
+        app.Expect("the labels are the value the fixture states, through Core.Geometry's Format", () =>
         {
-            DimensionMeasurement wall = Measurement(window, "Wall length");
-            Assert.Equal(
-                Length.Feet(12).Format(new FeetInchesFormat(16)).Text,
-                wall.Label(canvas.LabelFormat));
-            Assert.True(wall.Format(new FeetInchesFormat(16)).IsExact);
+            foreach (ExpectedLabel label in expected.DimensionLabels)
+            {
+                DimensionMeasurement measured = Measurement(window, label);
+
+                // The dimension stores no number: what it reads is worked out from the geometry,
+                // and it has to come to the units the fixture's arithmetic says.
+                Assert.Equal(label.ValueUnits, measured.Value.Units);
+                Assert.Equal(
+                    new Length(label.ValueUnits).Format(canvas.LabelFormat).Text,
+                    measured.Label(canvas.LabelFormat));
+                Assert.True(
+                    measured.Format(canvas.LabelFormat).IsExact,
+                    $"{label.Name} does not display exactly at this precision.");
+            }
         });
 
         app.SaveFrame("wall-with-window");
     });
+
+    [GuiWorkflow("GUI-VIEW-05")]
+    public void A_file_the_app_cannot_read_fails_visibly_and_leaves_the_drawing_alone() =>
+        GuiWorkflow.Run(app =>
+        {
+            MainWindow window = (MainWindow)app.Target;
+            CanvasView canvas = window.Canvas;
+
+            // Something is open and the view has been moved off its opening position, so that
+            // "untouched" means more than "nothing had happened yet".
+            app.Chord(Key.D1);
+            app.Chord(Key.D0);
+            app.Drag(new Point(430, 300), new Point(480, 330), new Point(520, 350));
+
+            Design opened = window.CurrentDesign!;
+            Sketch asOpened = opened.Sketch;
+            ViewTransform asFramed = canvas.View;
+            string? title = window.Title;
+            string? status = window.DesignReadout.Text;
+
+            string several = BadScenes.Write("several-faults.scene.json", BadScenes.SeveralFaults);
+            OpenThroughTheFileDialog(app, window, several);
+
+            app.Expect("the refusal names every problem, and the drawing is untouched", () =>
+            {
+                Assert.True(window.IsRefusalShowing, "nothing was shown for a file that was refused.");
+                Assert.Contains(
+                    "several-faults.scene.json",
+                    window.RefusalHeadlineText,
+                    StringComparison.Ordinal);
+
+                // Every problem, not the first: the fixture has three faults of a kind the reader
+                // finds in one pass (see BadScenes), and all three have to be readable at once.
+                Assert.True(
+                    window.RefusalProblems.Count >= 3,
+                    $"only {window.RefusalProblems.Count} problem(s) were shown: "
+                    + string.Join(" | ", window.RefusalProblems));
+
+                IReadOnlyList<string> onScreen = TextOnThePanel(window);
+                Assert.All(
+                    window.RefusalProblems,
+                    problem => Assert.Contains(problem, onScreen));
+
+                AssertUntouched(window, opened, asOpened, asFramed, title, status);
+            });
+
+            app.Press(Key.Escape);
+            app.Expect("Escape takes the message away and still nothing has changed", () =>
+            {
+                Assert.False(window.IsRefusalShowing);
+                Assert.Empty(window.RefusalProblems);
+                AssertUntouched(window, opened, asOpened, asFramed, title, status);
+            });
+
+            // A second refusal, of a different kind, dismissed with the mouse this time.
+            string dangling = BadScenes.Write("dangling.scene.json", BadScenes.DanglingReference);
+            OpenThroughTheFileDialog(app, window, dangling);
+            app.Expect("a dangling id is refused too, and named", () =>
+            {
+                Assert.True(window.IsRefusalShowing);
+                Assert.Contains(
+                    "0192f1a0-0000-4000-8000-0000000000ff",
+                    string.Join(" ", window.RefusalProblems),
+                    StringComparison.OrdinalIgnoreCase);
+                AssertUntouched(window, opened, asOpened, asFramed, title, status);
+            });
+
+            app.SaveFrame("refused");
+            app.Click(CentreOf(window, window.Refusal));
+            app.Expect("clicking the message dismisses it, and the drawing is still there", () =>
+            {
+                Assert.False(window.IsRefusalShowing);
+                AssertUntouched(window, opened, asOpened, asFramed, title, status);
+            });
+
+            // And a file that is good replaces the design, framed, with its name on the window.
+            OpenThroughTheFileDialog(app, window, SampleExpectations.SceneFile("wall-with-window"));
+            app.Expect("a good file opens, replaces the drawing and frames it", () =>
+            {
+                Assert.False(window.IsRefusalShowing);
+                Assert.Equal("wall-with-window.scene.json", window.CurrentDesign?.Name);
+                Assert.Equal("napkin — wall-with-window.scene.json", window.Title);
+                Assert.NotSame(asOpened, window.CurrentDesign!.Sketch);
+                Assert.Equal(FreshlyRead("wall-with-window"), window.CurrentDesign!.Sketch);
+                Assert.True(IsWhollyVisible(canvas), "the new drawing was not framed.");
+            });
+
+            app.SaveFrame("opened-after-a-refusal");
+        });
 
     /// <summary>Opens a sample the way a person does: the Samples menu, with the mouse.</summary>
     static void OpenThroughTheMenu(AppDriver app, MainWindow window, string sample)
@@ -249,6 +381,46 @@ public class ViewerWorkflows
             .Single(candidate => (candidate.Header as string) == sample);
         app.Click(CentreOf(window, item));
     }
+
+    /// <summary>
+    /// Opens a file through <em>File &#x2192; Open&#x2026;</em>: the real shortcut, the real
+    /// command, with a picker standing in for the platform's dialog.
+    /// </summary>
+    /// <remarks>
+    /// Substituting the picker is not a shortcut around a gesture — it is the one thing in this
+    /// path that has no gesture, because a headless test has no native dialog to click. The stub
+    /// answers synchronously, so the command finishes inside the key press and the next verb sees
+    /// the result.
+    /// </remarks>
+    static void OpenThroughTheFileDialog(AppDriver app, MainWindow window, string path)
+    {
+        window.FilePicker = new ScriptedPicker(path);
+        app.Chord(Key.O);
+    }
+
+    static void AssertUntouched(
+        MainWindow window,
+        Design opened,
+        Sketch asOpened,
+        ViewTransform asFramed,
+        string? title,
+        string? status)
+    {
+        Assert.Same(opened, window.CurrentDesign);
+        Assert.Same(asOpened, window.CurrentDesign!.Sketch);
+        Assert.Equal(asFramed, window.Canvas.View);
+        Assert.Equal(title, window.Title);
+        Assert.Equal(status, window.DesignReadout.Text);
+    }
+
+    /// <summary>Every line of text the refusal panel is really showing.</summary>
+    static IReadOnlyList<string> TextOnThePanel(MainWindow window) =>
+    [
+        .. window.Refusal
+            .GetVisualDescendants()
+            .OfType<TextBlock>()
+            .Select(block => block.Text ?? string.Empty),
+    ];
 
     static Point CentreOf(Visual root, Visual control) =>
         control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), root)
@@ -268,22 +440,16 @@ public class ViewerWorkflows
         return new Point(onCanvas.X + origin.X, onCanvas.Y + origin.Y);
     }
 
-    static void AssertPartDrawn(
-        MainWindow window,
-        Design design,
-        string key,
-        double x,
-        double y,
-        double width,
-        double height)
+    static void AssertPartDrawn(MainWindow window, Design design, ExpectedBox part)
     {
-        Box box = design.Sketch.Find<Box>(DesignBuilder.IdFor(design.Name, key))
-            ?? throw new InvalidOperationException($"{design.Name} has no part called {key}.");
+        Box box = design.Sketch.Find<Box>(part.EntityId)
+            ?? throw new InvalidOperationException($"{design.Name} has no part called {part.Name}.");
 
-        Assert.Equal(x, box.Anchor.X.ToInches());
-        Assert.Equal(y, box.Anchor.Y.ToInches());
-        Assert.Equal(width, box.Width.ToInches());
-        Assert.Equal(height, box.Height.ToInches());
+        // Integer units, compared exactly against the arithmetic committed in the fixture.
+        Assert.Equal(part.AnchorXUnits, box.Anchor.X.Units);
+        Assert.Equal(part.AnchorYUnits, box.Anchor.Y.Units);
+        Assert.Equal(part.WidthUnits, box.Width.Units);
+        Assert.Equal(part.HeightUnits, box.Height.Units);
 
         ViewTransform view = window.Canvas.View;
         Rect drawn = new Rect(
@@ -292,16 +458,23 @@ public class ViewerWorkflows
 
         Assert.True(
             new Rect(window.Canvas.Bounds.Size).Contains(drawn),
-            $"{key} is drawn at {drawn}, which is not inside the canvas.");
-        Assert.True(drawn.Width > 0 && drawn.Height > 0, $"{key} is drawn with no area.");
+            $"{part.Name} is drawn at {drawn}, which is not inside the canvas.");
+        Assert.True(drawn.Width > 0 && drawn.Height > 0, $"{part.Name} is drawn with no area.");
     }
 
     static void AssertNothingMoved(MainWindow window, Sketch asOpened)
     {
         // The sketch the canvas holds is still the one that was opened, value for value, and still
-        // equal to a fresh load of the same sample: no gesture has written to the model.
+        // equal to a fresh read of the same file: no gesture has written to the model.
         Assert.Same(asOpened, window.CurrentDesign!.Sketch);
-        Assert.Equal(BuiltInDesigns.CoffeeTable().Sketch, window.CurrentDesign!.Sketch);
+        Assert.Equal(FreshlyRead("coffee-table"), window.CurrentDesign!.Sketch);
+    }
+
+    /// <summary>The fixture as the reader produces it, read again from the shipped file.</summary>
+    static Sketch FreshlyRead(string fixture)
+    {
+        LoadResult result = SceneReader.ReadFile(SampleExpectations.SceneFile(fixture));
+        return Assert.IsType<Loaded>(result).Sketch;
     }
 
     static bool IsWhollyVisible(CanvasView canvas)
@@ -330,28 +503,25 @@ public class ViewerWorkflows
         Assert.True(viewport.Bottom - drawn.Bottom > 1, $"no margin at the bottom: {drawn}.");
     }
 
-    static Dictionary<string, string> LabelsByKey(MainWindow window)
+    /// <summary>What every dimension on screen reads, keyed by the name the fixture gives it.</summary>
+    static Dictionary<string, string> LabelsByName(MainWindow window, SampleExpectations expected)
     {
-        Design design = window.CurrentDesign!;
+        Dictionary<EntityId, string> names = expected.DimensionLabels
+            .ToDictionary(label => label.EntityId, label => label.Name);
+
         return window.Canvas.Measurements().ToDictionary(
-            measurement => KeyOf(design, measurement.Dimension.Id),
+            measurement => names.TryGetValue(measurement.Dimension.Id, out string? name)
+                ? name
+                : measurement.Dimension.Id.ToString(),
             measurement => measurement.Label(window.Canvas.LabelFormat));
     }
 
-    static DimensionMeasurement Measurement(MainWindow window, string key)
+    static DimensionMeasurement Measurement(MainWindow window, ExpectedLabel label) =>
+        window.Canvas.Measurements().Single(m => m.Dimension.Id == label.EntityId);
+
+    /// <summary>A file picker that answers with the path a workflow chose, at once.</summary>
+    sealed class ScriptedPicker(string path) : ISceneFilePicker
     {
-        EntityId id = DesignBuilder.IdFor(window.CurrentDesign!.Name, key);
-        return window.Canvas.Measurements().Single(m => m.Dimension.Id == id);
+        public Task<string?> PickSceneFileAsync() => Task.FromResult<string?>(path);
     }
-
-    /// <summary>Which named dimension of the open design an id belongs to.</summary>
-    static string KeyOf(Design design, EntityId id) => WellKnownKeys
-        .FirstOrDefault(key => DesignBuilder.IdFor(design.Name, key) == id)
-        ?? id.ToString();
-
-    static readonly string[] WellKnownKeys =
-    [
-        "Overall width", "Overall depth", "Leg inset", "Leg size", "Apron length",
-        "Wall length", "Opening width", "To opening", "Past opening", "Wall thickness",
-    ];
 }

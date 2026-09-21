@@ -188,7 +188,7 @@ public class ViewTransformTests
     [Trait("Feature", "CVS-002")]
     public void A_fit_frames_the_whole_design_with_a_margin()
     {
-        Design design = BuiltInDesigns.CoffeeTable();
+        Design design = CoffeeTable();
         WorldBounds extents = SketchExtents.Of(design.Sketch);
 
         ViewTransform fitted = ViewTransform.Default.FitTo(extents, Viewport);
@@ -258,9 +258,9 @@ public class ViewTransformTests
     [Trait("Feature", "CVS-001")]
     public void No_view_operation_touches_the_design()
     {
-        Design design = BuiltInDesigns.CoffeeTable();
+        Design design = CoffeeTable();
         Sketch before = design.Sketch;
-        Sketch reference = BuiltInDesigns.CoffeeTable().Sketch;
+        Sketch reference = CoffeeTable().Sketch;
 
         ViewTransform view = ViewTransform.Default
             .FitTo(SketchExtents.Of(design.Sketch), Viewport)
@@ -274,6 +274,13 @@ public class ViewTransformTests
         Assert.Same(before, design.Sketch);
         Assert.Equal(reference, design.Sketch);
     }
+
+    /// <summary>
+    /// The coffee table, read from the sample file the application ships. It is a real drawing
+    /// rather than a rectangle invented here, which is the point: a fit has to frame a design with
+    /// dimension lines standing off it, not just a box.
+    /// </summary>
+    static Design CoffeeTable() => SampleExpectations.Sample("coffee-table").Load();
 
     static void AssertFramedWithMargin(ViewTransform fitted, WorldBounds extents)
     {
