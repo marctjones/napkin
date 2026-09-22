@@ -212,7 +212,7 @@
                                FontSize="12"
                                FontWeight="SemiBold" />
 
-                    <TextBox Name="PartNameBox" FontSize="12" Watermark="Name" />
+                    <TextBox Name="PartNameBox" FontSize="12" PlaceholderText="Name" />
 
                     <CheckBox Name="IsPartCheck"
                               Content="This is a piece to cut"
@@ -236,17 +236,17 @@
                                        Text="Thickness" FontSize="11"
                                        VerticalAlignment="Center" Margin="0,0,8,0" />
                             <TextBox Name="OutOfPlaneBox" Grid.Row="2" Grid.Column="1" FontSize="12"
-                                     Watermark="3/4&quot;" Margin="0,0,0,4" />
+                                     PlaceholderText="3/4&quot;" Margin="0,0,0,4" />
 
                             <TextBlock Grid.Row="3" Grid.Column="0" Text="Qty" FontSize="11"
                                        VerticalAlignment="Center" Margin="0,0,8,0" />
                             <TextBox Name="QuantityBox" Grid.Row="3" Grid.Column="1" FontSize="12"
-                                     Watermark="1" />
+                                     PlaceholderText="1" />
                         </Grid>
 
-                        <TextBox Name="StockBox" FontSize="12" Watermark="Stock, e.g. 2x4" />
+                        <TextBox Name="StockBox" FontSize="12" PlaceholderText="Stock, e.g. 2x4" />
                         <TextBlock Name="StockReadout" FontSize="10" Opacity="0.8" TextWrapping="Wrap" />
-                        <TextBox Name="SpeciesBox" FontSize="12" Watermark="Species" />
+                        <TextBox Name="SpeciesBox" FontSize="12" PlaceholderText="Species" />
                     </StackPanel>
 
                     <Button Name="ApplyPartButton"
