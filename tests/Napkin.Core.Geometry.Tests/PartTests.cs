@@ -122,6 +122,46 @@ public class PartTests
         Assert.Throws<ArgumentNullException>(() => part.SizeOn(null!));
     }
 
+    [Trait("Feature", "CUT-002")]
+    [Fact]
+    public void Editing_a_part_keeps_it_a_part()
+    {
+        // Every edit rebuilds an entity with a `with` expression rather than a constructor call,
+        // which is what makes the name and the part survive a drag, a resize and a turn without
+        // anything having to remember to carry them. If this fails, a cut list would empty out
+        // the first time somebody moved a leg.
+        SketchBuilder builder = new();
+        EntityId id = builder.AddBox(0, 0, 10, 4);
+        Part part = new("2x4", "Douglas fir", 4, Length.Inches(16), new PlanAxes(PartDimension.Length, PartDimension.Width));
+
+        Sketch sketch = builder.Sketch.WithEntity(
+            ((Box)builder.Sketch.Find(id)!) with { Name = "Leg, south-west", Part = part });
+
+        DirectUpdater updater = new();
+        foreach (Request request in new Request[]
+        {
+            new Drag(id, new Vector2(Length.Inches(3), Length.Inches(2))),
+            new DragEdge(id, BoxEdge.East, Length.Inches(2)),
+            new SetRotation(id, Angle.Zero.Rotate90(1)),
+            new SetPosition(id, Point2.Inches(20, 30)),
+            new SetLayer(id, LayerId.Default),
+        })
+        {
+            Solved solved = Assert.IsType<Solved>(updater.Apply(sketch, request));
+            Box edited = Assert.IsType<Box>(solved.Sketch.Find(id));
+
+            Assert.Equal("Leg, south-west", edited.Name);
+            Assert.Equal(part, edited.Part);
+
+            sketch = solved.Sketch;
+        }
+
+        // The box really did change under all that: this is not a test of a no-op.
+        Box final = Assert.IsType<Box>(sketch.Find(id));
+        Assert.Equal(Point2.Inches(20, 30), final.Anchor);
+        Assert.Equal(Length.Inches(12), final.Width);
+    }
+
     [Trait("Feature", "CUT-001")]
     [Fact]
     public void A_box_with_no_part_is_a_box_as_it_always_was()

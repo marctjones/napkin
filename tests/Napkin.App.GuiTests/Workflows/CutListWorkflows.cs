@@ -5,6 +5,7 @@ using Avalonia.VisualTree;
 
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
+using Napkin.Core.Geometry;
 
 using Xunit;
 
@@ -91,8 +92,6 @@ public class CutListWorkflows
                 window.CutList!.Rows.Sorted.Select(row => row.Label));
         });
 
-        // Back to the drawing, and the list follows an edit to it.
-        app.Press(Key.Escape);
         app.Expect("the exported CSV is the table as it is being read, in the same order", () =>
         {
             CutListWindow list = window.CutList!;
@@ -102,7 +101,41 @@ public class CutListWorkflows
             Assert.StartsWith("Top,1,", lines[2], StringComparison.Ordinal);
             Assert.Contains("\"Apron, long\"", lines[5], StringComparison.Ordinal);
         });
+
+        // The list is a reading of the drawing rather than a snapshot of it, so it follows the
+        // drawing being replaced and then drawn on.
+        app.Chord(Key.N);
+        app.Expect("a blank sheet empties the list, with the window still open", () =>
+        {
+            Assert.NotNull(window.CutList);
+            Assert.Empty(window.CutList!.Rows.Rows);
+            Assert.Equal("This design has nothing in it to cut.", window.CutList!.EmptyMessage);
+        });
+
+        // Back to the drawing — the cut list took the focus when its header was clicked — and draw
+        // one box on the blank sheet.
+        app.Click(new Point(450, 320));
+        app.Press(Key.R);
+        app.Drag(At(window, Point2.Inches(-12, -9)), At(window, Point2.Inches(0, 0)), At(window, Point2.Inches(12, 9)));
+
+        app.Expect("a box that has been drawn but not made a part says so rather than listing", () =>
+        {
+            Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>());
+            Assert.Empty(window.CutList!.Rows.Rows);
+            Assert.StartsWith(
+                "Nothing in this design is a part yet",
+                window.CutList!.EmptyMessage,
+                StringComparison.Ordinal);
+        });
     });
+
+    /// <summary>The window coordinate a model point is drawn at.</summary>
+    static Point At(MainWindow window, Point2 world)
+    {
+        Point onCanvas = window.Canvas.View.ToScreen(world);
+        Point origin = window.Canvas.TranslatePoint(new Point(0, 0), window)!.Value;
+        return new Point(onCanvas.X + origin.X, onCanvas.Y + origin.Y);
+    }
 
     /// <summary>Opens a sample through the Samples menu, with the mouse.</summary>
     static void OpenSample(AppDriver app, MainWindow window, string sample)
