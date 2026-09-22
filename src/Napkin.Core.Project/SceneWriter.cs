@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -146,6 +147,7 @@ public static class SceneWriter
                 writer.WriteNumber(SceneNames.Height, box.Height.Units);
                 writer.WriteNumber(SceneNames.Rotation, box.Rotation.Arcseconds);
                 WritePart(writer, box.Part);
+                WriteCuts(writer, box.Cuts);
                 break;
 
             case Dimension dimension:
@@ -216,6 +218,56 @@ public static class SceneWriter
         writer.WriteEndObject();
 
         writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// What has been cut off a box's blank, in site order — <c>"cuts": []</c> for a plain
+    /// rectangle, written for the same reason <c>"part": null</c> is
+    /// (<c>docs/design/shaped-parts-model.md</c> §5).
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Box.Cuts"/> is already in site order by construction, so the array is written in
+    /// the order the list holds and the reader refuses a file whose order differs. That is what
+    /// keeps a file one spelling of one shape.
+    /// </remarks>
+    private static void WriteCuts(Utf8JsonWriter writer, ImmutableList<Cut> cuts)
+    {
+        writer.WriteStartArray(SceneNames.Cuts);
+
+        foreach (Cut cut in cuts)
+        {
+            writer.WriteStartObject();
+
+            switch (cut)
+            {
+                case CornerCut corner:
+                    writer.WriteString(SceneNames.Kind, SceneNames.CornerCut);
+                    writer.WriteString(SceneNames.Corner, SceneNames.Of(corner.Corner));
+                    writer.WriteNumber(SceneNames.AlongX, corner.AlongX.Units);
+                    writer.WriteNumber(SceneNames.AlongY, corner.AlongY.Units);
+                    break;
+
+                case RoundedCorner rounded:
+                    writer.WriteString(SceneNames.Kind, SceneNames.RoundedCorner);
+                    writer.WriteString(SceneNames.Corner, SceneNames.Of(rounded.Corner));
+                    writer.WriteNumber(SceneNames.CutRadius, rounded.Radius.Units);
+                    break;
+
+                case CurvedEdge curve:
+                    writer.WriteString(SceneNames.Kind, SceneNames.CurvedEdge);
+                    writer.WriteString(SceneNames.Edge, SceneNames.Of(curve.Edge));
+                    writer.WriteString(SceneNames.Bow, SceneNames.Of(curve.Bow));
+                    writer.WriteNumber(SceneNames.Depth, curve.Depth.Units);
+                    break;
+
+                default:
+                    throw Unwritable(cut);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
     }
 
     private static string TypeOf(Entity entity) => entity switch
