@@ -2110,13 +2110,27 @@ public partial class MainWindow : Window
             : [new KeyGesture(Key.Z, CommandModifier)];
 
     /// <summary>
-    /// The platform's own redo keys: Control+Y and Control+Shift+Z on Windows, Command+Shift+Z on
-    /// macOS. Every one of them is bound; the menu shows the first.
+    /// The platform's own redo keys — Avalonia lists command+Y and command+Shift+Z — every one of
+    /// them bound. The menu shows the first, so the list is ordered by convention: Control+Y
+    /// first on Windows, Command+Shift+Z first on macOS, where Command+Y is not redo.
     /// </summary>
-    static IReadOnlyList<KeyGesture> RedoGestures =>
-        Application.Current?.PlatformSettings?.HotkeyConfiguration.Redo is { Count: > 0 } redo
-            ? [.. redo]
-            : [new KeyGesture(Key.Z, CommandModifier | KeyModifiers.Shift), new KeyGesture(Key.Y, CommandModifier)];
+    static IReadOnlyList<KeyGesture> RedoGestures
+    {
+        get
+        {
+            KeyModifiers command = CommandModifier;
+            List<KeyGesture> redo = Application.Current?.PlatformSettings?.HotkeyConfiguration.Redo is { Count: > 0 } listed
+                ? [.. listed]
+                : [new KeyGesture(Key.Y, command), new KeyGesture(Key.Z, command | KeyModifiers.Shift)];
+
+            bool mac = command.HasFlag(KeyModifiers.Meta);
+            return
+            [
+                .. redo.OrderBy(gesture =>
+                    gesture.Key == Key.Z && gesture.KeyModifiers.HasFlag(KeyModifiers.Shift) ? (mac ? 0 : 1) : (mac ? 1 : 0)),
+            ];
+        }
+    }
 
     /// <summary>
     /// Control on Windows, Command on macOS, read from the platform rather than hardcoded.
