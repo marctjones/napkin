@@ -19,7 +19,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 21,
+    "workflowsPassed": 25,
     "workflowIds": [
       "CVS-011",
       "GUI-CUT-02",
@@ -30,13 +30,17 @@
       "GUI-DRAW-02",
       "GUI-DRAW-03",
       "GUI-DRAW-04",
+      "GUI-DRAW-05",
+      "GUI-DRAW-06",
       "GUI-DRAW-07",
       "GUI-DRAW-08",
       "GUI-DRAW-09",
+      "GUI-DRAW-10",
       "GUI-SHELL-01",
       "GUI-SHELL-02",
       "GUI-SHELL-03",
       "GUI-SHELL-04",
+      "GUI-SHELL-05",
       "GUI-VIEW-01",
       "GUI-VIEW-02",
       "GUI-VIEW-03",

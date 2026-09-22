@@ -57,6 +57,10 @@ public partial class MainWindow : Window
     ISceneFilePicker _filePicker;
     CutListWindow? _cutList;
     bool _opening;
+    bool _saving;
+    bool _closeConfirmed;
+    string? _documentPath;
+    Func<Task>? _afterAnswer;
     bool _showingProperties;
     bool _showingCut;
     EntityId? _editingBox;
@@ -75,6 +79,7 @@ public partial class MainWindow : Window
         Editor.MessageChanged += (_, _) => UpdateMessageBar();
         Editor.DesignChanged += (_, _) => OnDesignChanged();
         Editor.SelectionChanged += (_, _) => OnSelectionChanged();
+        Editor.History.Changed += (_, _) => UpdateMenuEnablement();
 
         BuildSamplesMenu();
         BuildKeyBindings();
@@ -132,6 +137,10 @@ public partial class MainWindow : Window
         // Keys that reach the window with the menu focused still steer the view, so arrowing after
         // a menu click does what it looks like it should.
         AddHandler(KeyDownEvent, OnShellKeyDown, RoutingStrategies.Bubble);
+
+        // The backdrop behind the save question takes every press, so nothing on the paper can be
+        // edited while it waits for an answer.
+        UnsavedBackdrop.PointerPressed += (_, e) => e.Handled = true;
 
         if (Samples.Count > 0)
         {
@@ -334,7 +343,12 @@ public partial class MainWindow : Window
         DismissRefusal();
         CloseDimensionEditor(focusCanvas: false);
         Editor.Open(design);
-        Title = $"napkin — {design.Name}";
+
+        // A file a person opened is where Save writes back to. A sample is not: it ships beside
+        // the executable, and a plain Save must not quietly overwrite it — the first Save of an
+        // edited sample asks where to put the copy, as a new sheet's does.
+        _documentPath = source is FileDesignSource file && !Samples.Contains(source) ? file.Path : null;
+        UpdateTitle();
         DesignText.Text = $"{design.Name} — {source.Description}";
 
         foreach (MenuItem item in _sampleItems)
@@ -347,8 +361,18 @@ public partial class MainWindow : Window
         return true;
     }
 
-    /// <summary>Starts a blank sheet.</summary>
-    public void NewSheetCommand() => ShowDesign(new NewSheet());
+    /// <summary>Starts a blank sheet — after asking about unsaved changes, if there are any.</summary>
+    public void NewSheetCommand() =>
+        _ = WhenChangesAreSafe("starting a new sheet", () => Now(() => ShowDesign(new NewSheet())));
+
+    /// <summary>
+    /// Opens one of the samples — after asking about unsaved changes, if there are any.
+    /// </summary>
+    public void OpenSampleCommand(IDesignSource sample)
+    {
+        ArgumentNullException.ThrowIfNull(sample);
+        _ = WhenChangesAreSafe($"opening {sample.Name}", () => Now(() => ShowDesign(sample)));
+    }
 
     /// <summary>The cut-list window, when one is open.</summary>
     public CutListWindow? CutList => _cutList;
@@ -387,7 +411,9 @@ public partial class MainWindow : Window
     /// Anything it throws becomes a visible refusal: the one thing this path must never do is take
     /// the application down between a person choosing a file and seeing what happened to it.
     /// </remarks>
-    public async Task OpenFileAsync()
+    public Task OpenFileAsync() => WhenChangesAreSafe("opening another file", PickAndOpenFileAsync);
+
+    async Task PickAndOpenFileAsync()
     {
         if (_opening)
         {
@@ -411,6 +437,315 @@ public partial class MainWindow : Window
         {
             _opening = false;
         }
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Saving, and not losing what has not been saved
+    // ---------------------------------------------------------------------------------------
+
+    /// <summary>The <em>File</em> menu.</summary>
+    public MenuItem FileMenuItem => FileMenu;
+
+    /// <summary>The <em>File &#x2192; Exit</em> item.</summary>
+    public MenuItem ExitMenuEntry => ExitMenuItem;
+
+    /// <summary>The <em>File &#x2192; Save</em> item.</summary>
+    public MenuItem SaveMenuEntry => SaveMenuItem;
+
+    /// <summary>The <em>File &#x2192; Save As&#x2026;</em> item.</summary>
+    public MenuItem SaveAsMenuEntry => SaveAsMenuItem;
+
+    /// <summary>
+    /// The scene file a plain Save writes to: the file that was opened, or the last one saved to.
+    /// Null for a new sheet or a sample that has not been saved anywhere yet.
+    /// </summary>
+    public string? DocumentPath => _documentPath;
+
+    /// <summary>Whether the drawing has changed since it was opened or last saved.</summary>
+    public bool HasUnsavedChanges => Editor.HasUnsavedChanges;
+
+    /// <summary>Whether the window is asking whether to save before it throws changes away.</summary>
+    public bool IsAskingToSave => UnsavedBackdrop.IsVisible;
+
+    /// <summary>What the save question says, or empty when it is not being asked.</summary>
+    public string SaveQuestionText => IsAskingToSave ? UnsavedHeadline.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The question's Save button: save, then carry on.</summary>
+    public Button SaveChangesButton => UnsavedSaveButton;
+
+    /// <summary>The question's Don't save button: carry on, and lose the changes.</summary>
+    public Button DiscardChangesButton => UnsavedDiscardButton;
+
+    /// <summary>The question's Cancel button: do neither, and go back to the drawing.</summary>
+    public Button KeepEditingButton => UnsavedCancelButton;
+
+    /// <summary>
+    /// Saves the drawing to the file it came from or was last saved to; a drawing with no such
+    /// file asks where to put it, as <see cref="SaveAsAsync"/> does.
+    /// </summary>
+    /// <returns>Whether the drawing was written.</returns>
+    public Task<bool> SaveAsync() =>
+        _documentPath is { } path ? Task.FromResult(SaveTo(path)) : SaveAsAsync();
+
+    /// <summary>
+    /// Asks where to save the drawing, writes it there, and makes that the file a plain Save
+    /// writes to from then on.
+    /// </summary>
+    /// <remarks>
+    /// Cancelling writes nothing and says so. A picker that throws is reported like any other
+    /// failure to save: the one thing this must never do is lose the drawing or the application.
+    /// </remarks>
+    /// <returns>Whether the drawing was written.</returns>
+    public async Task<bool> SaveAsAsync()
+    {
+        if (_saving || IsAskingToSave || RefusedMidGesture())
+        {
+            return false;
+        }
+
+        _saving = true;
+        try
+        {
+            string? path;
+            try
+            {
+                path = await FilePicker.PickSaveDestinationAsync(SuggestedFileName()).ConfigureAwait(true);
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                Editor.Say(EditSeverity.Problem, $"Not saved: {exception.Message}");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                Editor.Say(EditSeverity.Hint, "Not saved — no file was chosen, so nothing was written.");
+                return false;
+            }
+
+            return SaveTo(path);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    /// <summary>Writes the drawing to a file, and says what happened.</summary>
+    bool SaveTo(string path)
+    {
+        if (IsAskingToSave || RefusedMidGesture())
+        {
+            return false;
+        }
+
+        switch (SceneFileSaver.Save(path, Editor.Sketch))
+        {
+            case SceneSaved saved:
+                Editor.MarkSaved();
+                _documentPath = saved.Path;
+                string fileName = System.IO.Path.GetFileName(saved.Path);
+                DesignText.Text = $"{fileName} — {saved.Path}";
+                UpdateTitle();
+                Editor.Say(
+                    EditSeverity.Done,
+                    $"Saved {fileName} in {System.IO.Path.GetDirectoryName(saved.Path)}.");
+                return true;
+
+            case SceneNotSaved refused:
+                Editor.Say(EditSeverity.Problem, "Not saved. " + string.Join(" ", refused.Problems));
+                return false;
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Whether a drag is still under way, and so there is no finished drawing to save yet — said
+    /// in the message bar rather than silently ignored.
+    /// </summary>
+    bool RefusedMidGesture()
+    {
+        if (!Editor.InGesture)
+        {
+            return false;
+        }
+
+        Editor.Say(EditSeverity.Hint, "Not saved — finish the drag first, then save.");
+        return true;
+    }
+
+    /// <summary>What Save As offers to call the file: the file it already has, or the design's name.</summary>
+    string SuggestedFileName()
+    {
+        if (_documentPath is { } path)
+        {
+            return System.IO.Path.GetFileName(path);
+        }
+
+        string name = Editor.Design.Name;
+        return name.EndsWith(".json", StringComparison.OrdinalIgnoreCase) ? name : name + ".scene.json";
+    }
+
+    /// <summary>
+    /// Does something that would throw the drawing's changes away — at once when there are none,
+    /// and otherwise only once the person has said whether to save them first.
+    /// </summary>
+    /// <param name="doing">What is about to happen, for the question: "starting a new sheet".</param>
+    /// <param name="then">What to do once it is safe to.</param>
+    /// <returns>
+    /// The work itself when it ran at once; a finished task when the question is waiting, because
+    /// the work then runs when the person answers.
+    /// </returns>
+    Task WhenChangesAreSafe(string doing, Func<Task> then)
+    {
+        if (IsAskingToSave)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (!Editor.HasUnsavedChanges)
+        {
+            return then();
+        }
+
+        // A half-typed dimension would sit under the question, out of reach; the question is
+        // about the drawing, so the drawing is all that is left showing.
+        CloseDimensionEditor(focusCanvas: false);
+
+        UnsavedHeadline.Text = $"Save the changes to {DocumentName} before {doing}?";
+        _afterAnswer = then;
+        UnsavedBackdrop.IsVisible = true;
+        UnsavedSaveButton.Focus();
+        return Task.CompletedTask;
+    }
+
+    /// <summary>The question is answered Save: save, and carry on only if the save worked.</summary>
+    async Task SaveThenCarryOnAsync()
+    {
+        Func<Task>? then = TakeAnswer();
+        if (await SaveAsync().ConfigureAwait(true) && then is not null)
+        {
+            await then().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>The question is answered Don't save: carry on, and the changes go.</summary>
+    async Task DiscardThenCarryOnAsync()
+    {
+        if (TakeAnswer() is { } then)
+        {
+            await then().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>The question is answered Cancel: nothing happens, and the drawing is as it was.</summary>
+    void KeepEditing()
+    {
+        TakeAnswer();
+        Editor.Say(EditSeverity.Hint, "Nothing was saved and nothing was thrown away.");
+    }
+
+    /// <summary>Takes the question off the screen and hands back what it was holding.</summary>
+    Func<Task>? TakeAnswer()
+    {
+        Func<Task>? then = _afterAnswer;
+        _afterAnswer = null;
+        UnsavedBackdrop.IsVisible = false;
+        DrawingCanvas.Focus();
+        return then;
+    }
+
+    /// <summary>Closes the window without asking again: the person has already answered.</summary>
+    Task CloseNow()
+    {
+        _closeConfirmed = true;
+        Close();
+        return Task.CompletedTask;
+    }
+
+    static Task Now(Action action)
+    {
+        action();
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Closing the window from its title bar, or quitting the application, asks first when there
+    /// are unsaved changes. A close the application asks for itself (<see cref="Window.Close()"/>
+    /// in code) does not: every such call has either asked already — <em>File &#x2192; Exit</em>
+    /// goes through the same question — or is a test harness tearing the window down.
+    /// </remarks>
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+
+        bool personAsked = !e.IsProgrammatic || e.CloseReason == WindowCloseReason.ApplicationShutdown;
+        if (personAsked && !_closeConfirmed && Editor.HasUnsavedChanges)
+        {
+            e.Cancel = true;
+            _ = WhenChangesAreSafe("closing napkin", CloseNow);
+        }
+
+        base.OnClosing(e);
+    }
+
+    /// <summary>What the drawing is called in the title and the save question: its file, or its name.</summary>
+    string DocumentName =>
+        _documentPath is { } path ? System.IO.Path.GetFileName(path) : Editor.Design.Name;
+
+    /// <summary>The title: the file's name, marked with an asterisk while there are unsaved changes.</summary>
+    void UpdateTitle() =>
+        Title = Editor.HasUnsavedChanges ? $"napkin — {DocumentName}*" : $"napkin — {DocumentName}";
+
+    // ---------------------------------------------------------------------------------------
+    // Undo and redo (#11)
+    // ---------------------------------------------------------------------------------------
+
+    /// <summary>The <em>Edit</em> menu.</summary>
+    public MenuItem EditMenuItem => EditMenu;
+
+    /// <summary>The <em>Edit &#x2192; Undo</em> item, which names what it would undo.</summary>
+    public MenuItem UndoMenuEntry => UndoMenuItem;
+
+    /// <summary>The <em>Edit &#x2192; Redo</em> item, which names what it would redo.</summary>
+    public MenuItem RedoMenuEntry => RedoMenuItem;
+
+    /// <summary>
+    /// Takes back the last thing done to the drawing — or, while a text field has the keyboard,
+    /// the last thing typed into it.
+    /// </summary>
+    /// <returns>Whether the drawing changed.</returns>
+    public bool UndoCommand()
+    {
+        if (FocusManager?.GetFocusedElement() is TextBox field)
+        {
+            // The window's key binding sees the key before the field does, so the field's own
+            // undo is asked for here: undo while typing a dimension takes back the typing, never
+            // the part whose dimension is being typed.
+            field.Undo();
+            return false;
+        }
+
+        return !IsAskingToSave && Editor.Undo();
+    }
+
+    /// <summary>
+    /// Puts back the last thing undone — or, while a text field has the keyboard, the last thing
+    /// undone in it.
+    /// </summary>
+    /// <returns>Whether the drawing changed.</returns>
+    public bool RedoCommand()
+    {
+        if (FocusManager?.GetFocusedElement() is TextBox field)
+        {
+            field.Redo();
+            return false;
+        }
+
+        return !IsAskingToSave && Editor.Redo();
     }
 
     /// <summary>Takes the refusal panel off the drawing.</summary>
@@ -574,6 +909,7 @@ public partial class MainWindow : Window
 
     void OnDesignChanged()
     {
+        UpdateTitle();
         UpdateRelationships();
         PlaceDimensionEditor();
         UpdateWorkshop();
@@ -1389,6 +1725,17 @@ public partial class MainWindow : Window
         // The shape workshop covers the paper and takes the toolbar's stock icons with it, so the
         // menu's way in to the same stock goes too: there is no paper to drag it onto.
         StockMenu.IsEnabled = !IsShapingPart;
+
+        // Undo and redo name what they would do, and grey out when there is nothing to. An
+        // underscore in a part's name is doubled so the menu shows it rather than taking it as
+        // an access key.
+        UndoHistory history = Editor.History;
+        UndoMenuItem.IsEnabled = history.CanUndo;
+        UndoMenuItem.Header = history.UndoWhat is { } undo ? $"_Undo {Escaped(undo)}" : "_Undo";
+        RedoMenuItem.IsEnabled = history.CanRedo;
+        RedoMenuItem.Header = history.RedoWhat is { } redo ? $"_Redo {Escaped(redo)}" : "_Redo";
+
+        static string Escaped(string text) => text.Replace("_", "__", StringComparison.Ordinal);
     }
 
     void UpdateMessageBar()
@@ -1612,6 +1959,10 @@ public partial class MainWindow : Window
 
         RefusalPanel.Background = paper;
         RefusalPanel.BorderBrush = edge;
+        UnsavedPanel.Background = paper;
+        UnsavedPanel.BorderBrush = edge;
+        UnsavedHeadline.Foreground = edge;
+        UnsavedDetail.Foreground = new SolidColorBrush(palette.Label);
         RefusalHeadline.Foreground = edge;
         RefusalDismissHint.Foreground = new SolidColorBrush(palette.Label);
 
@@ -1691,13 +2042,17 @@ public partial class MainWindow : Window
                 item.InputGesture = new KeyGesture(Key.D1 + i, command);
             }
 
-            item.Click += (_, _) => ShowDesign(source);
+            item.Click += (_, _) => OpenSampleCommand(source);
             _sampleItems.Add(item);
         }
 
         SamplesMenu.ItemsSource = _sampleItems;
         NewMenuItem.InputGesture = new KeyGesture(Key.N, command);
         OpenMenuItem.InputGesture = new KeyGesture(Key.O, command);
+        SaveMenuItem.InputGesture = new KeyGesture(Key.S, command);
+        SaveAsMenuItem.InputGesture = new KeyGesture(Key.S, command | KeyModifiers.Shift);
+        UndoMenuItem.InputGesture = UndoGestures[0];
+        RedoMenuItem.InputGesture = RedoGestures[0];
         ZoomToFitMenuItem.InputGesture = new KeyGesture(Key.D0, command);
         ZoomInMenuItem.InputGesture = new KeyGesture(Key.OemPlus);
         ZoomOutMenuItem.InputGesture = new KeyGesture(Key.OemMinus);
@@ -1728,6 +2083,26 @@ public partial class MainWindow : Window
             Gesture = new KeyGesture(Key.L, command),
             Command = new RelayCommand(() => OpenCutList()),
         });
+        KeyBindings.Add(new KeyBinding
+        {
+            Gesture = new KeyGesture(Key.S, command),
+            Command = new RelayCommand(() => _ = SaveAsync()),
+        });
+        KeyBindings.Add(new KeyBinding
+        {
+            Gesture = new KeyGesture(Key.S, command | KeyModifiers.Shift),
+            Command = new RelayCommand(() => _ = SaveAsAsync()),
+        });
+
+        foreach (KeyGesture gesture in UndoGestures)
+        {
+            KeyBindings.Add(new KeyBinding { Gesture = gesture, Command = new RelayCommand(() => UndoCommand()) });
+        }
+
+        foreach (KeyGesture gesture in RedoGestures)
+        {
+            KeyBindings.Add(new KeyBinding { Gesture = gesture, Command = new RelayCommand(() => RedoCommand()) });
+        }
 
         for (int i = 0; i < Samples.Count && i < 9; i++)
         {
@@ -1735,8 +2110,40 @@ public partial class MainWindow : Window
             KeyBindings.Add(new KeyBinding
             {
                 Gesture = new KeyGesture(Key.D1 + i, command),
-                Command = new RelayCommand(() => ShowDesign(source)),
+                Command = new RelayCommand(() => OpenSampleCommand(source)),
             });
+        }
+    }
+
+    /// <summary>
+    /// The platform's own undo keys — Control+Z on Windows, Command+Z on macOS — read from the
+    /// platform the way <see cref="CommandModifier"/> is, rather than hardcoded.
+    /// </summary>
+    static IReadOnlyList<KeyGesture> UndoGestures =>
+        Application.Current?.PlatformSettings?.HotkeyConfiguration.Undo is { Count: > 0 } undo
+            ? [.. undo]
+            : [new KeyGesture(Key.Z, CommandModifier)];
+
+    /// <summary>
+    /// The platform's own redo keys — Avalonia lists command+Y and command+Shift+Z — every one of
+    /// them bound. The menu shows the first, so the list is ordered by convention: Control+Y
+    /// first on Windows, Command+Shift+Z first on macOS, where Command+Y is not redo.
+    /// </summary>
+    static IReadOnlyList<KeyGesture> RedoGestures
+    {
+        get
+        {
+            KeyModifiers command = CommandModifier;
+            List<KeyGesture> redo = Application.Current?.PlatformSettings?.HotkeyConfiguration.Redo is { Count: > 0 } listed
+                ? [.. listed]
+                : [new KeyGesture(Key.Y, command), new KeyGesture(Key.Z, command | KeyModifiers.Shift)];
+
+            bool mac = command.HasFlag(KeyModifiers.Meta);
+            return
+            [
+                .. redo.OrderBy(gesture =>
+                    gesture.Key == Key.Z && gesture.KeyModifiers.HasFlag(KeyModifiers.Shift) ? (mac ? 0 : 1) : (mac ? 1 : 0)),
+            ];
         }
     }
 
@@ -1751,6 +2158,19 @@ public partial class MainWindow : Window
     {
         if (e.Handled)
         {
+            return;
+        }
+
+        // While the save question is up, Escape answers it with Cancel, and no other key reaches
+        // the drawing underneath.
+        if (IsAskingToSave)
+        {
+            if (e.Key == Key.Escape)
+            {
+                KeepEditing();
+                e.Handled = true;
+            }
+
             return;
         }
 
@@ -1815,7 +2235,21 @@ public partial class MainWindow : Window
 
     void OnZoomOutClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.ZoomOut();
 
-    void OnExitClicked(object? sender, RoutedEventArgs e) => Close();
+    void OnExitClicked(object? sender, RoutedEventArgs e) => _ = WhenChangesAreSafe("quitting", CloseNow);
+
+    void OnSaveClicked(object? sender, RoutedEventArgs e) => _ = SaveAsync();
+
+    void OnSaveAsClicked(object? sender, RoutedEventArgs e) => _ = SaveAsAsync();
+
+    void OnUndoClicked(object? sender, RoutedEventArgs e) => UndoCommand();
+
+    void OnRedoClicked(object? sender, RoutedEventArgs e) => RedoCommand();
+
+    void OnUnsavedSaveClicked(object? sender, RoutedEventArgs e) => _ = SaveThenCarryOnAsync();
+
+    void OnUnsavedDiscardClicked(object? sender, RoutedEventArgs e) => _ = DiscardThenCarryOnAsync();
+
+    void OnUnsavedCancelClicked(object? sender, RoutedEventArgs e) => KeepEditing();
 
     void UpdateZoomReadout() => ZoomText.Text = string.Create(
         CultureInfo.InvariantCulture,

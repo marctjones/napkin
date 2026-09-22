@@ -29,7 +29,23 @@
                           Click="OnOpenClicked"
                           ToolTip.Tip="Open a napkin scene file. A file this build cannot read is refused, and whatever is on screen stays." />
                 <Separator />
+                <MenuItem Name="SaveMenuItem"
+                          Header="_Save"
+                          Click="OnSaveClicked"
+                          ToolTip.Tip="Write the drawing back to its scene file. A drawing that has never been saved asks where to put it." />
+                <MenuItem Name="SaveAsMenuItem"
+                          Header="Save _As…"
+                          Click="OnSaveAsClicked"
+                          ToolTip.Tip="Write the drawing to a new scene file, and keep saving there." />
+                <Separator />
                 <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
+            </MenuItem>
+
+            <!-- Undo and redo say what they would take back or put back, and grey out when there
+                 is nothing to. Their headers are filled in the code-behind from the history. -->
+            <MenuItem Name="EditMenu" Header="_Edit">
+                <MenuItem Name="UndoMenuItem" Header="_Undo" Click="OnUndoClicked" />
+                <MenuItem Name="RedoMenuItem" Header="_Redo" Click="OnRedoClicked" />
             </MenuItem>
 
             <!-- The Draw menu is the toolbar, in the toolbar's order: the tools, the actions on the
@@ -562,6 +578,48 @@
                                FontSize="11"
                                Opacity="0.7" />
                 </StackPanel>
+            </Border>
+
+            <!--
+                "Save changes first?" — asked over the drawing whenever something would throw the
+                drawing's unsaved changes away: a new sheet, another file or sample, quitting. It is
+                a sheet over the paper like the refusal panel, not a second window, and the backdrop
+                under it takes the pointer so nothing behind it can be edited while it waits.
+            -->
+            <Border Name="UnsavedBackdrop"
+                    IsVisible="False"
+                    Background="#59000000">
+                <Border Name="UnsavedPanel"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        MaxWidth="460"
+                        Margin="16"
+                        Padding="16,14"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <StackPanel Spacing="10">
+                        <TextBlock Name="UnsavedHeadline"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Name="UnsavedDetail"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Text="Changes that are not saved are lost. Escape goes back to the drawing." />
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    HorizontalAlignment="Right">
+                            <Button Name="UnsavedSaveButton"
+                                    Content="Save"
+                                    Click="OnUnsavedSaveClicked" />
+                            <Button Name="UnsavedDiscardButton"
+                                    Content="Don't save"
+                                    Click="OnUnsavedDiscardClicked" />
+                            <Button Name="UnsavedCancelButton"
+                                    Content="Cancel"
+                                    Click="OnUnsavedCancelClicked" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </Border>
         </Panel>
 
