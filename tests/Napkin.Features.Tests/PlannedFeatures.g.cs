@@ -120,12 +120,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: CUT-007 — Sheet-goods nesting reports the sheets a project needs")]
-    [Trait("Feature", "CUT-007")]
-    public void CUT_007()
-    {
-    }
-
     [Fact(Skip = "planned: CVS-005 — Every edit goes through the update interface")]
     [Trait("Feature", "CVS-005")]
     public void CVS_005()
@@ -294,12 +288,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: GUI-VIEW-05 — A file the app cannot read fails visibly")]
-    [Trait("Feature", "GUI-VIEW-05")]
-    public void GUI_VIEW_05()
-    {
-    }
-
     [Fact(Skip = "planned: IOP-001 — Exported DXF opens in another CAD tool")]
     [Trait("Feature", "IOP-001")]
     public void IOP_001()
@@ -315,12 +303,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: IOP-003 — PDF sheets are vector and true scale, with a title block")]
     [Trait("Feature", "IOP-003")]
     public void IOP_003()
-    {
-    }
-
-    [Fact(Skip = "planned: IOP-004 — No proprietary import dependency enters without a recorded decision")]
-    [Trait("Feature", "IOP-004")]
-    public void IOP_004()
     {
     }
 
@@ -375,12 +357,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: REL-001 — A tag produces downloadable macOS and Windows artifacts")]
     [Trait("Feature", "REL-001")]
     public void REL_001()
-    {
-    }
-
-    [Fact(Skip = "planned: REL-002 — Every release is a pre-release")]
-    [Trait("Feature", "REL-002")]
-    public void REL_002()
     {
     }
 

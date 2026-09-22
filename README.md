@@ -26,8 +26,10 @@ interface).
 
 ## Status
 
-Early scaffold, pre-1.0 beta. The solution structure builds; almost none of the actual
-functionality (geometry, the rules engine, the UI) exists yet.
+Early beta. What exists: an exact-length geometry model with a constraint-aware update engine, a
+read-only viewer that opens and draws sample designs with dimensions, and a strict scene-file
+reader. What is being built now: drawing and editing (M2). Not built yet: the cut list, and the
+rules engine that sizes headers against the building code.
 
 The work is organised into five milestones, each of them something you can hold rather than a
 layer of the architecture — **M1 Look** (open a sample design and look at it), **M2 Draw** (draw,
@@ -39,9 +41,13 @@ What each one gets you, and which issues build it, is the milestone table in
 
 napkin is a **beta indefinitely**: every release is a pre-release, breaking changes are always
 allowed, and there is no migration path between betas (an older project file gets a clear
-"unsupported version" error, not a conversion). Each milestone earns a tagged pre-release when it
-is done, and its version number is assigned then rather than planned. See
+"unsupported version" error, not a conversion). See
 [`DESIGN.md` §12](./DESIGN.md#12-versioning-and-releases-beta-policy).
+
+## Trying it
+
+There are no downloadable builds; building and releasing installers is parked until the core
+functionality exists. Run it from source (see [Building](#building)).
 
 ## Building
 

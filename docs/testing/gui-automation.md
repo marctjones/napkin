@@ -199,14 +199,24 @@ workflow's acceptance sentence stops being true of the product, rewrite the sent
 `features/gui-shell.json` and the scenario together, in the change that made it untrue. A suite
 that has to be rewritten as the product grows is doing its job.
 
-The viewer's own workflows, `GUI-VIEW-01` to `GUI-VIEW-04`, live in
+The viewer's own workflows, `GUI-VIEW-01` to `GUI-VIEW-05`, live in
 `tests/Napkin.App.GuiTests/Workflows/ViewerWorkflows.cs` and are catalogued in
-`features/catalog.json`. Two of them deviate from the catalogue's wording while the scene reader
-(#6) and the sample files (#37) are still being written: they open a sample through the Samples
-menu rather than through a file dialog, and state their expected dimension strings inline rather
-than reading a fixture's expectations file. `GUI-VIEW-05`, a file the application cannot read
-failing visibly, waits for the reader. Both deviations are recorded in that file's own
-documentation comment.
+`features/catalog.json`. Two of them used to deviate from the catalogue's wording, while the scene
+reader (#6) and the sample files (#37) were still being written: they opened a sample the viewer
+had built in code rather than a file, and stated their expected dimension strings inline rather
+than reading a fixture's expectations file. Both have been closed. `GUI-VIEW-01` opens a scene file
+through the real **Ctrl/Cmd + O** shortcut and the real command, `GUI-VIEW-04` reads its expected
+strings out of `samples/wall-with-window.expected.json`, and `GUI-VIEW-05` — a file the application
+cannot read failing visibly — is implemented.
+
+**One substitution remains, and it is the one headless cannot avoid**: the platform's open dialog.
+A workflow puts an `ISceneFilePicker` that answers with a path behind `MainWindow.FilePicker` and
+then presses the shortcut; the key binding, the command, the reader, the refusal panel and the
+canvas are all the shipped code. Driving the real dialog belongs to the real-OS smoke layer
+described at the foot of this page. Two cases have no gesture behind them at all — cancelling a
+dialog that cannot be shown, and a dialog that throws — and those are asserted against the real
+window in `tests/Napkin.App.GuiTests/Unit/OpenFileTests.cs` through `HeadlessWindow`, which records
+no feature id and cannot move the ratchet.
 
 ## Planned workflows
 

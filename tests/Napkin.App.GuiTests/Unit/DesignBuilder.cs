@@ -1,9 +1,10 @@
 using System.Collections.Immutable;
 using System.Security.Cryptography;
 using System.Text;
+using Napkin.App.Designs;
 using Napkin.Core.Geometry;
 
-namespace Napkin.App.Designs;
+namespace Napkin.App.GuiTests.Unit;
 
 /// <summary>
 /// Assembles a <see cref="Design"/> from named parts, giving every entity an id derived from its
@@ -11,15 +12,23 @@ namespace Napkin.App.Designs;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>Ids are derived, not generated.</strong> <see cref="EntityId.New"/> would make a
-/// different sketch every time the sample is opened, so "nothing moved" could never be asserted by
-/// comparing two loads, and a test could not name the part it wants. Hashing the design's name and
-/// the part's name gives ids that are stable across runs, processes and platforms, and that are
-/// still globally unique the way a GUID is meant to be.
+/// <strong>A test helper, and only that.</strong> It used to live in the application, because the
+/// viewer built its samples in code while the scene reader (#6) and the sample files (#37) were
+/// being written in parallel. The samples are files now, so the application has no reason to
+/// assemble a design from parts; what is left is the tests' need for a small synthetic drawing —
+/// a part 3 1/32&#x2033; wide to prove the &#x2248; marker, a wall to widen and watch a label
+/// follow — that no fixture on disk should have to carry.
 /// </para>
 /// <para>
-/// This is a construction helper for the built-in samples, not a format. Nothing in it is written
-/// to disk and nothing reads it back.
+/// <strong>Ids are derived, not generated.</strong> <see cref="EntityId.New"/> would make a
+/// different sketch every time, so "nothing moved" could not be asserted by comparing two builds
+/// and a test could not name the part it wants. Hashing the design's name and the part's name gives
+/// ids that are stable across runs, processes and platforms, and that are still globally unique the
+/// way a GUID is meant to be.
+/// </para>
+/// <para>
+/// This is a construction helper, not a format. Nothing in it is written to disk and nothing reads
+/// it back.
 /// </para>
 /// </remarks>
 public sealed class DesignBuilder
