@@ -17,7 +17,8 @@ internal sealed record ExpectedFixture(
     string Fixture,
     int FormatVersion,
     IReadOnlyList<ExpectedCutRow> CutList,
-    IReadOnlyList<string> CutListCsv)
+    IReadOnlyList<string> CutListCsv,
+    ExpectedOutline? TopOutline = null)
 {
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -63,3 +64,23 @@ internal sealed record ExpectedCutRow(
     IReadOnlyList<string> Members,
     string Derivation,
     IReadOnlyList<string>? Cuts = null);
+
+/// <summary>
+/// The boundary a shaped part's blank is left with, walked by hand from
+/// <c>docs/design/shaped-parts-model.md</c> §1.5 rather than read off <c>Box.Outline()</c>.
+/// </summary>
+/// <param name="Segments">The boundary in order; the last segment ends where the first begins.</param>
+internal sealed record ExpectedOutline(IReadOnlyList<ExpectedSegment> Segments);
+
+/// <param name="Kind"><c>straight</c> or <c>arc</c> — a rounded corner's arc about a centre.</param>
+/// <param name="CenterXUnits">The arc's centre, absent on a straight run.</param>
+/// <param name="CenterYUnits">The arc's centre, absent on a straight run.</param>
+internal sealed record ExpectedSegment(
+    string Kind,
+    long FromXUnits,
+    long FromYUnits,
+    long ToXUnits,
+    long ToYUnits,
+    string Derivation,
+    long? CenterXUnits = null,
+    long? CenterYUnits = null);

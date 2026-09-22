@@ -43,7 +43,7 @@ public class SampleFileTests
         }
 
         Assert.Equal(
-            ["Coffee table", "Wall with window"],
+            ["Coffee table", "Rounded-corner table", "Wall with window"],
             SampleFiles.All.Select(sample => sample.Name));
     }
 
