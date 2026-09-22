@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 2
+# The napkin project file — container version 1, scene format version 3
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -25,7 +25,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 2` and nothing else. A file from an older *or* a
+   `"containerVersion": 1` and `"formatVersion": 3` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
@@ -35,11 +35,19 @@ document and stays one.
    a cut list needs and a plan view cannot hold. Every version-1 file is refused, including the two
    this repository had committed until they were rewritten in the same change — that is the beta
    policy working as designed rather than an accident.
+
+   **Version 3** added a `cuts` array to every box, which is what a part that is not a plain
+   rectangle needs ([`docs/design/shaped-parts-model.md`](./design/shaped-parts-model.md) §5).
+   Every version-2 file is refused, including the two this repository had committed until they
+   were rewritten in the same change, and every project saved since version 2 landed. The *model*
+   is a strict superset — a box with no cuts is the box version 2 described, in every respect —
+   but the format has no optional fields, so a plain rectangle writes `"cuts": []` and a file
+   without the field is not a version-3 file.
 3. **Reading is strict and never repairs.** An unknown field, a field written twice, an id that is
    not a GUID, an id that names nothing, an id that names the wrong kind of entity, a non-positive
-   size, an un-normalised rotation, a duplicated id, two relationships saying the same thing, and a
-   relationship kind this build cannot hold are each a refusal naming what was wrong. Nothing is
-   opened approximately.
+   size, an un-normalised rotation, cuts out of site order, a cut that does not fit the blank it is
+   on, a duplicated id, two relationships saying the same thing, and a relationship kind this build
+   cannot hold are each a refusal naming what was wrong. Nothing is opened approximately.
 4. **A file must satisfy its own relationships.** After the scene is bound, `Sketch.Validate()` and
    `RelationshipChecker.Check` both run. A file whose geometry does not hold its own stated
    relationships — written by a buggy build, or edited by hand — is refused with the violations
@@ -161,7 +169,7 @@ Two places where the bytes legitimately differ:
 
 ```json
 {
-  "formatVersion": 2,
+  "formatVersion": 3,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ … ],
   "entities": [ … ],
@@ -171,15 +179,15 @@ Two places where the bytes legitimately differ:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `formatVersion` | integer | Exactly `2`. Judged before anything else is read. |
+| `formatVersion` | integer | Exactly `3`. Judged before anything else is read. |
 | `units` | object | `length` is exactly `"inch/1024"`, `angle` is exactly `"arcsecond"`. The unit is named in the file so that a reader never has to assume one. |
 | `layers` | array | Every layer, in the order the UI shows them. |
 | `entities` | array | Every entity, in any order; ids may be referred to before they appear. |
 | `relationships` | array | Every relationship, in any order. |
 
 Every field listed in this document is required. There are no optional fields: a reference
-dimension writes `"drives": null` rather than leaving the field out, so that the writer and the
-reader always agree on the shape.
+dimension writes `"drives": null` and a box that is a plain rectangle writes `"cuts": []`, rather
+than leaving the field out, so that the writer and the reader always agree on the shape.
 
 **Ids are GUIDs** written in the canonical 8-4-4-4-12 form, for example
 `10000000-0000-4000-8000-000000000001`. Braces, `N` form and other spellings are refused. Ids are
@@ -203,14 +211,14 @@ Every entity has `id`, `type`, `layer` and `name`. `type` is one of `box`, `dime
 ```json
 { "id": "…", "type": "box", "layer": "…", "name": "Leg, south-west",
   "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 3584, "rotation": 0,
-  "part": null }
+  "part": null, "cuts": [] }
 ```
 
 | `type` | Fields |
 |---|---|
 | `node` | `position`: `{ "x": <integer>, "y": <integer> }` |
 | `segment` | `start`, `end`: ids of two `node` entities |
-| `box` | `anchor`: a point, the box's south-west corner in its own frame; `width` and `height`: integers greater than zero, along the box's local X and Y; `rotation`: arcseconds, `0 ≤ rotation < 1296000`; `part`: below, or `null` |
+| `box` | `anchor`: a point, the box's south-west corner in its own frame; `width` and `height`: integers greater than zero, along the box's local X and Y; `rotation`: arcseconds, `0 ≤ rotation < 1296000`; `part`: below, or `null`; `cuts`: below, `[]` for a plain rectangle |
 | `dimension` | `measures`, `drives`, `placement` — below |
 
 A box is parametric: it stores the width and height that were typed and derives its corners, so a
@@ -301,6 +309,52 @@ manifest already takes on `adoptedCode`. A project drawn against a stock table a
 renames still opens, and the cut list says the name did not resolve rather than guessing. A file is
 refused for being malformed, never for naming something this build has not heard of.
 
+### Cuts
+
+`cuts` is a required field on a box. It is `[]` on a plain rectangle — which is every box in both
+samples — and otherwise lists what has been cut off the blank, one object per cut:
+
+```json
+"cuts": [
+  { "kind": "roundedCorner", "corner": "southWest", "radius": 1024 },
+  { "kind": "cornerCut",     "corner": "southEast", "alongX": 3072, "alongY": 5120 },
+  { "kind": "curvedEdge",    "edge": "north", "bow": "inward", "depth": 2048 }
+]
+```
+
+| `kind` | Fields | Meaning | Refused when |
+|---|---|---|---|
+| `cornerCut` | `corner`; `alongX`, `alongY`: integers | A straight cut across a corner, from the point `alongX` from it on the edge running along local X to the point `alongY` from it on the edge running along local Y. A clipped corner, a mitred end, a taper, a diagonal | a value is not a positive integer, or the cut does not fit the blank |
+| `roundedCorner` | `corner`; `radius`: integer | A quarter-circle tangent to both edges `radius` from the corner | as above |
+| `curvedEdge` | `edge`; `bow`: `outward` or `inward`; `depth`: integer | The whole edge replaced by a circular arc through three points on the grid. `outward` keeps the middle of the edge and brings the two corners in by `depth`; `inward` keeps the corners and takes the middle in by `depth` | as above, or `bow` is neither of the two |
+
+**A box holds the blank, not the shape.** `width` and `height` stay the dimensions of the
+rectangular board the part is cut from, and the outline is derived from them and the cuts — so a
+taper never shrinks the size the cut list reads, and a file says what a person decided rather than
+what that produced. The reasoning is
+[`docs/design/shaped-parts-model.md`](./design/shaped-parts-model.md) §1.1.
+
+**Corners and edges are named in the box's own local frame**, before rotation, with the spellings
+references already use: `southWest`, `southEast`, `northEast`, `northWest` for a corner, and
+`south`, `east`, `north`, `west` for an edge. Every stored value is a whole number of units, like
+every other length.
+
+**Cuts are stored in site order**, which is `southWest`, `southEast`, `northEast`, `northWest`,
+`south`, `east`, `north`, `west`. A file out of that order is refused rather than quietly
+re-ordered, for the same reason an un-normalised rotation is: the model sorts, so such a file
+would load as a sketch that no longer equals it, and a shape has one spelling.
+
+**One cut per site, and a curved edge owns its corners.** No two cuts may name the same corner or
+edge; nothing may be cut at either end of a `curvedEdge`, and two edges that meet cannot both be
+curved. A clipped-then-rounded corner is not expressible, on purpose.
+
+**A cut must fit the blank it is on**, which is three things together and each of them a refusal:
+every value is positive and no longer than the edge it is set back along; the two cuts at the ends
+of an edge claim no more than its length between them, and a curve and whatever faces it across
+the blank claim no more than the size between them; and what is left has positive area. Two
+full-diagonal corner cuts at opposite corners pass the first two and leave nothing, which the
+third catches.
+
 ### References
 
 Every reference is an object with a `kind`, so that no shape has to be guessed from which fields
@@ -356,22 +410,23 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 ```jsonc
 {
-  "formatVersion": 2,                                  // exactly 2, judged first
+  "formatVersion": 3,                                  // exactly 3, judged first
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
   "entities": [
     // The wall: 144" x 1024 = 147456 units long, 5.5" x 1024 = 5632 units thick. A wall is not a
-    // piece anybody cuts, so its part is null — which is a statement, not an omission.
+    // piece anybody cuts, so its part is null — which is a statement, not an omission — and
+    // nothing has been cut off it, which "cuts": [] says the same way.
     { "id": "30000000-0000-4000-8000-000000000001", "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall",
       "anchor": { "x": 0, "y": 0 }, "width": 147456, "height": 5632, "rotation": 0,
-      "part": null },
+      "part": null, "cuts": [] },
 
     // The opening: 36" = 36864 units wide, the full thickness of the wall, starting 54" along.
     { "id": "30000000-0000-4000-8000-000000000002", "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001", "name": "Opening",
       "anchor": { "x": 55296, "y": 0 }, "width": 36864, "height": 5632, "rotation": 0,
-      "part": null },
+      "part": null, "cuts": [] },
 
     // A driving dimension: the relationship named in "drives" owns the number 147456; this
     // annotation draws it, as 12'-0".
