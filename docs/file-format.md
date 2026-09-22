@@ -145,10 +145,12 @@ Two places where the bytes legitimately differ:
 
 - **Across builds.** `appVersion` is the build that wrote the file, and CI adds the commit SHA, so
   a file saved by a different commit differs in the manifest. That is the field doing its job.
-- **Across .NET runtimes.** The entries are DEFLATE-compressed, and a future runtime is free to
-  compress the same bytes differently. Byte-identity is guaranteed for one build on one runtime,
-  which is what "save twice and compare" and a git diff actually need. Identity across runtime
-  versions is *not* claimed and has not been measured.
+- **Possibly across machines and runtimes.** The entries are DEFLATE-compressed, and what a
+  compressor emits is the runtime's business: .NET's deflate is native zlib-ng, which may take a
+  different code path on a different CPU, and a future runtime may compress differently again.
+  What is tested, and what "save twice and compare" and a git diff actually need, is that the same
+  drawing saved twice by the same build on the same machine gives the same bytes. Identity across
+  machines or across runtime versions is **not** claimed and has **not** been measured.
 
 ## The scene document
 

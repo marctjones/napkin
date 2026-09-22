@@ -43,6 +43,10 @@ public sealed class ProjectFileTests
     [MemberData(nameof(SceneWriterTests.Seeds), MemberType = typeof(SceneWriterTests))]
     public void Two_saves_of_the_same_project_are_the_same_bytes(int seed)
     {
+        // This catches anything that varies between two calls — but note what it cannot catch: two
+        // saves a moment apart would share a wall-clock timestamp too, so a writer that stamped
+        // the clock instead of the epoch would still pass here. The assertion that the entries
+        // carry ProjectFile.Timestamp, below, is what actually holds that down.
         Sketch sketch = SketchGenerator.Generate(seed);
 
         Assert.Equal(ProjectFile.SaveToBytes(sketch), ProjectFile.SaveToBytes(sketch));
@@ -353,10 +357,12 @@ public sealed class ProjectFileTests
     [Trait("Feature", "PRJ-002")]
     public void A_container_whose_compressed_data_is_damaged_is_refused()
     {
-        // The directory at the end still reads, so this gets as far as decompressing and fails
-        // there — the other half of "not a readable zip".
+        // The damage is in the compressed middle, not in the directory at the end, so this gets
+        // as far as decompressing and fails there — the other half of "not a readable zip". The
+        // range is a proportion of the file rather than fixed offsets, because where the entries
+        // land depends on how well the compressor did, which is the runtime's business.
         byte[] damaged = ProjectFile.SaveToBytes(SketchGenerator.Generate(5));
-        for (int i = 200; i < 260; i++)
+        for (int i = damaged.Length / 5; i < damaged.Length * 3 / 5; i++)
         {
             damaged[i] ^= 0xFF;
         }

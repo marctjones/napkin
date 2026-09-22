@@ -46,10 +46,18 @@ public static class ProjectFile
     /// The timestamp every entry in a saved container carries.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The zip epoch, and not the clock. A saved project has to be a function of the drawing and
-    /// nothing else: two saves of the same drawing are byte-identical, so a project file diffs
-    /// cleanly in git and "did this change?" is a checksum rather than an opinion. A real
-    /// modification time would make every save differ from the last.
+    /// nothing else: two saves of the same drawing by the same build are byte-identical, so a
+    /// project file diffs cleanly in git and "did this change?" is a checksum rather than an
+    /// opinion. A real modification time would make every save differ from the last.
+    /// </para>
+    /// <para>
+    /// How far that reaches is written down in <c>docs/file-format.md</c>: the same build on the
+    /// same machine, and no further. The entries are DEFLATE-compressed, and what a compressor
+    /// emits is the runtime's business; identity across machines and across runtime versions is
+    /// not claimed and has not been measured.
+    /// </para>
     /// </remarks>
     internal static readonly DateTimeOffset Timestamp = new(1980, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
