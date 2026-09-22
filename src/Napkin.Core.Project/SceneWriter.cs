@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 
 using Napkin.Core.Geometry;
@@ -33,19 +35,6 @@ namespace Napkin.Core.Project;
 /// </remarks>
 public static class SceneWriter
 {
-    /// <summary>
-    /// How the scene document is laid out: two-space indents and <c>\n</c> line endings, the same
-    /// on Windows as on macOS, because the bytes are the thing being compared.
-    /// </summary>
-    private static readonly JsonWriterOptions Layout = new()
-    {
-        Indented = true,
-        IndentCharacter = ' ',
-        IndentSize = 2,
-        NewLine = "\n",
-        SkipValidation = false,
-    };
-
     /// <summary>The format version this build writes, and the only one it reads.</summary>
     public static int FormatVersion => FormatStamp.CurrentVersion;
 
@@ -63,7 +52,7 @@ public static class SceneWriter
     /// <summary>The scene document for a sketch, as text, for a test or a diff.</summary>
     /// <param name="sketch">The sketch to write.</param>
     public static string WriteToText(Sketch sketch)
-        => System.Text.Encoding.UTF8.GetString(WriteToBytes(sketch));
+        => Encoding.UTF8.GetString(WriteToBytes(sketch));
 
     /// <summary>Writes the scene document for a sketch to a stream, in UTF-8.</summary>
     /// <param name="stream">Where the bytes go. Not closed by this call.</param>
@@ -73,7 +62,7 @@ public static class SceneWriter
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(sketch);
 
-        using (Utf8JsonWriter writer = new(stream, Layout))
+        using (Utf8JsonWriter writer = new(stream, JsonLayout.Options))
         {
             WriteDocument(writer, sketch);
             writer.Flush();
@@ -445,7 +434,7 @@ public static class SceneWriter
 
     /// <summary>An id, in the canonical 8-4-4-4-12 form the reader parses with <c>Guid.TryParseExact</c>.</summary>
     private static void WriteId(Utf8JsonWriter writer, string name, Guid id)
-        => writer.WriteString(name, id.ToString("D", System.Globalization.CultureInfo.InvariantCulture));
+        => writer.WriteString(name, id.ToString("D", CultureInfo.InvariantCulture));
 
     /// <summary>
     /// A kind of entity, relationship, reference or measurand the model holds and the format has

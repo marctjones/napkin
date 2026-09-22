@@ -64,6 +64,27 @@ public enum LoadProblemKind
 
     /// <summary>The file's numbers are too large to evaluate its geometry with.</summary>
     OutOfRange,
+
+    /// <summary>The bytes are not a zip container at all, or the zip is truncated or corrupt.</summary>
+    NotAContainer,
+
+    /// <summary>The container's <c>containerVersion</c> is not the one this build reads.</summary>
+    UnsupportedContainerVersion,
+
+    /// <summary>The container does not hold an entry the format requires.</summary>
+    MissingEntry,
+
+    /// <summary>The container holds an entry this format does not define. Strict, for the same reason unknown fields are.</summary>
+    UnknownEntry,
+
+    /// <summary>The container holds the same entry name twice.</summary>
+    DuplicateEntry,
+
+    /// <summary>An entry's name could escape the container — <c>..</c>, a rooted path, a backslash.</summary>
+    UnsafeEntryName,
+
+    /// <summary>The container, or one entry in it, is larger than this build will read.</summary>
+    TooLarge,
 }
 
 /// <summary>One thing wrong with a file.</summary>
@@ -88,7 +109,7 @@ public abstract record LoadResult
     }
 
     /// <summary>Whether a sketch came back.</summary>
-    public bool IsLoaded => this is Loaded;
+    public bool IsLoaded => this is Loaded or LoadedProject;
 }
 
 /// <summary>
@@ -97,6 +118,29 @@ public abstract record LoadResult
 /// <param name="Sketch">The sketch the file holds, equal to its contents by value.</param>
 /// <param name="Stamp">What the file said about itself.</param>
 public sealed record Loaded(Sketch Sketch, FormatStamp Stamp) : LoadResult;
+
+/// <summary>
+/// A whole <c>.napkin</c> container was read: its manifest, and the scene inside it.
+/// </summary>
+/// <remarks>
+/// A sibling of <see cref="Loaded"/> rather than a replacement for it, because both ways of
+/// opening a design stay: <see cref="SceneReader"/> opens a plain <c>.scene.json</c> — the hand
+/// written samples, and anything a person writes with a text editor — and
+/// <see cref="ProjectFile"/> opens what the app saves. Both refuse with the same
+/// <see cref="Refused"/>, so a caller has one kind of error message to show.
+/// </remarks>
+/// <param name="Contents">The manifest and the sketch, together.</param>
+public sealed record LoadedProject(ProjectContents Contents) : LoadResult
+{
+    /// <summary>The sketch the container holds.</summary>
+    public Sketch Sketch => Contents.Sketch;
+
+    /// <summary>What the container's manifest said about itself.</summary>
+    public ProjectManifest Manifest => Contents.Manifest;
+
+    /// <summary>What the scene body said about itself.</summary>
+    public FormatStamp Stamp => Contents.SceneStamp;
+}
 
 /// <summary>
 /// The file was refused. Nothing was opened approximately and nothing was repaired.
