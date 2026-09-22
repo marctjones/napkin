@@ -61,10 +61,17 @@ running isolated, not a process choice, and it doesn't reintroduce PRs. The step
    there is no PR checkmark to wait on. Don't skip it or weaken it because it's no longer a
    published check.
 3. Commits end with `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`.
-4. **Push your first real, building, tested increment early**, not at the end — report to
-   whoever's integrating (usually the orchestrating session) by pushing, not by finishing a turn
-   with unpushed work. A session crash mid-task loses anything not pushed.
-5. Whoever integrates: `git fetch`, merge `main` into the branch if it moved, rebuild/retest,
+4. **Commit regularly, in sensible groups, as you go — don't let a pile of uncommitted work
+   accumulate.** A commit doesn't have to be a finished, fully-verified slice; a coherent step
+   (the format-layer change, the model type, the fixture update) each landing as its own commit is
+   exactly right, and cheap insurance against losing work if a session ends unexpectedly. The
+   orchestrating session may check your worktree's `git status` for durability, but should not
+   `git add`/`git commit` inside a worktree you're actively writing to — that's your job; a
+   collision, even a harmless one, is unnecessary risk for no benefit once you're already doing it.
+5. **Push early and often** — after your first real, building, tested increment, and after each
+   further one. Report to whoever's integrating (usually the orchestrating session) by pushing,
+   not by finishing a turn with unpushed work. A session crash mid-task loses anything not pushed.
+6. Whoever integrates: `git fetch`, merge `main` into the branch if it moved, rebuild/retest,
    bump the version in `Directory.Build.props` in that same step, then merge the branch into
    `main` with a real merge commit (not squash — commit history documents the process) and
    `git push origin main` directly. No `gh pr create`, no waiting for a PR's CI check — local
@@ -72,9 +79,9 @@ running isolated, not a process choice, and it doesn't reintroduce PRs. The step
    `push: branches: [main]`), which is a secondary, after-the-fact safety net (it's caught real
    platform-specific bugs before, e.g. a Windows-only CRLF issue) — check it after pushing and fix
    forward with a small follow-up commit if it's red, rather than pretending it didn't happen.
-6. `ratchet update` only for the assembly/GUI count that actually changed, and only after coverage
+7. `ratchet update` only for the assembly/GUI count that actually changed, and only after coverage
    truly rose (see `docs/testing/ratchet.md`); never touch another area's floor.
-7. Clean up: remove the worktree, delete the merged branch (local and `origin`).
+8. Clean up: remove the worktree, delete the merged branch (local and `origin`).
 
 **Parallel agents:** when several agents run at once, each owns a disjoint set of files (stated in
 its task) to avoid merge conflicts — the recurring collision points are `napkin.sln`,
