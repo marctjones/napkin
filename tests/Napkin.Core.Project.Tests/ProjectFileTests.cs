@@ -9,6 +9,15 @@ namespace Napkin.Core.Project.Tests;
 /// The container: what a saved project is, what it promises about its bytes, and every shape of
 /// file it refuses.
 /// </summary>
+/// <remarks>
+/// <strong>PRJ-006 is deliberately not claimed here.</strong> Its acceptance is "a saved project
+/// opens with a standard zip tool and contains manifest.json, scene.json, <em>a thumbnail and an
+/// assets directory</em>". The first two are tested below; a thumbnail means rendering, which
+/// lives in the app, and neither it nor assets is written by this build. Tagging the trait anyway
+/// would make the scorecard say something is proven that is not, which is the one thing the
+/// scorecard exists to prevent (docs/testing/scorecard.md). It stays a planned stub until the
+/// container grows those entries, which is a container-version bump.
+/// </remarks>
 public sealed class ProjectFileTests
 {
     [Theory]
@@ -32,7 +41,6 @@ public sealed class ProjectFileTests
 
     [Theory]
     [MemberData(nameof(SceneWriterTests.Seeds), MemberType = typeof(SceneWriterTests))]
-    [Trait("Feature", "PRJ-006")]
     public void Two_saves_of_the_same_project_are_the_same_bytes(int seed)
     {
         Sketch sketch = SketchGenerator.Generate(seed);
@@ -41,7 +49,6 @@ public sealed class ProjectFileTests
     }
 
     [Fact]
-    [Trait("Feature", "PRJ-006")]
     public void A_saved_project_is_a_zip_a_standard_tool_opens()
     {
         byte[] saved = ProjectFile.SaveToBytes(Containers.OneBox);
@@ -363,7 +370,7 @@ public sealed class ProjectFileTests
     // ---------------------------------------------------------------------------------------
 
     [Fact]
-    [Trait("Feature", "PRJ-006")]
+    [Trait("Feature", "PRJ-007")]
     public void A_project_saved_to_a_path_opens_from_that_path()
     {
         using Workspace workspace = new();
@@ -379,7 +386,6 @@ public sealed class ProjectFileTests
     }
 
     [Fact]
-    [Trait("Feature", "PRJ-006")]
     public void A_save_that_dies_part_way_through_leaves_the_previous_project_untouched()
     {
         using Workspace workspace = new();
@@ -406,7 +412,6 @@ public sealed class ProjectFileTests
     }
 
     [Fact]
-    [Trait("Feature", "PRJ-006")]
     public void A_save_into_a_folder_that_cannot_be_written_fails_without_touching_the_old_file()
     {
         if (OperatingSystem.IsWindows())
@@ -450,7 +455,6 @@ public sealed class ProjectFileTests
     }
 
     [Fact]
-    [Trait("Feature", "PRJ-006")]
     public void A_drawing_napkin_could_not_open_again_is_not_saved_at_all()
     {
         using Workspace workspace = new();
@@ -469,7 +473,7 @@ public sealed class ProjectFileTests
     }
 
     [Fact]
-    [Trait("Feature", "PRJ-006")]
+    [Trait("Feature", "PRJ-007")]
     public void Saving_over_an_existing_project_replaces_it()
     {
         using Workspace workspace = new();

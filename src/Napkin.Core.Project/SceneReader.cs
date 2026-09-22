@@ -23,9 +23,11 @@ namespace Napkin.Core.Project;
 /// rather than opened approximately (geometry design &#xA7;6).
 /// </para>
 /// <para>
-/// M1 reads one plain scene file. M2 puts that same file inside a zip container beside a manifest,
-/// a thumbnail and assets; the manifest takes over the <see cref="FormatStamp"/> that the scene
-/// carries at its top today, and the writer mirrors this reader.
+/// This reads one plain scene document. <see cref="ProjectFile"/> reads the same document out of a
+/// <c>.napkin</c> container, through this very method — the container wraps the scene, it does not
+/// change it — and both doors stay open, because the hand-written samples and anything a person
+/// writes in a text editor are plain scene documents. <see cref="SceneWriter"/> is this reader's
+/// mirror image.
 /// </para>
 /// </remarks>
 public static class SceneReader

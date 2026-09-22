@@ -1,12 +1,20 @@
-# The napkin project file — M1 (format version 1)
+# The napkin project file — container version 1, scene format version 1
 
-This is the public description of what napkin reads. The format is documented regardless of the
-app's own license, because an open, documented format is what keeps a project file readable
-independent of whether the project is maintained in ten years (DESIGN.md §6.4).
+This is the public description of what napkin reads and writes. The format is documented
+regardless of the app's own license, because an open, documented format is what keeps a project
+file readable independent of whether the project is maintained in ten years (DESIGN.md §6.4).
 
-**Status: M1, the reader only.** M1 reads one plain JSON file — no zip, no manifest, no writer.
-Saving, the zip container and the manifest arrive in M2 (issue #6, stage 2). What is written here
-is what `Napkin.Core.Project.SceneReader` accepts today.
+**Status: M2, reader and writer.** There are two ways into a napkin drawing, and both are
+supported:
+
+| | What it is | Read by | Written by |
+|---|---|---|---|
+| `*.napkin` | A zip container holding `manifest.json` and `scene.json` | `ProjectFile.Load` | `ProjectFile.Save` |
+| `*.scene.json` | One plain scene document, on its own | `SceneReader.Read` | `SceneWriter.Write` |
+
+The scene document is the same either way — the container wraps it, it does not change it. A file
+written by hand in a text editor, such as the two in [`samples/`](../samples), is a plain scene
+document and stays one.
 
 ## The rules that matter most
 
@@ -14,11 +22,14 @@ is what `Napkin.Core.Project.SceneReader` accepts today.
    whole number of arcseconds. `30720` is 30 inches. A decimal is never a length: `30720.0`,
    `30720.5` and `3.072e4` are all refused. The reasoning is in
    [`docs/design/geometry-model.md`](./design/geometry-model.md) §1.
-2. **Exact format-version match, and no migration.** The reader accepts `"formatVersion": 1` and
-   nothing else. A file from an older *or* a newer version is refused before the scene is parsed,
-   with a message naming both versions. napkin is a pre-1.0 beta indefinitely: breaking changes
-   are always allowed, `formatVersion` is bumped whenever the meaning of the file changes, and no
-   migration code or compatibility shim is ever written (DESIGN.md §12).
+2. **Exact version match, and no migration — on both stamps.** A project carries two version
+   numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
+   container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
+   `"containerVersion": 1` and `"formatVersion": 1` and nothing else. A file from an older *or* a
+   newer version of either is refused before the scene is parsed, with a message naming both
+   versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
+   stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
+   shim is ever written (DESIGN.md §12).
 3. **Reading is strict and never repairs.** An unknown field, a field written twice, an id that is
    not a GUID, an id that names nothing, an id that names the wrong kind of entity, a non-positive
    size, an un-normalised rotation, a duplicated id, two relationships saying the same thing, and a
@@ -28,8 +39,118 @@ is what `Napkin.Core.Project.SceneReader` accepts today.
    `RelationshipChecker.Check` both run. A file whose geometry does not hold its own stated
    relationships — written by a buggy build, or edited by hand — is refused with the violations
    listed.
+5. **What is written is a function of the drawing and nothing else.** The same drawing saved twice
+   by the same build gives byte-identical files: no timestamps, no counters, no machine name, a
+   fixed field order, and entities and relationships sorted by id. A project file therefore diffs
+   cleanly in git, and "has this changed?" is a checksum rather than an opinion.
 
-## The document
+## The container
+
+```
+table.napkin            a zip, readable with any zip tool
+  manifest.json         containerVersion, appVersion, adoptedCode
+  scene.json            the scene document below, unchanged
+```
+
+Two entries, and no others. An entry this document does not define — including the `thumbnail.png`
+and `assets/` that DESIGN.md §6.4 reserves for later and this build does not write — is a refusal,
+for the same reason an unknown field is: with the container version pinned there is no legitimate
+reason for one. Adding them is a `containerVersion` bump.
+
+### `manifest.json`
+
+```json
+{
+  "containerVersion": 1,
+  "appVersion": "0.5.0-beta+1a2b3c4",
+  "adoptedCode": null
+}
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `containerVersion` | integer | Exactly `1`. Judged before anything else in the project is read. |
+| `appVersion` | string | The build that wrote the file, so a bug report can name it. Recorded, never judged: a project written by any version of napkin opens, as long as its two stamps match. |
+| `adoptedCode` | object or `null` | The adopted building code the project is locked to, or `null` when none is chosen. |
+
+**`adoptedCode` is reserved and is not interpreted.** When it is not `null` it is
+`{ "pack": "us-ct-2026", "revision": 1 }` — a non-empty pack id and a revision counting up from
+zero. Its *shape* is checked and nothing else: this build does not know what a pack id means, and
+must not refuse a project for naming a pack it has never heard of. It is read, carried, and
+written back unchanged. What it will mean is
+[`docs/design/rules-engine-model.md`](./design/rules-engine-model.md) §7.1, which is a **draft**;
+the field exists now so that a project drawn against a code has somewhere to say so.
+
+### Why the units are not in the manifest
+
+The geometry design's §6 sketch put `formatVersion` and `units` in the manifest. They are in the
+scene document instead, and the manifest versions the container. That keeps each stamp next to
+what it describes and lets the two move independently: adding a thumbnail entry bumps
+`containerVersion` and leaves every scene readable, and renaming a relationship field bumps
+`formatVersion` and leaves the container alone. It is also what lets a plain `scene.json` still be
+a complete, self-describing file with no manifest anywhere near it.
+
+### What a container is refused for
+
+Each of these is a refusal naming what was wrong, never a repair:
+
+| Refused | Why |
+|---|---|
+| The bytes are not a zip, or the zip is truncated or corrupt | A plain scene document handed to `ProjectFile` is refused here, with a message pointing at `SceneReader`. Nothing is sniffed. |
+| No `manifest.json`, or no `scene.json` | Both are required. |
+| An entry the format does not define | Strict, as above. |
+| The same entry name twice | Which one is the project is not something to guess at. |
+| An entry name that could leave the container | Rooted, containing `..`, containing a backslash or a drive letter, a directory entry, or a control character. Nothing is extracted to disk today; the check is there so that it is already there the day something is. |
+| More than 16 entries | Refused before any entry is read. |
+
+### Limits
+
+A zip entry's stated size is written by whoever made the file, so it is a claim, not a
+measurement. Each limit below is checked against what the entry claims *and* enforced again as the
+bytes are decompressed, so a small file that expands to gigabytes stops at the limit instead of
+filling memory.
+
+| Limit | Value | Where |
+|---|---|---|
+| The whole `.napkin` file | 32 MB | Checked before the file is read at all. |
+| `scene.json`, decompressed | 16 MB | The largest sample is about 12 kB, so this is room for a drawing far larger than a house. |
+| `manifest.json`, decompressed | 64 kB | |
+| Entries in the container | 16 | The format defines two. |
+
+They are constants on `Napkin.Core.Project.ContainerLimits`. Raising one is a decision to make
+deliberately.
+
+### Saving is atomic
+
+The whole container is built in memory, written to a temporary file *in the same directory* as the
+target, flushed all the way to disk, and only then moved over the target. A failure at any point —
+no room, no permission, a pulled cable — leaves the previous file exactly as it was, and leaves no
+temporary behind. There is no moment at which the file on disk is half a drawing. The temporary
+shares a directory with the target because a move across a filesystem boundary is a copy, and a
+copy is not atomic.
+
+A save also refuses a drawing that does not pass `Sketch.Validate()`, rather than writing a file
+this build could not open again.
+
+### Reproducible bytes, and where that stops
+
+Saving the same drawing twice **with the same build** produces identical bytes. What makes that
+true: the two entries are written in a fixed order; every entry carries the zip epoch
+(1980-01-01 00:00) instead of a real modification time, which is a DOS time and so carries no time
+zone; no extra fields are written; and both JSON documents are themselves deterministic — a fixed
+field order, entities sorted by id, relationships sorted by id, integers only, `\n` line endings
+on every platform, and a trailing newline.
+
+Two places where the bytes legitimately differ:
+
+- **Across builds.** `appVersion` is the build that wrote the file, and CI adds the commit SHA, so
+  a file saved by a different commit differs in the manifest. That is the field doing its job.
+- **Across .NET runtimes.** The entries are DEFLATE-compressed, and a future runtime is free to
+  compress the same bytes differently. Byte-identity is guaranteed for one build on one runtime,
+  which is what "save twice and compare" and a git diff actually need. Identity across runtime
+  versions is *not* claimed and has not been measured.
+
+## The scene document
 
 ```json
 {
@@ -243,48 +364,57 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 (The comments are for this document. The reader rejects JSON comments and trailing commas.)
 
-## Reading a file
+## Opening and saving
 
 ```csharp
-LoadResult result = SceneReader.ReadFile("samples/wall-with-window.scene.json");
-
-switch (result)
+// A whole project: table.napkin
+switch (ProjectFile.Load(path))
 {
-    case Loaded loaded:
-        Draw(loaded.Sketch);
+    case LoadedProject project:
+        Draw(project.Sketch);
+        Remember(project.Manifest.AdoptedCode);
         break;
     case Refused refused:
         ShowTheUser(refused.Summary);   // every problem, each naming what was wrong
         break;
 }
+
+switch (ProjectFile.Save(path, sketch, adoptedCode))
+{
+    case Saved saved:
+        MarkClean(saved.Path);
+        break;
+    case NotSaved notSaved:
+        ShowTheUser(notSaved.Summary);
+        break;
+}
 ```
 
-`SceneReader.Read(Stream)` is the same thing over bytes. Both take an optional `IGeometryUpdater`
-whose `SupportedRelationships` decide which relationship kinds this build can hold; the default is
-the direct updater. Every refusal is a `Refused` carrying a list of `LoadProblem`s — a kind, a
-location such as `/entities/3/width`, and a message. Nothing is thrown for a bad file; exceptions
+```csharp
+// One plain scene document: wall-with-window.scene.json
+switch (SceneReader.ReadFile(path))
+{
+    case Loaded loaded: Draw(loaded.Sketch); break;
+    case Refused refused: ShowTheUser(refused.Summary); break;
+}
+
+SceneWriter.Write(stream, sketch);
+```
+
+`ProjectFile.Load(Stream)` and `SceneReader.Read(Stream)` are the same things over bytes, and
+`ProjectFile.SaveToBytes` and `SceneWriter.WriteToBytes` produce what would have been written
+without writing it anywhere. Every one of them takes an optional `IGeometryUpdater` whose
+`SupportedRelationships` decide which relationship kinds this build can hold; the default is the
+direct updater.
+
+Every refusal is a `Refused` carrying a list of `LoadProblem`s — a kind, a location such as
+`scene.json/entities/3/width`, and a message — and every save that could not be done is a
+`NotSaved` carrying `SaveProblem`s. **Nothing is thrown for a bad file or a full disk**; exceptions
 are for a caller that passed nonsense arguments.
 
-## What changes in M2
-
-Saving arrives with the writer, and with it the container from DESIGN.md §6.4:
-
-```
-project.napkin/         (a zip, readable with any zip tool)
-  manifest.json         formatVersion, app version, units, the project's adopted code
-  scene.json            exactly the scene body described above
-  thumbnail.png
-  assets/
-```
-
-The seam is already in place: `FormatStamp` — `formatVersion` and `units` — is read as its own
-record. In M1 it is the head of the scene file; in M2 it moves into `manifest.json` and gains the
-app version and the adopted code, and the scene body below it does not change. The writer is the
-mirror image of the reader and shares its one table of field names, so a name cannot change on one
-side only.
-
-`Load(Save(sketch)) == sketch` by value is M2's acceptance test (property P9 of the geometry
-design). It is not tested here because there is no writer yet.
+`Load(Save(sketch)) == sketch` by value is property P9 of the geometry design, and it is tested
+both ways round: a sketch survives being written and read back, and bytes survive being read and
+written back.
 
 ## Divergences from the geometry design's §6 sketch
 
@@ -296,12 +426,21 @@ here, each because the outline is ambiguous under strict reading:
    `center` reference (`{ "box": … }`) from a `corner` reference by which fields are present is
    exactly the sort of guess that strict reading is meant to remove, so every point, edge and size
    reference names its kind.
-2. **The stamp is in the scene file in M1.** §6 puts `formatVersion` and `units` in
-   `manifest.json`, which does not exist until M2. Without them in the file there would be nothing
-   to refuse an old file with, so they head the scene document and move to the manifest in M2.
+2. **The scene's stamp stays in the scene, and the manifest gets its own.** §6 puts
+   `formatVersion` and `units` in `manifest.json`. They head the scene document instead, and the
+   manifest carries a `containerVersion` of its own — the reasoning is under
+   [Why the units are not in the manifest](#why-the-units-are-not-in-the-manifest) above. The
+   consequence worth stating plainly: a plain `scene.json` with no manifest anywhere near it is
+   still a complete, self-describing, refusable file, which is what keeps the hand-written samples
+   working.
 3. **A dimension's `measures` is the size reference itself for a size**, as §6's example shows,
    and `{ "kind": "axis", … }` for a span. There is no wrapper object, and `axis` is therefore not
    available as the name of a size reference.
+4. **The container holds two entries, not four.** §6.4 of DESIGN.md sketches a `thumbnail.png` and
+   an `assets/` directory alongside. A thumbnail means rendering, which lives in the app, and
+   neither is written by this build; a container holding one is refused like any other unknown
+   entry. Adding them is a `containerVersion` bump, and catalogue feature `PRJ-006` stays
+   unclaimed until then.
 
 One thing the reader deliberately does **not** check: that a driving dimension's `drives`
 relationship is about the same measurand the dimension measures. Nothing in the design requires
