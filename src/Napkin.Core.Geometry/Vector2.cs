@@ -1,13 +1,25 @@
 namespace Napkin.Core.Geometry;
 
-/// <summary>Which of the two axes a relationship or a measurement runs along.</summary>
+/// <summary>Which axis a relationship or a measurement runs along.</summary>
+/// <remarks>
+/// <see cref="Z"/> exists for the value types of docs/design/assembly-model.md &#xA7;1.4
+/// (<see cref="Vector3"/>, <see cref="Point3"/>, <see cref="Orientation"/>). The plan-view types —
+/// <see cref="Point2"/>, <see cref="Vector2"/>, the propagator and the checker — are not yet taught
+/// about it (that is &#xA7;10 steps 2 to 4) and must not be handed it.
+/// </remarks>
 public enum Axis
 {
     /// <summary>The horizontal axis; X increases to the right.</summary>
     X,
 
-    /// <summary>The vertical axis; Y increases upward (the CAD, DXF and PDF convention).</summary>
+    /// <summary>The vertical axis of the plan; Y increases upward (the CAD, DXF and PDF convention).</summary>
     Y,
+
+    /// <summary>
+    /// The axis out of the plan; Z increases toward the viewer of the plan view, so that X, Y, Z
+    /// is right-handed (docs/design/assembly-model.md &#xA7;1.4).
+    /// </summary>
+    Z,
 }
 
 /// <summary>
