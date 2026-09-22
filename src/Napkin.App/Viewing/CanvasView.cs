@@ -144,6 +144,17 @@ public sealed class CanvasView : Control
     public event EventHandler<DimensionEditRequested>? DimensionEditRequested;
 
     /// <summary>
+    /// Raised when a person asks to shape the selected part — the way into the shape workshop
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;7.1).
+    /// </summary>
+    /// <remarks>
+    /// The canvas does not own the workshop, because the workshop is a mode the <em>window</em> is
+    /// in and needs room the canvas does not have. So the keystroke is handled here, beside the
+    /// other editing keys, and the window decides what to open.
+    /// </remarks>
+    public event EventHandler<EntityId>? ShapeRequested;
+
+    /// <summary>
     /// Raised when the set of parts on the canvas changes — one drawn, one deleted, a different
     /// design opened — so the automation peer can rebuild its children.
     /// </summary>
@@ -474,6 +485,35 @@ public sealed class CanvasView : Control
         InvalidateVisual();
     }
 
+    /// <summary>
+    /// Asks for the selected part to be opened in the shape workshop
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;7.1).
+    /// </summary>
+    /// <remarks>
+    /// The workshop's scope is one box, so this says so rather than shaping whichever of a
+    /// multiple selection sorts first — the same rule <see cref="DuplicateSelection"/> has for the
+    /// same reason.
+    /// </remarks>
+    public void ShapeSelection()
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        if (editor.OnlySelectedBox is not { } part)
+        {
+            editor.Say(
+                EditSeverity.Hint,
+                editor.Selection.Count == 0
+                    ? "Select a part to shape it."
+                    : "The shape workshop takes one part at a time; select just the one.");
+            return;
+        }
+
+        ShapeRequested?.Invoke(this, part.Id);
+    }
+
     /// <summary>Pins what is selected where it is, or says why it cannot be pinned.</summary>
     public void PinSelection()
     {
@@ -780,6 +820,10 @@ public sealed class CanvasView : Control
                 }
 
                 DuplicateSelection();
+                return true;
+
+            case Key.C:
+                ShapeSelection();
                 return true;
 
             case Key.Tab when editor.OnlySelectedBox is { } forWidth:

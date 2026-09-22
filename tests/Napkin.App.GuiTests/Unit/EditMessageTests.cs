@@ -197,5 +197,50 @@ public class EditMessageTests
             EditMessages.Rename(summary, [id], _ => "Shelf"));
     }
 
+    [Fact]
+    [Trait("Feature", "CVS-008")]
+    public void A_cut_that_does_not_fit_is_refused_with_the_box_and_the_site_named()
+    {
+        // The kernel writes the sentence that names which of eight cuts was the problem
+        // (docs/design/shaped-parts-model.md §7.2); the message keeps it, with the id replaced by
+        // the name the drawing shows.
+        EntityId box = EditingBuilder.Id(0);
+        Design design = EditingBuilder.Design(EditingBuilder.At(0, 0, 48, 24));
+
+        EditMessage message = EditMessages.For(
+            new Rejected(
+                RejectionReason.CutDoesNotFit,
+                new ValidationError(
+                    ValidationErrorKind.CutDoesNotFit,
+                    $"Box {box}'s cut at the NorthEast corner reaches 4\" across the width, "
+                    + "which does not fit the blank's 3 1/2\".")),
+            "Rounded Part 1's NorthEast corner",
+            design.Sketch,
+            Name,
+            AtSixteenths);
+
+        Assert.Equal(EditSeverity.Problem, message.Severity);
+        Assert.Contains("does not fit the blank it is on", message.Text, StringComparison.Ordinal);
+        Assert.Contains("NorthEast corner", message.Text, StringComparison.Ordinal);
+        Assert.Contains("Part 1's cut at the", message.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain(box.ToString(), message.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "CVS-008")]
+    public void A_refusal_with_nothing_more_to_say_says_only_the_reason()
+    {
+        EditMessage message = EditMessages.For(
+            new Rejected(RejectionReason.NoSuchCut),
+            "Removed the cut at Part 1's south edge",
+            Sketch.Empty,
+            Name,
+            AtSixteenths);
+
+        Assert.Equal(
+            "Removed the cut at Part 1's south edge did not happen: there is no cut there to take off.",
+            message.Text);
+    }
+
     static string Name(EntityId id) => "Part 1";
 }

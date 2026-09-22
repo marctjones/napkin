@@ -33,6 +33,39 @@ public static class BlankShape
         return null;
     }
 
+    /// <summary>
+    /// A site in the cut list's own words: compass, lower case, in the part's own frame.
+    /// </summary>
+    /// <remarks>
+    /// The shape workshop exists so that the words and the picture agree (&#xA7;7.1), so what it
+    /// calls a corner is what <c>CutDescription</c>'s sentences call it, rather than the enum
+    /// spelling the kernel's own diagnostics use. It lives here, beside the other questions about
+    /// a blank's sites, so the view and the window say it the same way.
+    /// </remarks>
+    public static string Words(CutSite site) => site.AsCorner is { } corner
+        ? $"{Compass(corner)} corner"
+        : $"{Compass(site.AsEdge!.Value)} edge";
+
+    /// <summary>A corner, by compass.</summary>
+    static string Compass(BoxCorner corner) => corner switch
+    {
+        BoxCorner.SouthWest => "south-west",
+        BoxCorner.SouthEast => "south-east",
+        BoxCorner.NorthEast => "north-east",
+        BoxCorner.NorthWest => "north-west",
+        _ => throw new ArgumentOutOfRangeException(nameof(corner), corner, "Unknown corner."),
+    };
+
+    /// <summary>An edge, by compass.</summary>
+    public static string Compass(BoxEdge edge) => edge switch
+    {
+        BoxEdge.South => "south",
+        BoxEdge.East => "east",
+        BoxEdge.North => "north",
+        BoxEdge.West => "west",
+        _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, "Unknown edge."),
+    };
+
     /// <summary>The two edges of a blank that meet at a corner.</summary>
     public static ImmutableArray<BoxEdge> EdgesAt(BoxCorner corner) => corner switch
     {
