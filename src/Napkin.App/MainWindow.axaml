@@ -35,6 +35,10 @@
             <MenuItem Name="DrawMenu" Header="_Draw">
                 <MenuItem Name="SelectToolMenuItem" Header="_Select" Click="OnSelectToolClicked" />
                 <MenuItem Name="RectangleToolMenuItem" Header="_Rectangle" Click="OnRectangleToolClicked" />
+                <MenuItem Name="StockToolboxMenuItem"
+                          Header="Stoc_k toolbox"
+                          Click="OnStockToolboxClicked"
+                          ToolTip.Tip="Pick a real stock size — a 2x4, a sheet of plywood — and drag it onto the paper." />
                 <Separator />
                 <MenuItem Name="ShapeMenuItem"
                           Header="S_hape…"
@@ -326,8 +330,23 @@
                                   Padding="10,4"
                                   Click="OnRectangleToolClicked"
                                   ToolTip.Tip="Drag out a new part (R)" />
+                    <ToggleButton Name="StockToolButton"
+                                  Content="Stock"
+                                  FontSize="12"
+                                  Padding="10,4"
+                                  Click="OnStockToolboxClicked"
+                                  ToolTip.Tip="Pick real stock from the toolbox and drag it onto the paper (M)" />
                 </StackPanel>
             </Border>
+
+            <!-- The stock toolbox (issue #7's picker): category icons, then a text list, then a
+                 drag on the paper places a part already cut from the item picked. It floats under
+                 the tool control it is opened from, and stays open while parts are placed. -->
+            <viewing:StockToolbox Name="StockToolboxPanel"
+                                  IsVisible="False"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Top"
+                                  Margin="10,56,10,10" />
 
             <!-- What the drawing says about itself, in words. Read-only on purpose, and not
                  hit-testable, so it never takes a click or a wheel turn meant for the drawing. -->

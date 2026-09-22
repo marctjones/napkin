@@ -192,12 +192,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: GUI-CUT-02 — Assign materials to parts")]
-    [Trait("Feature", "GUI-CUT-02")]
-    public void GUI_CUT_02()
-    {
-    }
-
     [Fact(Skip = "planned: GUI-CUT-04 — Open the shopping list and export it")]
     [Trait("Feature", "GUI-CUT-04")]
     public void GUI_CUT_04()

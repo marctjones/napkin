@@ -11,6 +11,11 @@ public enum EditTool
 
     /// <summary>Drag out a new rectangular part.</summary>
     Rectangle,
+
+    /// <summary>
+    /// Drag out a part already cut from a stock item picked in the toolbox (<see cref="StockTool"/>).
+    /// </summary>
+    Stock,
 }
 
 /// <summary>
