@@ -132,6 +132,18 @@ public class PlannedFeatures
     {
     }
 
+    [Fact(Skip = "planned: CVS-011 — Tool buttons show a tooltip")]
+    [Trait("Feature", "CVS-011")]
+    public void CVS_011()
+    {
+    }
+
+    [Fact(Skip = "planned: CVS-012 — Relationship glyphs show their sentence on hover")]
+    [Trait("Feature", "CVS-012")]
+    public void CVS_012()
+    {
+    }
+
     [Fact(Skip = "planned: DECK-001 — Ledger attachment is sized from the project's pack")]
     [Trait("Feature", "DECK-001")]
     public void DECK_001()
