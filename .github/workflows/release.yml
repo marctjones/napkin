@@ -1,0 +1,346 @@
+name: Release
+
+# Turns a tag into unsigned, self-contained macOS and Windows builds attached to a GitHub
+# PRE-RELEASE (issue #38; DESIGN.md §6.6, §11, §12). How a release is cut, and how to rehearse one
+# without publishing, is in docs/release.md.
+#
+# Three ways in:
+#   * push of a tag `v*`            the real thing. Creates the pre-release. Fails unless the tag is
+#                                   exactly `v` + the version in Directory.Build.props.
+#   * workflow_dispatch             a DRY RUN. Builds everything, uploads workflow artifacts,
+#                                   creates no release.
+#   * pull_request touching this    a DRY RUN as well, so a change to this file is exercised
+#     file only                     before it is merged.
+#
+# Nothing here signs or notarizes anything, on either platform. macOS arm64 keeps the automatic
+# ad-hoc signature the toolchain applies, which arm64 code needs in order to run at all; a step
+# below asserts that it is the only signature there is. tests/Napkin.Tools.Tests/
+# ReleaseWorkflowTests.cs fails if this file gains a signing or notarization step, or loses the
+# pre-release flags.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+  pull_request:
+    paths: ['.github/workflows/release.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  # Reads the version from its single home and, on a tag, refuses to go on unless the tag agrees.
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_release: ${{ steps.version.outputs.is_release }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: version
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          # Every version is 0.N.0-beta (DESIGN.md §12). Exactly one match each, or the file is
+          # not what this step was written for.
+          prefix_lines=$(sed -n 's:.*<VersionPrefix>\([0-9][0-9.]*\)</VersionPrefix>.*:\1:p' Directory.Build.props)
+          suffix_lines=$(sed -n 's:.*<VersionSuffix>\([A-Za-z0-9.]*\)</VersionSuffix>.*:\1:p' Directory.Build.props)
+          if [ "$(printf '%s\n' "$prefix_lines" | grep -c .)" != "1" ] || [ "$(printf '%s\n' "$suffix_lines" | grep -c .)" != "1" ]; then
+            echo "::error::Directory.Build.props must hold exactly one VersionPrefix and one VersionSuffix."
+            exit 1
+          fi
+          if ! printf '%s' "$prefix_lines" | grep -Eq '^0\.[0-9]+\.0$'; then
+            echo "::error::VersionPrefix '$prefix_lines' is not 0.N.0 (DESIGN.md §12)."
+            exit 1
+          fi
+          if [ "$suffix_lines" != "beta" ]; then
+            echo "::error::VersionSuffix '$suffix_lines' is not 'beta'. napkin ships pre-releases only (DESIGN.md §12)."
+            exit 1
+          fi
+          version="$prefix_lines-$suffix_lines"
+
+          is_release=false
+          if [ "$EVENT_NAME" = "push" ] && [[ "$REF" == refs/tags/v* ]]; then
+            is_release=true
+            if [ "$REF_NAME" != "v$version" ]; then
+              echo "::error::Tag '$REF_NAME' does not match Directory.Build.props: expected 'v$version'. Nothing was built."
+              exit 1
+            fi
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "is_release=$is_release" >> "$GITHUB_OUTPUT"
+          echo "Version $version; real release: $is_release"
+
+  build:
+    name: Build ${{ matrix.rid }}
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Avalonia's supported-platforms page lists Windows x64 and macOS arm64 and x64.
+          # win-arm64 is supported by Avalonia too, and is deliberately not built (issue #38).
+          - rid: win-x64
+            os: windows-latest
+          - rid: osx-arm64
+            os: macos-latest
+          # A plain cross-architecture publish: no native compilation is involved, so the arm64
+          # macOS runner produces it.
+          - rid: osx-x64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      RID: ${{ matrix.rid }}
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # The SDK comes from global.json, exactly as in ci.yml.
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      # Self-contained, single file. The flags live here and not in the project file: a
+      # PublishSingleFile property in the csproj would switch on the single-file analyzers in
+      # every ordinary `dotnet build` too. IncludeNativeLibrariesForSelfExtract folds the native
+      # libraries (Skia, HarfBuzz, Avalonia's own) into the one file; without it they would sit
+      # beside it. Trimming is off: Avalonia relies on reflection.
+      - name: Publish
+        shell: bash
+        run: >
+          dotnet publish src/Napkin.App/Napkin.App.csproj
+          --configuration Release
+          --runtime "$RID"
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:PublishTrimmed=false
+          -p:SourceRevisionId="$(git rev-parse HEAD)"
+          --output "out/$RID"
+
+      # The layout is the publish output, minus symbols, plus the licence, the written offer of
+      # source (AGPL-3.0 §6) and the first-run instructions, so that every artifact carries them
+      # (issue #27). Whatever else the publish left beside the executable ships too and shows up
+      # in the listing below.
+      - name: Stage
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="napkin-$VERSION-$RID"
+          sha=$(git rev-parse HEAD)
+          dest="stage/$name"
+          mkdir -p "$dest" dist
+          cp -R "out/$RID/." "$dest/"
+          find "$dest" -name '*.pdb' -delete
+          cp LICENSE "$dest/LICENSE"
+          cp docs/first-run.md "$dest/FIRST-RUN.md"
+          {
+            echo "napkin $VERSION ($RID)"
+            echo
+            echo "This is a pre-release beta build of napkin (https://github.com/$GITHUB_REPOSITORY)."
+            echo "It is free software under the GNU Affero General Public License v3.0; the licence"
+            echo "text is in the file LICENSE next to this one."
+            echo
+            echo "Written offer of source (AGPL-3.0 section 6): the complete Corresponding Source"
+            echo "for this build is available, at no charge, from:"
+            echo
+            echo "  Commit:  $sha"
+            echo "  Browse:  https://github.com/$GITHUB_REPOSITORY/tree/$sha"
+            echo "  Archive: https://github.com/$GITHUB_REPOSITORY/archive/$sha.zip"
+            echo
+            echo "That commit is the one this build was made from. The release tag v$VERSION"
+            echo "points at it. Third-party libraries are pulled in as NuGet packages at the"
+            echo "versions pinned in the project files in that source; each is under its own licence."
+            echo
+            echo "First-run instructions for an unsigned build: FIRST-RUN.md in this folder."
+          } > "$dest/SOURCE.txt"
+          echo "Layout of $name:"
+          (cd stage && find "$name" -type f -exec ls -l {} +)
+
+      # Zipped on the runner that built it. upload-artifact does not keep Unix permission bits,
+      # so a zip made here is the only way the macOS executable keeps its executable bit.
+      - name: Zip (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="napkin-$VERSION-$RID"
+          (cd stage && zip -r -X "../dist/$name.zip" "$name")
+          unzip -l "dist/$name.zip"
+
+      - name: Zip (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $name = "napkin-$env:VERSION-$env:RID"
+          Compress-Archive -Path "stage/$name" -DestinationPath "dist/$name.zip"
+          Get-Item "dist/$name.zip" | Format-List Name, Length
+
+      # Signature check (REL-003). It looks at the executable as it comes OUT of the zip, which
+      # is what a downloader gets, so it also proves that nothing between the publish and the
+      # zip stripped the signature.
+      #
+      # What is asserted, and no more: the toolchain's automatic ad-hoc signature is present on
+      # arm64 and valid, and no build carries a certificate authority or a notarization ticket.
+      # (A bare Mach-O file cannot carry a stapled ticket anyway; codesign would name one.)
+      - name: Check signature (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="napkin-$VERSION-$RID"
+          rm -rf verify && mkdir verify
+          unzip -q "dist/$name.zip" -d verify
+          bin="verify/$name/Napkin.App"
+          test -x "$bin" || { echo "::error::$bin is missing or not executable after unzip."; exit 1; }
+
+          case "$RID" in
+            osx-arm64) want_arch=arm64 ;;
+            osx-x64) want_arch=x86_64 ;;
+          esac
+          got_arch=$(lipo -archs "$bin")
+          echo "architecture: $got_arch"
+          [ "$got_arch" = "$want_arch" ] || { echo "::error::$RID binary is '$got_arch', expected '$want_arch'."; exit 1; }
+
+          # codesign writes to stderr and exits non-zero for an unsigned file, which is not by
+          # itself a failure on x64.
+          codesign -dvv "$bin" > signature.txt 2>&1 || true
+          cat signature.txt
+
+          if grep -Eq '^Authority=|Developer ID' signature.txt; then
+            echo "::error::$RID binary carries a certificate authority. napkin does no Developer ID signing (DESIGN.md §6.6)."
+            exit 1
+          fi
+          if grep -qi 'Notarization Ticket' signature.txt; then
+            echo "::error::$RID binary carries a notarization ticket. napkin does no notarization (DESIGN.md §6.6)."
+            exit 1
+          fi
+
+          if [ "$RID" = "osx-arm64" ]; then
+            if ! grep -q '^Signature=adhoc' signature.txt; then
+              echo "::error::osx-arm64 binary has no ad-hoc signature. arm64 code does not run without one (DESIGN.md §6.6)."
+              exit 1
+            fi
+            codesign --verify --strict --verbose=2 "$bin"
+            echo "osx-arm64: ad-hoc signature present and valid; no Developer ID, no notarization ticket."
+          fi
+
+      - name: Check archive (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $name = "napkin-$env:VERSION-$env:RID"
+          Expand-Archive -Path "dist/$name.zip" -DestinationPath verify
+          $exe = Get-Item "verify/$name/Napkin.App.exe"
+          if ($exe.Length -lt 1MB) { throw "Napkin.App.exe is only $($exe.Length) bytes." }
+          Get-ChildItem "verify/$name" | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zip-${{ matrix.rid }}
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  # Gathers the three zips, writes their checksums and the release notes. Runs on the dry runs
+  # too, so a rehearsal produces exactly the bytes a release would attach.
+  package:
+    name: Checksums and notes
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: zip-*
+          merge-multiple: true
+          path: payload
+
+      - name: Checksums and release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd payload
+          for rid in win-x64 osx-arm64 osx-x64; do
+            test -f "napkin-$VERSION-$rid.zip" || { echo "::error::napkin-$VERSION-$rid.zip is missing."; exit 1; }
+          done
+          [ "$(ls -1 *.zip | wc -l)" = "3" ] || { echo "::error::Expected exactly three zips."; ls -l; exit 1; }
+
+          # "<hash>  <name>", so `sha256sum -c` and `shasum -a 256 -c` work as they stand.
+          sha256sum napkin-*.zip > SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          cd ..
+
+          sed \
+            -e "s|{{VERSION}}|$VERSION|g" \
+            -e "s|{{TAG}}|v$VERSION|g" \
+            -e "s|{{SHA}}|$(git rev-parse HEAD)|g" \
+            -e "s|{{SERVER}}|$GITHUB_SERVER_URL|g" \
+            -e "s|{{REPO}}|$GITHUB_REPOSITORY|g" \
+            .github/release-notes-template.md > payload/RELEASE_NOTES.md
+          if grep -q '{{' payload/RELEASE_NOTES.md; then
+            echo "::error::Unfilled placeholder in the release notes."
+            grep -n '{{' payload/RELEASE_NOTES.md
+            exit 1
+          fi
+          cat payload/RELEASE_NOTES.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-payload
+          path: payload/
+          if-no-files-found: error
+          retention-days: 14
+
+  # The only job that can write to the repository, and it runs only for a pushed tag. Every
+  # other trigger stops at the artifacts above.
+  publish:
+    name: Publish pre-release
+    needs: [version, package]
+    if: needs.version.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-payload
+          path: payload
+
+      # Always a pre-release, never "latest" (DESIGN.md §12). --verify-tag refuses to invent a tag.
+      - name: Create the pre-release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd payload
+          gh release create "v$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --prerelease \
+            --latest=false \
+            --title "napkin $VERSION" \
+            --notes-file RELEASE_NOTES.md \
+            napkin-*.zip \
+            SHA256SUMS.txt

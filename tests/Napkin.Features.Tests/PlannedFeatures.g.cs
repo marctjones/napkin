@@ -384,12 +384,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: REL-002 — Every release is a pre-release")]
-    [Trait("Feature", "REL-002")]
-    public void REL_002()
-    {
-    }
-
     [Fact(Skip = "planned: REL-003 — The arm64 macOS artifact carries its ad-hoc signature only")]
     [Trait("Feature", "REL-003")]
     public void REL_003()
