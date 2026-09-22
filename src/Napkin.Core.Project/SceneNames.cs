@@ -52,6 +52,16 @@ internal static class SceneNames
     internal const string Offset = "offset";
     internal const string Side = "side";
 
+    // Corners, edges and sides, in the box's own local frame.
+    internal const string SouthWest = "southWest";
+    internal const string SouthEast = "southEast";
+    internal const string NorthEast = "northEast";
+    internal const string NorthWest = "northWest";
+    internal const string South = "south";
+    internal const string East = "east";
+    internal const string North = "north";
+    internal const string West = "west";
+
     // References.
     internal const string Corner = "corner";
     internal const string Center = "center";
@@ -119,10 +129,10 @@ internal static class SceneNames
     {
         switch (text)
         {
-            case "southWest": corner = BoxCorner.SouthWest; return true;
-            case "southEast": corner = BoxCorner.SouthEast; return true;
-            case "northEast": corner = BoxCorner.NorthEast; return true;
-            case "northWest": corner = BoxCorner.NorthWest; return true;
+            case SouthWest: corner = BoxCorner.SouthWest; return true;
+            case SouthEast: corner = BoxCorner.SouthEast; return true;
+            case NorthEast: corner = BoxCorner.NorthEast; return true;
+            case NorthWest: corner = BoxCorner.NorthWest; return true;
             default: corner = default; return false;
         }
     }
@@ -131,10 +141,10 @@ internal static class SceneNames
     {
         switch (text)
         {
-            case "south": edge = Geometry.BoxEdge.South; return true;
-            case "east": edge = Geometry.BoxEdge.East; return true;
-            case "north": edge = Geometry.BoxEdge.North; return true;
-            case "west": edge = Geometry.BoxEdge.West; return true;
+            case South: edge = Geometry.BoxEdge.South; return true;
+            case East: edge = Geometry.BoxEdge.East; return true;
+            case North: edge = Geometry.BoxEdge.North; return true;
+            case West: edge = Geometry.BoxEdge.West; return true;
             default: edge = default; return false;
         }
     }
@@ -143,14 +153,55 @@ internal static class SceneNames
     {
         switch (text)
         {
-            case "north": side = DimensionSide.North; return true;
-            case "south": side = DimensionSide.South; return true;
-            case "east": side = DimensionSide.East; return true;
-            case "west": side = DimensionSide.West; return true;
+            case North: side = DimensionSide.North; return true;
+            case South: side = DimensionSide.South; return true;
+            case East: side = DimensionSide.East; return true;
+            case West: side = DimensionSide.West; return true;
             default: side = default; return false;
         }
     }
 
+    // The write direction of the four spelled-out value sets. Each is the exact inverse of the
+    // Try… above it: a spelling added on one side without the other stops compiling here, which is
+    // the point of keeping both directions in one file.
+
+    internal static string Of(Axis axis) => axis switch
+    {
+        Geometry.Axis.X => X,
+        Geometry.Axis.Y => Y,
+        _ => throw Unknown(nameof(axis), axis),
+    };
+
+    internal static string Of(BoxCorner corner) => corner switch
+    {
+        BoxCorner.SouthWest => SouthWest,
+        BoxCorner.SouthEast => SouthEast,
+        BoxCorner.NorthEast => NorthEast,
+        BoxCorner.NorthWest => NorthWest,
+        _ => throw Unknown(nameof(corner), corner),
+    };
+
+    internal static string Of(Geometry.BoxEdge edge) => edge switch
+    {
+        Geometry.BoxEdge.South => South,
+        Geometry.BoxEdge.East => East,
+        Geometry.BoxEdge.North => North,
+        Geometry.BoxEdge.West => West,
+        _ => throw Unknown(nameof(edge), edge),
+    };
+
+    internal static string Of(DimensionSide side) => side switch
+    {
+        DimensionSide.North => North,
+        DimensionSide.South => South,
+        DimensionSide.East => East,
+        DimensionSide.West => West,
+        _ => throw Unknown(nameof(side), side),
+    };
+
     /// <summary>The spellings a message offers when one was not recognised.</summary>
     internal static string List(params string[] values) => string.Join(", ", values);
+
+    private static ArgumentOutOfRangeException Unknown<T>(string name, T value)
+        => new(name, value, "The scene format has no spelling for this value.");
 }
