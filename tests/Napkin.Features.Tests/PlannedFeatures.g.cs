@@ -120,30 +120,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: CVS-005 — Every edit goes through the update interface")]
-    [Trait("Feature", "CVS-005")]
-    public void CVS_005()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-006 — A snap creates a stored relationship the canvas can show")]
-    [Trait("Feature", "CVS-006")]
-    public void CVS_006()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-007 — Live dimensions follow the geometry while dragging")]
-    [Trait("Feature", "CVS-007")]
-    public void CVS_007()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-008 — Every update result has a place on screen")]
-    [Trait("Feature", "CVS-008")]
-    public void CVS_008()
-    {
-    }
-
     [Fact(Skip = "planned: CVS-009 — Undo, redo and layers over immutable sketch values")]
     [Trait("Feature", "CVS-009")]
     public void CVS_009()
@@ -246,30 +222,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: GUI-DRAW-01 — Draw a rectangle by dragging")]
-    [Trait("Feature", "GUI-DRAW-01")]
-    public void GUI_DRAW_01()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-02 — Type a dimension in feet-inch-fraction text")]
-    [Trait("Feature", "GUI-DRAW-02")]
-    public void GUI_DRAW_02()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-03 — Recover from invalid dimension text")]
-    [Trait("Feature", "GUI-DRAW-03")]
-    public void GUI_DRAW_03()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-04 — Move a part until it snaps, and see the relationship")]
-    [Trait("Feature", "GUI-DRAW-04")]
-    public void GUI_DRAW_04()
-    {
-    }
-
     [Fact(Skip = "planned: GUI-DRAW-05 — Undo and redo a chain of edits")]
     [Trait("Feature", "GUI-DRAW-05")]
     public void GUI_DRAW_05()
@@ -279,12 +231,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: GUI-DRAW-06 — Save a design, reopen it and find the same design")]
     [Trait("Feature", "GUI-DRAW-06")]
     public void GUI_DRAW_06()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-07 — See a conflict explained rather than a wrong number")]
-    [Trait("Feature", "GUI-DRAW-07")]
-    public void GUI_DRAW_07()
     {
     }
 

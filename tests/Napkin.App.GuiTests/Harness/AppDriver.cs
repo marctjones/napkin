@@ -144,6 +144,41 @@ public sealed class AppDriver
     }
 
     /// <summary>
+    /// Presses the left button at a point, and leaves it down.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Drag"/> is one verb from press to release, which is right for a gesture whose
+    /// result is only visible afterwards. A drag that is <em>supposed</em> to show something while
+    /// it is running — a snap indicator, a dimension counting up — has to be stopped in the
+    /// middle, so it is driven with these three instead. They are the same simulated input
+    /// <see cref="Drag"/> sends; the only difference is that the scenario gets to look between
+    /// them.
+    /// </remarks>
+    public void PressAt(Point point)
+    {
+        Target.MouseMove(point);
+        Target.MouseDown(point, MouseButton.Left);
+        Settle();
+        Record(GuiActionKind.Pointer, $"press at {Format(point)}");
+    }
+
+    /// <summary>Moves the pointer with the left button still held.</summary>
+    public void DragTo(Point point)
+    {
+        Target.MouseMove(point, RawInputModifiers.LeftMouseButton);
+        Settle();
+        Record(GuiActionKind.Pointer, $"drag to {Format(point)}");
+    }
+
+    /// <summary>Releases the left button at a point.</summary>
+    public void ReleaseAt(Point point)
+    {
+        Target.MouseUp(point, MouseButton.Left);
+        Settle();
+        Record(GuiActionKind.Pointer, $"release at {Format(point)}");
+    }
+
+    /// <summary>
     /// Turns the mouse wheel at a point. Positive Y scrolls up, as Avalonia reports it.
     /// </summary>
     public void Wheel(Point point, Vector delta, KeyModifiers modifiers = KeyModifiers.None)

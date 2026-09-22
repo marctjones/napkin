@@ -10,14 +10,20 @@
         MinWidth="560" MinHeight="380">
 
     <!--
-        The shell is three things and no more: a menu, the drawing, and a line saying where you
-        are. M1 is a viewer, so there is nothing else a person could do here, and a toolbar of
-        disabled buttons would be a promise rather than a tool.
+        The shell is a menu, the drawing, and a line saying where you are. The editing chrome — the
+        tool control, the relationship list, the dimension a person is typing into — floats over
+        the drawing rather than docking beside it, so the canvas still fills everything the menu
+        and the status line leave. That is not decoration: docking a panel would change the
+        canvas's arranged size, and the view transform is arranged size.
     -->
     <DockPanel>
 
         <Menu Name="MainMenu" DockPanel.Dock="Top">
             <MenuItem Name="FileMenu" Header="_File">
+                <MenuItem Name="NewMenuItem"
+                          Header="_New"
+                          Click="OnNewClicked"
+                          ToolTip.Tip="Start a blank sheet. Press R and drag to draw a part." />
                 <MenuItem Name="OpenMenuItem"
                           Header="_Open…"
                           Click="OnOpenClicked"
@@ -26,10 +32,18 @@
                 <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
             </MenuItem>
 
+            <MenuItem Name="DrawMenu" Header="_Draw">
+                <MenuItem Name="SelectToolMenuItem" Header="_Select" Click="OnSelectToolClicked" />
+                <MenuItem Name="RectangleToolMenuItem" Header="_Rectangle" Click="OnRectangleToolClicked" />
+                <Separator />
+                <MenuItem Name="PinMenuItem" Header="_Pin in place" Click="OnPinClicked" />
+                <MenuItem Name="DeleteMenuItem" Header="_Delete" Click="OnDeleteClicked" />
+            </MenuItem>
+
             <!-- Samples are built from SampleFiles.All in the code-behind: one item per scene file
                  that shipped beside the executable, opened through the same reader as any other
                  file. -->
-            <MenuItem Name="SamplesMenu" Header="_Samples" />
+            <MenuItem Name="SamplesMenu" Header="Sa_mples" />
 
             <MenuItem Name="ViewMenu" Header="_View">
                 <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
@@ -41,39 +55,136 @@
         <Border Name="StatusBar"
                 DockPanel.Dock="Bottom"
                 BorderThickness="0,1,0,0"
-                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                Padding="12,5">
-            <Grid ColumnDefinitions="*,Auto,Auto">
-                <TextBlock Name="DesignText"
-                           Grid.Column="0"
-                           FontSize="12"
-                           Opacity="0.75"
-                           VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis" />
-                <TextBlock Name="CursorText"
-                           Grid.Column="1"
-                           FontSize="12"
-                           Margin="16,0"
-                           MinWidth="190"
-                           TextAlignment="Right"
-                           VerticalAlignment="Center" />
-                <TextBlock Name="ZoomText"
-                           Grid.Column="2"
-                           FontSize="12"
-                           MinWidth="86"
-                           TextAlignment="Right"
-                           VerticalAlignment="Center" />
-            </Grid>
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+            <StackPanel>
+
+                <!-- Every update result lands here and stays until the next edit: what was done,
+                     what could not be done and why, and — when a conflict has a way out — the
+                     offer to take it (CVS-008). -->
+                <Border Name="MessageBar"
+                        IsVisible="False"
+                        Padding="12,6"
+                        BorderThickness="0,0,0,1"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Name="MessageText"
+                                   Grid.Column="0"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                        <Button Name="MessageOfferButton"
+                                Grid.Column="1"
+                                IsVisible="False"
+                                Margin="12,0,0,0"
+                                Padding="8,3"
+                                FontSize="12"
+                                Click="OnMessageOfferClicked" />
+                    </Grid>
+                </Border>
+
+                <Grid ColumnDefinitions="*,Auto,Auto" Margin="12,5">
+                    <TextBlock Name="DesignText"
+                               Grid.Column="0"
+                               FontSize="12"
+                               Opacity="0.75"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Name="CursorText"
+                               Grid.Column="1"
+                               FontSize="12"
+                               Margin="16,0"
+                               MinWidth="190"
+                               TextAlignment="Right"
+                               VerticalAlignment="Center" />
+                    <TextBlock Name="ZoomText"
+                               Grid.Column="2"
+                               FontSize="12"
+                               MinWidth="86"
+                               TextAlignment="Right"
+                               VerticalAlignment="Center" />
+                </Grid>
+            </StackPanel>
         </Border>
 
         <!--
-            The canvas fills what is left, and the refusal panel floats over the top of it rather
-            than docking beside it. That is deliberate: a docked panel would change the canvas's
-            arranged size, which would move the view transform, and "the drawing you had is exactly
-            as you left it" is the whole promise of a refusal.
+            The canvas fills what is left, and everything else floats over the top of it rather
+            than docking beside it.
         -->
         <Panel>
             <viewing:CanvasView Name="DrawingCanvas" />
+
+            <!-- The dimension a person is typing into sits on the drawing, over the label it is
+                 editing. The host Canvas has no background, so it is not hit-testable and the
+                 drawing underneath still takes every click that is not on the field itself. -->
+            <Canvas Name="EditorOverlay">
+                <Border Name="DimensionEditor"
+                        IsVisible="False"
+                        Padding="6,5"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <StackPanel Spacing="4" MinWidth="150">
+                        <TextBlock Name="DimensionEditorCaption" FontSize="11" FontWeight="SemiBold" />
+                        <TextBox Name="DimensionEntryBox"
+                                 FontSize="13"
+                                 Width="150"
+                                 PlaceholderText="3' 4 1/2&quot;" />
+                        <TextBlock Name="DimensionEditorError"
+                                   IsVisible="False"
+                                   FontSize="11"
+                                   MaxWidth="230"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Name="DimensionEditorHint"
+                                   Text="Enter applies it. Escape leaves it alone."
+                                   FontSize="10"
+                                   Opacity="0.7" />
+                    </StackPanel>
+                </Border>
+            </Canvas>
+
+            <Border Name="ToolBar"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Margin="10"
+                    Padding="4"
+                    CornerRadius="4"
+                    BorderThickness="1">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <ToggleButton Name="SelectToolButton"
+                                  Content="Select"
+                                  FontSize="12"
+                                  Padding="10,4"
+                                  Click="OnSelectToolClicked"
+                                  ToolTip.Tip="Pick, move and resize parts (S)" />
+                    <ToggleButton Name="RectangleToolButton"
+                                  Content="Rectangle"
+                                  FontSize="12"
+                                  Padding="10,4"
+                                  Click="OnRectangleToolClicked"
+                                  ToolTip.Tip="Drag out a new part (R)" />
+                </StackPanel>
+            </Border>
+
+            <!-- What the drawing says about itself, in words. Read-only on purpose, and not
+                 hit-testable, so it never takes a click or a wheel turn meant for the drawing. -->
+            <Border Name="RelationshipsPanel"
+                    IsVisible="False"
+                    IsHitTestVisible="False"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Margin="10"
+                    Padding="10,8"
+                    MaxWidth="260"
+                    MaxHeight="320"
+                    CornerRadius="4"
+                    BorderThickness="1">
+                <StackPanel Spacing="5">
+                    <TextBlock Name="RelationshipsHeadline"
+                               Text="Relationships"
+                               FontSize="12"
+                               FontWeight="SemiBold" />
+                    <StackPanel Name="RelationshipsList" Spacing="3" />
+                </StackPanel>
+            </Border>
 
             <!-- Its colours come from the canvas palette in the code-behind, not from a theme
                  resource: the panel sits on the drawing, so it should be lit the same way, and a
@@ -95,8 +206,7 @@
                     <TextBlock Name="RefusalDismissHint"
                                Text="Press Escape, or click this message, to dismiss it."
                                FontSize="11"
-                               Opacity="0.7"
-                               TextWrapping="Wrap" />
+                               Opacity="0.7" />
                 </StackPanel>
             </Border>
         </Panel>
