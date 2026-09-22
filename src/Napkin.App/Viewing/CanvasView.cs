@@ -4,41 +4,50 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Napkin.App.Designs;
+using Napkin.App.Editing;
 using Design = Napkin.App.Designs.Design;
 using Napkin.Core.Geometry;
 
 namespace Napkin.App.Viewing;
 
+/// <summary>Raised when the canvas wants a dimension opened for typing.</summary>
+/// <param name="Box">The part.</param>
+/// <param name="Axis">Which of its sizes.</param>
+public sealed record DimensionEditRequested(EntityId Box, SizeAxis Axis);
+
 /// <summary>
-/// Draws a design in plan view, and lets a person move around it.
+/// Draws a design in plan view, and lets a person move around it and change it.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>Read-only.</strong> Every gesture here changes <see cref="View"/> and nothing else. The
-/// <see cref="Design"/> it is given is a value it never writes to: there is no code path in this
-/// control that produces a <see cref="Sketch"/>, which is what makes "panning moved nothing"
-/// true by construction rather than by care.
+/// <strong>Every change goes through the updater.</strong> The canvas holds a
+/// <see cref="DesignEditor"/> and issues <see cref="Request"/>s to it: a move is
+/// <see cref="Drag"/>, a handle is <see cref="DragEdge"/> (a corner handle is one
+/// <see cref="Batch"/> of two), drawing a part is <see cref="AddEntity"/>, a snap adds a
+/// <see cref="Flush"/> or a <see cref="Coincident"/>, and Delete is
+/// <see cref="RemoveEntity"/>. There is no code path in this control that builds a
+/// <see cref="Sketch"/> (CVS-005).
 /// </para>
 /// <para>
-/// <strong>Controls.</strong> Wheel zooms about the pointer; Shift and the wheel pan; dragging with
-/// the left or the middle button pans; the arrow keys pan by a tenth of the viewport (a full half
-/// with Shift held); <c>+</c> and <c>-</c> zoom about the centre; the command key with <c>0</c>
-/// zooms to fit. Left-drag pans because M1 has nothing to select; it becomes the selection gesture
-/// when editing lands (#10), and panning keeps the middle button and the space bar.
+/// <strong>Controls.</strong> <c>R</c> takes the rectangle tool and <c>S</c> or Escape gives it
+/// back; drag on empty paper to pan, click a part to select it, drag a selected part to move it,
+/// drag its handles to resize; arrow keys pan, or nudge the selection by one grid step when there
+/// is one; Delete removes what is selected; <c>P</c> pins it. Wheel zooms about the pointer;
+/// Shift and the wheel pan; the middle button always pans.
+/// </para>
+/// <para>
+/// <strong>Snapping is live and stored.</strong> While a part is being moved it lands on the grid
+/// you can see, or on another part's edges when it is close enough, with an indicator on the line
+/// it caught. Dropping it there stores the relationship that says so — a drawing never infers a
+/// relationship from where things happen to sit (docs/design/geometry-model.md &#xA7;3.2).
 /// </para>
 /// <para>
 /// <strong>Line weights are in pixels, not inches.</strong> A 1.4-pixel outline is 1.4 pixels at
-/// every zoom, so the drawing reads the same framed on a wall or zoomed to a single joint. Text is
-/// the same: a fixed size in pixels, which is what keeps a label readable when it is over a part
-/// three pixels wide.
+/// every zoom, so the drawing reads the same framed on a wall or zoomed to a single joint.
 /// </para>
 /// </remarks>
 public sealed class CanvasView : Control
 {
-    /// <summary>The design drawn. Null draws an empty sheet.</summary>
-    public static readonly StyledProperty<Design?> DesignProperty =
-        AvaloniaProperty.Register<CanvasView, Design?>(nameof(Design));
-
     /// <summary>How much one wheel notch zooms.</summary>
     const double ZoomPerWheelNotch = 1.15;
 
@@ -69,28 +78,44 @@ public sealed class CanvasView : Control
     /// <summary>How far an extension line runs past the dimension line, in pixels.</summary>
     const double ExtensionOvershoot = 5;
 
-    /// <summary>The closest two grid lines are allowed to be drawn, in pixels.</summary>
-    const double MinimumGridSpacing = 14;
+    /// <summary>Half the width of a resize handle, in pixels.</summary>
+    const double HandleHalfSize = 4;
+
+    /// <summary>How near a handle the pointer has to be to grab it, in pixels.</summary>
+    const double HandleGrabPixels = 7;
+
+    /// <summary>How near another part's edge a drag has to land to snap to it, in pixels.</summary>
+    const double SnapRadiusPixels = 10;
+
+    /// <summary>How far a selected part's dimension lines sit off it, in pixels.</summary>
+    const double SelectionDimensionOffsetPixels = 26;
 
     /// <summary>
-    /// The grid steps, in inches: a quarter inch up to a hundred feet, each a plain number a
-    /// person would use.
+    /// The scale a blank sheet opens at: an inch drawn at sixteen pixels, so about four and a
+    /// half feet fits across a laptop window — a table, a bench, a run of cabinets — and the grid
+    /// in force is a one-inch grid, which is the step a person drawing furniture wants to land on.
     /// </summary>
-    static readonly double[] GridLadder =
-    [
-        0.25, 0.5, 1, 3, 6, 12, 24, 48, 96, 144, 288, 600, 1200, 2400, 6000, 12000,
-    ];
+    public const double BlankSheetPixelsPerInch = 16;
 
     bool _fitPending = true;
     bool _panning;
     Point _panFrom;
+    Point _pressedAt;
     ViewTransform _view = ViewTransform.Default;
+    DesignEditor? _editor;
 
-    static CanvasView()
-    {
-        FocusableProperty.OverrideDefaultValue<CanvasView>(true);
-        DesignProperty.Changed.AddClassHandler<CanvasView>((canvas, _) => canvas.OnDesignChanged());
-    }
+    readonly RectangleTool _rectangle = new();
+    EditTool _tool = EditTool.Select;
+
+    Gesture _gesture = Gesture.None;
+    EntityId _gestureEntity;
+    BoxGrip _gestureGrip = BoxGrip.Body;
+    Point2 _gestureAnchorAtPress;
+    Point2 _gestureWorldAtPress;
+    Box? _gestureBoxAtPress;
+    SnapPlan? _snap;
+
+    static CanvasView() => FocusableProperty.OverrideDefaultValue<CanvasView>(true);
 
     /// <summary>Raised whenever the view transform changes, so a status bar can follow it.</summary>
     public event EventHandler? ViewChanged;
@@ -100,14 +125,47 @@ public sealed class CanvasView : Control
     /// </summary>
     public event EventHandler<Point2?>? PointerWorldPositionChanged;
 
-    /// <inheritdoc cref="DesignProperty"/>
-    public Design? Design
+    /// <summary>Raised when the active tool changes, so a tool control can follow it.</summary>
+    public event EventHandler? ToolChanged;
+
+    /// <summary>Raised when a dimension label is clicked, or Tab asks for one.</summary>
+    public event EventHandler<DimensionEditRequested>? DimensionEditRequested;
+
+    /// <summary>The drawing being edited. The canvas draws what this holds and nothing else.</summary>
+    public DesignEditor? Editor
     {
-        get => GetValue(DesignProperty);
-        set => SetValue(DesignProperty, value);
+        get => _editor;
+        set
+        {
+            if (ReferenceEquals(_editor, value))
+            {
+                return;
+            }
+
+            if (_editor is not null)
+            {
+                _editor.DesignChanged -= OnEditorDesignChanged;
+                _editor.DesignOpened -= OnEditorDesignOpened;
+                _editor.SelectionChanged -= OnEditorDesignChanged;
+            }
+
+            _editor = value;
+
+            if (_editor is not null)
+            {
+                _editor.DesignChanged += OnEditorDesignChanged;
+                _editor.DesignOpened += OnEditorDesignOpened;
+                _editor.SelectionChanged += OnEditorDesignChanged;
+            }
+
+            OnEditorDesignOpened(this, EventArgs.Empty);
+        }
     }
 
-    /// <summary>Where the view is. Every gesture in this control changes this and nothing else.</summary>
+    /// <summary>The design on screen, or null before there is an editor.</summary>
+    public Design? Design => _editor?.Design;
+
+    /// <summary>Where the view is. Every navigation gesture changes this and nothing else.</summary>
     public ViewTransform View
     {
         get => _view;
@@ -124,11 +182,39 @@ public sealed class CanvasView : Control
         }
     }
 
+    /// <summary>Which tool the pointer is holding.</summary>
+    public EditTool Tool
+    {
+        get => _tool;
+        set
+        {
+            if (_tool == value)
+            {
+                return;
+            }
+
+            _rectangle.Cancel();
+            _tool = value;
+            Cursor = new Cursor(value == EditTool.Rectangle ? StandardCursorType.Cross : StandardCursorType.Arrow);
+            InvalidateVisual();
+            ToolChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
     /// <summary>
-    /// The precision dimension labels are shown at. Fixed at 1/16&#x2033; for M1; the per-project
-    /// picker is #11.
+    /// The precision dimension labels are shown at. Fixed at 1/16&#x2033;; the per-project picker
+    /// is #11.
     /// </summary>
     public LengthFormat LabelFormat { get; } = new FeetInchesFormat(16);
+
+    /// <summary>The grid step in force at this zoom, in inches.</summary>
+    public double GridStepInches => SnapGrid.StepInches(_view.PixelsPerInch);
+
+    /// <summary>Whether a part is being drawn or dragged right now.</summary>
+    public bool IsEditing => _gesture != Gesture.None || _rectangle.IsDrawing;
+
+    /// <summary>What the drag in progress has caught, or null when nothing is being dragged.</summary>
+    public SnapPlan? ActiveSnap => _snap;
 
     /// <summary>The bounding box of everything in the current design.</summary>
     public WorldBounds Extents =>
@@ -149,14 +235,46 @@ public sealed class CanvasView : Control
         .FirstOrDefault(measurement => measurement.Dimension.Id == dimension)
         ?.Label(LabelFormat);
 
+    /// <summary>
+    /// The width or height dimension shown for a selected part — the same measurement the canvas
+    /// draws, so a test reads the label a person sees.
+    /// </summary>
+    public DimensionMeasurement? SelectionDimension(EntityId box, SizeAxis axis) =>
+        Design is { } design
+        && SelectionDimensions.TryFor(
+            design.Sketch,
+            box,
+            axis,
+            DimensionOffset(),
+            out DimensionMeasurement? measurement,
+            out _)
+            ? measurement
+            : null;
+
+    /// <summary>Where a selected part's dimension label is drawn, in canvas pixels.</summary>
+    public Point? SelectionDimensionLabelAt(EntityId box, SizeAxis axis) =>
+        SelectionDimension(box, axis) is { } measurement
+            ? _view.ToScreen(measurement.LabelAnchor)
+            : null;
+
     /// <summary>Frames the whole design, with a margin.</summary>
     public void ZoomToFit()
     {
         WorldBounds extents = Extents;
-        if (extents.IsEmpty || !_view.HasViewport)
+        if (!_view.HasViewport)
         {
-            // Nothing to frame, or no viewport to frame it in: fit as soon as there is one.
+            // No viewport to frame anything in yet: fit as soon as there is one.
             _fitPending = true;
+            return;
+        }
+
+        if (extents.IsEmpty)
+        {
+            // A blank sheet has nothing to frame, so it is put at the origin at a scale a piece of
+            // furniture fits in — about six feet across a laptop window. Leaving the view wherever
+            // the last drawing left it would open a new sheet somewhere unknowable.
+            _fitPending = false;
+            View = new ViewTransform(0, 0, BlankSheetPixelsPerInch, _view.Viewport);
             return;
         }
 
@@ -225,6 +343,59 @@ public sealed class CanvasView : Control
         }
     }
 
+    /// <summary>Removes what is selected, through the updater, relationships and all.</summary>
+    public void DeleteSelection()
+    {
+        if (_editor is not { } editor || editor.Selection.Count == 0)
+        {
+            return;
+        }
+
+        List<EntityId> doomed = [.. editor.Selection.OrderBy(id => id)];
+        string what = doomed.Count == 1
+            ? $"Deleted {editor.NameOf(doomed[0])}"
+            : $"Deleted {doomed.Count} parts";
+
+        editor.BeginGesture(what);
+        editor.Apply(
+            Batch.Of([.. doomed.Select(id => (Request)new RemoveEntity(id))]),
+            what);
+        editor.EndGesture();
+    }
+
+    /// <summary>Pins what is selected where it is, or says why it cannot be pinned.</summary>
+    public void PinSelection()
+    {
+        if (_editor is not { } editor || editor.Selection.Count == 0)
+        {
+            return;
+        }
+
+        List<Request> requests = [];
+        foreach (EntityId id in editor.Selection.OrderBy(id => id))
+        {
+            Anchored candidate = new(RelationshipId.New(), id);
+            if (editor.CanHold(candidate) && !editor.AlreadyStates(candidate))
+            {
+                requests.Add(new AddRelationship(candidate));
+            }
+        }
+
+        if (requests.Count == 0)
+        {
+            editor.Say(EditSeverity.Hint, "Already pinned.");
+            return;
+        }
+
+        string what = requests.Count == 1
+            ? $"Pinned {editor.NameOf(editor.Selection.OrderBy(id => id).First())}"
+            : $"Pinned {requests.Count} parts";
+
+        editor.BeginGesture(what);
+        editor.Apply(Batch.Of([.. requests]), what);
+        editor.EndGesture();
+    }
+
     /// <inheritdoc/>
     protected override Size ArrangeOverride(Size finalSize)
     {
@@ -249,16 +420,56 @@ public sealed class CanvasView : Control
     {
         base.OnPointerPressed(e);
         PointerPointProperties properties = e.GetCurrentPoint(this).Properties;
-        if (!properties.IsLeftButtonPressed && !properties.IsMiddleButtonPressed)
+        Point position = e.GetPosition(this);
+        _pressedAt = position;
+        Focus();
+
+        if (properties.IsMiddleButtonPressed)
+        {
+            BeginPan(e.Pointer, position);
+            return;
+        }
+
+        if (!properties.IsLeftButtonPressed)
         {
             return;
         }
 
-        Focus();
-        _panning = true;
-        _panFrom = e.GetPosition(this);
-        e.Pointer.Capture(this);
-        Cursor = new Cursor(StandardCursorType.SizeAll);
+        if (_editor is not { } editor)
+        {
+            BeginPan(e.Pointer, position);
+            return;
+        }
+
+        if (_tool == EditTool.Rectangle)
+        {
+            _rectangle.Begin(SnapGrid.Snap(_view.ToWorld(position), GridStepInches));
+            e.Pointer.Capture(this);
+            InvalidateVisual();
+            return;
+        }
+
+        Point2 world = _view.ToWorld(position);
+
+        // The gesture is decided from what was already selected. A press on empty paper, or on a
+        // part nobody has picked yet, pans — which is what the viewer's left button has always
+        // done — and picking happens on release, where a click and a drag can still be told
+        // apart.
+        if (editor.OnlySelectedBox is { } selected
+            && BoxGeometry.GripAt(selected, world, ModelLength(HandleGrabPixels)) is { } grip)
+        {
+            BeginEdit(e.Pointer, selected, grip, world);
+            return;
+        }
+
+        if (editor.Selection.Count > 0 && PickAt(world) is { } picked && editor.Selection.Contains(picked)
+            && editor.Design!.Sketch.Find<Box>(picked) is { } pickedBox)
+        {
+            BeginEdit(e.Pointer, pickedBox, BoxGrip.Body, world);
+            return;
+        }
+
+        BeginPan(e.Pointer, position);
     }
 
     /// <inheritdoc/>
@@ -266,14 +477,22 @@ public sealed class CanvasView : Control
     {
         base.OnPointerMoved(e);
         Point position = e.GetPosition(this);
+
         if (_panning)
         {
             View = _view.PanByPixels(position - _panFrom);
             _panFrom = position;
         }
+        else if (_rectangle.IsDrawing)
+        {
+            _rectangle.MoveTo(SnapGrid.Snap(_view.ToWorld(position), GridStepInches));
+            InvalidateVisual();
+        }
+        else if (_gesture != Gesture.None)
+        {
+            ContinueEdit(_view.ToWorld(position));
+        }
 
-        // Deliberately no InvalidateVisual: the readout is a label, and redrawing the whole
-        // drawing on every pointer sample is how a canvas starts to feel heavy.
         PointerWorldPositionChanged?.Invoke(this, _view.ToWorld(position));
     }
 
@@ -281,6 +500,34 @@ public sealed class CanvasView : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
+        Point position = e.GetPosition(this);
+
+        if (_rectangle.IsDrawing)
+        {
+            CompleteRectangle();
+        }
+        else if (_gesture != Gesture.None)
+        {
+            CompleteEdit();
+        }
+        else if (_panning && e.InitialPressMouseButton == MouseButton.Left)
+        {
+            // Measured from where the button went down, not from the last pointer sample: a drag
+            // ends with the pointer standing still, and comparing against the last sample would
+            // call every drag a click.
+            bool moved = Math.Abs(position.X - _pressedAt.X) > 2 || Math.Abs(position.Y - _pressedAt.Y) > 2;
+            EndPan(e.Pointer);
+
+            // A left press that did not move the view is a click, and a click picks. Doing this on
+            // release rather than on press is what lets the same button pan and select.
+            if (!moved)
+            {
+                PickOn(position, e.KeyModifiers);
+            }
+
+            return;
+        }
+
         EndPan(e.Pointer);
     }
 
@@ -288,6 +535,18 @@ public sealed class CanvasView : Control
     protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
     {
         base.OnPointerCaptureLost(e);
+
+        if (_rectangle.IsDrawing)
+        {
+            _rectangle.Cancel();
+            InvalidateVisual();
+        }
+
+        if (_gesture != Gesture.None)
+        {
+            CompleteEdit();
+        }
+
         EndPan(null);
     }
 
@@ -324,11 +583,432 @@ public sealed class CanvasView : Control
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (!e.Handled && HandleViewKey(e.Key, e.KeyModifiers))
+        if (e.Handled || HandleEditKey(e.Key, e.KeyModifiers))
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (HandleViewKey(e.Key, e.KeyModifiers))
         {
             e.Handled = true;
         }
     }
+
+    /// <summary>
+    /// The editing keystrokes, handled here — with the canvas focused — rather than as window
+    /// shortcuts, so that typing an <c>r</c> into a dimension field types an <c>r</c>.
+    /// </summary>
+    bool HandleEditKey(Key key, KeyModifiers modifiers)
+    {
+        if (modifiers.HasFlag(KeyModifiers.Control) || modifiers.HasFlag(KeyModifiers.Meta))
+        {
+            return false;
+        }
+
+        if (_editor is not { } editor)
+        {
+            return false;
+        }
+
+        switch (key)
+        {
+            case Key.R:
+                Tool = EditTool.Rectangle;
+                editor.Say(EditSeverity.Hint, "Rectangle tool: drag on the paper to draw a part.");
+                return true;
+
+            case Key.S:
+                Tool = EditTool.Select;
+                return true;
+
+            case Key.Escape:
+                if (_rectangle.IsDrawing)
+                {
+                    _rectangle.Cancel();
+                    InvalidateVisual();
+                    return true;
+                }
+
+                if (_tool == EditTool.Rectangle)
+                {
+                    Tool = EditTool.Select;
+                    return true;
+                }
+
+                if (editor.Selection.Count > 0)
+                {
+                    editor.ClearSelection();
+                    return true;
+                }
+
+                return false;
+
+            case Key.Delete or Key.Back:
+                if (editor.Selection.Count == 0)
+                {
+                    return false;
+                }
+
+                DeleteSelection();
+                return true;
+
+            case Key.P:
+                if (editor.Selection.Count == 0)
+                {
+                    return false;
+                }
+
+                PinSelection();
+                return true;
+
+            case Key.Tab when editor.OnlySelectedBox is { } forWidth:
+                DimensionEditRequested?.Invoke(
+                    this,
+                    new DimensionEditRequested(forWidth.Id, SizeAxis.Width));
+                return true;
+
+            case Key.Left or Key.Right or Key.Up or Key.Down when editor.Selection.Count > 0:
+                Nudge(key, modifiers);
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>Moves the selection by one grid step — the keyboard's version of a drag.</summary>
+    void Nudge(Key key, KeyModifiers modifiers)
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        double step = GridStepInches * (modifiers.HasFlag(KeyModifiers.Shift) ? 4 : 1);
+        Length distance = new(SnapGrid.UnitsPerStep(step));
+        Vector2 delta = key switch
+        {
+            Key.Left => new Vector2(-distance, Length.Zero),
+            Key.Right => new Vector2(distance, Length.Zero),
+            Key.Up => new Vector2(Length.Zero, distance),
+            _ => new Vector2(Length.Zero, -distance),
+        };
+
+        List<EntityId> moving = [.. editor.Selection.OrderBy(id => id)];
+        string what = moving.Count == 1 ? $"Moved {editor.NameOf(moving[0])}" : $"Moved {moving.Count} parts";
+
+        editor.BeginGesture(what);
+        editor.Apply(Batch.Of([.. moving.Select(id => (Request)new Drag(id, delta))]), what);
+        editor.EndGesture();
+    }
+
+    void BeginPan(IPointer pointer, Point position)
+    {
+        _panning = true;
+        _panFrom = position;
+        pointer.Capture(this);
+        Cursor = new Cursor(StandardCursorType.SizeAll);
+    }
+
+    void BeginEdit(IPointer pointer, Box box, BoxGrip grip, Point2 world)
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        _gesture = grip == BoxGrip.Body ? Gesture.Move : Gesture.Resize;
+        _gestureEntity = box.Id;
+        _gestureGrip = grip;
+        _gestureAnchorAtPress = box.Anchor;
+        _gestureWorldAtPress = world;
+        _gestureBoxAtPress = box;
+        _snap = null;
+
+        editor.BeginGesture(
+            _gesture == Gesture.Move
+                ? $"Moved {editor.NameOf(box.Id)}"
+                : $"Resized {editor.NameOf(box.Id)}");
+
+        pointer.Capture(this);
+    }
+
+    void ContinueEdit(Point2 world)
+    {
+        if (_editor is not { } editor || editor.Design!.Sketch.Find<Box>(_gestureEntity) is not { } box)
+        {
+            return;
+        }
+
+        Vector2 sincePress = world - _gestureWorldAtPress;
+
+        if (_gesture == Gesture.Move)
+        {
+            SnapPlan plan = SnapResolver.Resolve(
+                editor.Design.Sketch,
+                box,
+                _gestureAnchorAtPress + sincePress,
+                GridStepInches,
+                ModelLength(SnapRadiusPixels));
+
+            _snap = plan;
+            Vector2 delta = plan.Anchor - box.Anchor;
+            if (delta != Vector2.Zero)
+            {
+                editor.ApplyQuietly(new Drag(_gestureEntity, delta));
+            }
+
+            InvalidateVisual();
+            return;
+        }
+
+        // A resize is measured from the box as it was when the handle was grabbed, so a blocked
+        // edge does not accumulate the difference and jump when it comes free.
+        Box atPress = _gestureBoxAtPress!;
+        List<Request> requests = [];
+        foreach (BoxEdge edge in BoxGeometry.EdgesOf(_gestureGrip))
+        {
+            Length wantedSize = OutwardSize(atPress, edge) + SnappedOutward(atPress, edge, sincePress);
+            Length delta = wantedSize - OutwardSize(box, edge);
+            if (delta != Length.Zero)
+            {
+                requests.Add(new DragEdge(_gestureEntity, edge, delta));
+            }
+        }
+
+        if (requests.Count > 0)
+        {
+            editor.ApplyQuietly(requests.Count == 1 ? requests[0] : Batch.Of([.. requests]));
+        }
+
+        InvalidateVisual();
+    }
+
+    void CompleteEdit()
+    {
+        if (_editor is not { } editor)
+        {
+            _gesture = Gesture.None;
+            return;
+        }
+
+        Gesture gesture = _gesture;
+        SnapPlan? plan = _snap;
+        _gesture = Gesture.None;
+        _snap = null;
+        _gestureBoxAtPress = null;
+
+        string what = gesture == Gesture.Move
+            ? $"Moved {editor.NameOf(_gestureEntity)}"
+            : $"Resized {editor.NameOf(_gestureEntity)}";
+
+        List<Request> statements = [];
+        if (gesture == Gesture.Move && plan is not null)
+        {
+            foreach (Relationship candidate in plan.Relationships)
+            {
+                if (editor.CanHold(candidate) && !editor.AlreadyStates(candidate))
+                {
+                    statements.Add(new AddRelationship(candidate));
+                }
+            }
+        }
+
+        if (statements.Count > 0)
+        {
+            // The drop states what the snap caught. Relationships are stored, never inferred, so
+            // if this is not put to the updater the drawing knows nothing about the alignment a
+            // person just made (design §3.2).
+            UpdateResult result = editor.Apply(
+                statements.Count == 1 ? statements[0] : Batch.Of([.. statements]),
+                what + " and snapped it");
+
+            if (result is not Succeeded)
+            {
+                // The move itself already happened; only the statement about it was refused, and
+                // the message says which.
+                editor.EndGesture();
+                InvalidateVisual();
+                return;
+            }
+        }
+        else
+        {
+            editor.Say(EditSeverity.Done, what + ".");
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+    }
+
+    void CompleteRectangle()
+    {
+        if (_editor is not { } editor)
+        {
+            _rectangle.Cancel();
+            return;
+        }
+
+        EntityId id = EntityId.New();
+        if (!_rectangle.TryComplete(editor.LayerForNewParts(), id, out Request? request))
+        {
+            InvalidateVisual();
+            editor.Say(EditSeverity.Hint, "Drag to draw a part — a click on its own makes nothing.");
+            return;
+        }
+
+        editor.BeginGesture("Drew a part");
+        UpdateResult result = editor.Apply(request, "Drew a part");
+        if (result is Succeeded)
+        {
+            editor.Select(id);
+            editor.Say(EditSeverity.Done, $"Drew {editor.NameOf(id)}, {Size(id)}.");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+    }
+
+    string Size(EntityId id)
+    {
+        if (_editor?.Design!.Sketch.Find<Box>(id) is not { } box)
+        {
+            return string.Empty;
+        }
+
+        return $"{box.Width.Format(LabelFormat).Text} by {box.Height.Format(LabelFormat).Text}";
+    }
+
+    /// <summary>
+    /// Where a resize handle wants its edge, snapped to the grid so a dragged edge lands on a
+    /// number a person would type.
+    /// </summary>
+    Length SnappedOutward(Box atPress, BoxEdge edge, Vector2 sincePress)
+    {
+        Length raw = BoxGeometry.OutwardDelta(atPress, edge, sincePress);
+        Length size = OutwardSize(atPress, edge);
+        Length snapped = SnapGrid.Snap(size + raw, GridStepInches);
+        return snapped - size;
+    }
+
+    static Length OutwardSize(Box box, BoxEdge edge) =>
+        edge is BoxEdge.East or BoxEdge.West ? box.Width : box.Height;
+
+    void PickOn(Point position, KeyModifiers modifiers)
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        Point2 world = _view.ToWorld(position);
+
+        if (editor.OnlySelectedBox is { } selected
+            && ClickedDimension(selected, world) is { } axis)
+        {
+            DimensionEditRequested?.Invoke(this, new DimensionEditRequested(selected.Id, axis));
+            return;
+        }
+
+        EntityId? picked = PickAt(world);
+        if (picked is not { } id)
+        {
+            editor.ClearSelection();
+            return;
+        }
+
+        if (modifiers.HasFlag(KeyModifiers.Shift))
+        {
+            editor.ToggleSelected(id);
+        }
+        else
+        {
+            editor.Select(id);
+            editor.Say(EditSeverity.Done, $"{editor.NameOf(id)} selected, {Size(id)}.");
+        }
+    }
+
+    /// <summary>Which of a selected part's dimension labels is under a model point, if any.</summary>
+    SizeAxis? ClickedDimension(Box box, Point2 world)
+    {
+        foreach (SizeAxis axis in (SizeAxis[])[SizeAxis.Width, SizeAxis.Height])
+        {
+            if (SelectionDimension(box.Id, axis) is { } measurement)
+            {
+                Point label = _view.ToScreen(measurement.LabelAnchor);
+                Point at = _view.ToScreen(world);
+                if (Math.Abs(label.X - at.X) <= 34 && Math.Abs(label.Y - at.Y) <= 11)
+                {
+                    return axis;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The smallest part under a model point, or null.</summary>
+    EntityId? PickAt(Point2 world)
+    {
+        if (Design is not { } design)
+        {
+            return null;
+        }
+
+        Length tolerance = ModelLength(3);
+        Box? best = null;
+
+        foreach (Box box in design.Sketch.Entities.Values.OfType<Box>().OrderBy(entity => entity.Id))
+        {
+            if (BoxGeometry.DistanceOutside(box, world) > tolerance)
+            {
+                continue;
+            }
+
+            // The smallest part wins: a leg sitting on a table top is the one that was aimed at.
+            if (best is null || BoxGeometry.Area(box) < BoxGeometry.Area(best))
+            {
+                best = box;
+            }
+        }
+
+        return best?.Id;
+    }
+
+    /// <summary>A distance in pixels, as a model length at the current zoom.</summary>
+    Length ModelLength(double pixels) =>
+        Length.FromInches(pixels / Math.Max(_view.PixelsPerInch, 1e-9), Rounding.HalfAwayFromZero);
+
+    Length DimensionOffset() => ModelLength(SelectionDimensionOffsetPixels);
+
+    void OnEditorDesignChanged(object? sender, EventArgs e) => InvalidateVisual();
+
+    void OnEditorDesignOpened(object? sender, EventArgs e)
+    {
+        // A new design is framed the moment there is a viewport to frame it in.
+        _fitPending = true;
+        ZoomToFit();
+        InvalidateVisual();
+    }
+
+    void EndPan(IPointer? pointer)
+    {
+        if (!_panning)
+        {
+            pointer?.Capture(null);
+            return;
+        }
+
+        _panning = false;
+        Cursor = new Cursor(_tool == EditTool.Rectangle ? StandardCursorType.Cross : StandardCursorType.Arrow);
+        pointer?.Capture(null);
+    }
+
+    // -------------------------------------------------------------------------------------
+    // Drawing
+    // -------------------------------------------------------------------------------------
 
     /// <inheritdoc/>
     public override void Render(DrawingContext context)
@@ -374,41 +1054,169 @@ public sealed class CanvasView : Control
         // Dimensions last, so a dimension line is never hidden under a part.
         foreach (DimensionMeasurement measurement in DimensionLayout.Measure(sketch))
         {
-            DrawDimension(context, palette, measurement);
+            DrawDimension(context, palette, measurement, palette.Dimension);
         }
+
+        DrawSelection(context, palette, sketch);
+        DrawSnapIndicator(context, palette);
+        DrawRectanglePreview(context, palette);
     }
 
-    void OnDesignChanged()
+    void DrawSelection(DrawingContext context, CanvasPalette palette, Sketch sketch)
     {
-        // A new design is framed the moment there is a viewport to frame it in.
-        _fitPending = true;
-        ZoomToFit();
-        InvalidateVisual();
-    }
-
-    void EndPan(IPointer? pointer)
-    {
-        if (!_panning)
+        if (_editor is not { } editor || editor.Selection.Count == 0)
         {
             return;
         }
 
-        _panning = false;
-        Cursor = Cursor.Default;
-        pointer?.Capture(null);
+        Pen pen = new(new SolidColorBrush(palette.Selection), 2.2) { LineJoin = PenLineJoin.Miter };
+
+        foreach (EntityId id in editor.Selection.OrderBy(entity => entity))
+        {
+            if (sketch.Find<Box>(id) is not { } box)
+            {
+                continue;
+            }
+
+            context.DrawGeometry(null, pen, Outline(box));
+        }
+
+        if (editor.OnlySelectedBox is not { } only)
+        {
+            return;
+        }
+
+        // The width and height a selected part shows, as dimension graphics: the same lines,
+        // arrowheads and text a stored dimension draws, in the selection's colour. Clicking one
+        // opens it for typing.
+        foreach (SizeAxis axis in (SizeAxis[])[SizeAxis.Width, SizeAxis.Height])
+        {
+            if (SelectionDimensions.TryFor(
+                    sketch,
+                    only.Id,
+                    axis,
+                    DimensionOffset(),
+                    out DimensionMeasurement? measurement,
+                    out bool annotated)
+                && !annotated)
+            {
+                DrawDimension(context, palette, measurement, palette.Selection);
+            }
+        }
+
+        SolidColorBrush handleFill = new(palette.Background);
+        SolidColorBrush handleEdge = new(palette.Selection);
+        Pen handlePen = new(handleEdge, 1.4);
+
+        foreach (BoxGrip grip in BoxGeometry.CornerGrips.Concat(BoxGeometry.EdgeGrips))
+        {
+            Point at = _view.ToScreen(BoxGeometry.GripPoint(only, grip));
+            context.DrawRectangle(
+                handleFill,
+                handlePen,
+                new Rect(
+                    at.X - HandleHalfSize,
+                    at.Y - HandleHalfSize,
+                    HandleHalfSize * 2,
+                    HandleHalfSize * 2));
+        }
+    }
+
+    void DrawSnapIndicator(DrawingContext context, CanvasPalette palette)
+    {
+        if (_snap is not { } plan)
+        {
+            return;
+        }
+
+        Pen pen = new(new SolidColorBrush(palette.Snap), 1.4) { DashStyle = new DashStyle([5, 4], 0) };
+
+        foreach (SnapHit hit in plan.Hits)
+        {
+            if (hit.Kind == SnapKind.Grid)
+            {
+                continue;
+            }
+
+            Point from = hit.Axis == Axis.X
+                ? _view.ToScreen(new Point2(hit.Coordinate, hit.From))
+                : _view.ToScreen(new Point2(hit.From, hit.Coordinate));
+            Point to = hit.Axis == Axis.X
+                ? _view.ToScreen(new Point2(hit.Coordinate, hit.To))
+                : _view.ToScreen(new Point2(hit.To, hit.Coordinate));
+
+            context.DrawLine(pen, from, to);
+
+            Point middle = new((from.X + to.X) / 2, (from.Y + to.Y) / 2);
+            DrawDiamond(context, new SolidColorBrush(palette.Snap), middle, 4.5);
+        }
+    }
+
+    void DrawRectanglePreview(DrawingContext context, CanvasPalette palette)
+    {
+        if (!_rectangle.IsDrawing || !_rectangle.TryRectangle(out Point2 anchor, out Length width, out Length height))
+        {
+            return;
+        }
+
+        Point southWest = _view.ToScreen(anchor);
+        Point northEast = _view.ToScreen(new Point2(anchor.X + width, anchor.Y + height));
+        Rect rectangle = new Rect(southWest, northEast).Normalize();
+
+        Pen pen = new(new SolidColorBrush(palette.Selection), 1.6)
+        {
+            DashStyle = new DashStyle([4, 3], 0),
+        };
+        context.DrawRectangle(new SolidColorBrush(palette.PreviewFill), pen, rectangle);
+
+        // The size while the part is still being dragged out: read from the two corners, the same
+        // way the part's dimensions will read it a moment later (CVS-007).
+        FormattedText text = Text(
+            $"{width.Format(LabelFormat).Text} × {height.Format(LabelFormat).Text}",
+            palette.Selection);
+
+        Point at = new(rectangle.Center.X - (text.Width / 2), rectangle.Bottom + 6);
+        context.DrawRectangle(
+            new SolidColorBrush(palette.Background),
+            null,
+            new RoundedRect(new Rect(at.X - 4, at.Y - 2, text.Width + 8, text.Height + 4), 2));
+        context.DrawText(text, at);
+    }
+
+    static void DrawDiamond(DrawingContext context, IBrush brush, Point centre, double radius)
+    {
+        StreamGeometry diamond = new();
+        using (StreamGeometryContext geometry = diamond.Open())
+        {
+            geometry.BeginFigure(new Point(centre.X, centre.Y - radius), isFilled: true);
+            geometry.LineTo(new Point(centre.X + radius, centre.Y));
+            geometry.LineTo(new Point(centre.X, centre.Y + radius));
+            geometry.LineTo(new Point(centre.X - radius, centre.Y));
+            geometry.EndFigure(isClosed: true);
+        }
+
+        context.DrawGeometry(brush, null, diamond);
+    }
+
+    StreamGeometry Outline(Box box)
+    {
+        StreamGeometry outline = new();
+        using (StreamGeometryContext geometry = outline.Open())
+        {
+            geometry.BeginFigure(_view.ToScreen(box.Corner(BoxCorner.SouthWest)), isFilled: true);
+            geometry.LineTo(_view.ToScreen(box.Corner(BoxCorner.SouthEast)));
+            geometry.LineTo(_view.ToScreen(box.Corner(BoxCorner.NorthEast)));
+            geometry.LineTo(_view.ToScreen(box.Corner(BoxCorner.NorthWest)));
+            geometry.EndFigure(isClosed: true);
+        }
+
+        return outline;
     }
 
     void DrawGrid(DrawingContext context, CanvasPalette palette, Rect viewport)
     {
-        double minor = GridLadder.FirstOrDefault(
-            step => step * _view.PixelsPerInch >= MinimumGridSpacing);
-        if (minor <= 0)
-        {
-            return;
-        }
-
-        double major = GridLadder.FirstOrDefault(
-            step => step >= minor * 4 && step * _view.PixelsPerInch >= MinimumGridSpacing * 4);
+        double minor = SnapGrid.StepInches(_view.PixelsPerInch);
+        double major = SnapGrid.CoarserStepInches(minor, _view.PixelsPerInch);
 
         Pen minorPen = new(new SolidColorBrush(palette.GridMinor), 1);
         Pen majorPen = new(new SolidColorBrush(palette.GridMajor), 1);
@@ -445,31 +1253,21 @@ public sealed class CanvasView : Control
         string layerName)
     {
         EntityStyle style = palette.StyleFor(layerName);
-        Point southWest = _view.ToScreen(box.Corner(BoxCorner.SouthWest));
-        Point southEast = _view.ToScreen(box.Corner(BoxCorner.SouthEast));
-        Point northEast = _view.ToScreen(box.Corner(BoxCorner.NorthEast));
-        Point northWest = _view.ToScreen(box.Corner(BoxCorner.NorthWest));
-
-        StreamGeometry outline = new();
-        using (StreamGeometryContext geometry = outline.Open())
-        {
-            geometry.BeginFigure(southWest, isFilled: true);
-            geometry.LineTo(southEast);
-            geometry.LineTo(northEast);
-            geometry.LineTo(northWest);
-            geometry.EndFigure(isClosed: true);
-        }
-
         Pen pen = new(new SolidColorBrush(style.Stroke), style.StrokeThickness)
         {
             LineJoin = PenLineJoin.Miter,
             DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
         };
-        context.DrawGeometry(new SolidColorBrush(style.Fill), pen, outline);
+        context.DrawGeometry(new SolidColorBrush(style.Fill), pen, Outline(box));
 
         if (design.LabelFor(box.Id) is { } label)
         {
-            DrawPartLabel(context, palette, label, southWest, northEast);
+            DrawPartLabel(
+                context,
+                palette,
+                label,
+                _view.ToScreen(box.Corner(BoxCorner.SouthWest)),
+                _view.ToScreen(box.Corner(BoxCorner.NorthEast)));
         }
     }
 
@@ -516,7 +1314,11 @@ public sealed class CanvasView : Control
         context.DrawEllipse(new SolidColorBrush(palette.NodeFill), null, centre, 2.5, 2.5);
     }
 
-    void DrawDimension(DrawingContext context, CanvasPalette palette, DimensionMeasurement measurement)
+    void DrawDimension(
+        DrawingContext context,
+        CanvasPalette palette,
+        DimensionMeasurement measurement,
+        Color ink)
     {
         Point from = _view.ToScreen(measurement.From);
         Point to = _view.ToScreen(measurement.To);
@@ -532,8 +1334,8 @@ public sealed class CanvasView : Control
             return;
         }
 
-        SolidColorBrush ink = new(palette.Dimension);
-        Pen pen = new(ink, 1);
+        SolidColorBrush brush = new(ink);
+        Pen pen = new(brush, 1);
         Vector direction = along / length;
 
         DrawExtensionLine(context, pen, from, lineFrom);
@@ -551,10 +1353,10 @@ public sealed class CanvasView : Control
             context.DrawLine(pen, lineFrom, lineTo);
         }
 
-        DrawArrowhead(context, ink, lineFrom, tight ? direction : -direction);
-        DrawArrowhead(context, ink, lineTo, tight ? -direction : direction);
+        DrawArrowhead(context, brush, lineFrom, tight ? direction : -direction);
+        DrawArrowhead(context, brush, lineTo, tight ? -direction : direction);
 
-        FormattedText text = Text(measurement.Label(LabelFormat), palette.Dimension);
+        FormattedText text = Text(measurement.Label(LabelFormat), ink);
         Point centre = new(
             (lineFrom.X + lineTo.X) / 2,
             (lineFrom.Y + lineTo.Y) / 2);
@@ -644,5 +1446,12 @@ public sealed class CanvasView : Control
     {
         double ratio = value / step;
         return Math.Abs(ratio - Math.Round(ratio)) < 1e-6;
+    }
+
+    enum Gesture
+    {
+        None,
+        Move,
+        Resize,
     }
 }

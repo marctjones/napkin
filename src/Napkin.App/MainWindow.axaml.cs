@@ -1,11 +1,13 @@
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Napkin.App.Designs;
 using Design = Napkin.App.Designs.Design;
+using Napkin.App.Editing;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 
@@ -16,15 +18,17 @@ namespace Napkin.App;
 /// </summary>
 /// <remarks>
 /// <para>
-/// M1 is a viewer. The window opens a design, hands it to the canvas and reports where the view is;
-/// it never edits anything, and there is no path from here to a <see cref="Sketch"/> that differs
-/// from the one the design source produced.
+/// The window opens a design, hands it to the <see cref="DesignEditor"/> the canvas draws and
+/// edits, and reports what the last edit did. It never touches geometry itself: every change in
+/// the application is a <see cref="Request"/> put to an <see cref="IGeometryUpdater"/> by the
+/// editor, and nothing here — or in the canvas — can reach an entity to change it (CVS-005).
 /// </para>
 /// <para>
-/// Every design comes from a file. The Samples menu lists the scene files that shipped beside the
-/// executable (<see cref="SampleFiles"/>) and <em>File &#x2192; Open&#x2026;</em> opens any other
-/// one; both go through <see cref="FileDesignSource"/> and the same reader, so a sample and a file
-/// a person picked are trusted exactly as far as each other.
+/// Every design comes from a file, or from <em>File &#x2192; New</em>. The Samples menu lists the
+/// scene files that shipped beside the executable (<see cref="SampleFiles"/>) and
+/// <em>File &#x2192; Open&#x2026;</em> opens any other one; both go through
+/// <see cref="FileDesignSource"/> and the same reader, so a sample and a file a person picked are
+/// trusted exactly as far as each other.
 /// </para>
 /// <para>
 /// <strong>A refusal changes nothing.</strong> <see cref="ShowDesign"/> loads before it assigns, so
@@ -38,6 +42,8 @@ public partial class MainWindow : Window
     readonly List<MenuItem> _sampleItems = [];
     ISceneFilePicker _filePicker;
     bool _opening;
+    EntityId? _editingBox;
+    SizeAxis _editingAxis = SizeAxis.Width;
 
     public MainWindow()
     {
@@ -45,22 +51,38 @@ public partial class MainWindow : Window
 
         _filePicker = new StorageProviderScenePicker(this);
 
+        DrawingCanvas.Editor = Editor;
+        Editor.MessageChanged += (_, _) => UpdateMessageBar();
+        Editor.DesignChanged += (_, _) => OnDesignChanged();
+        Editor.SelectionChanged += (_, _) => OnSelectionChanged();
+
         BuildSamplesMenu();
         BuildKeyBindings();
 
-        DrawingCanvas.ViewChanged += (_, _) => UpdateZoomReadout();
+        DrawingCanvas.ViewChanged += (_, _) =>
+        {
+            UpdateZoomReadout();
+            PlaceDimensionEditor();
+        };
         DrawingCanvas.PointerWorldPositionChanged += (_, point) => UpdateCursorReadout(point);
+        DrawingCanvas.ToolChanged += (_, _) => UpdateToolButtons();
+        DrawingCanvas.DimensionEditRequested += (_, request) =>
+            OpenDimensionEditor(request.Box, request.Axis);
+
         RefusalPanel.PointerPressed += (_, e) =>
         {
             DismissRefusal();
             e.Handled = true;
         };
 
-        ApplyRefusalPalette();
-        ActualThemeVariantChanged += (_, _) => ApplyRefusalPalette();
+        DimensionEntryBox.KeyDown += OnDimensionEntryKeyDown;
+        DimensionEntryBox.LostFocus += (_, _) => CloseDimensionEditor(focusCanvas: false);
 
-        // The canvas takes focus when the window opens so the arrow keys steer the drawing, not
-        // the menu bar. Anything a person clicks afterwards is welcome to take it.
+        ApplyEditingPalette();
+        ActualThemeVariantChanged += (_, _) => ApplyEditingPalette();
+
+        // The canvas takes focus when the window opens so the keys steer the drawing, not the
+        // menu bar. Anything a person clicks afterwards is welcome to take it.
         Opened += (_, _) => DrawingCanvas.Focus();
 
         // Keys that reach the window with the menu focused still steer the view, so arrowing after
@@ -73,16 +95,21 @@ public partial class MainWindow : Window
         }
         else
         {
-            // A build that shipped without its samples still starts, with an empty sheet and a
+            // A build that shipped without its samples still starts, on a blank sheet, with a
             // status line that says why rather than a stack trace.
+            ShowDesign(new NewSheet());
             DesignText.Text =
                 $"No sample designs found in {SampleFiles.SampleDirectory}. "
-                + "Use File → Open… to open a scene file.";
+                + "Use File → Open… to open a scene file, or press R and drag to draw a part.";
         }
 
+        UpdateToolButtons();
         UpdateZoomReadout();
         UpdateCursorReadout(null);
     }
+
+    /// <summary>The drawing being edited, and the one place a sketch is ever replaced.</summary>
+    public DesignEditor Editor { get; } = new();
 
     /// <summary>The sample scene files the Samples menu offers, in menu order.</summary>
     public IReadOnlyList<IDesignSource> Samples { get; } = SampleFiles.All;
@@ -110,6 +137,18 @@ public partial class MainWindow : Window
     /// <summary>The <em>File &#x2192; Open&#x2026;</em> item.</summary>
     public MenuItem OpenMenuEntry => OpenMenuItem;
 
+    /// <summary>The <em>File &#x2192; New</em> item.</summary>
+    public MenuItem NewMenuEntry => NewMenuItem;
+
+    /// <summary>The tool control that floats over the drawing.</summary>
+    public Border ToolControl => ToolBar;
+
+    /// <summary>The rectangle tool's button.</summary>
+    public ToggleButton RectangleToolControl => RectangleToolButton;
+
+    /// <summary>The select tool's button.</summary>
+    public ToggleButton SelectToolControl => SelectToolButton;
+
     /// <summary>The status line at the foot of the window.</summary>
     public Border StatusLine => StatusBar;
 
@@ -121,6 +160,37 @@ public partial class MainWindow : Window
 
     /// <summary>The status line's zoom percentage.</summary>
     public TextBlock ZoomReadout => ZoomText;
+
+    /// <summary>What the last edit did, as it is showing now. Empty when nothing is showing.</summary>
+    public string MessageOnScreen => MessageBar.IsVisible ? MessageText.Text ?? string.Empty : string.Empty;
+
+    /// <summary>Whether the last message offers a way out of a conflict.</summary>
+    public bool IsOfferingToRemoveRelationship => MessageOfferButton.IsVisible;
+
+    /// <summary>The wording of that offer.</summary>
+    public string RemoveOfferText => MessageOfferButton.Content as string ?? string.Empty;
+
+    /// <summary>The button that takes the offer.</summary>
+    public Button RemoveOfferButton => MessageOfferButton;
+
+    /// <summary>The relationship list panel.</summary>
+    public Border Relationships => RelationshipsPanel;
+
+    /// <summary>What the relationship list is showing, one line each.</summary>
+    public IReadOnlyList<string> RelationshipsOnScreen =>
+    [
+        .. RelationshipsList.Children.OfType<TextBlock>().Select(line => line.Text ?? string.Empty),
+    ];
+
+    /// <summary>The inline dimension field, when one is open.</summary>
+    public TextBox DimensionField => DimensionEntryBox;
+
+    /// <summary>Whether a dimension is open for typing.</summary>
+    public bool IsEditingDimension => DimensionEditor.IsVisible;
+
+    /// <summary>What the dimension field is complaining about, or empty when it is not.</summary>
+    public string DimensionFieldError =>
+        DimensionEditorError.IsVisible ? DimensionEditorError.Text ?? string.Empty : string.Empty;
 
     /// <summary>The panel that lists why a file was refused. Hidden until one is.</summary>
     public Border Refusal => RefusalPanel;
@@ -137,8 +207,8 @@ public partial class MainWindow : Window
     /// <summary>The line above the problems: which file could not be opened.</summary>
     public string RefusalHeadlineText => RefusalHeadline.Text ?? string.Empty;
 
-    /// <summary>The design on screen, or null before the first one is opened.</summary>
-    public Design? CurrentDesign => DrawingCanvas.Design;
+    /// <summary>The design on screen.</summary>
+    public Design? CurrentDesign => Editor.Design;
 
     /// <summary>
     /// Opens a design and frames it.
@@ -167,7 +237,8 @@ public partial class MainWindow : Window
         }
 
         DismissRefusal();
-        DrawingCanvas.Design = design;
+        CloseDimensionEditor(focusCanvas: false);
+        Editor.Open(design);
         Title = $"napkin — {design.Name}";
         DesignText.Text = $"{design.Name} — {source.Description}";
 
@@ -180,6 +251,9 @@ public partial class MainWindow : Window
 
         return true;
     }
+
+    /// <summary>Starts a blank sheet.</summary>
+    public void NewSheetCommand() => ShowDesign(new NewSheet());
 
     /// <summary>
     /// Asks for a file and opens it. Cancelling changes nothing at all.
@@ -229,6 +303,227 @@ public partial class MainWindow : Window
         RefusalHeadline.Text = string.Empty;
     }
 
+    /// <summary>
+    /// Opens one of a selected part's dimensions for typing, over the label it is editing.
+    /// </summary>
+    public void OpenDimensionEditor(EntityId box, SizeAxis axis)
+    {
+        if (Editor.Design.Sketch.Find<Box>(box) is not { } part)
+        {
+            return;
+        }
+
+        _editingBox = box;
+        _editingAxis = axis;
+
+        Length current = axis == SizeAxis.Width ? part.Width : part.Height;
+        DimensionEditorCaption.Text = $"{Editor.NameOf(box)} — {(axis == SizeAxis.Width ? "width" : "height")}";
+        DimensionEntryBox.Text = current.Format(Editor.LabelFormat).Text;
+        DimensionEditorError.IsVisible = false;
+        DimensionEditor.IsVisible = true;
+
+        PlaceDimensionEditor();
+        DimensionEntryBox.Focus();
+        DimensionEntryBox.SelectAll();
+    }
+
+    /// <summary>
+    /// Applies what is in the dimension field.
+    /// </summary>
+    /// <remarks>
+    /// Text that is not a length is explained beside the field and changes nothing at all — the
+    /// part keeps the size it had and the next entry is read exactly as if the bad one had never
+    /// happened (GUI-DRAW-03). A conflict is explained the same way, in the same place, because
+    /// from where the person is sitting the two are the same event: what I typed did not take.
+    /// </remarks>
+    /// <returns>Whether the drawing changed.</returns>
+    public bool ApplyDimensionEntry()
+    {
+        if (_editingBox is not { } box)
+        {
+            return false;
+        }
+
+        if (DimensionEntry.Interpret(DimensionEntryBox.Text) is not ReadableLength readable)
+        {
+            UnreadableText unreadable = (UnreadableText)DimensionEntry.Interpret(DimensionEntryBox.Text);
+            ShowDimensionError(unreadable.Message);
+            Editor.Say(EditSeverity.Problem, unreadable.Message);
+            return false;
+        }
+
+        ParamRef size = SelectionDimensions.ParamFor(box, _editingAxis);
+        string what = $"Set {Editor.NameOf(box)}'s {(_editingAxis == SizeAxis.Width ? "width" : "height")} "
+                      + $"to {readable.Value.Format(Editor.LabelFormat).Text}";
+
+        Editor.BeginGesture(what);
+        UpdateResult result = Editor.Apply(
+            DimensionEntry.RequestFor(Editor.Design.Sketch, size, readable.Value),
+            what);
+        Editor.EndGesture();
+
+        if (result is Succeeded)
+        {
+            CloseDimensionEditor(focusCanvas: true);
+            return true;
+        }
+
+        // It did not take. The message bar has the whole explanation; the field repeats it where
+        // the person is looking, and keeps what they typed so they can change one character.
+        ShowDimensionError(Editor.LastMessage?.Text ?? "That did not take.");
+        return false;
+    }
+
+    /// <summary>Closes the dimension field without applying anything.</summary>
+    public void CloseDimensionEditor(bool focusCanvas)
+    {
+        if (!DimensionEditor.IsVisible)
+        {
+            return;
+        }
+
+        DimensionEditor.IsVisible = false;
+        DimensionEditorError.IsVisible = false;
+        _editingBox = null;
+
+        if (focusCanvas)
+        {
+            DrawingCanvas.Focus();
+        }
+    }
+
+    /// <summary>Takes a conflict's way out: removes the relationship the message offered.</summary>
+    public void TakeRemoveOffer()
+    {
+        if (Editor.LastMessage?.OfferToRemove is not { } id)
+        {
+            return;
+        }
+
+        string what = $"Removed: {RelationshipText.Describe(Editor.Design.Sketch, Editor.Design.Sketch.Find(id)!, Editor.NameOf, Editor.LabelFormat)}";
+        Editor.BeginGesture(what);
+        Editor.Apply(new RemoveRelationship(id), what);
+        Editor.EndGesture();
+    }
+
+    void OnDimensionEntryKeyDown(object? sender, KeyEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Key.Enter:
+                ApplyDimensionEntry();
+                e.Handled = true;
+                break;
+
+            case Key.Escape:
+                CloseDimensionEditor(focusCanvas: true);
+                e.Handled = true;
+                break;
+        }
+    }
+
+    void ShowDimensionError(string message)
+    {
+        DimensionEditorError.Text = message;
+        DimensionEditorError.IsVisible = true;
+        DimensionEntryBox.Focus();
+        DimensionEntryBox.SelectAll();
+    }
+
+    /// <summary>Puts the dimension field over the label it is editing.</summary>
+    void PlaceDimensionEditor()
+    {
+        if (!DimensionEditor.IsVisible || _editingBox is not { } box)
+        {
+            return;
+        }
+
+        Point at = DrawingCanvas.SelectionDimensionLabelAt(box, _editingAxis)
+                   ?? new Point(DrawingCanvas.Bounds.Width / 2, DrawingCanvas.Bounds.Height / 2);
+
+        double left = Math.Clamp(at.X - 80, 8, Math.Max(8, DrawingCanvas.Bounds.Width - 260));
+        double top = Math.Clamp(at.Y + 10, 8, Math.Max(8, DrawingCanvas.Bounds.Height - 120));
+
+        Avalonia.Controls.Canvas.SetLeft(DimensionEditor, left);
+        Avalonia.Controls.Canvas.SetTop(DimensionEditor, top);
+    }
+
+    void OnDesignChanged()
+    {
+        UpdateRelationships();
+        PlaceDimensionEditor();
+    }
+
+    void OnSelectionChanged()
+    {
+        if (_editingBox is { } box && !Editor.Selection.Contains(box))
+        {
+            CloseDimensionEditor(focusCanvas: false);
+        }
+
+        UpdateMenuEnablement();
+    }
+
+    void UpdateMenuEnablement()
+    {
+        bool anything = Editor.Selection.Count > 0;
+        DeleteMenuItem.IsEnabled = anything;
+        PinMenuItem.IsEnabled = anything;
+    }
+
+    void UpdateMessageBar()
+    {
+        EditMessage? message = Editor.LastMessage;
+        if (message is null)
+        {
+            MessageBar.IsVisible = false;
+            MessageOfferButton.IsVisible = false;
+            return;
+        }
+
+        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
+        MessageText.Text = message.Text;
+        MessageText.Foreground = new SolidColorBrush(message.Severity switch
+        {
+            EditSeverity.Problem => palette.Snap,
+            EditSeverity.Hint => palette.Dimension,
+            _ => palette.Label,
+        });
+
+        MessageOfferButton.IsVisible = message.OfferToRemove is not null;
+        MessageOfferButton.Content = message.OfferText ?? string.Empty;
+        MessageBar.IsVisible = true;
+    }
+
+    void UpdateRelationships()
+    {
+        IReadOnlyList<RelationshipEntry> entries = Editor.RelationshipEntries();
+        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
+
+        RelationshipsList.Children.Clear();
+        foreach (RelationshipEntry entry in entries)
+        {
+            RelationshipsList.Children.Add(new TextBlock
+            {
+                Text = entry.Text,
+                FontSize = 11,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = new SolidColorBrush(palette.Label),
+            });
+        }
+
+        RelationshipsHeadline.Text = entries.Count == 1
+            ? "Relationships — 1"
+            : $"Relationships — {entries.Count}";
+        RelationshipsPanel.IsVisible = entries.Count > 0;
+    }
+
+    void UpdateToolButtons()
+    {
+        SelectToolButton.IsChecked = DrawingCanvas.Tool == EditTool.Select;
+        RectangleToolButton.IsChecked = DrawingCanvas.Tool == EditTool.Rectangle;
+    }
+
     void ShowRefusal(string what, IReadOnlyList<string> problems)
     {
         CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
@@ -255,16 +550,32 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Lights the refusal panel from the same palette the drawing uses, so it reads as a note on
-    /// the paper in either theme.
+    /// Lights the panels that sit on the drawing from the same palette the drawing uses, so they
+    /// read as notes on the paper in either theme.
     /// </summary>
-    void ApplyRefusalPalette()
+    void ApplyEditingPalette()
     {
         CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
-        RefusalPanel.Background = new SolidColorBrush(palette.Background);
-        RefusalPanel.BorderBrush = new SolidColorBrush(palette.Dimension);
-        RefusalHeadline.Foreground = new SolidColorBrush(palette.Dimension);
+        SolidColorBrush paper = new(palette.Background);
+        SolidColorBrush edge = new(palette.Dimension);
+
+        RefusalPanel.Background = paper;
+        RefusalPanel.BorderBrush = edge;
+        RefusalHeadline.Foreground = edge;
         RefusalDismissHint.Foreground = new SolidColorBrush(palette.Label);
+
+        ToolBar.Background = paper;
+        ToolBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
+
+        RelationshipsPanel.Background = paper;
+        RelationshipsPanel.BorderBrush = new SolidColorBrush(palette.GridMajor);
+        RelationshipsHeadline.Foreground = edge;
+
+        DimensionEditor.Background = paper;
+        DimensionEditor.BorderBrush = new SolidColorBrush(palette.Selection);
+        DimensionEditorCaption.Foreground = new SolidColorBrush(palette.Selection);
+        DimensionEditorError.Foreground = new SolidColorBrush(palette.Snap);
+        DimensionEditorHint.Foreground = new SolidColorBrush(palette.Label);
 
         foreach (Control line in RefusalProblemList.Children)
         {
@@ -273,6 +584,9 @@ public partial class MainWindow : Window
                 text.Foreground = new SolidColorBrush(palette.Label);
             }
         }
+
+        UpdateMessageBar();
+        UpdateRelationships();
     }
 
     void BuildSamplesMenu()
@@ -299,15 +613,26 @@ public partial class MainWindow : Window
         }
 
         SamplesMenu.ItemsSource = _sampleItems;
+        NewMenuItem.InputGesture = new KeyGesture(Key.N, command);
         OpenMenuItem.InputGesture = new KeyGesture(Key.O, command);
         ZoomToFitMenuItem.InputGesture = new KeyGesture(Key.D0, command);
         ZoomInMenuItem.InputGesture = new KeyGesture(Key.OemPlus);
         ZoomOutMenuItem.InputGesture = new KeyGesture(Key.OemMinus);
+        SelectToolMenuItem.InputGesture = new KeyGesture(Key.S);
+        RectangleToolMenuItem.InputGesture = new KeyGesture(Key.R);
+        PinMenuItem.InputGesture = new KeyGesture(Key.P);
+        DeleteMenuItem.InputGesture = new KeyGesture(Key.Delete);
+        UpdateMenuEnablement();
     }
 
     void BuildKeyBindings()
     {
         KeyModifiers command = CommandModifier;
+        KeyBindings.Add(new KeyBinding
+        {
+            Gesture = new KeyGesture(Key.N, command),
+            Command = new RelayCommand(NewSheetCommand),
+        });
         KeyBindings.Add(new KeyBinding
         {
             Gesture = new KeyGesture(Key.O, command),
@@ -346,13 +671,36 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!DrawingCanvas.IsFocused && DrawingCanvas.HandleViewKey(e.Key, e.KeyModifiers))
+        if (!DrawingCanvas.IsFocused && !IsEditingDimension
+            && DrawingCanvas.HandleViewKey(e.Key, e.KeyModifiers))
         {
             e.Handled = true;
         }
     }
 
+    void OnNewClicked(object? sender, RoutedEventArgs e) => NewSheetCommand();
+
     void OnOpenClicked(object? sender, RoutedEventArgs e) => _ = OpenFileAsync();
+
+    void OnSelectToolClicked(object? sender, RoutedEventArgs e)
+    {
+        DrawingCanvas.Tool = EditTool.Select;
+        UpdateToolButtons();
+        DrawingCanvas.Focus();
+    }
+
+    void OnRectangleToolClicked(object? sender, RoutedEventArgs e)
+    {
+        DrawingCanvas.Tool = EditTool.Rectangle;
+        UpdateToolButtons();
+        DrawingCanvas.Focus();
+    }
+
+    void OnPinClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.PinSelection();
+
+    void OnDeleteClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.DeleteSelection();
+
+    void OnMessageOfferClicked(object? sender, RoutedEventArgs e) => TakeRemoveOffer();
 
     void OnZoomToFitClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.ZoomToFit();
 

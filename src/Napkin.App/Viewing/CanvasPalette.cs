@@ -19,13 +19,21 @@ namespace Napkin.App.Viewing;
 /// <param name="Dimension">Dimension lines, arrowheads and their text.</param>
 /// <param name="Label">Part names drawn on parts.</param>
 /// <param name="NodeFill">Free points and segment ends.</param>
+/// <param name="Selection">
+/// What is picked: its outline, its handles, and the dimensions it shows while it is picked.
+/// </param>
+/// <param name="Snap">A snap indicator, while a part is being dragged onto something.</param>
+/// <param name="PreviewFill">The inside of a part that is still being dragged out.</param>
 public sealed record CanvasPalette(
     Color Background,
     Color GridMinor,
     Color GridMajor,
     Color Dimension,
     Color Label,
-    Color NodeFill)
+    Color NodeFill,
+    Color Selection,
+    Color Snap,
+    Color PreviewFill)
 {
     /// <summary>Light theme: ink on warm paper.</summary>
     public static readonly CanvasPalette Light = new(
@@ -34,7 +42,10 @@ public sealed record CanvasPalette(
         GridMajor: Color.Parse("#DBD5C9"),
         Dimension: Color.Parse("#1F6C7B"),
         Label: Color.Parse("#4A463F"),
-        NodeFill: Color.Parse("#5A554C"))
+        NodeFill: Color.Parse("#5A554C"),
+        Selection: Color.Parse("#0F6FC6"),
+        Snap: Color.Parse("#C2410C"),
+        PreviewFill: Color.Parse("#1A0F6FC6"))
     {
         Styles =
         {
@@ -53,7 +64,10 @@ public sealed record CanvasPalette(
         GridMajor: Color.Parse("#343840"),
         Dimension: Color.Parse("#63C2CE"),
         Label: Color.Parse("#D3D6DA"),
-        NodeFill: Color.Parse("#B7BBC1"))
+        NodeFill: Color.Parse("#B7BBC1"),
+        Selection: Color.Parse("#63A7F0"),
+        Snap: Color.Parse("#F08A4B"),
+        PreviewFill: Color.Parse("#2663A7F0"))
     {
         Styles =
         {
