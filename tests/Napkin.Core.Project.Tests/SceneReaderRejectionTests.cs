@@ -336,8 +336,9 @@ public sealed class SceneReaderRejectionTests
     [Theory]
     [InlineData("\"name\": \"Shelf\",", "name")]
     [InlineData("\"part\": ", "part")]
+    [InlineData("\"cuts\": ", "cuts")]
     [Trait("Feature", "CUT-001")]
-    public void A_name_and_a_part_are_required_on_a_box(string original, string named)
+    public void A_name_a_part_and_a_cut_list_are_required_on_a_box(string original, string named)
         => Scenes.RefuseWith(
             Scenes.OneBox.With(original, original.Replace(named, $"{named}Of", StringComparison.Ordinal)),
             LoadProblemKind.MissingField,
