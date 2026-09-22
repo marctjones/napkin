@@ -5,6 +5,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <!-- The executable is called `napkin`, never `Napkin.App`. macOS 26 kills, at launch and with
+         no message (exit 137), any executable FILE whose name ends in `.app`: it takes it for a
+         malformed application bundle. A trivial program renamed `hello.App` dies the same way and
+         the same bytes named `napkin-viewer` run. Found with the first downloadable build
+         (issue #56). The project keeps its name; only the assembly and so the apphost change. -->
+    <AssemblyName>napkin</AssemblyName>
+    <RootNamespace>Napkin.App</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
