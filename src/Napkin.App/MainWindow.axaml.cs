@@ -899,6 +899,11 @@ public partial class MainWindow : Window
         }
 
         UpdateWorkshop();
+
+        // The hint line is where the modifiers are written down, and it is the first thing a
+        // person needs. The view only announces it when it changes, and it opens saying nothing,
+        // so the default is put up here rather than waiting for a hover.
+        UpdateWorkshopHint();
         UpdateMenuEnablement();
         ShowProperties();
         WorkshopDrawing.Focus();
@@ -1168,7 +1173,7 @@ public partial class MainWindow : Window
         {
             CutFields.IsVisible = true;
             CutError.IsVisible = false;
-            CutHeadline.Text = $"Cut at the {cut.Site}";
+            CutHeadline.Text = $"Cut at the {BlankShape.Words(cut.Site)}";
             CutFirstCaption.IsVisible = true;
             CutFirstBox.IsVisible = true;
 
@@ -1182,9 +1187,9 @@ public partial class MainWindow : Window
             switch (cut)
             {
                 case CornerCut clip:
-                    CutFirstCaption.Text = $"Along {EdgeWord(XEdge(clip.Corner))}";
+                    CutFirstCaption.Text = $"{BlankShape.Compass(XEdge(clip.Corner))} edge";
                     CutFirstBox.Text = clip.AlongX.Format(Editor.LabelFormat).Text;
-                    CutSecondCaption.Text = $"Along {EdgeWord(YEdge(clip.Corner))}";
+                    CutSecondCaption.Text = $"{BlankShape.Compass(YEdge(clip.Corner))} edge";
                     CutSecondBox.Text = clip.AlongY.Format(Editor.LabelFormat).Text;
                     CutAngleBox.Text = CutAngle.Text(
                         Length.Min(clip.AlongX, clip.AlongY),
@@ -1274,15 +1279,16 @@ public partial class MainWindow : Window
     static string CutSummary(Cut cut, LengthFormat format) => cut switch
     {
         CornerCut clip =>
-            $"{cut.Site} — clip {Text(clip.AlongX, format)} × {Text(clip.AlongY, format)}",
+            $"{BlankShape.Words(cut.Site)} — clip {Text(clip.AlongX, format)} × {Text(clip.AlongY, format)}",
         RoundedCorner rounded =>
-            $"{cut.Site} — round, {Text(rounded.Radius, format)} radius",
+            $"{BlankShape.Words(cut.Site)} — round, {Text(rounded.Radius, format)} radius",
         CurvedEdge { Bow: Bow.Inward } scallop =>
-            $"{cut.Site} — scallop {Text(scallop.Depth, format)} deep",
+            $"{BlankShape.Words(cut.Site)} — scallop {Text(scallop.Depth, format)} deep",
         CurvedEdge curve =>
-            $"{cut.Site} — curve {Text(curve.Depth, format)} deep",
-        _ => cut.Site.ToString(),
+            $"{BlankShape.Words(cut.Site)} — curve {Text(curve.Depth, format)} deep",
+        _ => BlankShape.Words(cut.Site),
     };
+
 
     static string Text(Length length, LengthFormat format)
     {
@@ -1298,14 +1304,6 @@ public partial class MainWindow : Window
     static BoxEdge YEdge(BoxCorner corner) =>
         corner is BoxCorner.SouthWest or BoxCorner.NorthWest ? BoxEdge.West : BoxEdge.East;
 
-    /// <summary>An edge, by compass, in the words the cut list uses.</summary>
-    static string EdgeWord(BoxEdge edge) => edge switch
-    {
-        BoxEdge.South => "south",
-        BoxEdge.East => "east",
-        BoxEdge.North => "north",
-        _ => "west",
-    };
 
     void UpdateMenuEnablement()
     {

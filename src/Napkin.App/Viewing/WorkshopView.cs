@@ -193,11 +193,11 @@ public sealed class WorkshopView : Control
 
         if (BlankShape.CutAt(blank, site) is null)
         {
-            editor.Say(EditSeverity.Hint, $"There is no cut at the {site} to remove.");
+            editor.Say(EditSeverity.Hint, $"There is no cut at the {BlankShape.Words(site)} to remove.");
             return false;
         }
 
-        string what = $"Removed the cut at {blank.Name}'s {site}";
+        string what = $"Removed the cut at {blank.Name}'s {BlankShape.Words(site)}";
         editor.BeginGesture(what);
         editor.Apply(new RemoveCut(blank.Id, site), what);
         editor.EndGesture();
@@ -421,11 +421,11 @@ public sealed class WorkshopView : Control
     static string WhatFor(Box blank, CutSite site, CutModifiers modifiers) =>
         CutTool.GestureFor(site, modifiers) switch
         {
-            CutGesture.Round => $"Rounded {blank.Name}'s {site}",
-            CutGesture.Curve => $"Curved {blank.Name}'s {site}",
+            CutGesture.Round => $"Rounded {blank.Name}'s {BlankShape.Words(site)}",
+            CutGesture.Curve => $"Curved {blank.Name}'s {BlankShape.Words(site)}",
             _ => modifiers.HasFlag(CutModifiers.Equal)
-                ? $"Clipped {blank.Name}'s {site} at 45°"
-                : $"Clipped {blank.Name}'s {site}",
+                ? $"Clipped {blank.Name}'s {BlankShape.Words(site)} at 45°"
+                : $"Clipped {blank.Name}'s {BlankShape.Words(site)}",
         };
 
     /// <summary>What a finished gesture did, named after the cut it actually made.</summary>
@@ -434,11 +434,11 @@ public sealed class WorkshopView : Control
         string name = blank?.Name ?? "the part";
         return cut switch
         {
-            RoundedCorner rounded => $"Rounded {name}'s {site} to a {Show(rounded.Radius)} radius",
-            CurvedEdge { Bow: Bow.Inward } scallop => $"Scalloped {name}'s {site} by {Show(scallop.Depth)}",
-            CurvedEdge curve => $"Curved {name}'s {site} by {Show(curve.Depth)}",
-            CornerCut clip => $"Clipped {name}'s {site}, {Show(clip.AlongX)} by {Show(clip.AlongY)}",
-            _ => $"Cut {name}'s {site}",
+            RoundedCorner rounded => $"Rounded {name}'s {BlankShape.Words(site)} to a {Show(rounded.Radius)} radius",
+            CurvedEdge { Bow: Bow.Inward } scallop => $"Scalloped {name}'s {BlankShape.Words(site)} by {Show(scallop.Depth)}",
+            CurvedEdge curve => $"Curved {name}'s {BlankShape.Words(site)} by {Show(curve.Depth)}",
+            CornerCut clip => $"Clipped {name}'s {BlankShape.Words(site)}, {Show(clip.AlongX)} by {Show(clip.AlongY)}",
+            _ => $"Cut {name}'s {BlankShape.Words(site)}",
         };
     }
 
