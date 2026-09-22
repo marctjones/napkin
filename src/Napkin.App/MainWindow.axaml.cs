@@ -92,6 +92,10 @@ public partial class MainWindow : Window
         DrawingCanvas.ToolboxRequested += (_, _) => ToggleToolbox();
         StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
 
+        // A click on a category icon gives the keyboard back to the drawing, so Escape and M still
+        // reach it; the toolbox has nothing to type into.
+        StockToolboxPanel.AddHandler(Button.ClickEvent, (_, _) => DrawingCanvas.Focus());
+
         WorkshopDrawing.Editor = Editor;
         WorkshopDrawing.SelectedCutChanged += (_, _) => ShowCut();
         WorkshopDrawing.HintChanged += (_, _) => UpdateWorkshopHint();
@@ -1326,6 +1330,7 @@ public partial class MainWindow : Window
         DeleteMenuItem.IsEnabled = anything;
         PinMenuItem.IsEnabled = anything;
         ShapeMenuItem.IsEnabled = Editor.OnlySelected is not null && !IsShapingPart;
+        StockToolboxMenuItem.IsEnabled = !IsShapingPart;
     }
 
     void UpdateMessageBar()
@@ -1389,6 +1394,13 @@ public partial class MainWindow : Window
     /// <summary>Opens the stock toolbox, or closes it and puts down whatever it had picked up.</summary>
     public void ToggleToolbox()
     {
+        // The workshop covers the canvas the toolbox places parts on, and focusing the canvas from
+        // here would take the keyboard away from the blank being shaped.
+        if (IsShapingPart)
+        {
+            return;
+        }
+
         _toolboxOpen = !_toolboxOpen;
         if (!_toolboxOpen)
         {
