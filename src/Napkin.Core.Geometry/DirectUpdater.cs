@@ -106,6 +106,15 @@ public sealed class DirectUpdater : IGeometryUpdater
             {
                 return new Rejected(RejectionReason.RotationNotSupported);
             }
+
+            // A box arrives with its cuts already on it, so it is validated here rather than by a
+            // later SetCut (docs/design/shaped-parts-model.md §2.2).
+            if (CutRules.FirstError(box) is { } cut)
+            {
+                return new Rejected(cut.Kind is ValidationErrorKind.CutDoesNotFit or ValidationErrorKind.NonPositiveArea
+                    ? RejectionReason.CutDoesNotFit
+                    : RejectionReason.CutSiteTaken);
+            }
         }
 
         if (entity is Segment segment

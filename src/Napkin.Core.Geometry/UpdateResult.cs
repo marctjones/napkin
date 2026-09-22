@@ -233,6 +233,17 @@ public enum RejectionReason
     DrivenSize,
 
     /// <summary>
+    /// Another cut is already at that site, or a curved edge claims it — shaped-parts invariants
+    /// 5 and 6 (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.2).
+    /// </summary>
+    CutSiteTaken,
+
+    /// <summary>
+    /// A cut does not fit the blank it is on — shaped-parts invariants 7, 8 and 9.
+    /// </summary>
+    CutDoesNotFit,
+
+    /// <summary>
     /// This updater does not implement that kind of request at all. See
     /// docs/design/geometry-model.md &#xA7;10.
     /// </summary>
