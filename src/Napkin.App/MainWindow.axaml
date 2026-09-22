@@ -349,6 +349,12 @@
                     and always on the toolbar, so real stock is one click away.
                 -->
                 <Border.Styles>
+                    <!-- The icons have no words, so a tooltip is each one's label: it shows as soon
+                         as the pointer is on it, as the stock drawer's size tooltips do — for every
+                         icon in the row, the stock categories' included. -->
+                    <Style Selector=":is(Button)">
+                        <Setter Property="ToolTip.ShowDelay" Value="0" />
+                    </Style>
                     <Style Selector="Path.toolGlyph">
                         <Setter Property="Width" Value="18" />
                         <Setter Property="Height" Value="18" />

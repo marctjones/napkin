@@ -40,7 +40,8 @@ public class ToolbarWorkflows
 
             foreach (Button button in window.ToolButtons)
             {
-                string name = AutomationProperties.GetName(button);
+                string name = AutomationProperties.GetName(button)
+                    ?? throw new InvalidOperationException($"{button.Name} has no automation name.");
                 string tip = Assert.IsType<string>(ToolTip.GetTip(button));
                 Assert.StartsWith(name + ":", tip, StringComparison.Ordinal);
 
@@ -61,22 +62,22 @@ public class ToolbarWorkflows
                 item => Assert.False(item.IsEnabled));
         });
 
-        // Hover the two tools. The toolbar keeps the platform's usual tooltip delay, so sweeping
-        // across it does not flash every tooltip on the way; the headless dispatcher never lets that
-        // timer run out, so what is asserted is that the pointer is on the icon and what its tooltip
-        // will say when it opens.
+        // Hover the two tools: an icon's tooltip is its label, so it opens as soon as the pointer is
+        // on it — for every icon in the row, the stock categories' included.
         app.MoveTo(CentreOf(window, window.SelectToolControl));
-        app.Expect("the pointer rests on the arrow, whose tooltip says Select, and S", () =>
+        app.Expect("hovering the arrow opens a tooltip saying Select, and S", () =>
         {
-            Assert.True(window.SelectToolControl.IsPointerOver, "the hover did not reach the Select icon.");
+            Assert.True(ToolTip.GetIsOpen(window.SelectToolControl), "the Select tooltip did not open.");
             Assert.Equal("Select: pick, move and resize parts (S)", ToolTip.GetTip(window.SelectToolControl));
+            Assert.All(window.ToolButtons, button => Assert.Equal(0, ToolTip.GetShowDelay(button)));
+            Assert.All(window.Toolbox.CategoryButtons.Values, icon => Assert.Equal(0, ToolTip.GetShowDelay(icon)));
         });
 
         app.MoveTo(CentreOf(window, window.RectangleToolControl));
-        app.Expect("the pointer rests on the rectangle, whose tooltip says Rectangle, and R", () =>
+        app.Expect("hovering the rectangle opens a tooltip saying Rectangle, and R", () =>
         {
-            Assert.True(window.RectangleToolControl.IsPointerOver, "the hover did not reach the Rectangle icon.");
-            Assert.False(window.SelectToolControl.IsPointerOver);
+            Assert.True(ToolTip.GetIsOpen(window.RectangleToolControl), "the Rectangle tooltip did not open.");
+            Assert.False(ToolTip.GetIsOpen(window.SelectToolControl), "the Select tooltip stayed open.");
             Assert.Equal("Rectangle: drag out a new part (R)", ToolTip.GetTip(window.RectangleToolControl));
         });
 
