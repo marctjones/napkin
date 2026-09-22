@@ -41,9 +41,11 @@ the finished wall.
   beyond what a table already prescribes.
 - Not a permit-submission platform. No jurisdiction integration, no e-filing.
 - Not a multi-user / collaboration tool in the first betas. Single user, local files.
-- **Not 3D in the first betas.** 2D plan/elevation with live dimensions ships first, deep and
-  solid; 3D visualization is an explicit later phase (see §8), not a requirement of the first
-  working beta.
+- **3D is real, not a visualization phase.** 2D plan/elevation with live dimensions shipped first;
+  Marc decided (2026-09-22) that napkin needs real 3D editing — parts placed and turned in space,
+  not just a preview — designed in
+  [`docs/design/assembly-model.md`](docs/design/assembly-model.md), signed off and authorized for
+  implementation.
 
 ### 2.1 License and dependency policy (decided)
 
@@ -488,7 +490,8 @@ The issue-by-issue breakdown, and which model leads each step, is in
 ## 9. Decided
 
 - **License**: AGPL-3.0 for the project; dependencies permissive or weak-copyleft only (§2.1).
-- **Beta scope is 2D only**, deep and solid, with 3D as an explicit later phase (§2, §8).
+- **Real 3D editing is in scope**, designed in
+  [`docs/design/assembly-model.md`](docs/design/assembly-model.md) and signed off 2026-09-22 (§2).
 - **First-beta constraint handling is direct/explicit geometry**, no general nonlinear solver
   dependency (§5.1) — sidesteps the SolveSpace(GPL)/PlaneGCS(LGPL, C++) licensing and interop
   trade-off entirely for now. The solver is a separate workstream (§11).
