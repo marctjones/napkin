@@ -348,21 +348,9 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: PRJ-005 — The manifest records what the file means")]
-    [Trait("Feature", "PRJ-005")]
-    public void PRJ_005()
-    {
-    }
-
     [Fact(Skip = "planned: PRJ-006 — The project is a documented zip container")]
     [Trait("Feature", "PRJ-006")]
     public void PRJ_006()
-    {
-    }
-
-    [Fact(Skip = "planned: PRJ-007 — Save then load is an identity")]
-    [Trait("Feature", "PRJ-007")]
-    public void PRJ_007()
     {
     }
 
