@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -95,6 +96,7 @@ public partial class MainWindow : Window
         // The stock category icons sit on the main toolbar beside Select and Rectangle, always in
         // reach; the toolbox itself is only the drawer that drops down under the one picked.
         ToolRow.Children.Add(StockToolboxPanel.CategoryRow);
+        BuildStockMenu();
 
         // A click on a category icon or an item gives the keyboard back to the drawing, so Escape
         // still reaches it; the toolbox has nothing to type into.
@@ -219,6 +221,12 @@ public partial class MainWindow : Window
 
     /// <summary>The <em>Draw</em> menu, which reaches everything the toolbar does.</summary>
     public MenuItem DrawMenuItem => DrawMenu;
+
+    /// <summary>
+    /// <em>Draw &#x2192; Stock</em>: one submenu per stock category, in the toolbar's order, each
+    /// holding one item per size.
+    /// </summary>
+    public MenuItem StockMenuItem => StockMenu;
 
     /// <summary>The stock toolbox: its drawer, and through it the category icons on the toolbar.</summary>
     public StockToolbox Toolbox => StockToolboxPanel;
@@ -1377,6 +1385,10 @@ public partial class MainWindow : Window
         DeleteMenuItem.IsEnabled = DeleteToolButton.IsEnabled = anything;
         PinMenuItem.IsEnabled = PinToolButton.IsEnabled = anything;
         ShapeMenuItem.IsEnabled = ShapeToolButton.IsEnabled = shapeable;
+
+        // The shape workshop covers the paper and takes the toolbar's stock icons with it, so the
+        // menu's way in to the same stock goes too: there is no paper to drag it onto.
+        StockMenu.IsEnabled = !IsShapingPart;
     }
 
     void UpdateMessageBar()
@@ -1518,6 +1530,49 @@ public partial class MainWindow : Window
         }
 
         DrawingCanvas.Focus();
+    }
+
+    /// <summary>
+    /// Builds <em>Draw &#x2192; Stock</em>: the toolbox's two levels as two levels of menu — a
+    /// submenu per category, named and explained as its toolbar icon is, and under it an item per
+    /// size with the size's actual dimensions and citation on hover.
+    /// </summary>
+    /// <remarks>
+    /// Picking an item does what the toolbar's two clicks do, through the same code: it opens that
+    /// category's drawer, so the item held is marked in it, and then picks the item exactly as a
+    /// click in the drawer does (<see cref="PickStock"/>). A fastener is listed and cannot be
+    /// placed, by menu as by toolbar.
+    /// </remarks>
+    void BuildStockMenu()
+    {
+        List<MenuItem> categories = [];
+        foreach (StockCategory category in StockToolboxPanel.Library.Categories)
+        {
+            List<MenuItem> sizes = [];
+            foreach (StockItem item in StockToolboxPanel.Library.InCategory(category))
+            {
+                MenuItem size = new() { Header = item.Name, Tag = item };
+                ToolTip.SetTip(size, item.HoverText);
+                AutomationProperties.SetHelpText(size, item.HoverText);
+                size.Click += (_, _) =>
+                {
+                    StockToolboxPanel.ShowCategory(category);
+                    PickStock(item);
+                };
+                sizes.Add(size);
+            }
+
+            MenuItem submenu = new()
+            {
+                Header = StockToolbox.Words(category),
+                Tag = category,
+                ItemsSource = sizes,
+            };
+            ToolTip.SetTip(submenu, ToolTip.GetTip(StockToolboxPanel.CategoryButtons[category]));
+            categories.Add(submenu);
+        }
+
+        StockMenu.ItemsSource = categories;
     }
 
     void ShowRefusal(string what, IReadOnlyList<string> problems)

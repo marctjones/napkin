@@ -32,8 +32,8 @@
                 <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
             </MenuItem>
 
-            <!-- The Draw menu is the toolbar, in the toolbar's order: the tools, then the actions on
-                 the selection. Each item runs the same handler as its toolbar button. -->
+            <!-- The Draw menu is the toolbar, in the toolbar's order: the tools, the actions on the
+                 selection, then the stock. Each item runs the same handler as its toolbar button. -->
             <MenuItem Name="DrawMenu" Header="_Draw">
                 <MenuItem Name="SelectToolMenuItem"
                           Header="_Select"
@@ -60,6 +60,12 @@
                           Header="_Delete"
                           Click="OnDeleteClicked"
                           ToolTip.Tip="Remove the selection, with its relationships." />
+                <Separator />
+                <!-- The toolbar's stock icons, by menu: one submenu per category, one item per
+                     size, built in the code-behind from the same library the toolbox lists. -->
+                <MenuItem Name="StockMenu"
+                          Header="S_tock"
+                          ToolTip.Tip="Real stock by category: pick a size, then drag it onto the paper." />
             </MenuItem>
 
             <!-- Samples are built from SampleFiles.All in the code-behind: one item per scene file
