@@ -323,7 +323,9 @@ public sealed class StockAssignmentTests
 
         Assert.IsType<OverConstrained>(Updater.Apply(pinned, batch));
 
-        // Nothing moved, nothing resized, and the part is still what it was.
+        // What "nothing is half-assigned" means here: OverConstrained carries no sketch, so the
+        // caller still holds this one, in which the width the batch's first request would have
+        // set was never set and the part is still what it was.
         Box unchanged = pinned.Find<Box>(leg_.Id)!;
         Assert.Equal(Length.Inches(4), unchanged.Width);
         Assert.Equal(Length.Inches(2), unchanged.Height);
