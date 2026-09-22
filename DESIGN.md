@@ -147,8 +147,12 @@ constants, and not copied verbatim from any single publisher's compiled table:
 
 - **Lumber**: nominal-to-actual dimension mapping (a "2x4" is 1.5"×3.5", a "4x4" is 3.5"×3.5",
   standard lengths), standard stud spacing (16"/24" OC).
-- **Sheet goods**: standard plywood/OSB sheet sizes (4×8) and actual thickness by nominal
-  thickness (¾" nominal plywood is often actually 23/32"), drywall sheet sizes.
+- **Sheet goods**: standard plywood/OSB sheet sizes (4×8), and actual thickness by Performance
+  Category — panels are designated by a labeled category (e.g. "23/32" or "3/4"), not a nominal-
+  to-actual conversion factor; 23/32 and 3/4 are separate, distinct categories in the product
+  standards (PS 1-19, PS 2-18), not the same panel under two names. Corrected 2026-09-22: an
+  earlier draft of this line (a stated "conversion") did not match what either standard says;
+  see `docs/design/parts-and-cut-list.md` and `Napkin.Core.Materials`.
 - **Decking**: actual dimensions for standard decking board nominal sizes (5/4×6, etc.).
 - **Fasteners**: screw gauge/length, nail penny-size-to-length (16d, 10d, ...), bolt
   diameter/length/thread standards.

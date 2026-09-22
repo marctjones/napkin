@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- The reference tables ship inside the assembly, so the library works from any working
+       directory and an app never has to copy a data folder around. Adding a size is still a data
+       change: edit the JSON, rebuild, no code touched (MAT-005). -->
+  <ItemGroup>
+    <EmbeddedResource Include="data/*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Napkin.Core.Geometry\Napkin.Core.Geometry.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,27 @@
+{
+  "tableVersion": 1,
+  "kind": "stock",
+  "id": "decking-softwood-ps20",
+  "title": "Softwood decking boards: nominal name to minimum dressed dry size",
+  "category": "Decking",
+
+  "citation": {
+    "designation": "PS 20-25",
+    "standard": "Voluntary Product Standard PS 20-25, American Softwood Lumber Standard (January 2025)",
+    "publisher": "U.S. Department of Commerce / National Institute of Standards and Technology, for the American Lumber Standard Committee",
+    "where": "Table 3, \"Nominal and minimum-dressed sizes of boards, dimension, and timbers\", page 15 — the Boards rows, Dry columns. A 5/4 deck board is a board under PS 20-25 §3.4.1 (less than nominal 2 in thick), so its finished size is read out of the Boards block: the standard has no separate decking table. EDITIONS: identical inch values in the previous edition, PS 20-20 (January 2020).",
+    "url": "https://www.nist.gov/document/ps-20-25-final",
+    "retrieved": "2026-09-21"
+  },
+
+  "entries": [
+    { "name": "5/4x4",
+      "sizeClass": "Board", "nominalThickness": "1-1/4", "nominalWidth": "4",
+      "thickness": "1", "width": "3-1/2",
+      "derivation": "Table 3, Boards. Thicknesses: nominal 1-1/4 in -> 25 mm (1 in) dry. Widths: nominal 4 in -> 89 mm (3-1/2 in) dry. \"5/4\" is how a yard writes the nominal 1-1/4 in thickness." },
+    { "name": "5/4x6",
+      "sizeClass": "Board", "nominalThickness": "1-1/4", "nominalWidth": "6",
+      "thickness": "1", "width": "5-1/2",
+      "derivation": "Table 3, Boards. Thicknesses: nominal 1-1/4 in -> 25 mm (1 in) dry. Widths: nominal 6 in -> 140 mm (5-1/2 in) dry." }
+  ]
+}
