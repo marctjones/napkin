@@ -105,11 +105,14 @@ public class StockToolboxWorkflows
         });
 
         // One drag, mostly along x and leaning an inch across: the board is the drag's length and
-        // the stock's width, whatever the pointer did across it.
+        // the stock's width, whatever the pointer did across it. It starts below the drawer, which
+        // hangs down over the top of the paper from its icon on the toolbar.
+        Point boardFrom = At(window, Point2.Inches(-2, -10));
+        Assert.False(OnDrawer(window, boardFrom), "the drag would start on the drawer, not the paper.");
         app.Drag(
-            At(window, Point2.Inches(-2, 10)),
-            At(window, Point2.Inches(10, 10)),
-            At(window, Point2.Inches(24, 11)));
+            boardFrom,
+            At(window, Point2.Inches(10, -10)),
+            At(window, Point2.Inches(24, -9)));
 
         Box board = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>());
 
@@ -159,10 +162,7 @@ public class StockToolboxWorkflows
         // lumber one, so the sheet is dragged out on open paper to the right of it.
         app.Click(CentreOf(window, plywoodButton));
         Point sheetFrom = At(window, Point2.Inches(4, -2));
-        Rect drawerOnScreen = new(
-            window.Toolbox.TranslatePoint(new Point(0, 0), window)!.Value,
-            window.Toolbox.Bounds.Size);
-        Assert.False(drawerOnScreen.Contains(sheetFrom), "the drag would start on the drawer, not the paper.");
+        Assert.False(OnDrawer(window, sheetFrom), "the drag would start on the drawer, not the paper.");
         app.Drag(
             sheetFrom,
             At(window, Point2.Inches(10, 2)),
@@ -227,6 +227,12 @@ public class StockToolboxWorkflows
         Point origin = window.Canvas.TranslatePoint(new Point(0, 0), window)!.Value;
         return new Point(onCanvas.X + origin.X, onCanvas.Y + origin.Y);
     }
+
+    /// <summary>Whether a window point is on the open drawer rather than on the paper.</summary>
+    static bool OnDrawer(MainWindow window, Point point) =>
+        window.IsShowingStockSizes
+        && new Rect(window.Toolbox.TranslatePoint(new Point(0, 0), window)!.Value, window.Toolbox.Bounds.Size)
+            .Contains(point);
 
     static Point CentreOf(Visual root, Visual control)
     {

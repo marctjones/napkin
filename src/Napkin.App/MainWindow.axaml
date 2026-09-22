@@ -32,17 +32,34 @@
                 <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
             </MenuItem>
 
+            <!-- The Draw menu is the toolbar, in the toolbar's order: the tools, then the actions on
+                 the selection. Each item runs the same handler as its toolbar button. -->
             <MenuItem Name="DrawMenu" Header="_Draw">
-                <MenuItem Name="SelectToolMenuItem" Header="_Select" Click="OnSelectToolClicked" />
-                <MenuItem Name="RectangleToolMenuItem" Header="_Rectangle" Click="OnRectangleToolClicked" />
+                <MenuItem Name="SelectToolMenuItem"
+                          Header="_Select"
+                          Click="OnSelectToolClicked"
+                          ToolTip.Tip="Pick, move and resize parts." />
+                <MenuItem Name="RectangleToolMenuItem"
+                          Header="_Rectangle"
+                          Click="OnRectangleToolClicked"
+                          ToolTip.Tip="Drag out a new part." />
                 <Separator />
                 <MenuItem Name="ShapeMenuItem"
                           Header="S_hape…"
                           Click="OnShapeClicked"
                           ToolTip.Tip="Open the selected part in the shape workshop: pick its stock and cut its corners and edges." />
-                <MenuItem Name="DuplicateMenuItem" Header="D_uplicate" Click="OnDuplicateClicked" />
-                <MenuItem Name="PinMenuItem" Header="_Pin in place" Click="OnPinClicked" />
-                <MenuItem Name="DeleteMenuItem" Header="_Delete" Click="OnDeleteClicked" />
+                <MenuItem Name="DuplicateMenuItem"
+                          Header="D_uplicate"
+                          Click="OnDuplicateClicked"
+                          ToolTip.Tip="Copy the selected part a grid step away." />
+                <MenuItem Name="PinMenuItem"
+                          Header="_Pin in place"
+                          Click="OnPinClicked"
+                          ToolTip.Tip="Hold the selection where it is." />
+                <MenuItem Name="DeleteMenuItem"
+                          Header="_Delete"
+                          Click="OnDeleteClicked"
+                          ToolTip.Tip="Remove the selection, with its relationships." />
             </MenuItem>
 
             <!-- Samples are built from SampleFiles.All in the code-behind: one item per scene file
@@ -313,21 +330,94 @@
                     Padding="4"
                     CornerRadius="4"
                     BorderThickness="1">
-                <!-- The stock category icons are appended to this row in the code-behind: they are
-                     StockToolbox's, and always on the toolbar, so real stock is one click away. -->
+                <!--
+                    One row of icons, in StockToolbox's drawing style: an 18-unit line glyph per
+                    button, stroked and filled from the canvas palette in the code-behind, the
+                    function and its key in the tooltip, and the function's name for automation
+                    (an icon has no text for Avalonia to name the button from). Every button here
+                    runs the same handler as its Draw menu item, and the Draw menu reaches every
+                    button here, the stock sizes included.
+
+                    The tools (modes) come first, then the actions on the selection, then the stock
+                    category icons, which are appended in the code-behind: they are StockToolbox's,
+                    and always on the toolbar, so real stock is one click away.
+                -->
+                <Border.Styles>
+                    <Style Selector="Path.toolGlyph">
+                        <Setter Property="Width" Value="18" />
+                        <Setter Property="Height" Value="18" />
+                        <Setter Property="Stretch" Value="Uniform" />
+                        <Setter Property="StrokeThickness" Value="1.2" />
+                    </Style>
+                    <!-- An action with nothing selected to act on is greyed out, as its menu item is;
+                         the glyph's brushes are explicit, so it is dimmed here rather than by the
+                         theme's disabled foreground. -->
+                    <Style Selector="Button:disabled Path.toolGlyph">
+                        <Setter Property="Opacity" Value="0.35" />
+                    </Style>
+                </Border.Styles>
                 <StackPanel Name="ToolRow" Orientation="Horizontal" Spacing="4">
                     <ToggleButton Name="SelectToolButton"
-                                  Content="Select"
-                                  FontSize="12"
-                                  Padding="10,4"
+                                  Padding="5"
                                   Click="OnSelectToolClicked"
-                                  ToolTip.Tip="Pick, move and resize parts (S)" />
+                                  AutomationProperties.Name="Select"
+                                  ToolTip.Tip="Select: pick, move and resize parts (S)">
+                        <!-- A pointer arrow. -->
+                        <Path Classes="toolGlyph"
+                              Data="M4,1 L4,14.5 L7.2,11.4 L9.6,16.8 L11.8,15.8 L9.4,10.4 L13.8,10.4 Z" />
+                    </ToggleButton>
                     <ToggleButton Name="RectangleToolButton"
-                                  Content="Rectangle"
-                                  FontSize="12"
-                                  Padding="10,4"
+                                  Padding="5"
                                   Click="OnRectangleToolClicked"
-                                  ToolTip.Tip="Drag out a new part (R)" />
+                                  AutomationProperties.Name="Rectangle"
+                                  ToolTip.Tip="Rectangle: drag out a new part (R)">
+                        <!-- A plain part outline, with a grip at the corner the drag pulls. -->
+                        <Path Classes="toolGlyph"
+                              Data="M1,4 L14,4 L14,15 L1,15 Z M13,14 L17,14 L17,18 L13,18 Z" />
+                    </ToggleButton>
+
+                    <Border Name="ToolRowActionsDivider" Width="1" Margin="4,3" />
+
+                    <Button Name="ShapeToolButton"
+                            Padding="5"
+                            Click="OnShapeClicked"
+                            AutomationProperties.Name="Shape"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Shape: open the selected part in the shape workshop to pick its stock and cut its corners and edges (C)">
+                        <!-- A blank with one corner cut off, and the offcut beside it. -->
+                        <Path Classes="toolGlyph"
+                              Data="M1,5 L10,5 L15,10 L15,17 L1,17 Z M12,2 L17,2 L17,7 Z" />
+                    </Button>
+                    <Button Name="DuplicateToolButton"
+                            Padding="5"
+                            Click="OnDuplicateClicked"
+                            AutomationProperties.Name="Duplicate"
+                            ToolTip.Tip="Duplicate: copy the selected part a grid step away (D)">
+                        <!-- Two overlapping parts: the copy in front of the original. -->
+                        <Path Classes="toolGlyph"
+                              Data="M1,1 L12,1 L12,6 L6,6 L6,12 L1,12 Z M6,6 L17,6 L17,17 L6,17 Z" />
+                    </Button>
+                    <Button Name="PinToolButton"
+                            Padding="5"
+                            Click="OnPinClicked"
+                            AutomationProperties.Name="Pin in place"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Pin in place: hold the selection where it is (P)">
+                        <!-- A drawing pin: head, body, collar, and its point. -->
+                        <Path Classes="toolGlyph"
+                              Data="M5,1 L13,1 L13,3 L11.5,3 L11.5,8 L14.5,11 L3.5,11 L6.5,8 L6.5,3 L5,3 Z M9,11 L9,18" />
+                    </Button>
+                    <Button Name="DeleteToolButton"
+                            Padding="5"
+                            Click="OnDeleteClicked"
+                            AutomationProperties.Name="Delete"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Delete: remove the selection, with its relationships (Delete)">
+                        <!-- A waste bin: lid with its handle, and a tapered body with two ribs. -->
+                        <Path Classes="toolGlyph"
+                              Data="M7,1 L11,1 L11,3 L7,3 Z M2,3 L16,3 L16,5 L2,5 Z M3.5,5 L14.5,5 L13.5,17 L4.5,17 Z M7.5,7.5 L7.5,14.5 M10.5,7.5 L10.5,14.5" />
+                    </Button>
+
                     <Border Name="ToolRowDivider" Width="1" Margin="4,3" />
                 </StackPanel>
             </Border>

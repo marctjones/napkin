@@ -191,6 +191,35 @@ public partial class MainWindow : Window
     /// <summary>The select tool's button.</summary>
     public ToggleButton SelectToolControl => SelectToolButton;
 
+    /// <summary>The toolbar's Shape button, which opens the selected part in the shape workshop.</summary>
+    public Button ShapeToolControl => ShapeToolButton;
+
+    /// <summary>The toolbar's Duplicate button.</summary>
+    public Button DuplicateToolControl => DuplicateToolButton;
+
+    /// <summary>The toolbar's Pin in place button.</summary>
+    public Button PinToolControl => PinToolButton;
+
+    /// <summary>The toolbar's Delete button.</summary>
+    public Button DeleteToolControl => DeleteToolButton;
+
+    /// <summary>
+    /// Every icon button on the toolbar ahead of the stock categories, in the order it shows them:
+    /// the tools, then the actions on the selection.
+    /// </summary>
+    public IReadOnlyList<Button> ToolButtons =>
+    [
+        SelectToolButton,
+        RectangleToolButton,
+        ShapeToolButton,
+        DuplicateToolButton,
+        PinToolButton,
+        DeleteToolButton,
+    ];
+
+    /// <summary>The <em>Draw</em> menu, which reaches everything the toolbar does.</summary>
+    public MenuItem DrawMenuItem => DrawMenu;
+
     /// <summary>The stock toolbox: its drawer, and through it the category icons on the toolbar.</summary>
     public StockToolbox Toolbox => StockToolboxPanel;
 
@@ -1337,12 +1366,17 @@ public partial class MainWindow : Window
         corner is BoxCorner.SouthWest or BoxCorner.NorthWest ? BoxEdge.West : BoxEdge.East;
 
 
+    /// <summary>
+    /// Greys out what has nothing to act on — the menu item and its toolbar button together, so
+    /// the two never disagree about whether a function is available.
+    /// </summary>
     void UpdateMenuEnablement()
     {
         bool anything = Editor.Selection.Count > 0;
-        DeleteMenuItem.IsEnabled = anything;
-        PinMenuItem.IsEnabled = anything;
-        ShapeMenuItem.IsEnabled = Editor.OnlySelected is not null && !IsShapingPart;
+        bool shapeable = Editor.OnlySelected is not null && !IsShapingPart;
+        DeleteMenuItem.IsEnabled = DeleteToolButton.IsEnabled = anything;
+        PinMenuItem.IsEnabled = PinToolButton.IsEnabled = anything;
+        ShapeMenuItem.IsEnabled = ShapeToolButton.IsEnabled = shapeable;
     }
 
     void UpdateMessageBar()
@@ -1529,7 +1563,18 @@ public partial class MainWindow : Window
         ToolBar.Background = paper;
         ToolBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
         ToolRowDivider.Background = new SolidColorBrush(palette.GridMajor);
+        ToolRowActionsDivider.Background = new SolidColorBrush(palette.GridMajor);
         StockToolboxPanel.ApplyPalette(palette);
+
+        // The tool icons are drawn the way the stock category icons are, so the row reads as one.
+        foreach (Button button in ToolButtons)
+        {
+            if (button.Content is Avalonia.Controls.Shapes.Path glyph)
+            {
+                glyph.Stroke = new SolidColorBrush(palette.Dimension);
+                glyph.Fill = new SolidColorBrush(palette.PreviewFill);
+            }
+        }
 
         RelationshipsPanel.Background = paper;
         RelationshipsPanel.BorderBrush = new SolidColorBrush(palette.GridMajor);
@@ -1604,6 +1649,7 @@ public partial class MainWindow : Window
         SelectToolMenuItem.InputGesture = new KeyGesture(Key.S);
         RectangleToolMenuItem.InputGesture = new KeyGesture(Key.R);
         ShapeMenuItem.InputGesture = new KeyGesture(Key.C);
+        DuplicateMenuItem.InputGesture = new KeyGesture(Key.D);
         PinMenuItem.InputGesture = new KeyGesture(Key.P);
         DeleteMenuItem.InputGesture = new KeyGesture(Key.Delete);
         UpdateMenuEnablement();
