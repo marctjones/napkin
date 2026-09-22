@@ -1,9 +1,10 @@
 # The viewer
 
-napkin's first window (issue #36, milestone **M1 Look**): it opens a design file and draws it in
-plan view, and lets you move around it. Nothing in it edits anything — there is no tool, no handle
-and no save. That is the whole of M1 on purpose: the drawing and the navigation have to feel right
-before anything is allowed to change the model.
+napkin's window (issue #36, milestone **M1 Look**): it opens a design file and draws it in plan
+view, and lets you move around it. M1 was the whole of that on purpose — the drawing and the
+navigation had to feel right before anything was allowed to change the model — and M2 added
+drawing and editing on top of it without changing any of it. M3's cut list and properties panel
+are the sections below the controls.
 
 ![The coffee-table sample](screenshots/m1-coffee-table.png)
 
@@ -54,6 +55,7 @@ configure; the sample files ship inside the build.
 | **+** / **-** | Zoom in and out about the centre of the window. |
 | **Ctrl/Cmd + 0** | Zoom to fit: frame everything, dimension lines included, with a margin. |
 | **Ctrl/Cmd + 1**, **Ctrl/Cmd + 2** | Open the first or second sample. |
+| **Ctrl/Cmd + L** | Open the cut list, or bring it forward. |
 | **Escape** | Dismiss a refusal message. |
 
 Left-drag pans because M1 has nothing to select. When editing lands (#10) the left button becomes
@@ -63,6 +65,37 @@ change.
 Zoom is limited at both ends — from an inch drawn at a fiftieth of a pixel, which fits a
 1,500-foot site in a window, to an inch drawn across 2,400 pixels, which is finer than the
 1/1024″ grid anything is stored on.
+
+## The cut list, and what makes a box a part
+
+**Ctrl/Cmd + L**, or *View → Cut list*, opens a window listing every piece the design says to cut:
+the part's name, how many, its finished length, width and thickness, and what it is cut from. It is
+not modal and it is not a snapshot — it follows the drawing, so an edit with the list open changes
+the row. Every column sorts, and sorting reorders what is shown and changes no number. The header
+line says what the list is before: **saw kerf and joinery allowance**, neither of which napkin
+knows about (`docs/design/parts-and-cut-list.md` §1.3).
+
+A box is not a piece to cut until somebody says so, because a plan view holds two of a part's three
+dimensions and only the person drawing knows which two. Select a box and the **properties panel**
+appears at the bottom right:
+
+| Field | What it is |
+|---|---|
+| Name | What the part is called. Not an id, not unique — four legs may all be "Leg". |
+| This is a piece to cut | Off for a wall or an opening, which stay off the cut list. |
+| Across / Up | Which of *length*, *width* and *thickness* the box's own width and height are. |
+| The third field | The one dimension the plan cannot hold. It is labelled with whichever name the two above did not claim. |
+| Qty | How many identical copies this one box stands for — the four legs you draw once. |
+| Stock | A nominal name, spelled however you like: "2x4", "2 x 4", "2×4" are one stock. |
+| Species | Free text. This build never interprets it. |
+
+The stock line under the field is the materials library's own: type `2 x 4` and it reads
+`2x4 — actual 1 1/2" x 3 1/2", PS 20-25` before anything is applied. A name the library does not
+carry is allowed and says so — the cut list reports it unresolved rather than guessing, so a
+project drawn against a table a later build renames still opens and still lists.
+
+The icon-per-category picker of issue #7's design — a floating toolbox, one icon per category, a
+text list inside the chosen one — is not built yet; the typed field is what there is.
 
 ## The status line
 
