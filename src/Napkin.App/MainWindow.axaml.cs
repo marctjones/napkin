@@ -443,6 +443,12 @@ public partial class MainWindow : Window
     // Saving, and not losing what has not been saved
     // ---------------------------------------------------------------------------------------
 
+    /// <summary>The <em>File</em> menu.</summary>
+    public MenuItem FileMenuItem => FileMenu;
+
+    /// <summary>The <em>File &#x2192; Exit</em> item.</summary>
+    public MenuItem ExitMenuEntry => ExitMenuItem;
+
     /// <summary>The <em>File &#x2192; Save</em> item.</summary>
     public MenuItem SaveMenuEntry => SaveMenuItem;
 
