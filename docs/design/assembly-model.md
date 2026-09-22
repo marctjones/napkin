@@ -1,14 +1,14 @@
 # Assembly: parts in three dimensions
 
-Status: **DRAFT — awaiting Marc's sign-off, not yet authorized for implementation.** No issue filed
-yet. This is scope Marc placed on no milestone: it extends the geometry kernel (#5), the editor
-(#10), the parts model (#8) and the file format (#6), and it supersedes DESIGN.md §2's "Not 3D in
-the first betas" and §9's "Beta scope is 2D only", both of which are updated on sign-off (§11,
-decision 14). Everything in §1–§10 stands as the working design until he says otherwise; §11 lists
-what is genuinely his call, each with the recommendation that holds until overridden. **Revised
-the same day** after Marc's correction that a sawhorse must be designable: §3a adds angled
-members without a solver, §3.3, §6, §9, §10 and §11 are updated to match, and the headline claim
-is qualified where it needed to be (§3.1). §11 decisions 17–24 are the new calls.
+Status: **Signed off by Marc, 2026-09-23 ("do your recommendations").** All 24 decisions in §11 are
+accepted as recommended, with no exceptions. Authorized for implementation per §10. No issue filed
+yet for §1–§10 themselves; this extends the geometry kernel (#5), the editor (#10), the parts model
+(#8) and the file format (#6), and it supersedes DESIGN.md §2's "Not 3D in the first betas" and
+§9's "Beta scope is 2D only" (§11 decision 14 — update both on the first implementation commit).
+It belongs to no milestone until Marc places it. **Revised the same day it was first drafted**
+after Marc's correction that a sawhorse must be designable: §3a adds angled members without a
+solver, §3.3, §6, §9, §10 and §11 are updated to match, and the headline claim is qualified where
+it needed to be (§3.1). §11 decisions 17–24 are the calls that revision added.
 
 Design document written by Fable per [`PLAN.md`](../../PLAN.md): a foundation every later phase
 builds on, where a wrong choice is a silent, expensive one. It decides how a part that today lives
