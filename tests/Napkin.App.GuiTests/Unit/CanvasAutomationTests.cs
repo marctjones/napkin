@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Automation.Peers;
 using Avalonia.Automation.Provider;
 using Avalonia.Controls;
+using Napkin.App.Designs;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
@@ -124,6 +125,13 @@ public class CanvasAutomationTests
             AutomationPeer part = Assert.Single(canvas.GetChildren());
 
             AssertClose(Drawn(window, canvas), part.GetBoundingRectangle());
+
+            // The rectangle a Windows client is actually handed is
+            // Peer.ToScreen(Peer.GetBoundingRectangle()), and ToScreenCore's default — the one a
+            // peer deriving straight from AutomationPeer would inherit, because the hook is
+            // private protected — returns null, which the Win32 bridge publishes as an empty
+            // rectangle. This assertion is what holds PartAutomationPeer to owning a control.
+            Assert.NotNull(part.ToScreen(part.GetBoundingRectangle()));
 
             // Panning moves the part's element with its pixels, because the rectangle is read from
             // the view transform every time rather than captured when the element was made.
@@ -248,6 +256,52 @@ public class CanvasAutomationTests
             Assert.Equal("Zoom In", Named(root, "ZoomInMenuItem"));
             Assert.Equal("Zoom Out", Named(root, "ZoomOutMenuItem"));
         });
+    }
+
+    /// <summary>
+    /// The Samples menu's items are built in the code-behind, one per shipped scene file, with no
+    /// <c>x:Name</c> and no automation id — so this is the one place where a name has to come from
+    /// the <c>Header</c> the code set, and it does.
+    /// </summary>
+    [Fact]
+    public void The_samples_built_in_code_are_named_too()
+    {
+        HeadlessWindow.Run(window =>
+        {
+            AutomationPeer root = ControlAutomationPeer.CreatePeerForElement(window);
+            window.SamplesMenuItem.IsSubMenuOpen = true;
+            HeadlessWindow.Settle();
+
+            AutomationPeer samples = Find(root, "SamplesMenu", 0)
+                ?? throw new InvalidOperationException("No Samples menu.");
+
+            List<string?> named = [];
+            Collect(samples, named, 0);
+
+            Assert.NotEmpty(window.Samples);
+            foreach (IDesignSource sample in window.Samples)
+            {
+                Assert.Contains(sample.Name, named);
+            }
+        });
+    }
+
+    static void Collect(AutomationPeer peer, List<string?> names, int depth)
+    {
+        if (peer.GetAutomationControlType() == AutomationControlType.MenuItem)
+        {
+            names.Add(peer.GetName());
+        }
+
+        if (depth > 25)
+        {
+            return;
+        }
+
+        foreach (AutomationPeer child in peer.GetChildren())
+        {
+            Collect(child, names, depth + 1);
+        }
     }
 
     static AutomationPeer Peer(Control control) =>

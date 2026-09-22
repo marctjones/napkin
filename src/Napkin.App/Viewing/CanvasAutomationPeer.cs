@@ -95,10 +95,13 @@ public sealed class CanvasAutomationPeer : ControlAutomationPeer
 /// <strong>Why it is a <see cref="ControlAutomationPeer"/> over the canvas rather than a bare
 /// <see cref="AutomationPeer"/>.</strong> A part has no <see cref="Control"/> of its own — it is
 /// drawn. The obvious shape, deriving <see cref="AutomationPeer"/> directly, cannot report a usable
-/// bounding rectangle: the hook that turns a peer's top-level rectangle into screen coordinates,
-/// <c>AutomationPeer.ToScreenCore</c>, is <c>private protected</c> in Avalonia 12.1.2 and its
-/// default returns <see langword="null"/>, and both platform bridges ask for
-/// <c>peer.ToScreen(peer.GetBoundingRectangle())</c>. Deriving from
+/// bounding rectangle to a Windows client: the hook that turns a peer's top-level rectangle into
+/// screen coordinates, <c>AutomationPeer.ToScreenCore</c>, is <c>private protected</c> in Avalonia
+/// 12.1.2 and its default returns <see langword="null"/>, and that version's
+/// <c>Avalonia.Win32.Automation.AutomationNode.GetBoundingRectangle</c> is
+/// <c>Peer.ToScreen(Peer.GetBoundingRectangle()) ?? default</c> — so a bare peer would publish an
+/// empty rectangle over UIA. (The macOS bridge reads <c>GetBoundingRectangle</c> directly and
+/// converts on its own side, so it would not have minded; Windows decides this.) Deriving from
 /// <see cref="ControlAutomationPeer"/> with the canvas as the owner inherits the working
 /// conversion — the part's rectangle is the canvas's window, so the canvas is the right thing to
 /// convert against — and every other inherited answer that would be about the canvas rather than

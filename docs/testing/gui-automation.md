@@ -226,7 +226,12 @@ accessibility, or a test script walking the UI by name rather than by pixel.
 
 Avalonia builds an **automation peer tree** beside the visual tree, and its platform bridges publish
 it: `Avalonia.Win32.Automation` to Windows UIA (`IRawElementProviderSimple`, linked against
-`UIAutomationCore`) and `Avalonia.Native`'s `IAvnAutomationPeer` to macOS accessibility. The
+`UIAutomationCore`) and `Avalonia.Native`'s `IAvnAutomationPeer` to macOS accessibility. A peer
+reports its rectangle in **top-level** coordinates, not screen coordinates; at 12.1.2 the Windows
+bridge converts with `Peer.ToScreen(Peer.GetBoundingRectangle()) ?? default` and the macOS bridge
+hands `GetBoundingRectangle()` straight to the native side. That `?? default` is why
+`PartAutomationPeer` owns a control rather than deriving from `AutomationPeer` directly — the
+comment on the class explains it, and a test holds it. The
 standard controls all have peers already, so the menus, the tool buttons and the status-line text
 are walkable with no work from us — **including their names**, which Avalonia derives from `Header`
 and `Content` with the access-key underscore stripped (`Header="_File"` reads as "File"), and their
@@ -256,8 +261,9 @@ nothing about its element went stale.
 process**, against a real shown window, through the same public entry point a bridge uses
 (`ControlAutomationPeer.CreatePeerForElement`). It asserts the canvas is reachable from the window
 root and named, that the parts of a design are its children with the right names, ids, values,
-rectangles and parent, that the tree follows the sketch, and that the menu items and tool buttons
-carry the names Avalonia derived for them.
+rectangles and parent, that `ToScreen` gives a rectangle rather than the null a bare peer would,
+that the tree follows the sketch, and that the menu items and tool buttons — including the samples
+built in the code-behind — carry the names Avalonia derived for them.
 
 **That is one level of proof, and it is not the same as the one a person cares about.** The peer
 tree is what the bridges publish, but nothing here shows that a real screen reader — VoiceOver,
