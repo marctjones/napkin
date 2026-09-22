@@ -312,7 +312,10 @@ public static class MaterialsReader
                 StockCategory.SheetGood => ReadPanel(fields, path, common),
                 StockCategory.HardwoodBoard => ReadHardwood(fields, path, common),
                 StockCategory.Fastener => ReadFastener(fields, path, common),
-                _ => UnsupportedCategory(path, category),
+
+                // Not a file problem: every category this build defines is read above, so this is
+                // only reachable by adding one to the enum and forgetting to read its entries.
+                _ => throw new InvalidOperationException($"No entry reader for the \"{category}\" category."),
             };
 
             item = TakeStandardLengths(fields, path, item, lengthSource);
@@ -328,15 +331,6 @@ public static class MaterialsReader
             StockCategory Category,
             Citation? Source,
             string Derivation);
-
-        private StockItem? UnsupportedCategory(string path, StockCategory category)
-        {
-            Add(
-                MaterialsProblemKind.UnknownValue,
-                path,
-                $"This build does not know how to read the entries of a \"{category}\" table yet.");
-            return null;
-        }
 
         private StockItem? TakeStandardLengths(JsonFields fields, string path, StockItem? item, Citation? lengthSource)
         {
