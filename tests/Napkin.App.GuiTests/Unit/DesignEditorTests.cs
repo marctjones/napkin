@@ -60,8 +60,11 @@ public class DesignEditorTests
     [Fact]
     public void Opening_a_file_with_no_names_in_it_numbers_what_it_has()
     {
-        // The scene format stores no name per entity (docs/file-format.md), so a design read from
-        // a file arrives unlabelled and would otherwise be listed by GUID.
+        // A design whose entities carry no name — one built in code, or a file whose names are all
+        // empty strings — would otherwise be listed by GUID, so the editor numbers what it has.
+        // The sketch itself is untouched: the application may not build one (CVS-005), and a name
+        // that is not in the file belongs in the design's own side table until a SetName request
+        // puts it on the entity.
         DesignEditor editor = new();
         Sketch sketch = Sketch.Empty
             .WithEntity(new Box(EditingBuilder.Id(0), LayerId.Default, Point2.Origin, Length.Inches(10), Length.Inches(10), Angle.Zero))

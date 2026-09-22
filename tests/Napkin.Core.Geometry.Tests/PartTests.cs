@@ -164,6 +164,68 @@ public class PartTests
 
     [Trait("Feature", "CUT-001")]
     [Fact]
+    public void A_box_becomes_a_part_and_stops_being_one_through_the_updater()
+    {
+        // Making a box a piece somebody cuts is the one thing that turns a drawing into a cut
+        // list, and it changes no dimension: the two in-plan dimensions are the box's own.
+        SketchBuilder builder = new();
+        EntityId id = builder.AddBox(0, 0, 10, 4);
+        DirectUpdater updater = new();
+        Part part = new("2x4", null, 2, Length.Inches(2), new PlanAxes(PartDimension.Length, PartDimension.Width));
+
+        Solved named = Assert.IsType<Solved>(updater.Apply(builder.Sketch, new SetName(id, "Rail, front")));
+        Assert.Equal("Rail, front", named.Sketch.Find(id)!.Name);
+        Assert.Equal([id], named.Changes.Modified);
+
+        Solved made = Assert.IsType<Solved>(updater.Apply(named.Sketch, new SetPart(id, part)));
+        Box box = Assert.IsType<Box>(made.Sketch.Find(id));
+        Assert.Equal(part, box.Part);
+        Assert.Equal("Rail, front", box.Name);
+        Assert.Equal(Length.Inches(10), box.Width);
+        Assert.Equal(Length.Inches(4), box.Height);
+
+        // And back to a plain box, which is what an opening drawn with the same tool is.
+        Solved plain = Assert.IsType<Solved>(updater.Apply(made.Sketch, new SetPart(id, null)));
+        Assert.Null(Assert.IsType<Box>(plain.Sketch.Find(id)).Part);
+
+        // An empty name is a legal "unnamed", not a refusal.
+        Solved unnamed = Assert.IsType<Solved>(updater.Apply(plain.Sketch, new SetName(id, string.Empty)));
+        Assert.Empty(unnamed.Sketch.Find(id)!.Name);
+    }
+
+    [Trait("Feature", "CUT-001")]
+    [Fact]
+    public void Only_a_box_that_is_there_can_be_named_or_made_a_part()
+    {
+        SketchBuilder builder = new();
+        EntityId box = builder.AddBox(0, 0, 10, 4);
+        EntityId node = builder.AddNode(0, 0);
+        EntityId missing = EntityId.New();
+        DirectUpdater updater = new();
+        Part part = new(null, null, 1, Length.Inches(1), new PlanAxes(PartDimension.Length, PartDimension.Width));
+
+        Assert.Equal(
+            RejectionReason.UnknownEntity,
+            Assert.IsType<Rejected>(updater.Apply(builder.Sketch, new SetName(missing, "Nothing"))).Reason);
+        Assert.Equal(
+            RejectionReason.UnknownEntity,
+            Assert.IsType<Rejected>(updater.Apply(builder.Sketch, new SetPart(missing, part))).Reason);
+
+        // A node has no size and a dimension is an annotation, so neither is a piece to cut.
+        Assert.Equal(
+            RejectionReason.DanglingReference,
+            Assert.IsType<Rejected>(updater.Apply(builder.Sketch, new SetPart(node, part))).Reason);
+
+        // A node can still be named — a name is on every entity, not only on a box.
+        Assert.Equal(
+            "West end",
+            Assert.IsType<Solved>(updater.Apply(builder.Sketch, new SetName(node, "West end"))).Sketch.Find(node)!.Name);
+
+        Assert.IsType<Solved>(updater.Apply(builder.Sketch, new SetPart(box, part)));
+    }
+
+    [Trait("Feature", "CUT-001")]
+    [Fact]
     public void A_box_with_no_part_is_a_box_as_it_always_was()
     {
         Box plain = Box(10240, 4096);

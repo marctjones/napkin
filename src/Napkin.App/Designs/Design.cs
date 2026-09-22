@@ -51,7 +51,14 @@ public sealed record Design(
     }
 
     /// <summary>The name to draw on an entity, or null when it has none.</summary>
-    public string? LabelFor(EntityId id) => Labels.TryGetValue(id, out string? label) ? label : null;
+    /// <remarks>
+    /// The entity's own <see cref="Entity.Name"/> wins, because since format version 2 that is
+    /// what a file carries and what a save writes back. <see cref="Labels"/> is the fallback, for
+    /// a name the design has and the sketch does not.
+    /// </remarks>
+    public string? LabelFor(EntityId id) => Sketch.Find(id)?.Name is { Length: > 0 } name
+        ? name
+        : Labels.TryGetValue(id, out string? label) ? label : null;
 }
 
 /// <summary>Something the viewer can open.</summary>

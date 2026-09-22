@@ -191,6 +191,78 @@
                 </StackPanel>
             </Border>
 
+            <!--
+                What the selected part is, as opposed to where it is: its name, the one dimension
+                the plan cannot hold, which of the three the drawing is showing, and what stock it
+                is cut from. This is the only way a box somebody drew becomes a piece somebody
+                cuts (docs/design/parts-and-cut-list.md §1).
+            -->
+            <Border Name="PropertiesPanel"
+                    IsVisible="False"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="10"
+                    Padding="10,8"
+                    Width="248"
+                    CornerRadius="4"
+                    BorderThickness="1">
+                <StackPanel Spacing="6">
+                    <TextBlock Name="PropertiesHeadline"
+                               Text="Part"
+                               FontSize="12"
+                               FontWeight="SemiBold" />
+
+                    <TextBox Name="PartNameBox" FontSize="12" Watermark="Name" />
+
+                    <CheckBox Name="IsPartCheck"
+                              Content="This is a piece to cut"
+                              FontSize="12"
+                              IsCheckedChanged="OnIsPartChanged"
+                              ToolTip.Tip="A wall or an opening is a box nobody cuts, and stays off the cut list." />
+
+                    <StackPanel Name="PartFields" Spacing="6" IsVisible="False">
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Across" FontSize="11"
+                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <ComboBox Name="PlanXBox" Grid.Row="0" Grid.Column="1" FontSize="12"
+                                      HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Up" FontSize="11"
+                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <ComboBox Name="PlanYBox" Grid.Row="1" Grid.Column="1" FontSize="12"
+                                      HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+
+                            <TextBlock Name="OutOfPlaneCaption" Grid.Row="2" Grid.Column="0"
+                                       Text="Thickness" FontSize="11"
+                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox Name="OutOfPlaneBox" Grid.Row="2" Grid.Column="1" FontSize="12"
+                                     Watermark="3/4&quot;" Margin="0,0,0,4" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Qty" FontSize="11"
+                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox Name="QuantityBox" Grid.Row="3" Grid.Column="1" FontSize="12"
+                                     Watermark="1" />
+                        </Grid>
+
+                        <TextBox Name="StockBox" FontSize="12" Watermark="Stock, e.g. 2x4" />
+                        <TextBlock Name="StockReadout" FontSize="10" Opacity="0.8" TextWrapping="Wrap" />
+                        <TextBox Name="SpeciesBox" FontSize="12" Watermark="Species" />
+                    </StackPanel>
+
+                    <Button Name="ApplyPartButton"
+                            Content="Apply"
+                            FontSize="12"
+                            Padding="10,3"
+                            HorizontalAlignment="Right"
+                            Click="OnApplyPartClicked" />
+
+                    <TextBlock Name="PropertiesError"
+                               IsVisible="False"
+                               FontSize="11"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
             <!-- Its colours come from the canvas palette in the code-behind, not from a theme
                  resource: the panel sits on the drawing, so it should be lit the same way, and a
                  resource name that failed to resolve would leave it with no background at all —

@@ -25,7 +25,7 @@ public class EditToolTests
         tool.MoveTo(Point2.Inches(16, 17));
 
         EntityId id = EntityId.New();
-        Assert.True(tool.TryComplete(LayerId.Default, id, out Request? request));
+        Assert.True(tool.TryComplete(LayerId.Default, id, "Part 1", out Request? request));
 
         AddEntity add = Assert.IsType<AddEntity>(request);
         Box box = Assert.IsType<Box>(add.Entity);
@@ -58,7 +58,7 @@ public class EditToolTests
         tool.Begin(Point2.Inches(4, 5));
 
         Assert.False(tool.TryRectangle(out _, out _, out _));
-        Assert.False(tool.TryComplete(LayerId.Default, EntityId.New(), out Request? request));
+        Assert.False(tool.TryComplete(LayerId.Default, EntityId.New(), "Part 1", out Request? request));
         Assert.Null(request);
     }
 
@@ -71,7 +71,7 @@ public class EditToolTests
         tool.Cancel();
 
         Assert.False(tool.IsDrawing);
-        Assert.False(tool.TryComplete(LayerId.Default, EntityId.New(), out _));
+        Assert.False(tool.TryComplete(LayerId.Default, EntityId.New(), "Part 1", out _));
     }
 
     [Fact]

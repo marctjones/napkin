@@ -10,6 +10,7 @@ using Design = Napkin.App.Designs.Design;
 using Napkin.App.Editing;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
+using Napkin.Core.Materials;
 
 namespace Napkin.App;
 
@@ -39,10 +40,22 @@ namespace Napkin.App;
 /// </remarks>
 public partial class MainWindow : Window
 {
+    /// <summary>
+    /// What the properties panel offers when a plain box is about to become a part: 3/4 inch
+    /// thick, lying flat. Nothing about a box says which it is, so something has to be first.
+    /// </summary>
+    static readonly Part DefaultPart = new(
+        Stock: null,
+        Species: null,
+        Quantity: 1,
+        new Length(768),
+        new PlanAxes(PartDimension.Length, PartDimension.Width));
+
     readonly List<MenuItem> _sampleItems = [];
     ISceneFilePicker _filePicker;
     CutListWindow? _cutList;
     bool _opening;
+    bool _showingProperties;
     EntityId? _editingBox;
     SizeAxis _editingAxis = SizeAxis.Width;
 
@@ -500,6 +513,227 @@ public partial class MainWindow : Window
         }
 
         UpdateMenuEnablement();
+        ShowProperties();
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // The properties panel: what the selected part is, as opposed to where it is
+    // ---------------------------------------------------------------------------------------
+
+    /// <summary>The properties panel.</summary>
+    public Border Properties => PropertiesPanel;
+
+    /// <summary>Whether the properties panel is on screen.</summary>
+    public bool IsShowingProperties => PropertiesPanel.IsVisible;
+
+    /// <summary>The field the selected part's name is typed into.</summary>
+    public TextBox PartNameField => PartNameBox;
+
+    /// <summary>The box that says whether the selection is a piece to cut.</summary>
+    public CheckBox IsPartField => IsPartCheck;
+
+    /// <summary>The field the out-of-plane dimension is typed into.</summary>
+    public TextBox OutOfPlaneField => OutOfPlaneBox;
+
+    /// <summary>The field the quantity is typed into.</summary>
+    public TextBox QuantityField => QuantityBox;
+
+    /// <summary>The field a stock name is typed into.</summary>
+    public TextBox StockField => StockBox;
+
+    /// <summary>The field a species is typed into.</summary>
+    public TextBox SpeciesField => SpeciesBox;
+
+    /// <summary>Which of the three dimensions the box's width is.</summary>
+    public ComboBox PlanAcross => PlanXBox;
+
+    /// <summary>Which of the three dimensions the box's height is.</summary>
+    public ComboBox PlanUp => PlanYBox;
+
+    /// <summary>The button that puts the panel's contents on the part.</summary>
+    public Button ApplyPart => ApplyPartButton;
+
+    /// <summary>What the stock line says: the library's own hover text, or why it did not resolve.</summary>
+    public string StockReadoutText => StockReadout.Text ?? string.Empty;
+
+    /// <summary>What the panel is complaining about, or empty when it is not.</summary>
+    public string PropertiesErrorText => PropertiesError.IsVisible ? PropertiesError.Text ?? string.Empty : string.Empty;
+
+    /// <summary>
+    /// Fills the properties panel from the selection, or hides it when there is nothing to fill it
+    /// from.
+    /// </summary>
+    void ShowProperties()
+    {
+        if (Editor.OnlySelectedBox is not { } box)
+        {
+            PropertiesPanel.IsVisible = false;
+            return;
+        }
+
+        _showingProperties = true;
+        try
+        {
+            PropertiesPanel.IsVisible = true;
+            PropertiesError.IsVisible = false;
+
+            PartNameBox.Text = box.Name;
+            IsPartCheck.IsChecked = box.Part is not null;
+            PartFields.IsVisible = box.Part is not null;
+
+            FillDimensionChoices();
+
+            Part part = box.Part ?? DefaultPart;
+            PlanXBox.SelectedItem = SceneWords.Of(part.PlanAxes.X);
+            PlanYBox.SelectedItem = SceneWords.Of(part.PlanAxes.Y);
+            OutOfPlaneBox.Text = part.OutOfPlane.Format(Editor.LabelFormat).Text;
+            QuantityBox.Text = part.Quantity.ToString(CultureInfo.InvariantCulture);
+            StockBox.Text = part.Stock ?? string.Empty;
+            SpeciesBox.Text = part.Species ?? string.Empty;
+
+            UpdateOutOfPlaneCaption();
+            UpdateStockReadout();
+        }
+        finally
+        {
+            _showingProperties = false;
+        }
+    }
+
+    void FillDimensionChoices()
+    {
+        if (PlanXBox.ItemsSource is not null)
+        {
+            return;
+        }
+
+        PlanXBox.ItemsSource = SceneWords.Dimensions;
+        PlanYBox.ItemsSource = SceneWords.Dimensions;
+        PlanXBox.SelectionChanged += (_, _) => UpdateOutOfPlaneCaption();
+        PlanYBox.SelectionChanged += (_, _) => UpdateOutOfPlaneCaption();
+        StockBox.TextChanged += (_, _) => UpdateStockReadout();
+    }
+
+    /// <summary>
+    /// The out-of-plane field is labelled with the dimension it actually is, which follows from
+    /// the two the plan is showing: the third name is the one neither axis claims.
+    /// </summary>
+    void UpdateOutOfPlaneCaption()
+        => OutOfPlaneCaption.Text = ChosenAxes() is { } axes
+            ? SceneWords.Of(axes.OutOfPlane)
+            : "Third";
+
+    /// <summary>
+    /// What the library says about the stock that was typed — the same hover line the picker
+    /// shows — or that it does not carry that name, which is not an error.
+    /// </summary>
+    void UpdateStockReadout()
+    {
+        string typed = StockBox.Text ?? string.Empty;
+        if (typed.Trim().Length == 0)
+        {
+            StockReadout.Text = "No stock chosen. The cut list shows the size you typed.";
+            return;
+        }
+
+        StockReadout.Text = MaterialsLibrary.Shipped.TryFind(typed, out StockItem item)
+            ? item.HoverText
+            : $"\"{typed.Trim()}\" is not in this build's materials library. "
+              + "The cut list will say so rather than guess.";
+    }
+
+    PlanAxes? ChosenAxes()
+    {
+        if (!SceneWords.TryDimension(PlanXBox.SelectedItem as string, out PartDimension x)
+            || !SceneWords.TryDimension(PlanYBox.SelectedItem as string, out PartDimension y)
+            || x == y)
+        {
+            return null;
+        }
+
+        return new PlanAxes(x, y);
+    }
+
+    void OnIsPartChanged(object? sender, RoutedEventArgs e)
+    {
+        if (_showingProperties)
+        {
+            return;
+        }
+
+        PartFields.IsVisible = IsPartCheck.IsChecked == true;
+    }
+
+    void OnApplyPartClicked(object? sender, RoutedEventArgs e) => ApplyProperties();
+
+    /// <summary>
+    /// Puts what the panel says onto the selected box: its name, and what kind of part it is.
+    /// </summary>
+    /// <remarks>
+    /// Both go through the editor as requests, so the canvas, the relationship list and the cut
+    /// list all hear about them the same way they hear about a drag. Nothing is half-applied: the
+    /// panel checks every field before it sends anything.
+    /// </remarks>
+    /// <returns>Whether the panel's contents were applied.</returns>
+    public bool ApplyProperties()
+    {
+        if (Editor.OnlySelectedBox is not { } box)
+        {
+            return false;
+        }
+
+        Part? part = null;
+        if (IsPartCheck.IsChecked == true)
+        {
+            if (ChosenAxes() is not { } axes)
+            {
+                return Complain("A part's two plan dimensions have to be different ones.");
+            }
+
+            if (!Length.TryParse(OutOfPlaneBox.Text, out Length outOfPlane, out _)
+                || outOfPlane <= Length.Zero)
+            {
+                return Complain(
+                    $"{SceneWords.Of(axes.OutOfPlane)} has to be a length greater than zero, "
+                    + "like 3/4\" or 1' 4 1/4\".");
+            }
+
+            if (!int.TryParse(
+                    QuantityBox.Text,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out int quantity)
+                || quantity < 1)
+            {
+                return Complain("A part stands for at least one piece.");
+            }
+
+            part = new Part(
+                Blank(StockBox.Text),
+                Blank(SpeciesBox.Text),
+                quantity,
+                outOfPlane,
+                axes);
+        }
+
+        PropertiesError.IsVisible = false;
+
+        string name = PartNameBox.Text ?? string.Empty;
+        Editor.Apply(
+            Batch.Of(new SetName(box.Id, name), new SetPart(box.Id, part)),
+            part is null ? "make it a plain box" : "set what this part is");
+
+        ShowProperties();
+        return true;
+
+        bool Complain(string why)
+        {
+            PropertiesError.Text = why;
+            PropertiesError.IsVisible = true;
+            return false;
+        }
+
+        static string? Blank(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
     }
 
     void UpdateMenuEnablement()
@@ -608,6 +842,12 @@ public partial class MainWindow : Window
         RelationshipsPanel.Background = paper;
         RelationshipsPanel.BorderBrush = new SolidColorBrush(palette.GridMajor);
         RelationshipsHeadline.Foreground = edge;
+
+        PropertiesPanel.Background = paper;
+        PropertiesPanel.BorderBrush = new SolidColorBrush(palette.GridMajor);
+        PropertiesHeadline.Foreground = edge;
+        PropertiesError.Foreground = new SolidColorBrush(palette.Snap);
+        StockReadout.Foreground = new SolidColorBrush(palette.Label);
 
         DimensionEditor.Background = paper;
         DimensionEditor.BorderBrush = new SolidColorBrush(palette.Selection);

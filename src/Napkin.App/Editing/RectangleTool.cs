@@ -81,11 +81,16 @@ public sealed class RectangleTool
     /// </summary>
     /// <param name="layer">The layer the new part goes on.</param>
     /// <param name="id">The id the new part will have — stable from here on.</param>
+    /// <param name="name">
+    /// What to call it, so that nothing on screen is a GUID and a part drawn today keeps the name
+    /// it was drawn with when the file is saved.
+    /// </param>
     /// <param name="request">The request to put to the updater.</param>
     /// <returns><see langword="false"/> when the gesture was a click and made nothing.</returns>
     public bool TryComplete(
         LayerId layer,
         EntityId id,
+        string name,
         [NotNullWhen(true)] out Request? request)
     {
         request = null;
@@ -98,7 +103,7 @@ public sealed class RectangleTool
             return false;
         }
 
-        request = new AddEntity(new Box(id, layer, anchor, width, height, Angle.Zero));
+        request = new AddEntity(new Box(id, layer, anchor, width, height, Angle.Zero) { Name = name });
         return true;
     }
 }

@@ -57,6 +57,8 @@ public sealed class DirectUpdater : IGeometryUpdater
             RemoveEntity remove => ApplyRemoveEntity(sketch, remove),
             RemoveRelationship remove => ApplyRemoveRelationship(sketch, remove),
             SetLayer setLayer => ApplySetLayer(sketch, setLayer),
+            SetName setName => ApplySetName(sketch, setName),
+            SetPart setPart => ApplySetPart(sketch, setPart),
 
             // Geometry requests need the rectilinear precondition first.
             AddRelationship add => ApplyAddRelationship(sketch, add),
@@ -229,6 +231,37 @@ public sealed class DirectUpdater : IGeometryUpdater
         return new Solved(
             sketch.WithEntity(entity.OnLayer(request.Layer)),
             ChangeSet.Empty with { Modified = [request.Id] });
+    }
+
+    private static UpdateResult ApplySetName(Sketch sketch, SetName request)
+    {
+        if (sketch.Find(request.Id) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        return new Solved(
+            sketch.WithEntity(entity with { Name = request.Name }),
+            ChangeSet.Empty with { Modified = [request.Id] });
+    }
+
+    private static UpdateResult ApplySetPart(Sketch sketch, SetPart request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        // Only a box can be a piece somebody cuts: a node has no size and a dimension is an
+        // annotation, so asking either to be a part is a mistake rather than a preference.
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        return new Solved(
+            sketch.WithEntity(box with { Part = request.Part }),
+            ChangeSet.Empty with { Modified = [request.Box] });
     }
 
     // ---------------------------------------------------------------------------------------

@@ -875,6 +875,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-CUT-05",
+      "area": "ui",
+      "title": "Make a drawn box into a part",
+      "acceptance": "Draw a box, name it and say in the properties panel what its third dimension is, which of the three the drawing is showing, how many there are and what stock it is cut from; the panel reports what the library says that stock actually measures before anything is applied, and applying it puts a row on the cut list with the two in-plan dimensions the box was drawn at.",
+      "milestone": "M3",
+      "issue": 8,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-CUT-04",
       "area": "ui",
       "title": "Open the shopping list and export it",

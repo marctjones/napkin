@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
+using Napkin.Modules.Furniture;
 
 using Xunit;
 
@@ -128,6 +129,102 @@ public class CutListWorkflows
                 StringComparison.Ordinal);
         });
     });
+
+    /// <remarks>
+    /// This is <c>GUI-CUT-05</c> and not <c>GUI-CUT-02</c>: the picker GUI-CUT-02 asks for is a
+    /// floating toolbox with one icon per category and a text list inside the chosen one, and this
+    /// panel is a typed stock name with the library's own hover line under it. The lookup, the
+    /// citation and the assignment are real; the icons are not built yet, so the feature they are
+    /// the point of stays unclaimed.
+    /// </remarks>
+    [GuiWorkflow("GUI-CUT-05")]
+    public void Make_a_drawn_box_into_a_part_and_watch_it_reach_the_cut_list() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        // A blank sheet and one box: 24" x 4" in plan, which is a rail on edge.
+        app.Chord(Key.N);
+        app.Click(new Point(450, 320));
+        app.Press(Key.R);
+        app.Drag(At(window, Point2.Inches(0, 0)), At(window, Point2.Inches(12, 2)), At(window, Point2.Inches(24, 4)));
+
+        app.Expect("the box is drawn, selected, and the properties panel is offering to make it a part", () =>
+        {
+            Box drawn = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>());
+            Assert.Null(drawn.Part);
+            Assert.Equal("Part 1", drawn.Name);
+
+            Assert.True(window.IsShowingProperties);
+            Assert.Equal("Part 1", window.PartNameField.Text);
+            Assert.False(window.IsPartField.IsChecked);
+        });
+
+        app.Chord(Key.L);
+        app.Expect("a box that is not a part is not on the cut list", () =>
+        {
+            Assert.Empty(window.CutList!.Rows.Rows);
+            Assert.StartsWith(
+                "Nothing in this design is a part yet",
+                window.CutList!.EmptyMessage,
+                StringComparison.Ordinal);
+        });
+
+        // Say what it is: a 2x4 rail, two of them, on edge — length across X, width up Y, and the
+        // 1 1/2" thickness is the dimension the plan cannot hold.
+        app.Click(CentreOf(window, window.PartNameField));
+        app.Chord(Key.A);
+        app.Type("Rail, front");
+
+        app.Click(CentreOf(window, window.IsPartField));
+        app.Expect("ticking the box opens the fields that say what kind of part it is", () =>
+        {
+            Assert.True(window.IsPartField.IsChecked);
+            Assert.True(window.OutOfPlaneField.IsVisible);
+        });
+
+        Fill(app, window, window.OutOfPlaneField, "1 1/2\"");
+        Fill(app, window, window.QuantityField, "2");
+        Fill(app, window, window.StockField, "2 x 4");
+
+        app.Expect("the library says what a 2x4 actually measures, before anything is applied", () =>
+        {
+            Assert.Contains("actual 1 1/2\" x 3 1/2\"", window.StockReadoutText, StringComparison.Ordinal);
+            Assert.Contains("PS 20", window.StockReadoutText, StringComparison.Ordinal);
+        });
+
+        app.SaveFrame("properties-panel");
+        app.Click(CentreOf(window, window.ApplyPart));
+
+        app.Expect("the box is a part now, and the cut list says what to cut", () =>
+        {
+            Box part = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>());
+            Assert.Equal("Rail, front", part.Name);
+            Assert.Equal("2 x 4", part.Part?.Stock);
+            Assert.Equal(2, part.Part?.Quantity);
+
+            CutListRow row = Assert.Single(window.CutList!.Rows.Rows);
+            Assert.Equal("Rail, front", row.Label);
+            Assert.Equal(2, row.Quantity);
+
+            // The two in-plan dimensions are the box's own, and the third is what was typed.
+            Assert.Equal(Length.Inches(24).Units, row.Length.Units);
+            Assert.Equal(Length.Inches(4).Units, row.Width.Units);
+            Assert.Equal(1536, row.Thickness.Units);
+
+            // "2 x 4" resolved to the library's own name and item, not to the name as typed.
+            Assert.Equal("2x4", row.Material);
+            Assert.False(row.Unresolved);
+            Assert.NotNull(row.Stock);
+        });
+    });
+
+    /// <summary>Replaces what a field says, the way a person does: select all, then type.</summary>
+    static void Fill(AppDriver app, MainWindow window, TextBox field, string text)
+    {
+        app.Click(CentreOf(window, field));
+        app.Chord(Key.A);
+        app.Type(text);
+    }
 
     /// <summary>The window coordinate a model point is drawn at.</summary>
     static Point At(MainWindow window, Point2 world)
