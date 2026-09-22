@@ -218,6 +218,62 @@ dialog that cannot be shown, and a dialog that throws — and those are asserted
 window in `tests/Napkin.App.GuiTests/Unit/OpenFileTests.cs` through `HeadlessWindow`, which records
 no feature id and cannot move the ratchet.
 
+## The automation tree: what a script or a screen reader can see
+
+Everything above is about driving the application. This section is about the other direction — what
+the application *shows* to a client that is not a person with a mouse: Windows UI Automation, macOS
+accessibility, or a test script walking the UI by name rather than by pixel.
+
+Avalonia builds an **automation peer tree** beside the visual tree, and its platform bridges publish
+it: `Avalonia.Win32.Automation` to Windows UIA (`IRawElementProviderSimple`, linked against
+`UIAutomationCore`) and `Avalonia.Native`'s `IAvnAutomationPeer` to macOS accessibility. The
+standard controls all have peers already, so the menus, the tool buttons and the status-line text
+are walkable with no work from us — **including their names**, which Avalonia derives from `Header`
+and `Content` with the access-key underscore stripped (`Header="_File"` reads as "File"), and their
+automation ids, which come from `x:Name`. No `AutomationProperties.Name` is set anywhere in
+`MainWindow.axaml`, on purpose: a second copy of the same text would only drift from the first.
+
+`CanvasView` was the gap (#64). It draws every part, every dimension and every relationship glyph
+itself, so it had no peer worth the name — `Control`'s default is a `NoneAutomationPeer`, which
+reports `IsControlElement == false` and does not appear in a client's control view at all. It now
+returns a `CanvasAutomationPeer`: a group named "Drawing" whose children are one element per part in
+the sketch, each carrying
+
+- a **name** — the part's label today, a real part name when #7/#8 give it one;
+- an **automation id** — the entity id, in full;
+- a **value** — its size, in the same feet-inches-fractions format the dimension labels use,
+  including the `≈` that marks a value the text does not state exactly; and
+- a **bounding rectangle** — the rectangle the part's outline is drawn in, in top-level coordinates.
+
+Nothing there is cached. Pan, zoom, move or resize and the elements follow, because each answer is
+read from the same sketch and the same view transform `Render` draws from. The set of children
+follows too: drawing or deleting a part raises `ChildrenChanged`; moving one does not, because
+nothing about its element went stale.
+
+### What the tests prove, and what they do not
+
+`tests/Napkin.App.GuiTests/Unit/CanvasAutomationTests.cs` queries **Avalonia's own peer tree, in
+process**, against a real shown window, through the same public entry point a bridge uses
+(`ControlAutomationPeer.CreatePeerForElement`). It asserts the canvas is reachable from the window
+root and named, that the parts of a design are its children with the right names, ids, values,
+rectangles and parent, that the tree follows the sketch, and that the menu items and tool buttons
+carry the names Avalonia derived for them.
+
+**That is one level of proof, and it is not the same as the one a person cares about.** The peer
+tree is what the bridges publish, but nothing here shows that a real screen reader — VoiceOver,
+NVDA, Narrator — or a real UIA client on a real desktop reads it the way it should. That needs a
+real windowing backend and a real accessibility client, which is the smoke layer described at the
+foot of this page, and it has not been done. Treat "napkin's canvas is accessible" as unproven;
+"napkin's canvas publishes an automation element per part" is what is proven.
+
+The tests are unit tests rather than workflows: a peer tree is not something a person does with a
+mouse, so they claim no feature id and cannot move the GUI ratchet.
+
+Out of scope for #64 and still to do, each with the feature that needs it: live-region
+announcements for what the message bar says, a keyboard-only operability audit, high-contrast and
+reduced-motion support, an accessible name for the dimension field, and accessible descriptions for
+the relationship glyphs and the cut list as M3 and M4 add them.
+
 ## Planned workflows
 
 These are the scenarios the suite should grow into as each milestone lands. They are written as
@@ -288,6 +344,9 @@ application, and it should not be read as if it did. Out of reach:
   as the command modifier on macOS too, so Cmd-key shortcuts are not genuinely exercised here.
 - **Anything about how it looks** — fonts render differently on each platform, so frames are
   artifacts to look at, not baselines to compare.
+- **Real accessibility clients** — the automation peer tree can be walked in process, and is, but
+  whether VoiceOver, NVDA or Narrator makes sense of it is a question only a real desktop with a
+  real screen reader can answer.
 
 A small real-OS smoke layer is the right place for those, and is a later addition: a handful of
 scenarios on the actual windowing backends — launch, open a file through the platform dialog, use
