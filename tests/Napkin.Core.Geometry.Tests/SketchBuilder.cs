@@ -37,6 +37,18 @@ internal sealed class SketchBuilder
         return id;
     }
 
+    /// <summary>Adds a blank with cuts on it, in whole inches, unrotated.</summary>
+    public EntityId AddBlank(long x, long y, long width, long height, params Cut[] cuts)
+    {
+        EntityId id = NextEntity();
+        Sketch = Sketch.WithEntity(
+            new Box(id, LayerId.Default, Point2.Inches(x, y), Length.Inches(width), Length.Inches(height), Angle.Zero)
+            {
+                Cuts = [.. cuts],
+            });
+        return id;
+    }
+
     /// <summary>Adds a node, in whole inches.</summary>
     public EntityId AddNode(long x, long y) => AddNode(Point2.Inches(x, y));
 
