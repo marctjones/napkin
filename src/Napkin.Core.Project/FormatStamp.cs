@@ -12,11 +12,12 @@ namespace Napkin.Core.Project;
 /// compatibility shim, per the beta policy (DESIGN.md &#xA7;12 and &#xA7;6.4).
 /// </para>
 /// <para>
-/// In M1 a project is one plain <c>scene.json</c>, so the stamp is the first thing in that file.
-/// In M2 the project becomes a zip container and the same stamp moves into <c>manifest.json</c>,
-/// gaining the app version and the project's adopted code; the scene body below it does not
-/// change. Keeping the stamp in its own type is what makes that move a change of where one record
-/// is read from rather than a change to the reader.
+/// This stamp heads the scene document, whether that document is a plain <c>scene.json</c> or the
+/// <c>scene.json</c> inside a <c>.napkin</c> container. The container's own
+/// <see cref="ProjectManifest.ContainerVersion"/> is a second, separate stamp for a second,
+/// separate thing: this one versions what a drawing <em>means</em>, and that one versions what the
+/// container <em>is</em>. They move independently, and a plain scene file carrying this one is a
+/// complete, refusable file with no manifest anywhere near it.
 /// </para>
 /// </remarks>
 /// <param name="FormatVersion">The integer format version, bumped on every change to what the file means.</param>
