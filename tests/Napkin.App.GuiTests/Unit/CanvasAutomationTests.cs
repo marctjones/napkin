@@ -51,6 +51,7 @@ public class CanvasAutomationTests
     }
 
     [Fact]
+    [Trait("Feature", "ACC-001")]
     public void Every_part_in_the_sketch_is_an_element_of_the_canvas()
     {
         HeadlessWindow.Run(window =>

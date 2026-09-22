@@ -954,6 +954,15 @@
       "milestone": "M2",
       "issue": 62,
       "kind": "workflow"
+    },
+    {
+      "id": "ACC-001",
+      "area": "ui",
+      "title": "The canvas exposes one automation element per part",
+      "acceptance": "Every Box in the Sketch is reachable as a distinct automation element under the canvas, with a name, a read-only size value, and a bounding rectangle that follows pan/zoom/edits — proven by querying Avalonia's own automation peer tree in-process, not a screenshot.",
+      "milestone": "M2",
+      "issue": 64,
+      "kind": "unit"
     }
   ]
 }
