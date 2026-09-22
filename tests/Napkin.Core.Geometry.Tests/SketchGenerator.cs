@@ -227,6 +227,110 @@ internal sealed class SketchGenerator
         return sketch;
     }
 
+    /// <summary>
+    /// Unrelated boxes with valid cuts on them, at every rotation
+    /// (docs/design/shaped-parts-model.md §9.2).
+    /// </summary>
+    /// <remarks>
+    /// Cuts are kept out of <see cref="NextSketch"/> on purpose, for now. The updater has no
+    /// post-write fit check until step 3 of §10, so a <c>SetParameter</c> that shrank a box below
+    /// its cuts would succeed and hand back a sketch invariants 7 to 9 refuse — a true failure of
+    /// P1 that is not this step's to fix. Whoever lands the updater step points
+    /// <see cref="NextSketch"/> at this and the rest of the properties follow.
+    /// </remarks>
+    internal Sketch NextShapedSketch()
+    {
+        Sketch sketch = Sketch.Empty;
+
+        int boxes = _random.Next(1, 5);
+        for (int i = 0; i < boxes; i++)
+        {
+            Length width = NextSize();
+            Length height = NextSize();
+
+            sketch = sketch.WithEntity(new Box(
+                NextEntityId(),
+                LayerId.Default,
+                new Point2(NextCoordinate(), NextCoordinate()),
+                width,
+                height,
+                Angle.Zero.Rotate90(_random.Next(0, 4)))
+            {
+                Cuts = NextCuts(width, height),
+            });
+        }
+
+        return sketch;
+    }
+
+    /// <summary>
+    /// Cuts that fit the blank they are on, <em>derived</em> from its sizes rather than sampled
+    /// and hoped for (design §7.2, shaped parts §9.2).
+    /// </summary>
+    /// <remarks>
+    /// No value is more than a quarter of the size it is measured against, so the two claims on
+    /// any edge — and a curve's claim against whatever faces it across the blank — come to at most
+    /// half of it, and invariants 7, 8 and 9 hold by construction. A curved edge claims both of
+    /// its corners, so the corners it takes are left alone, and two curves are only ever opposite
+    /// each other.
+    /// </remarks>
+    internal ImmutableList<Cut> NextCuts(Length width, Length height)
+    {
+        Length alongX = new(width.Units / 4);
+        Length alongY = new(height.Units / 4);
+        if (alongX <= Length.Zero || alongY <= Length.Zero)
+        {
+            return [];
+        }
+
+        List<Cut> cuts = [];
+        HashSet<BoxCorner> claimed = [];
+
+        List<BoxEdge> curved = _random.Next(4) switch
+        {
+            0 => [RandomEdge()],
+            1 => _random.Next(2) == 0 ? [BoxEdge.South, BoxEdge.North] : [BoxEdge.East, BoxEdge.West],
+            _ => [],
+        };
+
+        foreach (BoxEdge edge in curved)
+        {
+            bool alongTheXAxis = edge is BoxEdge.South or BoxEdge.North;
+            cuts.Add(new CurvedEdge(
+                edge,
+                _random.Next(2) == 0 ? Bow.Outward : Bow.Inward,
+                UpTo(alongTheXAxis ? alongY : alongX)));
+
+            (BoxCorner from, BoxCorner to) = Box.Ends(edge);
+            claimed.Add(from);
+            claimed.Add(to);
+        }
+
+        foreach (BoxCorner corner in Enum.GetValues<BoxCorner>())
+        {
+            if (claimed.Contains(corner))
+            {
+                continue;
+            }
+
+            switch (_random.Next(3))
+            {
+                case 0:
+                    cuts.Add(new CornerCut(corner, UpTo(alongX), UpTo(alongY)));
+                    break;
+
+                case 1:
+                    cuts.Add(new RoundedCorner(corner, UpTo(Length.Min(alongX, alongY))));
+                    break;
+            }
+        }
+
+        return [.. cuts];
+    }
+
+    /// <summary>A positive length of at most <paramref name="limit"/>, on the raw unit grid.</summary>
+    private Length UpTo(Length limit) => new(_random.NextInt64(1, limit.Units + 1));
+
     /// <summary>A request to put to the updater. It may well be one that cannot be satisfied.</summary>
     internal Request NextRequest(Sketch sketch)
     {

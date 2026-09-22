@@ -3,7 +3,8 @@ using System.Collections.Immutable;
 namespace Napkin.Core.Geometry.Tests;
 
 /// <summary>
-/// Properties P1 to P8 and P10 of docs/design/geometry-model.md &#xA7;7.2. P9 (serialization)
+/// Properties P1 to P8 and P10 of docs/design/geometry-model.md &#xA7;7.2, and P1 for the cuts
+/// and P11 of docs/design/shaped-parts-model.md &#xA7;9.2. P9 (serialization)
 /// waits for #6.
 /// </summary>
 /// <remarks>
@@ -370,6 +371,112 @@ public class PropertyTests
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// P1 for the cuts (docs/design/shaped-parts-model.md §9.2): every box whose cuts were derived
+    /// from its blank satisfies invariants 5 to 9, so <see cref="Sketch.Validate"/> passes it and
+    /// <see cref="AddEntity"/> takes it.
+    /// </summary>
+    /// <remarks>
+    /// P1 proper is about what the updater hands back, and the updater does not know about cuts
+    /// until step 3 of §10 gives it the post-write fit check. Until then this is P1's spirit at
+    /// the layer that exists: every valid box satisfies its invariants, and the one request that
+    /// can carry a box with cuts today — <see cref="AddEntity"/> — agrees with
+    /// <see cref="Sketch.Validate"/> about which boxes those are.
+    /// </remarks>
+    [Trait("Feature", "GEO-008")]
+    [Theory]
+    [MemberData(nameof(Seeds))]
+    public void P1_EveryBoxWhoseCutsWereDerivedFromItsBlankSatisfiesInvariants5To9(int seed)
+    {
+        SketchGenerator generator = new(seed);
+
+        for (int iteration = 0; iteration < Iterations; iteration++)
+        {
+            Sketch sketch = generator.NextShapedSketch();
+            string because = $"seed {seed}, iteration {iteration}";
+
+            ValidationResult validation = sketch.Validate();
+            Assert.True(validation.IsValid, $"{because}{Environment.NewLine}{validation}");
+
+            foreach (Box box in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
+            {
+                UpdateResult result = Updater.Apply(Sketch.Empty, new AddEntity(box));
+                Assert.True(result is Succeeded, $"{because}: AddEntity of {box.Id} was {result.GetType().Name}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// P11 (shaped parts §9.2): consecutive segments share their endpoint, the last returns to the
+    /// first, and the polygon of invariant 9 has positive area — in world coordinates, so a
+    /// right-angle rotation is shown not to have turned the boundary inside out.
+    /// </summary>
+    [Trait("Feature", "GEO-007")]
+    [Theory]
+    [MemberData(nameof(Seeds))]
+    public void P11_TheOutlineOfAValidBoxIsClosedAndEnclosesPositiveArea(int seed)
+    {
+        SketchGenerator generator = new(seed);
+
+        for (int iteration = 0; iteration < Iterations; iteration++)
+        {
+            foreach (Box box in generator.NextShapedSketch().Entities.Values.OfType<Box>().OrderBy(box => box.Id))
+            {
+                string because = $"seed {seed}, iteration {iteration}, box {box.Id}";
+                ImmutableArray<OutlineSegment> segments = box.Outline().Segments;
+
+                Assert.True(segments.Length >= 3, $"{because}: {segments.Length} segments");
+
+                for (int i = 0; i < segments.Length; i++)
+                {
+                    OutlineSegment next = segments[(i + 1) % segments.Length];
+                    Assert.True(segments[i].To == next.From, $"{because}: segment {i} does not meet the next");
+                }
+
+                Assert.True(
+                    Area.TwiceSignedPolygon(box.Outline().Vertices) > Int128.Zero,
+                    $"{because}: the outline encloses nothing");
+            }
+        }
+    }
+
+    /// <summary>
+    /// The shaped generator reaches every cut kind and both bows, or the two properties above
+    /// would pass by never producing a cut at all.
+    /// </summary>
+    [Fact]
+    public void TheShapedGeneratorReachesEveryCutKind()
+    {
+        int cornerCuts = 0;
+        int roundedCorners = 0;
+        int outwardCurves = 0;
+        int inwardCurves = 0;
+        int plainBlanks = 0;
+
+        foreach (int seed in Enumerable.Range(1, 8))
+        {
+            SketchGenerator generator = new(seed);
+
+            for (int iteration = 0; iteration < Iterations; iteration++)
+            {
+                foreach (Box box in generator.NextShapedSketch().Entities.Values.OfType<Box>())
+                {
+                    plainBlanks += box.Cuts.IsEmpty ? 1 : 0;
+                    cornerCuts += box.Cuts.OfType<CornerCut>().Count();
+                    roundedCorners += box.Cuts.OfType<RoundedCorner>().Count();
+                    outwardCurves += box.Cuts.OfType<CurvedEdge>().Count(curve => curve.Bow == Bow.Outward);
+                    inwardCurves += box.Cuts.OfType<CurvedEdge>().Count(curve => curve.Bow == Bow.Inward);
+                }
+            }
+        }
+
+        Assert.True(cornerCuts > 100, $"{cornerCuts} corner cuts");
+        Assert.True(roundedCorners > 100, $"{roundedCorners} rounded corners");
+        Assert.True(outwardCurves > 50, $"{outwardCurves} outward curves");
+        Assert.True(inwardCurves > 50, $"{inwardCurves} inward curves");
+        Assert.True(plainBlanks > 0, "no blank was ever left plain");
     }
 
     [Fact]

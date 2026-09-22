@@ -19,6 +19,28 @@ public enum ValidationErrorKind
 
     /// <summary>An entity is on a layer the sketch does not have.</summary>
     UnknownLayer,
+
+    /// <summary>
+    /// A box has more than one cut at one site — shaped-parts invariant 5.
+    /// </summary>
+    DuplicateCutSite,
+
+    /// <summary>
+    /// A curved edge claims a site another cut is at, or two adjacent edges are both curved —
+    /// shaped-parts invariant 6.
+    /// </summary>
+    CutSiteTaken,
+
+    /// <summary>
+    /// A cut's value is not positive, does not fit its edge, or leaves no room for what is on the
+    /// other end of its edge or across the blank — shaped-parts invariants 7 and 8.
+    /// </summary>
+    CutDoesNotFit,
+
+    /// <summary>
+    /// A box's cuts leave nothing of the blank — shaped-parts invariant 9.
+    /// </summary>
+    NonPositiveArea,
 }
 
 /// <summary>One thing wrong with a sketch.</summary>
@@ -188,8 +210,9 @@ public sealed record Sketch(
 
     /// <summary>
     /// Checks referential integrity, positive sizes and duplicate relationships — invariants 1, 2
-    /// and 4 of design &#xA7;2.5. Invariant 3, that every relationship holds, is
-    /// <see cref="RelationshipChecker.Check(Sketch)"/>.
+    /// and 4 of design &#xA7;2.5 — and a box's cuts against invariants 5 to 9 of
+    /// <c>docs/design/shaped-parts-model.md</c> &#xA7;1.6. Invariant 3, that every relationship
+    /// holds, is <see cref="RelationshipChecker.Check(Sketch)"/>.
     /// </summary>
     public ValidationResult Validate()
     {
@@ -213,6 +236,11 @@ public sealed record Sketch(
                         errors.Add(new ValidationError(
                             ValidationErrorKind.NonPositiveSize,
                             $"Box {box.Id} is {box.Width} by {box.Height}; both must be greater than zero."));
+                    }
+
+                    foreach (ValidationError error in CutRules.Errors(box))
+                    {
+                        errors.Add(error);
                     }
 
                     break;

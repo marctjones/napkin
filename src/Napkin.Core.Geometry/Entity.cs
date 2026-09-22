@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Napkin.Core.Geometry;
 
 /// <summary>
@@ -89,6 +91,35 @@ public sealed record Box(
     /// </remarks>
     public Part? Part { get; init; }
 
+    /// <summary>
+    /// What has been cut off the blank, in site order. Empty for a plain rectangle
+    /// (<c>docs/design/shaped-parts-model.md</c> §1.1).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The initialiser sorts, so §1.6's invariant 5 — cuts in <see cref="CutSite"/> order — holds
+    /// by construction and <see cref="Sketch.Validate"/> only has to check that no site is used
+    /// twice. Sorting is lossless, so the model normalises rather than rejects; a <em>file</em>
+    /// whose cuts are out of order is refused by the loader instead (§5), because a file has one
+    /// spelling.
+    /// </para>
+    /// <para>
+    /// A box with an empty list is today's box in every respect: same corners, same relationships,
+    /// same cut-list row, same drawing.
+    /// </para>
+    /// </remarks>
+    public ImmutableList<Cut> Cuts
+    {
+        get => _cuts;
+        init => _cuts = InSiteOrder(value);
+    }
+
+    /// <summary>
+    /// The shape that is left: derived, never stored (§1.5). In world coordinates,
+    /// counter-clockwise in the box's local frame, starting along the south edge.
+    /// </summary>
+    public Outline Outline() => OutlineBuilder.Build(this, world: true);
+
     /// <inheritdoc/>
     public override Entity OnLayer(LayerId layer) => this with { Layer = layer };
 
@@ -127,6 +158,53 @@ public sealed record Box(
         BoxEdge.West => (BoxCorner.SouthWest, BoxCorner.NorthWest),
         _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, "Unknown edge."),
     };
+
+    /// <summary>
+    /// Equality by value, including the cuts compared as a sequence.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ImmutableList{T}"/> compares by the identity of the list it wraps, so the
+    /// synthesised equality would call two boxes with the same cuts different — and #6's
+    /// <c>Load(Save(s)) == s</c> and the cut list's by-value grouping both depend on it not doing
+    /// that.
+    /// </remarks>
+    public bool Equals(Box? other)
+        => base.Equals(other)
+           && Anchor == other!.Anchor
+           && Width == other.Width
+           && Height == other.Height
+           && Rotation == other.Rotation
+           && Part == other.Part
+           && _cuts.SequenceEqual(other._cuts);
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        HashCode hash = default;
+        hash.Add(base.GetHashCode());
+        hash.Add(Anchor);
+        hash.Add(Width);
+        hash.Add(Height);
+        hash.Add(Rotation);
+        hash.Add(Part);
+        foreach (Cut cut in _cuts)
+        {
+            hash.Add(cut);
+        }
+
+        return hash.ToHashCode();
+    }
+
+    private readonly ImmutableList<Cut> _cuts = [];
+
+    private static ImmutableList<Cut> InSiteOrder(ImmutableList<Cut> cuts)
+    {
+        ArgumentNullException.ThrowIfNull(cuts);
+
+        // OrderBy is stable, so two cuts at one site keep the order they were given in and
+        // Validate can report them.
+        return cuts.Count < 2 ? cuts : [.. cuts.OrderBy(cut => cut.Site.Order)];
+    }
 }
 
 /// <summary>
