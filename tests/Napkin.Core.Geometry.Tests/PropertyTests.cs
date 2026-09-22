@@ -269,8 +269,12 @@ public class PropertyTests
                 UpdateResult attempt = Updater.Apply(reduced, request);
                 if (attempt is not OverConstrained again)
                 {
+                    // Rejected(CutDoesNotFit) counts as resolved: the conflict is gone, and what
+                    // is left is not one. Shaped parts §2.3 refuses a resize that no longer fits a
+                    // cut rather than reporting a conflict, precisely because no relationship is
+                    // involved and ConflictReport.Relationships would have nothing honest to name.
                     Assert.True(
-                        attempt is Succeeded,
+                        attempt is Succeeded or Rejected { Reason: RejectionReason.CutDoesNotFit },
                         $"{because}: removing what the report named left {attempt.GetType().Name}");
                     resolved = true;
                     break;
@@ -379,11 +383,11 @@ public class PropertyTests
     /// <see cref="AddEntity"/> takes it.
     /// </summary>
     /// <remarks>
-    /// P1 proper is about what the updater hands back, and the updater does not know about cuts
-    /// until step 3 of §10 gives it the post-write fit check. Until then this is P1's spirit at
-    /// the layer that exists: every valid box satisfies its invariants, and the one request that
-    /// can carry a box with cuts today — <see cref="AddEntity"/> — agrees with
-    /// <see cref="Sketch.Validate"/> about which boxes those are.
+    /// P1 proper — every sketch the updater hands back is consistent — now covers the cuts as
+    /// well, because <see cref="SketchGenerator.NextSketch"/> produces boxes with cuts on them and
+    /// <see cref="Sketch.Validate"/> checks invariants 5 to 9. This case stays for the narrower
+    /// claim it makes: the model and <see cref="AddEntity"/> agree about which boxes are valid, on
+    /// blanks at every rotation and with no relationships in the way.
     /// </remarks>
     [Trait("Feature", "GEO-008")]
     [Theory]
@@ -440,6 +444,171 @@ public class PropertyTests
                     $"{because}: the outline encloses nothing");
             }
         }
+    }
+
+    /// <summary>
+    /// P12 (shaped parts §9.2): cuts are invisible to propagation. For every sketch and every
+    /// request that is not a <see cref="SetCut"/> or a <see cref="RemoveCut"/>, applying it to the
+    /// sketch and to the same sketch with every cut stripped gives results whose <em>blanks</em>
+    /// are identical — unless the cut-bearing one is <see cref="RejectionReason.CutDoesNotFit"/>,
+    /// which is the one thing §2.3 lets the cuts decide.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="DragEdge"/> is excluded, and the exclusion is the design's own doing rather than
+    /// a weakening of the property: §2.3 makes <c>DragEdge</c> <em>clamp</em> instead of refusing,
+    /// because it is best effort, so a shaped blank legitimately ends up a different size from a
+    /// plain one and the result is <see cref="Solved"/> rather than the
+    /// <c>Rejected(CutDoesNotFit)</c> that §9.2's wording allows for. Every other request kind is
+    /// exact and takes the refusal.
+    /// </remarks>
+    [Trait("Feature", "GEO-015")]
+    [Theory]
+    [MemberData(nameof(Seeds))]
+    public void P12_CutsAreInvisibleToPropagation(int seed)
+    {
+        SketchGenerator generator = new(seed);
+
+        for (int iteration = 0; iteration < Iterations; iteration++)
+        {
+            Sketch shaped = generator.WithCuts(generator.NextSketch());
+            Sketch plain = SketchGenerator.WithoutCuts(shaped);
+            Request request = generator.NextRequest(plain);
+            string because = Because(seed, iteration, request);
+
+            if (request is DragEdge)
+            {
+                continue;
+            }
+
+            UpdateResult withCuts = Updater.Apply(shaped, request);
+            UpdateResult without = Updater.Apply(plain, request);
+
+            if (withCuts is Rejected { Reason: RejectionReason.CutDoesNotFit })
+            {
+                continue;
+            }
+
+            Assert.True(
+                withCuts.GetType() == without.GetType(),
+                $"{because}: {withCuts.GetType().Name} with cuts, {without.GetType().Name} without");
+
+            if (withCuts is not Succeeded shapedResult || without is not Succeeded plainResult)
+            {
+                continue;
+            }
+
+            AssertTheBlanksAreIdentical(plainResult.Sketch, shapedResult.Sketch, because);
+        }
+    }
+
+    /// <summary>
+    /// The same boxes, at the same anchors, sizes and rotations — everything but the cuts.
+    /// </summary>
+    private static void AssertTheBlanksAreIdentical(Sketch plain, Sketch shaped, string because)
+    {
+        Assert.Equal(
+            plain.Entities.Keys.Order().ToArray(),
+            shaped.Entities.Keys.Order().ToArray());
+
+        foreach (Box box in plain.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
+        {
+            Box other = Assert.IsType<Box>(shaped.Find(box.Id));
+            Assert.True(
+                box.Anchor == other.Anchor
+                && box.Width == other.Width
+                && box.Height == other.Height
+                && box.Rotation == other.Rotation,
+                $"{because}: box {box.Id} is {other.Anchor} {other.Width}x{other.Height} at "
+                + $"{other.Rotation} with cuts and {box.Anchor} {box.Width}x{box.Height} at "
+                + $"{box.Rotation} without");
+        }
+    }
+
+    /// <summary>
+    /// P13 (shaped parts §9.2): a successful resize never silently leaves a cut that does not fit.
+    /// Every box on the result satisfies invariants 7 to 9 — which is what
+    /// <see cref="Sketch.Validate"/> checks, so a consistent result is the whole claim.
+    /// </summary>
+    [Trait("Feature", "GEO-015")]
+    [Theory]
+    [MemberData(nameof(Seeds))]
+    public void P13_ASuccessfulResizeLeavesEveryCutFitting(int seed)
+    {
+        SketchGenerator generator = new(seed);
+
+        for (int iteration = 0; iteration < Iterations; iteration++)
+        {
+            Sketch shaped = generator.WithCuts(generator.NextSketch());
+            SketchAssert.IsConsistent(shaped, $"seed {seed}, iteration {iteration}: the generator's own sketch");
+
+            if (generator.NextResize(shaped) is not { } request)
+            {
+                continue;
+            }
+
+            if (Updater.Apply(shaped, request) is Succeeded succeeded)
+            {
+                SketchAssert.IsConsistent(succeeded.Sketch, Because(seed, iteration, request));
+            }
+        }
+    }
+
+    /// <summary>
+    /// P13 would pass if the fit check were dead code and no generated resize ever reached it, so
+    /// this counts the outcomes the property relies on: resizes that succeed, resizes refused
+    /// because a cut no longer fits, and drags the cut clamp cut short.
+    /// </summary>
+    [Fact]
+    public void TheGeneratorReachesTheOutcomesTheCutPropertiesRelyOn()
+    {
+        int resized = 0;
+        int refusedForACut = 0;
+        int clampedDrags = 0;
+        int shapedSketches = 0;
+
+        foreach (int seed in Enumerable.Range(1, 8))
+        {
+            SketchGenerator generator = new(seed);
+
+            for (int iteration = 0; iteration < Iterations; iteration++)
+            {
+                Sketch shaped = generator.WithCuts(generator.NextSketch());
+                shapedSketches += shaped.Entities.Values.OfType<Box>().Any(box => !box.Cuts.IsEmpty) ? 1 : 0;
+
+                if (generator.NextResize(shaped) is not { } request)
+                {
+                    continue;
+                }
+
+                UpdateResult result = Updater.Apply(shaped, request);
+                switch (result)
+                {
+                    case Succeeded ok when !ok.Changes.Resized.IsEmpty:
+                        resized++;
+                        break;
+
+                    case Rejected { Reason: RejectionReason.CutDoesNotFit }:
+                        refusedForACut++;
+                        break;
+                }
+
+                // The clamp's own signature: the edge ended up leaving the blank bigger than the
+                // drag asked for, which is the one thing only a clamp does.
+                if (request is DragEdge edge
+                    && result is Succeeded dragged
+                    && shaped.Find<Box>(edge.Box) is { } before
+                    && dragged.Sketch.Find<Box>(edge.Box) is { } after)
+                {
+                    Axis axis = edge.Edge is BoxEdge.East or BoxEdge.West ? Axis.X : Axis.Y;
+                    clampedDrags += before.Size(axis) + edge.Delta < after.Size(axis) ? 1 : 0;
+                }
+            }
+        }
+
+        Assert.True(shapedSketches > 300, $"{shapedSketches} sketches carried a cut");
+        Assert.True(resized > 100, $"{resized} resizes succeeded");
+        Assert.True(refusedForACut > 0, $"{refusedForACut} resizes were refused for a cut");
+        Assert.True(clampedDrags > 0, $"{clampedDrags} edge drags were clamped by a cut");
     }
 
     /// <summary>

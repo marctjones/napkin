@@ -28,12 +28,64 @@ internal sealed class SketchGenerator
 
     /// <summary>A valid, consistent rectilinear sketch.</summary>
     /// <remarks>
+    /// <para>
     /// One sketch in four is a row of parts rather than a scattering of them. A row is the shape
     /// issue #49 is about, and the scattered sketches reach one only by accident: the properties
     /// would pass without ever propagating along a chain. <see cref="LongestRow"/> is how the
     /// outcome guard proves they do.
+    /// </para>
+    /// <para>
+    /// One sketch in two carries cuts, so that P1 covers invariants 5 to 9 as shaped parts §9.2
+    /// asks. That is only safe now that the updater has the post-write fit check of §2.3: before
+    /// it, a <see cref="SetParameter"/> that shrank a box below its cuts succeeded and handed back
+    /// a sketch those invariants refuse. The other half stays plain, so nothing that used to be
+    /// covered stops being.
+    /// </para>
     /// </remarks>
-    internal Sketch NextSketch() => _random.Next(4) == 0 ? NextRow() : NextScattering();
+    internal Sketch NextSketch()
+    {
+        Sketch sketch = _random.Next(4) == 0 ? NextRow() : NextScattering();
+        return _random.Next(2) == 0 ? WithCuts(sketch) : sketch;
+    }
+
+    /// <summary>
+    /// The same sketch with cuts derived from each blank's own sizes — the shaped half of
+    /// <see cref="NextSketch"/>, and the one side of P12's pairing.
+    /// </summary>
+    /// <remarks>
+    /// Cuts reference nothing outside their own box and move with it, so decorating a consistent
+    /// sketch with cuts that fit leaves it consistent: no relationship reads one, and
+    /// <see cref="NextCuts"/> derives every value from the blank it is going on.
+    /// </remarks>
+    internal Sketch WithCuts(Sketch sketch)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+
+        Sketch result = sketch;
+        foreach (Box box in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
+        {
+            result = result.WithEntity(box with { Cuts = NextCuts(box.Width, box.Height) });
+        }
+
+        return result;
+    }
+
+    /// <summary>The same sketch with every cut stripped from every box — P12's other side.</summary>
+    internal static Sketch WithoutCuts(Sketch sketch)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+
+        Sketch result = sketch;
+        foreach (Box box in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
+        {
+            if (!box.Cuts.IsEmpty)
+            {
+                result = result.WithEntity(box with { Cuts = [] });
+            }
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// A row of 3 to 6 parts, each flush with the next along one axis: a bookcase, a run of
@@ -232,11 +284,10 @@ internal sealed class SketchGenerator
     /// (docs/design/shaped-parts-model.md §9.2).
     /// </summary>
     /// <remarks>
-    /// Cuts are kept out of <see cref="NextSketch"/> on purpose, for now. The updater has no
-    /// post-write fit check until step 3 of §10, so a <c>SetParameter</c> that shrank a box below
-    /// its cuts would succeed and hand back a sketch invariants 7 to 9 refuse — a true failure of
-    /// P1 that is not this step's to fix. Whoever lands the updater step points
-    /// <see cref="NextSketch"/> at this and the rest of the properties follow.
+    /// Cuts with no relationships around them, for the properties that are about the cut model
+    /// itself — the invariants and the outline — rather than about propagation. The properties
+    /// that need both use <see cref="NextSketch"/>, which carries cuts too now that the updater
+    /// has §2.3's post-write fit check.
     /// </remarks>
     internal Sketch NextShapedSketch()
     {
@@ -376,6 +427,34 @@ internal sealed class SketchGenerator
             {
                 choices.Add(new SetParameter(drivers[_random.Next(drivers.Count)].Id, NextSize()));
             }
+        }
+
+        return choices[_random.Next(choices.Count)];
+    }
+
+    /// <summary>
+    /// A request whose whole business is changing a size — what P13 is about: the three ways a
+    /// blank gets resized in the direct updater (a typed number, a stated one, a resize handle).
+    /// </summary>
+    internal Request? NextResize(Sketch sketch)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+
+        List<Box> boxes = [.. sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id)];
+        if (boxes.Count == 0)
+        {
+            return null;
+        }
+
+        Box box = boxes[_random.Next(boxes.Count)];
+        List<Request> choices = [new DragEdge(box.Id, RandomEdge(), NextDelta())];
+
+        ParamRef size = _random.Next(2) == 0 ? new BoxWidthRef(box.Id) : new BoxHeightRef(box.Id);
+        choices.Add(new AddRelationship(new ParamValue(NextRelationshipId(), size, NextSize())));
+
+        if (NextSetParameter(sketch) is { } typed)
+        {
+            choices.Add(typed);
         }
 
         return choices[_random.Next(choices.Count)];

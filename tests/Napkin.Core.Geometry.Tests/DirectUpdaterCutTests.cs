@@ -131,6 +131,33 @@ public class DirectUpdaterCutTests
         Assert.Equal(top, Assert.Single(removed.Changes.Modified));
     }
 
+    [Trait("Feature", "GEO-013")]
+    [Fact]
+    public void Case7_CuttingSomethingThatIsNotABlankIsRejectedRatherThanThrown()
+    {
+        SketchBuilder builder = new();
+        EntityId node = builder.AddNode(0, 0);
+        EntityId missing = SketchBuilder.EntityIdAt(9);
+        Cut cut = new RoundedCorner(BoxCorner.NorthEast, Length.Inches(1));
+
+        Assert.Equal(
+            RejectionReason.UnknownEntity,
+            Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetCut(missing, cut))).Reason);
+        Assert.Equal(
+            RejectionReason.UnknownEntity,
+            Assert.IsType<Rejected>(Updater.Apply(
+                builder.Sketch, new RemoveCut(missing, cut.Site))).Reason);
+
+        // A node has no edges to cut, and a dimension is an annotation: the wrong kind of
+        // reference, not a cut this updater cannot make.
+        Assert.Equal(
+            RejectionReason.DanglingReference,
+            Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetCut(node, cut))).Reason);
+        Assert.Equal(
+            RejectionReason.DanglingReference,
+            Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new RemoveCut(node, cut.Site))).Reason);
+    }
+
     // ---------------------------------------------------------------------------------------
     // Test 8: the post-write fit check
     // ---------------------------------------------------------------------------------------
@@ -242,6 +269,65 @@ public class DirectUpdaterCutTests
             RejectionReason.NonPositiveSize,
             Assert.IsType<Rejected>(Updater.Apply(
                 builder.Sketch, new DragEdge(plain, BoxEdge.East, Length.Inches(-20)))).Reason);
+    }
+
+    [Trait("Feature", "GEO-012")]
+    [Fact]
+    public void Case9_AnEdgeDragThatWouldBreakAnotherBoxsCutsDoesNotMoveAtAll()
+    {
+        // The clamp covers the blank the user grabbed. A box this resizes through an EqualParam
+        // has cuts of its own, and a drag is a question rather than a demand, so the answer here
+        // is the one a drag blocked by an anchored neighbour already gets: nothing moves. Nothing
+        // partial is ever handed back.
+        SketchBuilder builder = new();
+        EntityId shaped = builder.AddBlank(
+            0, 0, 20, 20, new RoundedCorner(BoxCorner.NorthEast, Length.Inches(6)));
+        EntityId plain = builder.AddBox(0, 40, 20, 20);
+        builder.EqualWidths(plain, shaped);
+
+        Solved blocked = Assert.IsType<Solved>(
+            Updater.Apply(builder.Sketch, new DragEdge(plain, BoxEdge.East, Length.Inches(-16))));
+
+        Assert.Equal(Vector2.Zero, blocked.Changes.AppliedDelta);
+        Assert.True(blocked.Changes.IsEmpty);
+        SketchAssert.BoxIs(blocked.Sketch, plain, 0, 40, 20, 20);
+        SketchAssert.BoxIs(blocked.Sketch, shaped, 0, 0, 20, 20);
+
+        // Growing through the same EqualParam is fine, and both boxes follow.
+        Solved grown = Assert.IsType<Solved>(
+            Updater.Apply(builder.Sketch, new DragEdge(plain, BoxEdge.East, Length.Inches(10))));
+
+        SketchAssert.BoxIs(grown.Sketch, plain, 0, 40, 30, 20);
+        SketchAssert.BoxIs(grown.Sketch, shaped, 0, 0, 30, 20);
+        SketchAssert.IsConsistent(grown.Sketch);
+    }
+
+    [Trait("Feature", "GEO-012")]
+    [Fact]
+    public void Case9_ABlankThatAlreadyDoesNotFitItsCutsCannotBeDraggedSmaller()
+    {
+        // Such a blank cannot be reached through the updater — Validate and AddEntity both refuse
+        // it — but DragEdge does not re-validate what it was handed, and clamping to a floor that
+        // does not exist would be worse than clamping to where it already is.
+        Box broken = new(
+            SketchBuilder.EntityIdAt(1),
+            LayerId.Default,
+            Point2.Origin,
+            Length.Inches(10),
+            Length.Inches(10),
+            Angle.Zero)
+        {
+            Cuts = [new CornerCut(BoxCorner.SouthWest, Length.Inches(20), Length.Inches(1))],
+        };
+
+        Sketch sketch = Sketch.Empty.WithEntity(broken);
+        Assert.False(sketch.Validate().IsValid);
+
+        Solved held = Assert.IsType<Solved>(
+            Updater.Apply(sketch, new DragEdge(broken.Id, BoxEdge.East, Length.Inches(-4))));
+
+        Assert.Equal(Vector2.Zero, held.Changes.AppliedDelta);
+        Assert.Equal(Length.Inches(10), held.Sketch.Find<Box>(broken.Id)!.Width);
     }
 
     // ---------------------------------------------------------------------------------------
