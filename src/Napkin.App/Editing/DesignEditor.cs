@@ -154,9 +154,7 @@ public sealed class DesignEditor
 
         if (result is Succeeded succeeded)
         {
-            _design = Named(_design with { Sketch = succeeded.Sketch }, succeeded.Changes);
-            PruneSelection();
-            DesignChanged?.Invoke(this, EventArgs.Empty);
+            Replace(succeeded);
         }
 
         SetMessage(EditMessages.For(result, what, before, NameOf, LabelFormat));
@@ -174,12 +172,31 @@ public sealed class DesignEditor
         UpdateResult result = _updater.Apply(_design.Sketch, request);
         if (result is Succeeded succeeded)
         {
-            _design = Named(_design with { Sketch = succeeded.Sketch }, succeeded.Changes);
-            PruneSelection();
-            DesignChanged?.Invoke(this, EventArgs.Empty);
+            Replace(succeeded);
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Takes the sketch an accepted result carries, when it is a different sketch.
+    /// </summary>
+    /// <remarks>
+    /// A drag that goes nowhere — because it was blocked, or because the pointer moved less than a
+    /// grid step — reports success over the sketch it was given. Wrapping that in a new
+    /// <see cref="Design"/> anyway would make a gesture that changed nothing look like a change,
+    /// and #11 would push an undo entry with the same drawing on both sides of it.
+    /// </remarks>
+    void Replace(Succeeded succeeded)
+    {
+        if (ReferenceEquals(succeeded.Sketch, _design.Sketch) && succeeded.Changes.IsEmpty)
+        {
+            return;
+        }
+
+        _design = Named(_design with { Sketch = succeeded.Sketch }, succeeded.Changes);
+        PruneSelection();
+        DesignChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Shows a message that did not come from a request — a refused keystroke, say.</summary>
