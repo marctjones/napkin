@@ -8,9 +8,10 @@ namespace Napkin.Core.Geometry;
 /// </summary>
 /// <remarks>
 /// All of them are cheap — a box has at most eight cuts — and all of them are checked by
-/// <see cref="Sketch.Validate"/> and by <see cref="DirectUpdater"/> before a box with cuts is
-/// added. Invariant 5's other half, that the cuts are in site order, holds by construction:
-/// <see cref="Box.Cuts"/>'s initialiser sorts.
+/// <see cref="Sketch.Validate"/> and by <see cref="DirectUpdater"/> at each of its three doors: an
+/// <see cref="AddEntity"/> carrying a box with cuts, a <see cref="SetCut"/>, and after every write
+/// that resized a blank (§2.3). Invariant 5's other half, that the cuts are in site order, holds by
+/// construction: <see cref="Box.Cuts"/>'s initialiser sorts.
 /// </remarks>
 internal static class CutRules
 {
