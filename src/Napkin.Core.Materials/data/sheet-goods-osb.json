@@ -1,5 +1,6 @@
 {
   "tableVersion": 1,
+  "kind": "stock",
   "id": "wood-structural-panels-ps2",
   "title": "OSB and other wood structural panels: Performance Category and sheet size",
   "category": "SheetGood",

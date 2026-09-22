@@ -1,5 +1,6 @@
 {
   "tableVersion": 1,
+  "kind": "stock",
   "id": "hardwood-thickness-nhla",
   "title": "Hardwood lumber: quarter-inch thickness names, rough and surfaced two sides",
   "category": "HardwoodBoard",

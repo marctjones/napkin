@@ -31,6 +31,7 @@ public sealed class MaterialsReaderShapeTests
     private static string Table(string category, string entries) => $$"""
         {
           "tableVersion": 1,
+          "kind": "stock",
           "id": "test-table",
           "title": "A table for a test",
           "category": "{{category}}",
@@ -70,7 +71,7 @@ public sealed class MaterialsReaderShapeTests
     public void EntriesThatAreNotAnArrayAreRefused()
         => Refuses(
             $$"""
-            { "tableVersion": 1, "id": "t", "title": "t", "category": "DimensionalLumber",
+            { "tableVersion": 1, "kind": "stock", "id": "t", "title": "t", "category": "DimensionalLumber",
               "citation": {{Citation}}, "entries": {} }
             """,
             MaterialsProblemKind.Malformed,
@@ -81,7 +82,7 @@ public sealed class MaterialsReaderShapeTests
     public void ATableWithNoEntriesFieldAtAllIsRefused()
         => Refuses(
             $$"""
-            { "tableVersion": 1, "id": "t", "title": "t", "category": "DimensionalLumber", "citation": {{Citation}} }
+            { "tableVersion": 1, "kind": "stock", "id": "t", "title": "t", "category": "DimensionalLumber", "citation": {{Citation}} }
             """,
             MaterialsProblemKind.MissingField,
             "entries");
@@ -104,7 +105,7 @@ public sealed class MaterialsReaderShapeTests
     public void ATableWithNoVersionIsRefused()
         => Refuses(
             $$"""
-            { "id": "t", "title": "t", "category": "DimensionalLumber", "citation": {{Citation}}, "entries": [] }
+            { "kind": "stock", "id": "t", "title": "t", "category": "DimensionalLumber", "citation": {{Citation}}, "entries": [] }
             """,
             MaterialsProblemKind.MissingField,
             "tableVersion");
@@ -241,7 +242,7 @@ public sealed class MaterialsReaderShapeTests
 
     private static string WithLengths(string lengths) => $$"""
         {
-          "tableVersion": 1, "id": "t", "title": "t", "category": "HardwoodBoard",
+          "tableVersion": 1, "kind": "stock", "id": "t", "title": "t", "category": "HardwoodBoard",
           "citation": {{Citation}},
           "standardLengthCitation": {{Citation}},
           "entries": [

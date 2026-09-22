@@ -4,17 +4,19 @@ using Napkin.Core.Materials;
 namespace Napkin.Core.Materials.Tests;
 
 /// <summary>
-/// The shipped softwood table, row by row, against the cells of PS 20-20 Table 3.
+/// The shipped softwood table, row by row, against the cells of PS 20-25 Table 3.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <strong>Every expected value in this file was read out of the standard, not out of napkin.</strong>
-/// The source is Voluntary Product Standard PS 20-20, <em>American Softwood Lumber Standard</em>
-/// (U.S. Department of Commerce / NIST for the American Lumber Standard Committee, January 2020),
-/// Table 3, "Nominal and minimum-dressed sizes of boards, dimension, and timbers", page 16,
-/// retrieved 2026-09-21 from <c>https://www.alsc.org/greenbook%20collection/ps20.pdf</c>. The Dry
-/// columns are the ones carried; the same table's Green columns are not
-/// (<see cref="TheGreenColumnIsNotWhatIsCarried"/> pins that choice).
+/// The source is Voluntary Product Standard PS 20-25, <em>American Softwood Lumber Standard</em>
+/// (U.S. Department of Commerce / NIST for the American Lumber Standard Committee, January 2025),
+/// Table 3, "Nominal and minimum-dressed sizes of boards, dimension, and timbers", page 15,
+/// retrieved 2026-09-21 from <c>https://www.nist.gov/document/ps-20-25-final</c>. The Dry columns
+/// are the ones carried; the same table's Green columns are not
+/// (<see cref="TheGreenColumnIsNotWhatIsCarried"/> pins that choice). The previous edition,
+/// PS 20-20 (January 2020), was read too: its Table 3 gives identical inch values in every cell
+/// below, so nothing here turns on which edition is cited.
 /// </para>
 /// <para>
 /// These are the cells, transcribed once here so the test is checkable line by line:
@@ -71,7 +73,7 @@ public sealed class SoftwoodLumberGoldenTests
         { "6x8", Length.Inches(5, 1, 2), Length.Inches(7, 1, 4), SizeClass.Timber },
         { "8x8", Length.Inches(7, 1, 4), Length.Inches(7, 1, 4), SizeClass.Timber },
 
-        // Decking, which PS 20-20 §3.4.1 grades as boards: nominal 1-1/4 in thick -> 1 in dry.
+        // Decking, which PS 20-25 §3.4.1 grades as boards: nominal 1-1/4 in thick -> 1 in dry.
         { "5/4x4", Length.Inches(1), Length.Inches(3, 1, 2), SizeClass.Board },
         { "5/4x6", Length.Inches(1), Length.Inches(5, 1, 2), SizeClass.Board },
     };
@@ -107,7 +109,7 @@ public sealed class SoftwoodLumberGoldenTests
 
     /// <summary>
     /// The nominal name's own numbers are stored as exact lengths too, because a board-foot
-    /// takeoff is computed from the nominal size and not the dressed one (PS 20-20 §2.2, "Board
+    /// takeoff is computed from the nominal size and not the dressed one (PS 20-25 §2.2, "Board
     /// measure": the number of board feet is obtained "by multiplying the nominal thickness in
     /// inches or fraction of an inch by the nominal width in feet by the length in feet"). A 5/4
     /// deck board's nominal thickness is 1-1/4 in, not 1 in.
@@ -139,7 +141,7 @@ public sealed class SoftwoodLumberGoldenTests
     }
 
     /// <summary>
-    /// A 4x4 is dimension lumber, not a timber: PS 20-20 §3.4.2 puts everything from nominal 2 in
+    /// A 4x4 is dimension lumber, not a timber: PS 20-25 §3.4.2 puts everything from nominal 2 in
     /// up to but not including nominal 5 in thick in the dimension class, and §3.4.3 starts
     /// timbers at nominal 5 in. Reading a 4x4 out of the timbers block would give 4 - 3/4 = 3-1/4
     /// in, which is wrong.
@@ -165,6 +167,6 @@ public sealed class SoftwoodLumberGoldenTests
         Assert.True(Library.TryFindLumber("2x4", out LumberStock twoByFour));
 
         Assert.Equal("1 1/2\" x 3 1/2\"", twoByFour.ActualSizeText);
-        Assert.Equal("2x4 — actual 1 1/2\" x 3 1/2\", PS 20-20", twoByFour.HoverText);
+        Assert.Equal("2x4 — actual 1 1/2\" x 3 1/2\", PS 20-25", twoByFour.HoverText);
     }
 }

@@ -1,15 +1,16 @@
 {
   "tableVersion": 1,
+  "kind": "stock",
   "id": "softwood-lumber-ps20",
   "title": "Softwood lumber: nominal name to minimum dressed dry size, with the lengths it is racked in",
   "category": "DimensionalLumber",
 
   "citation": {
-    "designation": "PS 20-20",
-    "standard": "Voluntary Product Standard PS 20-20, American Softwood Lumber Standard (January 2020)",
+    "designation": "PS 20-25",
+    "standard": "Voluntary Product Standard PS 20-25, American Softwood Lumber Standard (January 2025)",
     "publisher": "U.S. Department of Commerce / National Institute of Standards and Technology, for the American Lumber Standard Committee",
-    "where": "Table 3, \"Nominal and minimum-dressed sizes of boards, dimension, and timbers\", page 16 — the Dry columns (thicknesses and widths), which are the sizes of lumber at 19 percent or less moisture content (§2.7, §6.2.3). The Green columns of the same table are deliberately not carried: a green 2x4 is 1-9/16 in x 3-9/16 in.",
-    "url": "https://www.alsc.org/greenbook%20collection/ps20.pdf",
+    "where": "Table 3, \"Nominal and minimum-dressed sizes of boards, dimension, and timbers\", page 15 — the Dry columns (thicknesses and widths), which are the sizes of lumber at 19 percent or less moisture content (§2.7, §6.2.3). The Green columns of the same table are deliberately not carried: a green 2x4 is 1-9/16 in x 3-9/16 in. PS 20-25 states that the imperial values are the units of record and the metric ones are given for information only. EDITIONS: these rows were also checked against the previous edition, PS 20-20 (January 2020), whose Table 3 gives identical inch values in every cell carried here; only the metric conversions gained a decimal place.",
+    "url": "https://www.nist.gov/document/ps-20-25-final",
     "retrieved": "2026-09-21"
   },
 

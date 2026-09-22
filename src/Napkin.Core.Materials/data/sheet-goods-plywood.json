@@ -1,5 +1,6 @@
 {
   "tableVersion": 1,
+  "kind": "stock",
   "id": "structural-plywood-ps1",
   "title": "Structural plywood: Performance Category and sheet size",
   "category": "SheetGood",

@@ -21,18 +21,42 @@ public sealed class MaterialsLibrary
 {
     private readonly ImmutableDictionary<string, StockItem> _byKey;
 
-    internal MaterialsLibrary(ImmutableArray<StockTable> tables)
+    internal MaterialsLibrary(ImmutableArray<StockTable> tables, ImmutableArray<SpacingTable> spacingTables)
     {
         Tables = tables;
+        SpacingTables = spacingTables;
         Items = [.. tables.SelectMany(table => table.Items)];
+        SupportSpacings = [.. spacingTables.SelectMany(table => table.Spacings)];
         _byKey = Items.ToImmutableDictionary(item => item.Key, StringComparer.Ordinal);
     }
 
-    /// <summary>The tables, in the order they were read.</summary>
+    /// <summary>The stock tables, in the order they were read.</summary>
     public ImmutableArray<StockTable> Tables { get; }
+
+    /// <summary>The support-spacing tables, in the order they were read.</summary>
+    public ImmutableArray<SpacingTable> SpacingTables { get; }
 
     /// <summary>Every stock item in every table, in the order they were read.</summary>
     public ImmutableArray<StockItem> Items { get; }
+
+    /// <summary>
+    /// Every centre-to-centre framing spacing the library carries, in the order they were read.
+    /// </summary>
+    /// <remarks>
+    /// Not stock — you cannot buy a spacing — so it is deliberately not in <see cref="Items"/> and
+    /// has no drawer in the picker. See <see cref="SupportSpacing"/> for where the numbers come
+    /// from.
+    /// </remarks>
+    public ImmutableArray<SupportSpacing> SupportSpacings { get; }
+
+    /// <summary>
+    /// The spacings for one end use — "Wall" gives the stud spacings — shortest first.
+    /// </summary>
+    /// <param name="endUse">"Wall", "Roof", "Subfloor" or "Single Floor", ignoring case.</param>
+    public ImmutableArray<SupportSpacing> SpacingsFor(string endUse)
+        => [.. SupportSpacings
+            .Where(spacing => string.Equals(spacing.EndUse, endUse, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(spacing => spacing.Spacing.Units)];
 
     /// <summary>
     /// The tables napkin ships, read from the data files embedded in this assembly.

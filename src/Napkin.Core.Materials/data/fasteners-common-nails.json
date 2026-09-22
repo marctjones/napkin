@@ -1,5 +1,6 @@
 {
   "tableVersion": 1,
+  "kind": "stock",
   "id": "common-nails-ffn105b",
   "title": "Steel wire common nails: penny size to length and shank diameter",
   "category": "Fastener",
@@ -8,7 +9,7 @@
     "designation": "FF-N-105B",
     "standard": "Federal Specification FF-N-105B, Nails, Brads, Staples and Spikes: Wire, Cut and Wrought (17 March 1971)",
     "publisher": "General Services Administration, United States of America — a U.S. Government federal specification, in the public domain",
-    "where": "§3.6.11.2, \"Type II, style 10 - Common nails. Steel wire, flat head, diamond point, round smooth shank\", page 11, whose table gives S (the penny-size trade designation), L (length, in), D (shank diameter, in) and H (head diameter, in). NOTE ON THE DOCUMENT'S STATUS: FF-N-105B was cancelled on 3 December 1996 (Notice 2) and ASTM F1667, Standard Specification for Driven Fasteners: Nails, Spikes, and Staples, is its successor. F1667's dimension tables are behind a paywall and were not read in the task that wrote this table, so the penny-size-to-length convention here is cited to the last readable primary source that states it in full rather than to F1667. A reviewer with access to F1667 should check these rows against it.",
+    "where": "§3.6.11.2, \"Type II, style 10 - Common nails. Steel wire, flat head, diamond point, round smooth shank\", page 11, whose table gives S (the penny-size trade designation), L (length, in), D (shank diameter, in) and H (head diameter, in). NOTE ON THE DOCUMENT'S STATUS: FF-N-105B was cancelled on 3 December 1996 (Notice 2) and ASTM F1667, Standard Specification for Driven Fasteners: Nails, Spikes, and Staples, is its successor. F1667's dimension tables are behind a paywall and were not read in the task that wrote this table, so the penny-size-to-length convention here is cited to the last readable primary source that states it in full rather than to F1667. A reviewer with access to F1667 should check these rows against it. HOW TO OPEN THE URL: everyspec serves the PDF only with a Referer, so reach it from the document's own page at http://everyspec.com/FED_SPECS/F/FF-N-105B_9866/ rather than by pasting the file URL, which returns 403.",
     "url": "https://everyspec.com/FED_SPECS/F/download.php?spec=FF-N-105B.009866.pdf",
     "retrieved": "2026-09-21"
   },

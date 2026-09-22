@@ -24,6 +24,7 @@ public sealed class MaterialsReaderTests
     private static string Table(string entries, string? citation = null, string extra = "") => $$"""
         {
           "tableVersion": 1,
+          "kind": "stock",
           "id": "test-table",
           "title": "A table for a test",
           "category": "DimensionalLumber",
@@ -325,7 +326,7 @@ public sealed class MaterialsReaderTests
     /// </summary>
     [Fact]
     [Trait("Feature", "MAT-005")]
-    public void TheRefusalReadsAsSomethingAPersonCanAct0n()
+    public void TheRefusalReadsAsSomethingAPersonCanActOn()
     {
         MaterialsRefused refused = Refusal(
             Table(TwoByFour.Replace("\"3-1/2\"", "\"3-1/3\"", StringComparison.Ordinal)));

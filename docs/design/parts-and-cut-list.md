@@ -370,9 +370,11 @@ Every number and every word of that table is derivable:
 - **the quantities** 1, 2, 4, 2, which are the fixture's `partsList` quantities;
 - **the order** from §3 step 5, descending by length: 48 > 40 > 16 1/4 > 16.
 
-**The text** — `4'-0"`, `3'-4"`, `1'-4"`, `2 1/2"`, `3/4"` — is `LengthFormat.Default`, and the
-fixture's `partsList` and `dimensionLabels` already state every one of those strings, derived by
-hand, which is what the cut list's rendering is checked against.
+**The text** is `LengthFormat.Default`. Six of the eight distinct strings are already in the
+fixture, derived by hand: `4'-0"`, `2'-0"`, `3'-4"`, `1'-4"`, `2 1/2"` and `3/4"` all appear in its
+`partsList` or `dimensionLabels`. The other two — `1'-4 1/4"` for the leg's length and `3 1/2"` for
+the apron's face — are this design's renderings of `statedNotInScene`'s `16 1/4"` and `3 1/2"`, and
+are new strings for #8's expectations file to state, derived by hand like the rest.
 
 ### 6.2 What the fixture cannot produce yet
 

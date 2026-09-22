@@ -93,42 +93,57 @@ public static class MaterialsReader
     {
         List<MaterialsProblem> problems = [];
         List<StockTable> tables = [];
+        List<SpacingTable> spacingTables = [];
         Dictionary<string, string> tableIds = new(StringComparer.Ordinal);
         Dictionary<string, string> keys = new(StringComparer.Ordinal);
 
         foreach (NamedSource source in sources)
         {
             TableReader reader = new(source.Name, problems);
-            StockTable? table = reader.Read(source.Open);
+            object? table = reader.Read(source.Open);
             if (table is null)
             {
                 continue;
             }
 
-            if (!tableIds.TryAdd(table.Id, source.Name))
+            (string id, IEnumerable<(string Name, string Key)> rows) = table switch
+            {
+                StockTable stock => (stock.Id, stock.Items.Select(item => (item.Name, item.Key))),
+                SpacingTable spacings => (spacings.Id, spacings.Spacings.Select(row => (row.Name, row.Key))),
+                _ => throw new InvalidOperationException($"Unknown table kind {table.GetType().Name}."),
+            };
+
+            if (!tableIds.TryAdd(id, source.Name))
             {
                 problems.Add(new MaterialsProblem(
                     MaterialsProblemKind.DuplicateTable,
                     source.Name,
                     "/id",
-                    $"The table id \"{table.Id}\" is already used by {tableIds[table.Id]}."));
+                    $"The table id \"{id}\" is already used by {tableIds[id]}."));
                 continue;
             }
 
-            foreach (StockItem item in table.Items)
+            foreach ((string name, string key) in rows)
             {
-                if (!keys.TryAdd(item.Key, source.Name))
+                if (!keys.TryAdd(key, source.Name))
                 {
                     problems.Add(new MaterialsProblem(
                         MaterialsProblemKind.DuplicateEntry,
                         source.Name,
-                        $"/entries/{item.Name}",
-                        $"\"{item.Name}\" means the same item as an entry already read from {keys[item.Key]} "
-                        + $"(both normalise to \"{item.Key}\")."));
+                        $"/entries/{name}",
+                        $"\"{name}\" means the same thing as an entry already read from {keys[key]} "
+                        + $"(both normalise to \"{key}\")."));
                 }
             }
 
-            tables.Add(table);
+            if (table is StockTable stockTable)
+            {
+                tables.Add(stockTable);
+            }
+            else
+            {
+                spacingTables.Add((SpacingTable)table);
+            }
         }
 
         if (problems.Count > 0)
@@ -136,7 +151,7 @@ public static class MaterialsReader
             return new MaterialsRefused([.. problems]);
         }
 
-        if (tables.Count == 0)
+        if (tables.Count == 0 && spacingTables.Count == 0)
         {
             return Refuse(
                 MaterialsProblemKind.Empty,
@@ -145,7 +160,7 @@ public static class MaterialsReader
                 "There is nothing to read: the library holds no tables.");
         }
 
-        return new MaterialsLoaded(new MaterialsLibrary([.. tables]));
+        return new MaterialsLoaded(new MaterialsLibrary([.. tables], [.. spacingTables]));
     }
 
     private static MaterialsRefused Refuse(MaterialsProblemKind kind, string file, string location, string message)
@@ -164,7 +179,7 @@ public static class MaterialsReader
 
         private bool Failed => problems.Count > _problemsBefore;
 
-        public StockTable? Read(Func<Stream> open)
+        public object? Read(Func<Stream> open)
         {
             JsonDocument document;
             try
@@ -189,7 +204,7 @@ public static class MaterialsReader
             }
         }
 
-        private StockTable? ReadTable(JsonElement root)
+        private object? ReadTable(JsonElement root)
         {
             JsonFields? fields = ReadFields(root, string.Empty, "the table");
             if (fields is null)
@@ -213,6 +228,114 @@ public static class MaterialsReader
                 return null;
             }
 
+            string kind = TakeText(fields, "kind") ?? string.Empty;
+            if (Failed)
+            {
+                return null;
+            }
+
+            return kind switch
+            {
+                "stock" => ReadStockTable(fields),
+                "spacings" => ReadSpacingTable(fields),
+                _ => UnknownKind(kind),
+            };
+        }
+
+        private object? UnknownKind(string kind)
+        {
+            Add(
+                MaterialsProblemKind.UnknownValue,
+                "/kind",
+                $"\"{kind}\" is not a kind of table this build reads. They are: \"stock\", \"spacings\".");
+            return null;
+        }
+
+        private SpacingTable? ReadSpacingTable(JsonFields fields)
+        {
+            string id = TakeText(fields, "id") ?? string.Empty;
+            string title = TakeText(fields, "title") ?? string.Empty;
+            Citation? source = TakeCitation(fields, "citation");
+
+            ImmutableArray<SupportSpacing> spacings = TakeSpacings(fields, source);
+
+            RejectUnknownFields(fields);
+
+            return Failed || source is null ? null : new SpacingTable(id, title, source, file, spacings);
+        }
+
+        private ImmutableArray<SupportSpacing> TakeSpacings(JsonFields fields, Citation? tableSource)
+        {
+            JsonElement? element = fields.Take("spacings");
+            if (element is not { } spacings)
+            {
+                Add(MaterialsProblemKind.MissingField, "/spacings", "The table has no \"spacings\".");
+                return [];
+            }
+
+            if (spacings.ValueKind != JsonValueKind.Array)
+            {
+                Add(MaterialsProblemKind.Malformed, "/spacings", $"Expected \"spacings\" to be an array, and found {Describe(spacings)}.");
+                return [];
+            }
+
+            ImmutableArray<SupportSpacing>.Builder builder = ImmutableArray.CreateBuilder<SupportSpacing>();
+            HashSet<string> keysInFile = new(StringComparer.Ordinal);
+            int index = 0;
+            foreach (JsonElement each in spacings.EnumerateArray())
+            {
+                string path = $"/spacings/{index}";
+                index++;
+
+                JsonFields? row = ReadFields(each, path, "a spacing");
+                if (row is null)
+                {
+                    continue;
+                }
+
+                string name = TakeText(row, "name") ?? string.Empty;
+                string key = NominalName.Normalize(name);
+                string endUse = TakeText(row, "endUse") ?? string.Empty;
+                string derivation = TakeText(row, "derivation") ?? string.Empty;
+                Length spacing = TakeLength(row, path, "spacing");
+
+                RejectUnknownFields(row);
+
+                if (Failed || tableSource is null)
+                {
+                    continue;
+                }
+
+                if (!keysInFile.Add(key))
+                {
+                    Add(
+                        MaterialsProblemKind.DuplicateEntry,
+                        $"{path}/name",
+                        $"\"{name}\" means the same spacing as an earlier entry in this file.");
+                    continue;
+                }
+
+                builder.Add(new SupportSpacing
+                {
+                    Name = name,
+                    Key = key,
+                    EndUse = endUse,
+                    Spacing = spacing,
+                    Source = tableSource,
+                    Derivation = derivation,
+                });
+            }
+
+            if (builder.Count == 0 && !Failed)
+            {
+                Add(MaterialsProblemKind.Empty, "/spacings", "The table holds no spacings.");
+            }
+
+            return builder.ToImmutable();
+        }
+
+        private StockTable? ReadStockTable(JsonFields fields)
+        {
             string id = TakeText(fields, "id") ?? string.Empty;
             string title = TakeText(fields, "title") ?? string.Empty;
             StockCategory category = TakeCategory(fields, "category");
