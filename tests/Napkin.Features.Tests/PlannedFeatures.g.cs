@@ -96,12 +96,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: CVS-009 — Undo, redo and layers over immutable sketch values")]
-    [Trait("Feature", "CVS-009")]
-    public void CVS_009()
-    {
-    }
-
     [Fact(Skip = "planned: CVS-010 — Display precision is per project, and inexact display is marked")]
     [Trait("Feature", "CVS-010")]
     public void CVS_010()
@@ -189,18 +183,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: GUI-CUT-04 — Open the shopping list and export it")]
     [Trait("Feature", "GUI-CUT-04")]
     public void GUI_CUT_04()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-05 — Undo and redo a chain of edits")]
-    [Trait("Feature", "GUI-DRAW-05")]
-    public void GUI_DRAW_05()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-06 — Save a design, reopen it and find the same design")]
-    [Trait("Feature", "GUI-DRAW-06")]
-    public void GUI_DRAW_06()
     {
     }
 
