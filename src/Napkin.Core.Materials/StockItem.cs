@@ -118,9 +118,9 @@ public sealed record LumberStock : StockItem
     /// </summary>
     /// <remarks>
     /// Carried as an exact length rather than as a label because the takeoff needs it: PS 20-20
-    /// §2.3 defines a board foot as the <em>nominal</em> thickness in inches by the nominal width
-    /// in feet by the length in feet, so #9 computes board feet from these two and not from the
-    /// dressed size.
+    /// §2.2, "Board measure", obtains the number of board feet "by multiplying the nominal
+    /// thickness in inches or fraction of an inch by the nominal width in feet by the length in
+    /// feet", so #9 computes board feet from these two and not from the dressed size.
     /// </remarks>
     public required Length NominalThickness { get; init; }
 

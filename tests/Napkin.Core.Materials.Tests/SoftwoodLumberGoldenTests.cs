@@ -107,9 +107,10 @@ public sealed class SoftwoodLumberGoldenTests
 
     /// <summary>
     /// The nominal name's own numbers are stored as exact lengths too, because a board-foot
-    /// takeoff is computed from the nominal size and not the dressed one (PS 20-20 §2.3: a board
-    /// foot is "the nominal thickness in inches by the nominal width in feet by the length in
-    /// feet"). A 5/4 deck board's nominal thickness is 1-1/4 in, not 1 in.
+    /// takeoff is computed from the nominal size and not the dressed one (PS 20-20 §2.2, "Board
+    /// measure": the number of board feet is obtained "by multiplying the nominal thickness in
+    /// inches or fraction of an inch by the nominal width in feet by the length in feet"). A 5/4
+    /// deck board's nominal thickness is 1-1/4 in, not 1 in.
     /// </summary>
     [Fact]
     [Trait("Feature", "MAT-001")]
