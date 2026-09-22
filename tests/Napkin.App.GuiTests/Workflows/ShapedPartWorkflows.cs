@@ -278,6 +278,36 @@ public class ShapedPartWorkflows
             Assert.Single(window.CurrentDesign!.Sketch.Find<Box>(id)!.Cuts);
         });
 
+        // Typing is exact (§7.2): the same cut, set to a number rather than dragged to one.
+        app.Click(CentreOf(window, window.CutFirstField));
+        app.Chord(Key.A);
+        app.Type("3\"");
+        app.Click(CentreOf(window, window.ApplyCut));
+
+        app.Expect("the typed setback is one SetCut, and the other mark is left alone", () =>
+        {
+            CornerCut typed = Assert.IsType<CornerCut>(
+                Assert.Single(window.CurrentDesign!.Sketch.Find<Box>(id)!.Cuts));
+            Assert.Equal(Length.Inches(3).Units, typed.AlongX.Units);
+            Assert.Equal(Length.Inches(2).Units, typed.AlongY.Units);
+        });
+
+        // And the full-mitre entry: both setbacks at the blank's width, in one action (§7.2). It
+        // keeps nothing related afterwards — §2.5's stated gap, issue #67.
+        app.Click(CentreOf(window, window.FullMitre));
+
+        app.Expect("a full mitre is one cut with both setbacks at the 1x6's width", () =>
+        {
+            CornerCut mitre = Assert.IsType<CornerCut>(
+                Assert.Single(window.CurrentDesign!.Sketch.Find<Box>(id)!.Cuts));
+            Assert.Equal(Length.Inches(5, 1, 2).Units, mitre.AlongX.Units);
+            Assert.Equal(Length.Inches(5, 1, 2).Units, mitre.AlongY.Units);
+            Assert.Equal("45°", window.CutAngleField.Text);
+        });
+
+        // Back to the drawing to press Delete on it: the keyboard follows the focus, and the last
+        // thing clicked was a button in the properties panel.
+        app.Click(InWorkshop(window, Point2.Origin));
         app.Press(Key.Delete);
 
         app.Expect("the cut is off the blank and the part is a plain rectangle again", () =>

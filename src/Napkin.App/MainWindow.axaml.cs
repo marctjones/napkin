@@ -586,9 +586,13 @@ public partial class MainWindow : Window
     /// </summary>
     void ShowProperties()
     {
-        if (Editor.OnlySelectedBox is not { } box)
+        // While the shape workshop is open the canvas's floating chrome is off the screen, this
+        // panel with it: the workshop is a mode with its own panel, and two panels stacked on the
+        // same corner of the window would have one of them taking the other's clicks.
+        if (IsShapingPart || Editor.OnlySelectedBox is not { } box)
         {
             PropertiesPanel.IsVisible = false;
+            ShowCut();
             return;
         }
 
@@ -851,6 +855,9 @@ public partial class MainWindow : Window
     /// <summary>What the cut fields say about the selected cut, in words.</summary>
     public string CutReadoutText => CutReadout.Text ?? string.Empty;
 
+    /// <summary>What the cut fields are complaining about, or empty when they are not.</summary>
+    public string CutErrorText => CutError.IsVisible ? CutError.Text ?? string.Empty : string.Empty;
+
     /// <summary>
     /// Opens the shape workshop on one part.
     /// </summary>
@@ -874,10 +881,12 @@ public partial class MainWindow : Window
         WorkshopSheet.IsVisible = true;
         WorkshopDrawing.Blank = box;
 
-        // The chrome that belongs to the canvas goes while the canvas is behind the sheet; the
-        // properties panel stays, because the cut a person is typing into is in it (§7.2).
+        // The chrome that belongs to the canvas goes while the canvas is behind the sheet. The
+        // workshop says what the part is in its own headline and leads with its own stock picker,
+        // so nothing a person needs here is in the panels that just went.
         ToolBar.IsVisible = false;
         RelationshipsPanel.IsVisible = false;
+        PropertiesPanel.IsVisible = false;
 
         _showingCut = true;
         try
@@ -1010,7 +1019,7 @@ public partial class MainWindow : Window
             Length longer = Length.Max(clip.AlongX, clip.AlongY);
             if (CutAngle.SetbackFor(longer, degrees) is not { } shorter)
             {
-                return Complain("A cut is made at more than 0° and less than 90° off square.");
+                return ComplainAboutCut("A cut is made at more than 0° and less than 90° off square.");
             }
 
             CornerCut angled = clip.AlongX >= clip.AlongY
@@ -1039,16 +1048,16 @@ public partial class MainWindow : Window
         CutAngle.Text(Length.Min(clip.AlongX, clip.AlongY), Length.Max(clip.AlongX, clip.AlongY)),
         StringComparison.Ordinal);
 
-    /// <summary>A length out of a field, or nothing at all when it does not read as one.</summary>
+    /// <summary>A length out of a cut field, or nothing at all when it does not read as one.</summary>
     Length? Read(TextBox field, string what)
     {
         if (DimensionEntry.Interpret(field.Text) is ReadableLength readable && readable.Value > Length.Zero)
         {
-            PropertiesError.IsVisible = false;
+            CutError.IsVisible = false;
             return readable.Value;
         }
 
-        Complain($"{what} has to be a length greater than zero, like 3/4\" or 1' 4 1/4\".");
+        ComplainAboutCut($"{what} has to be a length greater than zero, like 3/4\" or 1' 4 1/4\".");
         return null;
     }
 
@@ -1056,6 +1065,13 @@ public partial class MainWindow : Window
     {
         PropertiesError.Text = why;
         PropertiesError.IsVisible = true;
+        return false;
+    }
+
+    bool ComplainAboutCut(string why)
+    {
+        CutError.Text = why;
+        CutError.IsVisible = true;
         return false;
     }
 
@@ -1151,6 +1167,7 @@ public partial class MainWindow : Window
         try
         {
             CutFields.IsVisible = true;
+            CutError.IsVisible = false;
             CutHeadline.Text = $"Cut at the {cut.Site}";
             CutFirstCaption.IsVisible = true;
             CutFirstBox.IsVisible = true;
@@ -1414,6 +1431,7 @@ public partial class MainWindow : Window
         WorkshopCutsEmpty.Foreground = new SolidColorBrush(palette.Label);
         CutHeadline.Foreground = edge;
         CutReadout.Foreground = new SolidColorBrush(palette.Label);
+        CutError.Foreground = new SolidColorBrush(palette.Snap);
         CutFieldsRule.BorderBrush = new SolidColorBrush(palette.GridMajor);
 
         DimensionEditor.Background = paper;

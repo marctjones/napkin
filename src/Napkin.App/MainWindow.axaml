@@ -130,9 +130,14 @@
                 whole job is to give one blank the room a canvas tool does not have — the part
                 drawn large and unrotated, its corners named, and its cuts listed beside it.
 
-                It deliberately does not cover the properties panel, which floats over it: the
-                stock readout and the typed fields for the selected cut are that panel's, and §7.2
-                puts a cut's numbers there rather than inventing a second place to type.
+                §7.2 says a selected cut's numbers show "in the properties panel". While the
+                workshop is open, the panel beside the blank *is* that panel: it lists the cuts
+                and holds the typed fields for the selected one, which is also §7.1's "the list
+                of cuts with their typed values beside it". The canvas's own properties panel is
+                hidden for the duration, along with the tool control and the relationship list —
+                two panels stacked on the same corner of the window would have one of them taking
+                the other's clicks, and the workshop already says what the part is and what it is
+                cut from.
             -->
             <Border Name="WorkshopSheet" IsVisible="False" BorderThickness="0">
                 <Grid RowDefinitions="Auto,*,Auto">
@@ -195,12 +200,72 @@
                                          FontSize="11"
                                          Background="Transparent"
                                          BorderThickness="0"
-                                         MaxHeight="260" />
+                                         MaxHeight="140" />
                                 <TextBlock Name="WorkshopCutsEmpty"
                                            Text="Nothing has been cut off this blank yet."
                                            FontSize="11"
                                            Opacity="0.75"
                                            TextWrapping="Wrap" />
+
+                                <!--
+                                    The selected cut's numbers, while the shape workshop is open
+                                    (docs/design/shaped-parts-model.md §7.2). Typing one is a SetCut with the
+                                    new value — the "resize by typing a dimension" pattern applied to a cut —
+                                    and an angle typed for a corner cut is converted to the setback it implies
+                                    with one explicit rounding.
+                                -->
+                                <StackPanel Name="CutFields" Spacing="5" IsVisible="False">
+                                    <Border Height="1"
+                                            Name="CutFieldsRule"
+                                            Margin="0,2"
+                                            BorderThickness="0,1,0,0" />
+
+                                    <TextBlock Name="CutHeadline" FontSize="12" FontWeight="SemiBold" />
+
+                                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                                        <TextBlock Name="CutFirstCaption" Grid.Row="0" Grid.Column="0"
+                                                   FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        <TextBox Name="CutFirstBox" Grid.Row="0" Grid.Column="1" FontSize="12"
+                                                 Margin="0,0,0,4" />
+
+                                        <TextBlock Name="CutSecondCaption" Grid.Row="1" Grid.Column="0"
+                                                   FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        <TextBox Name="CutSecondBox" Grid.Row="1" Grid.Column="1" FontSize="12"
+                                                 Margin="0,0,0,4" />
+
+                                        <TextBlock Name="CutAngleCaption" Grid.Row="2" Grid.Column="0"
+                                                   Text="Angle" FontSize="11"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        <TextBox Name="CutAngleBox" Grid.Row="2" Grid.Column="1" FontSize="12"
+                                                 PlaceholderText="45" />
+                                    </Grid>
+
+                                    <TextBlock Name="CutReadout" FontSize="10" Opacity="0.85" TextWrapping="Wrap" />
+
+                                    <TextBlock Name="CutError"
+                                               IsVisible="False"
+                                               FontSize="11"
+                                               TextWrapping="Wrap" />
+
+                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                                        <Button Name="FullMitreButton"
+                                                Content="Full mitre"
+                                                FontSize="11"
+                                                Padding="8,3"
+                                                Click="OnFullMitreClicked"
+                                                ToolTip.Tip="Both setbacks at the blank's width, once. It does not keep them related afterwards." />
+                                        <Button Name="RemoveCutButton"
+                                                Content="Remove"
+                                                FontSize="11"
+                                                Padding="8,3"
+                                                Click="OnRemoveCutClicked" />
+                                        <Button Name="ApplyCutButton"
+                                                Content="Apply"
+                                                FontSize="11"
+                                                Padding="8,3"
+                                                Click="OnApplyCutClicked" />
+                                    </StackPanel>
+                                </StackPanel>
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -350,61 +415,6 @@
                             Padding="10,3"
                             HorizontalAlignment="Right"
                             Click="OnApplyPartClicked" />
-
-                    <!--
-                        The selected cut's numbers, while the shape workshop is open
-                        (docs/design/shaped-parts-model.md §7.2). Typing one is a SetCut with the
-                        new value — the "resize by typing a dimension" pattern applied to a cut —
-                        and an angle typed for a corner cut is converted to the setback it implies
-                        with one explicit rounding.
-                    -->
-                    <StackPanel Name="CutFields" Spacing="5" IsVisible="False">
-                        <Border Height="1"
-                                Name="CutFieldsRule"
-                                Margin="0,2"
-                                BorderThickness="0,1,0,0" />
-
-                        <TextBlock Name="CutHeadline" FontSize="12" FontWeight="SemiBold" />
-
-                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
-                            <TextBlock Name="CutFirstCaption" Grid.Row="0" Grid.Column="0"
-                                       FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBox Name="CutFirstBox" Grid.Row="0" Grid.Column="1" FontSize="12"
-                                     Margin="0,0,0,4" />
-
-                            <TextBlock Name="CutSecondCaption" Grid.Row="1" Grid.Column="0"
-                                       FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBox Name="CutSecondBox" Grid.Row="1" Grid.Column="1" FontSize="12"
-                                     Margin="0,0,0,4" />
-
-                            <TextBlock Name="CutAngleCaption" Grid.Row="2" Grid.Column="0"
-                                       Text="Angle" FontSize="11"
-                                       VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBox Name="CutAngleBox" Grid.Row="2" Grid.Column="1" FontSize="12"
-                                     PlaceholderText="45" />
-                        </Grid>
-
-                        <TextBlock Name="CutReadout" FontSize="10" Opacity="0.85" TextWrapping="Wrap" />
-
-                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
-                            <Button Name="FullMitreButton"
-                                    Content="Full mitre"
-                                    FontSize="11"
-                                    Padding="8,3"
-                                    Click="OnFullMitreClicked"
-                                    ToolTip.Tip="Both setbacks at the blank's width, once. It does not keep them related afterwards." />
-                            <Button Name="RemoveCutButton"
-                                    Content="Remove"
-                                    FontSize="11"
-                                    Padding="8,3"
-                                    Click="OnRemoveCutClicked" />
-                            <Button Name="ApplyCutButton"
-                                    Content="Apply"
-                                    FontSize="11"
-                                    Padding="8,3"
-                                    Click="OnApplyCutClicked" />
-                        </StackPanel>
-                    </StackPanel>
 
                     <TextBlock Name="PropertiesError"
                                IsVisible="False"
