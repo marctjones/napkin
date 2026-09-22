@@ -659,24 +659,6 @@
       "kind": "unit"
     },
     {
-      "id": "IOP-004",
-      "area": "interop",
-      "title": "No proprietary import dependency enters without a recorded decision",
-      "acceptance": "The dependency gate fails the build if a package outside the license policy, including a proprietary SketchUp SDK, is referenced without a committed exception carrying a written justification.",
-      "milestone": "backlog",
-      "issue": 24,
-      "kind": "unit"
-    },
-    {
-      "id": "CUT-007",
-      "area": "furniture",
-      "title": "Sheet-goods nesting reports the sheets a project needs",
-      "acceptance": "Given a stock panel size and a cut list of sheet parts, the layout places every part inside the panels without overlap and reports the number of sheets needed.",
-      "milestone": "backlog",
-      "issue": 26,
-      "kind": "unit"
-    },
-    {
       "id": "PKG-001",
       "area": "packaging",
       "title": "Self-contained builds start on a clean machine",
@@ -690,7 +672,7 @@
       "area": "packaging",
       "title": "First-run instructions and the source offer ship with every build",
       "acceptance": "The README documents the macOS System Settings path for opening an unsigned app and the Windows SmartScreen path with every URL reachable, and each published artifact contains the AGPL-3.0 text and a written offer of source naming the commit it was built from.",
-      "milestone": "M1",
+      "milestone": "backlog",
       "issue": 27,
       "kind": "unit"
     },
@@ -699,7 +681,7 @@
       "area": "release",
       "title": "A tag produces downloadable macOS and Windows artifacts",
       "acceptance": "Pushing a tag matching the release pattern builds a macOS artifact and a Windows artifact and attaches both to a GitHub release created for that tag.",
-      "milestone": "M1",
+      "milestone": "backlog",
       "issue": 38,
       "kind": "unit"
     },
@@ -708,7 +690,7 @@
       "area": "release",
       "title": "Every release is a pre-release",
       "acceptance": "The release the pipeline creates has the pre-release flag set and is not marked latest, and a test over the workflow definition fails if that flag is ever removed.",
-      "milestone": "M1",
+      "milestone": "backlog",
       "issue": 38,
       "kind": "unit"
     },
@@ -717,7 +699,7 @@
       "area": "release",
       "title": "The arm64 macOS artifact carries its ad-hoc signature only",
       "acceptance": "The published macOS arm64 binary verifies as carrying the toolchain's automatic ad-hoc signature, which arm64 code needs to run at all, and carries no Developer ID signature or notarization ticket.",
-      "milestone": "M1",
+      "milestone": "backlog",
       "issue": 38,
       "kind": "unit"
     },
