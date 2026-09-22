@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
+using Napkin.Core.Materials;
 using Napkin.Modules.Furniture;
 
 using Xunit;
@@ -242,10 +243,23 @@ public class CutListWorkflows
             Assert.Equal("Rail, front", row.Label);
             Assert.Equal(2, row.Quantity);
 
-            // The two in-plan dimensions are the box's own, and the third is what was typed.
+            // Choosing a stock really makes the blank that stock: the rail was drawn 4" across,
+            // and a 2x4 is 3 1/2" wide, so the blank is now 3 1/2" wide (parts-and-cut-list.md
+            // §1.2). The length is the free dimension, so it stays what was drawn, and the
+            // thickness is what was typed — the same 1 1/2" the yard would have fixed it at.
+            Assert.True(MaterialsLibrary.Shipped.TryFindLumber("2x4", out LumberStock lumber));
             Assert.Equal(Length.Inches(24).Units, row.Length.Units);
-            Assert.Equal(Length.Inches(4).Units, row.Width.Units);
+            Assert.Equal(lumber.Width.Units, row.Width.Units);
+            Assert.NotEqual(Length.Inches(4).Units, row.Width.Units);
+            Assert.Equal(lumber.Thickness.Units, row.Thickness.Units);
             Assert.Equal(1536, row.Thickness.Units);
+
+            // The yard owns that number now, so the resize handle on that edge says so.
+            Assert.Equal(
+                lumber.Width,
+                Assert.Single(
+                    window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<ParamValue>(),
+                    value => value.Param.Equals(new BoxHeightRef(part.Id))).Value);
 
             // "2 x 4" resolved to the library's own name and item, not to the name as typed.
             Assert.Equal("2x4", row.Material);

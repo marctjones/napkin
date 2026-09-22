@@ -11,6 +11,7 @@ using Napkin.App.Editing;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Modules.Furniture;
 
 namespace Napkin.App;
 
@@ -720,7 +721,7 @@ public partial class MainWindow : Window
 
         string name = PartNameBox.Text ?? string.Empty;
         Editor.Apply(
-            Batch.Of(new SetName(box.Id, name), new SetPart(box.Id, part)),
+            Batch.Of(new SetName(box.Id, name), Assignment(box, part)),
             part is null ? "make it a plain box" : "set what this part is");
 
         ShowProperties();
@@ -734,6 +735,40 @@ public partial class MainWindow : Window
         }
 
         static string? Blank(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+    }
+
+    /// <summary>
+    /// What to put to the editor to make this box that part: not just the stock's <em>name</em>,
+    /// but the dimensions the yard fixes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A 1x6 is 5 1/2&#x2033; wide whatever the box was drawn at, so choosing it here really
+    /// resizes the blank — through the updater, so that relationships propagate and a conflict is
+    /// reported like any other, and as one batch, so that a part pinned to something that cannot
+    /// move keeps both its old size and its old stock rather than being half-assigned
+    /// (<c>docs/design/parts-and-cut-list.md</c> §1.2).
+    /// </para>
+    /// <para>
+    /// Which dimensions those are is <see cref="StockAssignment"/>'s to say, not this window's: the
+    /// panel resolves the typed name through the library — the same lookup the readout above it
+    /// uses, so what a person read is what gets assigned — and calls it. A name the library does
+    /// not carry fixes nothing and is not an error; the name is still stored, and the cut list says
+    /// it did not resolve.
+    /// </para>
+    /// </remarks>
+    Request Assignment(Box box, Part? part)
+    {
+        if (part is null)
+        {
+            return new SetPart(box.Id, null);
+        }
+
+        StockItem? stock = MaterialsLibrary.Shipped.TryFind(part.Stock, out StockItem item)
+            ? item
+            : null;
+
+        return StockAssignment.RequestsFor(Editor.Sketch, box, part, stock);
     }
 
     void UpdateMenuEnablement()
