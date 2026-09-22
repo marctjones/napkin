@@ -1,0 +1,39 @@
+{
+  "tableVersion": 1,
+  "id": "wood-structural-panels-ps2",
+  "title": "OSB and other wood structural panels: Performance Category and sheet size",
+  "category": "SheetGood",
+
+  "citation": {
+    "designation": "PS 2-18",
+    "standard": "Voluntary Product Standard PS 2-18, Performance Standard for Wood Structural Panels (effective 30 March 2019)",
+    "publisher": "U.S. Department of Commerce / National Institute of Standards and Technology; published by APA - The Engineered Wood Association, Form No. S350H",
+    "where": "§5.2.1.2 and Table 1, \"Panel thickness requirements\", page 7, which give each Performance Category its minimum and maximum thickness (Appendix D Table D1 repeats them with the recommended thickness label); §5.2.1.1, which allows plus or minus 1.6 mm (1/16 in) on the manufactured length and width; and §7.3, whose performance tests are run on 1,220 mm x 2,440 mm (48 in. x 96 in.) panels.",
+    "url": "https://tolko.com/wp-content/uploads/2019/11/APA-PS-2-18-Performance-Standard-for-Wood-Structural-Panels.pdf",
+    "retrieved": "2026-09-21"
+  },
+
+  "entries": [
+    { "name": "3/8 osb", "performanceCategory": "3/8",
+      "thickness": "3/8", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 1, 3/8 PERF CAT: 8.73 to 10.32 mm (0.344 to 0.406 in). Those limits are rounded conversions of millimetre values and do not land on the 1/1024 in grid, so the exact length carried is the Performance Category itself, 3/8 in. Sheet size: the 48 in x 96 in panel §7.3 tests, within the plus or minus 1/16 in size tolerance of §5.2.1.1." },
+    { "name": "7/16 osb", "performanceCategory": "7/16",
+      "thickness": "7/16", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 1, 7/16 PERF CAT: 10.32 to 11.91 mm (0.406 to 0.469 in). Carried length is the category, 7/16 in. Sheet size as above." },
+    { "name": "15/32 osb", "performanceCategory": "15/32",
+      "thickness": "15/32", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 1, 15/32 PERF CAT: 11.11 to 12.70 mm (0.438 to 0.500 in). Carried length is the category, 15/32 in. Sheet size as above." },
+    { "name": "19/32 osb", "performanceCategory": "19/32",
+      "thickness": "19/32", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 1, 19/32 PERF CAT: 14.29 to 15.88 mm (0.563 to 0.625 in). Carried length is the category, 19/32 in. Sheet size as above." },
+    { "name": "23/32 osb", "performanceCategory": "23/32",
+      "thickness": "23/32", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 1, 23/32 PERF CAT: 17.46 to 19.05 mm (0.688 to 0.750 in). Carried length is the category, 23/32 in. PS 2-18 lists 23/32 and 3/4 as two separate Performance Categories; neither is stated to be the actual thickness of the other. Sheet size as above." },
+    { "name": "3/4 osb", "performanceCategory": "3/4",
+      "thickness": "3/4", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 1, 3/4 PERF CAT: 18.26 to 19.84 mm (0.719 to 0.781 in). Carried length is the category, 3/4 in. Sheet size as above." },
+    { "name": "1-1/8 osb", "performanceCategory": "1-1/8",
+      "thickness": "1-1/8", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 1, 1-1/8 PERF CAT: 27.15 to 30.00 mm (1.069 to 1.181 in). Carried length is the category, 1-1/8 in. Sheet size as above." }
+  ]
+}

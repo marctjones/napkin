@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Text.Json;
 
 using Napkin.Core.Geometry;
@@ -216,15 +217,22 @@ public static class MaterialsReader
             string title = TakeText(fields, "title") ?? string.Empty;
             StockCategory category = TakeCategory(fields, "category");
             Citation? source = TakeCitation(fields, "citation");
+            Citation? lengthSource = fields.Take("standardLengthCitation") is null
+                ? null
+                : TakeCitation(fields, "standardLengthCitation");
 
-            ImmutableArray<StockItem> items = TakeEntries(fields, category, source);
+            ImmutableArray<StockItem> items = TakeEntries(fields, category, source, lengthSource);
 
             RejectUnknownFields(fields);
 
             return Failed || source is null ? null : new StockTable(id, title, category, source, file, items);
         }
 
-        private ImmutableArray<StockItem> TakeEntries(JsonFields fields, StockCategory category, Citation? tableSource)
+        private ImmutableArray<StockItem> TakeEntries(
+            JsonFields fields,
+            StockCategory category,
+            Citation? tableSource,
+            Citation? lengthSource)
         {
             JsonElement? element = fields.Take("entries");
             if (element is not { } entries)
@@ -244,7 +252,7 @@ public static class MaterialsReader
             int index = 0;
             foreach (JsonElement entry in entries.EnumerateArray())
             {
-                StockItem? item = ReadEntry(entry, $"/entries/{index}", category, tableSource);
+                StockItem? item = ReadEntry(entry, $"/entries/{index}", category, tableSource, lengthSource);
                 index++;
                 if (item is null)
                 {
@@ -272,7 +280,12 @@ public static class MaterialsReader
             return builder.ToImmutable();
         }
 
-        private StockItem? ReadEntry(JsonElement element, string path, StockCategory category, Citation? tableSource)
+        private StockItem? ReadEntry(
+            JsonElement element,
+            string path,
+            StockCategory category,
+            Citation? tableSource,
+            Citation? lengthSource)
         {
             JsonFields? fields = ReadFields(element, path, "an entry");
             if (fields is null)
@@ -292,34 +305,128 @@ public static class MaterialsReader
                 ? tableSource
                 : TakeCitation(fields, "citation");
 
+            Common common = new(name, key, category, source, derivation);
             StockItem? item = category switch
             {
-                StockCategory.DimensionalLumber or StockCategory.Decking
-                    => ReadLumber(fields, path, name, key, category, source, derivation),
+                StockCategory.DimensionalLumber or StockCategory.Decking => ReadLumber(fields, path, common),
+                StockCategory.SheetGood => ReadPanel(fields, path, common),
+                StockCategory.HardwoodBoard => ReadHardwood(fields, path, common),
+                StockCategory.Fastener => ReadFastener(fields, path, common),
                 _ => UnsupportedCategory(path, category),
             };
+
+            item = TakeStandardLengths(fields, path, item, lengthSource);
 
             RejectUnknownFields(fields);
             return Failed || source is null ? null : item;
         }
 
+        /// <summary>The fields every entry has, whatever its category.</summary>
+        private readonly record struct Common(
+            string Name,
+            string Key,
+            StockCategory Category,
+            Citation? Source,
+            string Derivation);
+
         private StockItem? UnsupportedCategory(string path, StockCategory category)
         {
             Add(
                 MaterialsProblemKind.UnknownValue,
-                $"{path}",
+                path,
                 $"This build does not know how to read the entries of a \"{category}\" table yet.");
             return null;
         }
 
-        private StockItem? ReadLumber(
-            JsonFields fields,
-            string path,
-            string name,
-            string key,
-            StockCategory category,
-            Citation? source,
-            string derivation)
+        private StockItem? TakeStandardLengths(JsonFields fields, string path, StockItem? item, Citation? lengthSource)
+        {
+            JsonElement? element = fields.Take("standardLengths");
+            string derivation = fields.Take("standardLengthDerivation") is { } derivationElement
+                && derivationElement.ValueKind == JsonValueKind.String
+                    ? derivationElement.GetString() ?? string.Empty
+                    : string.Empty;
+
+            if (element is not { } lengths)
+            {
+                return item;
+            }
+
+            if (lengths.ValueKind != JsonValueKind.Array)
+            {
+                Add(
+                    MaterialsProblemKind.Malformed,
+                    $"{path}/standardLengths",
+                    $"Expected \"standardLengths\" to be an array, and found {Describe(lengths)}.");
+                return item;
+            }
+
+            if (lengthSource is null)
+            {
+                Add(
+                    MaterialsProblemKind.MissingField,
+                    $"{path}/standardLengths",
+                    "This entry lists standard lengths, and the table has no \"standardLengthCitation\". "
+                    + "A stock-length list comes from a grading agency's rulebook rather than from the size "
+                    + "standard, so it names its own source or it is not carried.");
+                return item;
+            }
+
+            ImmutableArray<Length>.Builder builder = ImmutableArray.CreateBuilder<Length>();
+            int index = 0;
+            Length previous = Length.Zero;
+            foreach (JsonElement each in lengths.EnumerateArray())
+            {
+                string where = $"{path}/standardLengths/{index}";
+                index++;
+
+                if (each.ValueKind != JsonValueKind.String
+                    || !Length.TryParse(each.GetString(), out Length value, out bool wasRounded)
+                    || wasRounded)
+                {
+                    Add(MaterialsProblemKind.NotALength, where, $"{Describe(each)} is not an exact length.");
+                    continue;
+                }
+
+                if (value <= previous)
+                {
+                    Add(
+                        MaterialsProblemKind.InvalidValue,
+                        where,
+                        "Standard lengths are listed shortest first and each one only once, so the shopping "
+                        + "list can take the first that fits.");
+                    continue;
+                }
+
+                previous = value;
+                builder.Add(value);
+            }
+
+            if (builder.Count == 0)
+            {
+                Add(MaterialsProblemKind.Empty, $"{path}/standardLengths", "\"standardLengths\" is there and lists nothing.");
+                return item;
+            }
+
+            if (derivation.Length == 0)
+            {
+                Add(
+                    MaterialsProblemKind.MissingField,
+                    $"{path}/standardLengthDerivation",
+                    "An entry that lists standard lengths says how they were read out of the cited clause.");
+                return item;
+            }
+
+            return item is null
+                ? null
+                : item with
+                {
+                    StandardLengths = builder.ToImmutable(),
+                    StandardLengthSource = lengthSource,
+                    StandardLengthDerivation = derivation,
+                };
+        }
+
+        private StockItem? ReadLumber(JsonFields fields, string path, Common common)
         {
             Length nominalThickness = TakeLength(fields, path, "nominalThickness");
             Length nominalWidth = TakeLength(fields, path, "nominalWidth");
@@ -327,23 +434,104 @@ public static class MaterialsReader
             Length width = TakeLength(fields, path, "width");
             SizeClass sizeClass = TakeSizeClass(fields, path, "sizeClass");
 
-            if (Failed || source is null)
+            if (Failed || common.Source is null)
             {
                 return null;
             }
 
             return new LumberStock
             {
-                Name = name,
-                Key = key,
-                Category = category,
-                Source = source,
-                Derivation = derivation,
+                Name = common.Name,
+                Key = common.Key,
+                Category = common.Category,
+                Source = common.Source,
+                Derivation = common.Derivation,
                 NominalThickness = nominalThickness,
                 NominalWidth = nominalWidth,
                 Thickness = thickness,
                 Width = width,
                 SizeClass = sizeClass,
+            };
+        }
+
+        private StockItem? ReadPanel(JsonFields fields, string path, Common common)
+        {
+            string performanceCategory = TakeText(fields, "performanceCategory") ?? string.Empty;
+            Length thickness = TakeLength(fields, path, "thickness");
+            Length sheetWidth = TakeLength(fields, path, "sheetWidth");
+            Length sheetLength = TakeLength(fields, path, "sheetLength");
+
+            if (Failed || common.Source is null)
+            {
+                return null;
+            }
+
+            return new PanelStock
+            {
+                Name = common.Name,
+                Key = common.Key,
+                Category = common.Category,
+                Source = common.Source,
+                Derivation = common.Derivation,
+                PerformanceCategory = performanceCategory,
+                Thickness = thickness,
+                SheetWidth = sheetWidth,
+                SheetLength = sheetLength,
+            };
+        }
+
+        private StockItem? ReadHardwood(JsonFields fields, string path, Common common)
+        {
+            Length roughThickness = TakeLength(fields, path, "roughThickness");
+            Length surfacedTwoSides = TakeLength(fields, path, "surfacedTwoSides");
+
+            if (Failed || common.Source is null)
+            {
+                return null;
+            }
+
+            if (surfacedTwoSides >= roughThickness)
+            {
+                Add(
+                    MaterialsProblemKind.InvalidValue,
+                    $"{path}/surfacedTwoSides",
+                    "Surfacing takes thickness off: the surfaced thickness has to be less than the rough one.");
+                return null;
+            }
+
+            return new HardwoodStock
+            {
+                Name = common.Name,
+                Key = common.Key,
+                Category = common.Category,
+                Source = common.Source,
+                Derivation = common.Derivation,
+                RoughThickness = roughThickness,
+                SurfacedTwoSides = surfacedTwoSides,
+            };
+        }
+
+        private StockItem? ReadFastener(JsonFields fields, string path, Common common)
+        {
+            string pennySize = TakeText(fields, "pennySize") ?? string.Empty;
+            Length length = TakeLength(fields, path, "length");
+            double shankDiameter = TakeDecimalInches(fields, path, "shankDiameterInches");
+
+            if (Failed || common.Source is null)
+            {
+                return null;
+            }
+
+            return new FastenerStock
+            {
+                Name = common.Name,
+                Key = common.Key,
+                Category = common.Category,
+                Source = common.Source,
+                Derivation = common.Derivation,
+                PennySize = pennySize,
+                FastenerLength = length,
+                ShankDiameterInches = shankDiameter,
             };
         }
 
@@ -473,6 +661,47 @@ public static class MaterialsReader
             return value;
         }
 
+        /// <summary>
+        /// A wire diameter, which a fastener specification genuinely states as a decimal of an
+        /// inch rather than as a tape-measure fraction. Written as text so the data file reads
+        /// exactly like the specification's cell — <c>".162"</c> — and so no JSON number formatting
+        /// can come between the two.
+        /// </summary>
+        private double TakeDecimalInches(JsonFields fields, string path, string name)
+        {
+            string where = $"{path}/{name}";
+            if (fields.Take(name) is not { } element)
+            {
+                Add(MaterialsProblemKind.MissingField, where, $"\"{name}\" is required and is not there.");
+                return 0;
+            }
+
+            if (element.ValueKind != JsonValueKind.String)
+            {
+                Add(
+                    MaterialsProblemKind.Malformed,
+                    where,
+                    $"Expected \"{name}\" to be text written the way the specification prints it — \".162\" — "
+                    + $"and found {Describe(element)}.");
+                return 0;
+            }
+
+            string text = element.GetString() ?? string.Empty;
+            if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+            {
+                Add(MaterialsProblemKind.Malformed, where, $"\"{text}\" is not a decimal number.");
+                return 0;
+            }
+
+            if (value <= 0)
+            {
+                Add(MaterialsProblemKind.InvalidValue, where, $"\"{text}\" is not a positive diameter.");
+                return 0;
+            }
+
+            return value;
+        }
+
         private StockCategory TakeCategory(JsonFields fields, string name)
         {
             string path = $"{fields.Path}/{name}";
@@ -535,6 +764,7 @@ public static class MaterialsReader
                 return null;
             }
 
+            string? designation = TakeText(citationFields, "designation");
             string? standard = TakeText(citationFields, "standard");
             string? publisher = TakeText(citationFields, "publisher");
             string? where = TakeText(citationFields, "where");
@@ -543,7 +773,7 @@ public static class MaterialsReader
 
             RejectUnknownFields(citationFields);
 
-            if (standard is null || publisher is null || where is null || url is null || retrieved is null)
+            if (designation is null || standard is null || publisher is null || where is null || url is null || retrieved is null)
             {
                 return null;
             }
@@ -554,7 +784,7 @@ public static class MaterialsReader
                 return null;
             }
 
-            return new Citation(standard, publisher, where, url, retrievedOn);
+            return new Citation(designation, standard, publisher, where, url, retrievedOn);
         }
 
         private static string Describe(JsonElement element) => element.ValueKind switch

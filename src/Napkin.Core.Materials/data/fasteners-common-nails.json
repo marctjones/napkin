@@ -1,0 +1,50 @@
+{
+  "tableVersion": 1,
+  "id": "common-nails-ffn105b",
+  "title": "Steel wire common nails: penny size to length and shank diameter",
+  "category": "Fastener",
+
+  "citation": {
+    "designation": "FF-N-105B",
+    "standard": "Federal Specification FF-N-105B, Nails, Brads, Staples and Spikes: Wire, Cut and Wrought (17 March 1971)",
+    "publisher": "General Services Administration, United States of America — a U.S. Government federal specification, in the public domain",
+    "where": "§3.6.11.2, \"Type II, style 10 - Common nails. Steel wire, flat head, diamond point, round smooth shank\", page 11, whose table gives S (the penny-size trade designation), L (length, in), D (shank diameter, in) and H (head diameter, in). NOTE ON THE DOCUMENT'S STATUS: FF-N-105B was cancelled on 3 December 1996 (Notice 2) and ASTM F1667, Standard Specification for Driven Fasteners: Nails, Spikes, and Staples, is its successor. F1667's dimension tables are behind a paywall and were not read in the task that wrote this table, so the penny-size-to-length convention here is cited to the last readable primary source that states it in full rather than to F1667. A reviewer with access to F1667 should check these rows against it.",
+    "url": "https://everyspec.com/FED_SPECS/F/download.php?spec=FF-N-105B.009866.pdf",
+    "retrieved": "2026-09-21"
+  },
+
+  "entries": [
+    { "name": "2d", "pennySize": "2d", "length": "1", "shankDiameterInches": ".072",
+      "derivation": "§3.6.11.2: S = 2d, L = 1, D = .072." },
+    { "name": "3d", "pennySize": "3d", "length": "1-1/4", "shankDiameterInches": ".080",
+      "derivation": "§3.6.11.2: S = 3d, L = 1-1/4, D = .080." },
+    { "name": "4d", "pennySize": "4d", "length": "1-1/2", "shankDiameterInches": ".099",
+      "derivation": "§3.6.11.2: S = 4d, L = 1-1/2, D = .099." },
+    { "name": "5d", "pennySize": "5d", "length": "1-3/4", "shankDiameterInches": ".099",
+      "derivation": "§3.6.11.2: S = 5d, L = 1-3/4, D = .099." },
+    { "name": "6d", "pennySize": "6d", "length": "2", "shankDiameterInches": ".113",
+      "derivation": "§3.6.11.2: S = 6d, L = 2, D = .113." },
+    { "name": "7d", "pennySize": "7d", "length": "2-1/4", "shankDiameterInches": ".113",
+      "derivation": "§3.6.11.2: S = 7d, L = 2-1/4, D = .113." },
+    { "name": "8d", "pennySize": "8d", "length": "2-1/2", "shankDiameterInches": ".131",
+      "derivation": "§3.6.11.2: S = 8d, L = 2-1/2, D = .131." },
+    { "name": "9d", "pennySize": "9d", "length": "2-3/4", "shankDiameterInches": ".131",
+      "derivation": "§3.6.11.2: S = 9d, L = 2-3/4, D = .131." },
+    { "name": "10d", "pennySize": "10d", "length": "3", "shankDiameterInches": ".148",
+      "derivation": "§3.6.11.2: S = 10d, L = 3, D = .148." },
+    { "name": "12d", "pennySize": "12d", "length": "3-1/4", "shankDiameterInches": ".148",
+      "derivation": "§3.6.11.2: S = 12d, L = 3-1/4, D = .148." },
+    { "name": "16d", "pennySize": "16d", "length": "3-1/2", "shankDiameterInches": ".162",
+      "derivation": "§3.6.11.2: S = 16d, L = 3-1/2, D = .162." },
+    { "name": "20d", "pennySize": "20d", "length": "4", "shankDiameterInches": ".192",
+      "derivation": "§3.6.11.2: S = 20d, L = 4, D = .192." },
+    { "name": "30d", "pennySize": "30d", "length": "4-1/2", "shankDiameterInches": ".207",
+      "derivation": "§3.6.11.2: S = 30d, L = 4-1/2, D = .207." },
+    { "name": "40d", "pennySize": "40d", "length": "5", "shankDiameterInches": ".226",
+      "derivation": "§3.6.11.2: S = 40d, L = 5, D = .226." },
+    { "name": "50d", "pennySize": "50d", "length": "5-1/2", "shankDiameterInches": ".244",
+      "derivation": "§3.6.11.2: S = 50d, L = 5-1/2, D = .244." },
+    { "name": "60d", "pennySize": "60d", "length": "6", "shankDiameterInches": ".262",
+      "derivation": "§3.6.11.2: S = 60d, L = 6, D = .262." }
+  ]
+}

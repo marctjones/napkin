@@ -17,30 +17,32 @@ namespace Napkin.Core.Materials;
 /// checkable, "the lumber standard" is not.
 /// </para>
 /// </remarks>
+/// <param name="Designation">
+/// The short designation a person in the trade would say — "PS 20-20", "FF-N-105B". Written out in
+/// the data file rather than cut out of <paramref name="Standard"/> by the code, because every
+/// publisher titles its documents differently and a tooltip that guesses wrong is worse than one
+/// that was told.
+/// </param>
 /// <param name="Standard">The document — "Voluntary Product Standard PS 20-20, American Softwood Lumber Standard".</param>
 /// <param name="Publisher">Who publishes it, so the right document can be found without the link.</param>
 /// <param name="Where">The table, section, page and column the value was read from.</param>
 /// <param name="Url">The copy that was actually read.</param>
 /// <param name="Retrieved">The day it was retrieved, because a published standard is revised.</param>
-public sealed record Citation(string Standard, string Publisher, string Where, string Url, DateOnly Retrieved)
+public sealed record Citation(
+    string Designation,
+    string Standard,
+    string Publisher,
+    string Where,
+    string Url,
+    DateOnly Retrieved)
 {
-    /// <summary>The citation on one line, as a tooltip or a printed sheet shows it.</summary>
+    /// <summary>The citation on one line, as a properties panel or a printed sheet shows it.</summary>
     public override string ToString()
         => $"{Standard} ({Publisher}), {Where}. {Url}, retrieved {Retrieved:yyyy-MM-dd}.";
 
-    /// <summary>A short form for a hover tooltip — the standard's designation only.</summary>
-    /// <remarks>
-    /// The picker's hover shows "2x4 — actual 1 1/2" x 3 1/2", PS 20-20"; the whole citation is
-    /// for the properties panel and the printed cut list, not for a tooltip.
-    /// </remarks>
-    public string ShortForm
-    {
-        get
-        {
-            int comma = Standard.IndexOf(',');
-            string head = comma < 0 ? Standard : Standard[..comma];
-            const string prefix = "Voluntary Product Standard ";
-            return head.StartsWith(prefix, StringComparison.Ordinal) ? head[prefix.Length..] : head;
-        }
-    }
+    /// <summary>
+    /// The short form for a hover tooltip: "2x4 — actual 1 1/2" x 3 1/2", PS 20-20". The whole
+    /// citation is for the properties panel and the printed cut list, not for a tooltip.
+    /// </summary>
+    public string ShortForm => Designation;
 }

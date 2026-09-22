@@ -1,0 +1,63 @@
+{
+  "tableVersion": 1,
+  "id": "hardwood-thickness-nhla",
+  "title": "Hardwood lumber: quarter-inch thickness names, rough and surfaced two sides",
+  "category": "HardwoodBoard",
+
+  "citation": {
+    "designation": "NHLA 2023 Rules",
+    "standard": "Rules for the Measurement & Inspection of Hardwood & Cypress, effective January 1, 2023",
+    "publisher": "National Hardwood Lumber Association (NHLA), Memphis, Tennessee",
+    "where": "General Instructions ¶13, \"Standard Thicknesses\" (the standard rough thicknesses, and the quarter-inch way of writing those of 1 in and over), and ¶14, \"Standard Thickness for Surfaced Lumber\", page 7, whose table gives the thickness each rough thickness is surfaced two sides to. ¶12, \"Standard Lengths\", gives the lengths.",
+    "url": "https://static1.squarespace.com/static/6423f3b57854fd38cf335f11/t/64bfcf59d9a41006363c1560/1690292060342/2023-NHLA+Rulesbook.pdf",
+    "retrieved": "2026-09-21"
+  },
+
+  "standardLengthCitation": {
+    "designation": "NHLA 2023 Rules",
+    "standard": "Rules for the Measurement & Inspection of Hardwood & Cypress, effective January 1, 2023",
+    "publisher": "National Hardwood Lumber Association (NHLA), Memphis, Tennessee",
+    "where": "General Instructions ¶12, \"Standard Lengths\", page 7.",
+    "url": "https://static1.squarespace.com/static/6423f3b57854fd38cf335f11/t/64bfcf59d9a41006363c1560/1690292060342/2023-NHLA+Rulesbook.pdf",
+    "retrieved": "2026-09-21"
+  },
+
+  "entries": [
+    { "name": "4/4", "roughThickness": "1", "surfacedTwoSides": "13/16",
+      "derivation": "¶13 lists 1 in among the standard rough thicknesses and says 1 in and thicker may also be written in quarter inches as 4/4. ¶14: for lumber 1-1/2 in thick or less the surfaced thickness is the rough thickness less 3/16 in, and its table gives 4/4 -> S2S to 13/16 in. 1 - 3/16 = 13/16.",
+      "standardLengths": ["4'", "5'", "6'", "7'", "8'", "9'", "10'", "11'", "12'", "13'", "14'", "15'", "16'"],
+      "standardLengthDerivation": "¶12: standard lengths are 4', 5', 6', 7', 8', 9', 10', 11', 12', 13', 14', 15' and 16' — hardwood is racked in every foot, unlike softwood framing." },
+    { "name": "5/4", "roughThickness": "1-1/4", "surfacedTwoSides": "1-1/16",
+      "derivation": "¶13: 1-1/4 in, written 5/4. ¶14 table: 5/4 -> S2S to 1-1/16 in. 1-1/4 - 3/16 = 1-1/16.",
+      "standardLengths": ["4'", "5'", "6'", "7'", "8'", "9'", "10'", "11'", "12'", "13'", "14'", "15'", "16'"],
+      "standardLengthDerivation": "¶12: 4' through 16' in every foot." },
+    { "name": "6/4", "roughThickness": "1-1/2", "surfacedTwoSides": "1-5/16",
+      "derivation": "¶13: 1-1/2 in, written 6/4. ¶14 table: 6/4 -> S2S to 1-5/16 in. 1-1/2 - 3/16 = 1-5/16, the last size the 3/16 in rule covers.",
+      "standardLengths": ["4'", "5'", "6'", "7'", "8'", "9'", "10'", "11'", "12'", "13'", "14'", "15'", "16'"],
+      "standardLengthDerivation": "¶12: 4' through 16' in every foot." },
+    { "name": "7/4", "roughThickness": "1-3/4", "surfacedTwoSides": "1-1/2",
+      "derivation": "¶13: 1-3/4 in, written 7/4. ¶14: for lumber between 1-3/4 in and 4 in thick the deduction is 1/4 in, and its table gives 7/4 -> S2S to 1-1/2 in. 1-3/4 - 1/4 = 1-1/2.",
+      "standardLengths": ["4'", "5'", "6'", "7'", "8'", "9'", "10'", "11'", "12'", "13'", "14'", "15'", "16'"],
+      "standardLengthDerivation": "¶12: 4' through 16' in every foot." },
+    { "name": "8/4", "roughThickness": "2", "surfacedTwoSides": "1-3/4",
+      "derivation": "¶13: 2 in, written 8/4. ¶14 table: 8/4 -> S2S to 1-3/4 in. 2 - 1/4 = 1-3/4.",
+      "standardLengths": ["4'", "5'", "6'", "7'", "8'", "9'", "10'", "11'", "12'", "13'", "14'", "15'", "16'"],
+      "standardLengthDerivation": "¶12: 4' through 16' in every foot." },
+    { "name": "10/4", "roughThickness": "2-1/2", "surfacedTwoSides": "2-1/4",
+      "derivation": "¶13: 2-1/2 in, written 10/4. ¶14 table: 10/4 -> S2S to 2-1/4 in. 2-1/2 - 1/4 = 2-1/4.",
+      "standardLengths": ["4'", "5'", "6'", "7'", "8'", "9'", "10'", "11'", "12'", "13'", "14'", "15'", "16'"],
+      "standardLengthDerivation": "¶12: 4' through 16' in every foot." },
+    { "name": "12/4", "roughThickness": "3", "surfacedTwoSides": "2-3/4",
+      "derivation": "¶13: 3 in, written 12/4. ¶14 table: 12/4 -> S2S to 2-3/4 in. 3 - 1/4 = 2-3/4.",
+      "standardLengths": ["4'", "5'", "6'", "7'", "8'", "9'", "10'", "11'", "12'", "13'", "14'", "15'", "16'"],
+      "standardLengthDerivation": "¶12: 4' through 16' in every foot." },
+    { "name": "14/4", "roughThickness": "3-1/2", "surfacedTwoSides": "3-1/4",
+      "derivation": "¶13: 3-1/2 in, written 14/4. ¶14 table: 14/4 -> S2S to 3-1/4 in. 3-1/2 - 1/4 = 3-1/4.",
+      "standardLengths": ["4'", "5'", "6'", "7'", "8'", "9'", "10'", "11'", "12'", "13'", "14'", "15'", "16'"],
+      "standardLengthDerivation": "¶12: 4' through 16' in every foot." },
+    { "name": "16/4", "roughThickness": "4", "surfacedTwoSides": "3-3/4",
+      "derivation": "¶13: 4 in, written 16/4. ¶14 table: 16/4 -> S2S to 3-3/4 in. 4 - 1/4 = 3-3/4, the last size the 1/4 in rule covers.",
+      "standardLengths": ["4'", "5'", "6'", "7'", "8'", "9'", "10'", "11'", "12'", "13'", "14'", "15'", "16'"],
+      "standardLengthDerivation": "¶12: 4' through 16' in every foot." }
+  ]
+}
