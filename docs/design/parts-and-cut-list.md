@@ -96,8 +96,10 @@ rather than dropping it.
 - **Not a joinery model.** A tenon, a dado and a mitre change finished length, and napkin does not
   know about them. The cut list lists the stored size; #8 adds no joinery allowance and does not
   pretend to one.
-- **Not a solid.** `part.outOfPlane` is a number on a plan-view box, not a Z extent with a
-  position. Nothing draws it and nothing checks it against anything else.
+- **Not a solid, as designed here.** `part.outOfPlane` was a number on a plan-view box, not a Z
+  extent with a position; [`assembly-model.md`](./assembly-model.md) (signed off 2026-09-22) gives
+  every box a real position and orientation in space and moves this value to `Box.Depth`. The cut
+  list's own rule stands unchanged: it reads stored parameters, never a derived position.
 - **Not a grain direction.** Hardwood width and sheet nesting both want one eventually. Not here.
 
 ---

@@ -174,8 +174,11 @@ by trigonometry — that is what keeps the first beta's rectilinear geometry exa
 
 ### 2.1 Coordinate system and value types
 
-- Two dimensions. X increases to the right, Y increases *upward* (the CAD, DXF and PDF
-  convention); the canvas applies the screen flip in its view transform and nowhere else.
+- Two dimensions, as originally designed here. X increases to the right, Y increases *upward* (the
+  CAD, DXF and PDF convention); the canvas applies the screen flip in its view transform and
+  nowhere else. [`assembly-model.md`](./assembly-model.md) adds a third, Z, for a part's position
+  and orientation in space, extending `Point2`/`Vector2` with `Point3`/`Vector3` rather than
+  replacing them — everything below about the 2D plan and its exactness still holds unchanged.
 - Plan view for parts and walls; elevation views are a later concern and are not designed here.
 
 ```csharp
