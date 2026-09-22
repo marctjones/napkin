@@ -58,7 +58,6 @@ public partial class MainWindow : Window
     bool _opening;
     bool _showingProperties;
     bool _showingCut;
-    bool _toolboxOpen;
     EntityId? _editingBox;
     EntityId? _shaping;
     SizeAxis _editingAxis = SizeAxis.Width;
@@ -90,11 +89,16 @@ public partial class MainWindow : Window
         DrawingCanvas.DimensionEditRequested += (_, request) =>
             OpenDimensionEditor(request.Box, request.Axis);
         DrawingCanvas.ShapeRequested += (_, box) => OpenWorkshop(box);
-        DrawingCanvas.ToolboxRequested += (_, _) => ToggleToolbox();
         StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
+        StockToolboxPanel.CategoryChanged += (_, _) => OnStockCategoryChanged();
 
-        // A click on a category icon gives the keyboard back to the drawing, so Escape and M still
-        // reach it; the toolbox has nothing to type into.
+        // The stock category icons sit on the main toolbar beside Select and Rectangle, always in
+        // reach; the toolbox itself is only the drawer that drops down under the one picked.
+        ToolRow.Children.Add(StockToolboxPanel.CategoryRow);
+
+        // A click on a category icon or an item gives the keyboard back to the drawing, so Escape
+        // still reaches it; the toolbox has nothing to type into.
+        ToolBar.AddHandler(Button.ClickEvent, (_, _) => DrawingCanvas.Focus());
         StockToolboxPanel.AddHandler(Button.ClickEvent, (_, _) => DrawingCanvas.Focus());
 
         WorkshopDrawing.Editor = Editor;
@@ -187,14 +191,11 @@ public partial class MainWindow : Window
     /// <summary>The select tool's button.</summary>
     public ToggleButton SelectToolControl => SelectToolButton;
 
-    /// <summary>The tool control's button that opens and closes the stock toolbox.</summary>
-    public ToggleButton StockToolboxControl => StockToolButton;
-
-    /// <summary>The stock toolbox that floats over the drawing.</summary>
+    /// <summary>The stock toolbox: its drawer, and through it the category icons on the toolbar.</summary>
     public StockToolbox Toolbox => StockToolboxPanel;
 
-    /// <summary>Whether the stock toolbox is on screen.</summary>
-    public bool IsShowingToolbox => StockToolboxPanel.IsVisible;
+    /// <summary>Whether a stock category's drawer of sizes is open under its icon.</summary>
+    public bool IsShowingStockSizes => StockToolboxPanel.IsVisible;
 
     /// <summary>The status line at the foot of the window.</summary>
     public Border StatusLine => StatusBar;
@@ -1342,7 +1343,6 @@ public partial class MainWindow : Window
         DeleteMenuItem.IsEnabled = anything;
         PinMenuItem.IsEnabled = anything;
         ShapeMenuItem.IsEnabled = Editor.OnlySelected is not null && !IsShapingPart;
-        StockToolboxMenuItem.IsEnabled = !IsShapingPart;
     }
 
     void UpdateMessageBar()
@@ -1427,34 +1427,41 @@ public partial class MainWindow : Window
     // The stock toolbox: pick real stock, then drag it onto the paper (issue #7, GUI-CUT-02)
     // ---------------------------------------------------------------------------------------
 
-    /// <summary>Opens the stock toolbox, or closes it and puts down whatever it had picked up.</summary>
-    public void ToggleToolbox()
+    /// <summary>
+    /// A category icon was clicked: its drawer drops down under it, or — when that was the open
+    /// one — the drawer closes and puts down whatever it had picked up.
+    /// </summary>
+    void OnStockCategoryChanged()
     {
-        // The workshop covers the canvas the toolbox places parts on, and focusing the canvas from
-        // here would take the keyboard away from the blank being shaped.
-        if (IsShapingPart)
-        {
-            return;
-        }
-
-        _toolboxOpen = !_toolboxOpen;
-        if (!_toolboxOpen)
+        if (StockToolboxPanel.Category is null)
         {
             DrawingCanvas.ArmStock(null);
         }
 
         UpdateToolbox();
-        DrawingCanvas.Focus();
     }
 
     /// <summary>
-    /// Shows the toolbox when it is open and the canvas is what is on screen; the shape workshop
-    /// covers the canvas and takes its floating chrome with it.
+    /// Shows the drawer under its category's icon while one is open and the canvas is what is on
+    /// screen; the shape workshop covers the canvas and takes the toolbar and the drawer with it.
     /// </summary>
     void UpdateToolbox()
     {
-        StockToolboxPanel.IsVisible = _toolboxOpen && !IsShapingPart;
-        StockToolButton.IsChecked = _toolboxOpen;
+        StockToolboxPanel.IsVisible = StockToolboxPanel.Category is not null && !IsShapingPart;
+        if (!StockToolboxPanel.IsVisible
+            || StockToolboxPanel.Category is not { } open
+            || ToolBar.Parent is not Visual overlay)
+        {
+            return;
+        }
+
+        // Dropped down from the icon that opened it, pulled back left only as far as it takes to
+        // stay inside the window.
+        ToggleButton icon = StockToolboxPanel.CategoryButtons[open];
+        double left = icon.TranslatePoint(new Point(0, 0), overlay)?.X ?? ToolBar.Bounds.Left;
+        double room = overlay.Bounds.Width - StockToolboxPanel.Width - 10;
+        left = Math.Max(10, Math.Min(left, room));
+        StockToolboxPanel.Margin = new Thickness(left, ToolBar.Bounds.Bottom + 4, 10, 10);
     }
 
     /// <summary>
@@ -1478,8 +1485,6 @@ public partial class MainWindow : Window
 
         DrawingCanvas.Focus();
     }
-
-    void OnStockToolboxClicked(object? sender, RoutedEventArgs e) => ToggleToolbox();
 
     void ShowRefusal(string what, IReadOnlyList<string> problems)
     {
@@ -1523,6 +1528,7 @@ public partial class MainWindow : Window
 
         ToolBar.Background = paper;
         ToolBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
+        ToolRowDivider.Background = new SolidColorBrush(palette.GridMajor);
         StockToolboxPanel.ApplyPalette(palette);
 
         RelationshipsPanel.Background = paper;
@@ -1597,7 +1603,6 @@ public partial class MainWindow : Window
         ZoomOutMenuItem.InputGesture = new KeyGesture(Key.OemMinus);
         SelectToolMenuItem.InputGesture = new KeyGesture(Key.S);
         RectangleToolMenuItem.InputGesture = new KeyGesture(Key.R);
-        StockToolboxMenuItem.InputGesture = new KeyGesture(Key.M);
         ShapeMenuItem.InputGesture = new KeyGesture(Key.C);
         PinMenuItem.InputGesture = new KeyGesture(Key.P);
         DeleteMenuItem.InputGesture = new KeyGesture(Key.Delete);

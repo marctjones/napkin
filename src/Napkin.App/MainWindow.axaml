@@ -35,10 +35,6 @@
             <MenuItem Name="DrawMenu" Header="_Draw">
                 <MenuItem Name="SelectToolMenuItem" Header="_Select" Click="OnSelectToolClicked" />
                 <MenuItem Name="RectangleToolMenuItem" Header="_Rectangle" Click="OnRectangleToolClicked" />
-                <MenuItem Name="StockToolboxMenuItem"
-                          Header="Stoc_k toolbox"
-                          Click="OnStockToolboxClicked"
-                          ToolTip.Tip="Pick a real stock size — a 2x4, a sheet of plywood — and drag it onto the paper." />
                 <Separator />
                 <MenuItem Name="ShapeMenuItem"
                           Header="S_hape…"
@@ -317,7 +313,9 @@
                     Padding="4"
                     CornerRadius="4"
                     BorderThickness="1">
-                <StackPanel Orientation="Horizontal" Spacing="4">
+                <!-- The stock category icons are appended to this row in the code-behind: they are
+                     StockToolbox's, and always on the toolbar, so real stock is one click away. -->
+                <StackPanel Name="ToolRow" Orientation="Horizontal" Spacing="4">
                     <ToggleButton Name="SelectToolButton"
                                   Content="Select"
                                   FontSize="12"
@@ -330,18 +328,14 @@
                                   Padding="10,4"
                                   Click="OnRectangleToolClicked"
                                   ToolTip.Tip="Drag out a new part (R)" />
-                    <ToggleButton Name="StockToolButton"
-                                  Content="Stock"
-                                  FontSize="12"
-                                  Padding="10,4"
-                                  Click="OnStockToolboxClicked"
-                                  ToolTip.Tip="Pick real stock from the toolbox and drag it onto the paper (M)" />
+                    <Border Name="ToolRowDivider" Width="1" Margin="4,3" />
                 </StackPanel>
             </Border>
 
-            <!-- The stock toolbox (issue #7's picker): category icons, then a text list, then a
-                 drag on the paper places a part already cut from the item picked. It floats under
-                 the tool control it is opened from, and stays open while parts are placed. -->
+            <!-- The stock toolbox's drawer (issue #7's picker): the category icons are on the tool
+                 control above, and clicking one drops this text list down under it; a drag on the
+                 paper then places a part already cut from the item picked. It stays open while
+                 parts are placed, and closes when its icon is clicked again. -->
             <viewing:StockToolbox Name="StockToolboxPanel"
                                   IsVisible="False"
                                   HorizontalAlignment="Left"

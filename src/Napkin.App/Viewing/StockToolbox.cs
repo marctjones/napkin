@@ -10,8 +10,9 @@ using Napkin.Core.Materials;
 namespace Napkin.App.Viewing;
 
 /// <summary>
-/// The floating stock toolbox: one small icon per category, then a plain text list of what is in
-/// the chosen one, and each item's actual size on hover before it is placed.
+/// The stock toolbox: one small icon per category, always on the main toolbar, and under the one
+/// that is picked a plain text list of what is in it, with each item's actual size on hover before
+/// it is placed.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,8 +26,18 @@ namespace Napkin.App.Viewing;
 /// which is the same sentence the properties panel's stock line shows once the part is placed.
 /// </para>
 /// <para>
-/// It is not modal and it does not close when an item is placed: a toolbox, not a dialog. Picking
-/// an item raises <see cref="ItemPicked"/>; what that arms is the window's business.
+/// The two levels live in two places. The icons are <see cref="CategoryRow"/>, which the window
+/// puts on its main toolbar beside Select and Rectangle so they are always in reach, with nothing
+/// to open first (Marc, 2026-09-22: "Shouldnt the stock items all be visible on a main toolbar").
+/// This control itself is only the drawer — the list, its caption and the readout — and the window
+/// shows it under the icon that opened it while <see cref="Category"/> is not null.
+/// </para>
+/// <para>
+/// The drawer is not modal and it does not close when an item is placed: a toolbox, not a dialog.
+/// That is why it is a panel on the drawing rather than a light-dismiss flyout, which would close
+/// on the very press on the paper that places the part. Clicking the open category's icon again
+/// closes it. Picking an item raises <see cref="ItemPicked"/>; what that arms is the window's
+/// business.
 /// </para>
 /// <para>
 /// <strong>Fasteners are listed and cannot be placed.</strong> The library carries them and the
@@ -42,7 +53,6 @@ public sealed class StockToolbox : Border
 
     readonly MaterialsLibrary _library;
     readonly StackPanel _categoryRow = new() { Orientation = Orientation.Horizontal, Spacing = 4 };
-    readonly TextBlock _headline = new() { Text = "Stock", FontSize = 12, FontWeight = FontWeight.SemiBold };
     readonly TextBlock _caption = new() { FontSize = 11, TextWrapping = TextWrapping.Wrap };
     readonly StackPanel _itemList = new() { Spacing = 1 };
     readonly ScrollViewer _itemScroller;
@@ -88,7 +98,7 @@ public sealed class StockToolbox : Border
                 Padding = new Thickness(5),
                 Tag = category,
             };
-            ToolTip.SetTip(button, Words(category));
+            ToolTip.SetTip(button, $"{Words(category)}: pick a size, then drag it onto the paper");
             AutomationProperties.SetName(button, Words(category));
             // A second click on the open drawer's icon closes it again.
             button.Click += (_, _) => ShowCategory(Category == category ? null : category);
@@ -111,8 +121,6 @@ public sealed class StockToolbox : Border
             Spacing = 6,
             Children =
             {
-                _headline,
-                _categoryRow,
                 _caption,
                 _itemScroller,
                 _readout,
@@ -128,6 +136,15 @@ public sealed class StockToolbox : Border
 
     /// <summary>Raised when a person clicks an item in the list.</summary>
     public event EventHandler<StockItem>? ItemPicked;
+
+    /// <summary>Raised when a drawer opens, closes, or is swapped for another.</summary>
+    public event EventHandler? CategoryChanged;
+
+    /// <summary>
+    /// The category icons, one toggle each, for the window to put on its main toolbar. They are
+    /// not inside this control: the drawer comes and goes, the icons stay.
+    /// </summary>
+    public Control CategoryRow => _categoryRow;
 
     /// <summary>The drawer that is open.</summary>
     public StockCategory? Category { get; private set; }
@@ -225,6 +242,7 @@ public sealed class StockToolbox : Border
         _hovered = null;
         UpdateItemHighlight();
         UpdateReadout();
+        CategoryChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -245,7 +263,6 @@ public sealed class StockToolbox : Border
 
         Background = new SolidColorBrush(palette.Background);
         BorderBrush = new SolidColorBrush(palette.GridMajor);
-        _headline.Foreground = new SolidColorBrush(palette.Dimension);
         _caption.Foreground = new SolidColorBrush(palette.Label);
         _readout.Foreground = new SolidColorBrush(palette.Label);
 
