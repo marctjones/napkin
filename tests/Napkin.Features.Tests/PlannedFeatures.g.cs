@@ -264,36 +264,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: MAT-001 — Nominal lumber resolves to actual dimensions")]
-    [Trait("Feature", "MAT-001")]
-    public void MAT_001()
-    {
-    }
-
-    [Fact(Skip = "planned: MAT-002 — Sheet goods resolve to actual thickness and sheet size")]
-    [Trait("Feature", "MAT-002")]
-    public void MAT_002()
-    {
-    }
-
-    [Fact(Skip = "planned: MAT-003 — Decking and fasteners resolve from data")]
-    [Trait("Feature", "MAT-003")]
-    public void MAT_003()
-    {
-    }
-
-    [Fact(Skip = "planned: MAT-004 — Every reference table cites the standard it was authored from")]
-    [Trait("Feature", "MAT-004")]
-    public void MAT_004()
-    {
-    }
-
-    [Fact(Skip = "planned: MAT-005 — Adding a material is a data change")]
-    [Trait("Feature", "MAT-005")]
-    public void MAT_005()
-    {
-    }
-
     [Fact(Skip = "planned: PKG-001 — Self-contained builds start on a clean machine")]
     [Trait("Feature", "PKG-001")]
     public void PKG_001()
