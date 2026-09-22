@@ -36,13 +36,16 @@ public sealed class CutListCsvTests
             CutListRow row = rows[i];
             ImmutableArray<string> line = lines[i + 2];
 
-            Assert.Equal(6, line.Length);
+            Assert.Equal(7, line.Length);
             Assert.Equal(row.Label, line[0]);
             Assert.Equal(row.Quantity, int.Parse(line[1], System.Globalization.CultureInfo.InvariantCulture));
             Assert.Equal(CutListCsv.Text(row.Length), line[2]);
             Assert.Equal(CutListCsv.Text(row.Width), line[3]);
             Assert.Equal(CutListCsv.Text(row.Thickness), line[4]);
             Assert.Equal(row.MaterialText, line[5]);
+
+            // Nothing in this design is cut, so the last column is empty on every line.
+            Assert.Equal(string.Empty, line[6]);
         }
     }
 
@@ -166,6 +169,54 @@ public sealed class CutListCsvTests
 
         Assert.NotEqual(row, row with { Members = [EntityId.New()] });
         Assert.NotEqual(row, row with { Quantity = 2 });
+
+        // The cuts are in the comparison, by sequence. ImmutableArray's own equality compares the
+        // identity of the array it wraps, so a row rounded at one corner and a row rounded at
+        // another — and a row with cuts and one without — would otherwise all be the same row
+        // (shaped-parts-model.md §4.2).
+        CutListRow rounded = row with { Cuts = [new RoundedCorner(BoxCorner.NorthEast, new Length(1024))] };
+
+        Assert.NotEqual(row, rounded);
+        Assert.Equal(rounded, row with { Cuts = [new RoundedCorner(BoxCorner.NorthEast, new Length(1024))] });
+        Assert.Equal(
+            rounded.GetHashCode(),
+            (row with { Cuts = [new RoundedCorner(BoxCorner.NorthEast, new Length(1024))] }).GetHashCode());
+        Assert.NotEqual(rounded, row with { Cuts = [new RoundedCorner(BoxCorner.SouthWest, new Length(1024))] });
+        Assert.NotEqual(rounded, row with { Cuts = [new RoundedCorner(BoxCorner.NorthEast, new Length(512))] });
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-004")]
+    public void The_cuts_column_round_trips_and_is_empty_for_a_plain_rectangle()
+    {
+        // A top rounded at all four corners and a plain apron, so that one line has sentences in
+        // its last column and the other has nothing at all (shaped-parts-model.md §4.5, test 15).
+        Sketch sketch = Design.WithCutParts(
+            ("Top", 49152, 24576, Top,
+             [
+                 new RoundedCorner(BoxCorner.SouthWest, new Length(1024)),
+                 new RoundedCorner(BoxCorner.SouthEast, new Length(1024)),
+                 new RoundedCorner(BoxCorner.NorthEast, new Length(1024)),
+                 new RoundedCorner(BoxCorner.NorthWest, new Length(1024)),
+             ]),
+            ("Apron, long, south", 40960, 768, Apron, []));
+
+        ImmutableArray<CutListRow> rows = CutList.Of(sketch, MaterialsLibrary.Shipped);
+        ImmutableArray<ImmutableArray<string>> lines = CutListCsv.Parse(CutListCsv.ToCsv(rows));
+
+        Assert.Equal("Cuts", lines[1][^1]);
+
+        for (int i = 0; i < rows.Length; i++)
+        {
+            Assert.Equal(
+                string.Join(CutListCsv.BetweenCuts, rows[i].CutText),
+                lines[i + 2][6]);
+        }
+
+        // The top's one sentence survives a quote-carrying length and the round trip; the apron's
+        // column is empty rather than absent.
+        Assert.Equal("Round all four corners to a 1\" radius.", lines[2][6]);
+        Assert.Equal(string.Empty, lines[3][6]);
     }
 
     /// <summary>A row of one arbitrary 1-inch cube, for tests about a row rather than a design.</summary>
@@ -178,6 +229,8 @@ public sealed class CutListCsvTests
         string.Empty,
         Unresolved: false,
         Stock: null,
+        Cuts: [],
+        PlanAxes: new PlanAxes(PartDimension.Length, PartDimension.Width),
         Members: [new EntityId(Guid.Parse("10000000-0000-4000-8000-000000000001"))]);
 
     [Fact]

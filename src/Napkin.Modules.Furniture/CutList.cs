@@ -58,6 +58,10 @@ public static class CutList
                 ? item
                 : null;
 
+            // The cuts join the key by value, in the site order Box.Cuts holds them in, so that
+            // the same cuts at the same sites group and nothing else does (§4.3).
+            ImmutableArray<Cut> cuts = [.. box.Cuts];
+
             pieces.Add(new Piece(
                 box.Id,
                 box.Name,
@@ -68,10 +72,12 @@ public static class CutList
                     size.Width,
                     size.Thickness,
                     NominalName.Normalize(part.Stock),
-                    part.Species ?? string.Empty),
+                    part.Species ?? string.Empty,
+                    cuts),
                 Material: stock?.Name ?? part.Stock ?? string.Empty,
                 Unresolved: part.Stock is not null && stock is null,
-                Stock: stock));
+                Stock: stock,
+                PlanAxes: part.PlanAxes));
         }
 
         // Step 4 — group. Exact integer equality on all three dimensions, with no tolerance: two
@@ -91,12 +97,15 @@ public static class CutList
                 members[0].Material,
                 members[0].Unresolved,
                 members[0].Stock,
+                group.Key.Cuts,
+                members[0].PlanAxes,
                 [.. members.Select(member => member.Id)]));
         }
 
         // Step 5 — order: largest piece first, which is the order a person cuts in. The label and
-        // then the material and species break a tie between rows of identical size, so that the
-        // order is total and the same on every machine.
+        // then the material and species break a tie between rows of identical size, and the cuts
+        // break the last one — a plain rectangle before the same rectangle with cuts — so that the
+        // order is total and the same on every machine whatever order the boxes were enumerated in.
         return
         [
             .. rows
@@ -104,7 +113,8 @@ public static class CutList
                 .ThenByDescending(row => row.Width)
                 .ThenByDescending(row => row.Thickness)
                 .ThenBy(row => row.Label, StringComparer.Ordinal)
-                .ThenBy(row => row.Material, StringComparer.Ordinal),
+                .ThenBy(row => row.Material, StringComparer.Ordinal)
+                .ThenBy(row => row.Cuts, CutSequence.Order),
         ];
     }
 
@@ -177,17 +187,54 @@ public static class CutList
         GroupKey Key,
         string Material,
         bool Unresolved,
-        StockItem? Stock);
+        StockItem? Stock,
+        PlanAxes PlanAxes);
 
     /// <summary>
     /// What makes two parts one row: the same three finished dimensions out of the same stock in
-    /// the same species. The name is not in it — four boxes called "Leg, south-west" through
-    /// "Leg, north-east" are one row of four.
+    /// the same species, with the same cuts at the same sites. The name is not in it — four boxes
+    /// called "Leg, south-west" through "Leg, north-east" are one row of four.
     /// </summary>
+    /// <remarks>
+    /// Four legs chamfered on the same corner are one row of four; two legs chamfered on
+    /// mirror-image corners are two rows, each saying which corner, because they are not the same
+    /// piece (§4.3). A rectangle and the same rectangle with a cut are two rows for the same
+    /// reason.
+    /// </remarks>
     internal readonly record struct GroupKey(
         Length Length,
         Length Width,
         Length Thickness,
         string Stock,
-        string Species);
+        string Species,
+        ImmutableArray<Cut> Cuts)
+    {
+        /// <summary>
+        /// Equality by value, with the cuts compared as a sequence.
+        /// </summary>
+        /// <remarks>
+        /// Written out because the synthesised equality of a <c>record struct</c> compares an
+        /// <see cref="ImmutableArray{T}"/> by the identity of the array it wraps, which would mean
+        /// two shaped parts never grouped however identical they were — the trap
+        /// <c>docs/design/shaped-parts-model.md</c> §4.2 names for this key in particular.
+        /// </remarks>
+        /// <param name="other">The key to compare with.</param>
+        public bool Equals(GroupKey other)
+            => Length == other.Length
+               && Width == other.Width
+               && Thickness == other.Thickness
+               && string.Equals(Stock, other.Stock, StringComparison.Ordinal)
+               && string.Equals(Species, other.Species, StringComparison.Ordinal)
+               && CutSequence.AreEqual(Cuts, other.Cuts);
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+            => HashCode.Combine(
+                Length,
+                Width,
+                Thickness,
+                StringComparer.Ordinal.GetHashCode(Stock),
+                StringComparer.Ordinal.GetHashCode(Species),
+                CutSequence.HashOf(Cuts));
+    }
 }

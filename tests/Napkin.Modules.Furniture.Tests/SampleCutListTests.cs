@@ -48,6 +48,10 @@ public sealed class SampleCutListTests
             Assert.Equal(want.Unresolved, row.Unresolved);
             Assert.Equal(want.Members, row.Members.Select(id => id.Value.ToString("D")));
 
+            // A fixture of plain rectangles says nothing about cuts, which is the same statement
+            // as an empty list: no sentence is a sentence about nothing to do.
+            Assert.Equal(want.Cuts ?? [], row.CutText);
+
             Assert.False(string.IsNullOrWhiteSpace(want.Derivation), $"{want.Label} has no derivation.");
         }
     }

@@ -45,6 +45,10 @@ internal sealed record ExpectedFixture(
     internal string Csv => string.Concat(CutListCsv.Select(line => line + "\n"));
 }
 
+/// <param name="Cuts">
+/// The sentences the row's cuts read as, worked out by hand from the cuts the scene states. Left
+/// out of a fixture whose parts are plain rectangles, which is the same thing as an empty list.
+/// </param>
 internal sealed record ExpectedCutRow(
     string Label,
     int Quantity,
@@ -57,4 +61,5 @@ internal sealed record ExpectedCutRow(
     string Material,
     bool Unresolved,
     IReadOnlyList<string> Members,
-    string Derivation);
+    string Derivation,
+    IReadOnlyList<string>? Cuts = null);
