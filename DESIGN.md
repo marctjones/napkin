@@ -441,11 +441,10 @@ architecture it fills. A milestone earns a tagged pre-release when it is done, a
 number is assigned at that moment rather than planned in advance — which is why they have names.
 Nothing is scheduled toward a date (see "Versioning and releases" below).
 
-1. **M1 Look.** A read-only viewer: download an unsigned build, open a hand-crafted sample design
-   from a file, pan, zoom, zoom to fit, and read dimension labels in feet, inches and fractions.
-   Nothing editable, nothing saved. It proves the foundation — exact lengths (§5.1), the geometry
-   model, a strict scene reader (§6.4), hand-computed fixtures, and a pipeline that turns a tag
-   into something downloadable.
+1. **M1 Look (done).** A read-only viewer: open a hand-crafted sample design from a file, pan,
+   zoom, zoom to fit, and read dimension labels in feet, inches and fractions. Nothing editable,
+   nothing saved. It proves the foundation — exact lengths (§5.1), the geometry model, a strict
+   scene reader (§6.4) and hand-computed fixtures. Downloadable builds are parked (see below).
 2. **M2 Draw.** The viewer becomes a drawing tool: draw by dragging, move and resize, resize by
    *typing* a dimension, snap parts together and see the relationship the snap created, undo and
    redo, save a design and reopen it. Invalid input is explained; two dimensions that cannot both
@@ -462,10 +461,16 @@ Nothing is scheduled toward a date (see "Versioning and releases" below).
    code in force at permit application, and recomputing every result when that changes, is only
    demonstrable once there are two codes to move between.
 
+**Core first.** Marc's rule (2026-09-21): build the product before anything around it — design
+(M2), cut list (M3), code-cited sizing (M4, M5). Packaging, releases, installers, export formats and
+optimizers are parked; PLAN.md lists what was closed or deferred and when to reopen it.
+
 **Backlog**, wanted but not scheduled: the deck module in its pieces (ledger, joists and beams,
 footings, guards and stairs) reusing M3's cut-list machinery; the site plan; DXF and PDF export;
-the Massachusetts and Pennsylvania packs and municipal amendment overlays; sheet-goods nesting;
-SketchUp import; installers.
+the Massachusetts and Pennsylvania packs and municipal amendment overlays; the constraint solver.
+**Dropped until there is a real need:** SketchUp import, sheet-goods nesting, installers and the
+release pipeline (§6.6 and §12 keep the decisions about signing and versioning for when
+packaging resumes).
 
 Alongside all five, off the critical path: the **constraint solver workstream** (§11, #28), which
 starts once Core.Geometry (#5) has landed and **gates no milestone**. If it proves hard, it waits;

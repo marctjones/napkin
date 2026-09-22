@@ -120,12 +120,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: CUT-007 — Sheet-goods nesting reports the sheets a project needs")]
-    [Trait("Feature", "CUT-007")]
-    public void CUT_007()
-    {
-    }
-
     [Fact(Skip = "planned: CVS-005 — Every edit goes through the update interface")]
     [Trait("Feature", "CVS-005")]
     public void CVS_005()
@@ -309,12 +303,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: IOP-003 — PDF sheets are vector and true scale, with a title block")]
     [Trait("Feature", "IOP-003")]
     public void IOP_003()
-    {
-    }
-
-    [Fact(Skip = "planned: IOP-004 — No proprietary import dependency enters without a recorded decision")]
-    [Trait("Feature", "IOP-004")]
-    public void IOP_004()
     {
     }
 
