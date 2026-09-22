@@ -8,6 +8,7 @@ using Napkin.App.Designs;
 using Napkin.App.Editing;
 using Design = Napkin.App.Designs.Design;
 using Napkin.Core.Geometry;
+using Napkin.Core.Materials;
 
 namespace Napkin.App.Viewing;
 
@@ -117,6 +118,7 @@ public sealed class CanvasView : Control
     IReadOnlyList<EntityId>? _partsLastSeen;
 
     readonly RectangleTool _rectangle = new();
+    readonly StockTool _stock = new();
     EditTool _tool = EditTool.Select;
 
     Gesture _gesture = Gesture.None;
@@ -227,12 +229,74 @@ public sealed class CanvasView : Control
             }
 
             _rectangle.Cancel();
+
+            // Leaving the stock tool puts the stock down: the toolbox shows nothing picked, and a
+            // later press on the paper cannot place something nobody is holding any more.
+            if (value != EditTool.Stock)
+            {
+                _stock.Arm(null);
+            }
+
             _tool = value;
-            Cursor = new Cursor(value == EditTool.Rectangle ? StandardCursorType.Cross : StandardCursorType.Arrow);
+            Cursor = new Cursor(DrawsOnPress ? StandardCursorType.Cross : StandardCursorType.Arrow);
             InvalidateVisual();
             ToolChanged?.Invoke(this, EventArgs.Empty);
         }
     }
+
+    /// <summary>
+    /// The stock item the pointer is holding, picked from the toolbox, or null when it holds none.
+    /// </summary>
+    public StockItem? ArmedStock => _tool == EditTool.Stock ? _stock.Stock : null;
+
+    /// <summary>
+    /// Picks up a stock item from the toolbox, so that the next drag on the paper places a part
+    /// already cut from it (issue #7's picker, <c>GUI-CUT-02</c>) — or puts it down with null.
+    /// </summary>
+    /// <returns>
+    /// <see langword="false"/> when the item cannot be placed as a part (a fastener), in which case
+    /// the tool the pointer was holding is left as it was.
+    /// </returns>
+    public bool ArmStock(StockItem? item)
+    {
+        if (item is null)
+        {
+            if (_tool == EditTool.Stock)
+            {
+                Tool = EditTool.Select;
+            }
+
+            return true;
+        }
+
+        if (!StockTool.CanPlace(item))
+        {
+            return false;
+        }
+
+        bool changed = !ReferenceEquals(_stock.Stock, item) || _tool != EditTool.Stock;
+        _stock.Arm(item);
+        if (_tool == EditTool.Stock)
+        {
+            if (changed)
+            {
+                ToolChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        else
+        {
+            _rectangle.Cancel();
+            _tool = EditTool.Stock;
+            Cursor = new Cursor(StandardCursorType.Cross);
+            ToolChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        InvalidateVisual();
+        return true;
+    }
+
+    /// <summary>Whether a press on the paper starts drawing rather than picking or panning.</summary>
+    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock;
 
     /// <summary>
     /// The precision dimension labels are shown at. Fixed at 1/16&#x2033;; the per-project picker
@@ -244,7 +308,7 @@ public sealed class CanvasView : Control
     public double GridStepInches => SnapGrid.StepInches(_view.PixelsPerInch);
 
     /// <summary>Whether a part is being drawn or dragged right now.</summary>
-    public bool IsEditing => _gesture != Gesture.None || _rectangle.IsDrawing;
+    public bool IsEditing => _gesture != Gesture.None || _rectangle.IsDrawing || _stock.IsDrawing;
 
     /// <summary>What the drag in progress has caught, or null when nothing is being dragged.</summary>
     public SnapPlan? ActiveSnap => _snap;
@@ -600,6 +664,14 @@ public sealed class CanvasView : Control
             return;
         }
 
+        if (_tool == EditTool.Stock)
+        {
+            _stock.Begin(SnapGrid.Snap(_view.ToWorld(position), GridStepInches));
+            e.Pointer.Capture(this);
+            InvalidateVisual();
+            return;
+        }
+
         Point2 world = _view.ToWorld(position);
 
         // The gesture is decided from what was already selected. A press on empty paper, or on a
@@ -639,6 +711,11 @@ public sealed class CanvasView : Control
             _rectangle.MoveTo(SnapGrid.Snap(_view.ToWorld(position), GridStepInches));
             InvalidateVisual();
         }
+        else if (_stock.IsDrawing)
+        {
+            _stock.MoveTo(SnapGrid.Snap(_view.ToWorld(position), GridStepInches));
+            InvalidateVisual();
+        }
         else if (_gesture != Gesture.None)
         {
             ContinueEdit(_view.ToWorld(position));
@@ -656,6 +733,10 @@ public sealed class CanvasView : Control
         if (_rectangle.IsDrawing)
         {
             CompleteRectangle();
+        }
+        else if (_stock.IsDrawing)
+        {
+            CompleteStock();
         }
         else if (_gesture != Gesture.None)
         {
@@ -687,9 +768,10 @@ public sealed class CanvasView : Control
     {
         base.OnPointerCaptureLost(e);
 
-        if (_rectangle.IsDrawing)
+        if (_rectangle.IsDrawing || _stock.IsDrawing)
         {
             _rectangle.Cancel();
+            _stock.Cancel();
             InvalidateVisual();
         }
 
@@ -774,14 +856,15 @@ public sealed class CanvasView : Control
                 return true;
 
             case Key.Escape:
-                if (_rectangle.IsDrawing)
+                if (_rectangle.IsDrawing || _stock.IsDrawing)
                 {
                     _rectangle.Cancel();
+                    _stock.Cancel();
                     InvalidateVisual();
                     return true;
                 }
 
-                if (_tool == EditTool.Rectangle)
+                if (DrawsOnPress)
                 {
                     Tool = EditTool.Select;
                     return true;
@@ -1035,6 +1118,47 @@ public sealed class CanvasView : Control
         InvalidateVisual();
     }
 
+    /// <summary>
+    /// Ends a stock drag: one batch that adds the part and states what the yard fixes about it, so
+    /// the part is that stock from the moment it exists (issue #7).
+    /// </summary>
+    /// <remarks>
+    /// Like the rectangle tool, the pointer goes back to Select afterwards, so the next click picks
+    /// the part just placed rather than placing another. The toolbox stays open; picking an item
+    /// in it again is one click.
+    /// </remarks>
+    void CompleteStock()
+    {
+        if (_editor is not { } editor || _stock.Stock is not { } stock)
+        {
+            _stock.Cancel();
+            return;
+        }
+
+        EntityId id = EntityId.New();
+        if (!_stock.TryComplete(editor.Sketch, editor.LayerForNewParts(), id, editor.NextPartName(), out Request? request))
+        {
+            InvalidateVisual();
+            editor.Say(
+                EditSeverity.Hint,
+                $"Drag to place a {stock.Name} — its length is the way you drag. A click on its own makes nothing.");
+            return;
+        }
+
+        string what = $"Placed a {stock.Name}";
+        editor.BeginGesture(what);
+        UpdateResult result = editor.Apply(request, what);
+        if (result is Succeeded)
+        {
+            editor.Select(id);
+            editor.Say(EditSeverity.Done, $"Placed {editor.NameOf(id)}, a {stock.Name}, {Size(id)}.");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+    }
+
     string Size(EntityId id)
     {
         if (_editor?.Design!.Sketch.Find<Box>(id) is not { } box)
@@ -1221,7 +1345,7 @@ public sealed class CanvasView : Control
         }
 
         _panning = false;
-        Cursor = new Cursor(_tool == EditTool.Rectangle ? StandardCursorType.Cross : StandardCursorType.Arrow);
+        Cursor = new Cursor(DrawsOnPress ? StandardCursorType.Cross : StandardCursorType.Arrow);
         pointer?.Capture(null);
     }
 
@@ -1518,9 +1642,22 @@ public sealed class CanvasView : Control
         }
     }
 
+    /// <summary>
+    /// The part a release would make now, from whichever drawing tool is dragging — for a stock
+    /// part, the stock's own width across the drag, not wherever the pointer happens to be across
+    /// it, because that is what the release will really make.
+    /// </summary>
+    bool TryPreview(out Point2 anchor, out Length width, out Length height, out string? stockName)
+    {
+        stockName = _stock.IsDrawing ? _stock.Stock?.Name : null;
+        return _stock.IsDrawing
+            ? _stock.TryShape(out anchor, out width, out height, out _)
+            : _rectangle.IsDrawing & _rectangle.TryRectangle(out anchor, out width, out height);
+    }
+
     void DrawRectanglePreview(DrawingContext context, CanvasPalette palette)
     {
-        if (!_rectangle.IsDrawing || !_rectangle.TryRectangle(out Point2 anchor, out Length width, out Length height))
+        if (!TryPreview(out Point2 anchor, out Length width, out Length height, out string? stockName))
         {
             return;
         }
@@ -1537,7 +1674,8 @@ public sealed class CanvasView : Control
 
         // The size while the part is still being dragged out: read from the two corners, the same
         // way the part's dimensions will read it a moment later (CVS-007).
-        FormattedText text = Text($"{Label(width)} × {Label(height)}", palette.Selection);
+        string size = $"{Label(width)} × {Label(height)}";
+        FormattedText text = Text(stockName is null ? size : $"{stockName}  {size}", palette.Selection);
 
         Point at = new(rectangle.Center.X - (text.Width / 2), rectangle.Bottom + 6);
         context.DrawRectangle(
