@@ -7,6 +7,16 @@ namespace Napkin.Core.Geometry;
 /// <param name="Layer">The layer the entity is drawn on.</param>
 public abstract record Entity(EntityId Id, LayerId Layer)
 {
+    /// <summary>
+    /// What this is called — "Leg, south-west". Empty means unnamed, which is legal.
+    /// </summary>
+    /// <remarks>
+    /// A name is not an id and is not unique: the cut list groups by dimensions, never by name
+    /// (<c>docs/design/parts-and-cut-list.md</c> §2.1). It is on every entity rather than only on
+    /// a box because a named dimension reads better in a conflict message too.
+    /// </remarks>
+    public string Name { get; init; } = string.Empty;
+
     /// <summary>This entity moved to another layer.</summary>
     public abstract Entity OnLayer(LayerId layer);
 }
@@ -68,6 +78,17 @@ public sealed record Box(
     Length Height,
     Angle Rotation) : Entity(Id, Layer)
 {
+    /// <summary>
+    /// What this box is a piece of, or <see langword="null"/> when it is not a part — a wall, an
+    /// opening.
+    /// </summary>
+    /// <remarks>
+    /// A part is fields on the box rather than a side table, so undo, redo, save and load carry it
+    /// for free. A box whose part is <see langword="null"/> behaves exactly as a box did before
+    /// parts existed: nothing in the geometry kernel reads this.
+    /// </remarks>
+    public Part? Part { get; init; }
+
     /// <inheritdoc/>
     public override Entity OnLayer(LayerId layer) => this with { Layer = layer };
 

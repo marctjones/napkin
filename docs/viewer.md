@@ -24,10 +24,11 @@ configure; the sample files ship inside the build.
   sample files put everything on one layer called "Default", so everything in them draws in the
   neutral style; a file with those layer names in it gets those looks, and a file with layers
   napkin has never heard of still draws.
-- **No names are drawn on parts.** The M1 scene format stores ids, geometry and relationships and
-  no name per entity, so a design read from a file has nothing to write on a leg. The canvas can
-  draw a name the moment a file carries one (`Design.Labels`), which is a new field and a
-  `formatVersion` bump the cut list (#8) will want; see [file-format.md](file-format.md).
+- **Names are drawn on parts that have one.** Scene format version 2 (#8) put a `name` on every
+  entity, `FileDesignSource` reads them into `Design.Labels`, and the canvas draws them exactly as
+  it always could — a leg from `coffee-table.scene.json` says "Leg, south-west". An entity whose
+  name is the empty string has none and nothing is drawn for it; see
+  [file-format.md](file-format.md).
 - **Dimensions** are real dimension graphics — extension lines, a dimension line with arrowheads,
   and the value centred on it — not floating text. The value is computed from the geometry the
   dimension measures, every time it is drawn, and formatted as feet, inches and sixteenths by

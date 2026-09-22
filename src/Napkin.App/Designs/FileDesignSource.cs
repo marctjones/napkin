@@ -23,10 +23,10 @@ namespace Napkin.App.Designs;
 /// wrong.
 /// </para>
 /// <para>
-/// <strong>Entities carry no name.</strong> The M1 scene format stores ids, geometry and
-/// relationships, so <see cref="Design.Labels"/> is empty for every file and nothing is drawn on a
-/// part. A name per entity is a new field and a format-version bump, which the cut list (#8) will
-/// want; see <c>docs/file-format.md</c>.
+/// <strong>Entities carry a name.</strong> Scene format version 2 put one on every entity, so
+/// <see cref="Design.Labels"/> is filled from the file itself and a leg drawn from
+/// <c>coffee-table.scene.json</c> says "Leg, south-west" on the canvas. A name left empty is a
+/// name the file does not state, and nothing is drawn for it.
 /// </para>
 /// </remarks>
 public sealed class FileDesignSource : IDesignSource
@@ -85,7 +85,7 @@ public sealed class FileDesignSource : IDesignSource
 
         return result switch
         {
-            Loaded loaded => Design.Unlabelled(Name, loaded.Sketch),
+            Loaded loaded => Design.Named(Name, loaded.Sketch),
             Refused refused => throw new DesignLoadException(
                 refused.Summary,
                 refused.Problems.Select(problem => problem.ToString())),

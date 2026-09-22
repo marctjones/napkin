@@ -23,12 +23,15 @@ internal static class Scenes
     /// <summary>A 30 inch by 4 inch box at the origin, with its width driven.</summary>
     internal const string OneBox = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 0 }
+              "name": "Shelf",
+              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 0,
+              "part": { "stock": "1x6", "species": null, "quantity": 1, "outOfPlane": 768,
+                        "planAxes": { "x": "length", "y": "width" } } }
           ],
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "paramValue",
@@ -44,14 +47,17 @@ internal static class Scenes
     /// </summary>
     internal const string TurnedBoxAndNode = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 324000 },
+              "name": "Shelf",
+              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 324000,
+              "part": { "stock": "1x6", "species": null, "quantity": 1, "outOfPlane": 768,
+                        "planAxes": { "x": "length", "y": "width" } } },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "position": { "x": 0, "y": 30720 } }
+              "name": "", "position": { "x": 0, "y": 30720 } }
           ],
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "coincident",
@@ -67,17 +73,19 @@ internal static class Scenes
     /// </summary>
     internal const string SegmentAndDimension = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "position": { "x": 0, "y": 0 } },
+              "name": "West end", "position": { "x": 0, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000e", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "position": { "x": 30720, "y": 0 } },
+              "name": "East end", "position": { "x": 30720, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000c", "type": "segment", "layer": "00000000-0000-0000-0000-000000000001",
+              "name": "Centreline",
               "start": "0192f1a0-0000-4000-8000-00000000000b", "end": "0192f1a0-0000-4000-8000-00000000000e" },
             { "id": "0192f1a0-0000-4000-8000-00000000000d", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",
+              "name": "Centreline length",
               "measures": { "kind": "axis",
                 "from": { "kind": "node", "node": "0192f1a0-0000-4000-8000-00000000000b" },
                 "to": { "kind": "node", "node": "0192f1a0-0000-4000-8000-00000000000e" },
@@ -97,12 +105,14 @@ internal static class Scenes
     /// <summary>The box, with a relationship kind that is reserved for the solver.</summary>
     internal const string TangentBetweenBoxEdges = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 0 }
+              "name": "Shelf",
+              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 0,
+              "part": null }
           ],
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "tangent",
@@ -115,14 +125,16 @@ internal static class Scenes
     /// <summary>The same box written twice, under one id.</summary>
     internal const string TwoEntitiesUnderOneId = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 0 },
+              "name": "Shelf",
+              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 0, "part": null },
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 0 }
+              "name": "Shelf",
+              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 0, "part": null }
           ],
           "relationships": []
         }
@@ -131,7 +143,7 @@ internal static class Scenes
     /// <summary>Two layers under one id.</summary>
     internal const string TwoLayersUnderOneId = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [
             { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" },
@@ -145,12 +157,13 @@ internal static class Scenes
     /// <summary>Two relationships, two ids, one statement — invariant 4 of the geometry design.</summary>
     internal const string TwoRelationshipsSayingTheSameThing = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 0 }
+              "name": "Shelf",
+              "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 4096, "rotation": 0, "part": null }
           ],
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "paramValue",
@@ -164,7 +177,7 @@ internal static class Scenes
     /// <summary>An empty design: no entities, no relationships, one layer.</summary>
     internal const string Empty = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [],

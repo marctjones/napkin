@@ -3,7 +3,7 @@
   "scene": "coffee-table.scene.json",
   "design": "coffee-table.design.md",
   "derivedBy": "hand, from the stated dimensions in coffee-table.design.md; never regenerated from napkin's output",
-  "formatVersion": 1,
+  "formatVersion": 2,
   "unitsPerInch": 1024,
 
   "counts": { "layers": 1, "entities": 15, "boxes": 9, "dimensions": 6, "relationships": 33 },
@@ -59,6 +59,48 @@
       "planWidthText": "3/4\"", "planHeightText": "1'-4\"" }
   ],
 
+  "cutList": [
+    { "label": "Top", "quantity": 1,
+      "lengthUnits": 49152, "widthUnits": 24576, "thicknessUnits": 768,
+      "lengthText": "4'-0\"", "widthText": "2'-0\"", "thicknessText": "3/4\"",
+      "material": "", "unresolved": false,
+      "members": [ "10000000-0000-4000-8000-000000000001" ],
+      "derivation": "The top lies flat, so its plan axes are length across X and width up Y: length = the box's stored width 49152 (48\" x 1024), width = the box's stored height 24576 (24\" x 1024). The third dimension is the thickness the design states, 3/4\": 0.75 x 1024 = 768. Text: 49152 / 1024 = 48\" = 4 x 12 + 0 -> 4'-0\"; 24576 / 1024 = 24\" = 2 x 12 + 0 -> 2'-0\"; 768 / 1024 = 3/4\", under a foot so no feet are shown. One box, quantity 1, and one member so the label is its own name. No stock is named, so the material column is empty." },
+
+    { "label": "Apron, long", "quantity": 2,
+      "lengthUnits": 40960, "widthUnits": 3584, "thicknessUnits": 768,
+      "lengthText": "3'-4\"", "widthText": "3 1/2\"", "thicknessText": "3/4\"",
+      "material": "", "unresolved": false,
+      "members": [ "10000000-0000-4000-8000-000000000006", "10000000-0000-4000-8000-000000000007" ],
+      "derivation": "A long apron runs along X on edge: length across X = the box's stored width 40960 (44 - 4 = 40\" between the legs, x 1024), thickness up Y = the box's stored height 768 (3/4\" x 1024). The third dimension is the apron's vertical face, stated as 3 1/2\": 3.5 x 1024 = 3584. Text: 40960 / 1024 = 40\" = 3 x 12 + 4 -> 3'-4\"; 3584 / 1024 = 3 1/2\"; 768 / 1024 = 3/4\". Two boxes with the same three dimensions and no stock, so one row of 1 + 1 = 2. Label: the two names \"Apron, long, south\" and \"Apron, long, north\" share \"Apron, long, \", cut back to the last word boundary and stripped of trailing punctuation -> \"Apron, long\"." },
+
+    { "label": "Leg", "quantity": 4,
+      "lengthUnits": 16640, "widthUnits": 2560, "thicknessUnits": 2560,
+      "lengthText": "1'-4 1/4\"", "widthText": "2 1/2\"", "thicknessText": "2 1/2\"",
+      "material": "", "unresolved": false,
+      "members": [ "10000000-0000-4000-8000-000000000002", "10000000-0000-4000-8000-000000000003",
+                   "10000000-0000-4000-8000-000000000004", "10000000-0000-4000-8000-000000000005" ],
+      "derivation": "A leg stands up, so the plan holds its width and its thickness: both are the box's stored 2560 (2 1/2\" x 1024 = 2560). The third dimension is its length, stated as 16 1/4\": 16.25 x 1024 = 16640. Text: 16640 / 1024 = 16 1/4\" = 1 x 12 + 4 1/4 -> 1'-4 1/4\"; 2560 / 1024 = 2 1/2\" twice. Four boxes with identical dimensions and no stock, so one row of 1 + 1 + 1 + 1 = 4. Label: the four names share \"Leg, \" (south- and north- differ at the first letter), cut back to the last word boundary and stripped of its trailing comma -> \"Leg\"." },
+
+    { "label": "Apron, short", "quantity": 2,
+      "lengthUnits": 16384, "widthUnits": 3584, "thicknessUnits": 768,
+      "lengthText": "1'-4\"", "widthText": "3 1/2\"", "thicknessText": "3/4\"",
+      "material": "", "unresolved": false,
+      "members": [ "10000000-0000-4000-8000-000000000008", "10000000-0000-4000-8000-000000000009" ],
+      "derivation": "A short apron runs along Y on edge, so the axes swap: thickness across X = the box's stored width 768 (3/4\" x 1024), length up Y = the box's stored height 16384 (20 - 4 = 16\" between the legs, x 1024). The third dimension is again the 3 1/2\" face: 3.5 x 1024 = 3584. Text: 16384 / 1024 = 16\" = 1 x 12 + 4 -> 1'-4\"; 3584 / 1024 = 3 1/2\"; 768 / 1024 = 3/4\". Two boxes, one row of 2. Label: \"Apron, short, west\" and \"Apron, short, east\" share \"Apron, short, \" -> \"Apron, short\"." }
+  ],
+
+  "cutListOrder": "Descending by length: 49152 > 40960 > 16640 > 16384, which is 48\" > 40\" > 16 1/4\" > 16\". No two rows tie on length, so the width, thickness and label tie-breaks are not exercised by this fixture.",
+
+  "cutListCsv": [
+    "Cut list: finished sizes before saw kerf and joinery allowance.",
+    "Label,Quantity,Length,Width,Thickness,Material",
+    "Top,1,\"4'-0\"\"\",\"2'-0\"\"\",\"3/4\"\"\",",
+    "\"Apron, long\",2,\"3'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",",
+    "Leg,4,\"1'-4 1/4\"\"\",\"2 1/2\"\"\",\"2 1/2\"\"\",",
+    "\"Apron, short\",2,\"1'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\","
+  ],
+
   "relationshipKinds": {
     "anchored": 1,
     "paramValue": 8,
@@ -96,7 +138,8 @@
   ],
 
   "notes": [
-    "Plan view only: the scene carries no third dimension, so no test asserts one.",
-    "No cut list or materials list is expected here. Those arrive with #8, #9 and the materials library (#7); this fixture is the geometry they will be computed from."
+    "Format version 2 added a name to every entity and a part to every box, so the plan view now carries the third dimension of each part in part.outOfPlane. The three numbers under statedNotInScene are where they came from: nothing new was invented for the cut list.",
+    "The cutList rows above are re-derived by hand from coffee-table.design.md, the same rule samples/README.md sets for every other number here. Each row's derivation shows the arithmetic and the label rule so a reviewer can re-check it without running anything.",
+    "No materials list is expected here. That arrives with #9; no part in this fixture names a stock, so every row's material column is empty and a shopping list would report the whole table under \"no stock chosen\"."
   ]
 }

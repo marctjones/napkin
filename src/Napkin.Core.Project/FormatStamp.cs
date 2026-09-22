@@ -32,7 +32,13 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
     public const string Arcsecond = "arcsecond";
 
     /// <summary>The format version this build writes, and the only one it reads.</summary>
-    public const int CurrentVersion = 1;
+    /// <remarks>
+    /// Version 2 added a <c>name</c> to every entity and a <c>part</c> to every box, which is what
+    /// a cut list needs and a plan view cannot hold (<c>docs/design/parts-and-cut-list.md</c> §2).
+    /// A version-1 file is refused, including one this repository committed: the beta policy has
+    /// no converter in it.
+    /// </remarks>
+    public const int CurrentVersion = 2;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);

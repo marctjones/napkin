@@ -1,6 +1,6 @@
 # Sample designs (issue #37)
 
-Two hand-crafted designs, in the M1 scene format documented in
+Two hand-crafted designs, in the scene format documented in
 [`docs/file-format.md`](../docs/file-format.md), and the expectations a test asserts against them.
 
 | Fixture | Files |
@@ -44,11 +44,16 @@ after re-doing the arithmetic by hand and writing the new derivation down.
 
 ## What is deliberately **not** here
 
-- **No cut list and no materials list.** Those need finished sizes in three dimensions and the
-  materials library (#7), neither of which exists; catalogue features `CUT-004` and `CUT-005` stay
-  unclaimed until #8 and #9 can produce something to compare. The thicknesses and lengths the plan
-  view cannot hold are written in each `design.md` and repeated in the expectations file under
-  `statedNotInScene`, marked so that nobody mistakes them for something a test checks.
+- **No materials list.** That needs the shopping list and takeoff of #9; `CUT-005` stays unclaimed
+  until there is something to compare. No part in either fixture names a stock, deliberately (see
+  the last bullet), so a shopping list computed today would report the whole table under "no stock
+  chosen".
+
+  The **cut list** is here, as of #8: `coffee-table.expected.json`'s `cutList` is four rows
+  re-derived by hand from `coffee-table.design.md`, each with its own `derivation`, and
+  `wall-with-window.expected.json`'s is empty because neither of its boxes is a part. The
+  thicknesses and lengths the plan view cannot hold are still written in each `design.md` and
+  repeated under `statedNotInScene`; they are now also in the scene, as each part's `outOfPlane`.
 - **No header size, stud count or bracing length** in the wall fixture. Those expectations are
   added in M4 and M5 by a person reading the relevant row of Connecticut's published adopted text
   and citing the page it came from — never from memory, and never from napkin's own output.
@@ -86,11 +91,18 @@ must be drawn at, so one set of hand-derived numbers is what both the reader and
 held to. It reads them from here, in the repository, rather than from the build output: they are
 the answers, not something the application ships.
 
-**Entities carry no name.** `Design.Labels` — the viewer's part names — has nothing to read from
-the file: the format stores ids, geometry and relationships only, so a design opened from one of
-these files is drawn with no name on any part. The names in these fixtures live in their
-`*.expected.json`. Putting a name in the scene file is a new field and a `formatVersion` bump,
-which the cut list (#8) may well want; see `docs/file-format.md`.
+**Entities carry a name, and boxes carry a part.** Scene format version 2 (#8) added both, so the
+names that used to live only in `*.expected.json` are now in the scene files too and
+`Design.Labels` — the viewer's part names — is filled straight from the file. The expectations
+file still states them, and the reader test asserts the two agree: the fixture is the answer and
+the scene is what is being checked, which is the wrong way round only if they are allowed to
+disagree silently.
+
+The coffee table's nine boxes are all parts; the wall and its opening are not, so they carry
+`"part": null`. A part's third dimension — the one a plan view cannot hold — is `outOfPlane`, and
+every value of it here is one of the three numbers already listed under `statedNotInScene`:
+3/4″ = 768, 16 1/4″ = 16640 and 3 1/2″ = 3584 units. Nothing was invented to make a cut list
+possible.
 
 **Layers are named "Default".** The viewer styles a part by the name of the layer it is on — a
 part on "Parts" is drawn as furniture, one on "Wall" as a wall, one on "Opening" as a dashed hole —

@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 1
+# The napkin project file — container version 1, scene format version 2
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -25,11 +25,16 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 1` and nothing else. A file from an older *or* a
+   `"containerVersion": 1` and `"formatVersion": 2` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
    shim is ever written (DESIGN.md §12).
+
+   **Version 2** (issue #8) added a `name` to every entity and a `part` to every box, which is what
+   a cut list needs and a plan view cannot hold. Every version-1 file is refused, including the two
+   this repository had committed until they were rewritten in the same change — that is the beta
+   policy working as designed rather than an accident.
 3. **Reading is strict and never repairs.** An unknown field, a field written twice, an id that is
    not a GUID, an id that names nothing, an id that names the wrong kind of entity, a non-positive
    size, an un-normalised rotation, a duplicated id, two relationships saying the same thing, and a
@@ -156,7 +161,7 @@ Two places where the bytes legitimately differ:
 
 ```json
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ … ],
   "entities": [ … ],
@@ -166,7 +171,7 @@ Two places where the bytes legitimately differ:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `formatVersion` | integer | Exactly `1`. Judged before anything else is read. |
+| `formatVersion` | integer | Exactly `2`. Judged before anything else is read. |
 | `units` | object | `length` is exactly `"inch/1024"`, `angle` is exactly `"arcsecond"`. The unit is named in the file so that a reader never has to assume one. |
 | `layers` | array | Every layer, in the order the UI shows them. |
 | `entities` | array | Every entity, in any order; ids may be referred to before they appear. |
@@ -192,19 +197,20 @@ layer the file defines.
 
 ### Entities
 
-Every entity has `id`, `type` and `layer`. `type` is one of `box`, `dimension`, `node`,
+Every entity has `id`, `type`, `layer` and `name`. `type` is one of `box`, `dimension`, `node`,
 `segment`.
 
 ```json
-{ "id": "…", "type": "box", "layer": "…",
-  "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 3584, "rotation": 0 }
+{ "id": "…", "type": "box", "layer": "…", "name": "Leg, south-west",
+  "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 3584, "rotation": 0,
+  "part": null }
 ```
 
 | `type` | Fields |
 |---|---|
 | `node` | `position`: `{ "x": <integer>, "y": <integer> }` |
 | `segment` | `start`, `end`: ids of two `node` entities |
-| `box` | `anchor`: a point, the box's south-west corner in its own frame; `width` and `height`: integers greater than zero, along the box's local X and Y; `rotation`: arcseconds, `0 ≤ rotation < 1296000` |
+| `box` | `anchor`: a point, the box's south-west corner in its own frame; `width` and `height`: integers greater than zero, along the box's local X and Y; `rotation`: arcseconds, `0 ≤ rotation < 1296000`; `part`: below, or `null` |
 | `dimension` | `measures`, `drives`, `placement` — below |
 
 A box is parametric: it stores the width and height that were typed and derives its corners, so a
@@ -251,10 +257,49 @@ Both samples are placed against that reading. In `wall-with-window` the opening'
 reference dimensions either side of it, which measure from corners at y = 0 with `"offset": 6144`.
 The three then read as one dimension string: 4'-6" | 3'-0" | 4'-6".
 
-**There is no display name on an entity.** The format stores ids, geometry and relationships; what
-a part is *called* ("Leg, south-west") lives in the fixture's expectations file and, in the app, in
-the viewer's own side table. If a name ever belongs in the file it is a new field on the entity and
-a `formatVersion` bump, because it changes what the file means.
+### Names
+
+`name` is a string on **every** entity, not only on a box — a named dimension reads better in a
+conflict message too. An empty string is legal and means unnamed; only a non-string is refused.
+
+A name is **not an id and is not unique**: four legs may all be called "Leg". Nothing looks an
+entity up by name, and the cut list groups parts by their dimensions rather than by what they are
+called (`docs/design/parts-and-cut-list.md` §3).
+
+### Parts
+
+`part` is a required field on a box. It is `null` on a box that is not a piece anybody cuts — a
+wall, an opening — and otherwise an object with exactly these five fields:
+
+```json
+"part": {
+  "stock": "2x4",
+  "species": "Douglas fir",
+  "quantity": 1,
+  "outOfPlane": 16640,
+  "planAxes": { "x": "width", "y": "thickness" }
+}
+```
+
+| Field | Type | Meaning | Refused when |
+|---|---|---|---|
+| `stock` | string or `null` | A nominal name the materials library resolves, spelled however a yard spells it: `"2 x 4"` and `"2x4"` normalise to one stock | it is neither a string nor `null` |
+| `species` | string or `null` | Free text, set after placing. Never interpreted by this build | it is neither a string nor `null` |
+| `quantity` | integer | How many identical copies this one box stands for, for the four legs a person draws once. At least 1 | it is not an integer, or is less than 1 |
+| `outOfPlane` | integer | The one dimension the plan cannot show, in units. Greater than zero | it is not an integer, or is zero or negative |
+| `planAxes` | object | `x` and `y`, each exactly one of `length`, `width`, `thickness` | a key is missing, a value is not one of the three, or `x` and `y` name the same one |
+
+**A part has three finished dimensions and the file stores two of them on the box.** `planAxes`
+says which of `length`, `width` and `thickness` the box's stored `width` is and which its stored
+`height` is; the remaining name is the one `outOfPlane` carries. Nothing is stored twice, so a
+part's listed size cannot drift from the box the person is drawing, and a rotated part still lists
+what was typed.
+
+**`stock` is a name, not an id, and is not validated at load.** The reader checks that it is a
+string; it does *not* check that this build's materials library carries it — the same stance the
+manifest already takes on `adoptedCode`. A project drawn against a stock table a later build
+renames still opens, and the cut list says the name did not resolve rather than guessing. A file is
+refused for being malformed, never for naming something this build has not heard of.
 
 ### References
 
@@ -311,24 +356,27 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 ```jsonc
 {
-  "formatVersion": 1,                                  // exactly 1, judged first
+  "formatVersion": 2,                                  // exactly 2, judged first
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
   "entities": [
-    // The wall: 144" x 1024 = 147456 units long, 5.5" x 1024 = 5632 units thick.
+    // The wall: 144" x 1024 = 147456 units long, 5.5" x 1024 = 5632 units thick. A wall is not a
+    // piece anybody cuts, so its part is null — which is a statement, not an omission.
     { "id": "30000000-0000-4000-8000-000000000001", "type": "box",
-      "layer": "00000000-0000-0000-0000-000000000001",
-      "anchor": { "x": 0, "y": 0 }, "width": 147456, "height": 5632, "rotation": 0 },
+      "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall",
+      "anchor": { "x": 0, "y": 0 }, "width": 147456, "height": 5632, "rotation": 0,
+      "part": null },
 
     // The opening: 36" = 36864 units wide, the full thickness of the wall, starting 54" along.
     { "id": "30000000-0000-4000-8000-000000000002", "type": "box",
-      "layer": "00000000-0000-0000-0000-000000000001",
-      "anchor": { "x": 55296, "y": 0 }, "width": 36864, "height": 5632, "rotation": 0 },
+      "layer": "00000000-0000-0000-0000-000000000001", "name": "Opening",
+      "anchor": { "x": 55296, "y": 0 }, "width": 36864, "height": 5632, "rotation": 0,
+      "part": null },
 
     // A driving dimension: the relationship named in "drives" owns the number 147456; this
     // annotation draws it, as 12'-0".
     { "id": "30000000-0000-4000-8000-000000000003", "type": "dimension",
-      "layer": "00000000-0000-0000-0000-000000000001",
+      "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall length",
       "measures": { "kind": "boxWidth", "box": "30000000-0000-4000-8000-000000000001" },
       "drives": "40000000-0000-4000-8000-000000000002",
       "placement": { "offset": 12288, "side": "south" } },
@@ -336,7 +384,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
     // A reference dimension: it measures the span from the wall's west end to the opening and
     // owns nothing, so "drives" is null. It reads 4'-6".
     { "id": "30000000-0000-4000-8000-000000000006", "type": "dimension",
-      "layer": "00000000-0000-0000-0000-000000000001",
+      "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall west end to opening",
       "measures": { "kind": "axis",
         "from": { "kind": "corner", "box": "30000000-0000-4000-8000-000000000001", "corner": "southWest" },
         "to":   { "kind": "corner", "box": "30000000-0000-4000-8000-000000000002", "corner": "southWest" },

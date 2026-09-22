@@ -127,6 +127,7 @@ public static class SceneWriter
         WriteId(writer, SceneNames.Id, entity.Id.Value);
         writer.WriteString(SceneNames.Type, TypeOf(entity));
         WriteId(writer, SceneNames.Layer, entity.Layer.Value);
+        writer.WriteString(SceneNames.Name, entity.Name);
 
         switch (entity)
         {
@@ -144,6 +145,7 @@ public static class SceneWriter
                 writer.WriteNumber(SceneNames.Width, box.Width.Units);
                 writer.WriteNumber(SceneNames.Height, box.Height.Units);
                 writer.WriteNumber(SceneNames.Rotation, box.Rotation.Arcseconds);
+                WritePart(writer, box.Part);
                 break;
 
             case Dimension dimension:
@@ -169,6 +171,49 @@ public static class SceneWriter
             default:
                 throw Unwritable(entity);
         }
+
+        writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// A box's part, or <c>"part": null</c> for a box that is not a piece anybody cuts. Written
+    /// even when there is nothing to say, because the format has no optional fields.
+    /// </summary>
+    private static void WritePart(Utf8JsonWriter writer, Part? part)
+    {
+        if (part is null)
+        {
+            writer.WriteNull(SceneNames.Part);
+            return;
+        }
+
+        writer.WriteStartObject(SceneNames.Part);
+
+        if (part.Stock is { } stock)
+        {
+            writer.WriteString(SceneNames.Stock, stock);
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.Stock);
+        }
+
+        if (part.Species is { } species)
+        {
+            writer.WriteString(SceneNames.Species, species);
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.Species);
+        }
+
+        writer.WriteNumber(SceneNames.Quantity, part.Quantity);
+        writer.WriteNumber(SceneNames.OutOfPlane, part.OutOfPlane.Units);
+
+        writer.WriteStartObject(SceneNames.PlanAxes);
+        writer.WriteString(SceneNames.X, SceneNames.Of(part.PlanAxes.X));
+        writer.WriteString(SceneNames.Y, SceneNames.Of(part.PlanAxes.Y));
+        writer.WriteEndObject();
 
         writer.WriteEndObject();
     }
