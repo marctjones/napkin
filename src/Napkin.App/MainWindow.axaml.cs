@@ -692,13 +692,40 @@ public partial class MainWindow : Window
     /// <summary>The <em>Edit &#x2192; Redo</em> item, which names what it would redo.</summary>
     public MenuItem RedoMenuEntry => RedoMenuItem;
 
-    /// <summary>Takes back the last thing done to the drawing.</summary>
-    /// <returns>Whether anything was undone.</returns>
-    public bool UndoCommand() => !IsAskingToSave && Editor.Undo();
+    /// <summary>
+    /// Takes back the last thing done to the drawing — or, while a text field has the keyboard,
+    /// the last thing typed into it.
+    /// </summary>
+    /// <returns>Whether the drawing changed.</returns>
+    public bool UndoCommand()
+    {
+        if (FocusManager?.GetFocusedElement() is TextBox field)
+        {
+            // The window's key binding sees the key before the field does, so the field's own
+            // undo is asked for here: undo while typing a dimension takes back the typing, never
+            // the part whose dimension is being typed.
+            field.Undo();
+            return false;
+        }
 
-    /// <summary>Puts back the last thing undone.</summary>
-    /// <returns>Whether anything was redone.</returns>
-    public bool RedoCommand() => !IsAskingToSave && Editor.Redo();
+        return !IsAskingToSave && Editor.Undo();
+    }
+
+    /// <summary>
+    /// Puts back the last thing undone — or, while a text field has the keyboard, the last thing
+    /// undone in it.
+    /// </summary>
+    /// <returns>Whether the drawing changed.</returns>
+    public bool RedoCommand()
+    {
+        if (FocusManager?.GetFocusedElement() is TextBox field)
+        {
+            field.Redo();
+            return false;
+        }
+
+        return !IsAskingToSave && Editor.Redo();
+    }
 
     /// <summary>Takes the refusal panel off the drawing.</summary>
     public void DismissRefusal()
