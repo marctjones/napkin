@@ -97,7 +97,7 @@ public sealed class FileDesignSource : IDesignSource
 }
 
 /// <summary>
-/// Asks the person for a scene file to open.
+/// Asks the person for a scene file to open, or for where to save one.
 /// </summary>
 /// <remarks>
 /// The seam exists for one reason: the platform's open dialog is native, and the headless GUI suite
@@ -112,6 +112,12 @@ public interface ISceneFilePicker
     /// The scene file to open, or <see langword="null"/> when the person cancelled.
     /// </summary>
     Task<string?> PickSceneFileAsync();
+
+    /// <summary>
+    /// Where to save the drawing, or <see langword="null"/> when the person cancelled.
+    /// </summary>
+    /// <param name="suggestedName">The file name the dialog offers to begin with.</param>
+    Task<string?> PickSaveDestinationAsync(string suggestedName);
 }
 
 /// <summary>The platform's own open dialog, through Avalonia's storage provider.</summary>
@@ -147,5 +153,28 @@ public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicke
         // is not something the file reader can open, and pretending otherwise would fail later and
         // further from the cause.
         return chosen.Count == 0 ? null : chosen[0].TryGetLocalPath();
+    }
+
+    /// <inheritdoc/>
+    public async Task<string?> PickSaveDestinationAsync(string suggestedName)
+    {
+        IStorageProvider? storage = owner.StorageProvider;
+        if (storage is null || !storage.CanSave)
+        {
+            return null;
+        }
+
+        IStorageFile? chosen = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save this napkin design",
+            SuggestedFileName = suggestedName,
+            DefaultExtension = "scene.json",
+            FileTypeChoices = [SceneFiles],
+            ShowOverwritePrompt = true,
+        }).ConfigureAwait(true);
+
+        // The same rule as opening: a destination with no local path is one the writer cannot
+        // write to, and saying nothing now is better than failing further from the cause.
+        return chosen?.TryGetLocalPath();
     }
 }

@@ -98,10 +98,15 @@ public class OpenFileTests
     sealed class StubPicker(string? path) : ISceneFilePicker
     {
         public Task<string?> PickSceneFileAsync() => Task.FromResult(path);
+
+        public Task<string?> PickSaveDestinationAsync(string suggestedName) => Task.FromResult<string?>(null);
     }
 
     sealed class FailingPicker(string message) : ISceneFilePicker
     {
         public Task<string?> PickSceneFileAsync() => throw new InvalidOperationException(message);
+
+        public Task<string?> PickSaveDestinationAsync(string suggestedName) =>
+            throw new InvalidOperationException(message);
     }
 }

@@ -541,5 +541,7 @@ public class ViewerWorkflows
     sealed class ScriptedPicker(string path) : ISceneFilePicker
     {
         public Task<string?> PickSceneFileAsync() => Task.FromResult<string?>(path);
+
+        public Task<string?> PickSaveDestinationAsync(string suggestedName) => Task.FromResult<string?>(null);
     }
 }
