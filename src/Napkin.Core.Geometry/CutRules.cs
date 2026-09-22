@@ -54,6 +54,62 @@ internal static class CutRules
     internal static ValidationError? FirstError(Box box) => Errors(box).FirstOrDefault();
 
     /// <summary>
+    /// The smallest size along one axis of the blank at which its cuts still fit it — what a
+    /// <see cref="DragEdge"/> clamps to, so that a blank cannot be dragged shorter than its cuts
+    /// the way it cannot be dragged through an anchored neighbour
+    /// (<c>docs/design/shaped-parts-model.md</c> §2.3).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Found by bisection <em>against the rules above</em> rather than by a second copy of them
+    /// that could drift: "the cuts fit" is monotone in the size, because growing a blank loosens
+    /// every invariant 7 limit, widens every invariant 8 budget and only adds area to invariant 9.
+    /// A blank has at most eight cuts and the search is some thirty steps, so this is cheap.
+    /// </para>
+    /// <para>
+    /// <see cref="Length.Zero"/> for a plain rectangle, which clamps nothing: a drag that would
+    /// take a cutless box to nothing is <see cref="RejectionReason.NonPositiveSize"/> as it always
+    /// was.
+    /// </para>
+    /// </remarks>
+    internal static Length SmallestFitting(Box box, Axis axis)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        if (box.Cuts.IsEmpty)
+        {
+            return Length.Zero;
+        }
+
+        long high = box.Size(axis).Units;
+        if (high <= 1 || !Fits(box, axis, box.Size(axis)))
+        {
+            // The blank does not fit its own cuts even now, so nothing smaller will and there is
+            // no floor to offer. Whoever is writing the size refuses it instead of clamping to it.
+            return box.Size(axis);
+        }
+
+        long low = 1;
+        while (low < high)
+        {
+            long middle = low + ((high - low) / 2);
+            if (Fits(box, axis, new Length(middle)))
+            {
+                high = middle;
+            }
+            else
+            {
+                low = middle + 1;
+            }
+        }
+
+        return new Length(low);
+    }
+
+    private static bool Fits(Box box, Axis axis, Length size)
+        => Errors(axis == Axis.X ? box with { Width = size } : box with { Height = size }).IsEmpty;
+
+    /// <summary>
     /// Invariant 6: one cut of any kind per corner, and a curved edge counts at both of its
     /// corners — so nothing else may touch either end of it, and two adjacent edges cannot both be
     /// curved. One cut per corner is invariant 5's doing, since a corner is one site.

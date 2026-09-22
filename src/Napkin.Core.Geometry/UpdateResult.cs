@@ -60,7 +60,14 @@ public sealed record OverConstrained(ConflictReport Conflict) : UpdateResult;
 /// is unchanged.
 /// </summary>
 /// <param name="Reason">Why the request was refused.</param>
-public sealed record Rejected(RejectionReason Reason) : UpdateResult;
+/// <param name="Detail">
+/// Which box and which site, for a refusal that has one — the cut refusals of
+/// <c>docs/design/shaped-parts-model.md</c> §2.2 and §2.3, whose whole point is that the canvas can
+/// say <em>which</em> cut does not fit and offer to remove it. <see langword="null"/> for every
+/// other reason, where the reason is the whole story. This is the same <see cref="Rejected"/>, not
+/// a fourth result type: §2.2 asks for new reasons and no new type.
+/// </param>
+public sealed record Rejected(RejectionReason Reason, ValidationError? Detail = null) : UpdateResult;
 
 /// <summary>What an update changed, so the canvas can redraw and explain only that.</summary>
 /// <param name="Added">Entities added.</param>
@@ -239,9 +246,17 @@ public enum RejectionReason
     CutSiteTaken,
 
     /// <summary>
-    /// A cut does not fit the blank it is on — shaped-parts invariants 7, 8 and 9.
+    /// A cut does not fit the blank it is on — shaped-parts invariants 7, 8 and 9. Either the cut
+    /// being set is too big for the blank, or a resize has made the blank too small for a cut it
+    /// already carries (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.3).
     /// </summary>
     CutDoesNotFit,
+
+    /// <summary>
+    /// There is no cut at the site a <see cref="RemoveCut"/> names
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.2).
+    /// </summary>
+    NoSuchCut,
 
     /// <summary>
     /// This updater does not implement that kind of request at all. See

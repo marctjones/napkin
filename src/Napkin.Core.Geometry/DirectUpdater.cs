@@ -60,6 +60,12 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetName setName => ApplySetName(sketch, setName),
             SetPart setPart => ApplySetPart(sketch, setPart),
 
+            // A cut is in the blank's local frame and moves with it, so setting or removing one
+            // moves no geometry and disturbs no relationship: structural, like a rename
+            // (docs/design/shaped-parts-model.md §2.2).
+            SetCut setCut => ApplySetCut(sketch, setCut),
+            RemoveCut removeCut => ApplyRemoveCut(sketch, removeCut),
+
             // Geometry requests need the rectilinear precondition first.
             AddRelationship add => ApplyAddRelationship(sketch, add),
             SetParameter setParameter => ApplySetParameter(sketch, setParameter),
@@ -109,11 +115,9 @@ public sealed class DirectUpdater : IGeometryUpdater
 
             // A box arrives with its cuts already on it, so it is validated here rather than by a
             // later SetCut (docs/design/shaped-parts-model.md §2.2).
-            if (CutRules.FirstError(box) is { } cut)
+            if (CutsRefuse(box) is { } refusal)
             {
-                return new Rejected(cut.Kind is ValidationErrorKind.CutDoesNotFit or ValidationErrorKind.NonPositiveArea
-                    ? RejectionReason.CutDoesNotFit
-                    : RejectionReason.CutSiteTaken);
+                return refusal;
             }
         }
 
@@ -272,6 +276,84 @@ public sealed class DirectUpdater : IGeometryUpdater
             sketch.WithEntity(box with { Part = request.Part }),
             ChangeSet.Empty with { Modified = [request.Box] });
     }
+
+    private static UpdateResult ApplySetCut(Sketch sketch, SetCut request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        // Only a box is a blank. A node has no edges to cut and a dimension is an annotation.
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        // "Adds a cut, or replaces the cut at the same site" (§2.2): one operation per site, so
+        // what was there goes and the new one takes its place. Box.Cuts's initialiser re-sorts.
+        Box candidate = box with
+        {
+            Cuts = box.Cuts.RemoveAll(existing => existing.Site == request.Cut.Site).Add(request.Cut),
+        };
+
+        if (CutsRefuse(candidate) is { } refusal)
+        {
+            return refusal;
+        }
+
+        if (candidate == box)
+        {
+            // The same cut again is not a change, and a change set that claimed one would make the
+            // canvas redraw for nothing — the no-op branch SetRotation already has.
+            return new Solved(sketch, ChangeSet.Empty);
+        }
+
+        return new Solved(
+            sketch.WithEntity(candidate),
+            ChangeSet.Empty with { Modified = [request.Box] });
+    }
+
+    private static UpdateResult ApplyRemoveCut(Sketch sketch, RemoveCut request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        ImmutableList<Cut> left = box.Cuts.RemoveAll(cut => cut.Site == request.Site);
+        if (left.Count == box.Cuts.Count)
+        {
+            // No Detail: nothing about the sketch is wrong, and the request already names the box
+            // and the site the caller asked about.
+            return new Rejected(RejectionReason.NoSuchCut);
+        }
+
+        // Taking a cut off only gives the blank area back, so no invariant can break here.
+        return new Solved(
+            sketch.WithEntity(box with { Cuts = left }),
+            ChangeSet.Empty with { Modified = [request.Box] });
+    }
+
+    /// <summary>
+    /// The refusal a box's cuts earn it, or <see langword="null"/> when they are fine — the one
+    /// mapping from an invariant 5-to-9 failure to a <see cref="RejectionReason"/>, shared by
+    /// <see cref="AddEntity"/>, <see cref="SetCut"/> and the post-write check of &#xA7;2.3, so that
+    /// the same broken box is refused for the same reason whichever door it came in by.
+    /// </summary>
+    private static Rejected? CutsRefuse(Box box)
+        => CutRules.FirstError(box) is { } error
+            ? new Rejected(
+                error.Kind is ValidationErrorKind.CutDoesNotFit or ValidationErrorKind.NonPositiveArea
+                    ? RejectionReason.CutDoesNotFit
+                    : RejectionReason.CutSiteTaken,
+                error)
+            : null;
 
     // ---------------------------------------------------------------------------------------
     // Exact geometry requests
@@ -527,16 +609,23 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.DrivenSize);
         }
 
-        Length newSize = (alongWidth ? box.Width : box.Height) + request.Delta;
+        // §2.3: best effort, as always — the delta is clamped so the edge is never dragged past
+        // what the cuts on it claim, and the applied delta is what gets reported. A blank cannot be
+        // dragged shorter than its cuts, the way it cannot be dragged through an anchored
+        // neighbour. The floor is zero for a plain rectangle, so nothing here changes for one.
+        Length currentSize = alongWidth ? box.Width : box.Height;
+        Length newSize = Length.Max(currentSize + request.Delta, CutRules.SmallestFitting(box, localAxis));
         if (newSize <= Length.Zero)
         {
             return new Rejected(RejectionReason.NonPositiveSize);
         }
 
+        Length delta = newSize - currentSize;
+
         // Grabbing the anchor's own edge moves the anchor; grabbing the far edge leaves it. Either
         // way the opposite edge stays put, so both anchor coordinates are seeded and pinned.
         Vector2 anchorShift = request.Edge is BoxEdge.West or BoxEdge.South
-            ? Vector2.Along(localAxis, -request.Delta).Rotate(box.Rotation)
+            ? Vector2.Along(localAxis, -delta).Rotate(box.Rotation)
             : Vector2.Zero;
         Point2 anchor = box.Anchor + anchorShift;
 
@@ -569,7 +658,16 @@ public sealed class DirectUpdater : IGeometryUpdater
         Sketch written = Write(sketch, propagated.Assignments, out ImmutableHashSet<EntityId> moved, out ImmutableHashSet<EntityId> resized);
         AssertHolds(written);
 
-        Length outward = request.Edge is BoxEdge.West or BoxEdge.South ? -request.Delta : request.Delta;
+        // The clamp above covers the box the user grabbed. Another box this resized through an
+        // EqualParam has cuts of its own, and a drag is a question rather than a demand, so a
+        // refusal there is the same answer the blocked-propagation arm gives: the edge does not
+        // move at all. Nothing partial is ever handed back.
+        if (CutsStillFit(written, resized) is not null)
+        {
+            return new Solved(sketch, ChangeSet.Empty with { AppliedDelta = Vector2.Zero });
+        }
+
+        Length outward = request.Edge is BoxEdge.West or BoxEdge.South ? -delta : delta;
         Vector2 applied = Vector2.Along(localAxis, outward).Rotate(box.Rotation);
 
         return new Solved(
@@ -621,9 +719,43 @@ public sealed class DirectUpdater : IGeometryUpdater
         Sketch written = Write(target, propagated.Assignments, out ImmutableHashSet<EntityId> moved, out ImmutableHashSet<EntityId> resized);
         AssertHolds(written);
 
+        // §2.3's seam, "after the write, before the return": the propagator knows nothing about
+        // cuts and should not, so a typed dimension, an EqualParam from another box, a stock
+        // assignment or any future solver-produced write could otherwise shrink a blank below what
+        // its cuts need and nothing would catch it. `written` is a value nobody else has seen, so
+        // dropping it here leaves the caller's sketch untouched by construction — the same way the
+        // conflict arm above never wrote the working table back.
+        if (CutsStillFit(written, resized) is { } refusal)
+        {
+            return refusal;
+        }
+
         return new Solved(
             written,
             changes with { Moved = changes.Moved.Union(moved), Resized = changes.Resized.Union(resized) });
+    }
+
+    /// <summary>
+    /// Invariants 7 to 9 on every box a write resized, in id order so that the box named is the
+    /// same one whatever order the sketch's dictionaries were built in
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.3).
+    /// </summary>
+    /// <remarks>
+    /// Only the resized boxes: a cut is in the blank's local frame, so moving or rotating a box
+    /// carries its cuts along unchanged, and a box whose size did not change cannot have stopped
+    /// fitting them.
+    /// </remarks>
+    private static Rejected? CutsStillFit(Sketch written, ImmutableHashSet<EntityId> resized)
+    {
+        foreach (EntityId id in resized.OrderBy(id => id))
+        {
+            if (written.Find<Box>(id) is { } box && CutsRefuse(box) is { } refusal)
+            {
+                return refusal;
+            }
+        }
+
+        return null;
     }
 
     private static Sketch Write(
