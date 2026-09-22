@@ -92,20 +92,29 @@ public static class CutDescription
     private const string SitesPlaceholder = "{sites}";
 
     /// <summary>One cut as a sentence, with the site it was made at kept separate for grouping.</summary>
+    /// <remarks>
+    /// The kernel's <see cref="Cut"/> hierarchy is closed — three kinds, and a constructor no
+    /// fourth can be added to from outside the kernel — so what is left after the first two is the
+    /// curved edge. A fourth kind would fail loudly here rather than be described wrongly.
+    /// </remarks>
     private static (string Template, string Site) Sentence(
         Cut cut, Length planWidth, Length planHeight, string through)
-        => cut switch
+    {
+        if (cut is RoundedCorner rounded)
         {
-            RoundedCorner rounded => (
+            return (
                 $"Round {SitesPlaceholder} to a {CutListCsv.Text(rounded.Radius)} radius{through}.",
-                CornerName(rounded.Corner)),
+                CornerName(rounded.Corner));
+        }
 
-            CornerCut corner => Straight(corner, planWidth, planHeight, through),
+        if (cut is CornerCut corner)
+        {
+            return Straight(corner, planWidth, planHeight, through);
+        }
 
-            CurvedEdge curve => (Curve(curve, planWidth, planHeight, through), EdgeName(curve.Edge)),
-
-            _ => throw new ArgumentOutOfRangeException(nameof(cut), cut, "Unknown kind of cut."),
-        };
+        CurvedEdge curve = (CurvedEdge)cut;
+        return (Curve(curve, planWidth, planHeight, through), EdgeName(curve.Edge));
+    }
 
     /// <summary>
     /// A straight cut across a corner: a clipped corner, a mitred end, a taper, or the diagonal.
@@ -247,13 +256,12 @@ public static class CutDescription
         _ => $"the {string.Join(", ", sites.Take(sites.Count - 1))} and {sites[^1]} corners",
     };
 
-    /// <summary>What the out-of-plane dimension is called in a sentence.</summary>
-    private static string Word(PartDimension dimension) => dimension switch
-    {
-        PartDimension.Length => "length",
-        PartDimension.Width => "width",
-        _ => "thickness",
-    };
+    /// <summary>
+    /// What the out-of-plane dimension is called in a sentence. Only ever asked when it is not the
+    /// thickness, because that is the one case the sentence says nothing about.
+    /// </summary>
+    private static string Word(PartDimension dimension)
+        => dimension == PartDimension.Length ? "length" : "width";
 
     /// <summary>The value of one of the three named dimensions.</summary>
     private static Length Value(PartDimension dimension, FinishedSize size) => dimension switch

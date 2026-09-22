@@ -17,19 +17,15 @@ namespace Napkin.Modules.Furniture;
 internal static class CutSequence
 {
     /// <summary>Whether two lists hold the same cuts, in the same order.</summary>
-    internal static bool AreEqual(ImmutableArray<Cut> a, ImmutableArray<Cut> b)
-        => a.IsDefaultOrEmpty ? b.IsDefaultOrEmpty : !b.IsDefaultOrEmpty && a.SequenceEqual(b);
+    internal static bool AreEqual(ImmutableArray<Cut> a, ImmutableArray<Cut> b) => a.SequenceEqual(b);
 
     /// <summary>A hash that agrees with <see cref="AreEqual"/>.</summary>
     internal static int HashOf(ImmutableArray<Cut> cuts)
     {
         HashCode hash = default;
-        if (!cuts.IsDefaultOrEmpty)
+        foreach (Cut cut in cuts)
         {
-            foreach (Cut cut in cuts)
-            {
-                hash.Add(cut);
-            }
+            hash.Add(cut);
         }
 
         return hash.ToHashCode();
@@ -45,7 +41,7 @@ internal static class CutSequence
     {
         public int Compare(ImmutableArray<Cut> x, ImmutableArray<Cut> y)
         {
-            int shared = Math.Min(Count(x), Count(y));
+            int shared = Math.Min(x.Length, y.Length);
             for (int i = 0; i < shared; i++)
             {
                 int cut = CompareCuts(x[i], y[i]);
@@ -57,11 +53,13 @@ internal static class CutSequence
 
             // Everything they share is the same, so the shorter list — which is the plainer
             // blank — comes first.
-            return Count(x).CompareTo(Count(y));
+            return x.Length.CompareTo(y.Length);
         }
 
-        private static int Count(ImmutableArray<Cut> cuts) => cuts.IsDefault ? 0 : cuts.Length;
-
+        /// <remarks>
+        /// Same site and same kind leaves the values, and the two kinds the switch names are the
+        /// two that are not the curved edge — the hierarchy has three and no more.
+        /// </remarks>
         private static int CompareCuts(Cut a, Cut b)
         {
             int site = a.Site.CompareTo(b.Site);
@@ -83,10 +81,9 @@ internal static class CutSequence
                     first.AlongY.Units.CompareTo(second.AlongY.Units)),
                 (RoundedCorner first, RoundedCorner second) =>
                     first.Radius.Units.CompareTo(second.Radius.Units),
-                (CurvedEdge first, CurvedEdge second) => Then(
-                    ((int)first.Bow).CompareTo((int)second.Bow),
-                    first.Depth.Units.CompareTo(second.Depth.Units)),
-                _ => 0,
+                _ => Then(
+                    ((int)((CurvedEdge)a).Bow).CompareTo((int)((CurvedEdge)b).Bow),
+                    ((CurvedEdge)a).Depth.Units.CompareTo(((CurvedEdge)b).Depth.Units)),
             };
         }
 

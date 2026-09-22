@@ -81,6 +81,39 @@ public sealed class CutDescriptionTests
     }
 
     [Fact]
+    public void A_taper_takes_the_whole_of_a_long_edge_and_reads_as_a_mitre_too()
+    {
+        // The other way round from the golden above: here the setback along X is the whole of the
+        // north edge, so the north end is what goes and the mark is on the east edge. A 1" mark
+        // over 10" is atan(0.1) = 5.71°, which is 5.5° to the nearest half degree — the case the
+        // angle is written with a decimal in.
+        FinishedSize board = new(new Length(10240), new Length(3072), new Length(768));
+
+        Assert.Equal(
+            [
+                "Mitre the north end: from 1\" in along the east edge to the north-west corner "
+                + "(≈5.5° off square).",
+            ],
+            Describe(board, Flat, new CornerCut(BoxCorner.NorthEast, new Length(10240), new Length(1024))));
+    }
+
+    [Fact]
+    public void A_mitre_at_the_other_end_of_an_edge_names_the_corner_at_the_far_end_of_it()
+    {
+        // The same cut at the south-west corner rather than the north-east: the west end goes, the
+        // mark is on the south edge, and the corner the cut runs to is the north-west one — the
+        // other end of the edge the cut takes the whole of. atan(1/3) = 18.43°, so 18.5°.
+        FinishedSize board = new(new Length(10240), new Length(3072), new Length(768));
+
+        Assert.Equal(
+            [
+                "Mitre the west end: from 1\" in along the south edge to the north-west corner "
+                + "(≈18.5° off square).",
+            ],
+            Describe(board, Flat, new CornerCut(BoxCorner.SouthWest, new Length(1024), new Length(3072))));
+    }
+
+    [Fact]
     public void Both_setbacks_whole_is_the_diagonal_and_reads_corner_to_corner()
     {
         Assert.Equal(
@@ -115,6 +148,17 @@ public sealed class CutDescriptionTests
                 new RoundedCorner(BoxCorner.SouthEast, new Length(1024)),
                 new RoundedCorner(BoxCorner.NorthEast, new Length(1024)),
                 new RoundedCorner(BoxCorner.NorthWest, new Length(1024))));
+
+        // Three of them are listed with a comma and an "and", which is only "all four corners"
+        // when it really is all four.
+        Assert.Equal(
+            ["Round the south-west, south-east and north-east corners to a 1\" radius."],
+            Describe(
+                Top,
+                Flat,
+                new RoundedCorner(BoxCorner.SouthWest, new Length(1024)),
+                new RoundedCorner(BoxCorner.SouthEast, new Length(1024)),
+                new RoundedCorner(BoxCorner.NorthEast, new Length(1024))));
 
         // Not the same cut: two radii are two sentences, in site order.
         Assert.Equal(
@@ -162,6 +206,21 @@ public sealed class CutDescriptionTests
     }
 
     [Fact]
+    public void A_curve_on_an_end_marks_its_two_ends_on_the_north_and_south_edges()
+    {
+        // The edges a curve's marks go on are the ones it meets at its ends, so an end curve's
+        // are the north and south edges rather than the east and west. The 2'-0" west edge bowed
+        // 1" is a circle of exactly 72 1/2".
+        Assert.Equal(
+            [
+                "Curve the west edge: mark 1\" in from each end on the north and south edges, draw "
+                + "a fair curve from mark to mark through the middle of the west edge, and cut it "
+                + "(6'-0 1/2\" radius).",
+            ],
+            Describe(Top, Flat, new CurvedEdge(BoxEdge.West, Bow.Outward, new Length(1024))));
+    }
+
+    [Fact]
     public void A_radius_that_is_not_exact_at_a_sixteenth_says_so()
     {
         // (49152² + 4 x 5120²) / (8 x 5120) = 61542.4 units, which is not a whole unit and is not
@@ -201,6 +260,47 @@ public sealed class CutDescriptionTests
         Assert.Equal(
             ["Round the north-east corner to a 1/4\" radius."],
             Describe(Top, Flat, new RoundedCorner(BoxCorner.NorthEast, new Length(256))));
+    }
+
+    [Fact]
+    public void An_apron_drawn_on_edge_says_its_width_rather_than_its_length()
+    {
+        // The plan holds this apron's length and its thickness, so the dimension a cut runs
+        // through is the 3 1/2" face it shows: an eased end, rounded the whole width of it. The
+        // same rule as the leg's, said about a width instead of a length.
+        FinishedSize apron = new(new Length(40960), new Length(3584), new Length(768));
+        PlanAxes onEdge = new(PartDimension.Length, PartDimension.Thickness);
+
+        Assert.Equal(
+            ["Round the north-east corner to a 1/4\" radius, for the full 3 1/2\" width."],
+            Describe(apron, onEdge, new RoundedCorner(BoxCorner.NorthEast, new Length(256))));
+    }
+
+    [Fact]
+    public void A_radius_that_falls_between_two_units_is_rounded_to_the_nearer()
+    {
+        // (49152² + 4 x 1280²) / (8 x 1280) = 236569 units and 6144 left over, which is more than
+        // half of 10240, so the radius is 236570 units — 231.025", shown at 1/16" as 19'-3".
+        Assert.Equal(
+            [
+                "Curve the north edge: mark 1 1/4\" in from each end on the east and west edges, "
+                + "draw a fair curve from mark to mark through the middle of the north edge, and "
+                + "cut it (≈19'-3\" radius).",
+            ],
+            Describe(Top, Flat, new CurvedEdge(BoxEdge.North, Bow.Outward, new Length(1280))));
+    }
+
+    [Fact]
+    public void A_corner_or_an_edge_the_compass_does_not_name_is_refused()
+    {
+        // Not reachable through a file, whose corner and edge names the reader validates, nor
+        // through the canvas. It is reachable through the API, and a cut list that quietly said
+        // "Round the 7 corner" would be worse than one that stopped.
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => Describe(Top, Flat, new RoundedCorner((BoxCorner)7, new Length(1024))));
+
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => Describe(Top, Flat, new CurvedEdge((BoxEdge)7, Bow.Outward, new Length(1024))));
     }
 
     private static ImmutableArray<string> Describe(FinishedSize size, PlanAxes axes, params Cut[] cuts)

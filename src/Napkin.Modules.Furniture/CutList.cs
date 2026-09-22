@@ -219,13 +219,19 @@ public static class CutList
         /// <c>docs/design/shaped-parts-model.md</c> §4.2 names for this key in particular.
         /// </remarks>
         /// <param name="other">The key to compare with.</param>
+        /// <devdoc>
+        /// Every rung is compared, with <c>&amp;</c> rather than <c>&amp;&amp;</c>: the values are
+        /// three integers, two short strings and a handful of cuts, so there is nothing here worth
+        /// skipping, and a comparison with no short-circuit in it is one with no path through it
+        /// that a test cannot reach. Two keys are only ever compared when their hashes agree.
+        /// </devdoc>
         public bool Equals(GroupKey other)
             => Length == other.Length
-               && Width == other.Width
-               && Thickness == other.Thickness
-               && string.Equals(Stock, other.Stock, StringComparison.Ordinal)
-               && string.Equals(Species, other.Species, StringComparison.Ordinal)
-               && CutSequence.AreEqual(Cuts, other.Cuts);
+               & Width == other.Width
+               & Thickness == other.Thickness
+               & string.Equals(Stock, other.Stock, StringComparison.Ordinal)
+               & string.Equals(Species, other.Species, StringComparison.Ordinal)
+               & CutSequence.AreEqual(Cuts, other.Cuts);
 
         /// <inheritdoc/>
         public override int GetHashCode()

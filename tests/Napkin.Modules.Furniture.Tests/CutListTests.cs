@@ -431,6 +431,68 @@ public sealed class CutListTests
 
     [Fact]
     [Trait("Feature", "CUT-003")]
+    public void Rows_that_differ_only_in_their_cuts_sort_by_site_then_kind_then_value()
+    {
+        // Every rung of the last tie-break, in one design: nine shelves of identical size and name
+        // whose only difference is what has been cut off them. Drawn deliberately out of order, so
+        // that the order that comes back is the comparison's and not the design's.
+        Cut[][] cuts =
+        [
+            [new CurvedEdge(BoxEdge.North, Bow.Inward, new Length(256))],
+            [new RoundedCorner(BoxCorner.SouthWest, new Length(512))],
+            [new CornerCut(BoxCorner.SouthWest, new Length(512), new Length(512))],
+            [],
+            [new CurvedEdge(BoxEdge.North, Bow.Inward, new Length(128))],
+            [new CornerCut(BoxCorner.NorthEast, new Length(256), new Length(256))],
+            [new CornerCut(BoxCorner.SouthWest, new Length(256), new Length(256))],
+            [new CurvedEdge(BoxEdge.North, Bow.Outward, new Length(128))],
+            [new CornerCut(BoxCorner.SouthWest, new Length(512), new Length(256))],
+            [new RoundedCorner(BoxCorner.SouthWest, new Length(256))],
+        ];
+
+        ImmutableArray<CutListRow> rows = CutList.Of(
+            Design.WithCutParts([.. cuts.Select(shelf => ("Shelf", 10240L, 768L, Apron, shelf))]),
+            Library);
+
+        Assert.Equal(cuts.Length, rows.Length);
+
+        // One blank whose cuts start with another's: everything they share is the same, so the
+        // shorter list is the plainer blank and comes first.
+        ImmutableArray<CutListRow> nested = CutList.Of(
+            Design.WithCutParts(
+                ("Shelf", 10240, 768, Apron,
+                 [
+                     new RoundedCorner(BoxCorner.SouthWest, new Length(256)),
+                     new RoundedCorner(BoxCorner.NorthEast, new Length(256)),
+                 ]),
+                ("Shelf", 10240, 768, Apron, [new RoundedCorner(BoxCorner.SouthWest, new Length(256))])),
+            Library);
+
+        Assert.Equal([1, 2], nested.Select(row => row.Cuts.Length));
+
+        Assert.Equal<IEnumerable<Cut>>(
+            [
+                // Nothing cut at all comes first: everything they share is the same, and the
+                // shorter list is the plainer blank.
+                [],
+
+                // Then by site — south-west corner, north-east corner, north edge — and within a
+                // site by kind, a straight cut before a rounding.
+                [new CornerCut(BoxCorner.SouthWest, new Length(256), new Length(256))],
+                [new CornerCut(BoxCorner.SouthWest, new Length(512), new Length(256))],
+                [new CornerCut(BoxCorner.SouthWest, new Length(512), new Length(512))],
+                [new RoundedCorner(BoxCorner.SouthWest, new Length(256))],
+                [new RoundedCorner(BoxCorner.SouthWest, new Length(512))],
+                [new CornerCut(BoxCorner.NorthEast, new Length(256), new Length(256))],
+                [new CurvedEdge(BoxEdge.North, Bow.Outward, new Length(128))],
+                [new CurvedEdge(BoxEdge.North, Bow.Inward, new Length(128))],
+                [new CurvedEdge(BoxEdge.North, Bow.Inward, new Length(256))],
+            ],
+            rows.Select(row => row.Cuts.AsEnumerable()));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-003")]
     public void What_a_shopping_list_reads_is_untouched_by_the_cuts()
     {
         // Test 16 (§4.6). The shopping list consumes rows and reads the three blank dimensions and
