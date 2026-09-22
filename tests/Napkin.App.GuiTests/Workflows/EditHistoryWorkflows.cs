@@ -125,7 +125,16 @@ public class EditHistoryWorkflows
             ?? throw new InvalidOperationException("Edit → Redo shows no key.");
         for (int step = 1; step <= 4; step++)
         {
-            app.Press(redo.Key, redo.KeyModifiers);
+            // Every redo key the platform lists is bound, not only the one the menu shows.
+            if (step == 2)
+            {
+                app.Chord(Key.Z, KeyModifiers.Shift);
+            }
+            else
+            {
+                app.Press(redo.Key, redo.KeyModifiers);
+            }
+
             int expected = step;
             app.Expect($"redo {step} puts back edit {expected}, still selected", () =>
             {

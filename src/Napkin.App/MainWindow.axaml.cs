@@ -498,7 +498,7 @@ public partial class MainWindow : Window
     /// <returns>Whether the drawing was written.</returns>
     public async Task<bool> SaveAsAsync()
     {
-        if (_saving || IsAskingToSave || Editor.InGesture)
+        if (_saving || IsAskingToSave || RefusedMidGesture())
         {
             return false;
         }
@@ -534,7 +534,7 @@ public partial class MainWindow : Window
     /// <summary>Writes the drawing to a file, and says what happened.</summary>
     bool SaveTo(string path)
     {
-        if (IsAskingToSave || Editor.InGesture)
+        if (IsAskingToSave || RefusedMidGesture())
         {
             return false;
         }
@@ -559,6 +559,21 @@ public partial class MainWindow : Window
             default:
                 return false;
         }
+    }
+
+    /// <summary>
+    /// Whether a drag is still under way, and so there is no finished drawing to save yet — said
+    /// in the message bar rather than silently ignored.
+    /// </summary>
+    bool RefusedMidGesture()
+    {
+        if (!Editor.InGesture)
+        {
+            return false;
+        }
+
+        Editor.Say(EditSeverity.Hint, "Not saved — finish the drag first, then save.");
+        return true;
     }
 
     /// <summary>What Save As offers to call the file: the file it already has, or the design's name.</summary>
