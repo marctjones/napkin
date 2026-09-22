@@ -1019,6 +1019,8 @@ public partial class MainWindow : Window
         DrawingCanvas.Focus();
     }
 
+    void OnDuplicateClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.DuplicateSelection();
+
     void OnPinClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.PinSelection();
 
     void OnDeleteClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.DeleteSelection();

@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 
+using Napkin.Core.Geometry;
 using Napkin.Modules.Furniture;
 
 namespace Napkin.App.Viewing;
@@ -54,9 +55,14 @@ public sealed class CutListTable : Grid
     private bool _descending = true;
 
     /// <summary>A table with nothing in it yet.</summary>
+    /// <remarks>
+    /// The last column carries the shape thumbnails (<c>docs/design/shaped-parts-model.md</c>
+    /// &#xA7;4.4). It has no header, because it is a picture of the row rather than something to
+    /// sort by, and it is empty for a plain rectangle.
+    /// </remarks>
     public CutListTable()
     {
-        ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto");
+        ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto,Auto");
         Rebuild();
     }
 
@@ -95,10 +101,30 @@ public sealed class CutListTable : Grid
             .Select(row => string.Join(
                 "\t",
                 Children
-                    .Where(cell => GetRow(cell) == row)
+                    .Where(cell => GetRow(cell) == row && cell is not CutThumbnail)
                     .OrderBy(GetColumn)
                     .Select(TextOf))),
     ];
+
+    /// <summary>
+    /// The labels of the rows that drew a shape thumbnail, in the order they are on screen.
+    /// </summary>
+    /// <remarks>
+    /// The pictures cannot be read as text, so this is how the GUI suite asks which rows got one.
+    /// </remarks>
+    public ImmutableArray<string> RowsWithThumbnails =>
+    [
+        .. Children
+            .OfType<CutThumbnail>()
+            .OrderBy(GetRow)
+            .Select(thumbnail => LabelOn(GetRow(thumbnail))),
+    ];
+
+    /// <summary>What the part column of one line reads.</summary>
+    string LabelOn(int line) => Children
+        .Where(cell => GetRow(cell) == line && GetColumn(cell) == 0)
+        .Select(TextOf)
+        .FirstOrDefault(string.Empty);
 
     /// <summary>What one cell reads, whether it is a header button or a plain cell.</summary>
     private static string TextOf(Control cell) => cell switch
@@ -184,9 +210,53 @@ public sealed class CutListTable : Grid
             }
 
             Add(material, line, 5);
+
+            if (Thumbnail(row) is { } shape)
+            {
+                Add(shape, line, 6);
+            }
+
             line++;
         }
     }
+
+    /// <summary>
+    /// A picture of what this row describes, or nothing when it describes a plain rectangle.
+    /// </summary>
+    /// <remarks>
+    /// The blank is rebuilt from what the row already carries: <see cref="CutListRow.PlanAxes"/>
+    /// says which of the three finished dimensions the box's stored width and height were, and
+    /// the cuts come across by value. So the row needs nothing added to it to be drawable — which
+    /// is right, because a row is a value with no drawing decisions in it.
+    /// </remarks>
+    private static CutThumbnail? Thumbnail(CutListRow row)
+    {
+        if (row.Cuts.IsEmpty)
+        {
+            return null;
+        }
+
+        Box blank = new(
+            EntityId.New(),
+            LayerId.New(),
+            Point2.Origin,
+            Along(row, row.PlanAxes.X),
+            Along(row, row.PlanAxes.Y),
+            Angle.Zero)
+        {
+            Cuts = [.. row.Cuts],
+        };
+
+        return new CutThumbnail(blank);
+    }
+
+    /// <summary>Which of a row's three dimensions one of the plan axes is.</summary>
+    private static Length Along(CutListRow row, PartDimension dimension) => dimension switch
+    {
+        PartDimension.Length => row.Length,
+        PartDimension.Width => row.Width,
+        _ => row.Thickness,
+    };
 
     private void AddHeader()
     {

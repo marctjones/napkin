@@ -164,6 +164,74 @@ public static class BoxGeometry
                && local.Dy <= box.Height;
     }
 
+    /// <summary>
+    /// Whether a point is on what is left of the blank after its cuts: the blank itself for a
+    /// plain rectangle, the derived outline for a shaped part
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.4).
+    /// </summary>
+    /// <remarks>
+    /// Grips and snap targets deliberately stay on the blank; only "is this part under the
+    /// pointer?" moves to the outline, so that a click in a corner somebody cut off picks whatever
+    /// is really there.
+    /// </remarks>
+    public static bool ContainsShape(Box box, Point2 point)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        return box.Cuts.IsEmpty ? Contains(box, point) : OutlineHitTest.Contains(box.Outline(), point);
+    }
+
+    /// <summary>
+    /// Whether a point is on the shape, or near enough to it to count as a grab.
+    /// </summary>
+    /// <remarks>
+    /// A plain rectangle can answer this exactly, because the distance to a rectangle is a
+    /// two-line calculation. A shaped part's boundary is arcs as well as lines, and the distance
+    /// to an arc is not worth a page of trigonometry for a click tolerance: the shape is asked
+    /// about the point and about four points one tolerance away along each axis instead, which
+    /// grabs a boundary from either side without pretending to a precision a few pixels of slop
+    /// does not have.
+    /// </remarks>
+    /// <param name="box">The part.</param>
+    /// <param name="point">Where the pointer is, in model coordinates.</param>
+    /// <param name="tolerance">How far outside the shape still counts.</param>
+    public static bool IsWithinShape(Box box, Point2 point, Length tolerance)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        if (box.Cuts.IsEmpty)
+        {
+            return DistanceOutside(box, point) <= tolerance;
+        }
+
+        Outline outline = box.Outline();
+        if (OutlineHitTest.Contains(outline, point))
+        {
+            return true;
+        }
+
+        if (tolerance <= Length.Zero)
+        {
+            return false;
+        }
+
+        foreach (Vector2 nudge in (Vector2[])
+                 [
+                     new(tolerance, Length.Zero),
+                     new(-tolerance, Length.Zero),
+                     new(Length.Zero, tolerance),
+                     new(Length.Zero, -tolerance),
+                 ])
+        {
+            if (OutlineHitTest.Contains(outline, point + nudge))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>How far a point is outside the box; zero when it is inside.</summary>
     public static Length DistanceOutside(Box box, Point2 point)
     {
@@ -210,7 +278,9 @@ public static class BoxGeometry
             }
         }
 
-        return Contains(box, point) ? BoxGrip.Body : null;
+        // The body is the shape, not the blank: pressing where a cut took the material away is
+        // pressing on the paper, even when the part it belonged to is the one selected (§2.4).
+        return ContainsShape(box, point) ? BoxGrip.Body : null;
     }
 
     static bool Within(Point2 handle, Point2 point, Length tolerance) =>
