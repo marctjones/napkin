@@ -229,6 +229,53 @@ public sealed class CutFormatTests
             "inwards",
             "outward, inward");
 
+    [Theory]
+    [InlineData("\"corner\": \"southWest\"", "\"corner\": \"left\"", "left", "southWest, southEast, northEast, northWest")]
+    [InlineData("\"edge\": \"north\"", "\"edge\": \"up\"", "up", "south, east, north, west")]
+    [Trait("Feature", "PRJ-002")]
+    public void A_corner_or_an_edge_a_cut_does_not_spell_is_refused(
+        string original,
+        string replacement,
+        string named,
+        string offered)
+        => Scenes.RefuseWith(
+            EveryKindOfCut.With(original, replacement),
+            LoadProblemKind.UnknownValue,
+            named,
+            offered);
+
+    [Theory]
+    [InlineData("\"kind\": \"roundedCorner\", ", "", "kind")]
+    [InlineData("\"corner\": \"southWest\", ", "", "corner")]
+    [InlineData("\"corner\": \"southWest\", \"radius\": 1024", "\"corner\": \"southWest\"", "radius")]
+    [InlineData("\"alongX\": 3072, ", "", "alongX")]
+    [InlineData(", \"alongY\": 5120", "", "alongY")]
+    [InlineData("\"edge\": \"north\", ", "", "edge")]
+    [InlineData("\"bow\": \"inward\", ", "", "bow")]
+    [InlineData("\"bow\": \"inward\", \"depth\": 2048", "\"bow\": \"inward\"", "depth")]
+    [Trait("Feature", "PRJ-002")]
+    public void Every_field_a_cut_of_that_kind_carries_is_required(string original, string replacement, string named)
+        => Scenes.RefuseWith(
+            EveryKindOfCut.With(original, replacement),
+            LoadProblemKind.MissingField,
+            named);
+
+    [Theory]
+    [InlineData("{ \"kind\": \"roundedCorner\", \"corner\": \"southWest\", \"radius\": 1024 }", "5", "a cut", "a number")]
+    [InlineData("\"kind\": \"roundedCorner\"", "\"kind\": 7", "kind", "a number")]
+    [InlineData("\"radius\": 1024", "\"radius\": \"one inch\"", "radius", "text")]
+    [Trait("Feature", "PRJ-002")]
+    public void A_cut_of_the_wrong_json_shape_is_refused(
+        string original,
+        string replacement,
+        string named,
+        string found)
+        => Scenes.RefuseWith(
+            EveryKindOfCut.With(original, replacement),
+            LoadProblemKind.Malformed,
+            named,
+            $"found {found}");
+
     [Fact]
     [Trait("Feature", "PRJ-004")]
     public void A_format_version_2_file_is_refused_with_the_message_the_reader_already_gives()
