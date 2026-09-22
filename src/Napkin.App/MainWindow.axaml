@@ -36,6 +36,7 @@
                 <MenuItem Name="SelectToolMenuItem" Header="_Select" Click="OnSelectToolClicked" />
                 <MenuItem Name="RectangleToolMenuItem" Header="_Rectangle" Click="OnRectangleToolClicked" />
                 <Separator />
+                <MenuItem Name="DuplicateMenuItem" Header="D_uplicate" Click="OnDuplicateClicked" />
                 <MenuItem Name="PinMenuItem" Header="_Pin in place" Click="OnPinClicked" />
                 <MenuItem Name="DeleteMenuItem" Header="_Delete" Click="OnDeleteClicked" />
             </MenuItem>

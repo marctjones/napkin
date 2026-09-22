@@ -33,7 +33,8 @@ public sealed record DimensionEditRequested(EntityId Box, SizeAxis Axis);
 /// <strong>Controls.</strong> <c>R</c> takes the rectangle tool and <c>S</c> or Escape gives it
 /// back; drag on empty paper to pan, click a part to select it, drag a selected part to move it,
 /// drag its handles to resize; arrow keys pan, or nudge the selection by one grid step when there
-/// is one; Delete removes what is selected; <c>P</c> pins it. Wheel zooms about the pointer;
+/// is one; Delete removes what is selected; <c>P</c> pins it; <c>D</c> duplicates it a grid step
+/// away. Wheel zooms about the pointer;
 /// Shift and the wheel pan; the middle button always pans.
 /// </para>
 /// <para>
@@ -413,6 +414,63 @@ public sealed class CanvasView : Control
         editor.EndGesture();
     }
 
+    /// <summary>
+    /// Makes a copy of the selected part a grid step away and selects it
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.6).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <strong>A duplicate is a value copy.</strong> The blank, its cuts, the part — stock,
+    /// species, plan axes, out-of-plane, quantity — and the name are all carried across by the
+    /// record's own <c>with</c>; the copy gets a new id, a new anchor and <em>no
+    /// relationships</em>. It is unrelated until somebody snaps it, exactly like a part just
+    /// drawn, and nothing tracks back to the part it came from. Four duplicates of one gusset are
+    /// equal by value, so the cut list groups them into one row of four on its own (&#xA7;4.3).
+    /// </para>
+    /// <para>
+    /// One <see cref="AddEntity"/> through the updater, like every other edit (CVS-005). The copy
+    /// is selected on completion so the next thing a person does is drag it into place and snap
+    /// it, which is the whole workflow this command exists for.
+    /// </para>
+    /// </remarks>
+    public void DuplicateSelection()
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        if (editor.OnlySelectedBox is not { } source)
+        {
+            editor.Say(
+                EditSeverity.Hint,
+                editor.Selection.Count == 0
+                    ? "Select a part to duplicate it."
+                    : "Duplicate copies one part at a time; select just the one.");
+            return;
+        }
+
+        // A step along both axes, so the copy lands clear of the original instead of hiding
+        // behind one of its own edges.
+        Length step = new(SnapGrid.UnitsPerStep(GridStepInches));
+        Box copy = source with
+        {
+            Id = EntityId.New(),
+            Anchor = source.Anchor + new Vector2(step, step),
+        };
+
+        string what = $"Duplicated {editor.NameOf(source.Id)}";
+        editor.BeginGesture(what);
+        if (editor.Apply(new AddEntity(copy), what) is Succeeded)
+        {
+            editor.Select(copy.Id);
+            editor.Say(EditSeverity.Done, $"{what} as {editor.NameOf(copy.Id)}.");
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+    }
+
     /// <summary>Pins what is selected where it is, or says why it cannot be pinned.</summary>
     public void PinSelection()
     {
@@ -710,6 +768,15 @@ public sealed class CanvasView : Control
                 }
 
                 PinSelection();
+                return true;
+
+            case Key.D:
+                if (editor.Selection.Count == 0)
+                {
+                    return false;
+                }
+
+                DuplicateSelection();
                 return true;
 
             case Key.Tab when editor.OnlySelectedBox is { } forWidth:
