@@ -134,6 +134,10 @@ public class ShapedPartWorkflows
         });
 
         app.SaveFrame("snapped");
+
+        // The cut list is a window of its own, and the thumbnail is the one thing on it that
+        // cannot be read as text, so it is worth a frame of its own too.
+        AppDriver.Attach(window.CutList!, "cut-list").SaveFrame("cut-list-with-thumbnail");
     });
 
     /// <summary>The window coordinate a model point is drawn at.</summary>
