@@ -382,6 +382,9 @@ public class PropertyTests
         int dragsBlocked = 0;
         int dragsApplied = 0;
         int oddSpans = 0;
+        int rows = 0;
+        int rowsResized = 0;
+        int longestRow = 0;
         HashSet<RejectionReason> reasons = [];
 
         foreach (int seed in Enumerable.Range(1, 8))
@@ -392,6 +395,20 @@ public class PropertyTests
             {
                 Sketch sketch = generator.NextSketch();
                 oddSpans += CentredOddSpans(sketch);
+
+                // Issue #49 is about a row of three or more parts. Without this the properties
+                // could pass while never propagating along one.
+                int row = SketchGenerator.LongestRow(sketch);
+                longestRow = Math.Max(longestRow, row);
+                if (row >= 3)
+                {
+                    rows++;
+                    if (generator.NextSetParameter(sketch) is { } dimension
+                        && Updater.Apply(sketch, dimension) is Succeeded)
+                    {
+                        rowsResized++;
+                    }
+                }
 
                 switch (Updater.Apply(sketch, generator.NextRequest(sketch)))
                 {
@@ -424,13 +441,20 @@ public class PropertyTests
         string counts = $"succeeded {succeeded}, over-constrained {overConstrained}, "
                         + $"rejection reasons [{string.Join(", ", reasons.Order())}], "
                         + $"drags applied {dragsApplied}, drags blocked {dragsBlocked}, "
-                        + $"odd centred spans {oddSpans}";
+                        + $"odd centred spans {oddSpans}, "
+                        + $"rows of three or more {rows} (longest {longestRow}), resized {rowsResized}";
 
         Assert.True(succeeded > 100, counts);
         Assert.True(overConstrained > 0, counts);
         Assert.True(dragsApplied > 0, counts);
         Assert.True(dragsBlocked > 0, counts);
         Assert.True(reasons.Count >= 3, counts);
+
+        // Rows of three or more parts, and rows that a dimension actually resized: the shape
+        // issue #49 is about, and the request that used to fail on it.
+        Assert.True(rows > 0, counts);
+        Assert.True(longestRow >= 4, counts);
+        Assert.True(rowsResized > 0, counts);
 
         // The half-unit Centered case (Fable review of #35, finding 2) is only reachable when a
         // span is an odd number of units, which a 1/16" grid can never produce.

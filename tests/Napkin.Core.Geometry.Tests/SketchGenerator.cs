@@ -27,7 +27,164 @@ internal sealed class SketchGenerator
     internal SketchGenerator(int seed) => _random = new Random(seed);
 
     /// <summary>A valid, consistent rectilinear sketch.</summary>
-    internal Sketch NextSketch()
+    /// <remarks>
+    /// One sketch in four is a row of parts rather than a scattering of them. A row is the shape
+    /// issue #49 is about, and the scattered sketches reach one only by accident: the properties
+    /// would pass without ever propagating along a chain. <see cref="LongestRow"/> is how the
+    /// outcome guard proves they do.
+    /// </remarks>
+    internal Sketch NextSketch() => _random.Next(4) == 0 ? NextRow() : NextScattering();
+
+    /// <summary>
+    /// A row of 3 to 6 parts, each flush with the next along one axis: a bookcase, a run of
+    /// cabinets, a wall of studs.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Everything about the row that could decide the answer by accident is randomised: which
+    /// part is anchored (or none), which part carries the driving dimension, whether the widths
+    /// are tied together with <see cref="EqualParam"/>, the order the relationships are added in
+    /// — which is the order their ids come in — and which way round each one is written.
+    /// </para>
+    /// <para>
+    /// The parts are unrotated, so that "the next one to the east" is unambiguous; rotated boxes
+    /// are covered by the scattered sketches. Sizes and coordinates come from the same generators
+    /// as everything else, so a row can start at a negative coordinate and can have odd-unit
+    /// widths.
+    /// </para>
+    /// </remarks>
+    internal Sketch NextRow()
+    {
+        int parts = _random.Next(3, 7);
+        Axis axis = _random.Next(2) == 0 ? Axis.X : Axis.Y;
+        bool tied = _random.Next(3) == 0;
+        Length common = NextSize();
+
+        // -1 anchors nothing, which is the free-floating row of #49's comment.
+        int anchored = _random.Next(-1, parts);
+        int dimensioned = _random.Next(parts);
+
+        Sketch sketch = Sketch.Empty;
+        List<EntityId> row = [];
+        List<Length> sizes = [];
+        Length along = NextCoordinate();
+        Length across = NextCoordinate();
+
+        for (int i = 0; i < parts; i++)
+        {
+            Length size = tied ? common : NextSize();
+            Length other = NextSize();
+            EntityId id = NextEntityId();
+
+            sizes.Add(size);
+            row.Add(id);
+            sketch = sketch.WithEntity(new Box(
+                id,
+                LayerId.Default,
+                axis == Axis.X ? new Point2(along, across) : new Point2(across, along),
+                axis == Axis.X ? size : other,
+                axis == Axis.X ? other : size,
+                Angle.Zero));
+
+            along += size;
+            across = NextCoordinate();
+        }
+
+        (BoxEdge leading, BoxEdge trailing) = axis == Axis.X
+            ? (BoxEdge.East, BoxEdge.West)
+            : (BoxEdge.North, BoxEdge.South);
+        ParamRef Size(int i) => axis == Axis.X ? new BoxWidthRef(row[i]) : new BoxHeightRef(row[i]);
+
+        List<Func<Sketch, Sketch>> adds = [];
+        for (int i = 0; i < parts - 1; i++)
+        {
+            int index = i;
+            bool flipped = _random.Next(2) == 0;
+            adds.Add(current => current.WithRelationship(flipped
+                ? new Flush(NextRelationshipId(), new BoxEdgeRef(row[index + 1], trailing), new BoxEdgeRef(row[index], leading))
+                : new Flush(NextRelationshipId(), new BoxEdgeRef(row[index], leading), new BoxEdgeRef(row[index + 1], trailing))));
+
+            if (tied)
+            {
+                bool backwards = _random.Next(2) == 0;
+                adds.Add(current => current.WithRelationship(backwards
+                    ? new EqualParam(NextRelationshipId(), Size(index + 1), Size(index))
+                    : new EqualParam(NextRelationshipId(), Size(index), Size(index + 1))));
+            }
+        }
+
+        adds.Add(current => current.WithRelationship(
+            new ParamValue(NextRelationshipId(), Size(dimensioned), sizes[dimensioned])));
+
+        if (anchored >= 0)
+        {
+            adds.Add(current => current.WithRelationship(new Anchored(NextRelationshipId(), row[anchored])));
+        }
+
+        foreach (Func<Sketch, Sketch> add in Shuffled(adds))
+        {
+            sketch = Keep(sketch, add(sketch));
+        }
+
+        return sketch;
+    }
+
+    /// <summary>
+    /// The longest run of boxes any chain of <see cref="Flush"/> relationships links together,
+    /// which is how a test tells that it is looking at a row.
+    /// </summary>
+    internal static int LongestRow(Sketch sketch)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+
+        Dictionary<EntityId, HashSet<EntityId>> linked = [];
+        foreach (Flush flush in sketch.RelationshipsInOrder.OfType<Flush>())
+        {
+            Link(linked, flush.A.Owner, flush.B.Owner);
+            Link(linked, flush.B.Owner, flush.A.Owner);
+        }
+
+        static void Link(Dictionary<EntityId, HashSet<EntityId>> linked, EntityId from, EntityId to)
+        {
+            if (!linked.TryGetValue(from, out HashSet<EntityId>? neighbours))
+            {
+                neighbours = [];
+                linked[from] = neighbours;
+            }
+
+            neighbours.Add(to);
+        }
+
+        int longest = 0;
+        HashSet<EntityId> seen = [];
+        foreach (EntityId start in linked.Keys.Order())
+        {
+            if (!seen.Add(start))
+            {
+                continue;
+            }
+
+            int size = 1;
+            Queue<EntityId> frontier = new([start]);
+            while (frontier.Count > 0)
+            {
+                foreach (EntityId next in linked[frontier.Dequeue()].Order())
+                {
+                    if (seen.Add(next))
+                    {
+                        size++;
+                        frontier.Enqueue(next);
+                    }
+                }
+            }
+
+            longest = Math.Max(longest, size);
+        }
+
+        return longest;
+    }
+
+    private Sketch NextScattering()
     {
         Sketch sketch = Sketch.Empty;
 
