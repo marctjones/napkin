@@ -309,6 +309,26 @@ public class DrawWorkflows
 
         app.SaveFrame("relationships-badge");
 
+        // Resting the pointer on a related part is a quick look: the list opens without selecting
+        // anything, and folds again when the pointer moves back onto empty paper.
+        app.MoveTo(At(window, Point2.Inches(-4, 4)));
+        app.Expect("hovering a part with relationships opens the list, selecting nothing", () =>
+        {
+            Assert.Equal(right, window.Canvas.HoveredPart);
+            Assert.Empty(window.Editor.Selection);
+            Assert.True(window.IsRelationshipListExpanded, "hovering a related part did not open the list.");
+            Assert.Contains(
+                window.RelationshipsOnScreen,
+                line => line.Contains("flush with", StringComparison.Ordinal));
+        });
+
+        app.MoveTo(At(window, Point2.Inches(14, -12)));
+        app.Expect("off the part again, the list folds back to its count", () =>
+        {
+            Assert.Null(window.Canvas.HoveredPart);
+            Assert.False(window.IsRelationshipListExpanded);
+        });
+
         app.Click(At(window, Point2.Inches(-15, 0)));
         app.Expect("selecting a part with relationships opens the list again, same sentences", () =>
         {

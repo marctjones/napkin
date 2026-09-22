@@ -86,6 +86,7 @@ public partial class MainWindow : Window
         };
         DrawingCanvas.PointerWorldPositionChanged += (_, point) => UpdateCursorReadout(point);
         DrawingCanvas.ToolChanged += (_, _) => UpdateToolButtons();
+        DrawingCanvas.HoveredPartChanged += (_, _) => UpdateRelationships();
         DrawingCanvas.DimensionEditRequested += (_, request) =>
             OpenDimensionEditor(request.Box, request.Axis);
         DrawingCanvas.ShapeRequested += (_, box) => OpenWorkshop(box);
@@ -1370,7 +1371,7 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// The relationship list, on demand (#62): a count badge while nothing it talks about is in
-    /// play, and every sentence once a part it names is selected.
+    /// play, and every sentence once a part it names is selected or under the pointer.
     /// </summary>
     /// <remarks>
     /// Expanded, it shows the whole list, not only the selected part's rows: the sentences are the
@@ -1409,8 +1410,11 @@ public partial class MainWindow : Window
         RelationshipsPanel.IsVisible = entries.Count > 0 && !IsShapingPart;
     }
 
-    /// <summary>Whether a part is one the relationship list should open for.</summary>
-    bool IsInPlay(EntityId id) => Editor.Selection.Contains(id);
+    /// <summary>
+    /// Whether a part is one the relationship list should open for: selected, or resting under the
+    /// pointer. Hovering is the quick look; selecting keeps it open while the pointer goes elsewhere.
+    /// </summary>
+    bool IsInPlay(EntityId id) => Editor.Selection.Contains(id) || DrawingCanvas.HoveredPart == id;
 
     void UpdateToolButtons()
     {
