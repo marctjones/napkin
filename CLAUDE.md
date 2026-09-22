@@ -11,8 +11,8 @@ getting a cut list (M3), and getting code-cited structural sizing (M4/M5) — th
 starting or approving anything, ask: *does this make one of those real, or does it help a future
 session verify/ship that?* If not — packaging, release pipelines, installers, exhaustive docs,
 extra test infrastructure, roadmap rewrites — it waits. Land one runnable, mergeable slice of real
-capability before writing docs or screenshots for it; report by pushing a green PR, not by
-finishing a turn with an unpushed plan. Marc has pushed back on this twice (2026-09-21); see
+capability before writing docs or screenshots for it; report by pushing a real, verified increment,
+not by finishing a turn with an unpushed plan. Marc has pushed back on this twice (2026-09-21); see
 memory `core-functionality-first` for the specifics.
 
 ## Beta policy (DESIGN.md §12)
@@ -22,9 +22,9 @@ compatibility shims — breaking changes are always allowed; an old project file
 "unsupported version" error, never a converter. Don't hedge or add speculative flexibility for a
 future you can just build when it arrives.
 
-**Versioning: the minor number is bumped by the pull request that lands the work**, in
-`Directory.Build.props`'s single `<VersionPrefix>0.N.0</VersionPrefix>`. Every PR's last commit
-before merge bumps it by exactly one. A tag (`v0.N.0-beta`) is cut only when Marc says a milestone
+**Versioning: the minor number is bumped by whoever lands each change**, in
+`Directory.Build.props`'s single `<VersionPrefix>0.N.0</VersionPrefix>`. The last commit landed on
+`main` for a given piece of work bumps it by exactly one. A tag (`v0.N.0-beta`) is cut only when Marc says a milestone
 is worth naming — nothing is tagged or published without that.
 
 ## Build and test locally — do this, don't skip to CI
@@ -46,38 +46,54 @@ verify it stays in the worktree" — split into plain, separate commands instead
 it. If a build is denied outright, stop and report the exact denial text; never route around a
 permission denial (including by asking a peer session to do it for you).
 
-## The merge ritual (every PR, no exceptions)
+## Landing changes: direct to `main`, no pull requests (decided 2026-09-22)
 
-1. Branch from `main` (or from wherever your task says).
-2. Build, test with coverage, `ratchet check` locally before pushing.
-3. Commit ends with `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`; PR body ends with
-   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
-4. Push, open a **draft** PR against `main` (or the stacked base your task names), wait for CI on
-   **both** `macos-latest` and `windows-latest`, fix red.
-5. If `main` moved while you worked: `git merge origin/main` on your branch, rebuild/retest, bump
-   the version in that same merge commit, re-push, re-confirm CI — don't skip this; a stale branch
-   silently reverts someone else's version bump or ratchet floor.
-6. Mark ready, merge with a real merge commit (not squash — commit history documents the process).
-7. `ratchet update` only for the assembly/GUI count you actually changed, and only after coverage
+Marc's instruction: no GitHub pull requests, no PR review cycle, no draft/ready toggling. Develop
+directly on this repo's `main`. This replaces the earlier PR-based ritual; if you see a stale
+reference to "open a PR" anywhere else in this repo's history or docs, this section is current.
+
+A background agent still needs its own git branch and worktree — that's a technical necessity of
+running isolated, not a process choice, and it doesn't reintroduce PRs. The steps:
+
+1. Branch from `main` (or from wherever your task says), in your own worktree if you're a
+   background agent.
+2. Build, test with coverage, `ratchet check` **locally** — this is now the primary gate, since
+   there is no PR checkmark to wait on. Don't skip it or weaken it because it's no longer a
+   published check.
+3. Commits end with `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`.
+4. **Push your first real, building, tested increment early**, not at the end — report to
+   whoever's integrating (usually the orchestrating session) by pushing, not by finishing a turn
+   with unpushed work. A session crash mid-task loses anything not pushed.
+5. Whoever integrates: `git fetch`, merge `main` into the branch if it moved, rebuild/retest,
+   bump the version in `Directory.Build.props` in that same step, then merge the branch into
+   `main` with a real merge commit (not squash — commit history documents the process) and
+   `git push origin main` directly. No `gh pr create`, no waiting for a PR's CI check — local
+   verification is what gates the merge. Push to `main` still triggers CI (`ci.yml`'s
+   `push: branches: [main]`), which is a secondary, after-the-fact safety net (it's caught real
+   platform-specific bugs before, e.g. a Windows-only CRLF issue) — check it after pushing and fix
+   forward with a small follow-up commit if it's red, rather than pretending it didn't happen.
+6. `ratchet update` only for the assembly/GUI count that actually changed, and only after coverage
    truly rose (see `docs/testing/ratchet.md`); never touch another area's floor.
-8. Clean up: remove the worktree, delete the merged branch (local and `origin`).
+7. Clean up: remove the worktree, delete the merged branch (local and `origin`).
 
 **Parallel agents:** when several agents run at once, each owns a disjoint set of files (stated in
 its task) to avoid merge conflicts — the recurring collision points are `napkin.sln`,
 `Directory.Build.props`, `ratchet/baseline.json`, and `tests/Napkin.Features.Tests/PlannedFeatures.g.cs`
-(generated — regenerate with `scorecard stubs`, never hand-edit). An integration branch that merges
-several agents' branches together, verified once as a whole, is the way to catch cross-branch
-issues (like a wrong catalog ID format, or a coverage-merge bug) before they reach `main`.
+(generated — regenerate with `scorecard stubs`, never hand-edit). Merge each branch into `main`
+directly, one at a time, resolving the recurring collision points by hand as they come up; there is
+no separate integration branch to stage them on first — verify locally after each merge instead.
 
 ## Test layers (docs/testing/*.md)
 
 - **Unit/golden tests** — normal correctness tests, one per assembly's test project.
 - **Coverage ratchet** (`docs/testing/ratchet.md`) — per-assembly line/branch floors that only
-  rise; a PR gate. `Napkin.App` is excluded (a GUI shell isn't usefully covered by unit tests).
+  rise; a gate on landing on `main`, enforced locally by whoever merges (§"Landing changes" above),
+  not by a published PR check. `Napkin.App` is excluded (a GUI shell isn't usefully covered by
+  unit tests).
 - **GUI workflow suite** (`docs/testing/gui-automation.md`, `tests/Napkin.App.GuiTests`) — real
   keyboard/pointer input via Avalonia.Headless, driving multi-step scenarios
   (`[GuiWorkflow("ID")]`, ≥5 actions, both keyboard and pointer, an assertion after a state
-  change). Its passing-workflow count is a second PR gate that only rises.
+  change). Its passing-workflow count is a second local gate that only rises.
 - **Feature catalog and scorecard** (`docs/testing/scorecard.md`, `features/catalog.json`) —
   `[Trait("Feature","ID")]` on a test claims a catalog feature. **Never gates anything** — it
   measures progress for a person to read, nothing more. IDs are `<AREA>-<NNN>` or

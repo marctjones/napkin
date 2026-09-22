@@ -618,11 +618,11 @@ Set by Marc on 2026-09-21.
 - **This does not shrink product scope.** Four adopted codes (§11) and locking a project to its
   permit-date code edition (§5.4) are features, not legacy. "Beta scope" in this document means
   what the betas are meant to do, not what is provisional.
-- **Version numbers:** the minor number increments with each merged pull request; a release is tagged
-  when features improve significantly.
+- **Version numbers:** the minor number increments with each change landed on `main`; a release is
+  tagged when features improve significantly.
 
-**Mechanism — decided by Marc on 2026-09-21: the minor number is bumped per merged pull request**
-(tracked as #30):
+**Mechanism — decided by Marc on 2026-09-21, workflow updated 2026-09-22 (no pull requests, direct
+to `main`): the minor number is bumped by whoever lands each change** (tracked as #30):
 
 - A single `<VersionPrefix>0.N.0</VersionPrefix>` in a `Directory.Build.props` at the repository
   root, with `<VersionSuffix>beta</VersionSuffix>`, so every assembly and the app report the same
