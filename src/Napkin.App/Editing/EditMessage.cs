@@ -91,7 +91,7 @@ public static class EditMessages
 
             Rejected rejected => EditMessage.Plain(
                 EditSeverity.Problem,
-                $"{what} did not happen: {Refusal(rejected.Reason)}"),
+                $"{what} did not happen: {Refusal(rejected.Reason)}{Detail(rejected, before, nameOf)}"),
 
             _ => EditMessage.Plain(EditSeverity.Problem, $"{what} did not happen."),
         };
@@ -188,7 +188,29 @@ public static class EditMessages
         RejectionReason.DrivenSize =>
             "a typed dimension owns that size, so dragging must not quietly override it. Edit the "
             + "dimension instead.",
+        RejectionReason.CutSiteTaken =>
+            "something is already cut at that corner or edge. One cut per site, and a curved edge "
+            + "claims both of its corners.",
+        RejectionReason.CutDoesNotFit =>
+            "the cut does not fit the blank it is on. Make the blank bigger, or the cut smaller.",
+        RejectionReason.NoSuchCut => "there is no cut there to take off.",
         RejectionReason.UnsupportedRequest => "this build does not do that yet.",
         _ => "the drawing could not do it.",
     };
+
+    /// <summary>
+    /// The refusal's own sentence, which names the box and the site, with ids replaced by names.
+    /// </summary>
+    /// <remarks>
+    /// A cut that does not fit is refused "with the site named"
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;7.2), and the kernel already writes that
+    /// sentence into <see cref="Rejected.Detail"/> — "Box 01a0&#x2026;'s cut at the NorthEast
+    /// corner reaches 4&#x2033; across the width, which does not fit the blank's 3 1/2&#x2033;".
+    /// Dropping it would leave a person with a refusal that does not say which of eight cuts was
+    /// the problem, so it is kept and the ids in it are renamed like any other report.
+    /// </remarks>
+    static string Detail(Rejected rejected, Sketch before, Func<EntityId, string> nameOf) =>
+        rejected.Detail is { Message.Length: > 0 } detail
+            ? " " + Rename(detail.Message, before.Entities.Keys, nameOf)
+            : string.Empty;
 }
