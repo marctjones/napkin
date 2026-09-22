@@ -164,6 +164,211 @@ public class DrawWorkflows
         app.SaveFrame("typed-dimension");
     });
 
+    [GuiWorkflow("GUI-DRAW-03")]
+    public void Recover_from_invalid_dimension_text() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        CanvasView canvas = window.Canvas;
+
+        NewSheet(app, window);
+        EntityId id = DrawAPart(app, window, Point2.Inches(-8, -6), Point2.Inches(8, 6));
+
+        Sketch asDrawn = window.CurrentDesign!.Sketch;
+        Box before = asDrawn.Find<Box>(id)!;
+
+        app.Click(LabelAt(window, id, SizeAxis.Width));
+        app.Press(Key.A, AppDriver.CommandModifier);
+        app.Type("250mm");
+        app.Press(Key.Enter);
+
+        app.Expect("the field says what it could not read, and nothing about the part changed", () =>
+        {
+            Assert.True(window.IsEditingDimension, "the field closed on text it could not read.");
+
+            string error = window.DimensionFieldError;
+            Assert.Contains("250mm", error, StringComparison.Ordinal);
+            Assert.Contains("could not read", error, StringComparison.OrdinalIgnoreCase);
+
+            // The explanation has to say what does work, or it is only an insult.
+            Assert.Contains("3' 4 1/2\"", error, StringComparison.Ordinal);
+            Assert.Contains("feet and inches", error, StringComparison.OrdinalIgnoreCase);
+
+            Assert.Same(asDrawn, window.CurrentDesign!.Sketch);
+            Assert.Equal(before.Width.Units, window.CurrentDesign!.Sketch.Find<Box>(id)!.Width.Units);
+            Assert.Empty(window.CurrentDesign!.Sketch.Relationships);
+        });
+
+        app.SaveFrame("unreadable-text");
+
+        // Correcting it applies as normal: the refused entry left nothing behind.
+        app.Press(Key.A, AppDriver.CommandModifier);
+        app.Type("1' 3 1/4\"");
+        app.Press(Key.Enter);
+
+        Length wanted = Length.Inches(15, 1, 4);
+        app.Expect("the next entry is read as if the bad one had never happened", () =>
+        {
+            Assert.False(window.IsEditingDimension);
+            Assert.Equal(wanted.Units, window.CurrentDesign!.Sketch.Find<Box>(id)!.Width.Units);
+            Assert.Equal(
+                wanted.Format(canvas.LabelFormat).Text,
+                canvas.SelectionDimension(id, SizeAxis.Width)!.Label(canvas.LabelFormat));
+            Assert.Empty(window.DimensionFieldError);
+        });
+
+        app.SaveFrame("corrected");
+    });
+
+    [GuiWorkflow("GUI-DRAW-04")]
+    public void Move_a_part_until_it_snaps_and_see_the_relationship() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        CanvasView canvas = window.Canvas;
+
+        NewSheet(app, window);
+
+        // Two parts, offset vertically so that only the vertical edges are near each other: the
+        // snap under test is one edge onto one edge, not a corner onto a corner.
+        EntityId left = DrawAPart(app, window, Point2.Inches(-20, -6), Point2.Inches(-10, 6));
+        EntityId right = DrawAPart(app, window, Point2.Inches(-4, -2), Point2.Inches(6, 10));
+
+        // Give the left part a typed width, so its right-hand edge is at a half inch and the snap
+        // has somewhere to land that the one-inch grid would not have found.
+        app.Click(At(window, Point2.Inches(-15, 0)));
+        app.Click(LabelAt(window, left, SizeAxis.Width));
+        app.Press(Key.A, AppDriver.CommandModifier);
+        app.Type("10 1/2\"");
+        app.Press(Key.Enter);
+
+        Length flushAt = window.CurrentDesign!.Sketch.Find<Box>(left)!.Corner(BoxCorner.SouthEast).X;
+
+        app.Click(At(window, Point2.Inches(1, 4)));
+        app.Expect("the right-hand part is picked, and the left one is where it was typed", () =>
+        {
+            Assert.Equal(right, window.Editor.OnlySelected);
+            Assert.Equal(Length.Inches(-9, -1, 2).Units, flushAt.Units);
+        });
+
+        // Drag it left, stopping a fifth of an inch short of flush — near enough to catch, and
+        // not on a grid line, so a grid snap would have landed it somewhere else.
+        Point from = At(window, Point2.Inches(1, 4));
+        app.PressAt(from);
+        app.DragTo(new Point(from.X - 40, from.Y));
+        app.DragTo(new Point(from.X - 85, from.Y));
+
+        app.Expect("the snap has caught, and is showing, before the button is let go", () =>
+        {
+            SnapPlan plan = canvas.ActiveSnap
+                ?? throw new InvalidOperationException("nothing was caught during the drag.");
+            Assert.True(plan.CaughtSomething, "the drag landed on the grid, not on the other part.");
+            Assert.Contains(plan.Hits, hit => hit.Kind == SnapKind.Edge && hit.Target == left);
+            Assert.Equal(flushAt.Units, plan.Anchor.X.Units);
+
+            // And the part is already there: the drag is live, not a preview applied at the end.
+            Assert.Equal(flushAt.Units, window.CurrentDesign!.Sketch.Find<Box>(right)!.Anchor.X.Units);
+        });
+
+        app.SaveFrame("snapped");
+        app.ReleaseAt(new Point(from.X - 85, from.Y));
+
+        app.Expect("the parts are flush, and the drawing says so in its own words", () =>
+        {
+            Box moved = window.CurrentDesign!.Sketch.Find<Box>(right)!;
+            Assert.Equal(flushAt.Units, moved.Anchor.X.Units);
+            Assert.Equal(
+                flushAt.Units,
+                window.CurrentDesign!.Sketch.Find<Box>(left)!.Corner(BoxCorner.SouthEast).X.Units);
+
+            Flush stored = Assert.Single(
+                window.CurrentDesign!.Sketch.Relationships.Values.OfType<Flush>());
+            Assert.Equal(new BoxEdgeRef(left, BoxEdge.East), stored.A);
+            Assert.Equal(new BoxEdgeRef(right, BoxEdge.West), stored.B);
+
+            Assert.Contains(
+                window.RelationshipsOnScreen,
+                line => line.Contains("flush with", StringComparison.Ordinal));
+        });
+
+        app.SaveFrame("flush");
+    });
+
+    [GuiWorkflow("GUI-DRAW-07")]
+    public void A_conflict_is_explained_rather_than_a_wrong_number() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        NewSheet(app, window);
+        EntityId left = DrawAPart(app, window, Point2.Inches(-20, -6), Point2.Inches(-8, 6));
+        EntityId right = DrawAPart(app, window, Point2.Inches(-8, -2), Point2.Inches(4, 10));
+
+        // Snap them together, then pin both: now neither the shared edge nor either part can move,
+        // so the left part's width has nowhere to go.
+        app.Click(At(window, Point2.Inches(-2, 4)));
+        app.Drag(
+            At(window, Point2.Inches(-2, 4)),
+            At(window, Point2.Inches(-1, 4)),
+            At(window, Point2.Inches(-2, 4)));
+        app.Press(Key.P);
+
+        app.Click(At(window, Point2.Inches(-14, 0)));
+        app.Press(Key.P);
+
+        app.Expect("both parts are pinned and the drawing holds the flush between them", () =>
+        {
+            Assert.Equal(2, window.CurrentDesign!.Sketch.Relationships.Values.OfType<Anchored>().Count());
+            Assert.Single(window.CurrentDesign!.Sketch.Relationships.Values.OfType<Flush>());
+            Assert.Equal(left, window.Editor.OnlySelected);
+        });
+
+        Sketch before = window.CurrentDesign!.Sketch;
+        app.Click(LabelAt(window, left, SizeAxis.Width));
+        app.Press(Key.A, AppDriver.CommandModifier);
+        app.Type("2'-6\"");
+        app.Press(Key.Enter);
+
+        app.Expect("the conflict is explained, nothing moved, and no wrong number is shown", () =>
+        {
+            Assert.Same(before, window.CurrentDesign!.Sketch);
+
+            string message = window.MessageOnScreen;
+            Assert.Contains("would not hold", message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("cannot all be true", message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("flush with", message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("pinned", message, StringComparison.OrdinalIgnoreCase);
+
+            // The parts are named, not identified by a GUID.
+            Assert.Contains(window.Editor.NameOf(left), message, StringComparison.Ordinal);
+            Assert.Contains(window.Editor.NameOf(right), message, StringComparison.Ordinal);
+            Assert.DoesNotContain(left.ToString(), message, StringComparison.Ordinal);
+
+            // The part still reads what it really is, not what was typed.
+            Assert.Equal(
+                Length.Inches(12).Units,
+                window.CurrentDesign!.Sketch.Find<Box>(left)!.Width.Units);
+            Assert.True(window.IsOfferingToRemoveRelationship, "the conflict offered no way out.");
+        });
+
+        app.SaveFrame("conflict");
+
+        // Take the way out, and the same edit goes through.
+        app.Click(CentreOf(window, window.RemoveOfferButton));
+        app.Expect("removing one of the conflicting relationships leaves the rest alone", () =>
+        {
+            Assert.True(
+                window.CurrentDesign!.Sketch.Relationships.Count < before.Relationships.Count,
+                "nothing was removed.");
+            Assert.Equal(
+                Length.Inches(12).Units,
+                window.CurrentDesign!.Sketch.Find<Box>(left)!.Width.Units);
+        });
+
+        app.SaveFrame("conflict-resolved");
+    });
+
+    static Point CentreOf(Visual root, Visual control) =>
+        control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), root)
+        ?? throw new InvalidOperationException("The control is not in the window's visual tree.");
+
     /// <summary>Starts a blank sheet through the real shortcut.</summary>
     static void NewSheet(AppDriver app, MainWindow window)
     {
