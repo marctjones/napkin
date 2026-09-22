@@ -251,12 +251,7 @@ public sealed class StockAssignmentTests
     public void Changing_the_stock_resizes_the_blank()
     {
         // §1.2: changing the stock (1x6 -> 1x4) is this same function run again, which is a resize
-        // through the updater.
-        //
-        // The other half of §9.1's test 11c — assigning a 1x4 to a part with a 4" setback is
-        // Rejected(CutDoesNotFit) — is deferred to whichever session does §10 step 3: it needs
-        // SetCut to construct the scenario, and the post-write fit check in DirectUpdater.Apply
-        // that would refuse it is step 3's work too.
+        // through the updater. The case where that resize no longer fits a cut is the test below.
         LumberStock wider = Lumber("1x6");
         LumberStock narrower = Lumber("1x4");
         Part part = new("1x6", Species: null, Quantity: 1, Length.Inches(1), Flat);
@@ -282,6 +277,51 @@ public sealed class StockAssignmentTests
         Assert.Single(
             onA1x4.RelationshipsInOrder.OfType<ParamValue>(),
             value => value.Param.Equals(new BoxHeightRef(box.Id)));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-001")]
+    public void Rebuying_a_part_on_narrower_stock_is_refused_when_a_cut_no_longer_fits()
+    {
+        // The other half of §9.1's test 11c, and the reason
+        // docs/design/shaped-parts-model.md §2.3 puts its fit check in the updater rather than in
+        // any one caller: StockAssignment builds an ordinary ParamValue resize and knows nothing
+        // about cuts, so nothing here had to change for this to be refused.
+        //
+        // §1.2: "changing the stock (1x6 -> 1x4) is a resize through the updater, and §2.3's
+        // check refuses it if a cut no longer fits the narrower blank". Both widths are read from
+        // the library, which carries their citation; the setback is 4", chosen between them.
+        LumberStock wider = Lumber("1x6");
+        LumberStock narrower = Lumber("1x4");
+        Part part = new("1x6", Species: null, Quantity: 1, Length.Inches(1), Flat);
+        (Sketch drawn, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part);
+
+        Sketch onA1x6 = Assert.IsType<Solved>(
+            Updater.Apply(drawn, StockAssignment.RequestsFor(drawn, box, part, wider))).Sketch;
+
+        // A 4" setback across the width: it fits the 1x6 and cannot fit the 1x4.
+        Length setback = Length.Inches(4);
+        Assert.True(setback < wider.Width, "the setback has to fit the wider stock");
+        Assert.True(setback > narrower.Width, "and not fit the narrower one");
+
+        Sketch shaped = Assert.IsType<Solved>(Updater.Apply(
+            onA1x6,
+            new SetCut(box.Id, new CornerCut(BoxCorner.SouthEast, Length.Inches(6), setback)))).Sketch;
+
+        Part rebought = part with { Stock = "1x4" };
+        Rejected refused = Assert.IsType<Rejected>(Updater.Apply(
+            shaped,
+            StockAssignment.RequestsFor(shaped, shaped.Find<Box>(box.Id)!, rebought, narrower)));
+
+        Assert.Equal(RejectionReason.CutDoesNotFit, refused.Reason);
+        Assert.Contains("SouthEast corner", refused.Detail!.Message, StringComparison.Ordinal);
+
+        // Nothing is half-assigned: the batch sets the part before it resizes, so without the
+        // atomicity the box would now claim to be a 1x4 at the 1x6's width.
+        Box unchanged = shaped.Find<Box>(box.Id)!;
+        Assert.Equal("1x6", unchanged.Part!.Stock);
+        Assert.Equal(wider.Width, unchanged.Height);
+        Assert.Equal(setback, unchanged.Cuts.OfType<CornerCut>().Single().AlongY);
     }
 
     [Fact]

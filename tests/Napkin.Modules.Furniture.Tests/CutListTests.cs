@@ -261,6 +261,41 @@ public sealed class CutListTests
     }
 
     /// <summary>A leg: 2 1/2" square in plan, 16 1/4" long out of it.</summary>
+    [Fact]
+    [Trait("Feature", "CUT-003")]
+    public void A_duplicate_of_a_shaped_part_is_listed_with_its_source_as_one_row_of_two()
+    {
+        // docs/design/shaped-parts-model.md §9.1 test 11d, the cut-list half: four duplicates of
+        // one gusset have the same blank, the same stock and the same cuts by value, so they group
+        // (§2.6). The model half — that the copy equals its source in every field but id and
+        // anchor and carries no relationships — is DirectUpdaterCutTests.Case11d over in
+        // Napkin.Core.Geometry.Tests; this half is here so that the geometry test project does not
+        // have to reference the furniture module for one assertion.
+        //
+        // The cuts are not in the group key yet: that is §10 step 5's work on CutList, and this
+        // test stays true either way, because the copy's cuts are the source's by value.
+        Sketch drawn = Design.WithParts(("Gusset", 6144, 6144, Apron));
+        Box source = drawn.Entities.Values.OfType<Box>().Single() with
+        {
+            Cuts = [new CornerCut(BoxCorner.NorthEast, new Length(6144), new Length(6144))],
+        };
+
+        Box copy = source with
+        {
+            Id = EntityId.New(),
+            Anchor = source.Anchor + new Vector2(Length.Inches(8), Length.Zero),
+        };
+
+        Sketch both = Assert.IsType<Solved>(
+            DirectUpdater.Instance.Apply(drawn.WithEntity(source), new AddEntity(copy))).Sketch;
+
+        CutListRow row = Assert.Single(CutList.Of(both, Library));
+
+        Assert.Equal(2, row.Quantity);
+        Assert.Equal(2, row.Members.Length);
+        Assert.Equal("Gusset", row.Label);
+    }
+
     private static Part Leg => new(
         null, null, 1, new Length(16640), new PlanAxes(PartDimension.Width, PartDimension.Thickness));
 
