@@ -104,6 +104,32 @@ public sealed record SetPosition(EntityId Id, Point2 Anchor) : Request;
 public sealed record SetRotation(EntityId Box, Angle Rotation) : Request;
 
 /// <summary>
+/// Adds a cut to a blank, or replaces the cut already at the same site. Exact, and never moves
+/// geometry.
+/// </summary>
+/// <remarks>
+/// <see cref="RejectionReason.CutSiteTaken"/> when a curved edge claims the site — or when the cut
+/// <em>is</em> a curved edge and something is already cut at one of its two corners (invariant 6);
+/// <see cref="RejectionReason.CutDoesNotFit"/> when invariants 7 to 9 fail on the box as it would
+/// be; otherwise <see cref="Solved"/>, with the box in <see cref="ChangeSet.Modified"/> — a cut is
+/// neither a move nor a resize (<c>docs/design/shaped-parts-model.md</c> §2.2).
+/// </remarks>
+/// <param name="Box">The blank to cut.</param>
+/// <param name="Cut">What to take off it.</param>
+public sealed record SetCut(EntityId Box, Cut Cut) : Request;
+
+/// <summary>
+/// Removes the cut at a corner or an edge. Exact, and never moves geometry.
+/// </summary>
+/// <remarks>
+/// <see cref="RejectionReason.NoSuchCut"/> when there is nothing at the site. Removing a cut can
+/// only give the blank back area, so it can never break an invariant.
+/// </remarks>
+/// <param name="Box">The blank.</param>
+/// <param name="Site">Which corner or edge to un-cut.</param>
+public sealed record RemoveCut(EntityId Box, CutSite Site) : Request;
+
+/// <summary>
 /// Moves an entity, and everything that moves with it, as far towards the target as its
 /// relationships allow. Best effort: a drag is a question, not a demand, so it is never
 /// <see cref="OverConstrained"/>.

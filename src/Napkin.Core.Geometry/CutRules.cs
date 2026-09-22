@@ -8,9 +8,10 @@ namespace Napkin.Core.Geometry;
 /// </summary>
 /// <remarks>
 /// All of them are cheap — a box has at most eight cuts — and all of them are checked by
-/// <see cref="Sketch.Validate"/> and by <see cref="DirectUpdater"/> before a box with cuts is
-/// added. Invariant 5's other half, that the cuts are in site order, holds by construction:
-/// <see cref="Box.Cuts"/>'s initialiser sorts.
+/// <see cref="Sketch.Validate"/> and by <see cref="DirectUpdater"/> at each of its three doors: an
+/// <see cref="AddEntity"/> carrying a box with cuts, a <see cref="SetCut"/>, and after every write
+/// that resized a blank (§2.3). Invariant 5's other half, that the cuts are in site order, holds by
+/// construction: <see cref="Box.Cuts"/>'s initialiser sorts.
 /// </remarks>
 internal static class CutRules
 {
@@ -52,6 +53,62 @@ internal static class CutRules
 
     /// <summary>The first thing wrong with a box's cuts, or <see langword="null"/>.</summary>
     internal static ValidationError? FirstError(Box box) => Errors(box).FirstOrDefault();
+
+    /// <summary>
+    /// The smallest size along one axis of the blank at which its cuts still fit it — what a
+    /// <see cref="DragEdge"/> clamps to, so that a blank cannot be dragged shorter than its cuts
+    /// the way it cannot be dragged through an anchored neighbour
+    /// (<c>docs/design/shaped-parts-model.md</c> §2.3).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Found by bisection <em>against the rules above</em> rather than by a second copy of them
+    /// that could drift: "the cuts fit" is monotone in the size, because growing a blank loosens
+    /// every invariant 7 limit, widens every invariant 8 budget and only adds area to invariant 9.
+    /// A blank has at most eight cuts and the search is some thirty steps, so this is cheap.
+    /// </para>
+    /// <para>
+    /// <see cref="Length.Zero"/> for a plain rectangle, which clamps nothing: a drag that would
+    /// take a cutless box to nothing is <see cref="RejectionReason.NonPositiveSize"/> as it always
+    /// was.
+    /// </para>
+    /// </remarks>
+    internal static Length SmallestFitting(Box box, Axis axis)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        if (box.Cuts.IsEmpty)
+        {
+            return Length.Zero;
+        }
+
+        long high = box.Size(axis).Units;
+        if (high <= 1 || !Fits(box, axis, box.Size(axis)))
+        {
+            // The blank does not fit its own cuts even now, so nothing smaller will and there is
+            // no floor to offer. Whoever is writing the size refuses it instead of clamping to it.
+            return box.Size(axis);
+        }
+
+        long low = 1;
+        while (low < high)
+        {
+            long middle = low + ((high - low) / 2);
+            if (Fits(box, axis, new Length(middle)))
+            {
+                high = middle;
+            }
+            else
+            {
+                low = middle + 1;
+            }
+        }
+
+        return new Length(low);
+    }
+
+    private static bool Fits(Box box, Axis axis, Length size)
+        => Errors(axis == Axis.X ? box with { Width = size } : box with { Height = size }).IsEmpty;
 
     /// <summary>
     /// Invariant 6: one cut of any kind per corner, and a curved edge counts at both of its
