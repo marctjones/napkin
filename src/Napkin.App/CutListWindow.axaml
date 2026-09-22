@@ -1,0 +1,52 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewing="clr-namespace:Napkin.App.Viewing"
+        mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="460"
+        x:Class="Napkin.App.CutListWindow"
+        Title="Cut list"
+        Width="640" Height="460"
+        MinWidth="420" MinHeight="240">
+
+    <!--
+        The cut list is what a person reads at the bench: the parts, how many of each, how big and
+        out of what. The table is sortable by every column and the numbers never change when it is
+        sorted — sorting reorders what is shown, nothing else.
+    -->
+    <DockPanel Margin="12">
+
+        <TextBlock Name="DesignHeadline"
+                   DockPanel.Dock="Top"
+                   FontSize="13"
+                   FontWeight="SemiBold"
+                   TextWrapping="Wrap" />
+
+        <!-- Said on the table as well as in the exported file, rather than left for someone to
+             find out at the saw (docs/design/parts-and-cut-list.md §1.3). -->
+        <TextBlock Name="KerfNote"
+                   DockPanel.Dock="Top"
+                   Margin="0,4,0,10"
+                   FontSize="11"
+                   Opacity="0.75"
+                   TextWrapping="Wrap" />
+
+        <Border Name="EmptyNote"
+                DockPanel.Dock="Bottom"
+                IsVisible="False"
+                Margin="0,10,0,0"
+                Padding="10,8"
+                CornerRadius="4"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+            <TextBlock Name="EmptyText"
+                       FontSize="12"
+                       TextWrapping="Wrap" />
+        </Border>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <viewing:CutListTable Name="Table" />
+        </ScrollViewer>
+
+    </DockPanel>
+</Window>

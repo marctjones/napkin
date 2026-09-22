@@ -101,7 +101,7 @@ public class FileDesignSourceTests
 
         Assert.Equal(loaded.Sketch, design.Sketch);
         Assert.Equal("one-box.scene.json", design.Name);
-        Assert.Empty(design.Labels);
+        Assert.Equal("Shelf", Assert.Single(design.Labels).Value);
         Assert.Single(design.Sketch.Entities.Values.OfType<Box>());
     }
 

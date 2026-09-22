@@ -9,10 +9,10 @@ namespace Napkin.App.Designs;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The labels live here rather than in <see cref="Sketch"/> because the geometry kernel has no
-/// notion of a part name — an entity has an id and a layer, and nothing else a person would read.
-/// When the project format grows a name per entity (#6, #8's cut list needs one too), this
-/// dictionary is what it fills in, and nothing in the canvas changes.
+/// The labels live here rather than in the canvas because a design may name things the file does
+/// not — a new sheet's parts, for one. Scene format version 2 gave every entity a
+/// <see cref="Entity.Name"/>, and <see cref="Named"/> is what carries those into this dictionary;
+/// nothing in the canvas changed to make that work.
 /// </para>
 /// <para>
 /// A design is a value, like the sketch inside it. The viewer never edits one; M1 is read-only.
@@ -21,8 +21,7 @@ namespace Napkin.App.Designs;
 /// <param name="Name">What this drawing is called, in the window title and the status bar.</param>
 /// <param name="Sketch">The geometry.</param>
 /// <param name="Labels">
-/// Names for the entities that have one; entities may be missing from it, and a design read from a
-/// file has none at all because the M1 scene format stores no name per entity.
+/// Names for the entities that have one; an entity whose name is empty is simply not in it.
 /// </param>
 public sealed record Design(
     string Name,
@@ -33,8 +32,33 @@ public sealed record Design(
     public static Design Unlabelled(string name, Sketch sketch) =>
         new(name, sketch, ImmutableDictionary<EntityId, string>.Empty);
 
+    /// <summary>
+    /// A design labelled from the sketch's own entity names, which is what a file carries since
+    /// scene format version 2. An entity named with an empty string is left unlabelled.
+    /// </summary>
+    /// <param name="name">What to call the design.</param>
+    /// <param name="sketch">The geometry, whose entities carry the names.</param>
+    public static Design Named(string name, Sketch sketch)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+
+        return new(
+            name,
+            sketch,
+            sketch.Entities.Values
+                .Where(entity => entity.Name.Length > 0)
+                .ToImmutableDictionary(entity => entity.Id, entity => entity.Name));
+    }
+
     /// <summary>The name to draw on an entity, or null when it has none.</summary>
-    public string? LabelFor(EntityId id) => Labels.TryGetValue(id, out string? label) ? label : null;
+    /// <remarks>
+    /// The entity's own <see cref="Entity.Name"/> wins, because since format version 2 that is
+    /// what a file carries and what a save writes back. <see cref="Labels"/> is the fallback, for
+    /// a name the design has and the sketch does not.
+    /// </remarks>
+    public string? LabelFor(EntityId id) => Sketch.Find(id)?.Name is { Length: > 0 } name
+        ? name
+        : Labels.TryGetValue(id, out string? label) ? label : null;
 }
 
 /// <summary>Something the viewer can open.</summary>

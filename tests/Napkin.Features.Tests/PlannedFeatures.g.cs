@@ -84,30 +84,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: CUT-001 — A part resolves its stock through the materials library")]
-    [Trait("Feature", "CUT-001")]
-    public void CUT_001()
-    {
-    }
-
-    [Fact(Skip = "planned: CUT-002 — The cut list reads stored parameters, not derived corners")]
-    [Trait("Feature", "CUT-002")]
-    public void CUT_002()
-    {
-    }
-
-    [Fact(Skip = "planned: CUT-003 — The cut list groups identical parts")]
-    [Trait("Feature", "CUT-003")]
-    public void CUT_003()
-    {
-    }
-
-    [Fact(Skip = "planned: CUT-004 — The coffee-table cut list matches hand-computed expectations")]
-    [Trait("Feature", "CUT-004")]
-    public void CUT_004()
-    {
-    }
-
     [Fact(Skip = "planned: CUT-005 — The shopping list matches hand-computed expectations")]
     [Trait("Feature", "CUT-005")]
     public void CUT_005()
@@ -219,12 +195,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: GUI-CUT-02 — Assign materials to parts")]
     [Trait("Feature", "GUI-CUT-02")]
     public void GUI_CUT_02()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CUT-03 — Open the cut list and check it")]
-    [Trait("Feature", "GUI-CUT-03")]
-    public void GUI_CUT_03()
     {
     }
 

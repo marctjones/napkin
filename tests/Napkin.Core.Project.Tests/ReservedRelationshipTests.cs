@@ -85,21 +85,22 @@ public sealed class ReservedRelationshipTests
     /// </summary>
     private const string SolverKinds = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 0, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0 },
+              "name": "", "anchor": { "x": 0, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0, "part": null },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 16384, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0 },
+              "name": "", "anchor": { "x": 16384, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0, "part": null },
             { "id": "0192f1a0-0000-4000-8000-00000000000c", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "position": { "x": 4096, "y": 0 } },
+              "name": "", "position": { "x": 4096, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000d", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "position": { "x": 12288, "y": 0 } },
+              "name": "", "position": { "x": 12288, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000e", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "position": { "x": 12288, "y": 8192 } },
+              "name": "", "position": { "x": 12288, "y": 8192 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000f", "type": "segment", "layer": "00000000-0000-0000-0000-000000000001",
+              "name": "",
               "start": "0192f1a0-0000-4000-8000-00000000000d", "end": "0192f1a0-0000-4000-8000-00000000000e" }
           ],
           "relationships": [
@@ -131,12 +132,12 @@ public sealed class ReservedRelationshipTests
     /// <summary>A radius stated about a box, because there is no arc entity to state it about.</summary>
     private const string RadiusOfABox = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 0, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0 }
+              "name": "", "anchor": { "x": 0, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0, "part": null }
           ],
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-000000000001", "kind": "radius",

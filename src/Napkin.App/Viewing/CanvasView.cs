@@ -901,7 +901,7 @@ public sealed class CanvasView : Control
         }
 
         EntityId id = EntityId.New();
-        if (!_rectangle.TryComplete(editor.LayerForNewParts(), id, out Request? request))
+        if (!_rectangle.TryComplete(editor.LayerForNewParts(), id, editor.NextPartName(), out Request? request))
         {
             InvalidateVisual();
             editor.Say(EditSeverity.Hint, "Drag to draw a part — a click on its own makes nothing.");

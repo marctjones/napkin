@@ -333,7 +333,11 @@ public sealed class DesignEditor
     static int NextFreePartNumber(Design design)
     {
         int highest = 0;
-        foreach (string label in design.Labels.Values)
+        IEnumerable<string> names = design.Sketch.Entities.Values
+            .Select(entity => entity.Name)
+            .Concat(design.Labels.Values);
+
+        foreach (string label in names)
         {
             if (label.StartsWith("Part ", StringComparison.Ordinal)
                 && int.TryParse(label[5..], NumberStyles.None, CultureInfo.InvariantCulture, out int number))
@@ -345,6 +349,18 @@ public sealed class DesignEditor
         return highest + 1;
     }
 
+    /// <summary>
+    /// The name to give the next part somebody draws, so that nothing on screen is a GUID.
+    /// </summary>
+    /// <remarks>
+    /// The name goes on the entity, in the <see cref="AddEntity"/> request that creates it, rather
+    /// than into a side table afterwards: since scene format version 2 that is where a name lives
+    /// and what a save writes back, so a part drawn today keeps the name it was drawn with. It is
+    /// set on the way in because the application may not touch a sketch (CVS-005) — the only way
+    /// to name an entity that already exists is a <see cref="SetName"/> request.
+    /// </remarks>
+    public string NextPartName() => $"Part {_nextPartNumber++}";
+
     /// <summary>Gives every part that was just added a name, so nothing on screen is a GUID.</summary>
     Design Named(Design design, ChangeSet changes)
     {
@@ -353,7 +369,7 @@ public sealed class DesignEditor
         {
             if (named.Sketch.Find<Box>(id) is not null && named.LabelFor(id) is null)
             {
-                named = named with { Labels = named.Labels.SetItem(id, $"Part {_nextPartNumber++}") };
+                named = named with { Labels = named.Labels.SetItem(id, NextPartName()) };
             }
         }
 

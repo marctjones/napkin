@@ -3,7 +3,7 @@
   "scene": "wall-with-window.scene.json",
   "design": "wall-with-window.design.md",
   "derivedBy": "hand, from the stated dimensions in wall-with-window.design.md; never regenerated from napkin's output",
-  "formatVersion": 1,
+  "formatVersion": 2,
   "unitsPerInch": 1024,
 
   "counts": { "layers": 1, "entities": 7, "boxes": 2, "dimensions": 5, "relationships": 8 },
@@ -60,8 +60,18 @@
 
   "statedNotInScene": [],
 
+  "cutList": [],
+
+  "cutListOrder": "Empty by construction: a wall and an opening are boxes that nobody cuts, so both carry \"part\": null in the scene and the cut list collects nothing. That is the case the cut list must not treat as an error.",
+
+  "cutListCsv": [
+    "Cut list: finished sizes before saw kerf and joinery allowance.",
+    "Label,Quantity,Length,Width,Thickness,Material"
+  ],
+
   "notes": [
     "M1 is a geometry and labelling fixture only: entity positions and the exact feet-inch-fraction text of each dimension label.",
+    "Format version 2 gave every entity a name and every box a part. This fixture's two boxes are not parts, so they carry \"part\": null; their names are the ones this file already stated.",
     "No header size, stud count or bracing length is expected here. Those arrive in M4 and M5, read by a person from Connecticut's published adopted text with the page cited, never from memory and never from napkin's own output."
   ]
 }

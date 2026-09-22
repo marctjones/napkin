@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Napkin.Core.Materials", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Napkin.Core.Materials.Tests", "tests\Napkin.Core.Materials.Tests\Napkin.Core.Materials.Tests.csproj", "{A3A03C3B-E0C8-4AF1-A796-DBA777980531}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Napkin.Modules.Furniture.Tests", "tests\Napkin.Modules.Furniture.Tests\Napkin.Modules.Furniture.Tests.csproj", "{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -271,6 +273,18 @@ Global
 		{A3A03C3B-E0C8-4AF1-A796-DBA777980531}.Release|x64.Build.0 = Release|Any CPU
 		{A3A03C3B-E0C8-4AF1-A796-DBA777980531}.Release|x86.ActiveCfg = Release|Any CPU
 		{A3A03C3B-E0C8-4AF1-A796-DBA777980531}.Release|x86.Build.0 = Release|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Debug|x64.Build.0 = Debug|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Debug|x86.Build.0 = Debug|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Release|x64.ActiveCfg = Release|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Release|x64.Build.0 = Release|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Release|x86.ActiveCfg = Release|Any CPU
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -294,5 +308,6 @@ Global
 		{C2D56480-AB4A-4A70-814A-5C9920221648} = {34139B51-CB65-4768-91E6-8FBF5E3C4BDB}
 		{92F25FBF-0BB6-482D-80C2-02FEEC857F3C} = {DC7C3D10-CD14-4FB6-A510-7BD702BFFD1E}
 		{A3A03C3B-E0C8-4AF1-A796-DBA777980531} = {34139B51-CB65-4768-91E6-8FBF5E3C4BDB}
+		{BBF6DF1B-84B5-4F0E-BFB4-3B62A7F5987E} = {34139B51-CB65-4768-91E6-8FBF5E3C4BDB}
 	EndGlobalSection
 EndGlobal

@@ -45,6 +45,22 @@ internal static class SketchGenerator
         "Walls", "Openings", "Dimensions \"as drawn\"", "Étage — 1er", "Back\\slash", "日本語",
     ];
 
+    /// <summary>
+    /// Entity names, chosen for the same reason the layer names are: an entity name is written
+    /// into the same JSON and has to survive the same escaping. The empty string is in the list
+    /// because "unnamed" is legal and round-trips like any other name.
+    /// </summary>
+    private static readonly string[] EntityNames =
+    [
+        string.Empty, "Leg, south-west", "Apron \"long\"", "Tablette — chêne", "Back\\slash", "脚",
+    ];
+
+    /// <summary>Stock names, including none at all.</summary>
+    private static readonly string?[] StockNames = [null, "2x4", "1x6", "23/32", "a size nobody stocks"];
+
+    /// <summary>Species, including none at all.</summary>
+    private static readonly string?[] SpeciesNames = [null, "Douglas fir", "white oak", string.Empty];
+
     /// <summary>One sketch, the same one every time for the same seed.</summary>
     /// <param name="seed">The seed, which every failure message prints.</param>
     internal static Sketch Generate(int seed) => new Builder(seed).Build();
@@ -114,7 +130,11 @@ internal static class SketchGenerator
                     new Point2(NextCoordinate(), NextCoordinate()),
                     width,
                     height,
-                    RightAngles[random.Next(RightAngles.Length)]);
+                    RightAngles[random.Next(RightAngles.Length)])
+                {
+                    Name = NextName(),
+                    Part = NextPart(),
+                };
 
                 boxes.Add(box);
                 Add(box);
@@ -314,7 +334,10 @@ internal static class SketchGenerator
                     NextLayer(),
                     new ParamMeasurand(driven.Param),
                     driven.Id,
-                    NextPlacement()));
+                    NextPlacement())
+                {
+                    Name = NextName(),
+                });
             }
 
             // A driving linear dimension: the axisDistance owns the number.
@@ -323,7 +346,10 @@ internal static class SketchGenerator
                 NextLayer(),
                 new AxisMeasurand(DrivingSpan.From, DrivingSpan.To, DrivingSpan.Axis),
                 DrivingSpan.Id,
-                NextPlacement()));
+                NextPlacement())
+            {
+                Name = NextName(),
+            });
 
             // A reference dimension: it measures and owns nothing.
             Add(new Dimension(
@@ -331,11 +357,39 @@ internal static class SketchGenerator
                 NextLayer(),
                 new ParamMeasurand(new SegmentLengthRef(FirstRail.Id)),
                 null,
-                NextPlacement()));
+                NextPlacement())
+            {
+                Name = NextName(),
+            });
         }
 
         private DimensionPlacement NextPlacement()
             => new(NextCoordinate(), (DimensionSide)random.Next(4));
+
+        /// <summary>A name for an entity, sometimes empty, which is a legal "unnamed".</summary>
+        private string NextName() => EntityNames[random.Next(EntityNames.Length)];
+
+        /// <summary>
+        /// A part, or none: a third of the boxes are walls and openings rather than pieces
+        /// somebody cuts, so that <c>"part": null</c> is in the round trip as often as a part is.
+        /// </summary>
+        private Part? NextPart()
+        {
+            if (random.Next(3) == 0)
+            {
+                return null;
+            }
+
+            PartDimension x = (PartDimension)random.Next(3);
+            PartDimension y = (PartDimension)((int)(x + 1 + random.Next(2)) % 3);
+
+            return new Part(
+                StockNames[random.Next(StockNames.Length)],
+                SpeciesNames[random.Next(SpeciesNames.Length)],
+                random.Next(1, 13),
+                NextSize(),
+                new PlanAxes(x, y));
+        }
 
         // -----------------------------------------------------------------------------------
         // Plumbing
@@ -364,7 +418,7 @@ internal static class SketchGenerator
 
         private Node NodeAt(Point2 position)
         {
-            Node node = new(new EntityId(NextGuid()), NextLayer(), position);
+            Node node = new(new EntityId(NextGuid()), NextLayer(), position) { Name = NextName() };
             nodes.Add(node);
             Add(node);
             return node;
@@ -372,7 +426,11 @@ internal static class SketchGenerator
 
         private Segment SegmentBetween(Node start, Node end)
         {
-            Segment segment = new(new EntityId(NextGuid()), NextLayer(), start.Id, end.Id);
+            Segment segment = new(new EntityId(NextGuid()), NextLayer(), start.Id, end.Id)
+            {
+                Name = NextName(),
+            };
+
             segments.Add(segment);
             Add(segment);
             return segment;

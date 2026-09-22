@@ -59,6 +59,31 @@ public sealed record RemoveRelationship(RelationshipId Id) : Request;
 /// <param name="Layer">The layer to put it on.</param>
 public sealed record SetLayer(EntityId Id, LayerId Layer) : Request;
 
+/// <summary>Renames an entity. Exact, and never moves geometry.</summary>
+/// <remarks>
+/// A name is not an id: nothing looks an entity up by one, two entities may share one, and an
+/// empty name is a legal "unnamed". Renaming therefore cannot fail for any reason but the entity
+/// not being there.
+/// </remarks>
+/// <param name="Id">The entity to rename.</param>
+/// <param name="Name">What to call it. An empty string means unnamed.</param>
+public sealed record SetName(EntityId Id, string Name) : Request;
+
+/// <summary>
+/// Makes a box a part, changes what kind of part it is, or stops it being one. Exact, and never
+/// moves geometry.
+/// </summary>
+/// <remarks>
+/// This is the one thing that can turn a box somebody drew into a piece somebody cuts. It changes
+/// no dimension: the two in-plan dimensions are the box's own and stay exactly as they are, and
+/// the part supplies only the third and the names for all three
+/// (<c>docs/design/parts-and-cut-list.md</c> §1.1). Assigning a stock whose cross-section fixes an
+/// in-plan dimension is a separate step, and a geometry request when it happens.
+/// </remarks>
+/// <param name="Box">The box.</param>
+/// <param name="Part">What it is a piece of, or <see langword="null"/> to make it a plain box again.</param>
+public sealed record SetPart(EntityId Box, Part? Part) : Request;
+
 /// <summary>
 /// Sets the number a driving relationship owns — what editing a driving dimension is. Exact.
 /// </summary>

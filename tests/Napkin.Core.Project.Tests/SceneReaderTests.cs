@@ -19,7 +19,16 @@ public sealed class SceneReaderTests
                 new Point2(Length.Zero, Length.Zero),
                 new Length(30720),
                 new Length(4096),
-                Angle.Zero))
+                Angle.Zero)
+            {
+                Name = "Shelf",
+                Part = new Part(
+                    "1x6",
+                    Species: null,
+                    Quantity: 1,
+                    new Length(768),
+                    new PlanAxes(PartDimension.Length, PartDimension.Width)),
+            })
             .WithRelationship(new ParamValue(
                 new RelationshipId(Guid.Parse(Scenes.RelationshipId)),
                 new BoxWidthRef(new EntityId(Guid.Parse(Scenes.BoxId))),
@@ -121,19 +130,25 @@ public sealed class SceneReaderTests
     /// </summary>
     private const string AllReferenceShapes = """
         {
-          "formatVersion": 1,
+          "formatVersion": 2,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 0, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0 },
+              "name": "West square",
+              "anchor": { "x": 0, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0,
+              "part": { "stock": null, "species": "white oak", "quantity": 2, "outOfPlane": 768,
+                        "planAxes": { "x": "length", "y": "width" } } },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 8192, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0 },
+              "name": "East square",
+              "anchor": { "x": 8192, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0,
+              "part": null },
             { "id": "0192f1a0-0000-4000-8000-00000000000c", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "position": { "x": 8192, "y": 0 } },
+              "name": "Meeting point", "position": { "x": 8192, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000d", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "position": { "x": 8192, "y": 16384 } },
+              "name": "", "position": { "x": 8192, "y": 16384 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000e", "type": "segment", "layer": "00000000-0000-0000-0000-000000000001",
+              "name": "Joint line",
               "start": "0192f1a0-0000-4000-8000-00000000000c", "end": "0192f1a0-0000-4000-8000-00000000000d" }
           ],
           "relationships": [

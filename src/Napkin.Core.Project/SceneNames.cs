@@ -52,6 +52,20 @@ internal static class SceneNames
     internal const string Offset = "offset";
     internal const string Side = "side";
 
+    // A part, on a box (format version 2).
+    internal const string Part = "part";
+    internal const string Stock = "stock";
+    internal const string Species = "species";
+    internal const string Quantity = "quantity";
+    internal const string OutOfPlane = "outOfPlane";
+    internal const string PlanAxes = "planAxes";
+
+    // The three finished dimensions a part has. "length" is also the units object's length field
+    // and "width" also a box's stored width, which is the point: a plan axis names one of these.
+    internal const string PartLength = "length";
+    internal const string PartWidth = "width";
+    internal const string PartThickness = "thickness";
+
     // Corners, edges and sides, in the box's own local frame.
     internal const string SouthWest = "southWest";
     internal const string SouthEast = "southEast";
@@ -107,6 +121,9 @@ internal static class SceneNames
     /// <summary>Every entity type the format spells out, for a message that lists them.</summary>
     internal static readonly string[] EntityTypes = [Box, Dimension, Node, Segment];
 
+    /// <summary>The three names a part's plan axis can carry, for a message that lists them.</summary>
+    internal static readonly string[] PartDimensions = [PartLength, PartWidth, PartThickness];
+
     /// <summary>Every relationship kind the format spells out, for a message that lists them.</summary>
     internal static readonly string[] RelationshipKinds =
     [
@@ -149,6 +166,17 @@ internal static class SceneNames
         }
     }
 
+    internal static bool TryPartDimension(string text, out PartDimension dimension)
+    {
+        switch (text)
+        {
+            case PartLength: dimension = PartDimension.Length; return true;
+            case PartWidth: dimension = PartDimension.Width; return true;
+            case PartThickness: dimension = PartDimension.Thickness; return true;
+            default: dimension = default; return false;
+        }
+    }
+
     internal static bool TrySide(string text, out DimensionSide side)
     {
         switch (text)
@@ -188,6 +216,14 @@ internal static class SceneNames
         Geometry.BoxEdge.North => North,
         Geometry.BoxEdge.West => West,
         _ => throw Unknown(nameof(edge), edge),
+    };
+
+    internal static string Of(PartDimension dimension) => dimension switch
+    {
+        PartDimension.Length => PartLength,
+        PartDimension.Width => PartWidth,
+        PartDimension.Thickness => PartThickness,
+        _ => throw Unknown(nameof(dimension), dimension),
     };
 
     internal static string Of(DimensionSide side) => side switch

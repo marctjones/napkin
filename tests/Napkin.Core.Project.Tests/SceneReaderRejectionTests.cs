@@ -23,7 +23,8 @@ public sealed class SceneReaderRejectionTests
 
     [Theory]
     [InlineData(0)]
-    [InlineData(2)]
+    [InlineData(1)]
+    [InlineData(3)]
     [Trait("Feature", "PRJ-004")]
     public void A_file_from_another_format_version_fails_before_the_scene_is_parsed(int version)
     {
@@ -53,7 +54,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_file_with_no_version_stamp_is_refused()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 1,", string.Empty),
+            Scenes.OneBox.With("\"formatVersion\": 2,", string.Empty),
             LoadProblemKind.MissingField,
             "formatVersion");
 
@@ -61,7 +62,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_text_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 1", "\"formatVersion\": \"1\""),
+            Scenes.OneBox.With("\"formatVersion\": 2", "\"formatVersion\": \"2\""),
             LoadProblemKind.Malformed,
             "formatVersion");
 
@@ -69,7 +70,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_a_decimal_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 1", "\"formatVersion\": 1.0"),
+            Scenes.OneBox.With("\"formatVersion\": 2", "\"formatVersion\": 2.0"),
             LoadProblemKind.NotAnInteger,
             "formatVersion");
 
@@ -95,14 +96,20 @@ public sealed class SceneReaderRejectionTests
     public void An_unknown_field_is_refused_and_named()
     {
         Scenes.RefuseWith(
-            Scenes.OneBox.With("\"rotation\": 0 }", "\"rotation\": 0, \"colour\": \"walnut\" }"),
+            Scenes.OneBox.With("\"rotation\": 0,", "\"rotation\": 0, \"colour\": \"walnut\","),
             LoadProblemKind.UnknownField,
             "colour");
 
         Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 1,", "\"formatVersion\": 1, \"author\": \"someone\","),
+            Scenes.OneBox.With("\"formatVersion\": 2,", "\"formatVersion\": 2, \"author\": \"someone\","),
             LoadProblemKind.UnknownField,
             "author");
+
+        // A part's own object is read as strictly as the entity around it.
+        Scenes.RefuseWith(
+            Scenes.OneBox.With("\"quantity\": 1,", "\"quantity\": 1, \"grain\": \"quartersawn\","),
+            LoadProblemKind.UnknownField,
+            "grain");
     }
 
     [Fact]
@@ -325,13 +332,77 @@ public sealed class SceneReaderRejectionTests
             LoadProblemKind.MissingField,
             "height");
 
+    [Theory]
+    [InlineData("\"name\": \"Shelf\",", "name")]
+    [InlineData("\"part\": ", "part")]
+    [Trait("Feature", "CUT-001")]
+    public void A_name_and_a_part_are_required_on_a_box(string original, string named)
+        => Scenes.RefuseWith(
+            Scenes.OneBox.With(original, original.Replace(named, $"{named}Of", StringComparison.Ordinal)),
+            LoadProblemKind.MissingField,
+            named);
+
+    [Theory]
+    [InlineData("\"name\": \"Shelf\"", "\"name\": 7")]
+    [InlineData("\"stock\": \"1x6\"", "\"stock\": 24")]
+    [InlineData("\"species\": null", "\"species\": 24")]
+    [Trait("Feature", "CUT-001")]
+    public void A_name_a_stock_and_a_species_are_text_or_nothing(string original, string replacement)
+        => Scenes.RefuseWith(Scenes.OneBox.With(original, replacement), LoadProblemKind.Malformed, "found a number");
+
+    [Theory]
+    [InlineData("\"quantity\": 0", "quantity")]
+    [InlineData("\"quantity\": -1", "quantity")]
+    [InlineData("\"outOfPlane\": 0", "outOfPlane")]
+    [InlineData("\"outOfPlane\": -768", "outOfPlane")]
+    [Trait("Feature", "CUT-001")]
+    public void A_part_counts_at_least_one_piece_of_a_positive_thickness(string replacement, string named)
+        => Scenes.RefuseWith(
+            Scenes.OneBox.With($"\"{named}\": {(named == "quantity" ? "1" : "768")}", replacement),
+            LoadProblemKind.InvalidValue,
+            named);
+
+    [Fact]
+    [Trait("Feature", "CUT-001")]
+    public void A_plan_axis_this_build_does_not_know_is_refused_and_named()
+        => Scenes.RefuseWith(
+            Scenes.OneBox.With("\"y\": \"width\"", "\"y\": \"depth\""),
+            LoadProblemKind.UnknownValue,
+            "depth");
+
+    [Fact]
+    [Trait("Feature", "CUT-001")]
+    public void Two_plan_axes_naming_one_dimension_are_refused()
+    {
+        // Both axes claiming "length" would leave no name for outOfPlane to carry, so the part
+        // would have two dimensions and a spare number rather than three dimensions.
+        LoadProblem problem = Scenes.RefuseWith(
+            Scenes.OneBox.With("\"y\": \"width\"", "\"y\": \"length\""),
+            LoadProblemKind.InvalidValue,
+            "planAxes");
+
+        Assert.Contains("length", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-001")]
+    public void A_stock_name_this_build_has_never_heard_of_still_loads()
+    {
+        // Deliberate: a file is refused for being malformed, never for naming something this
+        // build's materials library does not carry. The cut list says so instead.
+        Sketch sketch = Scenes.Accept(Scenes.OneBox.With("\"stock\": \"1x6\"", "\"stock\": \"9x17 unobtainium\""));
+
+        Box box = Assert.IsType<Box>(sketch.Find(new EntityId(Guid.Parse(Scenes.BoxId))));
+        Assert.Equal("9x17 unobtainium", box.Part?.Stock);
+    }
+
     [Fact]
     [Trait("Feature", "PRJ-002")]
     public void A_file_with_several_faults_reports_them_all_and_returns_no_sketch()
     {
         Refused refused = Scenes.Refuse(
             Scenes.OneBox
-                .With("\"rotation\": 0 }", "\"rotation\": 0, \"colour\": \"walnut\" }")
+                .With("\"rotation\": 0,", "\"rotation\": 0, \"colour\": \"walnut\",")
                 .With("\"name\": \"Default\"", "\"name\": \"Default\", \"visible\": true"));
 
         Assert.Equal(2, refused.Problems.Count);

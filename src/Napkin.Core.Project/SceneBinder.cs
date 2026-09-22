@@ -274,6 +274,11 @@ internal sealed class SceneBinder
             Guid? id = ReadId(fields, SceneNames.Id);
             string? type = ReadText(fields, SceneNames.Type);
             Guid? layer = ReadId(fields, SceneNames.Layer);
+
+            // Every entity carries a name, whatever its type: a named dimension reads better in a
+            // conflict message, and an empty string is a legal "unnamed" (format version 2).
+            string? name = ReadText(fields, SceneNames.Name);
+
             if (id is not { } entityId || type is null || layer is not { } layerId)
             {
                 RejectUnknownFields(fields);
@@ -291,10 +296,12 @@ internal sealed class SceneBinder
 
             RejectUnknownFields(fields);
 
-            if (entity is null)
+            if (entity is null || name is null)
             {
                 continue;
             }
+
+            entity = entity with { Name = name };
 
             if (!entities.TryAdd(entity.Id, entity))
             {
@@ -331,6 +338,7 @@ internal sealed class SceneBinder
         long? width = ReadInteger(fields, SceneNames.Width);
         long? height = ReadInteger(fields, SceneNames.Height);
         long? rotation = ReadInteger(fields, SceneNames.Rotation);
+        (bool partRead, Part? part) = ReadPart(fields);
 
         if (width is { } w && w <= 0)
         {
@@ -361,9 +369,122 @@ internal sealed class SceneBinder
             rotation = null;
         }
 
-        return anchor is { } corner && width is { } wide && height is { } tall && rotation is { } turn
-            ? new Box(id, layer, corner, new Length(wide), new Length(tall), new Angle(turn))
+        return anchor is { } corner && width is { } wide && height is { } tall && rotation is { } turn && partRead
+            ? new Box(id, layer, corner, new Length(wide), new Length(tall), new Angle(turn)) { Part = part }
             : null;
+    }
+
+    /// <summary>
+    /// Reads a box's <c>part</c>, which is required and may be <see langword="null"/>: a wall and
+    /// an opening are boxes that are not pieces anybody cuts.
+    /// </summary>
+    /// <returns>
+    /// Whether the field was read without a problem, and the part it held, which is
+    /// <see langword="null"/> both for a well-formed <c>"part": null</c> and for a refusal — the
+    /// flag is what tells them apart.
+    /// </returns>
+    private (bool Read, Part? Part) ReadPart(JsonFields fields)
+    {
+        JsonElement? element = Take(fields, SceneNames.Part);
+        if (element is not { } value)
+        {
+            return (false, null);
+        }
+
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return (true, null);
+        }
+
+        JsonFields? part = ReadFields(value, $"{fields.Path}/{SceneNames.Part}", $"\"{SceneNames.Part}\"");
+        if (part is null)
+        {
+            return (false, null);
+        }
+
+        // The stock name is not checked against this build's materials library, deliberately: a
+        // file is refused for being malformed, never for naming something this build has not heard
+        // of (docs/design/parts-and-cut-list.md §2.2).
+        (bool stockRead, string? stock) = ReadTextOrNull(part, SceneNames.Stock);
+        (bool speciesRead, string? species) = ReadTextOrNull(part, SceneNames.Species);
+        long? quantity = ReadInteger(part, SceneNames.Quantity);
+        long? outOfPlane = ReadInteger(part, SceneNames.OutOfPlane);
+        PlanAxes? planAxes = ReadPlanAxes(part);
+        RejectUnknownFields(part);
+
+        if (quantity is { } count && count < 1)
+        {
+            Add(
+                LoadProblemKind.InvalidValue,
+                $"{part.Path}/{SceneNames.Quantity}",
+                $"A part stands for at least one piece; this one says {count.ToString(CultureInfo.InvariantCulture)}.");
+            quantity = null;
+        }
+
+        if (outOfPlane is { } third && third <= 0)
+        {
+            Add(
+                LoadProblemKind.InvalidValue,
+                $"{part.Path}/{SceneNames.OutOfPlane}",
+                "A part's out-of-plane dimension must be greater than zero; this one is "
+                + $"{third.ToString(CultureInfo.InvariantCulture)} units.");
+            outOfPlane = null;
+        }
+
+        return stockRead && speciesRead && quantity is { } pieces && outOfPlane is { } units && planAxes is { } axes
+            ? (true, new Part(stock, species, (int)pieces, new Length(units), axes))
+            : (false, null);
+    }
+
+    private PlanAxes? ReadPlanAxes(JsonFields part)
+    {
+        JsonFields? fields = ReadObject(part, SceneNames.PlanAxes);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        PartDimension? x = ReadPartDimension(fields, SceneNames.X);
+        PartDimension? y = ReadPartDimension(fields, SceneNames.Y);
+        RejectUnknownFields(fields);
+
+        if (x is not { } across || y is not { } up)
+        {
+            return null;
+        }
+
+        if (across == up)
+        {
+            Add(
+                LoadProblemKind.InvalidValue,
+                fields.Path,
+                $"A part's two plan axes must name different dimensions; both name \"{SceneNames.Of(across)}\". "
+                + "The third dimension is the one neither axis claims, and there would be none.");
+            return null;
+        }
+
+        return new PlanAxes(across, up);
+    }
+
+    private PartDimension? ReadPartDimension(JsonFields fields, string name)
+    {
+        string? text = ReadText(fields, name);
+        if (text is null)
+        {
+            return null;
+        }
+
+        if (!SceneNames.TryPartDimension(text, out PartDimension dimension))
+        {
+            Add(
+                LoadProblemKind.UnknownValue,
+                $"{fields.Path}/{name}",
+                $"\"{text}\" is not one of a part's three dimensions. They are: "
+                + $"{SceneNames.List(SceneNames.PartDimensions)}.");
+            return null;
+        }
+
+        return dimension;
     }
 
     private Entity? ReadDimension(JsonFields fields, EntityId id, LayerId layer)
@@ -1029,6 +1150,36 @@ internal sealed class SceneBinder
         }
 
         return value.GetString();
+    }
+
+    /// <summary>
+    /// Reads a field the format defines as text <em>or</em> <see langword="null"/> — a part's
+    /// stock name and its species, neither of which every part has.
+    /// </summary>
+    /// <returns>Whether the field was read without a problem, and the text it held.</returns>
+    private (bool Read, string? Text) ReadTextOrNull(JsonFields fields, string name)
+    {
+        JsonElement? element = Take(fields, name);
+        if (element is not { } value)
+        {
+            return (false, null);
+        }
+
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return (true, null);
+        }
+
+        if (value.ValueKind != JsonValueKind.String)
+        {
+            Add(
+                LoadProblemKind.Malformed,
+                $"{fields.Path}/{name}",
+                $"Expected \"{name}\" to be text or null, and found {Describe(value)}.");
+            return (false, null);
+        }
+
+        return (true, value.GetString());
     }
 
     private Guid? ReadId(JsonFields fields, string name)

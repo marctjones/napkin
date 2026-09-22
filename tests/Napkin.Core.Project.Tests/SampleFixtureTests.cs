@@ -45,6 +45,11 @@ public sealed class SampleFixtureTests
 
             // Integer units throughout: a part's size and position are compared exactly, never as
             // inches and never with a tolerance.
+            // Format version 2 put the name in the file, so the two places it is written — the
+            // scene and the expectations that were derived by hand before the scene existed — are
+            // held to each other rather than allowed to drift apart.
+            Assert.Equal(part.Name, box.Name);
+
             Assert.Equal(part.AnchorXUnits, box.Anchor.X.Units);
             Assert.Equal(part.AnchorYUnits, box.Anchor.Y.Units);
             Assert.Equal(part.WidthUnits, box.Width.Units);
@@ -136,6 +141,8 @@ public sealed class SampleFixtureTests
         foreach (ExpectedLabel label in expected.DimensionLabels)
         {
             Dimension dimension = Assert.IsType<Dimension>(sketch.Find(new EntityId(Guid.Parse(label.Id))));
+
+            Assert.Equal(label.Name, dimension.Name);
 
             // A dimension never stores a number: its value is computed from what it measures
             // (geometry design §3.3), which is what the expectations file states.
