@@ -1010,6 +1010,11 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>The smallest part under a model point, or null.</summary>
+    /// <remarks>
+    /// The test is against the <em>shape</em>, not the blank: a click in a corner that has been
+    /// cut off selects whatever is under it, because nothing of this part is there
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.4).
+    /// </remarks>
     EntityId? PickAt(Point2 world)
     {
         if (Design is not { } design)
@@ -1022,7 +1027,7 @@ public sealed class CanvasView : Control
 
         foreach (Box box in design.Sketch.Entities.Values.OfType<Box>().OrderBy(entity => entity.Id))
         {
-            if (BoxGeometry.DistanceOutside(box, world) > tolerance)
+            if (!BoxGeometry.IsWithinShape(box, world, tolerance))
             {
                 continue;
             }
@@ -1296,8 +1301,23 @@ public sealed class CanvasView : Control
         context.DrawGeometry(brush, null, diamond);
     }
 
+    /// <summary>
+    /// The shape a part is drawn as: its four corners when nothing has been cut off it, and the
+    /// boundary <see cref="Box.Outline"/> derives when something has
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;1.5).
+    /// </summary>
+    /// <remarks>
+    /// The plain case is kept as it was rather than routed through the outline builder, so that a
+    /// rectangle is four <c>LineTo</c>s today as it was yesterday and a part with no cuts cannot
+    /// be drawn differently by accident.
+    /// </remarks>
     StreamGeometry Outline(Box box)
     {
+        if (!box.Cuts.IsEmpty)
+        {
+            return OutlineDrawing.GeometryOf(box.Outline(), _view.ToScreen);
+        }
+
         StreamGeometry outline = new();
         using (StreamGeometryContext geometry = outline.Open())
         {
