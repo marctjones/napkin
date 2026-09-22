@@ -58,7 +58,6 @@ public partial class MainWindow : Window
     bool _opening;
     bool _showingProperties;
     bool _showingCut;
-    bool _toolboxOpen;
     EntityId? _editingBox;
     EntityId? _shaping;
     SizeAxis _editingAxis = SizeAxis.Width;
@@ -86,14 +85,20 @@ public partial class MainWindow : Window
         };
         DrawingCanvas.PointerWorldPositionChanged += (_, point) => UpdateCursorReadout(point);
         DrawingCanvas.ToolChanged += (_, _) => UpdateToolButtons();
+        DrawingCanvas.HoveredPartChanged += (_, _) => UpdateRelationships();
         DrawingCanvas.DimensionEditRequested += (_, request) =>
             OpenDimensionEditor(request.Box, request.Axis);
         DrawingCanvas.ShapeRequested += (_, box) => OpenWorkshop(box);
-        DrawingCanvas.ToolboxRequested += (_, _) => ToggleToolbox();
         StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
+        StockToolboxPanel.CategoryChanged += (_, _) => OnStockCategoryChanged();
 
-        // A click on a category icon gives the keyboard back to the drawing, so Escape and M still
-        // reach it; the toolbox has nothing to type into.
+        // The stock category icons sit on the main toolbar beside Select and Rectangle, always in
+        // reach; the toolbox itself is only the drawer that drops down under the one picked.
+        ToolRow.Children.Add(StockToolboxPanel.CategoryRow);
+
+        // A click on a category icon or an item gives the keyboard back to the drawing, so Escape
+        // still reaches it; the toolbox has nothing to type into.
+        ToolBar.AddHandler(Button.ClickEvent, (_, _) => DrawingCanvas.Focus());
         StockToolboxPanel.AddHandler(Button.ClickEvent, (_, _) => DrawingCanvas.Focus());
 
         WorkshopDrawing.Editor = Editor;
@@ -186,14 +191,11 @@ public partial class MainWindow : Window
     /// <summary>The select tool's button.</summary>
     public ToggleButton SelectToolControl => SelectToolButton;
 
-    /// <summary>The tool control's button that opens and closes the stock toolbox.</summary>
-    public ToggleButton StockToolboxControl => StockToolButton;
-
-    /// <summary>The stock toolbox that floats over the drawing.</summary>
+    /// <summary>The stock toolbox: its drawer, and through it the category icons on the toolbar.</summary>
     public StockToolbox Toolbox => StockToolboxPanel;
 
-    /// <summary>Whether the stock toolbox is on screen.</summary>
-    public bool IsShowingToolbox => StockToolboxPanel.IsVisible;
+    /// <summary>Whether a stock category's drawer of sizes is open under its icon.</summary>
+    public bool IsShowingStockSizes => StockToolboxPanel.IsVisible;
 
     /// <summary>The status line at the foot of the window.</summary>
     public Border StatusLine => StatusBar;
@@ -222,11 +224,21 @@ public partial class MainWindow : Window
     /// <summary>The relationship list panel.</summary>
     public Border Relationships => RelationshipsPanel;
 
-    /// <summary>What the relationship list is showing, one line each.</summary>
+    /// <summary>
+    /// What the relationship list is showing, one line each. Empty while it is collapsed to its
+    /// badge, because then no sentence is on the screen.
+    /// </summary>
     public IReadOnlyList<string> RelationshipsOnScreen =>
     [
         .. RelationshipsList.Children.OfType<TextBlock>().Select(line => line.Text ?? string.Empty),
     ];
+
+    /// <summary>Whether the relationship list is open to its sentences rather than showing only its count.</summary>
+    public bool IsRelationshipListExpanded => RelationshipsPanel.IsVisible && RelationshipsList.IsVisible;
+
+    /// <summary>What the relationship panel's headline says: the count badge, or the list's title.</summary>
+    public string RelationshipHeadlineText =>
+        RelationshipsPanel.IsVisible ? RelationshipsHeadline.Text ?? string.Empty : string.Empty;
 
     /// <summary>The inline dimension field, when one is open.</summary>
     public TextBox DimensionField => DimensionEntryBox;
@@ -550,6 +562,7 @@ public partial class MainWindow : Window
         }
 
         UpdateMenuEnablement();
+        UpdateRelationships();
         ShowProperties();
     }
 
@@ -1330,7 +1343,6 @@ public partial class MainWindow : Window
         DeleteMenuItem.IsEnabled = anything;
         PinMenuItem.IsEnabled = anything;
         ShapeMenuItem.IsEnabled = Editor.OnlySelected is not null && !IsShapingPart;
-        StockToolboxMenuItem.IsEnabled = !IsShapingPart;
     }
 
     void UpdateMessageBar()
@@ -1357,28 +1369,52 @@ public partial class MainWindow : Window
         MessageBar.IsVisible = true;
     }
 
+    /// <summary>
+    /// The relationship list, on demand (#62): a count badge while nothing it talks about is in
+    /// play, and every sentence once a part it names is selected or under the pointer.
+    /// </summary>
+    /// <remarks>
+    /// Expanded, it shows the whole list, not only the selected part's rows: the sentences are the
+    /// same ones it has always shown, and which part is selected only decides whether the drawing
+    /// has something to say that is worth the room. The panel stays off the screen while the shape
+    /// workshop is open, whatever changes underneath it.
+    /// </remarks>
     void UpdateRelationships()
     {
         IReadOnlyList<RelationshipEntry> entries = Editor.RelationshipEntries();
         CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
+        bool expanded = entries.Any(entry => entry.Entities.Any(IsInPlay));
 
         RelationshipsList.Children.Clear();
-        foreach (RelationshipEntry entry in entries)
+        if (expanded)
         {
-            RelationshipsList.Children.Add(new TextBlock
+            foreach (RelationshipEntry entry in entries)
             {
-                Text = entry.Text,
-                FontSize = 11,
-                TextWrapping = TextWrapping.Wrap,
-                Foreground = new SolidColorBrush(palette.Label),
-            });
+                RelationshipsList.Children.Add(new TextBlock
+                {
+                    Text = entry.Text,
+                    FontSize = 11,
+                    TextWrapping = TextWrapping.Wrap,
+                    Foreground = new SolidColorBrush(palette.Label),
+                });
+            }
         }
 
-        RelationshipsHeadline.Text = entries.Count == 1
-            ? "Relationships — 1"
-            : $"Relationships — {entries.Count}";
-        RelationshipsPanel.IsVisible = entries.Count > 0;
+        RelationshipsList.IsVisible = expanded;
+        RelationshipsHeadline.Text = expanded
+            ? $"Relationships — {entries.Count}"
+            : entries.Count == 1 ? "1 relationship" : $"{entries.Count} relationships";
+        RelationshipsHeadline.FontSize = expanded ? 12 : 11;
+        RelationshipsPanel.Padding = expanded ? new Thickness(10, 8) : new Thickness(8, 3);
+        RelationshipsPanel.CornerRadius = new CornerRadius(expanded ? 4 : 10);
+        RelationshipsPanel.IsVisible = entries.Count > 0 && !IsShapingPart;
     }
+
+    /// <summary>
+    /// Whether a part is one the relationship list should open for: selected, or resting under the
+    /// pointer. Hovering is the quick look; selecting keeps it open while the pointer goes elsewhere.
+    /// </summary>
+    bool IsInPlay(EntityId id) => Editor.Selection.Contains(id) || DrawingCanvas.HoveredPart == id;
 
     void UpdateToolButtons()
     {
@@ -1391,34 +1427,41 @@ public partial class MainWindow : Window
     // The stock toolbox: pick real stock, then drag it onto the paper (issue #7, GUI-CUT-02)
     // ---------------------------------------------------------------------------------------
 
-    /// <summary>Opens the stock toolbox, or closes it and puts down whatever it had picked up.</summary>
-    public void ToggleToolbox()
+    /// <summary>
+    /// A category icon was clicked: its drawer drops down under it, or — when that was the open
+    /// one — the drawer closes and puts down whatever it had picked up.
+    /// </summary>
+    void OnStockCategoryChanged()
     {
-        // The workshop covers the canvas the toolbox places parts on, and focusing the canvas from
-        // here would take the keyboard away from the blank being shaped.
-        if (IsShapingPart)
-        {
-            return;
-        }
-
-        _toolboxOpen = !_toolboxOpen;
-        if (!_toolboxOpen)
+        if (StockToolboxPanel.Category is null)
         {
             DrawingCanvas.ArmStock(null);
         }
 
         UpdateToolbox();
-        DrawingCanvas.Focus();
     }
 
     /// <summary>
-    /// Shows the toolbox when it is open and the canvas is what is on screen; the shape workshop
-    /// covers the canvas and takes its floating chrome with it.
+    /// Shows the drawer under its category's icon while one is open and the canvas is what is on
+    /// screen; the shape workshop covers the canvas and takes the toolbar and the drawer with it.
     /// </summary>
     void UpdateToolbox()
     {
-        StockToolboxPanel.IsVisible = _toolboxOpen && !IsShapingPart;
-        StockToolButton.IsChecked = _toolboxOpen;
+        StockToolboxPanel.IsVisible = StockToolboxPanel.Category is not null && !IsShapingPart;
+        if (!StockToolboxPanel.IsVisible
+            || StockToolboxPanel.Category is not { } open
+            || ToolBar.Parent is not Visual overlay)
+        {
+            return;
+        }
+
+        // Dropped down from the icon that opened it, pulled back left only as far as it takes to
+        // stay inside the window.
+        ToggleButton icon = StockToolboxPanel.CategoryButtons[open];
+        double left = icon.TranslatePoint(new Point(0, 0), overlay)?.X ?? ToolBar.Bounds.Left;
+        double room = overlay.Bounds.Width - StockToolboxPanel.Width - 10;
+        left = Math.Max(10, Math.Min(left, room));
+        StockToolboxPanel.Margin = new Thickness(left, ToolBar.Bounds.Bottom + 4, 10, 10);
     }
 
     /// <summary>
@@ -1442,8 +1485,6 @@ public partial class MainWindow : Window
 
         DrawingCanvas.Focus();
     }
-
-    void OnStockToolboxClicked(object? sender, RoutedEventArgs e) => ToggleToolbox();
 
     void ShowRefusal(string what, IReadOnlyList<string> problems)
     {
@@ -1487,6 +1528,7 @@ public partial class MainWindow : Window
 
         ToolBar.Background = paper;
         ToolBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
+        ToolRowDivider.Background = new SolidColorBrush(palette.GridMajor);
         StockToolboxPanel.ApplyPalette(palette);
 
         RelationshipsPanel.Background = paper;
@@ -1561,7 +1603,6 @@ public partial class MainWindow : Window
         ZoomOutMenuItem.InputGesture = new KeyGesture(Key.OemMinus);
         SelectToolMenuItem.InputGesture = new KeyGesture(Key.S);
         RectangleToolMenuItem.InputGesture = new KeyGesture(Key.R);
-        StockToolboxMenuItem.InputGesture = new KeyGesture(Key.M);
         ShapeMenuItem.InputGesture = new KeyGesture(Key.C);
         PinMenuItem.InputGesture = new KeyGesture(Key.P);
         DeleteMenuItem.InputGesture = new KeyGesture(Key.Delete);

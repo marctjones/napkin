@@ -128,6 +128,7 @@ public sealed class CanvasView : Control
     Point2 _gestureWorldAtPress;
     Box? _gestureBoxAtPress;
     SnapPlan? _snap;
+    EntityId? _hovered;
 
     static CanvasView() => FocusableProperty.OverrideDefaultValue<CanvasView>(true);
 
@@ -155,13 +156,6 @@ public sealed class CanvasView : Control
     /// other editing keys, and the window decides what to open.
     /// </remarks>
     public event EventHandler<EntityId>? ShapeRequested;
-
-    /// <summary>
-    /// Raised when a person asks for the stock toolbox from the keyboard. The toolbox floats over
-    /// the drawing and belongs to the window, so the key is handled here — where typing an
-    /// <c>m</c> into a field cannot reach it — and the window decides what to show.
-    /// </summary>
-    public event EventHandler? ToolboxRequested;
 
     /// <summary>
     /// Raised when the set of parts on the canvas changes — one drawn, one deleted, a different
@@ -250,6 +244,18 @@ public sealed class CanvasView : Control
             ToolChanged?.Invoke(this, EventArgs.Empty);
         }
     }
+
+    /// <summary>
+    /// Raised when the part under the pointer changes, so the window can open the relationship
+    /// list for a part that has some (#62).
+    /// </summary>
+    public event EventHandler? HoveredPartChanged;
+
+    /// <summary>
+    /// The part the pointer is resting on, or null. It follows the pointer only while nothing is
+    /// being dragged, panned or drawn: a gesture's own part is what it is about, not a hover.
+    /// </summary>
+    public EntityId? HoveredPart => _hovered;
 
     /// <summary>
     /// The stock item the pointer is holding, picked from the toolbox, or null when it holds none.
@@ -727,8 +733,23 @@ public sealed class CanvasView : Control
         {
             ContinueEdit(_view.ToWorld(position));
         }
+        else
+        {
+            Hover(PickAt(_view.ToWorld(position)));
+        }
 
         PointerWorldPositionChanged?.Invoke(this, _view.ToWorld(position));
+    }
+
+    void Hover(EntityId? part)
+    {
+        if (_hovered == part)
+        {
+            return;
+        }
+
+        _hovered = part;
+        HoveredPartChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <inheritdoc/>
@@ -794,6 +815,7 @@ public sealed class CanvasView : Control
     protected override void OnPointerExited(PointerEventArgs e)
     {
         base.OnPointerExited(e);
+        Hover(null);
         PointerWorldPositionChanged?.Invoke(this, null);
     }
 
@@ -860,10 +882,6 @@ public sealed class CanvasView : Control
 
             case Key.S:
                 Tool = EditTool.Select;
-                return true;
-
-            case Key.M:
-                ToolboxRequested?.Invoke(this, EventArgs.Empty);
                 return true;
 
             case Key.Escape:
@@ -1310,6 +1328,7 @@ public sealed class CanvasView : Control
         ZoomToFit();
         InvalidateVisual();
         NotePartsIfChanged();
+        Hover(null);
     }
 
     /// <summary>

@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 
 using Napkin.App.Editing;
 using Napkin.App.GuiTests.Harness;
@@ -12,8 +14,9 @@ using Xunit;
 namespace Napkin.App.GuiTests.Workflows;
 
 /// <summary>
-/// The stock toolbox, driven the way a person drives it: open it, pick a category, hover a size to
-/// read what it really measures, and drag it onto the paper — then do it again with something else.
+/// The stock toolbox, driven the way a person drives it: pick a category icon off the main toolbar,
+/// hover a size to read what it really measures, and drag it onto the paper — then do it again with
+/// something else.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,6 +24,10 @@ namespace Napkin.App.GuiTests.Workflows;
 /// an item sets the part's stock reference with its footprint following the stock's cross-section.
 /// The point Marc made about the old path is the one this checks hardest: the part that appears is
 /// <em>already</em> a 2x4, with no separate assignment step afterwards.
+/// </para>
+/// <para>
+/// The category icons are always on the toolbar beside Select and Rectangle — there is nothing to
+/// open first — and each one drops its size list down under itself; clicking it again closes it.
 /// </para>
 /// <para>
 /// Every expected size is read out of the shipped materials library, not typed here.
@@ -37,27 +44,39 @@ public class StockToolboxWorkflows
         Assert.True(library.TryFind(StockCategory.SheetGood, "3/4 plywood", out StockItem plywoodItem));
         PanelStock plywood = Assert.IsType<PanelStock>(plywoodItem);
 
-        // A blank sheet, and the toolbox from the keyboard.
+        // A blank sheet, from the keyboard. Nothing has to be opened to reach the stock.
         app.Chord(Key.N);
-        app.Press(Key.M);
 
-        app.Expect("the toolbox is open with one icon per category and no drawer open yet", () =>
+        app.Expect("one icon per category is on the main toolbar, and no drawer is open yet", () =>
         {
-            Assert.True(window.IsShowingToolbox, "the toolbox did not open.");
-            Assert.True(window.StockToolboxControl.IsChecked);
             Assert.Equal(library.Categories, window.Toolbox.CategoryButtons.Keys);
             Assert.Contains(StockCategory.Fastener, window.Toolbox.CategoryButtons.Keys);
+            foreach (ToggleButton icon in window.Toolbox.CategoryButtons.Values)
+            {
+                Assert.True(icon.IsEffectivelyVisible, "a category icon is not on screen.");
+                Assert.Contains(icon, window.ToolControl.GetVisualDescendants());
+            }
+
+            Assert.False(window.IsShowingStockSizes, "a drawer is open before any icon was clicked.");
             Assert.Empty(window.Toolbox.ItemButtons);
         });
 
-        // The lumber drawer, with the pointer.
-        app.Click(CentreOf(window, window.Toolbox.CategoryButtons[StockCategory.DimensionalLumber]));
+        // The lumber drawer, with the pointer, straight off the toolbar.
+        ToggleButton lumberIcon = window.Toolbox.CategoryButtons[StockCategory.DimensionalLumber];
+        app.Click(CentreOf(window, lumberIcon));
 
-        app.Expect("the drawer is a text list of the category's sizes, in the library's order", () =>
+        app.Expect("the drawer drops down under its icon, a text list of the sizes in the library's order", () =>
         {
+            Assert.True(window.IsShowingStockSizes, "the drawer did not open.");
+            Assert.True(lumberIcon.IsChecked);
             Assert.Equal(
                 library.InCategory(StockCategory.DimensionalLumber).Select(item => item.Name),
                 window.Toolbox.ItemButtons.Select(button => button.Content as string));
+
+            Point icon = lumberIcon.TranslatePoint(new Point(0, lumberIcon.Bounds.Height), window)!.Value;
+            Point drawer = window.Toolbox.TranslatePoint(new Point(0, 0), window)!.Value;
+            Assert.True(Math.Abs(drawer.X - icon.X) < 1, $"the drawer is at x {drawer.X}, its icon at {icon.X}.");
+            Assert.True(drawer.Y >= icon.Y, "the drawer is not below its icon.");
         });
 
         // Hover the 2x4 before placing it: its actual size and where that came from.
@@ -77,11 +96,11 @@ public class StockToolboxWorkflows
 
         app.Click(CentreOf(window, twoByFourButton));
 
-        app.Expect("the pointer holds the 2x4 and the toolbox stays open", () =>
+        app.Expect("the pointer holds the 2x4 and the drawer stays open", () =>
         {
             Assert.Same(twoByFour, window.Canvas.ArmedStock);
             Assert.Equal(EditTool.Stock, window.Canvas.Tool);
-            Assert.True(window.IsShowingToolbox);
+            Assert.True(window.IsShowingStockSizes);
             Assert.Empty(window.CurrentDesign!.Sketch.Entities);
         });
 
@@ -113,10 +132,10 @@ public class StockToolboxWorkflows
             Assert.Equal("2x4", window.StockField.Text);
             Assert.Equal(twoByFour.HoverText, window.StockReadoutText);
 
-            // And the pointer is back to Select, with the toolbox still there for the next one.
+            // And the pointer is back to Select, with the drawer still there for the next one.
             Assert.Equal(EditTool.Select, window.Canvas.Tool);
             Assert.Null(window.Canvas.ArmedStock);
-            Assert.True(window.IsShowingToolbox);
+            Assert.True(window.IsShowingStockSizes);
         });
 
         app.SaveFrame("placed-2x4");
@@ -136,11 +155,18 @@ public class StockToolboxWorkflows
                 $"3/4 plywood is at {top.Y} in a drawer {scroller.Bounds.Height} tall.");
         });
 
+        // The sheet-goods drawer hangs under its own icon, further along the toolbar than the
+        // lumber one, so the sheet is dragged out on open paper to the right of it.
         app.Click(CentreOf(window, plywoodButton));
+        Point sheetFrom = At(window, Point2.Inches(4, -2));
+        Rect drawerOnScreen = new(
+            window.Toolbox.TranslatePoint(new Point(0, 0), window)!.Value,
+            window.Toolbox.Bounds.Size);
+        Assert.False(drawerOnScreen.Contains(sheetFrom), "the drag would start on the drawer, not the paper.");
         app.Drag(
-            At(window, Point2.Inches(-4, -2)),
-            At(window, Point2.Inches(2, 2)),
-            At(window, Point2.Inches(8, 6)));
+            sheetFrom,
+            At(window, Point2.Inches(10, 2)),
+            At(window, Point2.Inches(16, 6)));
 
         app.Expect("the second part is a sheet of 3/4 plywood the size it was dragged", () =>
         {
@@ -151,6 +177,7 @@ public class StockToolboxWorkflows
             Assert.Equal(plywood.Thickness.Units, sheet.Part.OutOfPlane.Units);
             Assert.Equal(Length.Inches(12).Units, sheet.Width.Units);
             Assert.Equal(Length.Inches(8).Units, sheet.Height.Units);
+            Assert.Equal(Point2.Inches(4, -2), sheet.Anchor);
             Assert.Equal(sheet.Id, window.Editor.OnlySelected);
 
             // The board placed first is untouched.
@@ -181,10 +208,14 @@ public class StockToolboxWorkflows
             Assert.Equal(2, window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Count());
         });
 
-        // And M again closes the toolbox.
-        app.Press(Key.M);
-        app.Expect("the toolbox closes from the keyboard", () =>
-            Assert.False(window.IsShowingToolbox, "the toolbox did not close."));
+        // Clicking the open drawer's icon again folds it away; the icons stay on the toolbar.
+        app.Click(CentreOf(window, lumberIcon));
+        app.Expect("the drawer closes from its icon, and the category row is still there", () =>
+        {
+            Assert.False(window.IsShowingStockSizes, "the drawer did not close.");
+            Assert.False(lumberIcon.IsChecked);
+            Assert.All(window.Toolbox.CategoryButtons.Values, icon => Assert.True(icon.IsEffectivelyVisible));
+        });
 
         app.SaveFrame("closed");
     });
