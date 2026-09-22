@@ -3,7 +3,7 @@
   "scene": "wall-with-window.scene.json",
   "design": "wall-with-window.design.md",
   "derivedBy": "hand, from the stated dimensions in wall-with-window.design.md; never regenerated from napkin's output",
-  "formatVersion": 2,
+  "formatVersion": 3,
   "unitsPerInch": 1024,
 
   "counts": { "layers": 1, "entities": 7, "boxes": 2, "dimensions": 5, "relationships": 8 },

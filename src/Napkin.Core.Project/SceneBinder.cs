@@ -339,6 +339,7 @@ internal sealed class SceneBinder
         long? height = ReadInteger(fields, SceneNames.Height);
         long? rotation = ReadInteger(fields, SceneNames.Rotation);
         (bool partRead, Part? part) = ReadPart(fields);
+        (bool cutsRead, ImmutableList<Cut> cuts) = ReadCuts(fields);
 
         if (width is { } w && w <= 0)
         {
@@ -369,9 +370,213 @@ internal sealed class SceneBinder
             rotation = null;
         }
 
-        return anchor is { } corner && width is { } wide && height is { } tall && rotation is { } turn && partRead
-            ? new Box(id, layer, corner, new Length(wide), new Length(tall), new Angle(turn)) { Part = part }
+        return anchor is { } corner && width is { } wide && height is { } tall && rotation is { } turn
+            && partRead && cutsRead
+            ? new Box(id, layer, corner, new Length(wide), new Length(tall), new Angle(turn))
+            {
+                Part = part,
+                Cuts = cuts,
+            }
             : null;
+    }
+
+    /// <summary>
+    /// Reads a box's <c>cuts</c>, which is required and is empty for a plain rectangle
+    /// (<c>docs/design/shaped-parts-model.md</c> §5).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Only what the file alone can be wrong about is judged here: an unknown <c>kind</c>, a
+    /// corner, edge or <c>bow</c> the format does not spell, a value that is not a positive
+    /// integer, and the array's order. Invariants 5 to 9 — one cut per site, a curve's claim on
+    /// its corners, whether a cut fits the blank it is on — belong to the geometry kernel's cut
+    /// rules and are checked where every other sketch invariant is, by the
+    /// <see cref="Sketch.Validate"/> this reader already runs; there is no second copy of them
+    /// here to drift.
+    /// </para>
+    /// <para>
+    /// <strong>The order is judged, not fixed.</strong> <see cref="Box.Cuts"/>'s initialiser sorts,
+    /// so a file out of site order would load as a sketch that no longer equals it; it is refused
+    /// instead, the same stance the format takes on an un-normalised rotation.
+    /// </para>
+    /// </remarks>
+    /// <returns>
+    /// Whether the field was read without a problem, and the cuts it held — which are empty both
+    /// for a well-formed <c>"cuts": []</c> and for a refusal, so the flag is what tells them apart.
+    /// </returns>
+    private (bool Read, ImmutableList<Cut> Cuts) ReadCuts(JsonFields fields)
+    {
+        int before = problems.Count;
+        ImmutableList<Cut>.Builder cuts = ImmutableList.CreateBuilder<Cut>();
+        CutSite? previous = null;
+        bool saidSo = false;
+
+        foreach ((JsonElement element, string path) in ReadArray(fields, SceneNames.Cuts))
+        {
+            JsonFields? cut = ReadFields(element, path, "a cut");
+            if (cut is null)
+            {
+                continue;
+            }
+
+            string? kind = ReadText(cut, SceneNames.Kind);
+            Cut? read = kind switch
+            {
+                null => null,
+                SceneNames.CornerCut => ReadCornerCut(cut),
+                SceneNames.RoundedCorner => ReadRoundedCorner(cut),
+                SceneNames.CurvedEdge => ReadCurvedEdge(cut),
+                _ => UnknownCutKind(cut, kind),
+            };
+
+            RejectUnknownFields(cut);
+
+            if (read is null)
+            {
+                continue;
+            }
+
+            // Strictly out of order is a refusal; a site repeated is not reported here, so that
+            // it falls through to CutRules as the duplicate site it is (invariant 5).
+            if (!saidSo && previous is { } last && last > read.Site)
+            {
+                Add(
+                    LoadProblemKind.InvalidValue,
+                    path,
+                    $"A box's cuts are stored in site order — {SceneNames.List(SceneNames.Sites)} — so that a "
+                    + "file has one spelling of one shape. This one's cut at the "
+                    + $"{read.Site} follows its cut at the {last}. A file out of order is refused rather than "
+                    + "quietly sorted, the way an un-normalised rotation is.");
+                saidSo = true;
+            }
+
+            previous = read.Site;
+            cuts.Add(read);
+        }
+
+        return problems.Count > before ? (false, ImmutableList<Cut>.Empty) : (true, cuts.ToImmutable());
+    }
+
+    private Cut? UnknownCutKind(JsonFields fields, string kind)
+    {
+        Add(
+            LoadProblemKind.UnknownValue,
+            $"{fields.Path}/{SceneNames.Kind}",
+            $"\"{kind}\" is not a kind of cut this build knows. The kinds are: {SceneNames.List(SceneNames.CutKinds)}.");
+        return null;
+    }
+
+    private Cut? ReadCornerCut(JsonFields fields)
+    {
+        BoxCorner? corner = ReadCutCorner(fields);
+        Length? alongX = ReadCutValue(fields, SceneNames.AlongX);
+        Length? alongY = ReadCutValue(fields, SceneNames.AlongY);
+
+        return corner is { } which && alongX is { } across && alongY is { } up
+            ? new CornerCut(which, across, up)
+            : null;
+    }
+
+    private Cut? ReadRoundedCorner(JsonFields fields)
+    {
+        BoxCorner? corner = ReadCutCorner(fields);
+        Length? radius = ReadCutValue(fields, SceneNames.CutRadius);
+
+        return corner is { } which && radius is { } round ? new RoundedCorner(which, round) : null;
+    }
+
+    private Cut? ReadCurvedEdge(JsonFields fields)
+    {
+        BoxEdge? edge = ReadCutEdge(fields);
+        Bow? bow = ReadBow(fields);
+        Length? depth = ReadCutValue(fields, SceneNames.Depth);
+
+        return edge is { } which && bow is { } way && depth is { } deep ? new CurvedEdge(which, way, deep) : null;
+    }
+
+    private BoxCorner? ReadCutCorner(JsonFields fields)
+    {
+        string? text = ReadText(fields, SceneNames.Corner);
+        if (text is null)
+        {
+            return null;
+        }
+
+        if (!SceneNames.TryCorner(text, out BoxCorner corner))
+        {
+            Add(
+                LoadProblemKind.UnknownValue,
+                $"{fields.Path}/{SceneNames.Corner}",
+                $"\"{text}\" is not a corner. The corners are: southWest, southEast, northEast, northWest.");
+            return null;
+        }
+
+        return corner;
+    }
+
+    private BoxEdge? ReadCutEdge(JsonFields fields)
+    {
+        string? text = ReadText(fields, SceneNames.Edge);
+        if (text is null)
+        {
+            return null;
+        }
+
+        if (!SceneNames.TryEdge(text, out BoxEdge edge))
+        {
+            Add(
+                LoadProblemKind.UnknownValue,
+                $"{fields.Path}/{SceneNames.Edge}",
+                $"\"{text}\" is not an edge. The edges are: south, east, north, west.");
+            return null;
+        }
+
+        return edge;
+    }
+
+    private Bow? ReadBow(JsonFields fields)
+    {
+        string? text = ReadText(fields, SceneNames.Bow);
+        if (text is null)
+        {
+            return null;
+        }
+
+        if (!SceneNames.TryBow(text, out Bow bow))
+        {
+            Add(
+                LoadProblemKind.UnknownValue,
+                $"{fields.Path}/{SceneNames.Bow}",
+                $"\"{text}\" is not a way for an edge to bow. The ways are: {SceneNames.List(SceneNames.Bows)}.");
+            return null;
+        }
+
+        return bow;
+    }
+
+    /// <summary>
+    /// One of a cut's stored lengths. Every one of them is how far the cut reaches into the blank,
+    /// so zero and negative are refused here; whether it reaches too far is invariant 7's business.
+    /// </summary>
+    private Length? ReadCutValue(JsonFields fields, string name)
+    {
+        long? value = ReadInteger(fields, name);
+        if (value is not { } units)
+        {
+            return null;
+        }
+
+        if (units <= 0)
+        {
+            Add(
+                LoadProblemKind.InvalidValue,
+                $"{fields.Path}/{name}",
+                $"A cut's \"{name}\" is how far it reaches into the blank and must be greater than zero; "
+                + $"this one is {units.ToString(CultureInfo.InvariantCulture)} units.");
+            return null;
+        }
+
+        return new Length(units);
     }
 
     /// <summary>

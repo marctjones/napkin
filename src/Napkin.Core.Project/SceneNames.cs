@@ -66,6 +66,22 @@ internal static class SceneNames
     internal const string PartWidth = "width";
     internal const string PartThickness = "thickness";
 
+    // The cuts on a box's blank (format version 3). "corner" and "edge" are the names a reference
+    // already uses for the same things, and "radius" is the relationship kind's spelling reused
+    // for the value a rounded corner stores — one spelling per word, as "length" is both a unit
+    // and a part's dimension.
+    internal const string Cuts = "cuts";
+    internal const string CornerCut = "cornerCut";
+    internal const string RoundedCorner = "roundedCorner";
+    internal const string CurvedEdge = "curvedEdge";
+    internal const string AlongX = "alongX";
+    internal const string AlongY = "alongY";
+    internal const string CutRadius = "radius";
+    internal const string Depth = "depth";
+    internal const string Bow = "bow";
+    internal const string Outward = "outward";
+    internal const string Inward = "inward";
+
     // Corners, edges and sides, in the box's own local frame.
     internal const string SouthWest = "southWest";
     internal const string SouthEast = "southEast";
@@ -124,6 +140,18 @@ internal static class SceneNames
     /// <summary>The three names a part's plan axis can carry, for a message that lists them.</summary>
     internal static readonly string[] PartDimensions = [PartLength, PartWidth, PartThickness];
 
+    /// <summary>Every kind of cut the format spells out, for a message that lists them.</summary>
+    internal static readonly string[] CutKinds = [CornerCut, CurvedEdge, RoundedCorner];
+
+    /// <summary>The two ways a curved edge bows, for a message that lists them.</summary>
+    internal static readonly string[] Bows = [Outward, Inward];
+
+    /// <summary>
+    /// The eight sites a cut can be at, in the fixed order <see cref="CutSite"/> sorts them and a
+    /// box's <c>cuts</c> array is written in, for a message that says what the order is.
+    /// </summary>
+    internal static readonly string[] Sites = [SouthWest, SouthEast, NorthEast, NorthWest, South, East, North, West];
+
     /// <summary>Every relationship kind the format spells out, for a message that lists them.</summary>
     internal static readonly string[] RelationshipKinds =
     [
@@ -163,6 +191,16 @@ internal static class SceneNames
             case North: edge = Geometry.BoxEdge.North; return true;
             case West: edge = Geometry.BoxEdge.West; return true;
             default: edge = default; return false;
+        }
+    }
+
+    internal static bool TryBow(string text, out Geometry.Bow bow)
+    {
+        switch (text)
+        {
+            case Outward: bow = Geometry.Bow.Outward; return true;
+            case Inward: bow = Geometry.Bow.Inward; return true;
+            default: bow = default; return false;
         }
     }
 
@@ -216,6 +254,13 @@ internal static class SceneNames
         Geometry.BoxEdge.North => North,
         Geometry.BoxEdge.West => West,
         _ => throw Unknown(nameof(edge), edge),
+    };
+
+    internal static string Of(Geometry.Bow bow) => bow switch
+    {
+        Geometry.Bow.Outward => Outward,
+        Geometry.Bow.Inward => Inward,
+        _ => throw Unknown(nameof(bow), bow),
     };
 
     internal static string Of(PartDimension dimension) => dimension switch

@@ -24,7 +24,8 @@ public sealed class SceneReaderRejectionTests
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
-    [InlineData(3)]
+    [InlineData(2)]
+    [InlineData(4)]
     [Trait("Feature", "PRJ-004")]
     public void A_file_from_another_format_version_fails_before_the_scene_is_parsed(int version)
     {
@@ -54,7 +55,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_file_with_no_version_stamp_is_refused()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 2,", string.Empty),
+            Scenes.OneBox.With("\"formatVersion\": 3,", string.Empty),
             LoadProblemKind.MissingField,
             "formatVersion");
 
@@ -62,7 +63,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_text_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 2", "\"formatVersion\": \"2\""),
+            Scenes.OneBox.With("\"formatVersion\": 3", "\"formatVersion\": \"2\""),
             LoadProblemKind.Malformed,
             "formatVersion");
 
@@ -70,7 +71,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_a_decimal_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 2", "\"formatVersion\": 2.0"),
+            Scenes.OneBox.With("\"formatVersion\": 3", "\"formatVersion\": 3.0"),
             LoadProblemKind.NotAnInteger,
             "formatVersion");
 
@@ -101,7 +102,7 @@ public sealed class SceneReaderRejectionTests
             "colour");
 
         Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 2,", "\"formatVersion\": 2, \"author\": \"someone\","),
+            Scenes.OneBox.With("\"formatVersion\": 3,", "\"formatVersion\": 3, \"author\": \"someone\","),
             LoadProblemKind.UnknownField,
             "author");
 
@@ -335,8 +336,9 @@ public sealed class SceneReaderRejectionTests
     [Theory]
     [InlineData("\"name\": \"Shelf\",", "name")]
     [InlineData("\"part\": ", "part")]
+    [InlineData("\"cuts\": ", "cuts")]
     [Trait("Feature", "CUT-001")]
-    public void A_name_and_a_part_are_required_on_a_box(string original, string named)
+    public void A_name_a_part_and_a_cut_list_are_required_on_a_box(string original, string named)
         => Scenes.RefuseWith(
             Scenes.OneBox.With(original, original.Replace(named, $"{named}Of", StringComparison.Ordinal)),
             LoadProblemKind.MissingField,

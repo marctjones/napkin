@@ -33,12 +33,21 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
 
     /// <summary>The format version this build writes, and the only one it reads.</summary>
     /// <remarks>
+    /// <para>
     /// Version 2 added a <c>name</c> to every entity and a <c>part</c> to every box, which is what
     /// a cut list needs and a plan view cannot hold (<c>docs/design/parts-and-cut-list.md</c> §2).
     /// A version-1 file is refused, including one this repository committed: the beta policy has
     /// no converter in it.
+    /// </para>
+    /// <para>
+    /// Version 3 added a <c>cuts</c> array to every box, which is what a part that is not a plain
+    /// rectangle needs (<c>docs/design/shaped-parts-model.md</c> §5). Every version-2 file is
+    /// refused, including the two this repository committed until they were rewritten in the same
+    /// change; a box with no cuts writes <c>"cuts": []</c>, because the format has no optional
+    /// fields.
+    /// </para>
     /// </remarks>
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);

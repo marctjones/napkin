@@ -1,5 +1,5 @@
 {
-  "formatVersion": 2,
+  "formatVersion": 3,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [
     { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" }
@@ -8,11 +8,11 @@
     { "id": "30000000-0000-4000-8000-000000000001", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall",
       "anchor": { "x": 0, "y": 0 }, "width": 147456, "height": 5632, "rotation": 0,
-      "part": null },
+      "part": null, "cuts": [] },
     { "id": "30000000-0000-4000-8000-000000000002", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Opening",
       "anchor": { "x": 55296, "y": 0 }, "width": 36864, "height": 5632, "rotation": 0,
-      "part": null },
+      "part": null, "cuts": [] },
 
     { "id": "30000000-0000-4000-8000-000000000003", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall length",
