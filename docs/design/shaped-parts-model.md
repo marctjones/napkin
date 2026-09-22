@@ -907,7 +907,13 @@ the blank's sizes, never sample and hope):
   positive.
 - **P12 — cuts are invisible to propagation.** For every sketch S and request R that is not a
   `SetCut`/`RemoveCut`, applying R to S and to S-with-all-cuts-removed gives results whose blanks
-  are identical, unless the cut result is `Rejected(CutDoesNotFit)`.
+  are identical, unless the cut result is `Rejected(CutDoesNotFit)`. **`DragEdge` is excluded**
+  (found landing step 3): it is already a best-effort request that clamps its delta at other
+  existing limits (§2.3), and §2.3 has it clamp at what a cut claims too, rather than reject — so
+  a cut can make a `DragEdge` on the cut-bearing sketch apply a *smaller* delta than the same
+  request on the cuts-removed sketch, both `Solved`. That is §2.3's own stated behavior for
+  `DragEdge`, not a hole in this property; P12 as written only ever meant it for the exact-request
+  path.
 - **P13 — a successful resize leaves every cut fitting** (invariants 7–9 hold on the result).
 - **P10 (undo)** holds for `SetCut`/`RemoveCut` without change: each result is a whole new
   `Sketch`.
