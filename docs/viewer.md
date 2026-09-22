@@ -1,9 +1,9 @@
 # The viewer
 
-napkin's first window (issue #36, milestone **M1 Look**): it draws a design in plan view and lets
-you move around it. Nothing in it edits anything — there is no tool, no handle and no save. That is
-the whole of M1 on purpose: the drawing and the navigation have to feel right before anything is
-allowed to change the model.
+napkin's first window (issue #36, milestone **M1 Look**): it opens a design file and draws it in
+plan view, and lets you move around it. Nothing in it edits anything — there is no tool, no handle
+and no save. That is the whole of M1 on purpose: the drawing and the navigation have to feel right
+before anything is allowed to change the model.
 
 ![The coffee-table sample](screenshots/m1-coffee-table.png)
 
@@ -14,13 +14,20 @@ dotnet run --project src/Napkin.App
 ```
 
 It opens on the coffee-table sample, framed to fit. There is nothing to install and nothing to
-configure; the samples ship inside the build.
+configure; the sample files ship inside the build.
 
 ## What you are looking at
 
-- **Parts** are drawn as outlined, lightly filled rectangles, named where the name fits. A wall is
-  a thicker grey rectangle; an opening cut into one is drawn dashed, in the colour of the paper,
-  because it is a hole rather than a part.
+- **Parts** are drawn as outlined, lightly filled rectangles. How one is filled and outlined is
+  chosen by the *name of the layer it is on* — a part on "Parts" gets the furniture look, "Wall"
+  gets a thicker grey rectangle, "Opening" gets a dashed hole in the colour of the paper. Both
+  sample files put everything on one layer called "Default", so everything in them draws in the
+  neutral style; a file with those layer names in it gets those looks, and a file with layers
+  napkin has never heard of still draws.
+- **No names are drawn on parts.** The M1 scene format stores ids, geometry and relationships and
+  no name per entity, so a design read from a file has nothing to write on a leg. The canvas can
+  draw a name the moment a file carries one (`Design.Labels`), which is a new field and a
+  `formatVersion` bump the cut list (#8) will want; see [file-format.md](file-format.md).
 - **Dimensions** are real dimension graphics — extension lines, a dimension line with arrowheads,
   and the value centred on it — not floating text. The value is computed from the geometry the
   dimension measures, every time it is drawn, and formatted as feet, inches and sixteenths by
@@ -38,6 +45,7 @@ configure; the samples ship inside the build.
 
 | Gesture | What it does |
 |---|---|
+| **Ctrl/Cmd + O** | Open a scene file. |
 | **Wheel** | Zoom about the pointer. The model point under the cursor stays under it. |
 | **Shift + wheel** | Pan. A trackpad reports both axes, so it pans in both. |
 | **Drag**, left or middle button | Pan. The drawing follows the hand. |
@@ -45,6 +53,7 @@ configure; the samples ship inside the build.
 | **+** / **-** | Zoom in and out about the centre of the window. |
 | **Ctrl/Cmd + 0** | Zoom to fit: frame everything, dimension lines included, with a margin. |
 | **Ctrl/Cmd + 1**, **Ctrl/Cmd + 2** | Open the first or second sample. |
+| **Escape** | Dismiss a refusal message. |
 
 Left-drag pans because M1 has nothing to select. When editing lands (#10) the left button becomes
 the selection gesture and panning keeps the middle button; the wheel and the keyboard do not
@@ -56,11 +65,47 @@ Zoom is limited at both ends — from an inch drawn at a fiftieth of a pixel, wh
 
 ## The status line
 
-Three things, left to right: which sample is open and what it is, where the pointer is in the
-model as feet, inches and sixteenths, and the zoom as a percentage of life size (100% is a model
-inch drawn at 96 pixels, Avalonia's device-independent inch). The pointer readout is marked `≈`
-whenever the pixel it is over does not land exactly on a sixteenth — which is most of the time, and
-is the point of the marker.
+Three things, left to right: which design is open, which file it came from, and what it is; where
+the pointer is in the model as feet, inches and sixteenths; and the zoom as a percentage of life
+size (100% is a model inch drawn at 96 pixels, Avalonia's device-independent inch). The pointer
+readout is marked `≈` whenever the pixel it is over does not land exactly on a sixteenth — which is
+most of the time, and is the point of the marker.
+
+## Opening a file
+
+**File → Open…**, or **Ctrl/Cmd + O**, opens the platform's file dialog filtered to `*.scene.json`
+and `*.json`, and reads whatever is chosen with `Napkin.Core.Project`'s `SceneReader` — the same
+reader, with the same strictness, that the samples go through. A file that opens is shown, framed
+to fit, with its name in the window title and on the status line. Cancelling the dialog changes
+nothing at all.
+
+The dialog itself sits behind a one-method seam (`ISceneFilePicker`), because a native file dialog
+is the one part of this path a headless test cannot drive; everything after it — the shortcut, the
+command, the reader, the refusal, the canvas — is exercised for real by the GUI workflows.
+
+### When a file is refused
+
+![A file the viewer refused](screenshots/m1-refusal.png)
+
+The reader refuses rather than repairs (#6): a missing, empty or garbled file, a `formatVersion`
+this build does not read, an unknown field, a decimal length, an id that names nothing, a
+relationship kind this build's updater cannot hold. It reports **a list** of what was wrong, not
+one line, and the viewer shows the whole list in a panel over the drawing. **Escape, or a click on
+the message, dismisses it.**
+
+Two promises are worth stating because they are what the panel is for:
+
+- **Every problem is shown**, not the first. A file with four things wrong with it says four
+  things. (The reader works in stages and stops after the first stage that found anything, so a
+  file can still report fewer problems than it has faults — an unknown field is found before a
+  dangling id is looked for. What it reports, the panel shows in full.)
+- **The drawing you had is exactly as you left it**: the same sketch, the same view transform, the
+  same title and the same status line. The design is loaded before anything on screen is touched,
+  so there is no partly-opened state for a failure to leave behind, and the refusal panel floats
+  over the canvas rather than docking beside it so that showing it cannot even change the viewport.
+
+Nothing on this path throws: a reader that somehow threw, and a file dialog that failed, both end
+up in the same panel rather than in a crash.
 
 ## The samples
 
@@ -68,27 +113,39 @@ is the point of the marker.
 
 Two drawings, in the **Samples** menu:
 
-- **Coffee table** — a 4′-0″ × 1′-8″ top, four 2½″ legs inset 1″ from the edges, and four ¾″
-  aprons set back from the legs' outer faces.
-- **Wall with window** — 12′-0″ of 2×4 wall, 3½″ thick, with a 3′-0″ opening 4′-2½″ from the end,
-  framed by jack and king studs.
+- **Coffee table** — a 4′-0″ × 2′-0″ top, four 2½″ legs inset 1½″ from the edges, and four ¾″
+  aprons flush with the legs' outer faces.
+- **Wall with window** — 12′-0″ of 5½″ wall with a 3′-0″ opening centred in it, 4′-6″ of wall
+  either side.
 
-They are built in code, through the `Core.Geometry` API, behind `IDesignSource`
-(`src/Napkin.App/Designs/`). Every number in them is a real shop or framing number and lands
-exactly on the 1/1024″ grid; nothing in either sample rounds.
+**They are the files in [`samples/`](../samples/README.md)** — the same bytes
+`tests/Napkin.Core.Project.Tests` checks the reader against, copied into the build output and into
+a `dotnet publish` layout by a `Content` item in `src/Napkin.App/Napkin.App.csproj`. The Samples
+menu opens them through `SceneReader` like any other file; there is no second, in-code copy of a
+sample. There was until this change, because the viewer, the reader and the sample files were
+written in parallel; two hand-computed copies of the same drawing is one more than can be kept
+honest, and the copy that had no file behind it is the one that went.
 
-**Opening a file** is the menu item that is deliberately disabled. The scene reader is #6 and the
-sample files are #37, both in flight beside this viewer; when they land, a file source implements
-the same `IDesignSource` interface, `File → Open…` is enabled, and nothing in the canvas changes.
-A source that refuses a file already has its path through the window: the message names what was
-wrong and whatever is on screen is left untouched.
+Every number in them is a real shop or framing number, lands exactly on the 1/1024″ grid, and is
+derived by hand in the fixture's `*.design.md` and `*.expected.json`. Nothing in either sample
+rounds.
+
+The only thing about a sample that is *not* in its file is the title and the one-line blurb the
+menu and the status line show, and that is because the format stores no name for a drawing either.
+Those live in `SampleFiles.Catalogue`. A scene file dropped into `samples/` that nobody catalogued
+is still offered, under a title made from its file name.
 
 ## How it is tested
 
 - The transform arithmetic — world/screen round trips, zoom about a cursor, fit-to-extents, the
-  zoom limits — and the dimension labels are unit tests in
-  `tests/Napkin.App.GuiTests/Unit/`.
+  zoom limits — the dimension labels, and what `FileDesignSource` does with a missing, empty,
+  garbled, wrong-version or dangling-reference file are unit tests in
+  `tests/Napkin.App.GuiTests/Unit/`. The label expectations are read from each fixture's
+  `samples/*.expected.json` rather than typed out, so the viewer and the reader are held to one set
+  of hand-derived numbers.
 - The gestures are GUI workflows in `tests/Napkin.App.GuiTests/Workflows/ViewerWorkflows.cs`,
-  which drive the real window with simulated keyboard and mouse input on the headless platform.
-  See [gui-automation.md](testing/gui-automation.md).
+  which drive the real window with simulated keyboard and mouse input on the headless platform —
+  including `GUI-VIEW-05`, which opens two bad files through the real shortcut, dismisses each
+  refusal (once with Escape, once with the mouse), checks that the drawing and the view never
+  moved, and then opens a good one. See [gui-automation.md](testing/gui-automation.md).
 - The screenshots on this page are frames those workflows rendered.

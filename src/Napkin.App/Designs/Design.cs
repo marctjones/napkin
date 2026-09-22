@@ -20,7 +20,10 @@ namespace Napkin.App.Designs;
 /// </remarks>
 /// <param name="Name">What this drawing is called, in the window title and the status bar.</param>
 /// <param name="Sketch">The geometry.</param>
-/// <param name="Labels">Names for the entities that have one; entities may be missing from it.</param>
+/// <param name="Labels">
+/// Names for the entities that have one; entities may be missing from it, and a design read from a
+/// file has none at all because the M1 scene format stores no name per entity.
+/// </param>
 public sealed record Design(
     string Name,
     Sketch Sketch,
@@ -34,24 +37,23 @@ public sealed record Design(
     public string? LabelFor(EntityId id) => Labels.TryGetValue(id, out string? label) ? label : null;
 }
 
-/// <summary>Something the viewer can open: a built-in sample today, a file tomorrow.</summary>
+/// <summary>Something the viewer can open.</summary>
 /// <remarks>
 /// <para>
-/// The seam exists so that wiring <em>File &#x2192; Open&#x2026;</em> to the project reader (#6) is
-/// one new implementation of this interface and one menu item, with nothing in the canvas or the
-/// window touched. M1's samples are built in code because the reader and the sample files are being
-/// written in parallel (#37); they are hand-computed either way, and the arithmetic in
-/// <see cref="Samples.BuiltInDesigns"/> is the same arithmetic the fixtures state.
+/// Every source in M1 is a scene file read by <see cref="Napkin.Core.Project.SceneReader"/> — the
+/// two shipped samples and anything a person picks through <em>File &#x2192; Open&#x2026;</em> go
+/// through the same <see cref="FileDesignSource"/> and the same reader, so there is one way for a
+/// drawing to reach the canvas and one place where a bad file is refused.
 /// </para>
 /// <para>
-/// <see cref="Load"/> is allowed to fail: a file source will throw
-/// <see cref="DesignLoadException"/> when the reader refuses the file, and the window shows the
-/// message while leaving whatever is already on screen untouched.
+/// <see cref="Load"/> is allowed to fail: the source throws <see cref="DesignLoadException"/> when
+/// the reader refuses the file, and the window shows every problem while leaving whatever is
+/// already on screen untouched.
 /// </para>
 /// </remarks>
 public interface IDesignSource
 {
-    /// <summary>What to call this design in the menu.</summary>
+    /// <summary>What to call this design in the menu, the window title and the status bar.</summary>
     string Name { get; }
 
     /// <summary>One line about what it is, for the status bar.</summary>
@@ -62,18 +64,42 @@ public interface IDesignSource
     Design Load();
 }
 
-/// <summary>A design could not be opened, with a message naming what was wrong.</summary>
+/// <summary>A design could not be opened, with every reason it was refused.</summary>
+/// <remarks>
+/// The reader reports a list of problems, not one line (see
+/// <see cref="Napkin.Core.Project.Refused"/>), and the window shows the whole list. Carrying
+/// <see cref="Problems"/> beside <see cref="Exception.Message"/> is what lets it: the message is
+/// the summary a log wants, and the list is what a person reads.
+/// </remarks>
 public sealed class DesignLoadException : Exception
 {
     /// <inheritdoc cref="DesignLoadException"/>
     public DesignLoadException(string message)
-        : base(message)
+        : this(message, [message])
     {
     }
 
     /// <inheritdoc cref="DesignLoadException"/>
-    public DesignLoadException(string message, Exception innerException)
-        : base(message, innerException)
+    /// <param name="message">The whole refusal, on as many lines as it takes.</param>
+    /// <param name="problems">
+    /// One readable line per thing that was wrong. Never empty: a refusal with no reason in it
+    /// would be exactly the silent failure this type exists to prevent.
+    /// </param>
+    public DesignLoadException(string message, IEnumerable<string> problems)
+        : base(message)
     {
+        ArgumentNullException.ThrowIfNull(problems);
+        Problems = [.. problems];
+        if (Problems.IsEmpty)
+        {
+            Problems = [message];
+        }
     }
+
+    /// <inheritdoc cref="DesignLoadException"/>
+    public DesignLoadException(string message, Exception innerException)
+        : base(message, innerException) => Problems = [message];
+
+    /// <summary>Everything that was wrong, one readable line each.</summary>
+    public ImmutableArray<string> Problems { get; }
 }

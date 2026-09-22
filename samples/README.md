@@ -57,28 +57,43 @@ after re-doing the arithmetic by hand and writing the new derivation down.
 
 ## Opening these in the app
 
-The viewer (#36) builds its M1 samples in code, because the reader and these files were written in
-parallel. Wiring it to open these instead is one implementation of its own `IDesignSource`:
+**These files are the viewer's samples.** The viewer (#36) built its own copies in code while the
+reader and these files were being written in parallel; it does not any more. `src/Napkin.App`
+copies `samples/*.scene.json` into its build output and into a `dotnet publish` layout with a
+`Content` item, and its Samples menu opens them through `FileDesignSource`, which is one
+implementation of `IDesignSource` over `SceneReader`:
 
 ```csharp
 LoadResult result = SceneReader.ReadFile(path);          // Napkin.Core.Project
 return result switch
 {
     Loaded loaded => Design.Unlabelled(name, loaded.Sketch),
-    Refused refused => throw new DesignLoadException(refused.Summary),
+    Refused refused => throw new DesignLoadException(
+        refused.Summary,
+        refused.Problems.Select(problem => problem.ToString())),
     _ => throw new InvalidOperationException(),
 };
 ```
 
-`Refused.Summary` is written to be shown to a person as it is: one line per problem, each naming
-the field, id, kind or value that was wrong.
+`Refused.Summary` is written to be shown to a person as it is, and `Refused.Problems` is the same
+thing line by line: the viewer lists every one of them in a panel over the drawing, which is
+`GUI-VIEW-05`. A file dialog on a machine that has never seen this repository therefore opens the
+same bytes this directory holds.
 
-Issue #37 also asks that these fixtures ship inside the app build, so the file dialog can open them
-on a machine that has never seen this repository. That is a `Content` item over
-`samples/*.scene.json` with `CopyToOutputDirectory` in `src/Napkin.App/Napkin.App.csproj`, which
-belongs to the viewer; it is not done here.
+**The expectations are the viewer's too.** `tests/Napkin.App.GuiTests` reads each fixture's
+`*.expected.json` for the dimension strings its workflows assert and for the positions its parts
+must be drawn at, so one set of hand-derived numbers is what both the reader and the viewer are
+held to. It reads them from here, in the repository, rather than from the build output: they are
+the answers, not something the application ships.
 
 **Entities carry no name.** `Design.Labels` — the viewer's part names — has nothing to read from
-the file: the format stores ids, geometry and relationships only. The names in these fixtures live
-in their `*.expected.json`. Putting a name in the scene file is a new field and a `formatVersion`
-bump, which the cut list (#8) may well want; see `docs/file-format.md`.
+the file: the format stores ids, geometry and relationships only, so a design opened from one of
+these files is drawn with no name on any part. The names in these fixtures live in their
+`*.expected.json`. Putting a name in the scene file is a new field and a `formatVersion` bump,
+which the cut list (#8) may well want; see `docs/file-format.md`.
+
+**Layers are named "Default".** The viewer styles a part by the name of the layer it is on — a
+part on "Parts" is drawn as furniture, one on "Wall" as a wall, one on "Opening" as a dashed hole —
+so everything in these two fixtures draws in the neutral style. Giving the coffee table's layer the
+name "Parts", and splitting the wall's into "Wall" and "Opening", would be a change to these
+fixtures rather than to the viewer, and is #37's to make.
