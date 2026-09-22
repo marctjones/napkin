@@ -120,12 +120,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: CUT-007 — Sheet-goods nesting reports the sheets a project needs")]
-    [Trait("Feature", "CUT-007")]
-    public void CUT_007()
-    {
-    }
-
     [Fact(Skip = "planned: CVS-005 — Every edit goes through the update interface")]
     [Trait("Feature", "CVS-005")]
     public void CVS_005()
@@ -312,12 +306,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: IOP-004 — No proprietary import dependency enters without a recorded decision")]
-    [Trait("Feature", "IOP-004")]
-    public void IOP_004()
-    {
-    }
-
     [Fact(Skip = "planned: MAT-001 — Nominal lumber resolves to actual dimensions")]
     [Trait("Feature", "MAT-001")]
     public void MAT_001()
@@ -360,21 +348,9 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: PRJ-005 — The manifest records what the file means")]
-    [Trait("Feature", "PRJ-005")]
-    public void PRJ_005()
-    {
-    }
-
     [Fact(Skip = "planned: PRJ-006 — The project is a documented zip container")]
     [Trait("Feature", "PRJ-006")]
     public void PRJ_006()
-    {
-    }
-
-    [Fact(Skip = "planned: PRJ-007 — Save then load is an identity")]
-    [Trait("Feature", "PRJ-007")]
-    public void PRJ_007()
     {
     }
 

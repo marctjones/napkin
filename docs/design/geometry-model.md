@@ -601,12 +601,51 @@ derivation, so any attempt to move them is a contradiction with a nameable cause
    result), and return `Solved` with the `ChangeSet`.
 
 **The anchor rule for resizing.** When a box's width or height changes, which side moves? The
-box's `Anchor` corner stays put and the opposite side moves, *unless* a relationship pins the
-opposite side (a `Coincident` or `Flush` to something that is anchored or already assigned) and
-nothing pins the anchor side, in which case the anchor moves and the far side stays. If both sides
-are pinned, the resize is a contradiction and the report names both pins. This is a fixed,
-explainable rule rather than a "least movement" heuristic, and it is what the tests in §7 pin
-down.
+box's `Anchor` corner stays put and the opposite side moves, *unless* something pins the opposite
+side and nothing pins the anchor side, in which case the anchor moves and the far side stays. If
+both sides are pinned, the resize is a contradiction and the report names both pins. This is a
+fixed, explainable rule rather than a "least movement" heuristic, and it is what the tests in §7
+pin down.
+
+**What "pinned" means, and how far it reaches.** A scalar — a box's anchor X or Y, a node's X or
+Y — is *pinned* once the update has assigned it: by an `Anchored`, by the request's own seed, or
+by an earlier step of this same propagation. A *side* of a relationship is pinned when a scalar it
+is built on is. Two rules carry that along a chain, which is what #49 needed and what "to
+something that is anchored or already assigned" was too narrow to say:
+
+- **A relationship that already holds still passes its pin on.** If one side is pinned and the
+  other is not, the free side is assigned the value it already has. So a part held by an anchor
+  two or three parts away is pinned just as firmly as one anchored itself, and a bookcase — A, B
+  and C flush in a row, C anchored, A dimensioned — grows A to the west and leaves B and C where
+  they are, instead of reporting a conflict on a solvable sketch.
+- **A relationship with two unpinned sides moves nothing.** With no pin on either side there is no
+  reason to prefer one over the other, and choosing anyway is what made the answer depend on
+  relationship ids and on which way round a relationship was written.
+
+**The tie-break: which part keeps its anchor when nothing is pinned.** A chain that no pin reaches
+has one degree of freedom left per axis — the whole chain can slide — so exactly one scalar in it
+has to stay put, and everything else follows from it. It is chosen once, after the worklist has
+run, by *distance from the request*: the number of relationships a change in that part's size came
+through. A size the request set itself is distance 0; a size an `EqualParam` copied from it is 1;
+another `EqualParam` further on is 2; a part whose size did not change at all is infinitely far.
+**The nearest part keeps its anchor.** This is the anchor rule again, generalised from one box to
+a row: the part whose dimension the user typed stays where it is, the parts that were resized only
+because the change was passed on to them give way to it, and parts that were not resized give way
+to both. So three equal-width parts in a row, with the first one's width set from 10″ to 20″,
+become 20″ parts starting where the first one already started, growing east.
+
+Distance does not depend on ids or on argument order, so neither does the answer. Only a tie falls
+back to the order of the sketch — the first side of the lowest-numbered unsatisfied relationship
+stays — and a tie means the request cannot tell the candidates apart. That fallback is also what
+keeps the two seeding rules above true: `AddRelationship(Coincident(p, q))` changes no size, so
+both sides are infinitely far, the relationship is the only unsatisfied one, and `q` moves onto
+`p`; the same reasoning makes an `AxisDistance`'s *to* point follow its *from* point.
+
+What stays id-dependent: *which* relationship notices an unsatisfiable sketch. When a chain is
+held at both ends, the propagation reaches the contradiction from one end or the other depending
+on the order, so the two `Derivation`s in the report can be written from either side. The set of
+relationships the report names is the same either way, and so is the outcome. Tests should assert
+what the report names, not how it reads.
 
 **`SetRotation`.** Edge and corner references are in the box's local frame, so rotating a box
 that has a `Flush`, `Coincident`, `AxisDistance` or `Centered` relationship would turn a
@@ -1043,8 +1082,22 @@ decision above without saying so.
 - **The anchor rule is not special-cased.** A constraint moves whichever side is free to move,
   where "free" means none of the position scalars the side is built on has been assigned. §4.4's
   anchor rule, its seeding rule for `AddRelationship(Coincident(p, q))`, and "the *to* point
-  follows" for `AxisDistance` all fall out of that one rule plus one tie-break: when neither side
-  is driving, the second side follows the first.
+  follows" for `AxisDistance` all fall out of that one rule, plus the two that carry a pin along a
+  chain and the one tie-break that decides a chain nothing pins — all three in §4.4. The
+  tie-break is a property of the sketch (how far each part is from the request, counted in
+  relationships) rather than of how the sketch was written, which is what #49 needed; only an
+  exact tie consults the order of the sketch.
+- **Three places read the same model of a relationship (#49).** `Propagator.PairsOf` turns a
+  relationship into the pairs of values it holds equal, one per axis it speaks about, and the
+  worklist, the "does this still not hold?" question and the search for a reference scalar all use
+  it. `ParamValue` (an assignment, not a coupling) and `Centered` (a midpoint, not a pair) are the
+  two exceptions, and both are handled explicitly.
+- **`DirectUpdater.RigidGroup` was left alone.** §4.4's option for #49 suggested reusing it for a
+  pinned closure per axis. It is not needed: the pinned set is computed implicitly, by pins
+  travelling through relationships that hold, and it comes out per scalar rather than per entity
+  and axis — which is what makes an anchor that holds a part along Y leave the same part's X free.
+  `RigidGroup` remains what `Drag` needs, which is a different question: what moves *together*
+  under a translation (and so it still includes `Centered`, where pinning does not).
 - **`RejectionReason.DuplicateEntity` and `RejectionReason.UnsupportedRequest` were added** to
   §4.2's enum. `AddEntity` with an id the sketch already holds is not a dangling reference and not
   a geometric state; `UnsupportedRequest` covers the unreachable arm for a request kind this
@@ -1140,15 +1193,6 @@ decision above without saying so.
 Findings from Fable's review of PR #35 that are deliberately not addressed in #5, so that the next
 person to touch this code does not have to rediscover them.
 
-- **Chains of three or more parts resolve `OverConstrained` when a solution exists** — filed as
-  #49. A, B and C in a row, flush to each other, with C anchored and A dimensioned: resizing A
-  moves B east, and the second `Flush` then finds both sides assigned. Moving A's anchor west
-  would satisfy everything. The implementation is faithful to §4.4's rule as written ("pins the
-  opposite side … to something that is anchored or already assigned"), so this is a design
-  decision for Marc rather than a defect. The cheap route, if he wants the friendlier answer, is a
-  pinned closure per axis over `Coincident`/`Flush`/`AxisDistance`/`Centered` — `DirectUpdater`'s
-  `RigidGroup` already computes exactly that shape for `Drag` — treating a side as not adjustable
-  when its base is in an anchored closure.
 - **The `Propagator`'s state is narrower than §5.2 step 4 implies.** `ScalarKind` covers X, Y,
   width and height, so the repair pass cannot perform `rotationB := rotationA + 90°` for
   exact-class `Parallel`/`Perpendicular`/`AngleBetween`. That is #28's extension by this design's
@@ -1161,14 +1205,42 @@ person to touch this code does not have to rediscover them.
   slide while a driving `AxisDistance` fixes it, and the result is a zero applied delta with
   nothing to act on. #10 should turn a drag blocked by a driving relationship into an offer to
   edit that dimension, the way `Rejected(DrivenSize)` points at one.
-- **Propagation order can decide the answer for equal-width chains** (Fable's second review of
-  #35; pre-existing, not a regression of the review fixes; belongs with #49). Three boxes flush in a
-  row with equal widths (`ParamValue(A.Width)`, two `EqualParam`s, two `Flush`es): after
-  `SetParameter(A.Width, 10 → 20)` the result depends on relationship ids and argument order. One
-  ordering gives `OverConstrained` on a solvable sketch; another gives `Solved` with A grown west
-  and C unmoved, which satisfies every relationship but is not what the user expected. The root
-  cause is the id-ordered initial worklist plus single assignment, so a candidate fix is to order
-  the initial enqueue breadth-first from the changed scalars. That candidate is untested. Pin
-  today's four outcomes in a test, or skip it against #49, before changing anything.
 - **A `Centered` conflict with both ends anchored names only the first end's anchor** (LOW).
   Removing the relationship the report names still leaves a conflict; the report should name both.
+- **A `Centered` does not pin its third point unless the other two are pinned *and* it already
+  holds** (LOW, left from #49). §4.4's pinning rules are stated for relationships that hold two
+  values equal. `Centered` is a midpoint rather than a pair, so the propagator passes a pin on
+  through one only when it already holds and two of its three points are pinned — the third is
+  then held where it is. A `Centered` that does *not* hold still decides for itself which of its
+  points moves, by the rule above it, and a chain whose only link to an anchor runs through such a
+  `Centered` will pick its reference as though that anchor were not there. The answer still holds
+  together; it may just move more than it had to.
+
+### 10.6 What #49 changed, for the canvas (#10)
+
+Editing a design is where these rules become visible, so the behaviour the canvas can rely on,
+and what changed under it:
+
+- **A row of parts now resizes instead of refusing.** Three or more parts flush in a row with one
+  end anchored and a dimension on another part used to be `OverConstrained`; it is now `Solved`.
+  The canvas needs no special case for it — but a "this cannot be done" path that was reachable by
+  an ordinary bookcase edit is now reached far less often, and its message should be worth reading
+  when it does appear.
+- **The answer no longer depends on the order the user drew things in.** Two sketches that look
+  the same and hold the same relationships now give the same answer, whichever was drawn first and
+  whichever way round each relationship was created. So a canvas may create a `Flush` with its
+  arguments in whatever order the snap produced, without that deciding which part moves later.
+- **Which part moves may differ from before**, in exactly one family: a chain nothing pins. The
+  part whose dimension was edited keeps its anchor and the rest of the chain follows it, where
+  before the answer could be any of several. Undo (#11) is unaffected — every result is still a
+  whole new `Sketch` — but a canvas that cached "this edit moves that part" must recompute it.
+- **`ChangeSet.Moved` can now name parts several relationships away from the edit**, because a
+  chain resolves in one pass. It was already possible; it is now ordinary. Redraw from the change
+  set, not from the edited part.
+- **A conflict report names the whole path**, not just the nearest pin: both anchors and every
+  relationship between them, for a row held at both ends. That is the list to offer the user for
+  removal. The two `Derivation`s in the report may be written from either end of the path
+  depending on relationship ids, so show the named relationships rather than relying on which
+  derivation comes first.
+- **Nothing in the request or result API changed.** No new request kind, no new rejection reason,
+  no new result state.
