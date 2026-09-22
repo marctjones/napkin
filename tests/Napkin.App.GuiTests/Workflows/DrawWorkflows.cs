@@ -284,12 +284,43 @@ public class DrawWorkflows
             Assert.Equal(new BoxEdgeRef(left, BoxEdge.East), stored.A);
             Assert.Equal(new BoxEdgeRef(right, BoxEdge.West), stored.B);
 
+            // The moved part is selected and has relationships, so the list is open to them.
+            Assert.True(window.IsRelationshipListExpanded, "the list stayed a badge with a related part selected.");
             Assert.Contains(
                 window.RelationshipsOnScreen,
                 line => line.Contains("flush with", StringComparison.Ordinal));
         });
 
         app.SaveFrame("flush");
+
+        // The list is on demand (#62): with nothing selected it folds to a count, off the drawing's
+        // way, and comes back when a part it talks about is picked again.
+        int stated = window.CurrentDesign!.Sketch.Relationships.Count;
+        app.MoveTo(At(window, Point2.Inches(14, -12)));
+        app.Press(Key.Escape);
+
+        app.Expect("nothing selected: the list is a count badge, not a block of sentences", () =>
+        {
+            Assert.Empty(window.Editor.Selection);
+            Assert.False(window.IsRelationshipListExpanded, "the list stayed open with nothing selected.");
+            Assert.Empty(window.RelationshipsOnScreen);
+            Assert.Equal($"{stated} relationships", window.RelationshipHeadlineText);
+        });
+
+        app.SaveFrame("relationships-badge");
+
+        app.Click(At(window, Point2.Inches(-15, 0)));
+        app.Expect("selecting a part with relationships opens the list again, same sentences", () =>
+        {
+            Assert.Equal(left, window.Editor.OnlySelected);
+            Assert.True(window.IsRelationshipListExpanded);
+            Assert.Equal(
+                window.Editor.RelationshipEntries().Select(entry => entry.Text),
+                window.RelationshipsOnScreen);
+            Assert.Contains(
+                window.RelationshipsOnScreen,
+                line => line.Contains("flush with", StringComparison.Ordinal));
+        });
     });
 
     [GuiWorkflow("GUI-DRAW-07")]

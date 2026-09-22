@@ -349,7 +349,9 @@
                                   Margin="10,56,10,10" />
 
             <!-- What the drawing says about itself, in words. Read-only on purpose, and not
-                 hit-testable, so it never takes a click or a wheel turn meant for the drawing. -->
+                 hit-testable, so it never takes a click or a wheel turn meant for the drawing.
+                 On demand (#62): a small count badge until a part that has relationships is
+                 selected or under the pointer, and only then the sentences themselves. -->
             <Border Name="RelationshipsPanel"
                     IsVisible="False"
                     IsHitTestVisible="False"
@@ -366,7 +368,7 @@
                                Text="Relationships"
                                FontSize="12"
                                FontWeight="SemiBold" />
-                    <StackPanel Name="RelationshipsList" Spacing="3" />
+                    <StackPanel Name="RelationshipsList" Spacing="3" IsVisible="False" />
                 </StackPanel>
             </Border>
 

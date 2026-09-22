@@ -222,11 +222,21 @@ public partial class MainWindow : Window
     /// <summary>The relationship list panel.</summary>
     public Border Relationships => RelationshipsPanel;
 
-    /// <summary>What the relationship list is showing, one line each.</summary>
+    /// <summary>
+    /// What the relationship list is showing, one line each. Empty while it is collapsed to its
+    /// badge, because then no sentence is on the screen.
+    /// </summary>
     public IReadOnlyList<string> RelationshipsOnScreen =>
     [
         .. RelationshipsList.Children.OfType<TextBlock>().Select(line => line.Text ?? string.Empty),
     ];
+
+    /// <summary>Whether the relationship list is open to its sentences rather than showing only its count.</summary>
+    public bool IsRelationshipListExpanded => RelationshipsPanel.IsVisible && RelationshipsList.IsVisible;
+
+    /// <summary>What the relationship panel's headline says: the count badge, or the list's title.</summary>
+    public string RelationshipHeadlineText =>
+        RelationshipsPanel.IsVisible ? RelationshipsHeadline.Text ?? string.Empty : string.Empty;
 
     /// <summary>The inline dimension field, when one is open.</summary>
     public TextBox DimensionField => DimensionEntryBox;
@@ -550,6 +560,7 @@ public partial class MainWindow : Window
         }
 
         UpdateMenuEnablement();
+        UpdateRelationships();
         ShowProperties();
     }
 
@@ -1357,28 +1368,49 @@ public partial class MainWindow : Window
         MessageBar.IsVisible = true;
     }
 
+    /// <summary>
+    /// The relationship list, on demand (#62): a count badge while nothing it talks about is in
+    /// play, and every sentence once a part it names is selected.
+    /// </summary>
+    /// <remarks>
+    /// Expanded, it shows the whole list, not only the selected part's rows: the sentences are the
+    /// same ones it has always shown, and which part is selected only decides whether the drawing
+    /// has something to say that is worth the room. The panel stays off the screen while the shape
+    /// workshop is open, whatever changes underneath it.
+    /// </remarks>
     void UpdateRelationships()
     {
         IReadOnlyList<RelationshipEntry> entries = Editor.RelationshipEntries();
         CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
+        bool expanded = entries.Any(entry => entry.Entities.Any(IsInPlay));
 
         RelationshipsList.Children.Clear();
-        foreach (RelationshipEntry entry in entries)
+        if (expanded)
         {
-            RelationshipsList.Children.Add(new TextBlock
+            foreach (RelationshipEntry entry in entries)
             {
-                Text = entry.Text,
-                FontSize = 11,
-                TextWrapping = TextWrapping.Wrap,
-                Foreground = new SolidColorBrush(palette.Label),
-            });
+                RelationshipsList.Children.Add(new TextBlock
+                {
+                    Text = entry.Text,
+                    FontSize = 11,
+                    TextWrapping = TextWrapping.Wrap,
+                    Foreground = new SolidColorBrush(palette.Label),
+                });
+            }
         }
 
-        RelationshipsHeadline.Text = entries.Count == 1
-            ? "Relationships — 1"
-            : $"Relationships — {entries.Count}";
-        RelationshipsPanel.IsVisible = entries.Count > 0;
+        RelationshipsList.IsVisible = expanded;
+        RelationshipsHeadline.Text = expanded
+            ? $"Relationships — {entries.Count}"
+            : entries.Count == 1 ? "1 relationship" : $"{entries.Count} relationships";
+        RelationshipsHeadline.FontSize = expanded ? 12 : 11;
+        RelationshipsPanel.Padding = expanded ? new Thickness(10, 8) : new Thickness(8, 3);
+        RelationshipsPanel.CornerRadius = new CornerRadius(expanded ? 4 : 10);
+        RelationshipsPanel.IsVisible = entries.Count > 0 && !IsShapingPart;
     }
+
+    /// <summary>Whether a part is one the relationship list should open for.</summary>
+    bool IsInPlay(EntityId id) => Editor.Selection.Contains(id);
 
     void UpdateToolButtons()
     {
