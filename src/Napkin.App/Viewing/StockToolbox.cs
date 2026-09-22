@@ -98,7 +98,9 @@ public sealed class StockToolbox : Border
                 Padding = new Thickness(5),
                 Tag = category,
             };
-            ToolTip.SetTip(button, $"{Words(category)}: pick a size, then drag it onto the paper");
+            ToolTip.SetTip(button, category == StockCategory.Fastener
+                ? "Fasteners: listed for their sizes; napkin does not place them yet"
+                : $"{Words(category)}: pick a size, then drag it onto the paper");
             AutomationProperties.SetName(button, Words(category));
             // A second click on the open drawer's icon closes it again.
             button.Click += (_, _) => ShowCategory(Category == category ? null : category);
