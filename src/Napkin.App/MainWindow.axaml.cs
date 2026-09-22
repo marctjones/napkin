@@ -954,7 +954,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!DrawingCanvas.IsFocused && !IsEditingDimension
+        // A key typed into a field is text, not a view command: the properties panel gets the same
+        // guard the dimension editor has had from the start, so that "-" and "+" in 1'-4 1/4"
+        // cannot reach HandleViewKey and zoom the drawing. Whether Avalonia's own TextBox already
+        // stops every one of those keys is not something to rely on, and the headless platform
+        // cannot be used to find out — it routes them differently from a real backend.
+        if (!DrawingCanvas.IsFocused && !IsEditingDimension && !PropertiesPanel.IsKeyboardFocusWithin
             && DrawingCanvas.HandleViewKey(e.Key, e.KeyModifiers))
         {
             e.Handled = true;

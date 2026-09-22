@@ -93,14 +93,39 @@ public class CutListWorkflows
                 window.CutList!.Rows.Sorted.Select(row => row.Label));
         });
 
+        // The shortcut again brings the one that is open forward rather than opening a second.
+        CutListWindow opened = window.CutList!;
+        app.Chord(Key.L);
+        app.Expect("there is one cut list, however many times it is asked for", () =>
+        {
+            Assert.Same(opened, window.CutList);
+            Assert.True(window.CutList!.IsVisible);
+            Assert.Equal(4, window.CutList!.Rows.Rows.Length);
+        });
+
+        // And closing it is not the end of it: the shortcut opens a fresh one on the same design.
+        window.CutList!.Close();
+        app.Chord(Key.L);
+        app.Expect("closing the list and asking again gives a new one, showing the same design", () =>
+        {
+            Assert.NotNull(window.CutList);
+            Assert.NotSame(opened, window.CutList);
+            Assert.Equal(4, window.CutList!.Rows.Rows.Length);
+        });
+
         app.Expect("the exported CSV is the table as it is being read, in the same order", () =>
         {
+            // A fresh window sorts by length again, which is the order a person cuts in, so this
+            // is the fixture's own order: Top, Apron long, Leg, Apron short.
             CutListWindow list = window.CutList!;
             string[] lines = list.Csv.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
             Assert.Equal(list.Rows.Sorted.Length + 2, lines.Length);
+            Assert.Equal(
+                expected.CutList.Select(row => row.Label),
+                list.Rows.Sorted.Select(row => row.Label));
             Assert.StartsWith("Top,1,", lines[2], StringComparison.Ordinal);
-            Assert.Contains("\"Apron, long\"", lines[5], StringComparison.Ordinal);
+            Assert.StartsWith("\"Apron, long\",2,", lines[3], StringComparison.Ordinal);
         });
 
         // The list is a reading of the drawing rather than a snapshot of it, so it follows the
@@ -181,6 +206,17 @@ public class CutListWorkflows
             Assert.True(window.IsPartField.IsChecked);
             Assert.True(window.OutOfPlaneField.IsVisible);
         });
+
+        // A "-" typed into a field is text, not a view command: a TextBox leaves KeyDown alone for
+        // a character key, so without a guard the window would zoom out on the dash of 1'-4 1/4".
+        app.Click(CentreOf(window, window.OutOfPlaneField));
+        double zoom = window.Canvas.View.PixelsPerInch;
+        app.Press(Key.OemMinus);
+        app.Press(Key.OemPlus);
+        app.Press(Key.Down);
+
+        app.Expect("typing a dimension does not steer the drawing", () =>
+            Assert.Equal(zoom, window.Canvas.View.PixelsPerInch));
 
         Fill(app, window, window.OutOfPlaneField, "1 1/2\"");
         Fill(app, window, window.QuantityField, "2");
