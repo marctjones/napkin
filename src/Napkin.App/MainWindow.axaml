@@ -49,6 +49,11 @@
                 <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
                 <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />
                 <MenuItem Name="ZoomOutMenuItem" Header="Zoom _Out" Click="OnZoomOutClicked" />
+                <Separator />
+                <MenuItem Name="CutListMenuItem"
+                          Header="_Cut list"
+                          Click="OnCutListClicked"
+                          ToolTip.Tip="Every piece this design says to cut, grouped and sorted. It follows the drawing as it is edited." />
             </MenuItem>
         </Menu>
 

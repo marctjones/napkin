@@ -41,6 +41,7 @@ public partial class MainWindow : Window
 {
     readonly List<MenuItem> _sampleItems = [];
     ISceneFilePicker _filePicker;
+    CutListWindow? _cutList;
     bool _opening;
     EntityId? _editingBox;
     SizeAxis _editingAxis = SizeAxis.Width;
@@ -84,6 +85,10 @@ public partial class MainWindow : Window
         // The canvas takes focus when the window opens so the keys steer the drawing, not the
         // menu bar. Anything a person clicks afterwards is welcome to take it.
         Opened += (_, _) => DrawingCanvas.Focus();
+
+        // The cut list is a reading of this drawing, so it goes when the drawing does rather than
+        // being left behind as a window with no design under it.
+        Closed += (_, _) => _cutList?.Close();
 
         // Keys that reach the window with the menu focused still steer the view, so arrowing after
         // a menu click does what it looks like it should.
@@ -254,6 +259,35 @@ public partial class MainWindow : Window
 
     /// <summary>Starts a blank sheet.</summary>
     public void NewSheetCommand() => ShowDesign(new NewSheet());
+
+    /// <summary>The cut-list window, when one is open.</summary>
+    public CutListWindow? CutList => _cutList;
+
+    /// <summary>The <em>View &#x2192; Cut list</em> item.</summary>
+    public MenuItem CutListMenuEntry => CutListMenuItem;
+
+    /// <summary>
+    /// Opens the cut list for the design on screen, or brings the open one forward.
+    /// </summary>
+    /// <remarks>
+    /// One window, not one per invocation: a second cut list of the same design would be two
+    /// things to keep in step and nothing to gain by it. It is not modal — the drawing goes on
+    /// being edited with it open, and every edit re-reads it.
+    /// </remarks>
+    /// <returns>The window.</returns>
+    public CutListWindow OpenCutList()
+    {
+        if (_cutList is null)
+        {
+            _cutList = new CutListWindow();
+            _cutList.Closed += (_, _) => _cutList = null;
+        }
+
+        _cutList.ShowDesign(CurrentDesign);
+        _cutList.Show(this);
+        _cutList.Activate();
+        return _cutList;
+    }
 
     /// <summary>
     /// Asks for a file and opens it. Cancelling changes nothing at all.
@@ -452,6 +486,10 @@ public partial class MainWindow : Window
     {
         UpdateRelationships();
         PlaceDimensionEditor();
+
+        // The cut list follows the drawing: widen a part with the list open and the row changes,
+        // because both are readings of one design rather than a drawing and a snapshot of it.
+        _cutList?.ShowDesign(CurrentDesign);
     }
 
     void OnSelectionChanged()
@@ -638,6 +676,11 @@ public partial class MainWindow : Window
             Gesture = new KeyGesture(Key.O, command),
             Command = new RelayCommand(() => _ = OpenFileAsync()),
         });
+        KeyBindings.Add(new KeyBinding
+        {
+            Gesture = new KeyGesture(Key.L, command),
+            Command = new RelayCommand(() => OpenCutList()),
+        });
 
         for (int i = 0; i < Samples.Count && i < 9; i++)
         {
@@ -701,6 +744,8 @@ public partial class MainWindow : Window
     void OnDeleteClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.DeleteSelection();
 
     void OnMessageOfferClicked(object? sender, RoutedEventArgs e) => TakeRemoveOffer();
+
+    void OnCutListClicked(object? sender, RoutedEventArgs e) => OpenCutList();
 
     void OnZoomToFitClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.ZoomToFit();
 

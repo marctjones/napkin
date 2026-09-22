@@ -129,6 +129,58 @@ public sealed class CutListCsvTests
     }
 
     [Fact]
+    [Trait("Feature", "CUT-004")]
+    public void A_carriage_return_and_a_missing_last_newline_are_both_read_back()
+    {
+        // Not something ToCsv writes, but something a file that has been through a Windows editor
+        // or a clipboard can carry, and the parser is what a test compares an export with.
+        ImmutableArray<ImmutableArray<string>> lines = CutListCsv.Parse("a,\"b\r\nc\"\nd,e");
+
+        Assert.Equal(2, lines.Length);
+        Assert.Equal(["a", "b\r\nc"], lines[0]);
+        Assert.Equal(["d", "e"], lines[1]);
+
+        // A label whose own text holds a carriage return is quoted on the way out, so the line it
+        // sits on is still one line and reads back as what it was.
+        string csv = CutListCsv.ToCsv([Row("upper\rlower")]);
+
+        Assert.Contains("\"upper\rlower\"", csv, StringComparison.Ordinal);
+        Assert.Equal("upper\rlower", CutListCsv.Parse(csv)[2][0]);
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-004")]
+    public void A_row_is_a_value_that_can_be_compared_and_kept_in_a_set()
+    {
+        // Two cut lists of one design are equal, which is what makes "the export is exactly the
+        // table" assertable; ImmutableArray's own equality would call them different.
+        CutListRow row = Row("Leg");
+
+        Assert.Equal(row, Row("Leg"));
+        Assert.Equal(row.GetHashCode(), Row("Leg").GetHashCode());
+        Assert.NotEqual(row, Row("Apron"));
+        Assert.False(row.Equals(null));
+
+        HashSet<CutListRow> set = [row, Row("Leg"), Row("Apron")];
+        Assert.Equal(2, set.Count);
+
+        Assert.NotEqual(row, row with { Members = [EntityId.New()] });
+        Assert.NotEqual(row, row with { Quantity = 2 });
+    }
+
+    /// <summary>A row of one arbitrary 1-inch cube, for tests about a row rather than a design.</summary>
+    private static CutListRow Row(string label) => new(
+        label,
+        1,
+        new Length(1024),
+        new Length(1024),
+        new Length(1024),
+        string.Empty,
+        Unresolved: false,
+        Stock: null,
+        Members: [new EntityId(Guid.Parse("10000000-0000-4000-8000-000000000001"))]);
+
+    [Fact]
     public void The_exporter_rejects_nonsense_arguments()
     {
         Assert.Throws<ArgumentNullException>(() => CutListCsv.ToCsv(null!));
