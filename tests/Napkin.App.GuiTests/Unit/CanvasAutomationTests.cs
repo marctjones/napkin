@@ -215,12 +215,12 @@ public class CanvasAutomationTests
     }
 
     /// <summary>
-    /// Avalonia already names the standard chrome from its <c>Header</c> and <c>Content</c> text,
-    /// access-key underscore stripped, so no <c>AutomationProperties.Name</c> was added for it.
-    /// This is the test that says so, and that fails if that ever stops being true.
+    /// Avalonia already names the menus from their <c>Header</c> text, access-key underscore
+    /// stripped, so no <c>AutomationProperties.Name</c> was added for them. This is the test that
+    /// says so, and that fails if that ever stops being true.
     /// </summary>
     [Fact]
-    public void Menu_items_and_tool_buttons_are_named_without_being_told_to()
+    public void Menu_items_are_named_without_being_told_to()
     {
         HeadlessWindow.Run(window =>
         {
@@ -230,8 +230,26 @@ public class CanvasAutomationTests
             Assert.Equal("Draw", Named(root, "DrawMenu"));
             Assert.Equal("Samples", Named(root, "SamplesMenu"));
             Assert.Equal("View", Named(root, "ViewMenu"));
+        });
+    }
+
+    /// <summary>
+    /// The toolbar's buttons are icons, so there is no <c>Content</c> text for Avalonia to name them
+    /// from: each is told its function's name, the same words its Draw menu item says.
+    /// </summary>
+    [Fact]
+    public void Icon_tool_buttons_are_named_for_their_function()
+    {
+        HeadlessWindow.Run(window =>
+        {
+            AutomationPeer root = ControlAutomationPeer.CreatePeerForElement(window);
+
             Assert.Equal("Select", Named(root, "SelectToolButton"));
             Assert.Equal("Rectangle", Named(root, "RectangleToolButton"));
+            Assert.Equal("Shape", Named(root, "ShapeToolButton"));
+            Assert.Equal("Duplicate", Named(root, "DuplicateToolButton"));
+            Assert.Equal("Pin in place", Named(root, "PinToolButton"));
+            Assert.Equal("Delete", Named(root, "DeleteToolButton"));
         });
     }
 

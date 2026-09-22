@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -95,6 +96,7 @@ public partial class MainWindow : Window
         // The stock category icons sit on the main toolbar beside Select and Rectangle, always in
         // reach; the toolbox itself is only the drawer that drops down under the one picked.
         ToolRow.Children.Add(StockToolboxPanel.CategoryRow);
+        BuildStockMenu();
 
         // A click on a category icon or an item gives the keyboard back to the drawing, so Escape
         // still reaches it; the toolbox has nothing to type into.
@@ -190,6 +192,41 @@ public partial class MainWindow : Window
 
     /// <summary>The select tool's button.</summary>
     public ToggleButton SelectToolControl => SelectToolButton;
+
+    /// <summary>The toolbar's Shape button, which opens the selected part in the shape workshop.</summary>
+    public Button ShapeToolControl => ShapeToolButton;
+
+    /// <summary>The toolbar's Duplicate button.</summary>
+    public Button DuplicateToolControl => DuplicateToolButton;
+
+    /// <summary>The toolbar's Pin in place button.</summary>
+    public Button PinToolControl => PinToolButton;
+
+    /// <summary>The toolbar's Delete button.</summary>
+    public Button DeleteToolControl => DeleteToolButton;
+
+    /// <summary>
+    /// Every icon button on the toolbar ahead of the stock categories, in the order it shows them:
+    /// the tools, then the actions on the selection.
+    /// </summary>
+    public IReadOnlyList<Button> ToolButtons =>
+    [
+        SelectToolButton,
+        RectangleToolButton,
+        ShapeToolButton,
+        DuplicateToolButton,
+        PinToolButton,
+        DeleteToolButton,
+    ];
+
+    /// <summary>The <em>Draw</em> menu, which reaches everything the toolbar does.</summary>
+    public MenuItem DrawMenuItem => DrawMenu;
+
+    /// <summary>
+    /// <em>Draw &#x2192; Stock</em>: one submenu per stock category, in the toolbar's order, each
+    /// holding one item per size.
+    /// </summary>
+    public MenuItem StockMenuItem => StockMenu;
 
     /// <summary>The stock toolbox: its drawer, and through it the category icons on the toolbar.</summary>
     public StockToolbox Toolbox => StockToolboxPanel;
@@ -1337,12 +1374,21 @@ public partial class MainWindow : Window
         corner is BoxCorner.SouthWest or BoxCorner.NorthWest ? BoxEdge.West : BoxEdge.East;
 
 
+    /// <summary>
+    /// Greys out what has nothing to act on — the menu item and its toolbar button together, so
+    /// the two never disagree about whether a function is available.
+    /// </summary>
     void UpdateMenuEnablement()
     {
         bool anything = Editor.Selection.Count > 0;
-        DeleteMenuItem.IsEnabled = anything;
-        PinMenuItem.IsEnabled = anything;
-        ShapeMenuItem.IsEnabled = Editor.OnlySelected is not null && !IsShapingPart;
+        bool shapeable = Editor.OnlySelected is not null && !IsShapingPart;
+        DeleteMenuItem.IsEnabled = DeleteToolButton.IsEnabled = anything;
+        PinMenuItem.IsEnabled = PinToolButton.IsEnabled = anything;
+        ShapeMenuItem.IsEnabled = ShapeToolButton.IsEnabled = shapeable;
+
+        // The shape workshop covers the paper and takes the toolbar's stock icons with it, so the
+        // menu's way in to the same stock goes too: there is no paper to drag it onto.
+        StockMenu.IsEnabled = !IsShapingPart;
     }
 
     void UpdateMessageBar()
@@ -1486,6 +1532,49 @@ public partial class MainWindow : Window
         DrawingCanvas.Focus();
     }
 
+    /// <summary>
+    /// Builds <em>Draw &#x2192; Stock</em>: the toolbox's two levels as two levels of menu — a
+    /// submenu per category, named and explained as its toolbar icon is, and under it an item per
+    /// size with the size's actual dimensions and citation on hover.
+    /// </summary>
+    /// <remarks>
+    /// Picking an item does what the toolbar's two clicks do, through the same code: it opens that
+    /// category's drawer, so the item held is marked in it, and then picks the item exactly as a
+    /// click in the drawer does (<see cref="PickStock"/>). A fastener is listed and cannot be
+    /// placed, by menu as by toolbar.
+    /// </remarks>
+    void BuildStockMenu()
+    {
+        List<MenuItem> categories = [];
+        foreach (StockCategory category in StockToolboxPanel.Library.Categories)
+        {
+            List<MenuItem> sizes = [];
+            foreach (StockItem item in StockToolboxPanel.Library.InCategory(category))
+            {
+                MenuItem size = new() { Header = item.Name, Tag = item };
+                ToolTip.SetTip(size, item.HoverText);
+                AutomationProperties.SetHelpText(size, item.HoverText);
+                size.Click += (_, _) =>
+                {
+                    StockToolboxPanel.ShowCategory(category);
+                    PickStock(item);
+                };
+                sizes.Add(size);
+            }
+
+            MenuItem submenu = new()
+            {
+                Header = StockToolbox.Words(category),
+                Tag = category,
+                ItemsSource = sizes,
+            };
+            ToolTip.SetTip(submenu, ToolTip.GetTip(StockToolboxPanel.CategoryButtons[category]));
+            categories.Add(submenu);
+        }
+
+        StockMenu.ItemsSource = categories;
+    }
+
     void ShowRefusal(string what, IReadOnlyList<string> problems)
     {
         CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
@@ -1529,7 +1618,18 @@ public partial class MainWindow : Window
         ToolBar.Background = paper;
         ToolBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
         ToolRowDivider.Background = new SolidColorBrush(palette.GridMajor);
+        ToolRowActionsDivider.Background = new SolidColorBrush(palette.GridMajor);
         StockToolboxPanel.ApplyPalette(palette);
+
+        // The tool icons are drawn the way the stock category icons are, so the row reads as one.
+        foreach (Button button in ToolButtons)
+        {
+            if (button.Content is Avalonia.Controls.Shapes.Path glyph)
+            {
+                glyph.Stroke = new SolidColorBrush(palette.Dimension);
+                glyph.Fill = new SolidColorBrush(palette.PreviewFill);
+            }
+        }
 
         RelationshipsPanel.Background = paper;
         RelationshipsPanel.BorderBrush = new SolidColorBrush(palette.GridMajor);
@@ -1604,6 +1704,7 @@ public partial class MainWindow : Window
         SelectToolMenuItem.InputGesture = new KeyGesture(Key.S);
         RectangleToolMenuItem.InputGesture = new KeyGesture(Key.R);
         ShapeMenuItem.InputGesture = new KeyGesture(Key.C);
+        DuplicateMenuItem.InputGesture = new KeyGesture(Key.D);
         PinMenuItem.InputGesture = new KeyGesture(Key.P);
         DeleteMenuItem.InputGesture = new KeyGesture(Key.Delete);
         UpdateMenuEnablement();

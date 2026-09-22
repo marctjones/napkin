@@ -148,6 +148,12 @@ public sealed class StockToolbox : Border
     /// </summary>
     public Control CategoryRow => _categoryRow;
 
+    /// <summary>
+    /// The library the toolbox lists, so another way in to the same stock — the Draw menu's —
+    /// offers exactly the categories and sizes the icons do.
+    /// </summary>
+    public MaterialsLibrary Library => _library;
+
     /// <summary>The drawer that is open.</summary>
     public StockCategory? Category { get; private set; }
 

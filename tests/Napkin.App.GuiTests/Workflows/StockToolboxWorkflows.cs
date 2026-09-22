@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 
 using Napkin.App.Editing;
 using Napkin.App.GuiTests.Harness;
+using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
 
@@ -105,11 +106,14 @@ public class StockToolboxWorkflows
         });
 
         // One drag, mostly along x and leaning an inch across: the board is the drag's length and
-        // the stock's width, whatever the pointer did across it.
+        // the stock's width, whatever the pointer did across it. It starts below the drawer, which
+        // hangs down over the top of the paper from its icon on the toolbar.
+        Point boardFrom = At(window, Point2.Inches(-2, -10));
+        Assert.False(OnDrawer(window, boardFrom), "the drag would start on the drawer, not the paper.");
         app.Drag(
-            At(window, Point2.Inches(-2, 10)),
-            At(window, Point2.Inches(10, 10)),
-            At(window, Point2.Inches(24, 11)));
+            boardFrom,
+            At(window, Point2.Inches(10, -10)),
+            At(window, Point2.Inches(24, -9)));
 
         Box board = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>());
 
@@ -159,10 +163,7 @@ public class StockToolboxWorkflows
         // lumber one, so the sheet is dragged out on open paper to the right of it.
         app.Click(CentreOf(window, plywoodButton));
         Point sheetFrom = At(window, Point2.Inches(4, -2));
-        Rect drawerOnScreen = new(
-            window.Toolbox.TranslatePoint(new Point(0, 0), window)!.Value,
-            window.Toolbox.Bounds.Size);
-        Assert.False(drawerOnScreen.Contains(sheetFrom), "the drag would start on the drawer, not the paper.");
+        Assert.False(OnDrawer(window, sheetFrom), "the drag would start on the drawer, not the paper.");
         app.Drag(
             sheetFrom,
             At(window, Point2.Inches(10, 2)),
@@ -220,6 +221,148 @@ public class StockToolboxWorkflows
         app.SaveFrame("closed");
     });
 
+    /// <summary>
+    /// The same stock by menu alone: <em>Draw &#x2192; Stock &#x2192; Dimensional lumber &#x2192;
+    /// 2x4</em>, then a drag — and the board that appears is the board the toolbar places, checked
+    /// by placing one from the toolbar beside it and comparing the two.
+    /// </summary>
+    /// <remarks>
+    /// Claims <c>GUI-CUT-06</c>, which the catalog does not define: nothing in it says "every
+    /// toolbar function is reachable from the menu", and adding an entry is not this change's call,
+    /// so the claim shows as an orphan on the scorecard — which gates nothing — until somebody
+    /// writes the feature down.
+    /// </remarks>
+    [GuiWorkflow("GUI-CUT-06")]
+    public void Pick_stock_from_the_draw_menu_and_drag_it_onto_the_paper() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        MaterialsLibrary library = MaterialsLibrary.Shipped;
+        Assert.True(library.TryFindLumber("2x4", out LumberStock twoByFour));
+        StockItem nail = library.InCategory(StockCategory.Fastener).First();
+
+        app.Chord(Key.N);
+
+        app.Expect("Draw → Stock lists every category the toolbar has, in its order, and every size in each", () =>
+        {
+            List<MenuItem> categories = [.. window.StockMenuItem.Items.OfType<MenuItem>()];
+            Assert.Equal(window.Toolbox.CategoryButtons.Keys, categories.Select(item => (StockCategory)item.Tag!));
+            foreach (MenuItem category in categories)
+            {
+                StockCategory which = (StockCategory)category.Tag!;
+                Assert.Equal(StockToolbox.Words(which), category.Header);
+                Assert.Equal(ToolTip.GetTip(window.Toolbox.CategoryButtons[which]), ToolTip.GetTip(category));
+                Assert.Equal(
+                    library.InCategory(which).Select(item => item.Name),
+                    category.Items.OfType<MenuItem>().Select(item => item.Header as string));
+            }
+        });
+
+        // Down through the menu with the mouse: Draw, Stock, the lumber, and a hover on the 2x4.
+        MenuItem twoByFourItem = OpenStockMenuTo(app, window, StockCategory.DimensionalLumber, twoByFour);
+        app.MoveTo(CentreOf(window, twoByFourItem));
+
+        app.Expect("hovering the 2x4 in the menu gives its actual size and citation, as the drawer does", () =>
+        {
+            Assert.Equal(twoByFour.HoverText, ToolTip.GetTip(twoByFourItem));
+            Assert.Contains(twoByFour.ActualSizeText, twoByFour.HoverText, StringComparison.Ordinal);
+            Assert.Contains(twoByFour.Source.ShortForm, twoByFour.HoverText, StringComparison.Ordinal);
+        });
+
+        app.Click(CentreOf(window, twoByFourItem));
+
+        app.Expect("the pointer holds the 2x4, the menu is closed, and the drawer shows what is held", () =>
+        {
+            Assert.Same(twoByFour, window.Canvas.ArmedStock);
+            Assert.Equal(EditTool.Stock, window.Canvas.Tool);
+            Assert.False(window.DrawMenuItem.IsSubMenuOpen, "the menu is still open.");
+            Assert.True(window.IsShowingStockSizes, "the lumber drawer did not open.");
+            Assert.Equal(StockCategory.DimensionalLumber, window.Toolbox.Category);
+            Assert.Contains("Holding 2x4", window.Toolbox.ReadoutText, StringComparison.Ordinal);
+            Assert.Empty(window.CurrentDesign!.Sketch.Entities);
+        });
+
+        // A foot-long board below the drawer, leaning an inch across as the toolbar's drag does.
+        Point menuFrom = At(window, Point2.Inches(-2, -10));
+        Assert.False(OnDrawer(window, menuFrom), "the drag would start on the drawer, not the paper.");
+        app.Drag(menuFrom, At(window, Point2.Inches(4, -10)), At(window, Point2.Inches(10, -9)));
+
+        Box byMenu = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>());
+
+        app.Expect("the part placed by menu is already a 2x4, cut to the dragged length", () =>
+        {
+            Assert.Equal("2x4", byMenu.Part!.Stock);
+            Assert.Equal(Length.Inches(12).Units, byMenu.Width.Units);
+            Assert.Equal(twoByFour.Width.Units, byMenu.Height.Units);
+            Assert.Equal(twoByFour.Thickness.Units, byMenu.Part.OutOfPlane.Units);
+            Assert.Equal(new PlanAxes(PartDimension.Length, PartDimension.Width), byMenu.Part.PlanAxes);
+            Assert.Equal(byMenu.Id, window.Editor.OnlySelected);
+            Assert.Equal(twoByFour.HoverText, window.StockReadoutText);
+            Assert.Equal(EditTool.Select, window.Canvas.Tool);
+        });
+
+        // The same board from the toolbar's drawer, which the menu left open, dragged the same way
+        // on open paper to the left of the first.
+        app.Click(CentreOf(window, window.Toolbox.ButtonFor("2x4")!));
+        app.Expect("the drawer's 2x4 is held", () => Assert.Same(twoByFour, window.Canvas.ArmedStock));
+
+        Point toolbarFrom = At(window, Point2.Inches(-24, -10));
+        Assert.False(OnDrawer(window, toolbarFrom), "the drag would start on the drawer, not the paper.");
+        app.Drag(toolbarFrom, At(window, Point2.Inches(-18, -10)), At(window, Point2.Inches(-12, -9)));
+
+        app.Expect("the toolbar's board and the menu's board are the same board, in different places", () =>
+        {
+            Box byToolbar = Assert.Single(
+                window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>(),
+                box => box.Id != byMenu.Id);
+            Assert.Equal(byMenu.Part, byToolbar.Part);
+            Assert.Equal(byMenu.Width, byToolbar.Width);
+            Assert.Equal(byMenu.Height, byToolbar.Height);
+
+            // Each is driven by its stock's stated width, one ParamValue apiece.
+            List<ParamValue> driving = [.. window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<ParamValue>()];
+            Assert.Equal(2, driving.Count);
+            Assert.Contains(driving, value => value.Param == new BoxHeightRef(byMenu.Id));
+            Assert.Contains(driving, value => value.Param == new BoxHeightRef(byToolbar.Id));
+        });
+
+        // A nail by menu: listed with its size on hover, and nothing to drag — as on the toolbar.
+        MenuItem nailItem = OpenStockMenuTo(app, window, StockCategory.Fastener, nail);
+        app.MoveTo(CentreOf(window, nailItem));
+        app.Expect("the nail's menu item gives its size on hover", () =>
+            Assert.Equal(nail.HoverText, ToolTip.GetTip(nailItem)));
+        app.Click(CentreOf(window, nailItem));
+
+        app.Expect("a fastener picked from the menu is not picked up, and the window says why", () =>
+        {
+            Assert.Null(window.Canvas.ArmedStock);
+            Assert.Equal(EditTool.Select, window.Canvas.Tool);
+            Assert.Equal(StockCategory.Fastener, window.Toolbox.Category);
+            Assert.Contains("does not place fasteners", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Equal(2, window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Count());
+        });
+
+        app.SaveFrame("menu-fastener");
+    });
+
+    /// <summary>
+    /// Opens <em>Draw &#x2192; Stock &#x2192; category</em> with the mouse, one click per level,
+    /// and returns the item for a size in it.
+    /// </summary>
+    static MenuItem OpenStockMenuTo(AppDriver app, MainWindow window, StockCategory category, StockItem item)
+    {
+        app.Click(CentreOf(window, window.DrawMenuItem));
+        app.Click(CentreOf(window, window.StockMenuItem));
+
+        MenuItem submenu = window.GetVisualDescendants()
+            .OfType<MenuItem>()
+            .Single(candidate => candidate.Tag is StockCategory each && each == category);
+        app.Click(CentreOf(window, submenu));
+
+        return window.GetVisualDescendants()
+            .OfType<MenuItem>()
+            .Single(candidate => ReferenceEquals(candidate.Tag, item));
+    }
+
     /// <summary>The window coordinate a model point is drawn at.</summary>
     static Point At(MainWindow window, Point2 world)
     {
@@ -227,6 +370,12 @@ public class StockToolboxWorkflows
         Point origin = window.Canvas.TranslatePoint(new Point(0, 0), window)!.Value;
         return new Point(onCanvas.X + origin.X, onCanvas.Y + origin.Y);
     }
+
+    /// <summary>Whether a window point is on the open drawer rather than on the paper.</summary>
+    static bool OnDrawer(MainWindow window, Point point) =>
+        window.IsShowingStockSizes
+        && new Rect(window.Toolbox.TranslatePoint(new Point(0, 0), window)!.Value, window.Toolbox.Bounds.Size)
+            .Contains(point);
 
     static Point CentreOf(Visual root, Visual control)
     {
