@@ -175,9 +175,9 @@ public sealed class CutFormatTests
         // stance the format takes on an un-normalised rotation.
         LoadProblem problem = Scenes.RefuseWith(
             EveryKindOfCut.With(
-                "{ \"kind\": \"roundedCorner\", \"corner\": \"southWest\", \"radius\": 1024 },\n"
+                "{ \"kind\": \"roundedCorner\", \"corner\": \"southWest\", \"radius\": 1024 }," + Environment.NewLine
                 + "        { \"kind\": \"cornerCut\", \"corner\": \"southEast\", \"alongX\": 3072, \"alongY\": 5120 },",
-                "{ \"kind\": \"cornerCut\", \"corner\": \"southEast\", \"alongX\": 3072, \"alongY\": 5120 },\n"
+                "{ \"kind\": \"cornerCut\", \"corner\": \"southEast\", \"alongX\": 3072, \"alongY\": 5120 }," + Environment.NewLine
                 + "        { \"kind\": \"roundedCorner\", \"corner\": \"southWest\", \"radius\": 1024 },"),
             LoadProblemKind.InvalidValue,
             "site order",
