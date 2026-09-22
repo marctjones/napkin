@@ -202,7 +202,10 @@ public sealed class SupportSpacingGoldenTests
     [Trait("Feature", "MAT-005")]
     public void ATableWithNoKindIsRefused()
         => Refuses(
-            Table(ValidSpacing).Replace("  \"kind\": \"spacings\",\n", string.Empty, StringComparison.Ordinal),
+            // No trailing newline in the text being removed: a raw string literal carries whatever
+            // line ending the checkout has, and this file is CRLF on a Windows runner. Leaving the
+            // blank line behind is fine — JSON does not care, and the field is what is gone.
+            Table(ValidSpacing).Replace("\"kind\": \"spacings\",", string.Empty, StringComparison.Ordinal),
             MaterialsProblemKind.MissingField,
             "kind");
 
