@@ -21,11 +21,21 @@ namespace Napkin.Modules.Furniture;
 /// a length that is not exact at 1/16&#x2033; carries the same &#x2248; marker the canvas uses, so
 /// the file never claims more precision than the screen does.
 /// </para>
+/// <para>
+/// <strong>A trailing <c>Cuts</c> column</strong> holds what to do to the blank, one sentence per
+/// cut joined by <see cref="BetweenCuts"/>, and is empty for a plain rectangle
+/// (<c>docs/design/shaped-parts-model.md</c> &#xA7;4.5). The header line's statement — finished
+/// sizes before saw kerf and joinery allowance — is as true of a shaped part as of a rectangle:
+/// the sizes are the blank's.
+/// </para>
 /// </remarks>
 public static class CutListCsv
 {
     /// <summary>The column names, in the order they are written.</summary>
-    public const string Header = "Label,Quantity,Length,Width,Thickness,Material";
+    public const string Header = "Label,Quantity,Length,Width,Thickness,Material,Cuts";
+
+    /// <summary>What separates one cut's sentence from the next in the <c>Cuts</c> column.</summary>
+    public const string BetweenCuts = "; ";
 
     /// <summary>The marker on a length whose text is not the stored value (geometry model §1.4).</summary>
     public const string Approximately = "≈";
@@ -47,7 +57,8 @@ public static class CutListCsv
                .Append(Quoted(Text(row.Length))).Append(',')
                .Append(Quoted(Text(row.Width))).Append(',')
                .Append(Quoted(Text(row.Thickness))).Append(',')
-               .Append(Field(row.MaterialText))
+               .Append(Field(row.MaterialText)).Append(',')
+               .Append(Field(string.Join(BetweenCuts, row.CutText)))
                .Append('\n');
         }
 

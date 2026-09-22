@@ -296,6 +296,253 @@ public sealed class CutListTests
         Assert.Equal("Gusset", row.Label);
     }
 
+    [Fact]
+    [Trait("Feature", "CUT-002")]
+    public void A_shaped_part_is_listed_at_the_size_of_the_blank_it_is_cut_from()
+    {
+        // Test 12 (shaped-parts-model.md §9.1): the three finished dimensions of a shaped part are
+        // the dimensions of the blank you start from. No bounding box is computed and a taper never
+        // shrinks the listed size — the CUT-002 rule, one level up.
+        Cut[] cuts =
+        [
+            new CornerCut(BoxCorner.SouthEast, new Length(3072), new Length(5120)),
+            new RoundedCorner(BoxCorner.NorthWest, new Length(1024)),
+        ];
+
+        Sketch sketch = Design.WithCutParts(("Top", 49152, 24576, Top, cuts));
+        Box box = sketch.Entities.Values.OfType<Box>().Single();
+
+        CutListRow row = Assert.Single(CutList.Of(sketch, Library));
+
+        Assert.Equal(49152, row.Length.Units);
+        Assert.Equal(24576, row.Width.Units);
+        Assert.Equal(768, row.Thickness.Units);
+
+        // And the row carries the cuts themselves, in the site order the box holds them in, so the
+        // sentence is derived from the same data the canvas draws from.
+        Assert.Equal(box.Cuts, row.Cuts);
+        Assert.Equal([.. cuts], row.Cuts);
+        Assert.Equal(2, row.CutText.Length);
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-003")]
+    public void The_cuts_are_part_of_what_makes_two_parts_one_row()
+    {
+        // Test 13, first half: four legs chamfered on the same corner are one piece, made four
+        // times.
+        CornerCut chamfer = new(BoxCorner.NorthEast, new Length(256), new Length(256));
+        Sketch four = Design.WithCutParts(
+            ("Leg, south-west", 2560, 2560, Leg, [chamfer]),
+            ("Leg, south-east", 2560, 2560, Leg, [chamfer]),
+            ("Leg, north-west", 2560, 2560, Leg, [chamfer]),
+            ("Leg, north-east", 2560, 2560, Leg, [chamfer]));
+
+        CutListRow row = Assert.Single(CutList.Of(four, Library));
+
+        Assert.Equal("Leg", row.Label);
+        Assert.Equal(4, row.Quantity);
+        Assert.Equal(4, row.Members.Length);
+        Assert.Equal(chamfer, Assert.Single(row.Cuts));
+
+        // A leg is drawn as its footprint, so the chamfer runs the whole length of it and the one
+        // sentence says so.
+        Assert.Equal(
+            "Cut off the north-east corner: mark 1/4\" along each edge from the corner, and cut "
+            + "between the marks, for the full 1'-4 1/4\" length.",
+            Assert.Single(row.CutText));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-003")]
+    public void Chamfers_of_opposite_hand_are_two_rows_that_each_say_which_corner()
+    {
+        // Test 13, second half. A magazine would write "make two of each hand"; two honest rows
+        // that each name their corner are better than one row that hides it (§4.3, §6).
+        Sketch mirrored = Design.WithCutParts(
+            ("Leg, south-west", 2560, 2560, Leg,
+             [new CornerCut(BoxCorner.NorthEast, new Length(256), new Length(256))]),
+            ("Leg, south-east", 2560, 2560, Leg,
+             [new CornerCut(BoxCorner.NorthWest, new Length(256), new Length(256))]));
+
+        ImmutableArray<CutListRow> rows = CutList.Of(mirrored, Library);
+
+        Assert.Equal(2, rows.Length);
+        Assert.All(rows, row => Assert.Equal(1, row.Quantity));
+
+        // Each row names its own corner. Which of the two comes first is decided by the label
+        // tie-break, which runs before the cuts do, so this does not assert an order.
+        string[] sentences = [.. rows.Select(row => Assert.Single(row.CutText))];
+
+        Assert.Contains(sentences, sentence => sentence.Contains("north-east", StringComparison.Ordinal));
+        Assert.Contains(sentences, sentence => sentence.Contains("north-west", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-003")]
+    public void A_rectangle_and_the_same_rectangle_rounded_are_two_rows()
+    {
+        // Test 13, third part: they are not the same piece. Both are called "Shelf", so the label
+        // and the material tie-breaks say nothing and the cut sequence is what decides — an empty
+        // list before any cuts at all, whichever way round the boxes were drawn.
+        RoundedCorner rounded = new(BoxCorner.NorthEast, new Length(128));
+
+        ImmutableArray<CutListRow> rows = CutList.Of(
+            Design.WithCutParts(
+                ("Shelf", 10240, 768, Apron, [rounded]),
+                ("Shelf", 10240, 768, Apron, [])),
+            Library);
+
+        Assert.Equal(2, rows.Length);
+        Assert.All(rows, row => Assert.Equal("Shelf", row.Label));
+        Assert.Empty(rows[0].Cuts);
+        Assert.Empty(rows[0].CutText);
+        Assert.Equal(rounded, Assert.Single(rows[1].Cuts));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-003")]
+    public void Two_rows_that_differ_only_in_their_cuts_come_out_the_same_way_round_every_time()
+    {
+        // The tie-break is the cut sequence itself: site first, then kind, then the values. Built
+        // in one order and then the other, the list is the same both times.
+        RoundedCorner south = new(BoxCorner.SouthWest, new Length(128));
+        RoundedCorner north = new(BoxCorner.NorthEast, new Length(128));
+
+        ImmutableArray<CutListRow> oneWay = CutList.Of(
+            Design.WithCutParts(
+                ("Shelf", 10240, 768, Apron, [north]),
+                ("Shelf", 10240, 768, Apron, [south])),
+            Library);
+
+        ImmutableArray<CutListRow> theOther = CutList.Of(
+            Design.WithCutParts(
+                ("Shelf", 10240, 768, Apron, [south]),
+                ("Shelf", 10240, 768, Apron, [north])),
+            Library);
+
+        Assert.Equal<Cut>(
+            [south, north],
+            oneWay.Select(row => Assert.Single(row.Cuts)));
+        Assert.Equal(
+            oneWay.Select(row => row.Cuts),
+            theOther.Select(row => row.Cuts));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-003")]
+    public void Rows_that_differ_only_in_their_cuts_sort_by_site_then_kind_then_value()
+    {
+        // Every rung of the last tie-break, in one design: nine shelves of identical size and name
+        // whose only difference is what has been cut off them. Drawn deliberately out of order, so
+        // that the order that comes back is the comparison's and not the design's.
+        Cut[][] cuts =
+        [
+            [new CurvedEdge(BoxEdge.North, Bow.Inward, new Length(256))],
+            [new RoundedCorner(BoxCorner.SouthWest, new Length(512))],
+            [new CornerCut(BoxCorner.SouthWest, new Length(512), new Length(512))],
+            [],
+            [new CurvedEdge(BoxEdge.North, Bow.Inward, new Length(128))],
+            [new CornerCut(BoxCorner.NorthEast, new Length(256), new Length(256))],
+            [new CornerCut(BoxCorner.SouthWest, new Length(256), new Length(256))],
+            [new CurvedEdge(BoxEdge.North, Bow.Outward, new Length(128))],
+            [new CornerCut(BoxCorner.SouthWest, new Length(512), new Length(256))],
+            [new RoundedCorner(BoxCorner.SouthWest, new Length(256))],
+        ];
+
+        ImmutableArray<CutListRow> rows = CutList.Of(
+            Design.WithCutParts([.. cuts.Select(shelf => ("Shelf", 10240L, 768L, Apron, shelf))]),
+            Library);
+
+        Assert.Equal(cuts.Length, rows.Length);
+
+        // One blank whose cuts start with another's: everything they share is the same, so the
+        // shorter list is the plainer blank and comes first.
+        ImmutableArray<CutListRow> nested = CutList.Of(
+            Design.WithCutParts(
+                ("Shelf", 10240, 768, Apron,
+                 [
+                     new RoundedCorner(BoxCorner.SouthWest, new Length(256)),
+                     new RoundedCorner(BoxCorner.NorthEast, new Length(256)),
+                 ]),
+                ("Shelf", 10240, 768, Apron, [new RoundedCorner(BoxCorner.SouthWest, new Length(256))])),
+            Library);
+
+        Assert.Equal([1, 2], nested.Select(row => row.Cuts.Length));
+
+        Assert.Equal<IEnumerable<Cut>>(
+            [
+                // Nothing cut at all comes first: everything they share is the same, and the
+                // shorter list is the plainer blank.
+                [],
+
+                // Then by site — south-west corner, north-east corner, north edge — and within a
+                // site by kind, a straight cut before a rounding.
+                [new CornerCut(BoxCorner.SouthWest, new Length(256), new Length(256))],
+                [new CornerCut(BoxCorner.SouthWest, new Length(512), new Length(256))],
+                [new CornerCut(BoxCorner.SouthWest, new Length(512), new Length(512))],
+                [new RoundedCorner(BoxCorner.SouthWest, new Length(256))],
+                [new RoundedCorner(BoxCorner.SouthWest, new Length(512))],
+                [new CornerCut(BoxCorner.NorthEast, new Length(256), new Length(256))],
+                [new CurvedEdge(BoxEdge.North, Bow.Outward, new Length(128))],
+                [new CurvedEdge(BoxEdge.North, Bow.Inward, new Length(128))],
+                [new CurvedEdge(BoxEdge.North, Bow.Inward, new Length(256))],
+            ],
+            rows.Select(row => row.Cuts.AsEnumerable()));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-003")]
+    public void What_a_shopping_list_reads_is_untouched_by_the_cuts()
+    {
+        // Test 16 (§4.6). The shopping list consumes rows and reads the three blank dimensions and
+        // the stock; a shaped part buys exactly the board its blank needs. There is no shopping
+        // list in this build yet (#9, CUT-005), so this asserts the property it will rest on: the
+        // same design with and without cuts gives rows that are identical in everything but the
+        // cuts and the sentences derived from them.
+        (string Name, long Width, long Height, Part Part)[] parts =
+        [
+            ("Top", 49152, 24576, Top with { Stock = "1x6" }),
+            ("Leg, south-west", 2560, 2560, Leg),
+            ("Leg, south-east", 2560, 2560, Leg),
+        ];
+
+        Cut[] rounded = [new RoundedCorner(BoxCorner.NorthEast, new Length(1024))];
+
+        ImmutableArray<CutListRow> plain = CutList.Of(
+            Design.WithParts(parts),
+            Library);
+
+        ImmutableArray<CutListRow> shaped = CutList.Of(
+            Design.WithCutParts(
+                (parts[0].Name, parts[0].Width, parts[0].Height, parts[0].Part, rounded),
+                (parts[1].Name, parts[1].Width, parts[1].Height, parts[1].Part, []),
+                (parts[2].Name, parts[2].Width, parts[2].Height, parts[2].Part, [])),
+            Library);
+
+        Assert.Equal(plain.Length, shaped.Length);
+        for (int i = 0; i < plain.Length; i++)
+        {
+            Assert.Equal(plain[i], shaped[i] with { Cuts = plain[i].Cuts });
+
+            // Said one at a time, because these are the fields a shopping list adds up.
+            Assert.Equal(plain[i].Length, shaped[i].Length);
+            Assert.Equal(plain[i].Width, shaped[i].Width);
+            Assert.Equal(plain[i].Thickness, shaped[i].Thickness);
+            Assert.Equal(plain[i].Quantity, shaped[i].Quantity);
+            Assert.Equal(plain[i].Material, shaped[i].Material);
+            Assert.Equal(plain[i].Stock, shaped[i].Stock);
+        }
+
+        // The one difference is the one this step added.
+        Assert.Empty(plain[0].CutText);
+        Assert.Equal(["Round the north-east corner to a 1\" radius."], shaped[0].CutText);
+    }
+
+    /// <summary>A top lying flat: length across X, width up Y, 3/4" of thickness out of plane.</summary>
+    private static Part Top => new(
+        null, null, 1, new Length(768), new PlanAxes(PartDimension.Length, PartDimension.Width));
+
     private static Part Leg => new(
         null, null, 1, new Length(16640), new PlanAxes(PartDimension.Width, PartDimension.Thickness));
 

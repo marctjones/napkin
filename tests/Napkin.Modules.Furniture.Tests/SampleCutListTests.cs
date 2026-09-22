@@ -20,6 +20,7 @@ public sealed class SampleCutListTests
     [Theory]
     [InlineData("coffee-table")]
     [InlineData("wall-with-window")]
+    [InlineData("rounded-corner-table")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_cut_list_is_the_one_the_expectations_state(string fixture)
     {
@@ -48,6 +49,10 @@ public sealed class SampleCutListTests
             Assert.Equal(want.Unresolved, row.Unresolved);
             Assert.Equal(want.Members, row.Members.Select(id => id.Value.ToString("D")));
 
+            // A fixture of plain rectangles says nothing about cuts, which is the same statement
+            // as an empty list: no sentence is a sentence about nothing to do.
+            Assert.Equal(want.Cuts ?? [], row.CutText);
+
             Assert.False(string.IsNullOrWhiteSpace(want.Derivation), $"{want.Label} has no derivation.");
         }
     }
@@ -55,6 +60,7 @@ public sealed class SampleCutListTests
     [Theory]
     [InlineData("coffee-table")]
     [InlineData("wall-with-window")]
+    [InlineData("rounded-corner-table")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_csv_is_the_one_the_expectations_state(string fixture)
     {
@@ -88,14 +94,84 @@ public sealed class SampleCutListTests
         Assert.Empty(rows);
     }
 
+    [Fact]
+    [Trait("Feature", "CUT-004")]
+    public void The_rounded_corner_tables_top_is_the_shape_and_the_sentence_its_expectations_state()
+    {
+        // Test 18 (shaped-parts-model.md §9.1). The one part this fixture exists for, checked both
+        // ways round: the shape the cuts leave, and the words the cut list says to make it with.
+        // Both sides of the comparison were worked out by hand from the design — the outline from
+        // §1.5's walk — and neither was taken from napkin's own output (samples/README.md).
+        Sketch sketch = Read("rounded-corner-table");
+        ExpectedFixture expected = ExpectedFixture.Read("rounded-corner-table");
+        ExpectedOutline want = Assert.IsType<ExpectedOutline>(expected.TopOutline);
+
+        Box top = sketch.Entities.Values.OfType<Box>()
+            .Single(box => string.Equals(box.Name, "Top", StringComparison.Ordinal));
+
+        ImmutableArray<OutlineSegment> segments = top.Outline().Segments;
+
+        Assert.Equal(want.Segments.Count, segments.Length);
+
+        for (int i = 0; i < segments.Length; i++)
+        {
+            ExpectedSegment piece = want.Segments[i];
+
+            Assert.Equal(piece.FromXUnits, segments[i].From.X.Units);
+            Assert.Equal(piece.FromYUnits, segments[i].From.Y.Units);
+            Assert.Equal(piece.ToXUnits, segments[i].To.X.Units);
+            Assert.Equal(piece.ToYUnits, segments[i].To.Y.Units);
+
+            if (string.Equals(piece.Kind, "arc", StringComparison.Ordinal))
+            {
+                ArcByCenter arc = Assert.IsType<ArcByCenter>(segments[i]);
+
+                Assert.Equal(piece.CenterXUnits, arc.Center.X.Units);
+                Assert.Equal(piece.CenterYUnits, arc.Center.Y.Units);
+            }
+            else
+            {
+                Assert.IsType<StraightSegment>(segments[i]);
+            }
+
+            Assert.False(
+                string.IsNullOrWhiteSpace(piece.Derivation),
+                $"Segment {i} of the top's outline has no derivation.");
+        }
+
+        // The boundary closes: the last segment ends where the first one starts.
+        Assert.Equal(segments[0].From, segments[^1].To);
+
+        // And the row for it: the blank's own three dimensions, plus the one sentence.
+        CutListRow row = CutList.Of(sketch, MaterialsLibrary.Shipped)[0];
+
+        Assert.Equal("Top", row.Label);
+        Assert.Equal(expected.CutList[0].Cuts, row.CutText);
+        Assert.Equal("Round all four corners to a 1\"" + " radius.", Assert.Single(row.CutText));
+    }
+
     private static (ImmutableArray<CutListRow> Rows, ExpectedFixture Expected) Load(string fixture)
     {
-        LoadResult result = SceneReader.ReadFile(ExpectedFixture.ScenePath(fixture));
-        Loaded loaded = Assert.IsType<Loaded>(result);
         ExpectedFixture expected = ExpectedFixture.Read(fixture);
 
-        Assert.Equal(expected.FormatVersion, SceneReader.FormatVersion);
+        return (CutList.Of(Read(fixture), MaterialsLibrary.Shipped), expected);
+    }
 
-        return (CutList.Of(loaded.Sketch, MaterialsLibrary.Shipped), expected);
+    private static Sketch Read(string fixture)
+    {
+        LoadResult result = SceneReader.ReadFile(ExpectedFixture.ScenePath(fixture));
+
+        // A refusal says what is wrong with the file, which is what a failing fixture needs to
+        // print rather than "expected Loaded, got Refused".
+        if (result is Refused refused)
+        {
+            Assert.Fail($"{fixture}.scene.json was refused: {refused.Summary}");
+        }
+
+        Loaded loaded = Assert.IsType<Loaded>(result);
+
+        Assert.Equal(ExpectedFixture.Read(fixture).FormatVersion, SceneReader.FormatVersion);
+
+        return loaded.Sketch;
     }
 }

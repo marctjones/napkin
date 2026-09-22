@@ -1,15 +1,25 @@
 # Sample designs (issue #37)
 
-Two hand-crafted designs, in the scene format documented in
+Three hand-crafted designs, in the scene format documented in
 [`docs/file-format.md`](../docs/file-format.md), and the expectations a test asserts against them.
 
 | Fixture | Files |
 |---|---|
 | A coffee table | `coffee-table.design.md`, `coffee-table.scene.json`, `coffee-table.expected.json` |
 | A wall with a window | `wall-with-window.design.md`, `wall-with-window.scene.json`, `wall-with-window.expected.json` |
+| A table with rounded corners | `rounded-corner-table.design.md`, `rounded-corner-table.scene.json`, `rounded-corner-table.expected.json` |
 
-`tests/Napkin.Core.Project.Tests` loads each scene with the #6 reader and asserts it matches its
-`*.expected.json` exactly, in integer units.
+`tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts
+it matches its `*.expected.json` exactly, in integer units;
+`tests/Napkin.Modules.Furniture.Tests` does the same for all three fixtures' cut lists, and for the
+rounded-corner table's outline.
+
+**The rounded-corner table is the shaped-part fixture** (`docs/design/shaped-parts-model.md` §8).
+The coffee table is left exactly as drawn — five plain rectangles, square corners — because it is
+Marc's design and a feature does not get to edit it; a shaped part earns its own sample instead.
+The new one repeats the coffee table's frame so that the one thing that differs, a 1" radius at
+each of the top's four corners, is legible against a familiar shape. Its expectations carry the
+top's outline as well as its cut-list row, walked by hand from §1.5's rule.
 
 ## The rule
 
@@ -50,8 +60,10 @@ after re-doing the arithmetic by hand and writing the new derivation down.
   chosen".
 
   The **cut list** is here, as of #8: `coffee-table.expected.json`'s `cutList` is four rows
-  re-derived by hand from `coffee-table.design.md`, each with its own `derivation`, and
-  `wall-with-window.expected.json`'s is empty because neither of its boxes is a part. The
+  re-derived by hand from `coffee-table.design.md`, each with its own `derivation`;
+  `rounded-corner-table.expected.json`'s is the same four rows re-derived again, with the
+  sentence its top's rounded corners read as; and `wall-with-window.expected.json`'s is empty
+  because neither of its boxes is a part. The
   thicknesses and lengths the plan view cannot hold are still written in each `design.md` and
   repeated under `statedNotInScene`; they are now also in the scene, as each part's `outOfPlane`.
 - **No header size, stud count or bracing length** in the wall fixture. Those expectations are
