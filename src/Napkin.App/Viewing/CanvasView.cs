@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -44,6 +45,12 @@ public sealed record DimensionEditRequested(EntityId Box, SizeAxis Axis);
 /// <para>
 /// <strong>Line weights are in pixels, not inches.</strong> A 1.4-pixel outline is 1.4 pixels at
 /// every zoom, so the drawing reads the same framed on a wall or zoomed to a single joint.
+/// </para>
+/// <para>
+/// <strong>What is drawn is also readable.</strong> Because everything here is pixels, a script or
+/// an accessibility client would see one opaque rectangle and nothing else. <see cref="CanvasView"/>
+/// therefore returns a <see cref="CanvasAutomationPeer"/>, which exposes one element per part,
+/// reading this class's own view of the sketch (issue #64).
 /// </para>
 /// </remarks>
 public sealed class CanvasView : Control
@@ -103,6 +110,7 @@ public sealed class CanvasView : Control
     Point _pressedAt;
     ViewTransform _view = ViewTransform.Default;
     DesignEditor? _editor;
+    IReadOnlyList<EntityId>? _partsLastSeen;
 
     readonly RectangleTool _rectangle = new();
     EditTool _tool = EditTool.Select;
@@ -130,6 +138,16 @@ public sealed class CanvasView : Control
 
     /// <summary>Raised when a dimension label is clicked, or Tab asks for one.</summary>
     public event EventHandler<DimensionEditRequested>? DimensionEditRequested;
+
+    /// <summary>
+    /// Raised when the set of parts on the canvas changes — one drawn, one deleted, a different
+    /// design opened — so the automation peer can rebuild its children.
+    /// </summary>
+    /// <remarks>
+    /// Moving or resizing a part is not a change of the set and does not raise this: an element's
+    /// name, value and rectangle are all read live from the sketch, so nothing about it is stale.
+    /// </remarks>
+    public event EventHandler? PartsChanged;
 
     /// <summary>The drawing being edited. The canvas draws what this holds and nothing else.</summary>
     public DesignEditor? Editor
@@ -229,6 +247,38 @@ public sealed class CanvasView : Control
     /// </remarks>
     public IReadOnlyList<DimensionMeasurement> Measurements() =>
         Design is { } design ? [.. DimensionLayout.Measure(design.Sketch)] : [];
+
+    /// <summary>
+    /// Every part on the canvas, in the order <see cref="Render"/> draws them.
+    /// </summary>
+    /// <remarks>
+    /// The automation peer walks this, so the elements a client enumerates are the parts a person
+    /// sees, in the same order, from the same sketch.
+    /// </remarks>
+    internal IReadOnlyList<EntityId> PartsInOrder() =>
+        Design is { } design
+            ? [.. design.Sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id).Select(box => box.Id)]
+            : [];
+
+    /// <summary>What to call a part, the same name the status line and the messages use.</summary>
+    internal string PartName(EntityId id) => _editor?.NameOf(id) ?? id.ToString();
+
+    /// <summary>
+    /// A part's size as text, in the same format as the dimension labels drawn beside it.
+    /// </summary>
+    internal string? PartSize(EntityId id) =>
+        Design?.Sketch.Find<Box>(id) is { } box ? $"{Label(box.Width)} × {Label(box.Height)}" : null;
+
+    /// <summary>
+    /// Where a part is drawn, in canvas pixels: the rectangle <see cref="Outline"/> traces, taken
+    /// from the same two corners and the same view transform.
+    /// </summary>
+    internal Rect? PartRectangle(EntityId id) =>
+        Design?.Sketch.Find<Box>(id) is { } box
+            ? new Rect(
+                _view.ToScreen(box.Corner(BoxCorner.SouthWest)),
+                _view.ToScreen(box.Corner(BoxCorner.NorthEast))).Normalize()
+            : null;
 
     /// <summary>What one dimension reads, found by the label of the design it belongs to.</summary>
     public string? LabelOf(EntityId dimension) => Measurements()
@@ -878,7 +928,17 @@ public sealed class CanvasView : Control
             return string.Empty;
         }
 
-        return $"{box.Width.Format(LabelFormat).Text} by {box.Height.Format(LabelFormat).Text}";
+        return $"{Label(box.Width)} by {Label(box.Height)}";
+    }
+
+    /// <summary>
+    /// One length as the canvas writes it: at the label precision, with the <c>&#x2248;</c> marker
+    /// when the text is not the stored value (docs/design/geometry-model.md &#xA7;1.4).
+    /// </summary>
+    string Label(Length length)
+    {
+        FormattedLength formatted = length.Format(LabelFormat);
+        return formatted.IsExact ? formatted.Text : "≈" + formatted.Text;
     }
 
     /// <summary>
@@ -983,7 +1043,11 @@ public sealed class CanvasView : Control
 
     Length DimensionOffset() => ModelLength(SelectionDimensionOffsetPixels);
 
-    void OnEditorDesignChanged(object? sender, EventArgs e) => InvalidateVisual();
+    void OnEditorDesignChanged(object? sender, EventArgs e)
+    {
+        InvalidateVisual();
+        NotePartsIfChanged();
+    }
 
     void OnEditorDesignOpened(object? sender, EventArgs e)
     {
@@ -991,6 +1055,42 @@ public sealed class CanvasView : Control
         _fitPending = true;
         ZoomToFit();
         InvalidateVisual();
+        NotePartsIfChanged();
+    }
+
+    /// <summary>
+    /// Raises <see cref="PartsChanged"/> when the set of parts is not the one last seen.
+    /// </summary>
+    /// <remarks>
+    /// Nothing is walked while nobody is listening: a peer is only built once a client has asked
+    /// the canvas for one, and a drag raises <c>DesignChanged</c> on every pointer sample.
+    /// </remarks>
+    void NotePartsIfChanged()
+    {
+        if (PartsChanged is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<EntityId> parts = PartsInOrder();
+        if (_partsLastSeen is not null && _partsLastSeen.SequenceEqual(parts))
+        {
+            return;
+        }
+
+        _partsLastSeen = parts;
+        PartsChanged.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Recording the parts on the way past is what lets <see cref="NotePartsIfChanged"/> stay
+    /// silent while nobody is listening and still announce the first change after somebody starts.
+    /// </remarks>
+    protected override AutomationPeer OnCreateAutomationPeer()
+    {
+        _partsLastSeen = PartsInOrder();
+        return new CanvasAutomationPeer(this);
     }
 
     void EndPan(IPointer? pointer)
@@ -1171,9 +1271,7 @@ public sealed class CanvasView : Control
 
         // The size while the part is still being dragged out: read from the two corners, the same
         // way the part's dimensions will read it a moment later (CVS-007).
-        FormattedText text = Text(
-            $"{width.Format(LabelFormat).Text} × {height.Format(LabelFormat).Text}",
-            palette.Selection);
+        FormattedText text = Text($"{Label(width)} × {Label(height)}", palette.Selection);
 
         Point at = new(rectangle.Center.X - (text.Width / 2), rectangle.Bottom + 6);
         context.DrawRectangle(
