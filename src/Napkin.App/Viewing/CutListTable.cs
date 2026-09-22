@@ -217,8 +217,29 @@ public sealed class CutListTable : Grid
             }
 
             line++;
+
+            // What to do to the blank, under the row it belongs to: the sentences §4.4 wrote for a
+            // person at a bench, beside the picture of the shape they describe. A plain rectangle
+            // has none and gets no line.
+            foreach (string sentence in row.CutText)
+            {
+                RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+                Add(Sentence(sentence), line, 0, span: 7);
+                line++;
+            }
         }
     }
+
+    /// <summary>One bench sentence, set under its row and indented to read as part of it.</summary>
+    private TextBlock Sentence(string text) => new()
+    {
+        Text = text,
+        FontSize = 11,
+        Opacity = 0.9,
+        TextWrapping = TextWrapping.Wrap,
+        Margin = new Thickness(18, 0, 8, 5),
+        Foreground = new SolidColorBrush(CanvasPalette.For(ActualThemeVariant).Label),
+    };
 
     /// <summary>
     /// A picture of what this row describes, or nothing when it describes a plain rectangle.
@@ -305,10 +326,11 @@ public sealed class CutListTable : Grid
         VerticalAlignment = VerticalAlignment.Center,
     };
 
-    private void Add(Control control, int row, int column)
+    private void Add(Control control, int row, int column, int span = 1)
     {
         SetRow(control, row);
         SetColumn(control, column);
+        SetColumnSpan(control, span);
         Children.Add(control);
     }
 }

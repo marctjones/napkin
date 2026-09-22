@@ -140,6 +140,177 @@ public class ShapedPartWorkflows
         AppDriver.Attach(window.CutList!, "cut-list").SaveFrame("cut-list-with-thumbnail");
     });
 
+    [GuiWorkflow("GUI-DRAW-09")]
+    public void Shape_one_part_in_the_workshop_and_take_the_cut_off_again() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        // A blank sheet, and a plain rectangle drawn on it with the pointer.
+        app.Chord(Key.N);
+        app.Press(Key.R);
+        app.Drag(
+            At(window, Point2.Inches(-18, -4)),
+            At(window, Point2.Inches(0, 0)),
+            At(window, Point2.Inches(18, 4)));
+
+        EntityId id = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>()).Id;
+
+        app.Expect("a plain rectangle is drawn and selected", () =>
+        {
+            Box drawn = window.CurrentDesign!.Sketch.Find<Box>(id)!;
+            Assert.Empty(drawn.Cuts);
+            Assert.Equal(id, window.Editor.OnlySelected);
+        });
+
+        // Into the workshop by keyboard, which is the way §7.1 describes entering it: one part
+        // selected, one keystroke.
+        app.Press(Key.C);
+
+        app.Expect("the workshop is open on the part that was selected", () =>
+        {
+            Assert.True(window.IsShapingPart, "the workshop did not open.");
+            Assert.Equal(id, window.ShapedPart);
+            Assert.Contains(window.Editor.NameOf(id), window.WorkshopPanel.IsVisible
+                ? WorkshopHeadlineOf(window)
+                : string.Empty, StringComparison.Ordinal);
+        });
+
+        // Pick the stock. A 1x6 is 5 1/2" wide whatever the box was drawn at, so this really
+        // resizes the blank, through the updater (§1.2).
+        app.Click(CentreOf(window, window.WorkshopStockField));
+        app.Type("1x6");
+        app.Click(CentreOf(window, window.WorkshopStockApply));
+
+        app.Expect("the blank really is a 1x6: the yard's width, set through the updater", () =>
+        {
+            Box blank = window.CurrentDesign!.Sketch.Find<Box>(id)!;
+            Assert.Equal("1x6", blank.Part!.Stock);
+            Assert.Equal(Length.Inches(5, 1, 2).Units, blank.Height.Units);
+            Assert.Equal(Length.Inches(36).Units, blank.Width.Units);
+            Assert.Contains("5 1/2", window.WorkshopStockReadoutText, StringComparison.Ordinal);
+        });
+
+        app.SaveFrame("workshop-open");
+
+        // Press on the south-west corner and drag inward. The drag is stopped halfway so that the
+        // live preview can be looked at: §7.2 says the candidate is applied on every pointer move,
+        // so the part really carries a cut before the button comes up.
+        Point corner = InWorkshop(window, Point2.Origin);
+        app.PressAt(corner);
+        app.DragTo(InWorkshop(window, Point2.Inches(1, 1)));
+
+        app.Expect("the cut follows the pointer while the button is still down", () =>
+        {
+            CornerCut live = Assert.IsType<CornerCut>(
+                Assert.Single(window.CurrentDesign!.Sketch.Find<Box>(id)!.Cuts));
+            Assert.Equal(BoxCorner.SouthWest, live.Corner);
+            Assert.Equal(Length.Inches(1).Units, live.AlongX.Units);
+        });
+
+        app.DragTo(InWorkshop(window, Point2.Inches(2, 2)));
+        app.ReleaseAt(InWorkshop(window, Point2.Inches(2, 2)));
+
+        app.Expect("the gesture left one corner cut of the size it was dragged to", () =>
+        {
+            CornerCut clip = Assert.IsType<CornerCut>(
+                Assert.Single(window.CurrentDesign!.Sketch.Find<Box>(id)!.Cuts));
+            Assert.Equal(BoxCorner.SouthWest, clip.Corner);
+            Assert.Equal(Length.Inches(2).Units, clip.AlongX.Units);
+            Assert.Equal(Length.Inches(2).Units, clip.AlongY.Units);
+
+            // The cut it just made is the one selected, and its numbers are in the fields.
+            Assert.Equal(CutSite.Corner(BoxCorner.SouthWest), window.Workshop.SelectedSite);
+            Assert.True(window.IsShowingCutFields, "the typed fields did not appear.");
+            Assert.Single(window.WorkshopCutsOnScreen);
+        });
+
+        app.SaveFrame("cut");
+
+        // Leave the workshop. The part is where it was drawn, and the canvas draws its real
+        // outline rather than the rectangle.
+        Box blankBefore = window.CurrentDesign!.Sketch.Find<Box>(id)!;
+        app.Press(Key.Escape);
+
+        app.Expect("the canvas is back, the outline changed, and the part did not move", () =>
+        {
+            Assert.False(window.IsShapingPart, "the workshop did not close.");
+
+            Box shaped = window.CurrentDesign!.Sketch.Find<Box>(id)!;
+            Assert.Equal(blankBefore.Anchor, shaped.Anchor);
+            Assert.Equal(5, shaped.Outline().Segments.Length);
+
+            // The corner a cut took away is no longer part of the shape, which is what "the
+            // outline changed" means where a person clicks.
+            Point2 inTheClip = new(
+                shaped.Corner(BoxCorner.SouthWest).X + Length.Inches(0, 1, 4),
+                shaped.Corner(BoxCorner.SouthWest).Y + Length.Inches(0, 1, 4));
+            Assert.True(BoxGeometry.Contains(shaped, inTheClip));
+            Assert.False(BoxGeometry.ContainsShape(shaped, inTheClip));
+        });
+
+        // And the list a person cuts from says what to do to the blank, in bench words.
+        app.Chord(Key.L);
+
+        app.Expect("the cut list shows the row, its shape and the sentence for the cut", () =>
+        {
+            CutListWindow list = window.CutList!;
+            CutListRow row = Assert.Single(list.Rows.Rows);
+            Assert.Equal(window.CurrentDesign!.Sketch.Find<Box>(id)!.Cuts, row.Cuts);
+
+            string sentence = Assert.Single(row.CutText);
+            Assert.Contains("south-west corner", sentence, StringComparison.Ordinal);
+            Assert.Contains(sentence, list.Rows.LinesOnScreen, StringComparer.Ordinal);
+            Assert.Contains(row.Label, list.Rows.RowsWithThumbnails);
+        });
+
+        AppDriver.Attach(window.CutList!, "cut-list-shaped").SaveFrame("sentence");
+
+        // Back into the workshop, pick the cut, and take it off: RemoveCut, and the rectangle is
+        // a rectangle again.
+        app.Click(At(window, window.CurrentDesign!.Sketch.Find<Box>(id)!.Center));
+        app.Press(Key.C);
+        app.Click(InWorkshop(window, Point2.Origin));
+
+        app.Expect("a click on a corner that carries a cut picks it and cuts nothing new", () =>
+        {
+            Assert.True(window.IsShapingPart, "the workshop did not reopen.");
+            Assert.Equal(CutSite.Corner(BoxCorner.SouthWest), window.Workshop.SelectedSite);
+            Assert.Single(window.CurrentDesign!.Sketch.Find<Box>(id)!.Cuts);
+        });
+
+        app.Press(Key.Delete);
+
+        app.Expect("the cut is off the blank and the part is a plain rectangle again", () =>
+        {
+            Box plain = window.CurrentDesign!.Sketch.Find<Box>(id)!;
+            Assert.Empty(plain.Cuts);
+            Assert.Equal(4, plain.Outline().Segments.Length);
+            Assert.All(plain.Outline().Segments, segment => Assert.IsType<StraightSegment>(segment));
+
+            // Taking a cut off does not undo the stock: the blank is still a 1x6.
+            Assert.Equal(Length.Inches(5, 1, 2).Units, plain.Height.Units);
+            Assert.Equal(blankBefore.Anchor, plain.Anchor);
+            Assert.Empty(window.WorkshopCutsOnScreen);
+        });
+
+        app.SaveFrame("cut-removed");
+    });
+
+    static string WorkshopHeadlineOf(MainWindow window) => window.WorkshopPanel
+        .GetVisualDescendants()
+        .OfType<TextBlock>()
+        .Select(text => text.Text ?? string.Empty)
+        .FirstOrDefault(text => text.StartsWith("Shaping", StringComparison.Ordinal))
+        ?? string.Empty;
+
+    /// <summary>The window coordinate a point of the blank's own frame is drawn at in the workshop.</summary>
+    static Point InWorkshop(MainWindow window, Point2 local)
+    {
+        Point onWorkshop = window.Workshop.ToScreen(local);
+        Point origin = window.Workshop.TranslatePoint(new Point(0, 0), window)!.Value;
+        return new Point(onWorkshop.X + origin.X, onWorkshop.Y + origin.Y);
+    }
+
     /// <summary>The window coordinate a model point is drawn at.</summary>
     static Point At(MainWindow window, Point2 world)
     {
