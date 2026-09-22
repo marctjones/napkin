@@ -57,6 +57,7 @@ public sealed class DesignEditor
     Design? _gestureStart;
     string _gestureName = string.Empty;
     int _nextPartNumber = 1;
+    Sketch _savedSketch;
 
     /// <summary>An editor over an empty sheet, using the direct updater.</summary>
     public DesignEditor()
@@ -75,6 +76,7 @@ public sealed class DesignEditor
     {
         _updater = updater ?? throw new ArgumentNullException(nameof(updater));
         _design = NewSheet.Empty();
+        _savedSketch = _design.Sketch;
     }
 
     /// <summary>Raised when the design is replaced — by an edit or by opening another one.</summary>
@@ -89,8 +91,28 @@ public sealed class DesignEditor
     /// <summary>Raised when there is something new to say about the last edit.</summary>
     public event EventHandler? MessageChanged;
 
-    /// <summary>Raised when a gesture that changed something ends. #11's undo stack hangs here.</summary>
+    /// <summary>
+    /// Raised when a gesture that changed something ends, after it has been recorded in
+    /// <see cref="History"/>.
+    /// </summary>
     public event EventHandler<GestureCommitted>? GestureCommitted;
+
+    /// <summary>
+    /// Undo and redo (#11): every gesture that changed something, in order. Cleared when another
+    /// design is opened — there is no undoing across a change of file.
+    /// </summary>
+    public UndoHistory History { get; } = new();
+
+    /// <summary>
+    /// Whether the drawing differs from the one last opened or saved.
+    /// </summary>
+    /// <remarks>
+    /// Compared by value, not by counting edits: a sketch is an immutable value with structural
+    /// equality, so undoing back to exactly what was saved — or dragging a part away and back onto
+    /// the same spot — is correctly not a change. Only the sketch is compared, because it is all a
+    /// save writes.
+    /// </remarks>
+    public bool HasUnsavedChanges => !_design.Sketch.Equals(_savedSketch);
 
     /// <summary>The design, with the one sketch in it.</summary>
     public Design Design => _design;
@@ -124,11 +146,13 @@ public sealed class DesignEditor
 
         _gestureStart = null;
         _nextPartNumber = NextFreePartNumber(design);
+        History.Clear();
 
         // Every part gets a name on the way in, so that nothing a person reads — a relationship,
         // a conflict, a message — ever has to fall back to a GUID. A file carries no name per
         // entity yet (docs/file-format.md), so for now they are numbered in id order.
         _design = Named(design, ChangeSet.Empty with { Added = [.. design.Sketch.Entities.Keys] });
+        _savedSketch = _design.Sketch;
 
         SetMessage(null);
         ReplaceSelection([]);
@@ -145,9 +169,26 @@ public sealed class DesignEditor
     /// message the result produces, whichever result it is.
     /// </param>
     /// <returns>What the updater said, unaltered.</returns>
+    /// <remarks>
+    /// A request applied outside a gesture is a gesture of its own, so that every accepted edit is
+    /// one undo step whether or not the caller thought to say where it began and ended.
+    /// </remarks>
     public UpdateResult Apply(Request request, string what)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        if (!InGesture)
+        {
+            BeginGesture(what);
+            try
+            {
+                return Apply(request, what);
+            }
+            finally
+            {
+                EndGesture();
+            }
+        }
 
         Sketch before = _design.Sketch;
         UpdateResult result = _updater.Apply(before, request);
@@ -286,8 +327,71 @@ public sealed class DesignEditor
 
         if (start is not null && !ReferenceEquals(start, _design))
         {
-            GestureCommitted?.Invoke(this, new GestureCommitted(_gestureName, start, _design));
+            GestureCommitted committed = new(_gestureName, start, _design);
+            History.Record(committed);
+            GestureCommitted?.Invoke(this, committed);
         }
+    }
+
+    /// <summary>
+    /// Puts the drawing back as it was before the last gesture, and says so.
+    /// </summary>
+    /// <remarks>
+    /// The design restored is the very one the gesture started from, so the drawing, its names and
+    /// its entity ids come back exactly; whatever is selected stays selected if it still exists.
+    /// Nothing is undone in the middle of a gesture — a drag has not happened yet until it ends.
+    /// </remarks>
+    /// <returns>Whether anything was undone.</returns>
+    public bool Undo()
+    {
+        if (InGesture)
+        {
+            return false;
+        }
+
+        if (History.Undo() is not { } gesture)
+        {
+            Say(EditSeverity.Hint, "There is nothing to undo.");
+            return false;
+        }
+
+        Restore(gesture.Before);
+        Say(EditSeverity.Done, $"Undone: {gesture.What}.");
+        return true;
+    }
+
+    /// <summary>Puts back the last gesture that was undone, and says so.</summary>
+    /// <returns>Whether anything was redone.</returns>
+    public bool Redo()
+    {
+        if (InGesture)
+        {
+            return false;
+        }
+
+        if (History.Redo() is not { } gesture)
+        {
+            Say(EditSeverity.Hint, "There is nothing to redo.");
+            return false;
+        }
+
+        Restore(gesture.After);
+        Say(EditSeverity.Done, $"Redone: {gesture.What}.");
+        return true;
+    }
+
+    /// <summary>
+    /// Records that the drawing as it is now is what is on disk, so
+    /// <see cref="HasUnsavedChanges"/> measures from here.
+    /// </summary>
+    public void MarkSaved() => _savedSketch = _design.Sketch;
+
+    /// <summary>Replaces the design with one from the history — an edit, not an open.</summary>
+    void Restore(Design design)
+    {
+        _design = design;
+        PruneSelection();
+        DesignChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Everything the drawing says, in id order, in plain words.</summary>
