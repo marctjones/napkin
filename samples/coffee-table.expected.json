@@ -94,11 +94,11 @@
 
   "cutListCsv": [
     "Cut list: finished sizes before saw kerf and joinery allowance.",
-    "Label,Quantity,Length,Width,Thickness,Material",
-    "Top,1,\"4'-0\"\"\",\"2'-0\"\"\",\"3/4\"\"\",",
-    "\"Apron, long\",2,\"3'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",",
-    "Leg,4,\"1'-4 1/4\"\"\",\"2 1/2\"\"\",\"2 1/2\"\"\",",
-    "\"Apron, short\",2,\"1'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\","
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
+    "Top,1,\"4'-0\"\"\",\"2'-0\"\"\",\"3/4\"\"\",,",
+    "\"Apron, long\",2,\"3'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,",
+    "Leg,4,\"1'-4 1/4\"\"\",\"2 1/2\"\"\",\"2 1/2\"\"\",,",
+    "\"Apron, short\",2,\"1'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,"
   ],
 
   "relationshipKinds": {
@@ -140,6 +140,7 @@
   "notes": [
     "Format version 2 added a name to every entity and a part to every box, so the plan view now carries the third dimension of each part in part.outOfPlane. The three numbers under statedNotInScene are where they came from: nothing new was invented for the cut list.",
     "The cutList rows above are re-derived by hand from coffee-table.design.md, the same rule samples/README.md sets for every other number here. Each row's derivation shows the arithmetic and the label rule so a reviewer can re-check it without running anything.",
-    "No materials list is expected here. That arrives with #9; no part in this fixture names a stock, so every row's material column is empty and a shopping list would report the whole table under \"no stock chosen\"."
+    "No materials list is expected here. That arrives with #9; no part in this fixture names a stock, so every row's material column is empty and a shopping list would report the whole table under \"no stock chosen\".",
+    "The cut list's CSV gained a trailing Cuts column when cuts on a blank arrived (docs/design/shaped-parts-model.md §4.5). This table is five plain rectangles and stays that way — the rounded corners went into samples/rounded-corner-table instead (§8) — so the column is empty on every line and each row's line simply ends in one more comma. Nothing else in this file changed."
   ]
 }

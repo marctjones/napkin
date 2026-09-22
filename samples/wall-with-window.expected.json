@@ -66,12 +66,13 @@
 
   "cutListCsv": [
     "Cut list: finished sizes before saw kerf and joinery allowance.",
-    "Label,Quantity,Length,Width,Thickness,Material"
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts"
   ],
 
   "notes": [
     "M1 is a geometry and labelling fixture only: entity positions and the exact feet-inch-fraction text of each dimension label.",
     "Format version 2 gave every entity a name and every box a part. This fixture's two boxes are not parts, so they carry \"part\": null; their names are the ones this file already stated.",
-    "No header size, stud count or bracing length is expected here. Those arrive in M4 and M5, read by a person from Connecticut's published adopted text with the page cited, never from memory and never from napkin's own output."
+    "No header size, stud count or bracing length is expected here. Those arrive in M4 and M5, read by a person from Connecticut's published adopted text with the page cited, never from memory and never from napkin's own output.",
+    "The cut list's CSV gained a trailing Cuts column when cuts on a blank arrived (docs/design/shaped-parts-model.md §4.5). Nothing in this fixture is cut and nothing here is a part, so the only change is the column name in the header line above."
   ]
 }
