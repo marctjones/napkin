@@ -860,7 +860,7 @@
       "id": "GUI-CUT-02",
       "area": "ui",
       "title": "Assign materials to parts",
-      "acceptance": "Select the four legs, choose a nominal stock size from the materials picker, and each part's reported stock changes to that size's actual dimensions.",
+      "acceptance": "A floating toolbox groups stock by category (dimensional lumber, sheet goods, hardwood, fasteners) with one icon per category; choosing a category opens a text list of its items; hovering an item shows its actual size and citation before it is placed; placing one sets the part's stock reference.",
       "milestone": "M3",
       "issue": 7,
       "kind": "workflow"
@@ -935,6 +935,24 @@
       "acceptance": "After the code change, an opening the previous pack sized but the new pack does not cover shows as out of scope rather than keeping the number the old pack produced.",
       "milestone": "M5",
       "issue": 19,
+      "kind": "workflow"
+    },
+    {
+      "id": "CVS-011",
+      "area": "ui",
+      "title": "Tool buttons show a tooltip",
+      "acceptance": "Hovering the Select or Rectangle tool button shows a tooltip naming the tool and its keyboard shortcut.",
+      "milestone": "M2",
+      "issue": 62,
+      "kind": "workflow"
+    },
+    {
+      "id": "CVS-012",
+      "area": "ui",
+      "title": "Relationship glyphs show their sentence on hover",
+      "acceptance": "Hovering a relationship glyph on the canvas (e.g. a flush indicator) shows the same plain-language sentence as its row in the relationship list.",
+      "milestone": "M2",
+      "issue": 62,
       "kind": "workflow"
     }
   ]
