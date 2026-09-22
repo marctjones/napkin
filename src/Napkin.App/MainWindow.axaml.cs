@@ -58,6 +58,7 @@ public partial class MainWindow : Window
     bool _opening;
     bool _showingProperties;
     bool _showingCut;
+    bool _toolboxOpen;
     EntityId? _editingBox;
     EntityId? _shaping;
     SizeAxis _editingAxis = SizeAxis.Width;
@@ -88,6 +89,8 @@ public partial class MainWindow : Window
         DrawingCanvas.DimensionEditRequested += (_, request) =>
             OpenDimensionEditor(request.Box, request.Axis);
         DrawingCanvas.ShapeRequested += (_, box) => OpenWorkshop(box);
+        DrawingCanvas.ToolboxRequested += (_, _) => ToggleToolbox();
+        StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
 
         WorkshopDrawing.Editor = Editor;
         WorkshopDrawing.SelectedCutChanged += (_, _) => ShowCut();
@@ -178,6 +181,15 @@ public partial class MainWindow : Window
 
     /// <summary>The select tool's button.</summary>
     public ToggleButton SelectToolControl => SelectToolButton;
+
+    /// <summary>The tool control's button that opens and closes the stock toolbox.</summary>
+    public ToggleButton StockToolboxControl => StockToolButton;
+
+    /// <summary>The stock toolbox that floats over the drawing.</summary>
+    public StockToolbox Toolbox => StockToolboxPanel;
+
+    /// <summary>Whether the stock toolbox is on screen.</summary>
+    public bool IsShowingToolbox => StockToolboxPanel.IsVisible;
 
     /// <summary>The status line at the foot of the window.</summary>
     public Border StatusLine => StatusBar;
@@ -887,6 +899,8 @@ public partial class MainWindow : Window
         ToolBar.IsVisible = false;
         RelationshipsPanel.IsVisible = false;
         PropertiesPanel.IsVisible = false;
+        DrawingCanvas.ArmStock(null);
+        UpdateToolbox();
 
         _showingCut = true;
         try
@@ -923,6 +937,7 @@ public partial class MainWindow : Window
         WorkshopDrawing.Blank = null;
         ToolBar.IsVisible = true;
         CutFields.IsVisible = false;
+        UpdateToolbox();
 
         UpdateRelationships();
         UpdateMenuEnablement();
@@ -1364,7 +1379,59 @@ public partial class MainWindow : Window
     {
         SelectToolButton.IsChecked = DrawingCanvas.Tool == EditTool.Select;
         RectangleToolButton.IsChecked = DrawingCanvas.Tool == EditTool.Rectangle;
+        StockToolboxPanel.ShowArmed(DrawingCanvas.ArmedStock);
     }
+
+    // ---------------------------------------------------------------------------------------
+    // The stock toolbox: pick real stock, then drag it onto the paper (issue #7, GUI-CUT-02)
+    // ---------------------------------------------------------------------------------------
+
+    /// <summary>Opens the stock toolbox, or closes it and puts down whatever it had picked up.</summary>
+    public void ToggleToolbox()
+    {
+        _toolboxOpen = !_toolboxOpen;
+        if (!_toolboxOpen)
+        {
+            DrawingCanvas.ArmStock(null);
+        }
+
+        UpdateToolbox();
+        DrawingCanvas.Focus();
+    }
+
+    /// <summary>
+    /// Shows the toolbox when it is open and the canvas is what is on screen; the shape workshop
+    /// covers the canvas and takes its floating chrome with it.
+    /// </summary>
+    void UpdateToolbox()
+    {
+        StockToolboxPanel.IsVisible = _toolboxOpen && !IsShapingPart;
+        StockToolButton.IsChecked = _toolboxOpen;
+    }
+
+    /// <summary>
+    /// An item was picked in the toolbox: the pointer now holds it, and the next drag on the paper
+    /// places a part already cut from it. The toolbox stays open for the one after.
+    /// </summary>
+    void PickStock(StockItem item)
+    {
+        if (DrawingCanvas.ArmStock(item))
+        {
+            Editor.Say(
+                EditSeverity.Hint,
+                $"Holding {item.Name} — actual {item.ActualSizeText}. Drag on the paper to place it; Escape puts it down.");
+        }
+        else
+        {
+            Editor.Say(
+                EditSeverity.Hint,
+                $"{item.HoverText}. napkin does not place fasteners on the drawing yet, so there is nothing to drag.");
+        }
+
+        DrawingCanvas.Focus();
+    }
+
+    void OnStockToolboxClicked(object? sender, RoutedEventArgs e) => ToggleToolbox();
 
     void ShowRefusal(string what, IReadOnlyList<string> problems)
     {
@@ -1408,6 +1475,7 @@ public partial class MainWindow : Window
 
         ToolBar.Background = paper;
         ToolBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
+        StockToolboxPanel.ApplyPalette(palette);
 
         RelationshipsPanel.Background = paper;
         RelationshipsPanel.BorderBrush = new SolidColorBrush(palette.GridMajor);
@@ -1481,6 +1549,7 @@ public partial class MainWindow : Window
         ZoomOutMenuItem.InputGesture = new KeyGesture(Key.OemMinus);
         SelectToolMenuItem.InputGesture = new KeyGesture(Key.S);
         RectangleToolMenuItem.InputGesture = new KeyGesture(Key.R);
+        StockToolboxMenuItem.InputGesture = new KeyGesture(Key.M);
         ShapeMenuItem.InputGesture = new KeyGesture(Key.C);
         PinMenuItem.InputGesture = new KeyGesture(Key.P);
         DeleteMenuItem.InputGesture = new KeyGesture(Key.Delete);

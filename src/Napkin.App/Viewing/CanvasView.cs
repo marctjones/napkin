@@ -157,6 +157,13 @@ public sealed class CanvasView : Control
     public event EventHandler<EntityId>? ShapeRequested;
 
     /// <summary>
+    /// Raised when a person asks for the stock toolbox from the keyboard. The toolbox floats over
+    /// the drawing and belongs to the window, so the key is handled here — where typing an
+    /// <c>m</c> into a field cannot reach it — and the window decides what to show.
+    /// </summary>
+    public event EventHandler? ToolboxRequested;
+
+    /// <summary>
     /// Raised when the set of parts on the canvas changes — one drawn, one deleted, a different
     /// design opened — so the automation peer can rebuild its children.
     /// </summary>
@@ -853,6 +860,10 @@ public sealed class CanvasView : Control
 
             case Key.S:
                 Tool = EditTool.Select;
+                return true;
+
+            case Key.M:
+                ToolboxRequested?.Invoke(this, EventArgs.Empty);
                 return true;
 
             case Key.Escape:
