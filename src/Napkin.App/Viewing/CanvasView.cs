@@ -98,6 +98,9 @@ public sealed class CanvasView : Control
     /// <summary>How far a selected part's dimension lines sit off it, in pixels.</summary>
     const double SelectionDimensionOffsetPixels = 26;
 
+    /// <summary>Half the width of the cross that marks a corner a cut took away, in pixels.</summary>
+    const double VirtualCornerArm = 4;
+
     /// <summary>
     /// The scale a blank sheet opens at: an inch drawn at sixteen pixels, so about four and a
     /// half feet fits across a laptop window — a table, a bench, a run of cabinets — and the grid
@@ -1229,6 +1232,7 @@ public sealed class CanvasView : Control
             DrawDimension(context, palette, measurement, palette.Dimension);
         }
 
+        DrawBlankHints(context, palette, sketch);
         DrawSelection(context, palette, sketch);
         DrawSnapIndicator(context, palette);
         DrawRectanglePreview(context, palette);
@@ -1291,6 +1295,152 @@ public sealed class CanvasView : Control
                     at.Y - HandleHalfSize,
                     HandleHalfSize * 2,
                     HandleHalfSize * 2));
+        }
+    }
+
+    /// <summary>
+    /// Marks the blank where a relationship holds on to something a cut took away
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.1, &#xA7;2.5, &#xA7;7.2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every reference binds to the blank, not to the shape (&#xA7;2.1), so a <see cref="Flush"/>
+    /// can be flush with an edge line a curve replaced and a <see cref="Coincident"/> can hold a
+    /// corner that has been rounded right off. Left undrawn, that looks bound to nothing. So the
+    /// corner gets a small cross where it would have been, and the edge the blank has lost is
+    /// drawn as a faint line.
+    /// </para>
+    /// <para>
+    /// Both what the drawing already says and what a drag is catching right now are marked, in
+    /// the colour each already uses — the stored ones in the dimension ink, the live ones in the
+    /// snap's, beside the snap indicator itself, which is what &#xA7;2.5's gusset needs to be
+    /// snappable at all.
+    /// </para>
+    /// </remarks>
+    void DrawBlankHints(DrawingContext context, CanvasPalette palette, Sketch sketch)
+    {
+        DrawBlankHints(context, sketch, sketch.RelationshipsInOrder, palette.Dimension);
+        if (_snap is { } plan)
+        {
+            DrawBlankHints(context, sketch, plan.Relationships, palette.Snap);
+        }
+    }
+
+    void DrawBlankHints(
+        DrawingContext context,
+        Sketch sketch,
+        IEnumerable<Relationship> relationships,
+        Color ink)
+    {
+        HashSet<(EntityId Box, BoxCorner Corner)> corners = [];
+        HashSet<(EntityId Box, BoxEdge Edge)> edges = [];
+
+        foreach (Relationship relationship in relationships)
+        {
+            foreach (CornerRef corner in RelationshipSites.CornersOf(relationship))
+            {
+                corners.Add((corner.Box, corner.Corner));
+            }
+
+            foreach (BoxEdgeRef edge in RelationshipSites.EdgesOf(relationship))
+            {
+                edges.Add((edge.Box, edge.Edge));
+            }
+        }
+
+        if (corners.Count == 0 && edges.Count == 0)
+        {
+            return;
+        }
+
+        Pen faint = new(new SolidColorBrush(ink, 0.5), 1) { DashStyle = new DashStyle([3, 3], 0) };
+        Pen cross = new(new SolidColorBrush(ink, 0.9), 1.2);
+
+        foreach ((EntityId id, BoxEdge edge) in edges.OrderBy(entry => entry.Box).ThenBy(entry => entry.Edge))
+        {
+            if (sketch.Find<Box>(id) is not { Cuts.IsEmpty: false } box)
+            {
+                continue;
+            }
+
+            DrawMissingEdge(context, faint, box, edge, nearOnly: null);
+        }
+
+        foreach ((EntityId id, BoxCorner corner) in corners.OrderBy(entry => entry.Box).ThenBy(entry => entry.Corner))
+        {
+            if (sketch.Find<Box>(id) is not { Cuts.IsEmpty: false } box
+                || !BlankShape.IsVirtualCorner(box, corner))
+            {
+                continue;
+            }
+
+            foreach (BoxEdge edge in BlankShape.EdgesAt(corner))
+            {
+                DrawMissingEdge(context, faint, box, edge, nearOnly: corner);
+            }
+
+            Point at = _view.ToScreen(box.Corner(corner));
+            context.DrawLine(
+                cross,
+                new Point(at.X - VirtualCornerArm, at.Y - VirtualCornerArm),
+                new Point(at.X + VirtualCornerArm, at.Y + VirtualCornerArm));
+            context.DrawLine(
+                cross,
+                new Point(at.X - VirtualCornerArm, at.Y + VirtualCornerArm),
+                new Point(at.X + VirtualCornerArm, at.Y - VirtualCornerArm));
+        }
+    }
+
+    /// <summary>
+    /// Draws the parts of one blank edge the cuts took away, and nothing else: a curve replaces
+    /// the whole line, a corner cut or a roundover eats a setback off one end.
+    /// </summary>
+    /// <remarks>
+    /// Only the missing parts, so the faint line never runs over an edge the part still has —
+    /// which would be one line drawn twice, and would read as a heavier edge rather than as a
+    /// note about the blank.
+    /// </remarks>
+    /// <param name="nearOnly">
+    /// When given, only the portion at that corner is drawn: what a reference to <em>that</em>
+    /// corner is holding on to.
+    /// </param>
+    void DrawMissingEdge(DrawingContext context, Pen pen, Box box, BoxEdge edge, BoxCorner? nearOnly)
+    {
+        (BoxCorner from, BoxCorner to) = Box.Ends(edge);
+        Point start = _view.ToScreen(box.Corner(from));
+        Point end = _view.ToScreen(box.Corner(to));
+
+        if (BlankShape.CutAt(box, CutSite.Edge(edge)) is CurvedEdge)
+        {
+            // A curved edge replaced the line entirely, however it bows: the line a Flush is
+            // flush with is the blank's, and none of it is drawn.
+            context.DrawLine(pen, start, end);
+            return;
+        }
+
+        foreach ((BoxCorner corner, Point at, Point towards) in
+                 (( BoxCorner, Point, Point)[])[(from, start, end), (to, end, start)])
+        {
+            if (nearOnly is { } only && corner != only)
+            {
+                continue;
+            }
+
+            Length setback = BlankShape.SetbackAlong(box, corner, edge);
+            if (setback <= Length.Zero)
+            {
+                continue;
+            }
+
+            Vector along = towards - at;
+            double length = along.Length;
+            if (length < 1e-6)
+            {
+                continue;
+            }
+
+            double pixels = setback.ToInches() * _view.PixelsPerInch;
+            context.DrawLine(pen, at, at + (along / length * pixels));
         }
     }
 
