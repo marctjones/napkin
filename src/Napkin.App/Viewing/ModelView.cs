@@ -17,7 +17,7 @@ public enum SelectionCommand
     /// <summary>Pin it where it is.</summary>
     Pin,
 
-    /// <summary>Copy it a grid step away.</summary>
+    /// <summary>Copy it, beside it.</summary>
     Duplicate,
 
     /// <summary>Open it in the shape workshop.</summary>
@@ -228,6 +228,31 @@ public sealed class ModelView : Control
         Camera = bounds.IsEmpty
             ? _camera with { CenterX = 0, CenterY = 0, CenterZ = 0, PixelsPerInch = CanvasView.BlankSheetPixelsPerInch }
             : _camera.FitTo(bounds, _camera.Viewport);
+    }
+
+    /// <summary>
+    /// Makes sure a box can be seen whole: when any of its corners is off the view, the view zooms to
+    /// fit the drawing — as the plan canvas does for a duplicate that landed past its edge (#71).
+    /// </summary>
+    public void BringIntoView(EntityId id)
+    {
+        if (_editor?.Sketch.Find<Box>(id) is not { } box)
+        {
+            return;
+        }
+
+        Rect visible = new(Bounds.Size);
+        foreach (BoxCorner corner in (BoxCorner[])[BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest])
+        {
+            foreach (BoxLevel level in (BoxLevel[])[BoxLevel.Bottom, BoxLevel.Top])
+            {
+                if (!visible.Contains(_camera.Project(box.Vertex(corner, level))))
+                {
+                    ZoomToFit();
+                    return;
+                }
+            }
+        }
     }
 
     /// <summary>Back to the isometric view, framing the drawing.</summary>

@@ -67,7 +67,7 @@
                 <MenuItem Name="DuplicateMenuItem"
                           Header="D_uplicate"
                           Click="OnDuplicateClicked"
-                          ToolTip.Tip="Copy the selected part a grid step away." />
+                          ToolTip.Tip="Copy the selected part and put the copy beside it." />
                 <MenuItem Name="PinMenuItem"
                           Header="_Pin in place"
                           Click="OnPinClicked"
@@ -453,7 +453,7 @@
                             Padding="5"
                             Click="OnDuplicateClicked"
                             AutomationProperties.Name="Duplicate"
-                            ToolTip.Tip="Duplicate: copy the selected part a grid step away (D)">
+                            ToolTip.Tip="Duplicate: copy the selected part and put the copy beside it (D)">
                         <!-- Two overlapping parts: the copy in front of the original. -->
                         <Path Classes="toolGlyph"
                               Data="M1,1 L12,1 L12,6 L6,6 L6,12 L1,12 Z M6,6 L17,6 L17,17 L6,17 Z" />
