@@ -90,6 +90,24 @@
       "milestone": "backlog",
       "issue": 85,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-11",
+      "area": "ui",
+      "title": "Type where a part is, and what is held to it follows",
+      "acceptance": "With a coffee-table apron snapped flush under the top and the top's pin removed from its row, typing 20\" in the top's Up position field and pressing Enter puts the top's underside exactly 20\" off the floor, keeps it where it was east-west and north-south, and raises the apron with it.",
+      "milestone": "backlog",
+      "issue": 78,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-12",
+      "area": "ui",
+      "title": "Type a length after or during a 3D drag",
+      "acceptance": "In the 3D view, dragging a coffee-table apron's Z arrow down, typing 3 1/2 and pressing Enter leaves it exactly 3 1/2\" below where the drag began; typing 5 and Enter while dragging its top face handle makes it exactly 5\" deep; and one undo takes each back.",
+      "milestone": "backlog",
+      "issue": 79,
+      "kind": "workflow"
     }
   ]
 }

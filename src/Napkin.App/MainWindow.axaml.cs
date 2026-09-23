@@ -166,6 +166,22 @@ public partial class MainWindow : Window
         // a menu click does what it looks like it should.
         AddHandler(KeyDownEvent, OnShellKeyDown, RoutingStrategies.Bubble);
 
+        // The list takes up to a third of the side column — never less than about three rows — and
+        // the Part panel, below it, the rest (#73, #78).
+        SidePanels.SizeChanged += (_, e) =>
+            RelationshipsPanel.MaxHeight = Math.Clamp(e.NewSize.Height / 3, 96, 320);
+
+        // Enter in any of the Part panel's text fields applies the panel, the way the dimension
+        // field applies on Enter: typing a number and reaching for the mouse is a step too many (#78).
+        PropertiesPanel.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter && e.Source is TextBox)
+            {
+                ApplyProperties();
+                e.Handled = true;
+            }
+        };
+
         // The backdrop behind the save question takes every press, so nothing on the paper can be
         // edited while it waits for an answer.
         UnsavedBackdrop.PointerPressed += (_, e) => e.Handled = true;
@@ -1131,6 +1147,9 @@ public partial class MainWindow : Window
     /// <summary>The properties panel.</summary>
     public Border Properties => PropertiesPanel;
 
+    /// <summary>The part of the side column the Part panel is shown in, scrolling when it is taller.</summary>
+    public ScrollViewer PropertiesArea => PropertiesScroller;
+
     /// <summary>Whether the properties panel is on screen.</summary>
     public bool IsShowingProperties => PropertiesPanel.IsVisible;
 
@@ -1145,6 +1164,9 @@ public partial class MainWindow : Window
     /// has one (docs/design/assembly-model.md §1.2), so it is shown for a plain box too.
     /// </summary>
     public TextBox OutOfPlaneField => OutOfPlaneBox;
+
+    /// <summary>The Part panel's three position fields: east, north and up (#78).</summary>
+    public (TextBox East, TextBox North, TextBox Up) PositionFields => (PositionXBox, PositionYBox, PositionZBox);
 
     /// <summary>What the Part panel calls its three sizes now: the two part rows, then the depth field.</summary>
     public (string First, string Second, string Depth) PartRowCaptions =>
@@ -1200,6 +1222,7 @@ public partial class MainWindow : Window
             PartNameBox.Text = box.Name;
             FillPartFields(box);
             OutOfPlaneBox.Text = box.Depth.Format(Editor.LabelFormat).Text;
+            FillPosition(box);
 
             UpdateOutOfPlaneCaption();
             UpdateStockReadout();
@@ -1252,6 +1275,11 @@ public partial class MainWindow : Window
                 OutOfPlaneBox.Text = box.Depth.Format(Editor.LabelFormat).Text;
             }
 
+            if (SpaceSnapResolver.Extent(box).Low != SpaceSnapResolver.Extent(shown).Low)
+            {
+                FillPosition(box);
+            }
+
             UpdateOutOfPlaneCaption();
             UpdateStockReadout();
         }
@@ -1261,6 +1289,15 @@ public partial class MainWindow : Window
         }
 
         _propertiesShown = box;
+    }
+
+    /// <summary>Where the box is: the low corner of its extent, in the world's terms (#78).</summary>
+    void FillPosition(Box box)
+    {
+        Point3 low = SpaceSnapResolver.Extent(box).Low;
+        PositionXBox.Text = low.X.Format(Editor.LabelFormat).Text;
+        PositionYBox.Text = low.Y.Format(Editor.LabelFormat).Text;
+        PositionZBox.Text = low.Z.Format(Editor.LabelFormat).Text;
     }
 
     /// <summary>What kind of part the box is: the check box and everything under it.</summary>
@@ -1426,6 +1463,16 @@ public partial class MainWindow : Window
                 planAxes);
         }
 
+        Point3 low = SpaceSnapResolver.Extent(box).Low;
+        if (!TryPosition(PositionXBox, low.X, out Length x)
+            || !TryPosition(PositionYBox, low.Y, out Length y)
+            || !TryPosition(PositionZBox, low.Z, out Length z))
+        {
+            return Complain(
+                "Where it is has to be three lengths, like 1' 4\" — negative for west of or south of the "
+                + "origin, or below the floor.");
+        }
+
         PropertiesError.IsVisible = false;
 
         string name = PartNameBox.Text ?? string.Empty;
@@ -1433,6 +1480,14 @@ public partial class MainWindow : Window
         if (DepthRequest(box, part, depth) is { } typedDepth)
         {
             requests.Add(typedDepth);
+        }
+
+        // A typed place is exact: the anchor moves by what the corner was asked to, through the
+        // updater, so what is held to the part follows and a conflict is explained (#78).
+        Point3 typedLow = new(x, y, z);
+        if (typedLow != low)
+        {
+            requests.Add(new SetPosition(box.Id, box.Anchor + (typedLow - low)));
         }
 
         Editor.Apply(
@@ -1443,6 +1498,21 @@ public partial class MainWindow : Window
         return true;
 
         static string? Blank(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+    }
+
+    /// <summary>
+    /// A position field's length, or where the part already is when the field is empty: an empty
+    /// field is "leave it", not zero.
+    /// </summary>
+    static bool TryPosition(TextBox field, Length current, out Length value)
+    {
+        if (string.IsNullOrWhiteSpace(field.Text))
+        {
+            value = current;
+            return true;
+        }
+
+        return Length.TryParse(field.Text, out value, out _);
     }
 
     /// <summary>

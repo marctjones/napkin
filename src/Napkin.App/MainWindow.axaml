@@ -539,7 +539,7 @@
                   HorizontalAlignment="Right"
                   VerticalAlignment="Stretch"
                   Margin="10"
-                  RowDefinitions="*,Auto">
+                  RowDefinitions="Auto,*">
 
                 <!-- What the drawing says about itself, in words. On demand (#62): a small count
                      badge until a part that has relationships is selected or under the pointer,
@@ -579,21 +579,43 @@
                     is cut from. This is the only way a box somebody drew becomes a piece somebody
                     cuts (docs/design/parts-and-cut-list.md §1).
                 -->
+                <!-- The Part panel takes what the list leaves, and scrolls in a small window rather
+                     than pushing the list off the screen or running under the status bar. -->
+                <ScrollViewer Name="PropertiesScroller"
+                              Grid.Row="1"
+                              Margin="0,8,0,0"
+                              VerticalAlignment="Bottom"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
                 <Border Name="PropertiesPanel"
-                        Grid.Row="1"
                         IsVisible="False"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Bottom"
-                        Margin="0,8,0,0"
                         Padding="10,8"
                         Width="248"
                         CornerRadius="4"
                         BorderThickness="1">
                     <StackPanel Spacing="6">
-                        <TextBlock Name="PropertiesHeadline"
-                                   Text="Part"
-                                   FontSize="12"
-                                   FontWeight="SemiBold" />
+                        <!-- Apply sits by the headline, where it stays in sight when the panel has to
+                             scroll in a small window; Enter in any field applies too (#78). -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Name="PropertiesHeadline"
+                                       Text="Part"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                            <Button Name="ApplyPartButton"
+                                    Grid.Column="1"
+                                    Content="Apply"
+                                    FontSize="12"
+                                    Padding="10,3"
+                                    Click="OnApplyPartClicked" />
+                        </Grid>
+
+                        <TextBlock Name="PropertiesError"
+                                   IsVisible="False"
+                                   FontSize="11"
+                                   TextWrapping="Wrap" />
 
                         <TextBox Name="PartNameBox" FontSize="12" PlaceholderText="Name" />
 
@@ -605,6 +627,24 @@
                             <TextBox Name="OutOfPlaneBox" Grid.Column="1" FontSize="12"
                                      PlaceholderText="3/4&quot;" />
                         </Grid>
+
+                        <!-- Where the part is (#78): the low corner of its extent — its least east–west,
+                             north–south and height — in the world's terms, not its anchor, which after
+                             a turn can be any corner. -->
+                        <StackPanel Spacing="2">
+                            <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*">
+                                <TextBlock Grid.Column="0" Text="At E" FontSize="11" VerticalAlignment="Center" Margin="0,0,3,0"
+                                           ToolTip.Tip="Where its south-west bottom corner is: east of the origin, north of it, and up off the floor." />
+                                <TextBox Name="PositionXBox" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,3"
+                                         ToolTip.Tip="How far east of the origin, like 1' 4&quot; — or -2&quot; for west of it." />
+                                <TextBlock Grid.Column="2" Text="N" FontSize="11" VerticalAlignment="Center" Margin="5,0,3,0" />
+                                <TextBox Name="PositionYBox" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,3"
+                                         ToolTip.Tip="How far north of the origin — or, negative, south of it." />
+                                <TextBlock Grid.Column="4" Text="Up" FontSize="11" VerticalAlignment="Center" Margin="5,0,3,0" />
+                                <TextBox Name="PositionZBox" Grid.Column="5" FontSize="11" MinWidth="0" Padding="4,3"
+                                         ToolTip.Tip="How high off the floor its lowest face is." />
+                            </Grid>
+                        </StackPanel>
 
                         <CheckBox Name="IsPartCheck"
                                   Content="This is a piece to cut"
@@ -635,19 +675,9 @@
                             <TextBox Name="SpeciesBox" FontSize="12" PlaceholderText="Species" />
                         </StackPanel>
 
-                        <Button Name="ApplyPartButton"
-                                Content="Apply"
-                                FontSize="12"
-                                Padding="10,3"
-                                HorizontalAlignment="Right"
-                                Click="OnApplyPartClicked" />
-
-                        <TextBlock Name="PropertiesError"
-                                   IsVisible="False"
-                                   FontSize="11"
-                                   TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
+                </ScrollViewer>
             </Grid>
 
             <!-- Its colours come from the canvas palette in the code-behind, not from a theme

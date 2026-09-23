@@ -98,6 +98,8 @@ public sealed class ModelView : Control
     SpaceSnapPlan? _snap;
     UpdateResult? _gestureRefusal;
     ModelPick? _pressedOnPart;
+    readonly System.Text.StringBuilder _typed = new();
+    Typeable? _typeable;
     EntityId? _hovered;
     System.Collections.Immutable.ImmutableHashSet<EntityId> _attention = [];
 
@@ -185,7 +187,12 @@ public sealed class ModelView : Control
     {
         get
         {
-            if (!IsEditing || _editor is not { } editor || _boxAtPress is not { } atPress
+            if (!IsEditing)
+            {
+                return _typed.Length > 0 ? $"{_typed} — Enter to apply it, Esc to drop it" : null;
+            }
+
+            if (_editor is not { } editor || _boxAtPress is not { } atPress
                 || editor.Sketch.Find<Box>(_gestureEntity) is not { } box)
             {
                 return null;
@@ -219,7 +226,7 @@ public sealed class ModelView : Control
                 done += $" — flush with {editor.NameOf(target)}'s {where}";
             }
 
-            return done;
+            return _typed.Length > 0 ? $"{done} — typed {_typed}, Enter" : done;
 
             static string Way(Axis axis, bool positive) => (axis, positive) switch
             {
@@ -451,6 +458,8 @@ public sealed class ModelView : Control
         Point position = e.GetPosition(this);
         _pressedAt = position;
         _lastPointer = position;
+        _typeable = null;
+        _typed.Clear();
         Focus();
 
         if (properties.IsMiddleButtonPressed
@@ -612,9 +621,141 @@ public sealed class ModelView : Control
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Handled || HandleEditKey(e.Key, e.KeyModifiers) || HandleViewKey(e.Key, e.KeyModifiers))
+        if (e.Handled || HandleTypingKey(e.Key) || HandleEditKey(e.Key, e.KeyModifiers) || HandleViewKey(e.Key, e.KeyModifiers))
         {
             e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// A length typed for the arrow or face handle just dragged, or being dragged (#79): the
+    /// characters of a length go into it, Enter applies it, Backspace takes one back, Escape drops it.
+    /// </summary>
+    protected override void OnTextInput(TextInputEventArgs e)
+    {
+        base.OnTextInput(e);
+        if (e.Handled || _typeable is null || string.IsNullOrEmpty(e.Text)
+            || !e.Text.All(character => char.IsAsciiDigit(character) || " ./'\"".Contains(character, StringComparison.Ordinal)))
+        {
+            return;
+        }
+
+        if (_typed.Length == 0 && string.IsNullOrWhiteSpace(e.Text))
+        {
+            return;
+        }
+
+        _typed.Append(e.Text);
+        e.Handled = true;
+        InvalidateVisual();
+    }
+
+    bool HandleTypingKey(Key key)
+    {
+        if (_typed.Length == 0)
+        {
+            return false;
+        }
+
+        switch (key)
+        {
+            case Key.Enter:
+                if (IsEditing)
+                {
+                    // Still dragging: the drag ends here, and the typed length replaces where it got to.
+                    CompleteEdit();
+                }
+                else
+                {
+                    CommitTyped();
+                }
+
+                return true;
+
+            case Key.Escape:
+                _typed.Clear();
+                InvalidateVisual();
+                return true;
+
+            case Key.Back:
+                _typed.Length--;
+                InvalidateVisual();
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Puts the typed length in place of what the last arrow or face-handle drag did, as one undo
+    /// step: that drag is undone, and the part is moved exactly that far from where the drag began,
+    /// the way it was dragged, or made exactly that size across the face that was dragged (#79).
+    /// </summary>
+    void CommitTyped()
+    {
+        string text = _typed.ToString().Trim();
+        _typed.Clear();
+        InvalidateVisual();
+        if (_editor is not { } editor || _typeable is not { } typeable)
+        {
+            return;
+        }
+
+        _typeable = null;
+        if (!Length.TryParse(text, out Length typed, out _) || typed < Length.Zero
+            || (typeable.Kind == Gesture.Resize && typed == Length.Zero))
+        {
+            editor.Say(EditSeverity.Problem, $"\"{text}\" is not a length to {(typeable.Kind == Gesture.Resize ? "make it" : "move it")}, like 3 1/2 or 1' 4\".");
+            return;
+        }
+
+        if (editor.Sketch.Find<Box>(typeable.Id) is not { } now)
+        {
+            return;
+        }
+
+        if (typeable.After is { } after && !ReferenceEquals(after, typeable.Before))
+        {
+            if (!ReferenceEquals(editor.Design, after))
+            {
+                editor.Say(EditSeverity.Hint, "The drawing changed after that drag, so the typed length was not applied.");
+                return;
+            }
+
+            editor.Undo();
+        }
+
+        string name = editor.NameOf(typeable.Id);
+        LengthFormat format = editor.LabelFormat;
+        Request exact;
+        string what;
+        if (typeable.Kind == Gesture.MoveAxis)
+        {
+            bool back = now.Anchor.Component(typeable.Axis) < typeable.AtPress.Anchor.Component(typeable.Axis);
+            exact = new SetPosition(typeable.Id, typeable.AtPress.Anchor + Vector3.Along(typeable.Axis, back ? -typed : typed));
+            what = $"Moved {name} {WorldWords.Facing(typeable.Axis, !back).Replace("top", "up", StringComparison.Ordinal).Replace("bottom", "down", StringComparison.Ordinal)} {typed.Format(format).Text}";
+        }
+        else
+        {
+            BoxFace face = typeable.Face!.Value;
+            exact = new DragFace(typeable.Id, face, typed - ModelHandles.SizeAcross(typeable.AtPress, face));
+            what = $"Resized {name} to {typed.Format(format).Text} across its {WorldWords.Feature(typeable.AtPress, BoxFeature.Face(face))}";
+        }
+
+        editor.BeginGesture(what);
+        UpdateResult result = editor.Apply(exact, what);
+        editor.EndGesture();
+
+        // A resize is best effort: a cut can stop a face short. Say so rather than let the number
+        // on the screen pass for the one typed.
+        if (result is Succeeded && typeable.Kind == Gesture.Resize
+            && editor.Sketch.Find<Box>(typeable.Id) is { } resized
+            && ModelHandles.SizeAcross(resized, typeable.Face!.Value) != typed)
+        {
+            editor.Say(
+                EditSeverity.Problem,
+                $"{name} could only be made {ModelHandles.SizeAcross(resized, typeable.Face!.Value).Format(format).Text} there, not {typed.Format(format).Text}: something stops that face.");
         }
     }
 
@@ -696,6 +837,13 @@ public sealed class ModelView : Control
         _planeAxes = plane;
         _snap = null;
         _gestureRefusal = null;
+
+        // An arrow or a face handle can be given an exact length by typing it (#79); a slide in a
+        // face's plane has two axes, and no one number says where it goes.
+        _typed.Clear();
+        _typeable = handle is { } grabbed && gesture is Gesture.MoveAxis or Gesture.Resize
+            ? new Typeable(gesture, box.Id, box, grabbed.Axis, grabbed.Face, editor.Design, null)
+            : null;
 
         editor.BeginGesture(gesture == Gesture.Resize ? $"Resized {editor.NameOf(box.Id)}" : $"Moved {editor.NameOf(box.Id)}");
         pointer.Capture(this);
@@ -807,6 +955,22 @@ public sealed class ModelView : Control
     }
 
     void CompleteEdit()
+    {
+        CompleteEditCore();
+
+        // The gesture is over: what it left is what a typed length would replace (#79). A length
+        // typed while the button was still down is applied now.
+        if (_typeable is { } typeable && _editor is { } editor)
+        {
+            _typeable = typeable with { After = editor.Design };
+            if (_typed.Length > 0)
+            {
+                CommitTyped();
+            }
+        }
+    }
+
+    void CompleteEditCore()
     {
         Gesture gesture = _gesture;
         SpaceSnapPlan? plan = _snap;
@@ -1398,6 +1562,9 @@ public sealed class ModelView : Control
         Axis.Y => AxisY,
         _ => AxisZ,
     };
+
+    /// <summary>What a typed length would apply to: the arrow or face-handle drag just made (#79).</summary>
+    sealed record Typeable(Gesture Kind, EntityId Id, Box AtPress, Axis Axis, BoxFace? Face, Napkin.App.Designs.Design Before, Napkin.App.Designs.Design? After);
 
     enum Gesture
     {
