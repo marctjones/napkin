@@ -1498,9 +1498,14 @@ Solid:
 
 18. A plain box: six faces, each `Of` the right `BoxFace`, each a quad of the right four vertices,
     winding outward. A box with `RoundedCorner` at all four corners (the `rounded-corner-table`
-    sample's top): two caps of eight straight and four arc segments, twelve sides — eight quads
-    and four curved patches — every endpoint exact and a multiple of 1024. A box with a full
-    mitre: the cut side face has `Of = null`.
+    sample's top): two caps of four straight and four arc segments each (one outline segment per
+    corner and per edge), eight sides — four quads and four curved patches — every endpoint
+    exact. **Corrected against the landed implementation** (step 6, 2026-09-23): the original text
+    here said "eight straight and four arc segments, twelve sides", which over-counted — one
+    outline segment per site, not two; and it said every endpoint is "a multiple of 1024", which
+    holds for X and Y but not Z, whose grain is the anchor/depth grid (a multiple of 256 — e.g.
+    the sample top's Z values of 16640 and 17408), not necessarily 1024. A box with a full mitre:
+    the cut side face has `Of = null`.
 
 Cut list and shopping list (`Napkin.Modules.Furniture.Tests`):
 
