@@ -90,7 +90,7 @@ public class ShapedPartWorkflows
 
         app.SaveFrame("duplicated");
 
-        // Drag the copy up until its south edge catches the original's north edge, and well clear
+        // Drag the copy until its south edge catches the original's north edge, and well clear
         // of anything in X so the one thing the snap can catch is that edge. The grab starts on
         // the copy's own middle, which is material whatever its corners are doing.
         EntityId copyId = window.Editor.OnlySelected!.Value;

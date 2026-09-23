@@ -105,7 +105,7 @@ public class ToolbarWorkflows
             Assert.True(window.DeleteToolControl.IsEnabled);
         });
 
-        // Duplicate, by its icon: a copy a grid step away, selected.
+        // Duplicate, by its icon: a copy beside it, selected.
         app.Click(CentreOf(window, window.DuplicateToolControl));
 
         Box copy = Assert.Single(

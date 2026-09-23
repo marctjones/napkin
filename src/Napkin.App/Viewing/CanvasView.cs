@@ -408,6 +408,30 @@ public sealed class CanvasView : Control
             ? _view.ToScreen(measurement.LabelAnchor)
             : null;
 
+    /// <summary>
+    /// Makes sure a box can be seen whole: when any corner of its footprint is off the canvas, the
+    /// view zooms to fit the drawing. A duplicate lands beside its original (#71), and a copy of a
+    /// large part can land past the edge of the view, where it could not be dragged into place.
+    /// </summary>
+    public void BringIntoView(EntityId id)
+    {
+        if (_editor?.Sketch.Find<Box>(id) is not { } box)
+        {
+            return;
+        }
+
+        (Point3 low, Point3 high) = SpaceSnapResolver.Extent(box);
+        Rect visible = new(Bounds.Size);
+        foreach (Point2 corner in (Point2[])[new(low.X, low.Y), new(high.X, low.Y), new(high.X, high.Y), new(low.X, high.Y)])
+        {
+            if (!visible.Contains(_view.ToScreen(corner)))
+            {
+                ZoomToFit();
+                return;
+            }
+        }
+    }
+
     /// <summary>Frames the whole design, with a margin.</summary>
     public void ZoomToFit()
     {
@@ -492,145 +516,6 @@ public sealed class CanvasView : Control
             default:
                 return false;
         }
-    }
-
-    /// <summary>Removes what is selected, through the updater, relationships and all.</summary>
-    public void DeleteSelection()
-    {
-        if (_editor is not { } editor || editor.Selection.Count == 0)
-        {
-            return;
-        }
-
-        List<EntityId> doomed = [.. editor.Selection.OrderBy(id => id)];
-        string what = doomed.Count == 1
-            ? $"Deleted {editor.NameOf(doomed[0])}"
-            : $"Deleted {doomed.Count} parts";
-
-        editor.BeginGesture(what);
-        editor.Apply(
-            Batch.Of([.. doomed.Select(id => (Request)new RemoveEntity(id))]),
-            what);
-        editor.EndGesture();
-    }
-
-    /// <summary>
-    /// Makes a copy of the selected part a grid step away and selects it
-    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.6).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <strong>A duplicate is a value copy.</strong> The blank, its cuts, the part — stock,
-    /// species, plan axes, out-of-plane, quantity — and the name are all carried across by the
-    /// record's own <c>with</c>; the copy gets a new id, a new anchor and <em>no
-    /// relationships</em>. It is unrelated until somebody snaps it, exactly like a part just
-    /// drawn, and nothing tracks back to the part it came from. Four duplicates of one gusset are
-    /// equal by value, so the cut list groups them into one row of four on its own (&#xA7;4.3).
-    /// </para>
-    /// <para>
-    /// One <see cref="AddEntity"/> through the updater, like every other edit (CVS-005). The copy
-    /// is selected on completion so the next thing a person does is drag it into place and snap
-    /// it, which is the whole workflow this command exists for.
-    /// </para>
-    /// </remarks>
-    public void DuplicateSelection()
-    {
-        if (_editor is not { } editor)
-        {
-            return;
-        }
-
-        if (editor.OnlySelectedBox is not { } source)
-        {
-            editor.Say(
-                EditSeverity.Hint,
-                editor.Selection.Count == 0
-                    ? "Select a part to duplicate it."
-                    : "Duplicate copies one part at a time; select just the one.");
-            return;
-        }
-
-        // A step along both axes, so the copy lands clear of the original instead of hiding
-        // behind one of its own edges.
-        Length step = new(SnapGrid.UnitsPerStep(GridStepInches));
-        Box copy = source with
-        {
-            Id = EntityId.New(),
-            Anchor = source.Anchor + new Vector3(step, step, Length.Zero),
-        };
-
-        string what = $"Duplicated {editor.NameOf(source.Id)}";
-        editor.BeginGesture(what);
-        if (editor.Apply(new AddEntity(copy), what) is Succeeded)
-        {
-            editor.Select(copy.Id);
-            editor.Say(EditSeverity.Done, $"{what} as {editor.NameOf(copy.Id)}.");
-        }
-
-        editor.EndGesture();
-        InvalidateVisual();
-    }
-
-    /// <summary>
-    /// Asks for the selected part to be opened in the shape workshop
-    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;7.1).
-    /// </summary>
-    /// <remarks>
-    /// The workshop's scope is one box, so this says so rather than shaping whichever of a
-    /// multiple selection sorts first — the same rule <see cref="DuplicateSelection"/> has for the
-    /// same reason.
-    /// </remarks>
-    public void ShapeSelection()
-    {
-        if (_editor is not { } editor)
-        {
-            return;
-        }
-
-        if (editor.OnlySelectedBox is not { } part)
-        {
-            editor.Say(
-                EditSeverity.Hint,
-                editor.Selection.Count == 0
-                    ? "Select a part to shape it."
-                    : "The shape workshop takes one part at a time; select just the one.");
-            return;
-        }
-
-        ShapeRequested?.Invoke(this, part.Id);
-    }
-
-    /// <summary>Pins what is selected where it is, or says why it cannot be pinned.</summary>
-    public void PinSelection()
-    {
-        if (_editor is not { } editor || editor.Selection.Count == 0)
-        {
-            return;
-        }
-
-        List<Request> requests = [];
-        foreach (EntityId id in editor.Selection.OrderBy(id => id))
-        {
-            Anchored candidate = new(RelationshipId.New(), id);
-            if (editor.CanHold(candidate) && !editor.AlreadyStates(candidate))
-            {
-                requests.Add(new AddRelationship(candidate));
-            }
-        }
-
-        if (requests.Count == 0)
-        {
-            editor.Say(EditSeverity.Hint, "Already pinned.");
-            return;
-        }
-
-        string what = requests.Count == 1
-            ? $"Pinned {editor.NameOf(editor.Selection.OrderBy(id => id).First())}"
-            : $"Pinned {requests.Count} parts";
-
-        editor.BeginGesture(what);
-        editor.Apply(Batch.Of([.. requests]), what);
-        editor.EndGesture();
     }
 
     /// <inheritdoc/>
@@ -922,7 +807,7 @@ public sealed class CanvasView : Control
                     return false;
                 }
 
-                DeleteSelection();
+                SelectionCommands.Delete(editor);
                 return true;
 
             case Key.P:
@@ -931,7 +816,7 @@ public sealed class CanvasView : Control
                     return false;
                 }
 
-                PinSelection();
+                SelectionCommands.Pin(editor);
                 return true;
 
             case Key.D:
@@ -940,11 +825,20 @@ public sealed class CanvasView : Control
                     return false;
                 }
 
-                DuplicateSelection();
+                if (SelectionCommands.Duplicate(editor, GridStepInches) is { } copy)
+                {
+                    BringIntoView(copy);
+                }
+
+                InvalidateVisual();
                 return true;
 
             case Key.C:
-                ShapeSelection();
+                if (SelectionCommands.PartToShape(editor) is { } part)
+                {
+                    ShapeRequested?.Invoke(this, part);
+                }
+
                 return true;
 
             // A quarter turn of the selected part about a world axis, Shift the other way: the same

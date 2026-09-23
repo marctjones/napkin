@@ -817,25 +817,43 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>What the 3D view asks of the selection, done by the plan canvas's own commands.</summary>
+    /// <summary>
+    /// Runs a selection command — from a key in the 3D view, a toolbar button or a menu item — with
+    /// the grid step of whichever view is showing (#88).
+    /// </summary>
     void RunSelectionCommand(SelectionCommand command)
     {
         switch (command)
         {
             case SelectionCommand.Delete:
-                DrawingCanvas.DeleteSelection();
+                SelectionCommands.Delete(Editor);
                 break;
 
             case SelectionCommand.Pin:
-                DrawingCanvas.PinSelection();
+                SelectionCommands.Pin(Editor);
                 break;
 
             case SelectionCommand.Duplicate:
-                DrawingCanvas.DuplicateSelection();
+                if (SelectionCommands.Duplicate(Editor, IsShowingModel ? ModelDrawing.GridStepInches : DrawingCanvas.GridStepInches) is { } copy)
+                {
+                    if (IsShowingModel)
+                    {
+                        ModelDrawing.BringIntoView(copy);
+                    }
+                    else
+                    {
+                        DrawingCanvas.BringIntoView(copy);
+                    }
+                }
+
                 break;
 
             case SelectionCommand.Shape:
-                DrawingCanvas.ShapeSelection();
+                if (SelectionCommands.PartToShape(Editor) is { } part)
+                {
+                    OpenWorkshop(part);
+                }
+
                 break;
         }
     }
@@ -1885,7 +1903,7 @@ public partial class MainWindow : Window
         }
     }
 
-    void OnShapeClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.ShapeSelection();
+    void OnShapeClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Shape);
 
     void OnWorkshopDoneClicked(object? sender, RoutedEventArgs e) => CloseWorkshop();
 
@@ -2479,11 +2497,11 @@ public partial class MainWindow : Window
         FocusDrawing();
     }
 
-    void OnDuplicateClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.DuplicateSelection();
+    void OnDuplicateClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Duplicate);
 
-    void OnPinClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.PinSelection();
+    void OnPinClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Pin);
 
-    void OnDeleteClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.DeleteSelection();
+    void OnDeleteClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Delete);
 
     void OnMessageOfferClicked(object? sender, RoutedEventArgs e) => TakeRemoveOffer();
 
