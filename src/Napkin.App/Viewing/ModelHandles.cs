@@ -21,8 +21,8 @@ public enum ModelHandleKind
 /// <param name="Axis">The world axis it drags along: the arrow's, or the face's normal's.</param>
 /// <param name="Positive">Whether it points the positive way along <paramref name="Axis"/>.</param>
 /// <param name="Face">For a face handle, the face of the box, in its own frame.</param>
-/// <param name="At">Where it is grabbed, in the view's pixels: the arrow's tip, the face's centre.</param>
-/// <param name="Base">Where it is drawn from: the anchor for an arrow, the same point for a face.</param>
+/// <param name="At">Where it is grabbed, in the view's pixels: the arrow's tip, the face handle's square.</param>
+/// <param name="Base">Where it is drawn from: the part's centre for an arrow, the face's centre for a face handle's stalk.</param>
 public sealed record ModelHandle(ModelHandleKind Kind, Axis Axis, bool Positive, BoxFace? Face, Point At, Point Base)
 {
     /// <summary>The world direction a drag on this handle is measured along.</summary>
@@ -34,15 +34,22 @@ public sealed record ModelHandle(ModelHandleKind Kind, Axis Axis, bool Positive,
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>Per-axis move arrows</strong> at the part's anchor, along world X, Y and Z — the one
-/// gesture that says which axis a pointer drag means, which is the depth ambiguity they exist to
-/// remove (&#xA7;8.3). An arrow is a fixed number of pixels long, so it can be reached at any zoom;
-/// an axis pointing almost straight at the eye has no length on the screen to drag along, and its
-/// arrow is left off rather than offered and useless.
+/// <strong>Per-axis move arrows</strong> from the centre of the part, along world X, Y and Z — the
+/// one gesture that says which axis a pointer drag means, which is the depth ambiguity they exist to
+/// remove (&#xA7;8.3). They used to start at the anchor, the local south-west-bottom corner: the far
+/// end of a long apron, or wherever that corner went after a turn, often behind the part (#83). An
+/// arrow is a fixed number of pixels long, so it can be reached at any zoom; an axis pointing almost
+/// straight at the eye has no length on the screen to drag along, and its arrow is left off rather
+/// than offered and useless.
 /// </para>
 /// <para>
-/// <strong>A face handle at the centre of each face the eye can see</strong>: a resize across that
-/// face. A face turned away is behind the part, and its handle with it; orbiting brings it round.
+/// <strong>A face handle for each face the eye can see</strong>: a resize across that face. It
+/// stands a little way out from the face's centre, along the face's outward normal as the screen
+/// shows it, on a thin stalk (#84) — at the centre itself, the handles of a 3/4" board's two big
+/// faces and its edge were a few pixels apart, and on the body a drag grabs to move the part. No
+/// handle lands within two grab distances of another or of an arrow's tip: one that would is stood
+/// further out until it does not. A face turned away is behind the part, and its handle with it;
+/// orbiting brings it round.
 /// </para>
 /// </remarks>
 public static class ModelHandles
@@ -55,6 +62,12 @@ public static class ModelHandles
     /// to be draggable: below this it points too nearly at the eye.
     /// </summary>
     public const double ShortestUsableFraction = 0.15;
+
+    /// <summary>How far a face handle stands out from its face, in pixels, for a face seen edge-on.</summary>
+    public const double FaceHandleStandOff = 16;
+
+    /// <summary>How far apart any two handles are kept, in pixels: two grab distances.</summary>
+    public const double Separation = 2 * ModelView.HandleGrabPixels;
 
     static readonly Axis[] Axes = [Axis.X, Axis.Y, Axis.Z];
     static readonly BoxFace[] Faces = [BoxFace.South, BoxFace.East, BoxFace.North, BoxFace.West, BoxFace.Bottom, BoxFace.Top];
@@ -70,7 +83,7 @@ public static class ModelHandles
         }
 
         ImmutableArray<ModelHandle>.Builder handles = ImmutableArray.CreateBuilder<ModelHandle>();
-        Point anchor = camera.Project(box.Anchor);
+        Point middle = camera.Project(Centre(box));
         foreach (Axis axis in Axes)
         {
             Vector along = camera.ProjectDirection(Vector3d.Along(axis));
@@ -80,7 +93,7 @@ public static class ModelHandles
                 continue;
             }
 
-            handles.Add(new ModelHandle(ModelHandleKind.Move, axis, true, null, anchor + (along / pixels * ArrowPixels), anchor));
+            handles.Add(new ModelHandle(ModelHandleKind.Move, axis, true, null, middle + (along / pixels * ArrowPixels), middle));
         }
 
         foreach (BoxFace face in Faces)
@@ -91,12 +104,40 @@ public static class ModelHandles
                 continue;
             }
 
+            // Out along the face's normal as the screen shows it: a face seen edge-on stands its
+            // handle the full stand-off away, one facing the eye hardly at all — it is large on
+            // the screen, and its centre is clear of everything else already.
             Point centre = camera.Project(CentreOf(box, face));
-            handles.Add(new ModelHandle(ModelHandleKind.Face, axis, positive, face, centre, centre));
+            Vector outward = camera.ProjectDirection(Vector3d.Along(axis, positive)) / Math.Max(camera.PixelsPerInch, 1e-9);
+            Point at = centre + (outward * FaceHandleStandOff);
+            Vector unit = outward.Length > 1e-6 ? outward / outward.Length : new Vector(0, -1);
+            for (int step = 0; step < 16 && TooNear(at, handles); step++)
+            {
+                at += unit * (Separation / 2);
+            }
+
+            handles.Add(new ModelHandle(ModelHandleKind.Face, axis, positive, face, at, centre));
         }
 
         return handles.ToImmutable();
     }
+
+    /// <summary>The middle of a box's extent, in inches: where its move arrows start.</summary>
+    public static Vector3d Centre(Box box)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        Vector3d sum = Vector3d.Zero;
+        foreach (BoxCorner corner in (BoxCorner[])[BoxCorner.SouthWest, BoxCorner.NorthEast])
+        {
+            sum += Vector3d.From(box.Vertex(corner, corner == BoxCorner.SouthWest ? BoxLevel.Bottom : BoxLevel.Top));
+        }
+
+        return sum / 2;
+    }
+
+    static bool TooNear(Point at, IEnumerable<ModelHandle> others) =>
+        others.Any(other => Distance(other.At, at) < Separation);
 
     /// <summary>
     /// The handle a point has hold of: the nearest one within the tolerance, arrows winning a tie

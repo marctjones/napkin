@@ -185,11 +185,11 @@ public class SpaceSnapResolverTests
             [BoxFace.South, BoxFace.East, BoxFace.Top],
             handles.Where(handle => handle.Kind == ModelHandleKind.Face).Select(handle => handle.Face!.Value));
 
-        // Every arrow is the same length on the screen, from the anchor.
-        Point anchor = camera.Project(block.Anchor);
+        // Every arrow is the same length on the screen, from the part's centre (#83).
+        Point middle = camera.Project(ModelHandles.Centre(block));
         Assert.All(handles.Where(handle => handle.Kind == ModelHandleKind.Move), arrow =>
         {
-            Assert.Equal(anchor, arrow.Base);
+            Assert.Equal(middle, arrow.Base);
             Assert.Equal(ModelHandles.ArrowPixels, ((Vector)(arrow.At - arrow.Base)).Length, 9);
         });
 
