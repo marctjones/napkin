@@ -52,16 +52,18 @@ public static class GroupCopy
     public static (ImmutableList<Request> Requests, ImmutableDictionary<EntityId, EntityId> Copies) Duplicate(
         Sketch sketch,
         IReadOnlyCollection<Box> boxes,
-        Vector3 offset)
+        Vector3 offset,
+        Func<EntityId, string>? nameOf = null)
     {
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(boxes);
 
         ImmutableDictionary<EntityId, EntityId> copies = boxes.ToImmutableDictionary(box => box.Id, _ => EntityId.New());
         ImmutableList<Request>.Builder requests = ImmutableList.CreateBuilder<Request>();
+        HashSet<string> taken = Names(sketch, nameOf);
         foreach (Box box in boxes.OrderBy(box => box.Id))
         {
-            requests.Add(new AddEntity(box with { Id = copies[box.Id], Anchor = box.Anchor + offset }));
+            requests.Add(new AddEntity(box with { Id = copies[box.Id], Anchor = box.Anchor + offset, Name = CopyName(NameOf(box, nameOf), taken) }));
         }
 
         foreach (Relationship relationship in Among(sketch, copies.Keys))
@@ -86,7 +88,8 @@ public static class GroupCopy
         IReadOnlyCollection<Box> boxes,
         Axis axis,
         Length plane,
-        out Box? refused)
+        out Box? refused,
+        Func<EntityId, string>? nameOf = null)
     {
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(boxes);
@@ -99,6 +102,7 @@ public static class GroupCopy
 
         ImmutableDictionary<EntityId, EntityId> copies = boxes.ToImmutableDictionary(box => box.Id, _ => EntityId.New());
         ImmutableList<Request>.Builder requests = ImmutableList.CreateBuilder<Request>();
+        HashSet<string> taken = Names(sketch, nameOf);
         foreach (Box box in boxes.OrderBy(box => box.Id))
         {
             // The reflection of [low, high] about the plane is [2p - high, 2p - low]: the copy's low
@@ -106,7 +110,7 @@ public static class GroupCopy
             (Point3 low, Point3 high) = SpaceSnapResolver.Extent(box);
             Length reflectedLow = plane + plane - high.Component(axis);
             Vector3 shift = Vector3.Along(axis, reflectedLow - low.Component(axis));
-            requests.Add(new AddEntity(box with { Id = copies[box.Id], Anchor = box.Anchor + shift }));
+            requests.Add(new AddEntity(box with { Id = copies[box.Id], Anchor = box.Anchor + shift, Name = CopyName(NameOf(box, nameOf), taken) }));
         }
 
         foreach (Relationship relationship in Among(sketch, copies.Keys))
@@ -119,6 +123,46 @@ public static class GroupCopy
 
         return (requests.ToImmutable(), copies);
     }
+
+    /// <summary>
+    /// A copy's name (#91): its original's with the next free number — "Leg, south-west (2)", then
+    /// "(3)" — so that the list, the messages and the Part panel can tell a copy from the part it
+    /// came from. A name already ending in a number continues it rather than growing another. An
+    /// unnamed part's copy stays unnamed, and the editor gives it a "Part N" label as it does any
+    /// part added without one. The cut list groups by size, not by name, so the two still count as
+    /// one row.
+    /// </summary>
+    /// <param name="name">The original's name.</param>
+    /// <param name="taken">Every name in use, which the new one is added to.</param>
+    public static string CopyName(string name, ISet<string> taken)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(taken);
+
+        if (name.Length == 0)
+        {
+            return name;
+        }
+
+        System.Text.RegularExpressions.Match numbered = System.Text.RegularExpressions.Regex.Match(name, @"^(.*) \((\d+)\)$");
+        string stem = numbered.Success ? numbered.Groups[1].Value : name;
+        int next = numbered.Success ? int.Parse(numbered.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) + 1 : 2;
+        string candidate;
+        do
+        {
+            candidate = $"{stem} ({next++})";
+        }
+        while (!taken.Add(candidate));
+
+        return candidate;
+    }
+
+    // What the part is called on screen: its own name, or what the drawing calls it for want of one.
+    static string NameOf(Box box, Func<EntityId, string>? nameOf) =>
+        box.Name.Length > 0 || nameOf is null ? box.Name : nameOf(box.Id);
+
+    static HashSet<string> Names(Sketch sketch, Func<EntityId, string>? nameOf) =>
+        [.. sketch.Entities.Values.OfType<Box>().Select(box => NameOf(box, nameOf)).Where(name => name.Length > 0)];
 
     /// <summary>The relationships among some parts: naming two or more of them, and nothing else.</summary>
     public static IEnumerable<Relationship> Among(Sketch sketch, IEnumerable<EntityId> parts)
