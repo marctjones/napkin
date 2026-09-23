@@ -35,7 +35,8 @@ public sealed record DimensionEditRequested(EntityId Box, SizeAxis Axis);
 /// back; drag on empty paper to pan, click a part to select it, drag a selected part to move it,
 /// drag its handles to resize; arrow keys pan, or nudge the selection by one grid step when there
 /// is one; Delete removes what is selected; <c>P</c> pins it; <c>D</c> duplicates it a grid step
-/// away. Wheel zooms about the pointer;
+/// away; <c>X</c>, <c>Y</c> and <c>Z</c> turn it a quarter turn about that axis, Shift the other way;
+/// <c>V</c> asks for the 3D view (docs/design/assembly-model.md &#xA7;8). Wheel zooms about the pointer;
 /// Shift and the wheel pan; the middle button always pans.
 /// </para>
 /// <para>

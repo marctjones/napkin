@@ -15,6 +15,7 @@ that comes from the test suite rather than from a status report.
 |---|---|
 | `features/catalog.json` | the planner — everything below |
 | `features/gui-shell.json` | the GUI-automation workstream (#33): the `GUI-SHELL-*` shell workflows |
+| `features/assembly.json` | the 3D view (`docs/design/assembly-model.md` §9.3): the `GUI-ASSEM-*` workflows |
 
 Add a new file rather than editing someone else's; the tool merges them and fails on a duplicate
 id across files.
@@ -55,8 +56,9 @@ id across files.
   exactly three digits. Regular expression: `^[A-Z]{2,5}-\d{3}$`.
 - **GUI workflows: `GUI-<AREA>-<NN>`** — `GUI`, the workflow family, and exactly two digits.
   Regular expression: `^GUI-[A-Z]{2,6}-\d{2}$`. The families here are `VIEW` (M1), `DRAW` (M2),
-  `CUT` (M3), `CHECK` (M4) and `BRACE` (M5). `SHELL` belongs to `features/gui-shell.json` and is
-  not used in this file.
+  `CUT` (M3), `CHECK` (M4) and `BRACE` (M5). `SHELL` belongs to `features/gui-shell.json` and
+  `ASSEM` — parts turned and set against one another in the 3D view — to
+  `features/assembly.json`; neither is used in this file.
 - The area token in an id is a stable abbreviation and does not have to equal the `area` field —
   a workflow's `area` is `ui` while its id names the workflow family.
 - **Ids are permanent.** Numbers are not renumbered when a feature is removed or two are merged,
