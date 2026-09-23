@@ -127,30 +127,34 @@ public static class DimensionLayout
         {
             case ParamMeasurand { Param: BoxWidthRef width }:
             {
-                if (sketch.Find<Box>(width.Box) is not { } box)
+                // A width the box's orientation stands vertical has nowhere to be drawn in the plan
+                // (docs/design/assembly-model.md §7.3).
+                if (sketch.Find<Box>(width.Box) is not { } box || !LiesAlong(box, Axis.X, Axis.X))
                 {
                     return false;
                 }
 
-                // Measured along whichever edge the dimension sits beside, so its extension lines
-                // run from the near edge outwards instead of across the part.
+                // Measured along whichever side of the footprint the dimension sits beside, so its
+                // extension lines run from the near side outwards instead of across the part.
+                Footprint footprint = box.Footprint();
                 bool above = dimension.Placement.Side == DimensionSide.North;
-                from = box.Corner(above ? BoxCorner.NorthWest : BoxCorner.SouthWest);
-                to = box.Corner(above ? BoxCorner.NorthEast : BoxCorner.SouthEast);
+                from = footprint.Corner(above ? BoxCorner.NorthWest : BoxCorner.SouthWest);
+                to = footprint.Corner(above ? BoxCorner.NorthEast : BoxCorner.SouthEast);
                 value = box.Width;
                 break;
             }
 
             case ParamMeasurand { Param: BoxHeightRef height }:
             {
-                if (sketch.Find<Box>(height.Box) is not { } box)
+                if (sketch.Find<Box>(height.Box) is not { } box || !LiesAlong(box, Axis.Y, Axis.Y))
                 {
                     return false;
                 }
 
+                Footprint footprint = box.Footprint();
                 bool right = dimension.Placement.Side == DimensionSide.East;
-                from = box.Corner(right ? BoxCorner.SouthEast : BoxCorner.SouthWest);
-                to = box.Corner(right ? BoxCorner.NorthEast : BoxCorner.NorthWest);
+                from = footprint.Corner(right ? BoxCorner.SouthEast : BoxCorner.SouthWest);
+                to = footprint.Corner(right ? BoxCorner.NorthEast : BoxCorner.NorthWest);
                 value = box.Height;
                 break;
             }
@@ -193,6 +197,13 @@ public static class DimensionLayout
         return value > Length.Zero;
     }
 
+    /// <summary>
+    /// Whether a size along a local axis lies along a plan axis of the footprint, before the spin —
+    /// which is what lets it be drawn between the footprint's corners.
+    /// </summary>
+    static bool LiesAlong(Box box, Axis local, Axis plan)
+        => new Orientation(box.FaceUp, Angle.Zero).Image(local).Axis == plan;
+
     static bool TryPoint(Sketch sketch, PointRef reference, out Point2 point)
     {
         point = Point2.Origin;
@@ -207,7 +218,7 @@ public static class DimensionLayout
                 return true;
 
             case CenterRef centre when sketch.Find<Box>(centre.Box) is { } box:
-                point = box.Center;
+                point = box.Center.XY;
                 return true;
 
             default:

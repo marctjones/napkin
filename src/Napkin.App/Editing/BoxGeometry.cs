@@ -3,7 +3,11 @@ using Napkin.Core.Geometry;
 
 namespace Napkin.App.Editing;
 
-/// <summary>What a person grabbed on a selected part.</summary>
+/// <summary>
+/// What a person grabbed on a selected part. Corners and edges are the <em>footprint's</em>, named
+/// in the plan before the spin (<c>docs/design/assembly-model.md</c> &#xA7;7.1); for a box lying as
+/// drawn they are the blank's own.
+/// </summary>
 public enum BoxGrip
 {
     /// <summary>The body of the part: a move.</summary>
@@ -35,9 +39,10 @@ public enum BoxGrip
 }
 
 /// <summary>
-/// One axis-aligned edge of a box, as a line the rest of the drawing can be measured against.
+/// One axis-aligned side of a box's footprint, as a line the rest of the drawing can be measured
+/// against.
 /// </summary>
-/// <param name="Edge">Which edge of the box, in the box's own frame.</param>
+/// <param name="Edge">Which side of the footprint, in its own frame before the spin; <see cref="BoxGeometry.LocalEdge"/> says which edge of the blank that is.</param>
 /// <param name="NormalAxis">The axis the edge's position varies along — X for a vertical edge.</param>
 /// <param name="Coordinate">Where the edge sits along <paramref name="NormalAxis"/>.</param>
 /// <param name="Low">The lower end of the edge along the other axis.</param>
@@ -48,10 +53,18 @@ public sealed record EdgeLine(BoxEdge Edge, Axis NormalAxis, Length Coordinate, 
 /// Where a box's corners, edges and handles are, and what a point on the canvas has hold of.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Every method here is a pure function of a <see cref="Box"/> and exact <see cref="Length"/>s:
 /// nothing in this file knows about pixels, and nothing in it produces a <see cref="Sketch"/>.
 /// The canvas converts a pointer position to a model point and a tolerance to a model length, and
 /// asks these questions in the model's own units.
+/// </para>
+/// <para>
+/// What the plan has of a box is its <see cref="Footprint"/>, and that is all this reads: never
+/// the box's anchor, sizes or rotation directly (<c>docs/design/assembly-model.md</c> &#xA7;7.2).
+/// For a box lying as drawn the footprint is the box's own rectangle, field for field, so nothing
+/// here behaves differently for one.
+/// </para>
 /// </remarks>
 public static class BoxGeometry
 {
@@ -71,19 +84,69 @@ public static class BoxGeometry
     {
         ArgumentNullException.ThrowIfNull(box);
 
+        Footprint footprint = box.Footprint();
         return grip switch
         {
-            BoxGrip.Body => box.Center,
-            BoxGrip.SouthWest => box.Corner(BoxCorner.SouthWest),
-            BoxGrip.SouthEast => box.Corner(BoxCorner.SouthEast),
-            BoxGrip.NorthEast => box.Corner(BoxCorner.NorthEast),
-            BoxGrip.NorthWest => box.Corner(BoxCorner.NorthWest),
-            BoxGrip.South => Midpoint(box, BoxEdge.South),
-            BoxGrip.East => Midpoint(box, BoxEdge.East),
-            BoxGrip.North => Midpoint(box, BoxEdge.North),
-            BoxGrip.West => Midpoint(box, BoxEdge.West),
+            BoxGrip.Body => footprint.Center,
+            BoxGrip.SouthWest => footprint.Corner(BoxCorner.SouthWest),
+            BoxGrip.SouthEast => footprint.Corner(BoxCorner.SouthEast),
+            BoxGrip.NorthEast => footprint.Corner(BoxCorner.NorthEast),
+            BoxGrip.NorthWest => footprint.Corner(BoxCorner.NorthWest),
+            BoxGrip.South => Midpoint(footprint, BoxEdge.South),
+            BoxGrip.East => Midpoint(footprint, BoxEdge.East),
+            BoxGrip.North => Midpoint(footprint, BoxEdge.North),
+            BoxGrip.West => Midpoint(footprint, BoxEdge.West),
             _ => throw new ArgumentOutOfRangeException(nameof(grip), grip, "Unknown grip."),
         };
+    }
+
+    /// <summary>
+    /// The edge of the blank a side of the footprint is, or <see langword="null"/> when the plan
+    /// sees that side as the blank's top or bottom — a box standing on a side, whose resize along
+    /// its depth is &#xA7;10 step 4's <c>DragFace</c>, not a <see cref="DragEdge"/>.
+    /// </summary>
+    public static BoxEdge? LocalEdge(Box box, BoxEdge planSide)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        return box.Footprint().FaceAt(planSide) switch
+        {
+            BoxFace.South => BoxEdge.South,
+            BoxFace.East => BoxEdge.East,
+            BoxFace.North => BoxEdge.North,
+            BoxFace.West => BoxEdge.West,
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// The corner of the blank a corner of the footprint is — the one whose local upright is the
+    /// footprint's plan upright there — or <see langword="null"/> when that plan upright is not a
+    /// local one, which is the case for every corner of a box standing on a side.
+    /// </summary>
+    public static BoxCorner? LocalCorner(Box box, BoxCorner planCorner)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        BoxFeature upright = box.Footprint().UprightAt(planCorner);
+        foreach (BoxCorner corner in (BoxCorner[])[BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest])
+        {
+            if (BoxFeature.LocalUpright(corner) == upright)
+            {
+                return corner;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The footprint's size across a side: its plan width for east and west, its plan height for north and south.</summary>
+    public static Length SizeAcross(Box box, BoxEdge planSide)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        Footprint footprint = box.Footprint();
+        return planSide is BoxEdge.East or BoxEdge.West ? footprint.PlanWidth : footprint.PlanHeight;
     }
 
     /// <summary>
@@ -108,15 +171,15 @@ public static class BoxGeometry
     /// displacement of the pointer.
     /// </summary>
     /// <remarks>
-    /// The displacement arrives in world coordinates and the edge is named in the box's frame, so
-    /// it is rotated into that frame first. For the right-angle rotations this beta allows, that
-    /// rotation is an exact swap of components and never rounds.
+    /// The displacement arrives in world coordinates and the side is named in the footprint's
+    /// frame, so it is un-spun into that frame first. For the right-angle rotations this beta
+    /// allows, that is an exact swap of components and never rounds.
     /// </remarks>
     public static Length OutwardDelta(Box box, BoxEdge edge, Vector2 worldDelta)
     {
         ArgumentNullException.ThrowIfNull(box);
 
-        Vector2 local = worldDelta.Rotate(-box.Rotation);
+        Vector2 local = box.Footprint().ToLocal(worldDelta);
         return edge switch
         {
             BoxEdge.East => local.Dx,
@@ -128,18 +191,20 @@ public static class BoxGeometry
     }
 
     /// <summary>
-    /// The box's edges as lines, skipping any that is not axis-aligned. Every edge of a box rotated
-    /// by a right-angle multiple is axis-aligned, so in this beta that is all four.
+    /// The sides of the box's footprint as lines — the faces whose world normal is horizontal —
+    /// skipping any that is not axis-aligned. Every side of a box rotated by a right-angle multiple
+    /// is axis-aligned, so in this beta that is all four, in the order south, east, north, west.
     /// </summary>
     public static IEnumerable<EdgeLine> AxisAlignedEdges(Box box)
     {
         ArgumentNullException.ThrowIfNull(box);
 
+        Footprint footprint = box.Footprint();
         foreach (BoxEdge edge in (BoxEdge[])[BoxEdge.South, BoxEdge.East, BoxEdge.North, BoxEdge.West])
         {
             (BoxCorner fromCorner, BoxCorner toCorner) = Box.Ends(edge);
-            Point2 from = box.Corner(fromCorner);
-            Point2 to = box.Corner(toCorner);
+            Point2 from = footprint.Corner(fromCorner);
+            Point2 to = footprint.Corner(toCorner);
 
             if (from.X == to.X && from.Y != to.Y)
             {
@@ -152,16 +217,17 @@ public static class BoxGeometry
         }
     }
 
-    /// <summary>Whether a point is inside the box, corners included.</summary>
+    /// <summary>Whether a point is inside the box's footprint, corners included.</summary>
     public static bool Contains(Box box, Point2 point)
     {
         ArgumentNullException.ThrowIfNull(box);
 
-        Vector2 local = (point - box.Anchor).Rotate(-box.Rotation);
+        Footprint footprint = box.Footprint();
+        Vector2 local = footprint.ToLocal(point);
         return local.Dx >= Length.Zero
-               && local.Dx <= box.Width
+               && local.Dx <= footprint.PlanWidth
                && local.Dy >= Length.Zero
-               && local.Dy <= box.Height;
+               && local.Dy <= footprint.PlanHeight;
     }
 
     /// <summary>
@@ -178,7 +244,7 @@ public static class BoxGeometry
     {
         ArgumentNullException.ThrowIfNull(box);
 
-        return box.Cuts.IsEmpty ? Contains(box, point) : OutlineHitTest.Contains(box.Outline(), point);
+        return PlanShape.Contains(box, point);
     }
 
     /// <summary>
@@ -199,13 +265,12 @@ public static class BoxGeometry
     {
         ArgumentNullException.ThrowIfNull(box);
 
-        if (box.Cuts.IsEmpty)
+        if (box.Cuts.IsEmpty || !PlanShape.ShowsCap(box))
         {
             return DistanceOutside(box, point) <= tolerance;
         }
 
-        Outline outline = box.Outline();
-        if (OutlineHitTest.Contains(outline, point))
+        if (PlanShape.Contains(box, point))
         {
             return true;
         }
@@ -223,7 +288,7 @@ public static class BoxGeometry
                      new(Length.Zero, -tolerance),
                  ])
         {
-            if (OutlineHitTest.Contains(outline, point + nudge))
+            if (PlanShape.Contains(box, point + nudge))
             {
                 return true;
             }
@@ -232,22 +297,25 @@ public static class BoxGeometry
         return false;
     }
 
-    /// <summary>How far a point is outside the box; zero when it is inside.</summary>
+    /// <summary>How far a point is outside the box's footprint; zero when it is inside.</summary>
     public static Length DistanceOutside(Box box, Point2 point)
     {
         ArgumentNullException.ThrowIfNull(box);
 
-        Vector2 local = (point - box.Anchor).Rotate(-box.Rotation);
-        Length overX = Length.Max(-local.Dx, local.Dx - box.Width);
-        Length overY = Length.Max(-local.Dy, local.Dy - box.Height);
+        Footprint footprint = box.Footprint();
+        Vector2 local = footprint.ToLocal(point);
+        Length overX = Length.Max(-local.Dx, local.Dx - footprint.PlanWidth);
+        Length overY = Length.Max(-local.Dy, local.Dy - footprint.PlanHeight);
         return Length.Max(Length.Max(overX, Length.Zero), Length.Max(overY, Length.Zero));
     }
 
-    /// <summary>The area of a box, as a count of square 1/1024&#x2033; units.</summary>
+    /// <summary>The area of a box's footprint, as a count of square 1/1024&#x2033; units.</summary>
     public static double Area(Box box)
     {
         ArgumentNullException.ThrowIfNull(box);
-        return (double)box.Width.Units * box.Height.Units;
+
+        Footprint footprint = box.Footprint();
+        return (double)footprint.PlanWidth.Units * footprint.PlanHeight.Units;
     }
 
     /// <summary>
@@ -286,11 +354,11 @@ public static class BoxGeometry
     static bool Within(Point2 handle, Point2 point, Length tolerance) =>
         Length.Abs(point.X - handle.X) <= tolerance && Length.Abs(point.Y - handle.Y) <= tolerance;
 
-    static Point2 Midpoint(Box box, BoxEdge edge)
+    static Point2 Midpoint(Footprint footprint, BoxEdge edge)
     {
         (BoxCorner fromCorner, BoxCorner toCorner) = Box.Ends(edge);
-        Point2 from = box.Corner(fromCorner);
-        Point2 to = box.Corner(toCorner);
+        Point2 from = footprint.Corner(fromCorner);
+        Point2 to = footprint.Corner(toCorner);
         return new Point2(
             from.X + (to.X - from.X).Divide(2, Rounding.HalfToEven),
             from.Y + (to.Y - from.Y).Divide(2, Rounding.HalfToEven));

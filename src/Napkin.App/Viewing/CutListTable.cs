@@ -257,13 +257,14 @@ public sealed class CutListTable : Grid
             return null;
         }
 
-        Box blank = new(
+        Box blank = Box.AsDrawn(
             EntityId.New(),
             LayerId.New(),
             Point2.Origin,
             Along(row, row.PlanAxes.X),
             Along(row, row.PlanAxes.Y),
-            Angle.Zero)
+            Along(row, row.PlanAxes.OutOfPlane),
+            Angle.Zero) with
         {
             Cuts = [.. row.Cuts],
         };

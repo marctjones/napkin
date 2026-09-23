@@ -205,13 +205,13 @@ public sealed class StockTool
         }
 
         // Every placeable stock fixes the thickness, and a part lying flat has its thickness out
-        // of the plan, so this is the value the assignment will state for it too.
+        // of the plan — its depth — so this is the value the assignment will state for it too.
         Length thickness = ValueFor(StockAssignment.Fixes(stock), PartDimension.Thickness)
                            ?? throw new InvalidOperationException(
                                $"{stock.Name} fixes no thickness, so it cannot lie flat.");
 
-        Box box = new(id, layer, anchor, width, height, Angle.Zero) { Name = name };
-        Part part = new(stock.Name, Species: null, Quantity: 1, thickness, axes);
+        Box box = Box.AsDrawn(id, layer, anchor, width, height, thickness, Angle.Zero) with { Name = name };
+        Part part = new(stock.Name, Species: null, Quantity: 1, axes);
 
         request = Batch.Of(new AddEntity(box), StockAssignment.RequestsFor(sketch, box, part, stock));
         return true;

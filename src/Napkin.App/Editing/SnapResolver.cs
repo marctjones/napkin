@@ -43,7 +43,7 @@ public sealed record SnapHit(
 /// the editor still asks the updater whether it can hold each one before offering it
 /// (docs/design/geometry-model.md &#xA7;3.2 — relationships are stored, never inferred).
 /// </remarks>
-/// <param name="Anchor">Where the moving box's anchor goes.</param>
+/// <param name="Anchor">Where the moving box's anchor goes, in the plan; its Z is not the plan's to change.</param>
 /// <param name="Hits">What was caught, at most one per axis.</param>
 /// <param name="Relationships">What dropping here would state, in the order it would be stated.</param>
 public sealed record SnapPlan(Point2 Anchor, ImmutableList<SnapHit> Hits, ImmutableList<Relationship> Relationships)
@@ -67,6 +67,14 @@ public sealed record SnapPlan(Point2 Anchor, ImmutableList<SnapHit> Hits, Immuta
 /// Two edges only count as candidates when they overlap along the other axis. A shelf lines up
 /// with the side it touches, not with a leg three feet away that happens to share an X.
 /// </para>
+/// <para>
+/// Everything is read through each box's <see cref="Footprint"/>, and what the drop would state is
+/// named back in the box's own frame through <see cref="BoxGeometry.LocalEdge"/> and
+/// <see cref="BoxGeometry.LocalCorner"/> (<c>docs/design/assembly-model.md</c> &#xA7;7.2). For a
+/// box lying as drawn those are the names the footprint used, so the relationships are the ones the
+/// plan snap always stated; for a box on its side there is no plan corner or edge reference to
+/// state until &#xA7;10 step 3's features, and the snap lands the part without stating one.
+/// </para>
 /// </remarks>
 public static class SnapResolver
 {
@@ -88,7 +96,7 @@ public static class SnapResolver
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(moving);
 
-        Box proposed = moving with { Anchor = wantedAnchor };
+        Box proposed = moving with { Anchor = moving.Anchor with { X = wantedAnchor.X, Y = wantedAnchor.Y } };
         List<EdgeLine> movingEdges = [.. BoxGeometry.AxisAlignedEdges(proposed)];
 
         Candidate? bestX = null;
@@ -141,7 +149,7 @@ public static class SnapResolver
         Length anchorX = bestX is { } x ? wantedAnchor.X + x.Shift : SnapGrid.Snap(wantedAnchor.X, gridStepInches);
         Length anchorY = bestY is { } y ? wantedAnchor.Y + y.Shift : SnapGrid.Snap(wantedAnchor.Y, gridStepInches);
         Point2 anchor = new(anchorX, anchorY);
-        Box landed = moving with { Anchor = anchor };
+        Box landed = moving with { Anchor = moving.Anchor with { X = anchor.X, Y = anchor.Y } };
 
         ImmutableList<SnapHit>.Builder hits = ImmutableList.CreateBuilder<SnapHit>();
         ImmutableList<Relationship>.Builder statements = ImmutableList.CreateBuilder<Relationship>();
@@ -155,10 +163,17 @@ public static class SnapResolver
         {
             hits.Add(HitOf(cornerX, SnapKind.Corner));
             hits.Add(HitOf(cornerY, SnapKind.Corner));
-            statements.Add(new Coincident(
-                RelationshipId.New(),
-                new CornerRef(cornerX.Target, theirCorner),
-                new CornerRef(moving.Id, myCorner)));
+
+            // Plan corners, named back on each blank: the two plan uprights, as local corners.
+            if (sketch.Find<Box>(cornerX.Target) is { } target
+                && BoxGeometry.LocalCorner(target, theirCorner) is { } targetCorner
+                && BoxGeometry.LocalCorner(landed, myCorner) is { } movingCorner)
+            {
+                statements.Add(new Coincident(
+                    RelationshipId.New(),
+                    new CornerRef(cornerX.Target, targetCorner),
+                    new CornerRef(moving.Id, movingCorner)));
+            }
 
             return new SnapPlan(anchor, hits.ToImmutable(), statements.ToImmutable());
         }
@@ -173,11 +188,17 @@ public static class SnapResolver
             hits.Add(HitOf(caught, SnapKind.Edge));
 
             // The moving part is the one that follows, so it is the second edge: Flush(a, b)
-            // reads "b follows a" (docs/design/geometry-model.md §3.2).
-            statements.Add(new Flush(
-                RelationshipId.New(),
-                new BoxEdgeRef(caught.Target, caught.TargetEdge),
-                new BoxEdgeRef(moving.Id, caught.MovingEdge)));
+            // reads "b follows a" (docs/design/geometry-model.md §3.2). Each plan side is named
+            // back as the edge of its own blank.
+            if (sketch.Find<Box>(caught.Target) is { } target
+                && BoxGeometry.LocalEdge(target, caught.TargetEdge) is { } targetEdge
+                && BoxGeometry.LocalEdge(landed, caught.MovingEdge) is { } movingEdge)
+            {
+                statements.Add(new Flush(
+                    RelationshipId.New(),
+                    new BoxEdgeRef(caught.Target, targetEdge),
+                    new BoxEdgeRef(moving.Id, movingEdge)));
+            }
         }
 
         if (bestX is null)
@@ -224,9 +245,10 @@ public static class SnapResolver
     {
         // The indicator for a grid snap runs across the part itself, which is the only thing the
         // grid line has to do with.
+        Footprint footprint = landed.Footprint();
         IEnumerable<Point2> corners = ((BoxCorner[])
             [BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest])
-            .Select(landed.Corner);
+            .Select(footprint.Corner);
         Axis other = axis switch
         {
             Axis.X => Axis.Y,

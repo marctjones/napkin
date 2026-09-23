@@ -91,8 +91,8 @@ public class SaveWorkflows
         });
 
         // Change it and Save again: straight back to the same file, without asking.
-        app.Click(At(window, Part(window, first).Center));
-        app.Drag(At(window, Part(window, first).Center), At(window, Part(window, first).Center + new Vector2(Length.Zero, Length.Inches(4))));
+        app.Click(At(window, Part(window, first).Center.XY));
+        app.Drag(At(window, Part(window, first).Center.XY), At(window, Part(window, first).Center.XY + new Vector2(Length.Zero, Length.Inches(4))));
         app.Expect("the move is an unsaved change", () => Assert.EndsWith("*", window.Title!, StringComparison.Ordinal));
 
         app.Click(CentreOf(window, window.FileMenuItem));
@@ -153,7 +153,7 @@ public class SaveWorkflows
 
         // The drawing under the question cannot be touched: a press on the part goes to the
         // backdrop, and so do keys.
-        app.Click(At(window, Part(window, drawn).Center));
+        app.Click(At(window, Part(window, drawn).Center.XY));
         app.Press(Key.Delete);
         app.Expect("nothing behind the question moved or went", () =>
         {

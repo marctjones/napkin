@@ -58,7 +58,7 @@ public class ShapedPartWorkflows
             Assert.Null(window.Editor.OnlySelected);
         });
 
-        app.Click(At(window, top.Center));
+        app.Click(At(window, top.Center.XY));
 
         app.Expect("a click on the shape picks the part", () =>
             Assert.Equal(top.Id, window.Editor.OnlySelected));
@@ -95,9 +95,9 @@ public class ShapedPartWorkflows
         // the copy's own middle, which is material whatever its corners are doing.
         EntityId copyId = window.Editor.OnlySelected!.Value;
         Box before = window.CurrentDesign!.Sketch.Find<Box>(copyId)!;
-        Vector2 move = new Point2(Length.Inches(20), top.Corner(BoxCorner.NorthWest).Y) - before.Anchor;
+        Vector2 move = new Point2(Length.Inches(20), top.Corner(BoxCorner.NorthWest).Y) - before.Anchor.XY;
 
-        Point2 from = before.Center;
+        Point2 from = before.Center.XY;
         Point2 to = from + move;
         Point2 halfway = new(
             from.X + (move.Dx.Divide(2, Rounding.HalfToEven)),
@@ -267,7 +267,7 @@ public class ShapedPartWorkflows
 
         // Back into the workshop, pick the cut, and take it off: RemoveCut, and the rectangle is
         // a rectangle again.
-        app.Click(At(window, window.CurrentDesign!.Sketch.Find<Box>(id)!.Center));
+        app.Click(At(window, window.CurrentDesign!.Sketch.Find<Box>(id)!.Center.XY));
         app.Press(Key.C);
         app.Click(InWorkshop(window, Point2.Origin));
 

@@ -166,12 +166,13 @@ public class CanvasAutomationTests
 
             EntityId added = EntityId.New();
             window.Editor.Apply(
-                new AddEntity(new Box(
+                new AddEntity(Box.AsDrawn(
                     added,
                     LayerId.Default,
                     Point2.Inches(40, 0),
                     Length.Inches(6),
                     Length.Inches(6),
+                    Box.DefaultDepth,
                     Angle.Zero)),
                 "Drew a part");
             HeadlessWindow.Settle();
@@ -185,7 +186,7 @@ public class CanvasAutomationTests
             // A part that only moves is the same part: the tree does not change, because a name, a
             // value and a rectangle are all read live.
             window.Editor.Apply(
-                new Drag(added, new Vector2(Length.Inches(3), Length.Zero)),
+                Drag.InPlan(added, new Vector2(Length.Inches(3), Length.Zero)),
                 "Moved a part");
             HeadlessWindow.Settle();
             Assert.Equal(1, changes);

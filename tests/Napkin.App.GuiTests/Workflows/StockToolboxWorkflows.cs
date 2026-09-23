@@ -123,11 +123,11 @@ public class StockToolboxWorkflows
             Assert.Equal("2x4", placed.Part!.Stock);
             Assert.Equal(Length.Inches(26).Units, placed.Width.Units);
             Assert.Equal(twoByFour.Width.Units, placed.Height.Units);
-            Assert.Equal(twoByFour.Thickness.Units, placed.Part.OutOfPlane.Units);
+            Assert.Equal(twoByFour.Thickness.Units, placed.Depth.Units);
             Assert.Equal(new PlanAxes(PartDimension.Length, PartDimension.Width), placed.Part.PlanAxes);
 
             // The yard's width is stated, so it is driven — a drag on that edge is refused.
-            ParamValue driving = Assert.Single(window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<ParamValue>());
+            ParamValue driving = Assert.Single(window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<ParamValue>(), value => value.Param is not BoxDepthRef);
             Assert.Equal(new BoxHeightRef(board.Id), driving.Param);
 
             // Placed, selected, and the properties panel says the same sentence the hover did —
@@ -175,10 +175,10 @@ public class StockToolboxWorkflows
                 window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>(),
                 box => box.Id != board.Id);
             Assert.Equal("3/4 plywood", sheet.Part!.Stock);
-            Assert.Equal(plywood.Thickness.Units, sheet.Part.OutOfPlane.Units);
+            Assert.Equal(plywood.Thickness.Units, sheet.Depth.Units);
             Assert.Equal(Length.Inches(12).Units, sheet.Width.Units);
             Assert.Equal(Length.Inches(8).Units, sheet.Height.Units);
-            Assert.Equal(Point2.Inches(4, -2), sheet.Anchor);
+            Assert.Equal(Point2.Inches(4, -2), sheet.Anchor.XY);
             Assert.Equal(sheet.Id, window.Editor.OnlySelected);
 
             // The board placed first is untouched.
@@ -293,7 +293,7 @@ public class StockToolboxWorkflows
             Assert.Equal("2x4", byMenu.Part!.Stock);
             Assert.Equal(Length.Inches(12).Units, byMenu.Width.Units);
             Assert.Equal(twoByFour.Width.Units, byMenu.Height.Units);
-            Assert.Equal(twoByFour.Thickness.Units, byMenu.Part.OutOfPlane.Units);
+            Assert.Equal(twoByFour.Thickness.Units, byMenu.Depth.Units);
             Assert.Equal(new PlanAxes(PartDimension.Length, PartDimension.Width), byMenu.Part.PlanAxes);
             Assert.Equal(byMenu.Id, window.Editor.OnlySelected);
             Assert.Equal(twoByFour.HoverText, window.StockReadoutText);
@@ -319,7 +319,7 @@ public class StockToolboxWorkflows
             Assert.Equal(byMenu.Height, byToolbar.Height);
 
             // Each is driven by its stock's stated width, one ParamValue apiece.
-            List<ParamValue> driving = [.. window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<ParamValue>()];
+            List<ParamValue> driving = [.. window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<ParamValue>().Where(value => value.Param is not BoxDepthRef)];
             Assert.Equal(2, driving.Count);
             Assert.Contains(driving, value => value.Param == new BoxHeightRef(byMenu.Id));
             Assert.Contains(driving, value => value.Param == new BoxHeightRef(byToolbar.Id));

@@ -27,7 +27,7 @@ public class EditorUndoTests
         Design opened = editor.Design;
 
         editor.BeginGesture("Moved Part 1");
-        editor.Apply(new Drag(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
+        editor.Apply(Drag.InPlan(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
         editor.EndGesture();
         Design moved = editor.Design;
 
@@ -51,8 +51,8 @@ public class EditorUndoTests
         editor.BeginGesture("Moved both");
         editor.Apply(
             Batch.Of(
-                new Drag(EditingBuilder.Id(0), FiveInchesEast),
-                new Drag(EditingBuilder.Id(1), FiveInchesEast)),
+                Drag.InPlan(EditingBuilder.Id(0), FiveInchesEast),
+                Drag.InPlan(EditingBuilder.Id(1), FiveInchesEast)),
             "Moved both");
         editor.EndGesture();
 
@@ -70,7 +70,7 @@ public class EditorUndoTests
         editor.Open(EditingBuilder.Design(EditingBuilder.At(0, 0, 24, 12)));
         editor.Select(EditingBuilder.Id(0));
 
-        editor.Apply(new Drag(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
+        editor.Apply(Drag.InPlan(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
         editor.Apply(new DragEdge(EditingBuilder.Id(0), BoxEdge.East, Length.Inches(3)), "Resized Part 1");
 
         editor.Undo();
@@ -91,7 +91,7 @@ public class EditorUndoTests
         EntityId id = EntityId.New();
 
         editor.Apply(
-            new AddEntity(new Box(id, LayerId.Default, Point2.Origin, Length.Inches(10), Length.Inches(10), Angle.Zero)),
+            new AddEntity(Box.AsDrawn(id, LayerId.Default, Point2.Origin, Length.Inches(10), Length.Inches(10), Box.DefaultDepth, Angle.Zero)),
             "Drew a part");
         editor.Select(id);
 
@@ -113,7 +113,7 @@ public class EditorUndoTests
         LayerId parts = LayerId.New();
         Sketch sketch = Sketch.Empty
             .WithLayer(new Layer(parts, DesignLayers.Parts))
-            .WithEntity(new Box(EditingBuilder.Id(0), LayerId.Default, Point2.Origin, Length.Inches(10), Length.Inches(10), Angle.Zero));
+            .WithEntity(Box.AsDrawn(EditingBuilder.Id(0), LayerId.Default, Point2.Origin, Length.Inches(10), Length.Inches(10), Box.DefaultDepth, Angle.Zero));
 
         DesignEditor editor = new();
         editor.Open(Design.Unlabelled("Layers", sketch));
@@ -133,8 +133,8 @@ public class EditorUndoTests
     {
         DesignEditor editor = new();
         editor.Open(EditingBuilder.Design(EditingBuilder.At(0, 0, 24, 12)));
-        editor.Apply(new Drag(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
-        editor.Apply(new Drag(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
+        editor.Apply(Drag.InPlan(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
+        editor.Apply(Drag.InPlan(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
         editor.Undo();
         Assert.True(editor.History.CanUndo);
         Assert.True(editor.History.CanRedo);
@@ -165,10 +165,10 @@ public class EditorUndoTests
     {
         DesignEditor editor = new();
         editor.Open(EditingBuilder.Design(EditingBuilder.At(0, 0, 24, 12)));
-        editor.Apply(new Drag(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
+        editor.Apply(Drag.InPlan(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
 
         editor.BeginGesture("Moved Part 1");
-        editor.ApplyQuietly(new Drag(EditingBuilder.Id(0), FiveInchesEast));
+        editor.ApplyQuietly(Drag.InPlan(EditingBuilder.Id(0), FiveInchesEast));
         Design midDrag = editor.Design;
 
         Assert.False(editor.Undo());
@@ -186,7 +186,7 @@ public class EditorUndoTests
         editor.Open(EditingBuilder.Design(EditingBuilder.At(0, 0, 24, 12)));
         Assert.False(editor.HasUnsavedChanges);
 
-        editor.Apply(new Drag(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
+        editor.Apply(Drag.InPlan(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
         Assert.True(editor.HasUnsavedChanges);
 
         // Undoing back to what was opened is not a change.
@@ -205,8 +205,8 @@ public class EditorUndoTests
 
         // And a drag there and back again ends where the save did, which is no change at all.
         editor.Redo();
-        editor.Apply(new Drag(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
-        editor.Apply(new Drag(EditingBuilder.Id(0), new Vector2(Length.Inches(-5), Length.Zero)), "Moved Part 1");
+        editor.Apply(Drag.InPlan(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
+        editor.Apply(Drag.InPlan(EditingBuilder.Id(0), new Vector2(Length.Inches(-5), Length.Zero)), "Moved Part 1");
         Assert.False(editor.HasUnsavedChanges);
     }
 }
