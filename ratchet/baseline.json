@@ -19,7 +19,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 39,
+    "workflowsPassed": 40,
     "workflowIds": [
       "CVS-011",
       "GUI-ASSEM-01",
@@ -36,6 +36,7 @@
       "GUI-ASSEM-12",
       "GUI-ASSEM-13",
       "GUI-ASSEM-14",
+      "GUI-ASSEM-15",
       "GUI-CUT-02",
       "GUI-CUT-03",
       "GUI-CUT-05",
