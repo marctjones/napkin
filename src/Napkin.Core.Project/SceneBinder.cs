@@ -826,34 +826,34 @@ internal sealed class SceneBinder
 
             case SceneNames.Coincident:
             {
-                PointRef? a = ReadPointRef(fields, SceneNames.A);
-                PointRef? b = ReadPointRef(fields, SceneNames.B);
+                PlaceRef? a = ReadPointRef(fields, SceneNames.A);
+                PlaceRef? b = ReadPointRef(fields, SceneNames.B);
                 return a is not null && b is not null ? new Coincident(id, a, b) : null;
             }
 
             case SceneNames.Horizontal:
             {
-                EdgeRef? edge = ReadEdgeRef(fields, SceneNames.Edge);
+                PlaceRef? edge = ReadEdgeRef(fields, SceneNames.Edge);
                 return edge is not null ? new Horizontal(id, edge) : null;
             }
 
             case SceneNames.Vertical:
             {
-                EdgeRef? edge = ReadEdgeRef(fields, SceneNames.Edge);
+                PlaceRef? edge = ReadEdgeRef(fields, SceneNames.Edge);
                 return edge is not null ? new Vertical(id, edge) : null;
             }
 
             case SceneNames.Flush:
             {
-                EdgeRef? a = ReadEdgeRef(fields, SceneNames.A);
-                EdgeRef? b = ReadEdgeRef(fields, SceneNames.B);
+                PlaceRef? a = ReadEdgeRef(fields, SceneNames.A);
+                PlaceRef? b = ReadEdgeRef(fields, SceneNames.B);
                 return a is not null && b is not null ? new Flush(id, a, b) : null;
             }
 
             case SceneNames.AxisDistance:
             {
-                PointRef? from = ReadPointRef(fields, SceneNames.From);
-                PointRef? to = ReadPointRef(fields, SceneNames.To);
+                PlaceRef? from = ReadPointRef(fields, SceneNames.From);
+                PlaceRef? to = ReadPointRef(fields, SceneNames.To);
                 Axis? axis = ReadAxis(fields);
                 long? distance = ReadInteger(fields, SceneNames.Distance);
                 return from is not null && to is not null && axis is { } along && distance is { } units
@@ -877,9 +877,9 @@ internal sealed class SceneBinder
 
             case SceneNames.Centered:
             {
-                PointRef? middle = ReadPointRef(fields, SceneNames.Middle);
-                PointRef? a = ReadPointRef(fields, SceneNames.A);
-                PointRef? b = ReadPointRef(fields, SceneNames.B);
+                PlaceRef? middle = ReadPointRef(fields, SceneNames.Middle);
+                PlaceRef? a = ReadPointRef(fields, SceneNames.A);
+                PlaceRef? b = ReadPointRef(fields, SceneNames.B);
                 Axis? axis = ReadAxis(fields);
                 return middle is not null && a is not null && b is not null && axis is { } along
                     ? new Centered(id, middle, a, b, along)
@@ -888,22 +888,22 @@ internal sealed class SceneBinder
 
             case SceneNames.Parallel:
             {
-                EdgeRef? a = ReadEdgeRef(fields, SceneNames.A);
-                EdgeRef? b = ReadEdgeRef(fields, SceneNames.B);
+                PlaceRef? a = ReadEdgeRef(fields, SceneNames.A);
+                PlaceRef? b = ReadEdgeRef(fields, SceneNames.B);
                 return a is not null && b is not null ? new Geometry.Parallel(id, a, b) : null;
             }
 
             case SceneNames.Perpendicular:
             {
-                EdgeRef? a = ReadEdgeRef(fields, SceneNames.A);
-                EdgeRef? b = ReadEdgeRef(fields, SceneNames.B);
+                PlaceRef? a = ReadEdgeRef(fields, SceneNames.A);
+                PlaceRef? b = ReadEdgeRef(fields, SceneNames.B);
                 return a is not null && b is not null ? new Perpendicular(id, a, b) : null;
             }
 
             case SceneNames.AngleBetween:
             {
-                EdgeRef? a = ReadEdgeRef(fields, SceneNames.A);
-                EdgeRef? b = ReadEdgeRef(fields, SceneNames.B);
+                PlaceRef? a = ReadEdgeRef(fields, SceneNames.A);
+                PlaceRef? b = ReadEdgeRef(fields, SceneNames.B);
                 long? angle = ReadInteger(fields, SceneNames.Angle);
                 return a is not null && b is not null && angle is { } arcseconds
                     ? new AngleBetween(id, a, b, new Angle(arcseconds))
@@ -912,8 +912,8 @@ internal sealed class SceneBinder
 
             case SceneNames.Distance:
             {
-                PointRef? a = ReadPointRef(fields, SceneNames.A);
-                PointRef? b = ReadPointRef(fields, SceneNames.B);
+                PlaceRef? a = ReadPointRef(fields, SceneNames.A);
+                PlaceRef? b = ReadPointRef(fields, SceneNames.B);
                 long? value = ReadInteger(fields, SceneNames.Value);
                 return a is not null && b is not null && value is { } units
                     ? new Distance(id, a, b, new Length(units))
@@ -922,23 +922,23 @@ internal sealed class SceneBinder
 
             case SceneNames.PointOnEdge:
             {
-                PointRef? point = ReadPointRef(fields, SceneNames.Point);
-                EdgeRef? edge = ReadEdgeRef(fields, SceneNames.Edge);
+                PlaceRef? point = ReadPointRef(fields, SceneNames.Point);
+                PlaceRef? edge = ReadEdgeRef(fields, SceneNames.Edge);
                 return point is not null && edge is not null ? new PointOnEdge(id, point, edge) : null;
             }
 
             case SceneNames.Symmetric:
             {
-                PointRef? a = ReadPointRef(fields, SceneNames.A);
-                PointRef? b = ReadPointRef(fields, SceneNames.B);
-                EdgeRef? mirror = ReadEdgeRef(fields, SceneNames.Mirror);
+                PlaceRef? a = ReadPointRef(fields, SceneNames.A);
+                PlaceRef? b = ReadPointRef(fields, SceneNames.B);
+                PlaceRef? mirror = ReadEdgeRef(fields, SceneNames.Mirror);
                 return a is not null && b is not null && mirror is not null ? new Symmetric(id, a, b, mirror) : null;
             }
 
             case SceneNames.Tangent:
             {
-                EdgeRef? a = ReadEdgeRef(fields, SceneNames.A);
-                EdgeRef? b = ReadEdgeRef(fields, SceneNames.B);
+                PlaceRef? a = ReadEdgeRef(fields, SceneNames.A);
+                PlaceRef? b = ReadEdgeRef(fields, SceneNames.B);
                 return a is not null && b is not null ? new Tangent(id, a, b) : null;
             }
 
@@ -979,7 +979,7 @@ internal sealed class SceneBinder
     // References
     // -----------------------------------------------------------------------------------------
 
-    private PointRef? ReadPointRef(JsonFields parent, string name)
+    private PlaceRef? ReadPointRef(JsonFields parent, string name)
     {
         JsonFields? fields = ReadObject(parent, name);
         if (fields is null)
@@ -988,7 +988,7 @@ internal sealed class SceneBinder
         }
 
         string? kind = ReadText(fields, SceneNames.Kind);
-        PointRef? reference = kind switch
+        PlaceRef? reference = kind switch
         {
             null => null,
             SceneNames.Node => ReadEntityReference(fields, SceneNames.Node, typeof(Node)) is { } node
@@ -998,14 +998,14 @@ internal sealed class SceneBinder
             SceneNames.Center => ReadEntityReference(fields, SceneNames.Box, typeof(Box)) is { } box
                 ? new CenterRef(box)
                 : null,
-            _ => UnknownRefKind<PointRef>(fields, kind, "a point", SceneNames.Node, SceneNames.Corner, SceneNames.Center),
+            _ => UnknownRefKind<PlaceRef>(fields, kind, "a point", SceneNames.Node, SceneNames.Corner, SceneNames.Center),
         };
 
         RejectUnknownFields(fields);
         return reference;
     }
 
-    private PointRef? ReadCornerRef(JsonFields fields)
+    private PlaceRef? ReadCornerRef(JsonFields fields)
     {
         EntityId? box = ReadEntityReference(fields, SceneNames.Box, typeof(Box));
         string? corner = ReadText(fields, SceneNames.Corner);
@@ -1023,10 +1023,10 @@ internal sealed class SceneBinder
             return null;
         }
 
-        return new CornerRef(target, which);
+        return new FeatureRef(target, BoxFeature.LocalUpright(which));
     }
 
-    private EdgeRef? ReadEdgeRef(JsonFields parent, string name)
+    private PlaceRef? ReadEdgeRef(JsonFields parent, string name)
     {
         JsonFields? fields = ReadObject(parent, name);
         if (fields is null)
@@ -1035,21 +1035,21 @@ internal sealed class SceneBinder
         }
 
         string? kind = ReadText(fields, SceneNames.Kind);
-        EdgeRef? reference = kind switch
+        PlaceRef? reference = kind switch
         {
             null => null,
             SceneNames.Segment => ReadEntityReference(fields, SceneNames.Segment, typeof(Segment)) is { } segment
                 ? new SegmentRef(segment)
                 : null,
             SceneNames.BoxEdge => ReadBoxEdgeRef(fields),
-            _ => UnknownRefKind<EdgeRef>(fields, kind, "an edge", SceneNames.Segment, SceneNames.BoxEdge),
+            _ => UnknownRefKind<PlaceRef>(fields, kind, "an edge", SceneNames.Segment, SceneNames.BoxEdge),
         };
 
         RejectUnknownFields(fields);
         return reference;
     }
 
-    private EdgeRef? ReadBoxEdgeRef(JsonFields fields)
+    private PlaceRef? ReadBoxEdgeRef(JsonFields fields)
     {
         EntityId? box = ReadEntityReference(fields, SceneNames.Box, typeof(Box));
         string? edge = ReadText(fields, SceneNames.Edge);
@@ -1067,7 +1067,7 @@ internal sealed class SceneBinder
             return null;
         }
 
-        return new BoxEdgeRef(target, which);
+        return new FeatureRef(target, BoxFeature.Face(SceneNames.FaceOf(which)));
     }
 
     private ParamRef? ReadParamRef(JsonFields parent, string name)
@@ -1118,8 +1118,8 @@ internal sealed class SceneBinder
         if (fields.Peek(SceneNames.Kind) == SceneNames.AxisMeasurand)
         {
             ReadText(fields, SceneNames.Kind);
-            PointRef? from = ReadPointRef(fields, SceneNames.From);
-            PointRef? to = ReadPointRef(fields, SceneNames.To);
+            PlaceRef? from = ReadPointRef(fields, SceneNames.From);
+            PlaceRef? to = ReadPointRef(fields, SceneNames.To);
             Axis? axis = ReadAxis(fields);
             measurand = from is not null && to is not null && axis is { } along
                 ? new AxisMeasurand(from, to, along)

@@ -97,8 +97,8 @@ public class PropertyTests
                     break;
 
                 case AxisDistance distance:
-                    Length actual = succeeded.Sketch.PointOf(distance.To).Component(distance.Axis)
-                                    - succeeded.Sketch.PointOf(distance.From).Component(distance.Axis);
+                    Length actual = succeeded.Sketch.PlanPoint(distance.To).Component(distance.Axis)
+                                    - succeeded.Sketch.PlanPoint(distance.From).Component(distance.Axis);
                     Assert.True(actual == request.Value, $"{because}: the distance is {actual}, not {request.Value}");
                     break;
 
@@ -742,8 +742,8 @@ public class PropertyTests
     private static int CentredOddSpans(Sketch sketch)
         => sketch.RelationshipsInOrder
             .OfType<Centered>()
-            .Count(centred => (sketch.PointOf(centred.A).Component(centred.Axis)
-                               + sketch.PointOf(centred.B).Component(centred.Axis)).Units % 2 != 0);
+            .Count(centred => (sketch.PlanPoint(centred.A).Component(centred.Axis)
+                               + sketch.PlanPoint(centred.B).Component(centred.Axis)).Units % 2 != 0);
 
     private static string Because(int seed, int iteration, Request request)
         => $"seed {seed}, iteration {iteration}, request {request.GetType().Name}";

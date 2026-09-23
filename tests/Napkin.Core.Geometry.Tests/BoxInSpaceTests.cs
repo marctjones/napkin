@@ -448,11 +448,12 @@ public class BoxInSpaceTests
     }
 
     [Fact]
-    public void APositionalRelationshipOnATippedBoxWaitsForFeatures()
+    public void APositionalRelationshipOnATippedBoxIsJudgedByItsFeaturesAndWaitsForTheZPropagator()
     {
-        // A corner reference names the blank's corner, which the plan propagator would hold at
-        // the wrong place on a box that is not Top up; step 3's features fix that. Until then it
-        // is refused rather than silently wrong, and sizes still work.
+        // Since step 3 a feature fixes world axes through the orientation, so a pairing on a tipped
+        // box is legal or not by what it fixes. A legal one still waits for step 4, whose
+        // propagator knows a tipped box's Z and the depth that stands in its plan: it is refused
+        // rather than held at the wrong place, and sizes still work.
         SketchBuilder builder = new();
         EntityId drawn = builder.AddBox(0, 0, 10, 4);
         EntityId node = builder.AddNode(0, 0);
@@ -462,14 +463,29 @@ public class BoxInSpaceTests
 
         foreach (Relationship relationship in new Relationship[]
         {
-            new Coincident(RelationshipId.New(), new CornerRef(drawn, BoxCorner.SouthWest), new CornerRef(tipped.Id, BoxCorner.SouthWest)),
-            new Flush(RelationshipId.New(), new BoxEdgeRef(drawn, BoxEdge.West), new BoxEdgeRef(tipped.Id, BoxEdge.North)),
+            // East up, the blank's top faces plan west: it fixes X, as the drawn box's west face does.
+            new Flush(RelationshipId.New(), TestRefs.Edge(drawn, BoxEdge.West), new FeatureRef(tipped.Id, BoxFeature.Face(BoxFace.Top))),
             new AxisDistance(RelationshipId.New(), new CenterRef(tipped.Id), new NodeRef(node), Axis.X, Length.Zero),
-            new Centered(RelationshipId.New(), new CenterRef(tipped.Id), new CornerRef(drawn, BoxCorner.SouthWest), new CornerRef(drawn, BoxCorner.SouthEast), Axis.X),
+            new Centered(RelationshipId.New(), new CenterRef(tipped.Id), TestRefs.Corner(drawn, BoxCorner.SouthWest), TestRefs.Corner(drawn, BoxCorner.SouthEast), Axis.X),
+        })
+        {
+            Assert.Null(PlaceRules.Refusal(sketch, relationship));
+            Assert.Equal(
+                RejectionReason.UnsupportedRelationship,
+                Assert.IsType<Rejected>(updater.Apply(sketch, new AddRelationship(relationship))).Reason);
+        }
+
+        // The blank's south-west corner, standing on its east face, is an edge along plan Y at
+        // ground level: it fixes Y and Z, and shares only Y with a plan upright. And the drawn
+        // box's west face (X) is not in the tipped box's north face's plane (Y).
+        foreach (Relationship relationship in new Relationship[]
+        {
+            new Coincident(RelationshipId.New(), TestRefs.Corner(drawn, BoxCorner.SouthWest), TestRefs.Corner(tipped.Id, BoxCorner.SouthWest)),
+            new Flush(RelationshipId.New(), TestRefs.Edge(drawn, BoxEdge.West), TestRefs.Edge(tipped.Id, BoxEdge.North)),
         })
         {
             Assert.Equal(
-                RejectionReason.UnsupportedRelationship,
+                RejectionReason.PlacesNotComparable,
                 Assert.IsType<Rejected>(updater.Apply(sketch, new AddRelationship(relationship))).Reason);
         }
 

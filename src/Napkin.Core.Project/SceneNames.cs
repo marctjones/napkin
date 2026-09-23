@@ -257,6 +257,52 @@ internal static class SceneNames
         _ => throw Unknown(nameof(edge), edge),
     };
 
+    /// <summary>
+    /// The side face a version-3 <c>boxEdge</c> reference names: until docs/design/assembly-model.md
+    /// &#xA7;10 step 5 gives the file the <c>feature</c> reference, a box's plan edge is the face of
+    /// the same name on a box lying as drawn, which is the only kind version 3 holds.
+    /// </summary>
+    internal static BoxFace FaceOf(Geometry.BoxEdge edge) => edge switch
+    {
+        Geometry.BoxEdge.South => BoxFace.South,
+        Geometry.BoxEdge.East => BoxFace.East,
+        Geometry.BoxEdge.North => BoxFace.North,
+        Geometry.BoxEdge.West => BoxFace.West,
+        _ => throw Unknown(nameof(edge), edge),
+    };
+
+    /// <summary>The corner whose local upright this feature is, for a version-3 <c>corner</c> reference.</summary>
+    internal static bool TryCornerOf(BoxFeature feature, out BoxCorner corner)
+    {
+        foreach (BoxCorner candidate in (BoxCorner[])[BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest])
+        {
+            if (BoxFeature.LocalUpright(candidate) == feature)
+            {
+                corner = candidate;
+                return true;
+            }
+        }
+
+        corner = default;
+        return false;
+    }
+
+    /// <summary>The plan edge whose side face this feature is, for a version-3 <c>boxEdge</c> reference.</summary>
+    internal static bool TryEdgeOf(BoxFeature feature, out Geometry.BoxEdge edge)
+    {
+        foreach (Geometry.BoxEdge candidate in (Geometry.BoxEdge[])[Geometry.BoxEdge.South, Geometry.BoxEdge.East, Geometry.BoxEdge.North, Geometry.BoxEdge.West])
+        {
+            if (BoxFeature.Face(FaceOf(candidate)) == feature)
+            {
+                edge = candidate;
+                return true;
+            }
+        }
+
+        edge = default;
+        return false;
+    }
+
     internal static string Of(Geometry.Bow bow) => bow switch
     {
         Geometry.Bow.Outward => Outward,

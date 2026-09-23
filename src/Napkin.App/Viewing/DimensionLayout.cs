@@ -204,26 +204,27 @@ public static class DimensionLayout
     static bool LiesAlong(Box box, Axis local, Axis plan)
         => new Orientation(box.FaceUp, Angle.Zero).Image(local).Axis == plan;
 
-    static bool TryPoint(Sketch sketch, PointRef reference, out Point2 point)
+    // A place the plan can draw a dimension between: one that fixes both X and Y — a node, a centre,
+    // an upright edge (docs/design/assembly-model.md §2.2).
+    static bool TryPoint(Sketch sketch, PlaceRef reference, out Point2 point)
     {
         point = Point2.Origin;
-        switch (reference)
+        bool resolves = reference switch
         {
-            case NodeRef node when sketch.Find<Node>(node.Node) is { } found:
-                point = found.Position;
-                return true;
+            NodeRef node => sketch.Find<Node>(node.Node) is not null,
+            CenterRef or FeatureRef => sketch.Find<Box>(reference.Owner) is not null,
+            _ => false,
+        };
 
-            case CornerRef corner when sketch.Find<Box>(corner.Box) is { } box:
-                point = box.Corner(corner.Corner);
-                return true;
-
-            case CenterRef centre when sketch.Find<Box>(centre.Box) is { } box:
-                point = box.Center.XY;
-                return true;
-
-            default:
-                return false;
+        if (resolves
+            && (reference is not FeatureRef feature || !feature.Feature.Faces.IsEmpty)
+            && sketch.PlaceOf(reference) is { X: { } x, Y: { } y })
+        {
+            point = new Point2(x, y);
+            return true;
         }
+
+        return false;
     }
 
     /// <summary>

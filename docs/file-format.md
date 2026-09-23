@@ -382,6 +382,16 @@ are present.
 
 Corners and edges are named in the box's own local frame, before rotation. An axis is `x` or `y`.
 
+**In memory a box's corner and edge are features** (`docs/design/assembly-model.md` §2.2): until
+that design's §10 step 5 gives the file its `feature` reference, this version reads a `corner` as
+the blank's local upright — the edge along its local Z at that corner — and a `boxEdge` as the
+side face of the same name, which on a box lying as drawn (the only kind this version holds) mean
+what they always meant. The writer spells those two back the same way and refuses any other
+feature — a vertex, a top or bottom face, a horizontal edge — rather than saving it as a different
+one. Whether a relationship's places can be paired at all is judged at load by what each fixes
+(§2.3): a `flush` between a box's east edge and another's north edge, which lie on different axes,
+is refused as an invalid value naming both.
+
 ### Relationships
 
 Every relationship has `id` and `kind`. Relationships are stored, never inferred from position:

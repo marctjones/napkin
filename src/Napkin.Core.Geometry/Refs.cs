@@ -33,67 +33,67 @@ public enum BoxEdge
 }
 
 /// <summary>
-/// A reference to a point. Relationships never point at coordinates; they point at <em>what</em>
-/// on <em>which</em> entity (design &#xA7;3.1).
+/// Something with a place: a point, a line or a plane, each fixing some world axes
+/// (<c>docs/design/assembly-model.md</c> &#xA7;2.2). Relationships never point at coordinates; they
+/// point at <em>what</em> on <em>which</em> entity (geometry-model &#xA7;3.1).
 /// </summary>
-public abstract record PointRef
+/// <remarks>
+/// One base for points, lines and planes, because what a relationship may take is a validation rule
+/// on the axes each place fixes (<see cref="PlaceRules"/>, &#xA7;2.3) rather than a static type: a
+/// feature can be a face, an edge or a vertex, and a node — a two-axis thing — legally coincides
+/// with an upright edge. <see cref="Sketch.PlaceOf"/> says what a reference fixes.
+/// </remarks>
+public abstract record PlaceRef
 {
-    private protected PointRef()
+    private protected PlaceRef()
     {
     }
 
-    /// <summary>The entity this point belongs to.</summary>
+    /// <summary>The entity this place belongs to.</summary>
     public abstract EntityId Owner { get; }
 }
 
-/// <summary>A node's position.</summary>
+/// <summary>A node's position. Fixes X and Y: a node lies at the plan datum and says nothing about Z.</summary>
 /// <param name="Node">The node.</param>
-public sealed record NodeRef(EntityId Node) : PointRef
+public sealed record NodeRef(EntityId Node) : PlaceRef
 {
     /// <inheritdoc/>
     public override EntityId Owner => Node;
 }
 
-/// <summary>One corner of a box.</summary>
-/// <param name="Box">The box.</param>
-/// <param name="Corner">Which corner, in the box's local frame.</param>
-public sealed record CornerRef(EntityId Box, BoxCorner Corner) : PointRef
-{
-    /// <inheritdoc/>
-    public override EntityId Owner => Box;
-}
-
-/// <summary>The centre of a box.</summary>
-/// <param name="Box">The box.</param>
-public sealed record CenterRef(EntityId Box) : PointRef
-{
-    /// <inheritdoc/>
-    public override EntityId Owner => Box;
-}
-
-/// <summary>A reference to an edge.</summary>
-public abstract record EdgeRef
-{
-    private protected EdgeRef()
-    {
-    }
-
-    /// <summary>The entity this edge belongs to.</summary>
-    public abstract EntityId Owner { get; }
-}
-
-/// <summary>A whole segment, treated as an edge.</summary>
+/// <summary>
+/// A whole segment, as a line in the plan. Fixes X when it is vertical in the plan and Y when it is
+/// horizontal, and nothing when it is diagonal.
+/// </summary>
 /// <param name="Segment">The segment.</param>
-public sealed record SegmentRef(EntityId Segment) : EdgeRef
+public sealed record SegmentRef(EntityId Segment) : PlaceRef
 {
     /// <inheritdoc/>
     public override EntityId Owner => Segment;
 }
 
-/// <summary>One edge of a box.</summary>
+/// <summary>The centre of a box. Fixes X, Y and Z.</summary>
 /// <param name="Box">The box.</param>
-/// <param name="Edge">Which edge, in the box's local frame.</param>
-public sealed record BoxEdgeRef(EntityId Box, BoxEdge Edge) : EdgeRef
+public sealed record CenterRef(EntityId Box) : PlaceRef
+{
+    /// <inheritdoc/>
+    public override EntityId Owner => Box;
+}
+
+/// <summary>
+/// One feature of a box — a face, an edge or a vertex, named in the box's local frame — which fixes
+/// one, two or three world axes once the box's orientation is applied
+/// (<c>docs/design/assembly-model.md</c> &#xA7;2.1, &#xA7;2.2).
+/// </summary>
+/// <remarks>
+/// The feature is the <em>blank's</em>: a face a cut has taken part of still fixes the blank's face
+/// plane, and an upright edge at a clipped corner is the blank's virtual edge (&#xA7;2.5). A local
+/// upright — <c>BoxFeature.LocalUpright(SouthWest)</c> — is what a plan corner was, and a side
+/// face is what a plan edge was, on a box lying as drawn.
+/// </remarks>
+/// <param name="Box">The box.</param>
+/// <param name="Feature">Which feature, in the box's local frame. <c>default(BoxFeature)</c> is not a feature, and <see cref="Sketch.Validate"/> refuses it (invariant 12).</param>
+public sealed record FeatureRef(EntityId Box, BoxFeature Feature) : PlaceRef
 {
     /// <inheritdoc/>
     public override EntityId Owner => Box;
@@ -156,12 +156,12 @@ public abstract record Measurand
     }
 }
 
-/// <summary>A size: a box's width or height, or a segment's length.</summary>
+/// <summary>A size: a box's width, height or depth, or a segment's length.</summary>
 /// <param name="Param">The size measured.</param>
 public sealed record ParamMeasurand(ParamRef Param) : Measurand;
 
-/// <summary>The signed distance between two points along one axis.</summary>
-/// <param name="From">The point measured from.</param>
-/// <param name="To">The point measured to.</param>
-/// <param name="Axis">The axis measured along.</param>
-public sealed record AxisMeasurand(PointRef From, PointRef To, Axis Axis) : Measurand;
+/// <summary>The signed distance between two places along one axis, which both must fix.</summary>
+/// <param name="From">The place measured from.</param>
+/// <param name="To">The place measured to.</param>
+/// <param name="Axis">The axis measured along: X or Y, since a dimension lies in the plan (assembly-model invariant 13).</param>
+public sealed record AxisMeasurand(PlaceRef From, PlaceRef To, Axis Axis) : Measurand;

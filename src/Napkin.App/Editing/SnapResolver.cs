@@ -171,8 +171,8 @@ public static class SnapResolver
             {
                 statements.Add(new Coincident(
                     RelationshipId.New(),
-                    new CornerRef(cornerX.Target, targetCorner),
-                    new CornerRef(moving.Id, movingCorner)));
+                    LocalFeatures.Corner(cornerX.Target, targetCorner),
+                    LocalFeatures.Corner(moving.Id, movingCorner)));
             }
 
             return new SnapPlan(anchor, hits.ToImmutable(), statements.ToImmutable());
@@ -196,8 +196,8 @@ public static class SnapResolver
             {
                 statements.Add(new Flush(
                     RelationshipId.New(),
-                    new BoxEdgeRef(caught.Target, targetEdge),
-                    new BoxEdgeRef(moving.Id, movingEdge)));
+                    LocalFeatures.Edge(caught.Target, targetEdge),
+                    LocalFeatures.Edge(moving.Id, movingEdge)));
             }
         }
 

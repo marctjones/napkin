@@ -227,7 +227,7 @@ internal static class SketchGenerator
             foreach ((Box box, BoxCorner corner, Node node) in CornerNodes)
             {
                 Relate(new Coincident(
-                    NextRelationshipId(), new CornerRef(box.Id, corner), new NodeRef(node.Id)));
+                    NextRelationshipId(), TestRefs.Corner(box.Id, corner), new NodeRef(node.Id)));
             }
 
             // The segment rails: exact by construction, and their length is axis-aligned so it is
@@ -255,23 +255,23 @@ internal static class SketchGenerator
                 NextRelationshipId(),
                 new NodeRef(LeftOfMirror.Id),
                 new NodeRef(RightOfMirror.Id),
-                (sketch.PointOf(new NodeRef(RightOfMirror.Id)) - sketch.PointOf(new NodeRef(LeftOfMirror.Id)))
+                (sketch.PlanPoint(new NodeRef(RightOfMirror.Id)) - sketch.PlanPoint(new NodeRef(LeftOfMirror.Id)))
                     .Magnitude()));
 
             // A signed axis distance, measured rather than stated.
             Axis axis = random.Next(2) == 0 ? Axis.X : Axis.Y;
-            PointRef from = new CornerRef(boxes[0].Id, BoxCorner.SouthWest);
-            PointRef to = new CenterRef(boxes[1].Id);
+            PlaceRef from = TestRefs.Corner(boxes[0].Id, BoxCorner.SouthWest);
+            PlaceRef to = new CenterRef(boxes[1].Id);
             AxisDistance span = new(
                 NextRelationshipId(),
                 from,
                 to,
                 axis,
-                sketch.PointOf(to).Component(axis) - sketch.PointOf(from).Component(axis));
+                sketch.PlanPoint(to).Component(axis) - sketch.PlanPoint(from).Component(axis));
             DrivingSpan = (AxisDistance)Relate(span);
 
             // A node placed at the midpoint of that span, so that centered holds.
-            Length middle = (sketch.PointOf(from).Component(axis) + sketch.PointOf(to).Component(axis))
+            Length middle = (sketch.PlanPoint(from).Component(axis) + sketch.PlanPoint(to).Component(axis))
                 .Divide(2, Rounding.HalfToEven);
             Node midpoint = NodeAt(
                 new Point2(
@@ -289,8 +289,8 @@ internal static class SketchGenerator
         /// </summary>
         private void RelateBoxEdges()
         {
-            BoxEdgeRef a = new(boxes[0].Id, (BoxEdge)random.Next(4));
-            BoxEdgeRef b = new(boxes[1].Id, (BoxEdge)random.Next(4));
+            FeatureRef a = TestRefs.Edge(boxes[0].Id, (BoxEdge)random.Next(4));
+            FeatureRef b = TestRefs.Edge(boxes[1].Id, (BoxEdge)random.Next(4));
 
             Angle between = new(DirectionOf(b).Arcseconds - DirectionOf(a).Arcseconds);
             long quarterTurns = between.Arcseconds / Angle.RightAngleArcseconds;
@@ -309,17 +309,17 @@ internal static class SketchGenerator
 
             // A box edge is axis-aligned by its rotation, so whether it is horizontal or vertical
             // is read off the geometry, not chosen.
-            (Point2 start, Point2 end) = sketch.EdgeOf(a);
+            (Point2 start, Point2 end) = sketch.PlanLine(a);
             Relate(start.Y == end.Y
                 ? new Horizontal(NextRelationshipId(), a)
                 : new Vertical(NextRelationshipId(), a));
         }
 
         /// <summary>The direction a right-angle-rotated box's edge runs, exactly.</summary>
-        private Angle DirectionOf(BoxEdgeRef edge)
+        private Angle DirectionOf(FeatureRef edge)
         {
             Box box = sketch.Find<Box>(edge.Box)!;
-            Angle local = edge.Edge is BoxEdge.South or BoxEdge.North ? Angle.Zero : Angle.Right;
+            Angle local = edge.Feature.Faces[0] is BoxFace.South or BoxFace.North ? Angle.Zero : Angle.Right;
             return box.Rotation + local;
         }
 

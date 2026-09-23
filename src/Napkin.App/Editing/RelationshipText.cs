@@ -10,7 +10,7 @@ namespace Napkin.App.Editing;
 /// Relationships are stored, never inferred (docs/design/geometry-model.md &#xA7;3.2), which is
 /// only worth anything if the person can see what got stored. This turns each one into a
 /// sentence: "Part 2's left edge is flush with Part 1's right edge", not
-/// <c>Flush(BoxEdgeRef(01a0…, East), BoxEdgeRef(01a1…, West))</c>.
+/// <c>Flush(FeatureRef(01a0…, Face(East)), FeatureRef(01a1…, Face(West)))</c>.
 /// </para>
 /// <para>
 /// Edges and corners are named in the part's own frame, which is what the model stores. For a
@@ -70,32 +70,37 @@ public static class RelationshipText
         };
     }
 
-    /// <summary>A point reference, as a phrase: "Part 2's bottom-left corner".</summary>
-    public static string Point(PointRef reference, Func<EntityId, string> nameOf)
+    /// <summary>A place taken as a point, as a phrase: "Part 2's bottom-left corner".</summary>
+    public static string Point(PlaceRef reference, Func<EntityId, string> nameOf)
     {
         ArgumentNullException.ThrowIfNull(reference);
         ArgumentNullException.ThrowIfNull(nameOf);
 
         return reference switch
         {
-            CornerRef corner => $"{nameOf(corner.Box)}'s {CornerName(corner.Corner)} corner",
+            FeatureRef feature when LocalFeatures.TryCorner(feature.Feature, out BoxCorner corner)
+                => $"{nameOf(feature.Box)}'s {CornerName(corner)} corner",
+            FeatureRef feature => $"{nameOf(feature.Box)}'s {PlaceRules.InWords(feature.Feature)}",
             CenterRef centre => $"{nameOf(centre.Box)}'s centre",
             NodeRef node => nameOf(node.Node),
+            SegmentRef segment => nameOf(segment.Segment),
             _ => "a point",
         };
     }
 
-    /// <summary>An edge reference, as a phrase: "Part 2's left edge".</summary>
-    public static string Edge(EdgeRef reference, Func<EntityId, string> nameOf)
+    /// <summary>A place taken as an edge, as a phrase: "Part 2's left edge".</summary>
+    public static string Edge(PlaceRef reference, Func<EntityId, string> nameOf)
     {
         ArgumentNullException.ThrowIfNull(reference);
         ArgumentNullException.ThrowIfNull(nameOf);
 
         return reference switch
         {
-            BoxEdgeRef edge => $"{nameOf(edge.Box)}'s {EdgeName(edge.Edge)} edge",
+            FeatureRef feature when LocalFeatures.TryEdge(feature.Feature, out BoxEdge edge)
+                => $"{nameOf(feature.Box)}'s {EdgeName(edge)} edge",
+            FeatureRef feature => $"{nameOf(feature.Box)}'s {PlaceRules.InWords(feature.Feature)}",
             SegmentRef segment => nameOf(segment.Segment),
-            _ => "an edge",
+            _ => Point(reference, nameOf),
         };
     }
 

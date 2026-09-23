@@ -84,21 +84,21 @@ public class BlankShapeTests
 
         Coincident coincident = new(
             RelationshipId.New(),
-            new CornerRef(a, BoxCorner.NorthEast),
-            new CornerRef(b, BoxCorner.NorthEast));
+            LocalFeatures.Corner(a, BoxCorner.NorthEast),
+            LocalFeatures.Corner(b, BoxCorner.NorthEast));
 
         Assert.Equal(
-            [new CornerRef(a, BoxCorner.NorthEast), new CornerRef(b, BoxCorner.NorthEast)],
+            [(a, BoxCorner.NorthEast), (b, BoxCorner.NorthEast)],
             RelationshipSites.CornersOf(coincident));
         Assert.Empty(RelationshipSites.EdgesOf(coincident));
 
         Flush flush = new(
             RelationshipId.New(),
-            new BoxEdgeRef(a, BoxEdge.East),
-            new BoxEdgeRef(b, BoxEdge.West));
+            LocalFeatures.Edge(a, BoxEdge.East),
+            LocalFeatures.Edge(b, BoxEdge.West));
 
         Assert.Equal(
-            [new BoxEdgeRef(a, BoxEdge.East), new BoxEdgeRef(b, BoxEdge.West)],
+            [(a, BoxEdge.East), (b, BoxEdge.West)],
             RelationshipSites.EdgesOf(flush));
         Assert.Empty(RelationshipSites.CornersOf(flush));
 

@@ -207,7 +207,7 @@ public sealed class SceneWriterTests
 
         RelationshipId id = new(Guid.Parse("0192f1a0-0000-4000-8000-000000000001"));
         Relationship relationship = kind == "tangent"
-            ? new Tangent(id, new BoxEdgeRef(box.Id, BoxEdge.North), new BoxEdgeRef(box.Id, BoxEdge.South))
+            ? new Tangent(id, TestRefs.Edge(box.Id, BoxEdge.North), TestRefs.Edge(box.Id, BoxEdge.South))
             : new Radius(id, box.Id, new Length(4096));
 
         Sketch sketch = Sketch.Empty.WithEntity(box).WithRelationship(relationship);

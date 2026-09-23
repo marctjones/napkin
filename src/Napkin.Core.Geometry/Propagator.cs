@@ -19,9 +19,9 @@ internal enum ScalarKind
 
     /// <summary>
     /// A box's depth, along its local Z (docs/design/assembly-model.md §1.2). Only
-    /// <see cref="ParamValue"/> and <see cref="EqualParam"/> on a <see cref="BoxDepthRef"/> reach
-    /// it until §10 step 3 gives the relationships features that stand on it; no plan corner of a
-    /// box lying as drawn depends on it.
+    /// <see cref="ParamValue"/> and <see cref="EqualParam"/> on a <see cref="BoxDepthRef"/> assign
+    /// it: a feature's offset reads it, but the positional relationships the direct updater holds
+    /// before §10 step 4 are on boxes lying as drawn and along X and Y, where no feature depends on it.
     /// </summary>
     Depth,
 }
@@ -157,7 +157,7 @@ internal sealed class Propagator
         ScalarKind.Depth => new ParamTarget(new BoxDepthRef(key.Entity)),
         ScalarKind.X or ScalarKind.Y => new PointAxisTarget(
             sketch.Find(key.Entity) is Box
-                ? new CornerRef(key.Entity, BoxCorner.SouthWest)
+                ? new FeatureRef(key.Entity, BoxFeature.LocalUpright(BoxCorner.SouthWest))
                 : new NodeRef(key.Entity),
             key.Kind == ScalarKind.X ? Axis.X : Axis.Y),
         _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "Not a scalar kind."),
@@ -454,8 +454,13 @@ internal sealed class Propagator
         switch (relationship)
         {
             case Coincident coincident:
-                yield return (PointSide(coincident.A, Axis.X), PointSide(coincident.B, Axis.X));
-                yield return (PointSide(coincident.A, Axis.Y), PointSide(coincident.B, Axis.Y));
+                // Equal on every axis both places fix (docs/design/assembly-model.md §2.1): for
+                // two plan uprights, or a node and an upright, that is X and Y, as it always was.
+                foreach (Axis axis in AxesOf(coincident.A).Intersect(AxesOf(coincident.B)).Order())
+                {
+                    yield return (PointSide(coincident.A, axis), PointSide(coincident.B, axis));
+                }
+
                 break;
 
             case Horizontal { Edge: SegmentRef horizontal }:
@@ -505,25 +510,43 @@ internal sealed class Propagator
             ? (PointSide(new NodeRef(segment.Start), mustMatch), PointSide(new NodeRef(segment.End), mustMatch))
             : null;
 
-    /// <summary>The axis both edges of a flush hold constant, or null when they do not share one.</summary>
+    /// <summary>The one axis both places of a flush fix, or null when they do not share exactly one.</summary>
     internal Axis? CommonNormalAxis(Flush flush)
-    {
-        Axis? first = NormalAxisOf(flush.A);
-        return first is { } axis && NormalAxisOf(flush.B) == axis ? axis : null;
-    }
+        => AxesOf(flush.A) is [var first] && AxesOf(flush.B) is [var second] && first == second ? first : null;
 
-    private Axis? NormalAxisOf(EdgeRef edge)
+    /// <summary>
+    /// The world axes a place fixes, for the values worked out so far. Which axes a box's feature
+    /// fixes depends only on its orientation, never on a size or a position; a segment's depends on
+    /// where its nodes are now.
+    /// </summary>
+    private ImmutableArray<Axis> AxesOf(PlaceRef place)
     {
-        (Point2 from, Point2 to) = CurrentEdge(edge);
-        bool sameX = from.X == to.X;
-        bool sameY = from.Y == to.Y;
-
-        if (sameX == sameY)
+        switch (place)
         {
-            return null;
-        }
+            case NodeRef:
+                return [Axis.X, Axis.Y];
 
-        return sameX ? Axis.X : Axis.Y;
+            // Read from the stored sketch: only the axes are wanted, and they do not move with the
+            // values being worked out. This is also the one reading off the quarter turns, which the
+            // solver's repair pass will reach.
+            case CenterRef or FeatureRef when _sketch.Find<Box>(place.Owner) is not null:
+                return _sketch.PlaceOf(place).Axes;
+
+            case SegmentRef segmentRef when _sketch.Find<Segment>(segmentRef.Segment) is { } segment:
+            {
+                Point2 from = CurrentPosition(segment.Start);
+                Point2 to = CurrentPosition(segment.End);
+                return (from.X == to.X, from.Y == to.Y) switch
+                {
+                    (true, false) => [Axis.X],
+                    (false, true) => [Axis.Y],
+                    _ => [],
+                };
+            }
+
+            default:
+                return [];
+        }
     }
 
     private void ResolveCentered(Centered centered)
@@ -843,19 +866,19 @@ internal sealed class Propagator
     // is the position scalar a constraint can move.
     // -----------------------------------------------------------------------------------------
 
-    private Side PointSide(PointRef point, Axis axis) => PointSide(point, axis, Length.Zero);
+    private Side PointSide(PlaceRef point, Axis axis) => PointSide(point, axis, Length.Zero);
 
-    private Side PointSide(PointRef point, Axis axis, Length extraOffset)
+    private Side PointSide(PlaceRef point, Axis axis, Length extraOffset)
     {
         ScalarKey baseKey = new(point.Owner, KindOf(axis));
         AssignmentTarget target = new PointAxisTarget(point, axis);
 
         switch (point)
         {
-            case CornerRef corner:
+            case FeatureRef feature:
             {
-                Length offset = CornerOffset(corner.Box, corner.Corner).Component(axis) + extraOffset;
-                return new Side([baseKey], offset, SizesOf(corner.Box), CurrentOf(baseKey) + offset, target);
+                Length offset = FeatureOffset(feature.Box, feature.Feature).Component(axis) + extraOffset;
+                return new Side([baseKey], offset, SizesOf(feature.Box), CurrentOf(baseKey) + offset, target);
             }
 
             case CenterRef centre:
@@ -895,15 +918,12 @@ internal sealed class Propagator
         return new Side([key], Length.Zero, [], CurrentOf(key), new ParamTarget(param));
     }
 
-    private Side? EdgeSide(EdgeRef edge, Axis normalAxis)
+    private Side? EdgeSide(PlaceRef edge, Axis normalAxis)
     {
         switch (edge)
         {
-            case BoxEdgeRef boxEdge:
-            {
-                (BoxCorner from, _) = Box.Ends(boxEdge.Edge);
-                return PointSide(new CornerRef(boxEdge.Box, from), normalAxis);
-            }
+            case FeatureRef feature:
+                return PointSide(feature, normalAxis);
 
             case SegmentRef segmentRef when _sketch.Find<Segment>(segmentRef.Segment) is { } segment:
             {
@@ -925,62 +945,51 @@ internal sealed class Propagator
     private ImmutableArray<ScalarKey> SizesOf(EntityId box)
         => [new ScalarKey(box, ScalarKind.Width), new ScalarKey(box, ScalarKind.Height)];
 
-    private Vector2 CornerOffset(EntityId boxId, BoxCorner corner)
+    /// <summary>
+    /// Where a feature is from the box's anchor, in the world, for the sizes worked out so far: one
+    /// local point on every face of the feature — the far end of a local axis for East, North and
+    /// Top — turned by the box's orientation (docs/design/assembly-model.md &#xA7;2.1). A side reads
+    /// only the component along the axis it is about, which the feature fixes; the others are the
+    /// feature's own business.
+    /// </summary>
+    private Vector3 FeatureOffset(EntityId boxId, BoxFeature feature)
     {
         if (_sketch.Find<Box>(boxId) is not { } box)
         {
-            return Vector2.Zero;
+            return Vector3.Zero;
         }
 
-        Length width = CurrentOf(new ScalarKey(boxId, ScalarKind.Width));
-        Length height = CurrentOf(new ScalarKey(boxId, ScalarKind.Height));
-
-        Vector2 local = corner switch
+        Vector3 local = Vector3.Zero;
+        foreach (BoxFace face in feature.Faces)
         {
-            BoxCorner.SouthWest => Vector2.Zero,
-            BoxCorner.SouthEast => new Vector2(width, Length.Zero),
-            BoxCorner.NorthEast => new Vector2(width, height),
-            _ => new Vector2(Length.Zero, height),
-        };
-
-        return local.Rotate(box.Rotation);
-    }
-
-    private Vector2 CenterOffset(EntityId boxId)
-    {
-        if (_sketch.Find<Box>(boxId) is not { } box)
-        {
-            return Vector2.Zero;
-        }
-
-        Length width = CurrentOf(new ScalarKey(boxId, ScalarKind.Width));
-        Length height = CurrentOf(new ScalarKey(boxId, ScalarKind.Height));
-
-        return new Vector2(
-            width.Divide(2, Rounding.HalfToEven),
-            height.Divide(2, Rounding.HalfToEven)).Rotate(box.Rotation);
-    }
-
-    private (Point2 From, Point2 To) CurrentEdge(EdgeRef edge)
-    {
-        switch (edge)
-        {
-            case BoxEdgeRef boxEdge:
+            local = face switch
             {
-                (BoxCorner from, BoxCorner to) = Box.Ends(boxEdge.Edge);
-                return (CurrentCorner(boxEdge.Box, from), CurrentCorner(boxEdge.Box, to));
-            }
-
-            case SegmentRef segmentRef when _sketch.Find<Segment>(segmentRef.Segment) is { } segment:
-                return (CurrentPosition(segment.Start), CurrentPosition(segment.End));
-
-            default:
-                return (Point2.Origin, Point2.Origin);
+                BoxFace.East => local.WithComponent(Axis.X, CurrentOf(new ScalarKey(boxId, ScalarKind.Width))),
+                BoxFace.North => local.WithComponent(Axis.Y, CurrentOf(new ScalarKey(boxId, ScalarKind.Height))),
+                BoxFace.Top => local.WithComponent(Axis.Z, CurrentOf(new ScalarKey(boxId, ScalarKind.Depth))),
+                _ => local,
+            };
         }
+
+        return box.Orientation.Apply(local);
     }
 
-    private Point2 CurrentCorner(EntityId boxId, BoxCorner corner)
-        => CurrentPosition(boxId) + CornerOffset(boxId, corner);
+    private Vector3 CenterOffset(EntityId boxId)
+    {
+        if (_sketch.Find<Box>(boxId) is not { } box)
+        {
+            return Vector3.Zero;
+        }
+
+        Length width = CurrentOf(new ScalarKey(boxId, ScalarKind.Width));
+        Length height = CurrentOf(new ScalarKey(boxId, ScalarKind.Height));
+        Length depth = CurrentOf(new ScalarKey(boxId, ScalarKind.Depth));
+
+        return box.Orientation.Apply(new Vector3(
+            width.Divide(2, Rounding.HalfToEven),
+            height.Divide(2, Rounding.HalfToEven),
+            depth.Divide(2, Rounding.HalfToEven)));
+    }
 
     private Point2 CurrentPosition(EntityId entity)
         => new(CurrentOf(new ScalarKey(entity, ScalarKind.X)), CurrentOf(new ScalarKey(entity, ScalarKind.Y)));

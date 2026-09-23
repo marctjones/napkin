@@ -257,8 +257,10 @@ public sealed class DesignEditor
     /// <see cref="Horizontal"/> on a segment and refuses one on a box edge, and takes a
     /// <see cref="ParamValue"/> on a box's width and refuses one on a segment's length. A canvas
     /// that trusted the type list would offer relationships and then be told no (#10, Fable's
-    /// review of #35, finding 10). Only <see cref="RejectionReason.UnsupportedRelationship"/>
-    /// means "cannot hold"; a conflict or a duplicate both prove it could.
+    /// review of #35, finding 10). Only <see cref="RejectionReason.UnsupportedRelationship"/> and
+    /// <see cref="RejectionReason.PlacesNotComparable"/> — a pairing whose places share no axis to
+    /// hold equal (docs/design/assembly-model.md &#xA7;2.3) — mean "cannot hold"; a conflict or a
+    /// duplicate both prove it could.
     /// </remarks>
     public bool CanHold(Relationship candidate)
     {
@@ -270,7 +272,7 @@ public sealed class DesignEditor
         }
 
         return _updater.Apply(_design.Sketch, new AddRelationship(candidate))
-            is not Rejected { Reason: RejectionReason.UnsupportedRelationship };
+            is not Rejected { Reason: RejectionReason.UnsupportedRelationship or RejectionReason.PlacesNotComparable };
     }
 
     /// <summary>

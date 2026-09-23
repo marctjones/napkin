@@ -27,7 +27,7 @@ public class RelationshipCheckerTests
         SketchBuilder builder = new();
         EntityId box = builder.AddBox(0, 0, 10, 10);
         EntityId node = builder.AddNode(10, 10);
-        builder.Add(id => new Coincident(id, new CornerRef(box, BoxCorner.NorthEast), new NodeRef(node)));
+        builder.Add(id => new Coincident(id, TestRefs.Corner(box, BoxCorner.NorthEast), new NodeRef(node)));
 
         Sketch moved = builder.Sketch.WithEntity(
             builder.NodeOf(node) with { Position = new Point2(Length.Inches(10) + new Length(1), Length.Inches(10)) });
@@ -56,7 +56,7 @@ public class RelationshipCheckerTests
         SketchBuilder builder = new();
         EntityId box = builder.AddBox(0, 0, 10, 10);
         EntityId node = builder.AddNode(10, 10);
-        builder.Add(id => new Coincident(id, new CornerRef(box, BoxCorner.NorthEast), new NodeRef(node)));
+        builder.Add(id => new Coincident(id, TestRefs.Corner(box, BoxCorner.NorthEast), new NodeRef(node)));
 
         Assert.True(RelationshipChecker.Check(builder.Sketch).AllHold);
 
@@ -79,7 +79,7 @@ public class RelationshipCheckerTests
         EntityId node = builder.AddNode(0, 0);
         Coincident coincident = new(
             new RelationshipId(Guid.NewGuid()),
-            new CornerRef(tilted, BoxCorner.NorthEast),
+            TestRefs.Corner(tilted, BoxCorner.NorthEast),
             new NodeRef(node));
 
         Assert.False(RelationshipChecker.IsExactClass(builder.Sketch, coincident));
@@ -88,7 +88,7 @@ public class RelationshipCheckerTests
         EntityId square = builder.AddBox(0, 0, 10, 10);
         Assert.True(RelationshipChecker.IsExactClass(
             builder.Sketch,
-            coincident with { A = new CornerRef(square, BoxCorner.SouthWest) }));
+            coincident with { A = TestRefs.Corner(square, BoxCorner.SouthWest) }));
     }
 
     [Trait("Feature", "GEO-009")]
@@ -224,8 +224,8 @@ public class RelationshipCheckerTests
 
         Perpendicular perpendicular = new(
             new RelationshipId(Guid.NewGuid()),
-            new BoxEdgeRef(upright, BoxEdge.South),
-            new BoxEdgeRef(turned, BoxEdge.South));
+            TestRefs.Edge(upright, BoxEdge.South),
+            TestRefs.Edge(turned, BoxEdge.South));
 
         Assert.True(RelationshipChecker.IsExactClass(builder.Sketch, perpendicular));
         Assert.True(RelationshipChecker.Check(builder.Sketch.WithRelationship(perpendicular)).AllHold);
@@ -233,8 +233,8 @@ public class RelationshipCheckerTests
         // Parallel between the same two edges does not hold at all.
         Parallel parallel = new(
             new RelationshipId(Guid.NewGuid()),
-            new BoxEdgeRef(upright, BoxEdge.South),
-            new BoxEdgeRef(turned, BoxEdge.South));
+            TestRefs.Edge(upright, BoxEdge.South),
+            TestRefs.Edge(turned, BoxEdge.South));
         Assert.Single(RelationshipChecker.Check(builder.Sketch.WithRelationship(parallel)).Violations);
     }
 
@@ -250,7 +250,7 @@ public class RelationshipCheckerTests
 
         Parallel parallel = new(
             new RelationshipId(Guid.NewGuid()),
-            new BoxEdgeRef(box, BoxEdge.South),
+            TestRefs.Edge(box, BoxEdge.South),
             new SegmentRef(segment));
 
         Assert.False(RelationshipChecker.IsExactClass(builder.Sketch, parallel));

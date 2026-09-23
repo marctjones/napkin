@@ -40,8 +40,8 @@ public class SnapResolverTests
         Assert.Equal(Length.Inches(10, 1, 2).Units, plan.Anchor.X.Units);
 
         Flush flush = Assert.IsType<Flush>(Assert.Single(plan.Relationships));
-        Assert.Equal(new BoxEdgeRef(EditingBuilder.Id(0), BoxEdge.East), flush.A);
-        Assert.Equal(new BoxEdgeRef(EditingBuilder.Id(1), BoxEdge.West), flush.B);
+        Assert.Equal(LocalFeatures.Edge(EditingBuilder.Id(0), BoxEdge.East), flush.A);
+        Assert.Equal(LocalFeatures.Edge(EditingBuilder.Id(1), BoxEdge.West), flush.B);
 
         SnapHit hit = Assert.Single(plan.Hits, candidate => candidate.Kind == SnapKind.Edge);
         Assert.Equal(Axis.X, hit.Axis);
@@ -85,8 +85,8 @@ public class SnapResolverTests
             Radius);
 
         Coincident coincident = Assert.IsType<Coincident>(Assert.Single(plan.Relationships));
-        Assert.Equal(new CornerRef(EditingBuilder.Id(0), BoxCorner.SouthEast), coincident.A);
-        Assert.Equal(new CornerRef(EditingBuilder.Id(1), BoxCorner.SouthWest), coincident.B);
+        Assert.Equal(LocalFeatures.Corner(EditingBuilder.Id(0), BoxCorner.SouthEast), coincident.A);
+        Assert.Equal(LocalFeatures.Corner(EditingBuilder.Id(1), BoxCorner.SouthWest), coincident.B);
         Assert.All(plan.Hits, hit => Assert.Equal(SnapKind.Corner, hit.Kind));
     }
 
@@ -152,7 +152,7 @@ public class SnapResolverTests
         Assert.Equal(Length.Inches(4).Units, plan.Anchor.Y.Units);
         Flush flush = Assert.IsType<Flush>(Assert.Single(plan.Relationships));
         Assert.Equal(EditingBuilder.Id(1), flush.A.Owner);
-        Assert.Equal(BoxEdge.East, ((BoxEdgeRef)flush.A).Edge);
+        Assert.Equal(BoxFeature.Face(BoxFace.East), Assert.IsType<FeatureRef>(flush.A).Feature);
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public class SnapResolverTests
         EntityId box = EditingBuilder.Id(0);
 
         Assert.Contains(typeof(Horizontal), DirectUpdater.Instance.SupportedRelationships);
-        Assert.False(editor.CanHold(new Horizontal(RelationshipId.New(), new BoxEdgeRef(box, BoxEdge.South))));
+        Assert.False(editor.CanHold(new Horizontal(RelationshipId.New(), LocalFeatures.Edge(box, BoxEdge.South))));
 
         Assert.True(editor.CanHold(new ParamValue(RelationshipId.New(), new BoxWidthRef(box), Length.Inches(4))));
         Assert.True(editor.CanHold(new Anchored(RelationshipId.New(), box)));
@@ -200,8 +200,16 @@ public class SnapResolverTests
         // And a kind reserved for the solver is refused whatever it names.
         Assert.False(editor.CanHold(new Napkin.Core.Geometry.Parallel(
             RelationshipId.New(),
-            new BoxEdgeRef(box, BoxEdge.South),
-            new BoxEdgeRef(box, BoxEdge.North))));
+            LocalFeatures.Edge(box, BoxEdge.South),
+            LocalFeatures.Edge(box, BoxEdge.North))));
+
+        // A flush between a south face (Y) and an east face (X) shares no axis: it could never
+        // hold, and the refusal says so (docs/design/assembly-model.md §2.3).
+        Flush crossed = new(RelationshipId.New(), LocalFeatures.Edge(box, BoxEdge.South), LocalFeatures.Edge(box, BoxEdge.East));
+        Assert.False(editor.CanHold(crossed));
+        Rejected rejected = Assert.IsType<Rejected>(DirectUpdater.Instance.Apply(editor.Design.Sketch, new AddRelationship(crossed)));
+        Assert.Equal(RejectionReason.PlacesNotComparable, rejected.Reason);
+        Assert.Contains("could never hold", EditMessages.Refusal(rejected.Reason), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -214,8 +222,8 @@ public class SnapResolverTests
 
         Flush stated = new(
             RelationshipId.New(),
-            new BoxEdgeRef(EditingBuilder.Id(0), BoxEdge.East),
-            new BoxEdgeRef(EditingBuilder.Id(1), BoxEdge.West));
+            LocalFeatures.Edge(EditingBuilder.Id(0), BoxEdge.East),
+            LocalFeatures.Edge(EditingBuilder.Id(1), BoxEdge.West));
 
         editor.Apply(new AddRelationship(stated), "Snapped");
 
@@ -223,7 +231,7 @@ public class SnapResolverTests
         // this; the drawing would then say the same thing twice, in two list entries.
         Assert.True(editor.AlreadyStates(new Flush(
             RelationshipId.New(),
-            new BoxEdgeRef(EditingBuilder.Id(1), BoxEdge.West),
-            new BoxEdgeRef(EditingBuilder.Id(0), BoxEdge.East))));
+            LocalFeatures.Edge(EditingBuilder.Id(1), BoxEdge.West),
+            LocalFeatures.Edge(EditingBuilder.Id(0), BoxEdge.East))));
     }
 }

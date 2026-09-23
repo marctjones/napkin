@@ -11,20 +11,38 @@ namespace Napkin.App.Editing;
 /// <em>which</em> corner, <em>which</em> edge — so that it can mark the ones a cut has taken away
 /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.1). Reading it here rather than adding it to
 /// the kernel keeps a drawing concern out of the model; the price is that a new relationship kind
-/// carrying references has to be added to the two switches below, which is why every kind that
-/// exists is listed rather than defaulted.
+/// carrying references has to be added to the switch below, which is why every kind that exists
+/// is listed rather than defaulted. A corner is a local upright and an edge a side face
+/// (<see cref="LocalFeatures"/>); any other feature — a vertex, a top face — is not something a cut
+/// in the plan takes away, and is not listed.
 /// </remarks>
 public static class RelationshipSites
 {
     /// <summary>The blank corners a relationship refers to.</summary>
-    public static IEnumerable<CornerRef> CornersOf(Relationship relationship) =>
-        PointsOf(relationship).OfType<CornerRef>();
+    public static IEnumerable<(EntityId Box, BoxCorner Corner)> CornersOf(Relationship relationship)
+    {
+        foreach (FeatureRef feature in PlacesOf(relationship).OfType<FeatureRef>())
+        {
+            if (LocalFeatures.TryCorner(feature.Feature, out BoxCorner corner))
+            {
+                yield return (feature.Box, corner);
+            }
+        }
+    }
 
     /// <summary>The blank edge lines a relationship refers to.</summary>
-    public static IEnumerable<BoxEdgeRef> EdgesOf(Relationship relationship) =>
-        LinesOf(relationship).OfType<BoxEdgeRef>();
+    public static IEnumerable<(EntityId Box, BoxEdge Edge)> EdgesOf(Relationship relationship)
+    {
+        foreach (FeatureRef feature in PlacesOf(relationship).OfType<FeatureRef>())
+        {
+            if (LocalFeatures.TryEdge(feature.Feature, out BoxEdge edge))
+            {
+                yield return (feature.Box, edge);
+            }
+        }
+    }
 
-    static IEnumerable<PointRef> PointsOf(Relationship relationship)
+    static IEnumerable<PlaceRef> PlacesOf(Relationship relationship)
     {
         ArgumentNullException.ThrowIfNull(relationship);
 
@@ -34,26 +52,14 @@ public static class RelationshipSites
             AxisDistance distance => [distance.From, distance.To],
             Centered centered => [centered.Middle, centered.A, centered.B],
             Distance distance => [distance.A, distance.B],
-            PointOnEdge on => [on.Point],
-            Symmetric symmetric => [symmetric.A, symmetric.B],
-            _ => [],
-        };
-    }
-
-    static IEnumerable<EdgeRef> LinesOf(Relationship relationship)
-    {
-        ArgumentNullException.ThrowIfNull(relationship);
-
-        return relationship switch
-        {
+            PointOnEdge on => [on.Point, on.Edge],
+            Symmetric symmetric => [symmetric.A, symmetric.B, symmetric.Mirror],
             Flush flush => [flush.A, flush.B],
             Horizontal horizontal => [horizontal.Edge],
             Vertical vertical => [vertical.Edge],
             Napkin.Core.Geometry.Parallel parallel => [parallel.A, parallel.B],
             Perpendicular perpendicular => [perpendicular.A, perpendicular.B],
             AngleBetween angle => [angle.A, angle.B],
-            PointOnEdge on => [on.Edge],
-            Symmetric symmetric => [symmetric.Mirror],
             Tangent tangent => [tangent.A, tangent.B],
             _ => [],
         };

@@ -217,7 +217,7 @@ public class DirectUpdaterPropagationTests
         Solved result = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new AddRelationship(
             new Coincident(
                 SketchBuilder.RelationshipIdAt(99),
-                new CornerRef(box, BoxCorner.NorthEast),
+                TestRefs.Corner(box, BoxCorner.NorthEast),
                 new NodeRef(node)))));
 
         // The box's north-east corner is at (20, 4); the node follows it.
@@ -237,7 +237,7 @@ public class DirectUpdaterPropagationTests
         Solved result = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new AddRelationship(
             new Coincident(
                 SketchBuilder.RelationshipIdAt(99),
-                new CornerRef(box, BoxCorner.NorthEast),
+                TestRefs.Corner(box, BoxCorner.NorthEast),
                 new NodeRef(node)))));
 
         // The node stays; the box moves so that its north-east corner lands on it.
@@ -321,8 +321,8 @@ public class DirectUpdaterPropagationTests
         builder.Flush(wall, BoxEdge.North, opening, BoxEdge.North);
         RelationshipId along = builder.Add(id => new AxisDistance(
             id,
-            new CornerRef(wall, BoxCorner.SouthWest),
-            new CornerRef(opening, BoxCorner.SouthWest),
+            TestRefs.Corner(wall, BoxCorner.SouthWest),
+            TestRefs.Corner(opening, BoxCorner.SouthWest),
             Axis.X,
             Length.Inches(36)));
         RelationshipId width = builder.WidthIs(opening, Length.Inches(36));
