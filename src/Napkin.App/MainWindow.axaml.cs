@@ -737,10 +737,10 @@ public partial class MainWindow : Window
     /// document, selection, editor and undo stack (&#xA7;8.1, &#xA7;11 decision 13).
     /// </summary>
     /// <remarks>
-    /// Nothing about the drawing changes, and nothing about the plan does either — its view, its
-    /// tool and its snap settings are all where they were when it comes back. What the plan's tools
-    /// hold is put down: drawing a rectangle or placing stock is the plan's (&#xA7;6), and asking for
-    /// either from the 3D view brings the plan back.
+    /// Nothing about the drawing changes, and the plan's view is where it was when it comes back.
+    /// The plan's drawing tools are put down on the way in — the pointer goes back to Select and any
+    /// stock held is dropped — because drawing a rectangle or placing stock is the plan's (&#xA7;6),
+    /// and asking for either from the 3D view brings the plan back.
     /// </remarks>
     public void ShowModelView()
     {
