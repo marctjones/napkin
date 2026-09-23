@@ -195,6 +195,9 @@ public class SolidTests
             Cuts = [new CornerCut(BoxCorner.SouthEast, Length.Inches(2), Length.Inches(2))],
         };
 
+        // A setback equal to the whole edge is legal (shaped-parts §1.6 invariant 8).
+        Assert.True(Sketch.Empty.WithEntity(rail).Validate().IsValid);
+
         Solid solid = rail.Solid();
         ImmutableArray<SolidFace> sides = solid.Faces[2..];
 
