@@ -37,6 +37,18 @@ internal sealed class SketchBuilder
         return id;
     }
 
+    /// <summary>Adds a box in space, in whole inches: an anchor, three sizes and a face up, unspun.</summary>
+    public EntityId AddBox(Point3 anchor, long width, long height, long depth, BoxFace faceUp = BoxFace.Top, string name = "")
+    {
+        EntityId id = NextEntity();
+        Sketch = Sketch.WithEntity(new Box(
+            id, LayerId.Default, anchor, Length.Inches(width), Length.Inches(height), Length.Inches(depth), faceUp, Angle.Zero)
+        {
+            Name = name,
+        });
+        return id;
+    }
+
     /// <summary>Adds a blank with cuts on it, in whole inches, unrotated.</summary>
     public EntityId AddBlank(long x, long y, long width, long height, params Cut[] cuts)
     {
@@ -104,6 +116,14 @@ internal sealed class SketchBuilder
     /// <summary>Drives a box's height.</summary>
     public RelationshipId HeightIs(EntityId box, Length value)
         => Add(id => new ParamValue(id, new BoxHeightRef(box), value));
+
+    /// <summary>Holds two faces of two boxes in one plane.</summary>
+    public RelationshipId FlushFaces(EntityId a, BoxFace faceOfA, EntityId b, BoxFace faceOfB)
+        => Add(id => new Flush(id, new FeatureRef(a, BoxFeature.Face(faceOfA)), new FeatureRef(b, BoxFeature.Face(faceOfB))));
+
+    /// <summary>Drives a box's depth.</summary>
+    public RelationshipId DepthIs(EntityId box, Length value)
+        => Add(id => new ParamValue(id, new BoxDepthRef(box), value));
 
     /// <summary>Makes two box widths equal.</summary>
     public RelationshipId EqualWidths(EntityId a, EntityId b)
