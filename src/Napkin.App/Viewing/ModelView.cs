@@ -177,6 +177,12 @@ public sealed class ModelView : Control
     public EntityId? HoveredPart => _hovered;
 
     /// <summary>
+    /// How many pixels at the right of this view the window's side panels cover (#90): zoom to fit
+    /// frames the drawing in what is left, and a part under them counts as out of view.
+    /// </summary>
+    public double FitReserveRight { get; set; }
+
+    /// <summary>
     /// Parts to draw attention to, their edges in the problem colour: the ones a conflict or a
     /// refused turn names (#72), or the ones a relationship row under the pointer holds (#77).
     /// </summary>
@@ -248,7 +254,7 @@ public sealed class ModelView : Control
         Bounds3 bounds = _editor is { } editor ? Bounds3.Of(editor.Sketch) : Bounds3.Empty;
         Camera = bounds.IsEmpty
             ? _camera with { CenterX = 0, CenterY = 0, CenterZ = 0, PixelsPerInch = CanvasView.BlankSheetPixelsPerInch }
-            : _camera.FitTo(bounds, _camera.Viewport);
+            : _camera.FitTo(bounds, _camera.Viewport, coveredRight: FitReserveRight);
     }
 
     /// <summary>
@@ -262,7 +268,7 @@ public sealed class ModelView : Control
             return;
         }
 
-        Rect visible = new(Bounds.Size);
+        Rect visible = new(0, 0, Math.Max(Bounds.Width - FitReserveRight, 1), Bounds.Height);
         foreach (BoxCorner corner in (BoxCorner[])[BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest])
         {
             foreach (BoxLevel level in (BoxLevel[])[BoxLevel.Bottom, BoxLevel.Top])

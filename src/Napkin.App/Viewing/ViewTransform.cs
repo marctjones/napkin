@@ -177,14 +177,19 @@ public readonly record struct ViewTransform(
     /// <param name="marginFraction">
     /// How much of each edge to leave empty, as a fraction of the viewport.
     /// </param>
-    public ViewTransform FitTo(WorldBounds bounds, Size viewport, double marginFraction = FitMarginFraction)
+    /// <param name="coveredRight">
+    /// How many pixels at the right of the viewport something else covers — the window's side
+    /// panels (#90) — so the drawing is framed in what is left.
+    /// </param>
+    public ViewTransform FitTo(WorldBounds bounds, Size viewport, double marginFraction = FitMarginFraction, double coveredRight = 0)
     {
         if (bounds.IsEmpty || viewport.Width <= 0 || viewport.Height <= 0)
         {
             return WithViewport(viewport);
         }
 
-        double usableWidth = Math.Max(viewport.Width * (1 - (2 * marginFraction)), 1);
+        double covered = Math.Clamp(coveredRight, 0, viewport.Width / 2);
+        double usableWidth = Math.Max((viewport.Width - covered) * (1 - (2 * marginFraction)), 1);
         double usableHeight = Math.Max(viewport.Height * (1 - (2 * marginFraction)), 1);
         double width = bounds.WidthInches;
         double height = bounds.HeightInches;
@@ -199,7 +204,9 @@ public readonly record struct ViewTransform(
             scale = PixelsPerInch;
         }
 
-        return new ViewTransform(bounds.CenterXInches, bounds.CenterYInches, scale, viewport);
+        // The drawing's middle goes to the middle of the uncovered part: the view's own middle is
+        // half the covered strip further right, in the drawing.
+        return new ViewTransform(bounds.CenterXInches + (covered / 2 / ClampScale(scale)), bounds.CenterYInches, scale, viewport);
     }
 
     /// <summary>The scale limits, applied wherever a scale is set.</summary>

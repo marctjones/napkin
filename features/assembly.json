@@ -54,6 +54,15 @@
       "milestone": "backlog",
       "issue": 77,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-07",
+      "area": "ui",
+      "title": "Zoom to fit frames the drawing beside the side panels",
+      "acceptance": "With a coffee-table leg selected and the Part panel showing, zoom to fit in the plan and Home in the 3D view each put every corner of every part left of the Part panel.",
+      "milestone": "backlog",
+      "issue": 90,
+      "kind": "workflow"
     }
   ]
 }

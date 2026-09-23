@@ -53,6 +53,9 @@ public partial class MainWindow : Window
         Quantity: 1,
         new PlanAxes(PartDimension.Length, PartDimension.Width));
 
+    /// <summary>How much of the drawing's right side the side column can cover, in pixels (#90).</summary>
+    const double SidePanelsReserve = 280;
+
     readonly List<MenuItem> _sampleItems = [];
     ISceneFilePicker _filePicker;
     CutListWindow? _cutList;
@@ -78,6 +81,11 @@ public partial class MainWindow : Window
         _filePicker = new StorageProviderScenePicker(this);
 
         DrawingCanvas.Editor = Editor;
+
+        // The side column's widest (the list's MaxWidth) and its margins: both views frame the
+        // drawing beside it rather than under it (#90).
+        DrawingCanvas.FitReserveRight = SidePanelsReserve;
+        ModelDrawing.FitReserveRight = SidePanelsReserve;
         Editor.MessageChanged += (_, _) =>
         {
             UpdateMessageBar();
