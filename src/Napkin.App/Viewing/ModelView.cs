@@ -48,11 +48,11 @@ public enum SelectionCommand
 /// &#xA7;8.4 accepts that rather than paying for a depth buffer.
 /// </para>
 /// <para>
-/// <strong>Controls.</strong> Drag on empty space, or on a part that is not selected, to orbit;
-/// click a part to select it (Shift adds or removes); Shift-drag or the middle button pans; the
-/// wheel zooms about the pointer. On the selected part: drag one of the three arrows to move it
-/// along that world axis, drag its body to slide it in the plane of the face you pressed on, drag
-/// the square on a face to resize it across that face. <c>X</c>, <c>Y</c> and <c>Z</c> turn it a
+/// <strong>Controls.</strong> Drag on empty space to orbit; click a part to select it (Shift adds
+/// or removes); drag a part — selected or not (#85) — to slide it in the plane of the face you
+/// pressed on; Shift-drag or the middle button pans; the wheel zooms about the pointer. On the
+/// selected part: drag one of the three arrows to move it along that world axis, drag the square
+/// on a face to resize it across that face. <c>X</c>, <c>Y</c> and <c>Z</c> turn it a
 /// quarter turn about that axis, Shift the other way. Arrow keys orbit, +/&#x2212; zoom,
 /// Ctrl/Cmd+0 frames the drawing, Home goes back to the isometric view, <c>V</c> goes back to the
 /// plan. Delete, <c>P</c>, <c>D</c> and <c>C</c> do what they do on the plan.
@@ -96,6 +96,8 @@ public sealed class ModelView : Control
     ModelHandle? _gestureHandle;
     Axis[] _planeAxes = [];
     SpaceSnapPlan? _snap;
+    UpdateResult? _gestureRefusal;
+    ModelPick? _pressedOnPart;
     EntityId? _hovered;
     System.Collections.Immutable.ImmutableHashSet<EntityId> _attention = [];
 
@@ -172,6 +174,79 @@ public sealed class ModelView : Control
 
     /// <summary>What the drag in progress has caught, or null when nothing is being dragged.</summary>
     public SpaceSnapPlan? ActiveSnap => _snap;
+
+    /// <summary>
+    /// What a drag in progress has done so far, in words, as the label by the pointer shows it
+    /// (#86): how far the part has moved — "up 2 1/2"" — or how big the face being dragged has made
+    /// it, and what the snap has caught — "flush with Top's bottom face". Null when nothing is being
+    /// dragged.
+    /// </summary>
+    public string? LiveReadout
+    {
+        get
+        {
+            if (!IsEditing || _editor is not { } editor || _boxAtPress is not { } atPress
+                || editor.Sketch.Find<Box>(_gestureEntity) is not { } box)
+            {
+                return null;
+            }
+
+            LengthFormat format = editor.LabelFormat;
+            string done;
+            if (_gesture == Gesture.Resize && _gestureHandle is { Face: { } face })
+            {
+                done = $"{SizeName(box, face)} {ModelHandles.SizeAcross(box, face).Format(format).Text}";
+            }
+            else
+            {
+                Vector3 moved = box.Anchor - atPress.Anchor;
+                List<string> parts = [];
+                foreach (Axis axis in (Axis[])[Axis.X, Axis.Y, Axis.Z])
+                {
+                    Length along = moved.Component(axis);
+                    if (along != Length.Zero)
+                    {
+                        parts.Add($"{Way(axis, along > Length.Zero)} {Length.Abs(along).Format(format).Text}");
+                    }
+                }
+
+                done = parts.Count == 0 ? "not moved" : string.Join(", ", parts);
+            }
+
+            if (_snap is { } plan && plan.Hits.FirstOrDefault(hit => hit.Kind != SnapKind.Grid) is { Target: { } target, TargetFace: { } targetFace })
+            {
+                string where = WorldWords.Feature(editor.Sketch.Find<Box>(target), BoxFeature.Face(targetFace));
+                done += $" — flush with {editor.NameOf(target)}'s {where}";
+            }
+
+            return done;
+
+            static string Way(Axis axis, bool positive) => (axis, positive) switch
+            {
+                (Axis.X, true) => "east",
+                (Axis.X, false) => "west",
+                (Axis.Y, true) => "north",
+                (Axis.Y, false) => "south",
+                (Axis.Z, true) => "up",
+                _ => "down",
+            };
+
+            static string SizeName(Box box, BoxFace face) =>
+                box.Part is { } part
+                    ? SceneWords.Of(face switch
+                    {
+                        BoxFace.East or BoxFace.West => part.PlanAxes.X,
+                        BoxFace.North or BoxFace.South => part.PlanAxes.Y,
+                        _ => part.PlanAxes.OutOfPlane,
+                    })
+                    : face switch
+                    {
+                        BoxFace.East or BoxFace.West => "Width",
+                        BoxFace.North or BoxFace.South => "Height",
+                        _ => "Depth",
+                    };
+        }
+    }
 
     /// <summary>The part the pointer is resting on, or null.</summary>
     public EntityId? HoveredPart => _hovered;
@@ -401,15 +476,28 @@ public sealed class ModelView : Control
             && editor.Selection.Contains(pick.Box)
             && editor.Sketch.Find<Box>(pick.Box) is { } body)
         {
-            // A drag on the body moves in the plane of the face that was pressed — two axes, never
-            // three: the third would be a guess at depth the pointer cannot make (§8.3).
-            Axis[] plane = [.. ((Axis[])[Axis.X, Axis.Y, Axis.Z]).Where(axis => axis != pick.NormalAxis)];
-            BeginEdit(e.Pointer, body, Gesture.MovePlane, null, plane);
+            BeginEdit(e.Pointer, body, Gesture.MovePlane, null, PlaneOf(pick));
+            return;
+        }
+
+        // A part that is not selected is held until the pointer moves (#85): a drag selects it
+        // and moves it, a release where it went down is a click that picks it. Empty space orbits.
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Shift) && PickAt(position) is { } unselected)
+        {
+            _pressedOnPart = unselected;
+            Begin(e.Pointer, Gesture.Pending);
             return;
         }
 
         Begin(e.Pointer, Gesture.Orbit);
     }
+
+    /// <summary>
+    /// The two world axes a drag on a part's body moves along: the plane of the face that was
+    /// pressed — never three, which would be a guess at depth the pointer cannot make (§8.3).
+    /// </summary>
+    static Axis[] PlaneOf(ModelPick pick) =>
+        [.. ((Axis[])[Axis.X, Axis.Y, Axis.Z]).Where(axis => axis != pick.NormalAxis)];
 
     /// <inheritdoc/>
     protected override void OnPointerMoved(PointerEventArgs e)
@@ -427,6 +515,19 @@ public sealed class ModelView : Control
 
             case Gesture.Pan:
                 Camera = _camera.Pan(step);
+                break;
+
+            case Gesture.Pending when _pressedOnPart is { } held
+                                      && (Math.Abs(position.X - _pressedAt.X) > 2 || Math.Abs(position.Y - _pressedAt.Y) > 2):
+                // The press was a drag after all: pick the part and move it, from where it was grabbed.
+                _pressedOnPart = null;
+                if (_editor is { } editor && editor.Sketch.Find<Box>(held.Box) is { } box)
+                {
+                    editor.Select(held.Box);
+                    BeginEdit(e.Pointer, box, Gesture.MovePlane, null, PlaneOf(held));
+                    ContinueEdit(position);
+                }
+
                 break;
 
             case Gesture.MoveAxis or Gesture.MovePlane or Gesture.Resize:
@@ -456,12 +557,13 @@ public sealed class ModelView : Control
         }
 
         _gesture = Gesture.None;
+        _pressedOnPart = null;
         e.Pointer.Capture(null);
 
         // A press that did not move the view is a click, and a click picks — measured from where the
         // button went down, as the plan canvas measures it.
         bool moved = Math.Abs(position.X - _pressedAt.X) > 2 || Math.Abs(position.Y - _pressedAt.Y) > 2;
-        if (gesture is Gesture.Orbit or Gesture.Pan && !moved && e.InitialPressMouseButton == MouseButton.Left)
+        if (gesture is Gesture.Orbit or Gesture.Pan or Gesture.Pending && !moved && e.InitialPressMouseButton == MouseButton.Left)
         {
             PickOn(position, e.KeyModifiers);
         }
@@ -477,6 +579,7 @@ public sealed class ModelView : Control
         }
 
         _gesture = Gesture.None;
+        _pressedOnPart = null;
     }
 
     /// <inheritdoc/>
@@ -592,6 +695,7 @@ public sealed class ModelView : Control
         _gestureHandle = handle;
         _planeAxes = plane;
         _snap = null;
+        _gestureRefusal = null;
 
         editor.BeginGesture(gesture == Gesture.Resize ? $"Resized {editor.NameOf(box.Id)}" : $"Moved {editor.NameOf(box.Id)}");
         pointer.Capture(this);
@@ -644,15 +748,32 @@ public sealed class ModelView : Control
                     return;
                 }
 
-                // Measured from the part as it was when the handle was grabbed, and landed on the
-                // grid, as the plan's resize handles are: the face follows the pointer along its own
-                // outward normal (§8.3).
+                // Measured from the part as it was when the handle was grabbed: the face follows the
+                // pointer along its own outward normal (§8.3), and lands on another part's face
+                // within the snap radius (#80) — a leg's top stretched up meets the table's
+                // underside — or its size on the grid, as the plan's resize handles do.
                 Length atPressSize = ModelHandles.SizeAcross(atPress, face);
-                Length wantedSize = SnapGrid.Snap(atPressSize + ToLength(inches), GridStepInches);
+                Length faceAtPress = SpaceSnapResolver.FaceCoordinate(atPress, face);
+                Length outward = ToLength(inches);
+                Length wantedFace = handle.Positive ? faceAtPress + outward : faceAtPress - outward;
+                SpaceSnapPlan facePlan = SpaceSnapResolver.ResolveFace(editor.Sketch, atPress, face, wantedFace, radius);
+                Length wantedSize = SnapGrid.Snap(atPressSize + outward, GridStepInches);
+                _snap = null;
+                if (facePlan.CaughtSomething)
+                {
+                    Length caughtAt = facePlan.Hits[0].Coordinate;
+                    Length caughtSize = atPressSize + (handle.Positive ? caughtAt - faceAtPress : faceAtPress - caughtAt);
+                    if (caughtSize > Length.Zero)
+                    {
+                        wantedSize = caughtSize;
+                        _snap = facePlan;
+                    }
+                }
+
                 Length delta = wantedSize - ModelHandles.SizeAcross(box, face);
                 if (delta != Length.Zero)
                 {
-                    editor.ApplyQuietly(new DragFace(_gestureEntity, face, delta));
+                    Remember(editor.ApplyQuietly(new DragFace(_gestureEntity, face, delta)));
                 }
 
                 InvalidateVisual();
@@ -667,20 +788,36 @@ public sealed class ModelView : Control
         Vector3 delta = plan.Anchor - box.Anchor;
         if (delta != Vector3.Zero)
         {
-            editor.ApplyQuietly(new Drag(_gestureEntity, delta));
+            Remember(editor.ApplyQuietly(new Drag(_gestureEntity, delta)));
         }
 
         InvalidateVisual();
+    }
+
+    /// <summary>
+    /// Keeps the last refusal of a live gesture's quiet steps, so the drop can say why a part that
+    /// did not move did not — "Top is pinned where it is", with the way out — rather than "Moved Top."
+    /// </summary>
+    void Remember(UpdateResult result)
+    {
+        if (result is not Succeeded)
+        {
+            _gestureRefusal = result;
+        }
     }
 
     void CompleteEdit()
     {
         Gesture gesture = _gesture;
         SpaceSnapPlan? plan = _snap;
+        Box? atPress = _boxAtPress;
+        BoxFace? dragged = _gestureHandle?.Face;
+        UpdateResult? refusal = _gestureRefusal;
         _gesture = Gesture.None;
         _snap = null;
         _boxAtPress = null;
         _gestureHandle = null;
+        _gestureRefusal = null;
 
         if (_editor is not { } editor)
         {
@@ -691,8 +828,39 @@ public sealed class ModelView : Control
             ? $"Resized {editor.NameOf(_gestureEntity)}"
             : $"Moved {editor.NameOf(_gestureEntity)}";
 
+        // A snap is stated only when the part got to where it put it: one it never reached — a
+        // pinned part dragged at another — is not a relationship, and stating it would conflict.
+        Box? now = editor.Sketch.Find<Box>(_gestureEntity);
+        bool reached = plan is { CaughtSomething: true } && now is not null
+                       && (gesture == Gesture.Resize
+                           ? dragged is { } face && plan.Hits[0].Coordinate == SpaceSnapResolver.FaceCoordinate(now, face)
+                           : plan.Anchor == now.Anchor);
+
+        if (atPress is not null && now == atPress && !reached)
+        {
+            // Nothing moved or changed size. Say why: the updater's own words when it refused a
+            // step, the pin and the way out when the part was wanted somewhere else, or simply that
+            // it is as it was.
+            if (refusal is not null)
+            {
+                editor.Report(refusal, what);
+            }
+            else if (gesture != Gesture.Resize && plan is not null && plan.Anchor != now.Anchor)
+            {
+                SelectionCommands.SayStayedPut(editor, _gestureEntity, what);
+            }
+            else
+            {
+                editor.Say(EditSeverity.Done, $"{editor.NameOf(_gestureEntity)} is {(gesture == Gesture.Resize ? "the size" : "where")} it was.");
+            }
+
+            editor.EndGesture();
+            InvalidateVisual();
+            return;
+        }
+
         List<Request> statements = [];
-        if (gesture != Gesture.Resize && plan is not null)
+        if (plan is not null && reached)
         {
             foreach (Relationship candidate in plan.Relationships)
             {
@@ -858,7 +1026,24 @@ public sealed class ModelView : Control
         }
 
         DrawHandles(context, palette);
+        DrawReadout(context, palette);
         DrawAxes(context);
+    }
+
+    /// <summary>The live readout, on a small plate just below and right of the pointer (#86).</summary>
+    void DrawReadout(DrawingContext context, CanvasPalette palette)
+    {
+        if (LiveReadout is not { } readout)
+        {
+            return;
+        }
+
+        FormattedText text = new(readout, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 11, new SolidColorBrush(palette.Label));
+        Point at = _lastPointer + new Vector(16, 14);
+        at = new Point(Math.Min(at.X, Math.Max(Bounds.Width - FitReserveRight - text.Width - 12, 4)), Math.Min(at.Y, Bounds.Height - text.Height - 8));
+        Rect plate = new(at.X - 5, at.Y - 3, text.Width + 10, text.Height + 6);
+        context.DrawRectangle(new SolidColorBrush(palette.Background, 0.92), new Pen(new SolidColorBrush(palette.GridMajor), 1), plate, 3, 3);
+        context.DrawText(text, at);
     }
 
     void DrawPolygon(DrawingContext context, CanvasPalette palette, EntityStyle style, ScenePolygon polygon)
@@ -1217,6 +1402,7 @@ public sealed class ModelView : Control
     enum Gesture
     {
         None,
+        Pending,
         Orbit,
         Pan,
         MoveAxis,

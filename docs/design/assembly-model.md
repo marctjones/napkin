@@ -1376,6 +1376,13 @@ Nothing stored depends on any of this.
   drag on the part's body, not a handle, moves in the plane of the face that was hit — two axes —
   which is how a board is slid along a top. Never three axes from one pointer: that is the depth
   ambiguity per-axis handles exist to remove.
+- **Grabbing a part (#85, 2026-09-23).** A press on a part that is not selected, dragged past the
+  click threshold, selects it and moves it in the plane of the face pressed — in the plan too;
+  empty space, the middle button and Shift-drag move the view, and a click still selects. A move
+  or resize that leaves the part where it was states nothing — a snap the part never reached is not
+  a relationship — and says why: the updater's refusal, or that the part is pinned, with an offer
+  to unpin it. A move that returns a part to where it was *and* reached the snap still states it,
+  which is how two parts already touching are made to hold together.
 - **Snap.** `SnapResolver` generalised to three axes: for the axis or axes being dragged, a face of
   another part perpendicular to that axis within the snap radius beats the grid when the two
   parts overlap on the other two axes; the plan says `Flush(face, face)`. Three axes caught at
@@ -1383,7 +1390,11 @@ Nothing stored depends on any of this.
   draws the target face's outline, faint, as the plan canvas draws the edge line. Relationships are
   candidates until the drop, and the editor asks the updater whether each can hold, as today.
 - **Resize.** A handle at the centre of each of the six faces: `DragFace(box, face, delta)`, the
-  motion projected onto the face's world normal. (**Since #84:** each handle stands a few pixels
+  motion projected onto the face's world normal. **Since #80** the dragged face — only that one —
+  snaps to a coplanar face of another part it overlaps, and the drop states `Flush(target face,
+  dragged face)`: a leg's top stretched up meets the table's underside and is held there. **Since
+  #86** a label by the pointer says what a move or resize has done so far — "up 2 1/2″", "Length
+  1'-4 1/4″" — and what the snap caught, "flush with Top's bottom face". (**Since #84:** each handle stands a few pixels
   out from its face's centre along the face's projected normal, on a stalk, and no two handles —
   arrows' tips included — are drawn within two grab distances of each other; at the centre itself
   a 3/4″ board's handles were a few pixels apart, on the body a drag grabs to move it.)

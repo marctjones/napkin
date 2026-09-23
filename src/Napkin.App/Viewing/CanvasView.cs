@@ -128,6 +128,9 @@ public sealed class CanvasView : Control
     Point2 _gestureAnchorAtPress;
     Point2 _gestureWorldAtPress;
     Box? _gestureBoxAtPress;
+    UpdateResult? _gestureRefusal;
+    EntityId? _pressedOnPart;
+    Point2 _pressedOnPartAt;
     SnapPlan? _snap;
     EntityId? _hovered;
     System.Collections.Immutable.ImmutableHashSet<EntityId> _attention = [];
@@ -612,10 +615,11 @@ public sealed class CanvasView : Control
 
         Point2 world = _view.ToWorld(position);
 
-        // The gesture is decided from what was already selected. A press on empty paper, or on a
-        // part nobody has picked yet, pans — which is what the viewer's left button has always
-        // done — and picking happens on release, where a click and a drag can still be told
-        // apart.
+        // A press on a selected part's grip resizes it, and one on a selected part's body moves it.
+        // A press on a part that is not selected is held until the pointer moves (#85): a drag
+        // selects it and moves it, and a release where it went down is a click that picks it.
+        // Empty paper, the middle button and Shift pan. Picking happens on release, where a click
+        // and a drag can still be told apart.
         if (editor.OnlySelectedBox is { } selected
             && BoxGeometry.GripAt(selected, world, ModelLength(HandleGrabPixels)) is { } grip)
         {
@@ -630,6 +634,15 @@ public sealed class CanvasView : Control
             return;
         }
 
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Shift) && PickAt(world) is { } unselected
+            && editor.Design!.Sketch.Find<Box>(unselected) is not null)
+        {
+            _pressedOnPart = unselected;
+            _pressedOnPartAt = world;
+            e.Pointer.Capture(this);
+            return;
+        }
+
         BeginPan(e.Pointer, position);
     }
 
@@ -639,7 +652,21 @@ public sealed class CanvasView : Control
         base.OnPointerMoved(e);
         Point position = e.GetPosition(this);
 
-        if (_panning)
+        if (_pressedOnPart is { } held)
+        {
+            if (Math.Abs(position.X - _pressedAt.X) > 2 || Math.Abs(position.Y - _pressedAt.Y) > 2)
+            {
+                // The press was a drag after all: pick the part and move it, from where it was grabbed.
+                _pressedOnPart = null;
+                if (_editor is { } editor && editor.Design!.Sketch.Find<Box>(held) is { } box)
+                {
+                    editor.Select(held);
+                    BeginEdit(e.Pointer, box, BoxGrip.Body, _pressedOnPartAt);
+                    ContinueEdit(_view.ToWorld(position));
+                }
+            }
+        }
+        else if (_panning)
         {
             View = _view.PanByPixels(position - _panFrom);
             _panFrom = position;
@@ -682,6 +709,19 @@ public sealed class CanvasView : Control
     {
         base.OnPointerReleased(e);
         Point position = e.GetPosition(this);
+
+        if (_pressedOnPart is not null)
+        {
+            // Pressed on a part and let go where it went down: a click, which picks.
+            _pressedOnPart = null;
+            e.Pointer.Capture(null);
+            if (e.InitialPressMouseButton == MouseButton.Left)
+            {
+                PickOn(position, e.KeyModifiers);
+            }
+
+            return;
+        }
 
         if (_rectangle.IsDrawing)
         {
@@ -733,6 +773,7 @@ public sealed class CanvasView : Control
             CompleteEdit();
         }
 
+        _pressedOnPart = null;
         EndPan(null);
     }
 
@@ -948,6 +989,7 @@ public sealed class CanvasView : Control
         _gestureAnchorAtPress = box.Footprint().Anchor;
         _gestureWorldAtPress = world;
         _gestureBoxAtPress = box;
+        _gestureRefusal = null;
         _snap = null;
 
         editor.BeginGesture(
@@ -980,7 +1022,7 @@ public sealed class CanvasView : Control
             Vector2 delta = plan.Anchor - box.Footprint().Anchor;
             if (delta != Vector2.Zero)
             {
-                editor.ApplyQuietly(Drag.InPlan(_gestureEntity, delta));
+                Remember(editor.ApplyQuietly(Drag.InPlan(_gestureEntity, delta)));
             }
 
             InvalidateVisual();
@@ -1007,10 +1049,22 @@ public sealed class CanvasView : Control
 
         if (requests.Count > 0)
         {
-            editor.ApplyQuietly(requests.Count == 1 ? requests[0] : Batch.Of([.. requests]));
+            Remember(editor.ApplyQuietly(requests.Count == 1 ? requests[0] : Batch.Of([.. requests])));
         }
 
         InvalidateVisual();
+    }
+
+    /// <summary>
+    /// Keeps the last refusal of a live gesture's quiet steps, so the drop can say why a part that
+    /// did not move did not — "Top is pinned where it is", with the way out — rather than "Moved Top."
+    /// </summary>
+    void Remember(UpdateResult result)
+    {
+        if (result is not Succeeded)
+        {
+            _gestureRefusal = result;
+        }
     }
 
     void CompleteEdit()
@@ -1023,18 +1077,49 @@ public sealed class CanvasView : Control
 
         Gesture gesture = _gesture;
         SnapPlan? plan = _snap;
+        Box? atPress = _gestureBoxAtPress;
+        UpdateResult? refusal = _gestureRefusal;
         _gesture = Gesture.None;
         _snap = null;
         _gestureBoxAtPress = null;
+        _gestureRefusal = null;
 
         string what = gesture == Gesture.Move
             ? $"Moved {editor.NameOf(_gestureEntity)}"
             : $"Resized {editor.NameOf(_gestureEntity)}";
 
-        List<Request> statements = [];
-        if (gesture == Gesture.Move && plan is not null)
+        // A snap is stated only when the part got to where it put it: one it never reached — a
+        // pinned part dragged at another — is not a relationship, and stating it would conflict.
+        Box? now = editor.Design!.Sketch.Find<Box>(_gestureEntity);
+        bool reached = gesture == Gesture.Move && plan is not null && now is not null && plan.Anchor == now.Footprint().Anchor;
+
+        if (atPress is not null && now == atPress && !(reached && plan!.CaughtSomething))
         {
-            foreach (Relationship candidate in plan.Relationships)
+            // Nothing moved or changed size. Say why: the updater's own words when it refused a
+            // step, the pin and the way out when the part was wanted somewhere else, or simply that
+            // it is as it was.
+            if (refusal is not null)
+            {
+                editor.Report(refusal, what);
+            }
+            else if (gesture == Gesture.Move && plan is not null && !reached)
+            {
+                SelectionCommands.SayStayedPut(editor, _gestureEntity, what);
+            }
+            else
+            {
+                editor.Say(EditSeverity.Done, $"{editor.NameOf(_gestureEntity)} is {(gesture == Gesture.Resize ? "the size" : "where")} it was.");
+            }
+
+            editor.EndGesture();
+            InvalidateVisual();
+            return;
+        }
+
+        List<Request> statements = [];
+        if (reached)
+        {
+            foreach (Relationship candidate in plan!.Relationships)
             {
                 if (editor.CanHold(candidate) && !editor.AlreadyStates(candidate))
                 {

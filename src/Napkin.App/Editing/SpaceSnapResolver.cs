@@ -188,6 +188,79 @@ public static class SpaceSnapResolver
     }
 
     /// <summary>
+    /// Where a face dragged by a resize handle lands (#80): coplanar with a face of another part
+    /// within the radius — when the two parts overlap across the other two axes — or nowhere in
+    /// particular, and the caller puts the size on the grid.
+    /// </summary>
+    /// <remarks>
+    /// Only the dragged face snaps; the face opposite it stays where it is, which is what a resize
+    /// is. The tie rules are <see cref="Resolve"/>'s: nearest, then a face the dragged one would
+    /// meet over one it would be level with — a leg's top stretched up meets the table top's
+    /// underside — then the part it overlaps more. What a drop says is
+    /// <c>Flush(target face, dragged face)</c>.
+    /// </remarks>
+    /// <param name="sketch">The drawing.</param>
+    /// <param name="atPress">The box as it was when the handle was grabbed.</param>
+    /// <param name="face">The face being dragged, in the box's own frame.</param>
+    /// <param name="wanted">Where the pointer puts that face, on the world axis it faces along.</param>
+    /// <param name="radius">How near a face has to be to catch.</param>
+    /// <returns>The plan, with one hit: on a face, or — at <paramref name="wanted"/> — the grid.</returns>
+    public static SpaceSnapPlan ResolveFace(Sketch sketch, Box atPress, BoxFace face, Length wanted, Length radius)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(atPress);
+
+        (Axis axis, bool positive) = atPress.Orientation.Normal(face);
+        Candidate? caught = null;
+        if (atPress.Orientation.IsExact)
+        {
+            (Point3 myLow, Point3 myHigh) = Extent(atPress);
+            foreach (Box other in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
+            {
+                if (other.Id == atPress.Id || !other.Orientation.IsExact)
+                {
+                    continue;
+                }
+
+                (Point3 theirLow, Point3 theirHigh) = Extent(other);
+                if (!OverlapsAcross(axis, myLow, myHigh, theirLow, theirHigh, radius, out double area))
+                {
+                    continue;
+                }
+
+                foreach ((Length theirs, bool theirPositive) in Faces(axis, theirLow, theirHigh))
+                {
+                    Length shift = theirs - wanted;
+                    if (Length.Abs(shift) > radius)
+                    {
+                        continue;
+                    }
+
+                    Candidate candidate = new(axis, shift, theirs, other.Id, FaceFacing(other, axis, theirPositive), face, Mating: positive != theirPositive, area);
+                    caught = caught is null ? candidate : Better(caught, candidate);
+                }
+            }
+        }
+
+        return caught is { } hit
+            ? new SpaceSnapPlan(
+                atPress.Anchor,
+                [new SpaceSnapHit(axis, hit.Coordinate, SnapKind.Edge, hit.Target, hit.TargetFace, face)],
+                [new Flush(RelationshipId.New(), new FeatureRef(hit.Target, BoxFeature.Face(hit.TargetFace)), new FeatureRef(atPress.Id, BoxFeature.Face(face)))])
+            : new SpaceSnapPlan(atPress.Anchor, [new SpaceSnapHit(axis, wanted, SnapKind.Grid, null, null, null)], []);
+    }
+
+    /// <summary>Where a box's face is along the world axis it faces: the low or high end of its extent.</summary>
+    public static Length FaceCoordinate(Box box, BoxFace face)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        (Axis axis, bool positive) = box.Orientation.Normal(face);
+        (Point3 low, Point3 high) = Extent(box);
+        return positive ? high.Component(axis) : low.Component(axis);
+    }
+
+    /// <summary>
     /// The box's world extent: the least and greatest coordinate of its eight vertices on each axis.
     /// For the 24 orientations its six faces lie exactly on these six planes.
     /// </summary>

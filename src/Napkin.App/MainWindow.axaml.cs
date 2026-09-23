@@ -782,8 +782,8 @@ public partial class MainWindow : Window
         ShowViewChrome();
         Editor.Say(
             EditSeverity.Hint,
-            "3D view: drag to orbit; select a part, then drag an arrow to move it along that axis or "
-            + "a square to resize it; X, Y and Z turn it. V goes back to the plan.");
+            "3D view: drag a part to slide it, or empty space to orbit; on a selected part drag an arrow "
+            + "to move it along that axis or a square to resize it; X, Y and Z turn it. V goes back to the plan.");
     }
 
     /// <summary>Shows the plan canvas again, as it was left.</summary>
