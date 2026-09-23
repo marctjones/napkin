@@ -69,11 +69,12 @@ public sealed record SnapPlan(Point2 Anchor, ImmutableList<SnapHit> Hits, Immuta
 /// </para>
 /// <para>
 /// Everything is read through each box's <see cref="Footprint"/>, and what the drop would state is
-/// named back in the box's own frame through <see cref="BoxGeometry.LocalEdge"/> and
-/// <see cref="BoxGeometry.LocalCorner"/> (<c>docs/design/assembly-model.md</c> &#xA7;7.2). For a
-/// box lying as drawn those are the names the footprint used, so the relationships are the ones the
-/// plan snap always stated; for a box on its side there is no plan corner or edge reference to
-/// state until &#xA7;10 step 3's features, and the snap lands the part without stating one.
+/// named through it too (<c>docs/design/assembly-model.md</c> &#xA7;7.2): a plan side is the face
+/// <see cref="Footprint.FaceAt"/> says, a plan corner the upright <see cref="Footprint.UprightAt"/>
+/// says. For a box lying as drawn those are the blank's own edge and corner, so the relationships
+/// are the ones the plan snap always stated; for a box stood on a side they are whichever faces
+/// and edge the plan sees there, so a turned part snapped in the plan is held as it would be in the
+/// 3D view (#70) rather than landed with nothing said.
 /// </para>
 /// </remarks>
 public static class SnapResolver
@@ -164,15 +165,13 @@ public static class SnapResolver
             hits.Add(HitOf(cornerX, SnapKind.Corner));
             hits.Add(HitOf(cornerY, SnapKind.Corner));
 
-            // Plan corners, named back on each blank: the two plan uprights, as local corners.
-            if (sketch.Find<Box>(cornerX.Target) is { } target
-                && BoxGeometry.LocalCorner(target, theirCorner) is { } targetCorner
-                && BoxGeometry.LocalCorner(landed, myCorner) is { } movingCorner)
+            // Plan corners: the edges each footprint stands up from there, whatever its face-up.
+            if (sketch.Find<Box>(cornerX.Target) is { } target)
             {
                 statements.Add(new Coincident(
                     RelationshipId.New(),
-                    LocalFeatures.Corner(cornerX.Target, targetCorner),
-                    LocalFeatures.Corner(moving.Id, movingCorner)));
+                    new FeatureRef(cornerX.Target, target.Footprint().UprightAt(theirCorner)),
+                    new FeatureRef(moving.Id, landed.Footprint().UprightAt(myCorner))));
             }
 
             return new SnapPlan(anchor, hits.ToImmutable(), statements.ToImmutable());
@@ -188,16 +187,14 @@ public static class SnapResolver
             hits.Add(HitOf(caught, SnapKind.Edge));
 
             // The moving part is the one that follows, so it is the second edge: Flush(a, b)
-            // reads "b follows a" (docs/design/geometry-model.md §3.2). Each plan side is named
-            // back as the edge of its own blank.
-            if (sketch.Find<Box>(caught.Target) is { } target
-                && BoxGeometry.LocalEdge(target, caught.TargetEdge) is { } targetEdge
-                && BoxGeometry.LocalEdge(landed, caught.MovingEdge) is { } movingEdge)
+            // reads "b follows a" (docs/design/geometry-model.md §3.2). Each plan side is the face
+            // its own footprint sees there.
+            if (sketch.Find<Box>(caught.Target) is { } target)
             {
                 statements.Add(new Flush(
                     RelationshipId.New(),
-                    LocalFeatures.Edge(caught.Target, targetEdge),
-                    LocalFeatures.Edge(moving.Id, movingEdge)));
+                    new FeatureRef(caught.Target, BoxFeature.Face(target.Footprint().FaceAt(caught.TargetEdge))),
+                    new FeatureRef(moving.Id, BoxFeature.Face(landed.Footprint().FaceAt(caught.MovingEdge)))));
             }
         }
 

@@ -13,9 +13,10 @@ namespace Napkin.App.Editing;
 /// <c>Flush(FeatureRef(01a0…, Face(East)), FeatureRef(01a1…, Face(West)))</c>.
 /// </para>
 /// <para>
-/// Edges and corners are named in the part's own frame, which is what the model stores. For a
-/// part that has not been turned — everything in this beta unless someone rotates one — that
-/// frame is the page's, so "left edge" means the left edge on screen.
+/// Faces, edges and corners are named by the way they face now, in compass words with up and down
+/// only for height (<see cref="WorldWords"/>, #81): "Part 2's west face is flush with Part 1's
+/// east face". The model stores them in the part's own frame; the words follow the part when it is
+/// turned, so they always describe what is on the screen, in the plan (north up) and in 3D alike.
 /// </para>
 /// </remarks>
 public static class RelationshipText
@@ -41,10 +42,10 @@ public static class RelationshipText
             Anchored anchored => $"{nameOf(anchored.Entity)} is pinned where it is.",
 
             Coincident coincident =>
-                $"{Point(coincident.B, nameOf)} is at {Point(coincident.A, nameOf)}.",
+                $"{Place(sketch, coincident.B, nameOf)} is at {Place(sketch, coincident.A, nameOf)}.",
 
             Flush flush =>
-                $"{Edge(flush.B, nameOf)} is flush with {Edge(flush.A, nameOf)}.",
+                $"{Place(sketch, flush.B, nameOf)} is flush with {Place(sketch, flush.A, nameOf)}.",
 
             ParamValue value =>
                 $"{Size(value.Param, nameOf)} is {value.Value.Format(format).Text}.",
@@ -53,16 +54,16 @@ public static class RelationshipText
                 $"{Size(equal.B, nameOf)} is the same as {Size(equal.A, nameOf)}.",
 
             AxisDistance distance =>
-                $"{Point(distance.To, nameOf)} is {Length.Abs(distance.Distance).Format(format).Text} "
-                + $"{Direction(distance.Axis, distance.Distance)} {Point(distance.From, nameOf)}.",
+                $"{Place(sketch, distance.To, nameOf)} is {Length.Abs(distance.Distance).Format(format).Text} "
+                + $"{WorldWords.Direction(distance.Axis, distance.Distance)} {Place(sketch, distance.From, nameOf)}.",
 
             Centered centered =>
-                $"{Point(centered.Middle, nameOf)} is centred between {Point(centered.A, nameOf)} "
-                + $"and {Point(centered.B, nameOf)}, {Across(centered.Axis)}.",
+                $"{Place(sketch, centered.Middle, nameOf)} is centred between {Place(sketch, centered.A, nameOf)} "
+                + $"and {Place(sketch, centered.B, nameOf)}, {WorldWords.Across(centered.Axis)}.",
 
-            Horizontal horizontal => $"{Edge(horizontal.Edge, nameOf)} is level.",
+            Horizontal horizontal => $"{Place(sketch, horizontal.Edge, nameOf)} is level.",
 
-            Vertical vertical => $"{Edge(vertical.Edge, nameOf)} is plumb.",
+            Vertical vertical => $"{Place(sketch, vertical.Edge, nameOf)} is plumb.",
 
             // The kinds reserved for the solver (§3.2, table 2). A file can carry one; this build
             // cannot hold it, and saying which one is better than saying nothing.
@@ -70,37 +71,20 @@ public static class RelationshipText
         };
     }
 
-    /// <summary>A place taken as a point, as a phrase: "Part 2's bottom-left corner".</summary>
-    public static string Point(PlaceRef reference, Func<EntityId, string> nameOf)
+    /// <summary>A place, as a phrase: "Part 2's north-west corner", "Part 1's top face".</summary>
+    public static string Place(Sketch sketch, PlaceRef reference, Func<EntityId, string> nameOf)
     {
+        ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(reference);
         ArgumentNullException.ThrowIfNull(nameOf);
 
         return reference switch
         {
-            FeatureRef feature when LocalFeatures.TryCorner(feature.Feature, out BoxCorner corner)
-                => $"{nameOf(feature.Box)}'s {CornerName(corner)} corner",
-            FeatureRef feature => $"{nameOf(feature.Box)}'s {PlaceRules.InWords(feature.Feature)}",
+            FeatureRef feature => $"{nameOf(feature.Box)}'s {WorldWords.Feature(sketch.Find<Box>(feature.Box), feature.Feature)}",
             CenterRef centre => $"{nameOf(centre.Box)}'s centre",
             NodeRef node => nameOf(node.Node),
             SegmentRef segment => nameOf(segment.Segment),
             _ => "a point",
-        };
-    }
-
-    /// <summary>A place taken as an edge, as a phrase: "Part 2's left edge".</summary>
-    public static string Edge(PlaceRef reference, Func<EntityId, string> nameOf)
-    {
-        ArgumentNullException.ThrowIfNull(reference);
-        ArgumentNullException.ThrowIfNull(nameOf);
-
-        return reference switch
-        {
-            FeatureRef feature when LocalFeatures.TryEdge(feature.Feature, out BoxEdge edge)
-                => $"{nameOf(feature.Box)}'s {EdgeName(edge)} edge",
-            FeatureRef feature => $"{nameOf(feature.Box)}'s {PlaceRules.InWords(feature.Feature)}",
-            SegmentRef segment => nameOf(segment.Segment),
-            _ => Point(reference, nameOf),
         };
     }
 
@@ -138,40 +122,4 @@ public static class RelationshipText
             _ => relationship.GetType().Name,
         };
     }
-
-    static string CornerName(BoxCorner corner) => corner switch
-    {
-        BoxCorner.SouthWest => "bottom-left",
-        BoxCorner.SouthEast => "bottom-right",
-        BoxCorner.NorthEast => "top-right",
-        BoxCorner.NorthWest => "top-left",
-        _ => corner.ToString(),
-    };
-
-    static string EdgeName(BoxEdge edge) => edge switch
-    {
-        BoxEdge.South => "bottom",
-        BoxEdge.East => "right",
-        BoxEdge.North => "top",
-        BoxEdge.West => "left",
-        _ => edge.ToString(),
-    };
-
-    // Three ways, not two: in the plan "above" is +Y, so Z needs words of its own, and reading a Z
-    // as a Y here would describe a height as a place on the page.
-    static string Direction(Axis axis, Length distance) => axis switch
-    {
-        Axis.X => distance >= Length.Zero ? "right of" : "left of",
-        Axis.Y => distance >= Length.Zero ? "above" : "below",
-        Axis.Z => distance >= Length.Zero ? "higher than" : "lower than",
-        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "Not an axis."),
-    };
-
-    static string Across(Axis axis) => axis switch
-    {
-        Axis.X => "left to right",
-        Axis.Y => "top to bottom",
-        Axis.Z => "bottom to top",
-        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "Not an axis."),
-    };
 }

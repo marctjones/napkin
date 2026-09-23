@@ -49,6 +49,58 @@ public class SnapResolverTests
     }
 
     [Fact]
+    public void A_part_on_its_side_snapped_flush_in_the_plan_states_the_face_the_plan_sees(/* #70 */)
+    {
+        // An upright 10" x 12" board, and a 4 x 12 x 2 block tipped East: its local top faces
+        // west, so its plan west side is its Top face (assembly-model §1.3's tip table).
+        Box target = Box.AsDrawn(EditingBuilder.Id(0), LayerId.Default, Point2.Inches(0, 0), Length.Inches(10), Length.Inches(12), Length.Inches(0, 3, 4), Angle.Zero);
+        Box tipped = new(EditingBuilder.Id(1), LayerId.Default, Point3.Inches(14, 2, 0), Length.Inches(4), Length.Inches(12), Length.Inches(2), BoxFace.East, Angle.Zero);
+        DesignEditor editor = EditorWith(target, tipped);
+
+        // Its plan west side (at anchor X - 2") a quarter inch past the board's east edge.
+        SnapPlan plan = SnapResolver.Resolve(editor.Sketch, tipped, new Point2(Length.Inches(12, 1, 4), Length.Inches(2, 1, 2)), OneInchGrid, Radius);
+
+        Assert.Equal(Length.Inches(12), plan.Anchor.X);
+        Flush flush = Assert.IsType<Flush>(Assert.Single(plan.Relationships));
+        Assert.Equal(new FeatureRef(target.Id, BoxFeature.Face(BoxFace.East)), flush.A);
+        Assert.Equal(new FeatureRef(tipped.Id, BoxFeature.Face(BoxFace.Top)), flush.B);
+        Assert.True(editor.CanHold(flush), "the updater cannot hold what the snap would state.");
+    }
+
+    [Fact]
+    public void Two_turned_parts_snapped_corner_to_corner_state_a_coincidence_of_their_plan_uprights(/* #70 */)
+    {
+        // A board tipped back (North up), lying 10" x 12" in the plan, and the East-tipped block.
+        Box lying = new(EditingBuilder.Id(0), LayerId.Default, Point3.Inches(0, 12, 0), Length.Inches(10), Length.Inches(3), Length.Inches(12), BoxFace.North, Angle.Zero);
+        Box tipped = new(EditingBuilder.Id(1), LayerId.Default, Point3.Inches(14, 2, 0), Length.Inches(4), Length.Inches(12), Length.Inches(2), BoxFace.East, Angle.Zero);
+        DesignEditor editor = EditorWith(lying, tipped);
+
+        // The block's south-west plan corner a quarter inch off the board's south-east one.
+        SnapPlan plan = SnapResolver.Resolve(editor.Sketch, tipped, new Point2(Length.Inches(12, 1, 4), Length.Inches(0, 1, 4)), OneInchGrid, Radius);
+
+        Coincident coincident = Assert.IsType<Coincident>(Assert.Single(plan.Relationships));
+        Assert.Equal(new FeatureRef(lying.Id, lying.Footprint().UprightAt(BoxCorner.SouthEast)), coincident.A);
+        Assert.Equal(new FeatureRef(tipped.Id, tipped.Footprint().UprightAt(BoxCorner.SouthWest)), coincident.B);
+
+        // Neither is a corner of the blank as drawn: the board's is its east face meeting its top.
+        Assert.Equal(new FeatureRef(lying.Id, BoxFeature.Edge(BoxFace.East, BoxFace.Top)), coincident.A);
+        Assert.True(editor.CanHold(coincident), "the updater cannot hold what the snap would state.");
+    }
+
+    static DesignEditor EditorWith(params Box[] boxes)
+    {
+        Sketch sketch = Sketch.Empty;
+        foreach (Box box in boxes)
+        {
+            sketch = sketch.WithEntity(box);
+        }
+
+        DesignEditor editor = new();
+        editor.Open(Design.Unlabelled("Test", sketch));
+        return editor;
+    }
+
+    [Fact]
     public void The_moving_part_is_the_one_that_follows()
     {
         Design design = EditingBuilder.Design(

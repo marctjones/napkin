@@ -289,6 +289,62 @@ public class AssemblyEditingWorkflows
         app.SaveFrame("3d-fitted-beside-panels");
     });
 
+    [GuiWorkflow("GUI-ASSEM-08")]
+    public void The_words_and_the_plan_mark_follow_a_part_when_it_is_turned() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+        Box leg = BoxNamed(window, "Leg, north-east");
+        app.Click(OnPlan(window, leg.Center.XY));
+
+        app.Expect("a standing leg's rows read by the way they run, and the list speaks in compass words", () =>
+        {
+            Assert.Equal(("East–west", "North–south", "Length (up)"), window.PartRowCaptions);
+            Assert.All(window.RelationshipsOnScreen, line =>
+            {
+                Assert.DoesNotContain("left", line, StringComparison.Ordinal);
+                Assert.DoesNotContain("right", line, StringComparison.Ordinal);
+                Assert.DoesNotContain("bottom edge", line, StringComparison.Ordinal);
+            });
+            Assert.Contains(
+                window.RelationshipsOnScreen,
+                line => System.Text.RegularExpressions.Regex.IsMatch(line, "(north|south|east|west)(-(east|west))? (face|corner)"));
+            Assert.Null(PartHelpText(window, leg.Id));
+        });
+
+        // A copy is free to turn; tip it back, about X.
+        app.Press(Key.D);
+        EntityId copy = window.Editor.OnlySelected!.Value;
+        app.Press(Key.X);
+
+        app.Expect("the tipped copy's rows follow it, and the plan marks it with the size that stands up", () =>
+        {
+            Assert.Equal(BoxFace.North, window.CurrentDesign!.Sketch.Find<Box>(copy)!.FaceUp);
+            Assert.Equal(("East–west", "Up", "Length (north–south)"), window.PartRowCaptions);
+            Assert.Equal("↑ thickness", PartHelpText(window, copy));
+            Assert.Null(PartHelpText(window, leg.Id));
+        });
+
+        app.SaveFrame("plan-tipped-copy-marked");
+
+        // Undo stands it up again, and the mark goes.
+        app.Chord(Key.Z);
+
+        app.Expect("stood up again, the copy carries no mark and its rows read as the leg's", () =>
+        {
+            Assert.Null(PartHelpText(window, copy));
+            Assert.Equal(("East–west", "North–south", "Length (up)"), window.PartRowCaptions);
+        });
+    });
+
+    /// <summary>The help text the plan canvas's automation element for a part carries.</summary>
+    static string? PartHelpText(MainWindow window, EntityId part) =>
+        Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(window.Canvas)
+            .GetChildren()
+            .Single(peer => peer.GetAutomationId() == part.Value.ToString("D"))
+            .GetHelpText() is { Length: > 0 } text ? text : null;
+
     static void AssertSidePanelsApart(MainWindow window)
     {
         Assert.True(window.IsShowingProperties, "the Part panel is not showing.");

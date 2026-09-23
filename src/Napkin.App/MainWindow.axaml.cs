@@ -1146,6 +1146,10 @@ public partial class MainWindow : Window
     /// </summary>
     public TextBox OutOfPlaneField => OutOfPlaneBox;
 
+    /// <summary>What the Part panel calls its three sizes now: the two part rows, then the depth field.</summary>
+    public (string First, string Second, string Depth) PartRowCaptions =>
+        (PlanXCaption.Text ?? string.Empty, PlanYCaption.Text ?? string.Empty, OutOfPlaneCaption.Text ?? string.Empty);
+
     /// <summary>The field the quantity is typed into.</summary>
     public TextBox QuantityField => QuantityBox;
 
@@ -1290,15 +1294,33 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// The depth field is labelled with the dimension it actually is: for a part, the one the
-    /// plan's two axes leave, and for a plain box simply its depth.
+    /// The depth field is labelled with the dimension it actually is — for a part, the one the
+    /// plan's two axes leave, and for a plain box simply its depth — and which way it runs now; and
+    /// each of the two part rows with the way its dimension runs now (#81). "Across" and "Up" used
+    /// to name the plan's screen directions, so a standing leg read "Up: Thickness" while its
+    /// length was what pointed up.
     /// </summary>
     void UpdateOutOfPlaneCaption()
-        => OutOfPlaneCaption.Text = IsPartCheck.IsChecked != true
+    {
+        Box? box = Editor.OnlySelectedBox;
+        string name = IsPartCheck.IsChecked != true
             ? "Depth"
             : ChosenAxes() is { } axes
                 ? SceneWords.Of(axes.OutOfPlane)
                 : "Third";
+
+        if (box is not { Orientation.IsExact: true })
+        {
+            OutOfPlaneCaption.Text = name;
+            PlanXCaption.Text = "Across";
+            PlanYCaption.Text = "Up";
+            return;
+        }
+
+        OutOfPlaneCaption.Text = $"{name} ({WorldWords.Along(box.Orientation.Image(Axis.Z).Axis).ToLowerInvariant()})";
+        PlanXCaption.Text = WorldWords.Along(box.Orientation.Image(Axis.X).Axis);
+        PlanYCaption.Text = WorldWords.Along(box.Orientation.Image(Axis.Y).Axis);
+    }
 
     /// <summary>
     /// What the library says about the stock that was typed — the same hover line the picker

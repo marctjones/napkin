@@ -773,7 +773,7 @@ public sealed class ModelView : Control
         else
         {
             editor.Select(pick.Box);
-            editor.Say(EditSeverity.Done, $"{editor.NameOf(pick.Box)} selected, its {PlaceRules.InWords(pick.Feature)}.");
+            editor.Say(EditSeverity.Done, $"{editor.NameOf(pick.Box)} selected, its {WorldWords.Feature(editor.Sketch.Find<Box>(pick.Box), pick.Feature)}.");
         }
     }
 
@@ -1193,8 +1193,10 @@ public sealed class ModelView : Control
             Point tip = origin + (along / length * 22 * Math.Min(1, length / _camera.PixelsPerInch * 1.25));
             SolidColorBrush brush = new(AxisColour(axis));
             context.DrawLine(new Pen(brush, 1.6), origin, tip);
+            // The axis's letter, which the turn keys use, and which way it runs in the words the
+            // relationship list and the Part panel use (#81).
             FormattedText text = new(
-                axis.ToString(),
+                axis switch { Axis.X => "X east", Axis.Y => "Y north", _ => "Z up" },
                 CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight,
                 Typeface.Default,

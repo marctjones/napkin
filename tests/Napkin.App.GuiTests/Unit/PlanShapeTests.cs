@@ -120,39 +120,10 @@ public class PlanShapeTests
     }
 
     [Fact]
-    public void Plan_names_are_named_back_on_the_blank_before_anything_is_stated()
+    public void A_snap_onto_a_box_on_its_side_lines_the_part_up_and_states_the_face_the_plan_sees()
     {
-        // A box as drawn: every plan side and corner is the blank's own.
-        Box top = Blank(BoxFace.Top);
-        foreach (BoxEdge side in Enum.GetValues<BoxEdge>())
-        {
-            Assert.Equal(side, BoxGeometry.LocalEdge(top, side));
-        }
-
-        foreach (BoxCorner corner in Enum.GetValues<BoxCorner>())
-        {
-            Assert.Equal(corner, BoxGeometry.LocalCorner(top, corner));
-        }
-
-        // Turned over: north and south swap, and so do the corners along them.
-        Box over = Blank(BoxFace.Bottom);
-        Assert.Equal(BoxEdge.North, BoxGeometry.LocalEdge(over, BoxEdge.South));
-        Assert.Equal(BoxCorner.NorthWest, BoxGeometry.LocalCorner(over, BoxCorner.SouthWest));
-
-        // On its side: two plan sides are the blank's top and bottom, and no plan corner is a
-        // corner of the blank as drawn.
-        Box side_ = Blank(BoxFace.East);
-        Assert.Null(BoxGeometry.LocalEdge(side_, BoxEdge.West));
-        Assert.Null(BoxGeometry.LocalEdge(side_, BoxEdge.East));
-        Assert.Equal(BoxEdge.North, BoxGeometry.LocalEdge(side_, BoxEdge.North));
-        Assert.All(Enum.GetValues<BoxCorner>(), corner => Assert.Null(BoxGeometry.LocalCorner(side_, corner)));
-    }
-
-    [Fact]
-    public void A_snap_onto_a_box_on_its_side_lines_the_part_up_and_states_nothing_it_cannot_name()
-    {
-        // The target stands East up: its plan west side is the blank's top, which the snap does
-        // not name until it reads features through the footprint, so it lands the part and states no Flush.
+        // The target stands East up: its plan west side is the blank's top face, and since #70 the
+        // snap names it through the footprint rather than landing the part and saying nothing.
         Box standing = Blank(BoxFace.East) with { Id = EditingBuilder.Id(0) };
         Box moving = Box.AsDrawn(EditingBuilder.Id(1), LayerId.Default, Point2.Inches(0, 25), Length.Inches(4), Length.Inches(4), Box.DefaultDepth, Angle.Zero);
         Sketch sketch = Sketch.Empty.WithEntity(standing).WithEntity(moving);
@@ -162,7 +133,9 @@ public class PlanShapeTests
 
         Assert.True(plan.CaughtSomething);
         Assert.Equal((Length.Inches(10) - new Length(768) - Length.Inches(4)).Units, plan.Anchor.X.Units);
-        Assert.Empty(plan.Relationships);
+        Flush flush = Assert.IsType<Flush>(Assert.Single(plan.Relationships));
+        Assert.Equal(new FeatureRef(standing.Id, BoxFeature.Face(BoxFace.Top)), flush.A);
+        Assert.Equal(new FeatureRef(moving.Id, BoxFeature.Face(BoxFace.East)), flush.B);
     }
 
     [Fact]

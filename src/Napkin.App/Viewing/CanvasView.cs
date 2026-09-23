@@ -389,6 +389,10 @@ public sealed class CanvasView : Control
     /// <summary>What to call a part, the same name the status line and the messages use.</summary>
     internal string PartName(EntityId id) => _editor?.NameOf(id) ?? id.ToString();
 
+    /// <summary>How a part is turned, as its mark in the plan says it (#82), or null for a part as drawn.</summary>
+    internal string? PartStance(EntityId id) =>
+        Design?.Sketch.Find<Box>(id) is { } box ? WorldWords.Stance(box) : null;
+
     /// <summary>
     /// A part's size as text, in the same format as the dimension labels drawn beside it.
     /// </summary>
@@ -1383,6 +1387,32 @@ public sealed class CanvasView : Control
         DrawSelection(context, palette, sketch);
         DrawSnapIndicator(context, palette);
         DrawRectanglePreview(context, palette);
+        DrawNorth(context, palette);
+    }
+
+    /// <summary>
+    /// A north arrow in the corner (#81): the relationship list and the Part panel name sides by the
+    /// compass, and the plan is drawn north up, so the page says which way that is.
+    /// </summary>
+    void DrawNorth(DrawingContext context, CanvasPalette palette)
+    {
+        Point foot = new(24, Bounds.Height - 18);
+        Point tip = foot - new Vector(0, 22);
+        SolidColorBrush ink = new(palette.Label, 0.75);
+        context.DrawLine(new Pen(ink, 1.4), foot, tip);
+
+        StreamGeometry head = new();
+        using (StreamGeometryContext figure = head.Open())
+        {
+            figure.BeginFigure(tip - new Vector(0, 3), isFilled: true);
+            figure.LineTo(tip + new Vector(-4, 6));
+            figure.LineTo(tip + new Vector(4, 6));
+            figure.EndFigure(isClosed: true);
+        }
+
+        context.DrawGeometry(ink, null, head);
+        FormattedText north = Text("N", ink.Color);
+        context.DrawText(north, new Point(foot.X + 6, tip.Y - 2));
     }
 
     /// <summary>A wide outline in the problem colour round each part in <see cref="Attention"/>, under the selection's.</summary>
@@ -1769,38 +1799,58 @@ public sealed class CanvasView : Control
         };
         context.DrawGeometry(new SolidColorBrush(style.Fill), pen, Outline(box));
 
-        if (design.LabelFor(box.Id) is { } label)
+        Rect drawn = new Rect(
+            _view.ToScreen(box.Footprint().Corner(BoxCorner.SouthWest)),
+            _view.ToScreen(box.Footprint().Corner(BoxCorner.NorthEast))).Normalize();
+        string? stance = WorldWords.Stance(box);
+        bool labelled = design.LabelFor(box.Id) is { } label && DrawPartLabel(context, palette, label, drawn, stance is null ? 0 : -7);
+        if (stance is not null)
         {
-            DrawPartLabel(
-                context,
-                palette,
-                label,
-                _view.ToScreen(box.Footprint().Corner(BoxCorner.SouthWest)),
-                _view.ToScreen(box.Footprint().Corner(BoxCorner.NorthEast)));
+            DrawStance(context, palette, stance, drawn, labelled);
         }
     }
 
-    void DrawPartLabel(
+    /// <summary>
+    /// The mark a turned part carries in the plan (#82, assembly-model §7.2): which of its sizes
+    /// stands up now, under its name, so a leg standing on end and a leg lying down read
+    /// differently at a glance. Where the words do not fit, the arrow alone.
+    /// </summary>
+    void DrawStance(DrawingContext context, CanvasPalette palette, string stance, Rect drawn, bool underALabel)
+    {
+        FormattedText text = Text(stance, palette.Dimension);
+        if (text.Width + 8 > drawn.Width || text.Height + 4 > drawn.Height)
+        {
+            text = Text(stance[..1], palette.Dimension);
+            if (text.Width + 2 > drawn.Width || text.Height + 2 > drawn.Height)
+            {
+                return;
+            }
+        }
+
+        double y = drawn.Center.Y - (text.Height / 2) + (underALabel ? 7 : 0);
+        context.DrawText(text, new Point(drawn.Center.X - (text.Width / 2), y));
+    }
+
+    /// <returns>Whether the name fitted and was drawn.</returns>
+    bool DrawPartLabel(
         DrawingContext context,
         CanvasPalette palette,
         string label,
-        Point southWest,
-        Point northEast)
+        Rect rectangle,
+        double lift)
     {
-        // The two corners are model corners, so in screen coordinates south is below north and a
-        // rotated part may put either one first: normalise before measuring.
-        Rect rectangle = new Rect(southWest, northEast).Normalize();
         FormattedText text = Text(label, palette.Label);
         if (text.Width + 8 > rectangle.Width || text.Height + 4 > rectangle.Height)
         {
             // It does not fit. A part too small for its name is better unlabelled than overdrawn;
             // zooming in brings the name back.
-            return;
+            return false;
         }
 
         context.DrawText(text, new Point(
             rectangle.Center.X - (text.Width / 2),
-            rectangle.Center.Y - (text.Height / 2)));
+            rectangle.Center.Y - (text.Height / 2) + lift));
+        return true;
     }
 
     void DrawSegment(

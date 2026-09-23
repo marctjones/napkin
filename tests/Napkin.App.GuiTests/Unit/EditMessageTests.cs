@@ -143,8 +143,8 @@ public class EditMessageTests
     }
 
     [Theory]
-    [InlineData(typeof(Flush), "Part 2's left edge is flush with Part 1's right edge.")]
-    [InlineData(typeof(Coincident), "Part 2's bottom-left corner is at Part 1's bottom-right corner.")]
+    [InlineData(typeof(Flush), "Part 2's west face is flush with Part 1's east face.")]
+    [InlineData(typeof(Coincident), "Part 2's south-west corner is at Part 1's south-east corner.")]
     [InlineData(typeof(Anchored), "Part 1 is pinned where it is.")]
     [InlineData(typeof(ParamValue), "Part 1's width is 2'-0\".")]
     [InlineData(typeof(EqualParam), "Part 2's width is the same as Part 1's width.")]

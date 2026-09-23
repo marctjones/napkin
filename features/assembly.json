@@ -63,6 +63,15 @@
       "milestone": "backlog",
       "issue": 90,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-08",
+      "area": "ui",
+      "title": "The words and the plan's mark follow a part when it is turned",
+      "acceptance": "With a standing coffee-table leg selected the Part panel's rows read East–west, North–south and Length (up) and the relationship list uses compass words with no left, right or bottom edge; a duplicate tipped about X reads East–west, Up and Length (north–south) and carries the plan mark '↑ thickness', and undo removes the mark.",
+      "milestone": "backlog",
+      "issue": 81,
+      "kind": "workflow"
     }
   ]
 }

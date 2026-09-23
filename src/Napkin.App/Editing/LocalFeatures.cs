@@ -10,9 +10,8 @@ namespace Napkin.App.Editing;
 /// <remarks>
 /// This is the blank's own frame, which is the plan's only for a box lying as drawn — the only kind
 /// the direct updater holds a positional relationship on before &#xA7;10 step 4. Going from a plan
-/// corner of a tipped box to a feature is <see cref="Footprint.UprightAt"/>'s business, and the
-/// canvas's snap already names each plan corner back on its own blank first
-/// (<see cref="BoxGeometry.LocalCorner"/>).
+/// corner of a tipped box to a feature is <see cref="Footprint.UprightAt"/>'s business, which is
+/// how the canvas's snap names what it states (#70).
 /// </remarks>
 public static class LocalFeatures
 {
