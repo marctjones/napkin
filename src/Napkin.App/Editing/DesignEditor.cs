@@ -244,6 +244,16 @@ public sealed class DesignEditor
     public void Say(EditSeverity severity, string text) =>
         SetMessage(EditMessage.Plain(severity, text));
 
+    /// <summary>
+    /// Puts a message on the screen as it is — for a command that has more to say about a result
+    /// than <see cref="EditMessages.For"/> can, such as a way out of a refused turn (#76).
+    /// </summary>
+    public void Show(EditMessage message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        SetMessage(message);
+    }
+
     /// <summary>Takes the last message off the screen.</summary>
     public void ClearMessage() => SetMessage(null);
 

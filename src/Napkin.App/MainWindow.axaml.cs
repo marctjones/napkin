@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Automation;
@@ -61,6 +62,7 @@ public partial class MainWindow : Window
     string? _documentPath;
     Func<Task>? _afterAnswer;
     bool _showingProperties;
+    RelationshipEntry? _rowUnderPointer;
     Box? _propertiesShown;
     bool _showingCut;
     EntityId? _editingBox;
@@ -76,7 +78,11 @@ public partial class MainWindow : Window
         _filePicker = new StorageProviderScenePicker(this);
 
         DrawingCanvas.Editor = Editor;
-        Editor.MessageChanged += (_, _) => UpdateMessageBar();
+        Editor.MessageChanged += (_, _) =>
+        {
+            UpdateMessageBar();
+            UpdateAttention();
+        };
         Editor.DesignChanged += (_, _) => OnDesignChanged();
         Editor.SelectionChanged += (_, _) => OnSelectionChanged();
         Editor.History.Changed += (_, _) => UpdateMenuEnablement();
@@ -272,14 +278,14 @@ public partial class MainWindow : Window
     /// <summary>What the last edit did, as it is showing now. Empty when nothing is showing.</summary>
     public string MessageOnScreen => MessageBar.IsVisible ? MessageText.Text ?? string.Empty : string.Empty;
 
-    /// <summary>Whether the last message offers a way out of a conflict.</summary>
-    public bool IsOfferingToRemoveRelationship => MessageOfferButton.IsVisible;
+    /// <summary>Whether the last message offers a way out: of a conflict, or of a refused turn.</summary>
+    public bool IsOfferingAWayOut => MessageOfferButton.IsVisible;
 
     /// <summary>The wording of that offer.</summary>
-    public string RemoveOfferText => MessageOfferButton.Content as string ?? string.Empty;
+    public string OfferText => MessageOfferButton.Content as string ?? string.Empty;
 
     /// <summary>The button that takes the offer.</summary>
-    public Button RemoveOfferButton => MessageOfferButton;
+    public Button OfferButton => MessageOfferButton;
 
     /// <summary>The relationship list panel.</summary>
     public Border Relationships => RelationshipsPanel;
@@ -290,8 +296,16 @@ public partial class MainWindow : Window
     /// </summary>
     public IReadOnlyList<string> RelationshipsOnScreen =>
     [
-        .. RelationshipsList.Children.OfType<TextBlock>().Select(line => line.Text ?? string.Empty),
+        .. RelationshipsList.Children.OfType<Grid>().Select(row => row.Children.OfType<TextBlock>().First().Text ?? string.Empty),
     ];
+
+    /// <summary>The row of the relationship list that says this, when the list is open.</summary>
+    public Control? RelationshipRow(string text) =>
+        RelationshipsList.Children.OfType<Grid>().FirstOrDefault(row => row.Children.OfType<TextBlock>().First().Text == text);
+
+    /// <summary>The button on a row of the relationship list that removes what the row says.</summary>
+    public Button? RemoveRelationshipButton(string text) =>
+        RelationshipRow(text) is Grid row ? row.Children.OfType<Button>().FirstOrDefault() : null;
 
     /// <summary>Whether the relationship list is open to its sentences rather than showing only its count.</summary>
     public bool IsRelationshipListExpanded => RelationshipsPanel.IsVisible && RelationshipsList.IsVisible;
@@ -1009,18 +1023,21 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Takes a conflict's way out: removes the relationship the message offered.</summary>
-    public void TakeRemoveOffer()
+    /// <summary>
+    /// Takes the last message's way out — a conflict's relationship removed, or a refused turn's
+    /// relationships let go of and the turn made — as one undo step.
+    /// </summary>
+    public void TakeOffer()
     {
-        if (Editor.LastMessage?.OfferToRemove is not { } id)
+        if (Editor.LastMessage?.Offer is not { } offer)
         {
             return;
         }
 
-        string what = $"Removed: {RelationshipText.Describe(Editor.Design.Sketch, Editor.Design.Sketch.Find(id)!, Editor.NameOf, Editor.LabelFormat)}";
-        Editor.BeginGesture(what);
-        Editor.Apply(new RemoveRelationship(id), what);
+        Editor.BeginGesture(offer.What);
+        Editor.Apply(offer.Request, offer.What);
         Editor.EndGesture();
+        FocusDrawing();
     }
 
     void OnDimensionEntryKeyDown(object? sender, KeyEventArgs e)
@@ -1072,6 +1089,7 @@ public partial class MainWindow : Window
         PlaceDimensionEditor();
         UpdateWorkshop();
         FollowDesignInProperties();
+        UpdateAttention();
 
         // The cut list follows the drawing: widen a part with the list open and the row changes,
         // because both are readings of one design rather than a drawing and a snapshot of it.
@@ -2009,8 +2027,8 @@ public partial class MainWindow : Window
             _ => palette.Label,
         });
 
-        MessageOfferButton.IsVisible = message.OfferToRemove is not null;
-        MessageOfferButton.Content = message.OfferText ?? string.Empty;
+        MessageOfferButton.IsVisible = message.Offer is not null;
+        MessageOfferButton.Content = message.Offer?.Text ?? string.Empty;
         MessageBar.IsVisible = true;
     }
 
@@ -2037,13 +2055,7 @@ public partial class MainWindow : Window
         {
             foreach (RelationshipEntry entry in entries.OrderBy(entry => entry.Entities.Any(IsInPlay) ? 0 : 1))
             {
-                RelationshipsList.Children.Add(new TextBlock
-                {
-                    Text = entry.Text,
-                    FontSize = 11,
-                    TextWrapping = TextWrapping.Wrap,
-                    Foreground = new SolidColorBrush(palette.Label),
-                });
+                RelationshipsList.Children.Add(RelationshipRowFor(entry, palette));
             }
         }
 
@@ -2055,7 +2067,110 @@ public partial class MainWindow : Window
         RelationshipsPanel.Padding = expanded ? new Thickness(10, 8) : new Thickness(8, 3);
         RelationshipsPanel.CornerRadius = new CornerRadius(expanded ? 4 : 10);
         RelationshipsPanel.IsVisible = entries.Count > 0 && !IsShapingPart;
+
+        // Open, its rows take clicks (#77) and a wheel turn scrolls them. Collapsed to its badge it
+        // is only a label on the drawing, and a click or a wheel turn there is the drawing's.
+        RelationshipsPanel.IsHitTestVisible = expanded;
+        if (!expanded)
+        {
+            _rowUnderPointer = null;
+        }
     }
+
+    /// <summary>
+    /// One row of the relationship list: the sentence, and a button that removes it (#77). Resting
+    /// the pointer on the row draws attention to the parts it holds, in both views.
+    /// </summary>
+    Grid RelationshipRowFor(RelationshipEntry entry, CanvasPalette palette)
+    {
+        TextBlock sentence = new()
+        {
+            Text = entry.Text,
+            FontSize = 11,
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Foreground = new SolidColorBrush(palette.Label),
+        };
+
+        Button remove = new()
+        {
+            Content = "×",
+            FontSize = 11,
+            Padding = new Thickness(5, 0),
+            MinHeight = 0,
+            Margin = new Thickness(6, 0, 0, 0),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top,
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+        };
+        ToolTip.SetTip(remove, "Remove: " + entry.Text);
+        AutomationProperties.SetName(remove, "Remove: " + entry.Text);
+        remove.Click += (_, _) => RemoveRelationshipFromList(entry);
+
+        Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Background = Brushes.Transparent };
+        Grid.SetColumn(remove, 1);
+        row.Children.Add(sentence);
+        row.Children.Add(remove);
+        row.PointerEntered += (_, _) =>
+        {
+            _rowUnderPointer = entry;
+            UpdateAttention();
+        };
+        row.PointerExited += (_, _) =>
+        {
+            if (_rowUnderPointer?.Id == entry.Id)
+            {
+                _rowUnderPointer = null;
+                UpdateAttention();
+            }
+        };
+
+        return row;
+    }
+
+    /// <summary>Removes the relationship a row of the list says, as one undo step (#77).</summary>
+    void RemoveRelationshipFromList(RelationshipEntry entry)
+    {
+        string what = "Removed: " + entry.Text;
+        _rowUnderPointer = null;
+        Editor.BeginGesture(what);
+        Editor.Apply(new RemoveRelationship(entry.Id), what);
+        Editor.EndGesture();
+        FocusDrawing();
+    }
+
+    /// <summary>
+    /// What both views outline in the problem colour: the parts the relationships the message
+    /// highlights hold — a conflict (#72), a refused turn (#76) — and the parts the relationship row
+    /// under the pointer holds (#77).
+    /// </summary>
+    void UpdateAttention()
+    {
+        Sketch sketch = Editor.Sketch;
+        HashSet<EntityId> parts = [];
+        if (_rowUnderPointer is { } row && sketch.Relationships.ContainsKey(row.Id))
+        {
+            parts.UnionWith(row.Entities);
+        }
+
+        if (Editor.LastMessage is { } message)
+        {
+            foreach (RelationshipId id in message.Highlight)
+            {
+                if (sketch.Relationships.TryGetValue(id, out Relationship? relationship))
+                {
+                    parts.UnionWith(relationship.References);
+                }
+            }
+        }
+
+        ImmutableHashSet<EntityId> attention = [.. parts];
+        DrawingCanvas.Attention = attention;
+        ModelDrawing.Attention = attention;
+    }
+
+    /// <summary>The parts both views are drawing attention to now.</summary>
+    public IReadOnlySet<EntityId> AttentionOnScreen => IsShowingModel ? ModelDrawing.Attention : DrawingCanvas.Attention;
 
     /// <summary>
     /// Whether a part is one the relationship list should open for: selected, or resting under the
@@ -2505,7 +2620,7 @@ public partial class MainWindow : Window
 
     void OnDeleteClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Delete);
 
-    void OnMessageOfferClicked(object? sender, RoutedEventArgs e) => TakeRemoveOffer();
+    void OnMessageOfferClicked(object? sender, RoutedEventArgs e) => TakeOffer();
 
     void OnCutListClicked(object? sender, RoutedEventArgs e) => OpenCutList();
 

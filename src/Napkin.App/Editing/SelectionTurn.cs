@@ -28,7 +28,10 @@ namespace Napkin.App.Editing;
 /// A part held by a place in its own frame — a <see cref="Flush"/>, a <see cref="Coincident"/>, an
 /// <see cref="AxisDistance"/>, a <see cref="Centered"/> — is refused a turn by the updater
 /// (<see cref="RejectionReason.OrientationWithRelationships"/>, &#xA7;2.4), and the message says to
-/// remove them first. That is the updater's rule, and nothing here works round it.
+/// remove them first. That is the updater's rule, and nothing here works round it — but the
+/// refusal names them and carries an offer (#76, §2.4's "the canvas offers to remove them first"):
+/// <em>let go of them and turn</em>, one <see cref="Batch"/> of their removals and the turn, one
+/// undo step. Nothing is removed unless the person takes it (§11 decision 6).
 /// </para>
 /// </remarks>
 public static class SelectionTurn
@@ -64,10 +67,55 @@ public static class SelectionTurn
                       + (quarterTurns < 0 ? ", the other way" : string.Empty)
                       + (pinned ? ", about the corner it is pinned by" : string.Empty);
 
+        Sketch before = editor.Sketch;
+        Request request = RequestFor(box, turned, pinned);
         editor.BeginGesture(what);
-        UpdateResult result = editor.Apply(RequestFor(box, turned, pinned), what);
+        UpdateResult result = editor.Apply(request, what);
         editor.EndGesture();
+
+        if (result is Rejected { Reason: RejectionReason.OrientationWithRelationships }
+            && HeldByPlace(before, box.Id) is { Count: > 0 } holding)
+        {
+            editor.Show(Refusal(editor, before, box, holding, request, what));
+        }
+
         return result;
+    }
+
+    /// <summary>
+    /// The relationships that hold a box by a place in its own frame — the ones a turn would change
+    /// the meaning of, and the updater refuses it for. Sizes and pins are not among them.
+    /// </summary>
+    public static IReadOnlyList<Relationship> HeldByPlace(Sketch sketch, EntityId box)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        return
+        [
+            .. sketch.RelationshipsInOrder.Where(relationship =>
+                relationship.References.Contains(box) && relationship is not (Anchored or ParamValue or EqualParam)),
+        ];
+    }
+
+    /// <summary>A refused turn, the relationships that refused it, and the offer to let go of them and turn.</summary>
+    static EditMessage Refusal(DesignEditor editor, Sketch before, Box box, IReadOnlyList<Relationship> holding, Request turn, string what)
+    {
+        const int Named = 3;
+        string name = editor.NameOf(box.Id);
+        IEnumerable<string> sentences = holding
+            .Take(Named)
+            .Select(relationship => RelationshipText.Describe(before, relationship, editor.NameOf, editor.LabelFormat));
+        string more = holding.Count > Named ? $" And {holding.Count - Named} more." : string.Empty;
+        string count = holding.Count == 1 ? "1 relationship holds" : $"{holding.Count} relationships hold";
+
+        return new EditMessage(
+            EditSeverity.Problem,
+            $"{what} did not happen: {count} {name} by its faces, and a turn would change what "
+            + $"{(holding.Count == 1 ? "it means" : "they mean")}. {string.Join(" ", sentences)}{more}",
+            [.. holding.Select(relationship => relationship.Id)],
+            new EditOffer(
+                holding.Count == 1 ? "Let go of it and turn" : $"Let go of {holding.Count} and turn",
+                Batch.Of([.. holding.Select(relationship => (Request)new RemoveRelationship(relationship.Id)), turn]),
+                $"{what}, letting go of {(holding.Count == 1 ? "1 relationship" : $"{holding.Count} relationships")}"));
     }
 
     /// <summary>

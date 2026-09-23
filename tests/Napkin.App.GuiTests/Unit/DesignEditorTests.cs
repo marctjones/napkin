@@ -178,7 +178,7 @@ public class DesignEditorTests
 
         Assert.IsType<UnderConstrained>(result);
         Assert.Equal(EditSeverity.Hint, editor.LastMessage!.Severity);
-        Assert.Null(editor.LastMessage.OfferToRemove);
+        Assert.Null(editor.LastMessage.Offer);
     }
 
     /// <summary>An updater that applies nothing and calls every success under-constrained.</summary>
