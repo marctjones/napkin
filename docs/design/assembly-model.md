@@ -1348,7 +1348,9 @@ takes for point-in-outline against a curved edge.
    clipped-off corner then picks what is behind it, as the plan canvas already does.
 4. Nearest hit wins. Edges and vertices are picked by proximity to their projected positions, in
    screen pixels, with corners winning over edges and edges over faces — `GripAt`'s rule, one
-   dimension up.
+   dimension up. (**Since #89:** only on the face the ray hit, or anywhere when the ray hits
+   nothing — the silhouette case §3a.7 relies on. Another part's edge a few pixels away no longer
+   takes a click on the face under the pointer, nor does an edge on the far side of a thin board.)
 
 Nothing stored depends on any of this.
 
@@ -1365,7 +1367,10 @@ Nothing stored depends on any of this.
   it. The command therefore sends `Batch(SetOrientation, SetPosition)` so that the low corner of
   the part's extent is where it was: the part stays on what it sat on. The request itself is
   unchanged; a pinned part, which cannot move, still turns about its anchor.
-- **Move.** Per-axis handles: three arrows at the selected part's anchor along world X, Y and Z.
+- **Move.** Per-axis handles: three arrows at the selected part's anchor along world X, Y and Z
+  (**from the centre of the part's extent since #83, 2026-09-23**: the anchor is the local
+  south-west-bottom corner — the far end of a long apron, or wherever that corner went after a
+  turn).
   Dragging one projects the pointer's screen motion onto that axis's projected direction and
   produces `Drag(id, Vector3.Along(axis, d))`, snapped to the grid step and to faces (below). A
   drag on the part's body, not a handle, moves in the plane of the face that was hit — two axes —
@@ -1378,7 +1383,10 @@ Nothing stored depends on any of this.
   draws the target face's outline, faint, as the plan canvas draws the edge line. Relationships are
   candidates until the drop, and the editor asks the updater whether each can hold, as today.
 - **Resize.** A handle at the centre of each of the six faces: `DragFace(box, face, delta)`, the
-  motion projected onto the face's world normal.
+  motion projected onto the face's world normal. (**Since #84:** each handle stands a few pixels
+  out from its face's centre along the face's projected normal, on a stalk, and no two handles —
+  arrows' tips included — are drawn within two grab distances of each other; at the centre itself
+  a 3/4″ board's handles were a few pixels apart, on the body a drag grabs to move it.)
 - **A strut** has no turn and no face handles. Each end carries the three per-axis move arrows
   (`DragStrutEnd`), the body drags the whole strut (`Drag`), and the strut tool is two clicks on
   faces or the grid (§3a.7). Snapping an end onto a face or a vertex produces the `AxisDistance`

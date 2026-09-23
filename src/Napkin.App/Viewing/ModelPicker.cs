@@ -56,7 +56,7 @@ public sealed record ModelPick(
 /// <item>
 /// The nearest hit wins. Vertices and edges are picked by how near their projections are to the
 /// pointer, in pixels, vertices before edges before faces — <see cref="BoxGeometry.GripAt"/>'s rule,
-/// one dimension up — as long as the feature is not behind the surface the ray hit.
+/// one dimension up — as long as they are on the face the ray hit, or the ray hit nothing (#89).
 /// </item>
 /// </list>
 /// </remarks>
@@ -79,10 +79,9 @@ public static class ModelPicker
         (Vector3d origin, Vector3d direction) = camera.Ray(screen);
         SurfaceHit? surface = NearestSurface(sketch, scene, origin, direction);
 
-        // A feature may not be picked through the surface the ray hit, but a vertex or an edge on
-        // that surface — or on its silhouette, just off it — is exactly what is being aimed at.
+        // A cut face has no name to test a feature against, so on one a feature counts by depth: no
+        // further behind the surface than a few grab distances.
         double slack = (3 * tolerancePixels / Math.Max(camera.PixelsPerInch, 1e-9)) + 1e-6;
-        double limit = surface is { } hit ? hit.Distance + slack : double.PositiveInfinity;
 
         FeatureHit? best = null;
         foreach (Box box in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
@@ -94,7 +93,7 @@ public static class ModelPicker
 
             foreach (FeatureHit candidate in FeaturesNear(box, camera, screen, tolerancePixels))
             {
-                if (candidate.Depth <= limit && Better(candidate, best))
+                if (Counts(candidate, surface, slack) && Better(candidate, best))
                 {
                     best = candidate;
                 }
@@ -364,6 +363,39 @@ public static class ModelPicker
 
         Vector3d at = a + ((b - a) * t);
         return new FeatureHit(default, default, 1, pixels, camera.DepthOf(at), at);
+    }
+
+    /// <summary>
+    /// Whether a vertex or an edge near the pointer is what the click is aimed at (#89).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With nothing under the pointer, it is: a silhouette edge just off a part — a rail's lower
+    /// edge over the floor, assembly-model &#xA7;3a.7 — is exactly what is being aimed at.
+    /// </para>
+    /// <para>
+    /// With a part under the pointer, the part is what is being clicked, and only its own features
+    /// count, and only those on the face the ray went in through: an edge or a vertex of that face.
+    /// Another part's edge a few pixels away used to win — a click on an apron's face just under
+    /// the table top's front edge selected the top — and so did an edge on the far side of a thin
+    /// board, which the ray could only reach by passing through the board.
+    /// </para>
+    /// </remarks>
+    static bool Counts(FeatureHit candidate, SurfaceHit? surface, double slack)
+    {
+        if (surface is not { } hit)
+        {
+            return true;
+        }
+
+        if (candidate.Box != hit.Box)
+        {
+            return false;
+        }
+
+        return hit.Face is { } face
+            ? candidate.Feature.Faces.Contains(face)
+            : candidate.Depth <= hit.Distance + slack;
     }
 
     static bool Better(FeatureHit candidate, FeatureHit? current)

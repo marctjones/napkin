@@ -105,7 +105,7 @@ public class AssemblyEditingWorkflows
         Box apron = BoxNamed(window, "Apron, long, south");
 
         // Low on the apron's south face, well clear of the top's edge: the top overhangs the apron
-        // and hides its upper half from this view (and #89: an edge a few pixels away wins a click).
+        // and hides its upper half from this view.
         Point3 low = SpaceSnapResolver.Extent(apron).Low;
         Vector3d onFace = new((low.X + (apron.Width.Divide(2, Rounding.HalfToEven))).ToInches(), low.Y.ToInches(), low.Z.ToInches() + 0.75);
         Point onApron = InModel(window, window.Model.Camera.Project(onFace));

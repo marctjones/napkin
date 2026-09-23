@@ -980,6 +980,7 @@ public sealed class ModelView : Control
         {
             if (handle.Kind == ModelHandleKind.Face)
             {
+                context.DrawLine(new Pen(new SolidColorBrush(palette.Selection, 0.6), 1), handle.Base, handle.At);
                 context.DrawRectangle(
                     paper,
                     new Pen(new SolidColorBrush(palette.Selection), 1.4),

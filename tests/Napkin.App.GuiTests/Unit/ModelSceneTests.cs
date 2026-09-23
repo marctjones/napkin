@@ -190,6 +190,58 @@ public class ModelSceneTests
     }
 
     [Fact]
+    public void A_click_on_a_face_just_under_another_parts_edge_picks_the_face_under_it(/* #89 */)
+    {
+        // The top overhangs the apron by 1 1/2", so on the screen the apron shows just under the
+        // top's front edge. Two pixels under that edge the ray passes beneath the top and meets the
+        // apron's south face; the top's edge, two pixels away, used to win the click.
+        (Sketch sketch, Box top, Box apron) = TopAndApron();
+        Camera camera = Iso(sketch);
+        ModelScene scene = ModelScene.Of(sketch);
+        Point underTheEdge = camera.Project(new Vector3d(24, 0, 16.25)) + new Vector(0, 2);
+
+        ModelPick pick = ModelPicker.Pick(sketch, scene, camera, underTheEdge, 5)!;
+
+        Assert.Equal(apron.Id, pick.Box);
+        Assert.Equal(BoxFace.South, pick.Face);
+        Assert.NotEqual(top.Id, pick.Box);
+    }
+
+    [Fact]
+    public void A_feature_on_the_far_side_of_a_thin_board_is_not_picked_through_it(/* #89 */)
+    {
+        // Low on the apron's south face, near its bottom: the edge nearest the pointer may be the
+        // bottom north edge, 3/4" behind the face, which the ray could reach only through the board.
+        (Sketch sketch, _, Box apron) = TopAndApron();
+        Camera camera = Iso(sketch);
+        ModelScene scene = ModelScene.Of(sketch);
+
+        for (double z = 12.8; z < 14; z += 0.05)
+        {
+            ModelPick pick = ModelPicker.Pick(sketch, scene, camera, camera.Project(new Vector3d(24, 1.5, z)), 5)!;
+            Assert.Equal(apron.Id, pick.Box);
+            Assert.Contains(BoxFace.South, pick.Feature.Faces);
+        }
+    }
+
+    [Fact]
+    public void Just_off_a_parts_silhouette_with_nothing_behind_its_edge_is_still_picked(/* §3a.7 */)
+    {
+        // The top alone, high above the floor: two pixels under its front edge the ray meets no
+        // part, and the edge — a rail's lower edge, for the strut tool — is what is aimed at.
+        (Sketch withApron, Box top, _) = TopAndApron();
+        Sketch sketch = withApron.WithoutEntity(withApron.Entities.Values.OfType<Box>().Single(box => box.Id != top.Id).Id);
+        Camera camera = Iso(withApron);
+        ModelScene scene = ModelScene.Of(sketch);
+        Point underTheEdge = camera.Project(new Vector3d(24, 0, 16.25)) + new Vector(0, 2);
+
+        ModelPick pick = ModelPicker.Pick(sketch, scene, camera, underTheEdge, 5)!;
+
+        Assert.Equal(top.Id, pick.Box);
+        Assert.Equal(BoxFeature.Edge(BoxFace.South, BoxFace.Bottom), pick.Feature);
+    }
+
+    [Fact]
     public void A_click_where_a_cut_took_the_corner_away_picks_what_is_behind_it()
     {
         Box clipped = new Box(EntityId.New(), Layer, Point3.Inches(0, 0, 10), Length.Inches(10), Length.Inches(10), Length.Inches(1), BoxFace.Top, Angle.Zero)
