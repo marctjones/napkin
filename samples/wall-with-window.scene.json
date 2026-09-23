@@ -7,11 +7,11 @@
   "entities": [
     { "id": "30000000-0000-4000-8000-000000000001", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall",
-      "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 147456, "height": 5632, "depth": 768, "faceUp": "top", "rotation": 0,
+      "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 147456, "height": 5632, "depth": 98304, "faceUp": "top", "rotation": 0,
       "part": null, "cuts": [] },
     { "id": "30000000-0000-4000-8000-000000000002", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Opening",
-      "anchor": { "x": 55296, "y": 0, "z": 0 }, "width": 36864, "height": 5632, "depth": 768, "faceUp": "top", "rotation": 0,
+      "anchor": { "x": 55296, "y": 0, "z": 36864 }, "width": 36864, "height": 5632, "depth": 43008, "faceUp": "top", "rotation": 0,
       "part": null, "cuts": [] },
 
     { "id": "30000000-0000-4000-8000-000000000003", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",

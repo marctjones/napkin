@@ -23,26 +23,35 @@ wall, Y runs up the page across its thickness, the origin is the wall's south-we
 | Opening width | 3'-0" (36") | one window |
 | Opening depth | the full thickness of the wall | both long faces flush with the wall's |
 | Opening position | centred on the wall's length | the two reference dimensions either side are derived from that |
-| Wall height | **not stated** | see "Height and sill" below |
-| Opening height, sill height | **not stated** | see "Height and sill" below |
+| Wall height | 8'-0" (96") | Marc, 2026-09-23 |
+| Opening height | 3'-6" (42") | Marc, 2026-09-23 |
+| Sill height | 3'-0" (36") | Marc, 2026-09-23 |
 
-## Height and sill: not stated, and placeholders in the file
+## Height and sill
 
 Scene format version 4 requires every box to have a `depth` (for a wall, its height; for an
 opening, the opening's height) and an `anchor.z` (for an opening, its sill), and says which face
-is up (`docs/design/assembly-model.md` §1.2). **This design has never stated a wall height, an
-opening height or a sill**, and none is recoverable from anything earlier in the repository: the
-plan view never needed one, and every version of this fixture, its expectations and its design
-notes is silent on all three.
+is up (`docs/design/assembly-model.md` §1.2). **This design stated no wall height, no opening
+height and no sill from M1 through format version 4 landing** — the plan view never needed one —
+so the file briefly carried placeholder values (`anchor.z` 0, `depth` 768) exactly matching what
+the version-3 reader gave a box that was not a part.
 
-The file therefore carries, for both the wall and the opening, `faceUp` `top`, `anchor.z` 0 and
-`depth` 768 — exactly what the version-3 reader gave a box that was not a part (the rectangle
-tool's 3/4" default). **These are placeholders, not dimensions of this drawing.** They keep the
-file loading and change nothing it loaded as; nothing in the expectations depends on them beyond
-that they load unchanged, and nothing in napkin reads a wall's height yet (§6). Choosing a real
-wall height and a real opening height and sill is a design decision for this fixture's author,
-and when one is made it is written into the table above, into the scene, and into
-`wall-with-window.expected.json` with its derivation, like every other number here.
+Marc supplied the three real values on 2026-09-23, a design decision for this fixture with no
+primary source to cite (it is not a building-code value): a standard 8'-0" residential wall
+height, a 3'-0" sill, and a 3'-6" opening height, which puts the opening's top at 3'-0" + 3'-6" =
+6'-6" (78"), leaving 1'-6" (18") of wall above it for a header under the 8'-0" (96") wall — a
+plausible, if unchecked, header allowance; this fixture is a geometry and labelling test (M1), not
+a structural one, so nothing here asserts a header actually fits. The wall's `anchor.z` is 0 (it
+stands on the floor); its `depth` is its height, 96" = 98304 units. The opening's `anchor.z` is
+its sill, 36" = 36864 units; its `depth` is its height, 42" = 43008 units. Both boxes stay
+`faceUp: top` — the wall and the opening are drawn as drawn, not turned. These values and their
+derivations are in `wall-with-window.expected.json`.
+
+No relationship ties the wall's height to the opening's height or sill — unlike the opening's
+in-plan depth, which an `equalParam` ties to the wall's thickness — so raising the wall or moving
+the sill does not (yet) move the other; each is simply stated. That is consistent with
+shaped-parts §11.7's and the coffee-table fixture's precedent: a fixture's stated dimensions are
+not redesigned by a feature landing, only made expressible by one.
 
 ## What the scene file holds
 
