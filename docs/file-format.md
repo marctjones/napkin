@@ -303,6 +303,14 @@ says which of `length`, `width` and `thickness` the box's stored `width` is and 
 part's listed size cannot drift from the box the person is drawing, and a rotated part still lists
 what was typed.
 
+**In memory the third size is the box's `Depth`** (`docs/design/assembly-model.md` §1.2), and
+until that design's §10 step 5 gives the box its own `depth`, `faceUp` and `anchor.z`, this
+version reads a part's `outOfPlane` as its box's depth, reads a box that is not a part at the
+3/4-inch default depth (768 units) lying as drawn at the plan datum, and writes the depth back as
+`outOfPlane`. A drawing holding a box this version cannot say — turned onto a side or over, off
+the plan, or a plain box at another depth — is refused by the writer rather than saved as a
+different box. A typed depth is a `paramValue` on a `boxDepth` size.
+
 **`stock` is a name, not an id, and is not validated at load.** The reader checks that it is a
 string; it does *not* check that this build's materials library carries it — the same stance the
 manifest already takes on `adoptedCode`. A project drawn against a stock table a later build
@@ -369,6 +377,7 @@ are present.
 | | `boxEdge` | `box`: a box's id; `edge`: `south`, `east`, `north`, `west` |
 | a size | `boxWidth` | `box`: a box's id |
 | | `boxHeight` | `box`: a box's id |
+| | `boxDepth` | `box`: a box's id — the part's `outOfPlane` dimension, which is the box's depth |
 | | `segmentLength` | `segment`: a segment's id |
 
 Corners and edges are named in the box's own local frame, before rotation. An axis is `x` or `y`.
