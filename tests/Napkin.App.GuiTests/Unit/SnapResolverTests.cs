@@ -202,6 +202,14 @@ public class SnapResolverTests
             RelationshipId.New(),
             LocalFeatures.Edge(box, BoxEdge.South),
             LocalFeatures.Edge(box, BoxEdge.North))));
+
+        // A flush between a south face (Y) and an east face (X) shares no axis: it could never
+        // hold, and the refusal says so (docs/design/assembly-model.md §2.3).
+        Flush crossed = new(RelationshipId.New(), LocalFeatures.Edge(box, BoxEdge.South), LocalFeatures.Edge(box, BoxEdge.East));
+        Assert.False(editor.CanHold(crossed));
+        Rejected rejected = Assert.IsType<Rejected>(DirectUpdater.Instance.Apply(editor.Design.Sketch, new AddRelationship(crossed)));
+        Assert.Equal(RejectionReason.PlacesNotComparable, rejected.Reason);
+        Assert.Contains("could never hold", EditMessages.Refusal(rejected.Reason), StringComparison.Ordinal);
     }
 
     [Fact]
