@@ -42,7 +42,7 @@ public enum BoxGrip
 /// One axis-aligned side of a box's footprint, as a line the rest of the drawing can be measured
 /// against.
 /// </summary>
-/// <param name="Edge">Which side of the footprint, in its own frame before the spin; <see cref="BoxGeometry.LocalEdge"/> says which edge of the blank that is.</param>
+/// <param name="Edge">Which side of the footprint, in its own frame before the spin; <see cref="Footprint.FaceAt"/> says which face of the box that is.</param>
 /// <param name="NormalAxis">The axis the edge's position varies along — X for a vertical edge.</param>
 /// <param name="Coordinate">Where the edge sits along <paramref name="NormalAxis"/>.</param>
 /// <param name="Low">The lower end of the edge along the other axis.</param>
@@ -98,46 +98,6 @@ public static class BoxGeometry
             BoxGrip.West => Midpoint(footprint, BoxEdge.West),
             _ => throw new ArgumentOutOfRangeException(nameof(grip), grip, "Unknown grip."),
         };
-    }
-
-    /// <summary>
-    /// The edge of the blank a side of the footprint is, or <see langword="null"/> when the plan
-    /// sees that side as the blank's top or bottom — a box standing on a side. A resize handle
-    /// wants <see cref="Footprint.FaceAt"/> instead, which names that top or bottom too.
-    /// </summary>
-    public static BoxEdge? LocalEdge(Box box, BoxEdge planSide)
-    {
-        ArgumentNullException.ThrowIfNull(box);
-
-        return box.Footprint().FaceAt(planSide) switch
-        {
-            BoxFace.South => BoxEdge.South,
-            BoxFace.East => BoxEdge.East,
-            BoxFace.North => BoxEdge.North,
-            BoxFace.West => BoxEdge.West,
-            _ => null,
-        };
-    }
-
-    /// <summary>
-    /// The corner of the blank a corner of the footprint is — the one whose local upright is the
-    /// footprint's plan upright there — or <see langword="null"/> when that plan upright is not a
-    /// local one, which is the case for every corner of a box standing on a side.
-    /// </summary>
-    public static BoxCorner? LocalCorner(Box box, BoxCorner planCorner)
-    {
-        ArgumentNullException.ThrowIfNull(box);
-
-        BoxFeature upright = box.Footprint().UprightAt(planCorner);
-        foreach (BoxCorner corner in (BoxCorner[])[BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest])
-        {
-            if (BoxFeature.LocalUpright(corner) == upright)
-            {
-                return corner;
-            }
-        }
-
-        return null;
     }
 
     /// <summary>The footprint's size across a side: its plan width for east and west, its plan height for north and south.</summary>
