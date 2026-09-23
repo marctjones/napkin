@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewing="clr-namespace:Napkin.App.Viewing"
+        xmlns:theme="clr-namespace:Napkin.App.Theme"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="740"
         x:Class="Napkin.App.MainWindow"
         Title="napkin"
@@ -492,9 +493,7 @@
                             Click="OnDuplicateClicked"
                             AutomationProperties.Name="Duplicate"
                             ToolTip.Tip="Duplicate: copy the selected part and put the copy beside it (D)">
-                        <!-- Two overlapping parts: the copy in front of the original. -->
-                        <Path Classes="toolGlyph"
-                              Data="M1,1 L12,1 L12,6 L6,6 L6,12 L1,12 Z M6,6 L17,6 L17,17 L6,17 Z" />
+                        <theme:WorkbenchIcon Data="{StaticResource Icon.copy}" Width="18" Height="18" />
                     </Button>
                     <Button Name="PinToolButton"
                             Padding="5"
@@ -502,9 +501,7 @@
                             AutomationProperties.Name="Pin in place"
                             ToolTip.ShowOnDisabled="True"
                             ToolTip.Tip="Pin in place: hold the selection where it is (P)">
-                        <!-- A drawing pin: head, body, collar, and its point. -->
-                        <Path Classes="toolGlyph"
-                              Data="M5,1 L13,1 L13,3 L11.5,3 L11.5,8 L14.5,11 L3.5,11 L6.5,8 L6.5,3 L5,3 Z M9,11 L9,18" />
+                        <theme:WorkbenchIcon Data="{StaticResource Icon.pin}" Width="18" Height="18" />
                     </Button>
                     <Button Name="DeleteToolButton"
                             Padding="5"
@@ -512,9 +509,7 @@
                             AutomationProperties.Name="Delete"
                             ToolTip.ShowOnDisabled="True"
                             ToolTip.Tip="Delete: remove the selection, with its relationships (Delete)">
-                        <!-- A waste bin: lid with its handle, and a tapered body with two ribs. -->
-                        <Path Classes="toolGlyph"
-                              Data="M7,1 L11,1 L11,3 L7,3 Z M2,3 L16,3 L16,5 L2,5 Z M3.5,5 L14.5,5 L13.5,17 L4.5,17 Z M7.5,7.5 L7.5,14.5 M10.5,7.5 L10.5,14.5" />
+                        <theme:WorkbenchIcon Data="{StaticResource Icon.trash}" Width="18" Height="18" />
                     </Button>
 
                     <!-- The 3D view's three turn commands (assembly-model §8.3). Shown only there:
