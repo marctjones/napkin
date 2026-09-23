@@ -338,6 +338,138 @@ public class AssemblyEditingWorkflows
         });
     });
 
+    [GuiWorkflow("GUI-ASSEM-09")]
+    public void A_leg_stretched_by_its_top_handle_catches_the_underside_and_says_so_as_it_goes() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+        Box top = BoxNamed(window, "Top");
+        Box leg = BoxNamed(window, "Leg, north-east");
+        Length underside = top.Anchor.Z;
+        app.Click(OnPlan(window, leg.Center.XY));
+        app.Press(Key.V);
+
+        // Shrink it first, by its top face's handle, three grid steps down.
+        double perInch = -window.Model.Camera.ProjectDirection(Vector3d.UnitZ).Y;
+        double step = window.Model.GridStepInches;
+        ModelHandle handle = window.Model.FaceHandle(BoxFace.Top)!;
+        app.Drag(InModel(window, handle.At), InModel(window, handle.At + new Vector(0, perInch * step * 3)));
+
+        Box shrunk = window.CurrentDesign!.Sketch.Find<Box>(leg.Id)!;
+        app.Expect("the leg is shorter and nothing holds its top", () =>
+        {
+            Assert.True(shrunk.Depth < leg.Depth, "the leg did not get shorter.");
+            Assert.DoesNotContain(window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<Flush>(),
+                flush => flush.B == new FeatureRef(leg.Id, BoxFeature.Face(BoxFace.Top)));
+        });
+
+        // Stretch it back up, stopping short of the release to read the label by the pointer.
+        ModelHandle again = window.Model.FaceHandle(BoxFace.Top)!;
+        Point near = again.At - new Vector(0, perInch * ((underside - (shrunk.Anchor.Z + shrunk.Depth)).ToInches() - 0.2));
+        app.PressAt(InModel(window, again.At));
+        app.DragTo(InModel(window, again.At - new Vector(0, perInch)));
+        app.DragTo(InModel(window, near));
+
+        app.Expect("mid-drag, the readout gives the leg's length and the underside it caught", () =>
+        {
+            string readout = window.Model.LiveReadout ?? string.Empty;
+            Assert.StartsWith("Length 1'-4 1/4\"", readout, StringComparison.Ordinal);
+            Assert.Contains("flush with Top's bottom face", readout, StringComparison.Ordinal);
+        });
+
+        app.SaveFrame("stretching-to-the-underside");
+        app.ReleaseAt(InModel(window, near));
+
+        app.Expect("the leg's top is exactly at the underside, and a flush says so", () =>
+        {
+            Box stretched = window.CurrentDesign!.Sketch.Find<Box>(leg.Id)!;
+            Assert.Equal(underside, stretched.Anchor.Z + stretched.Depth);
+            Assert.Contains(
+                window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<Flush>(),
+                flush => flush.A == new FeatureRef(top.Id, BoxFeature.Face(BoxFace.Bottom))
+                         && flush.B == new FeatureRef(leg.Id, BoxFeature.Face(BoxFace.Top)));
+            Assert.Null(window.Model.LiveReadout);
+        });
+    });
+
+    [GuiWorkflow("GUI-ASSEM-10")]
+    public void Pressing_on_a_part_and_dragging_moves_it_in_both_views_without_clicking_first() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+
+        // The fixture's legs are held against the pinned top, so the part to drag is an unrelated
+        // copy of one: made, then let go of.
+        app.Click(OnPlan(window, BoxNamed(window, "Leg, south-west").Center.XY));
+        app.Press(Key.D);
+        Box leg = window.CurrentDesign!.Sketch.Find<Box>(window.Editor.OnlySelected!.Value)!;
+        app.Press(Key.Escape);
+
+        // In the plan: nothing selected, press on the copy and drag it two inches north.
+        ViewTransform planView = window.Canvas.View;
+        Point2 from = leg.Footprint().Center;
+        app.Drag(OnPlan(window, from), OnPlan(window, from + new Vector2(Length.Zero, Length.Inches(1))), OnPlan(window, from + new Vector2(Length.Zero, Length.Inches(2))));
+
+        app.Expect("the copy moved and is selected, and the plan's view did not move", () =>
+        {
+            Box moved = window.CurrentDesign!.Sketch.Find<Box>(leg.Id)!;
+            Assert.NotEqual(leg.Anchor.Y, moved.Anchor.Y);
+            Assert.Equal(leg.Id, window.Editor.OnlySelected);
+            Assert.Equal(planView, window.Canvas.View);
+        });
+
+        // In the 3D view: nothing selected, press low on the south apron's face and drag it along.
+        app.Press(Key.Escape);
+        app.Press(Key.V);
+        Box apron = BoxNamed(window, "Apron, long, south");
+        Camera camera = window.Model.Camera;
+        Point3 low = SpaceSnapResolver.Extent(apron).Low;
+        Vector3d onFace = new((low.X + apron.Width.Divide(2, Rounding.HalfToEven)).ToInches(), low.Y.ToInches(), low.Z.ToInches() + 0.75);
+        Point grab = InModel(window, camera.Project(onFace));
+
+        // Down: nothing holds the apron in Z (assembly-model §11 decision 9).
+        Vector down = -camera.ProjectDirection(Vector3d.UnitZ) * window.Model.GridStepInches;
+        app.Drag(grab, grab + down, grab + (down * 2));
+
+        app.Expect("the apron slid in the plane of the face pressed, is selected, and the camera did not move", () =>
+        {
+            Box slid = window.CurrentDesign!.Sketch.Find<Box>(apron.Id)!;
+            Assert.True(slid.Anchor.Z < apron.Anchor.Z, "the apron did not go down.");
+            Assert.Equal(apron.Anchor.Y, slid.Anchor.Y);
+            Assert.Equal(apron.Id, window.Editor.OnlySelected);
+            // The message bar may have changed the view's height; where it looks from has not changed.
+            Assert.Equal(camera with { Viewport = window.Model.Camera.Viewport }, window.Model.Camera);
+        });
+
+        // The top is pinned: a drag on it moves nothing, and says why, with the way out.
+        Box top = BoxNamed(window, "Top");
+        Point onTop = InModel(window, window.Model.Camera.Project(new Vector3d(24, 12, 17)));
+        app.Drag(onTop, onTop + new Vector(20, 0), onTop + new Vector(40, 0));
+
+        int relationships = window.CurrentDesign!.Sketch.Relationships.Count;
+        app.Expect("the pinned top did not move, stated nothing, and says it is pinned, with the way out", () =>
+        {
+            Assert.Equal(top, window.CurrentDesign!.Sketch.Find<Box>(top.Id));
+            Assert.Equal(relationships, window.CurrentDesign!.Sketch.Relationships.Count);
+            Assert.Equal("Moved Top did not happen: Top is pinned where it is.", window.MessageOnScreen);
+            Assert.Equal("Unpin it", window.OfferText);
+        });
+
+        app.SaveFrame("pinned-top-refused");
+        app.Click(CentreOf(window, window.OfferButton));
+
+        app.Expect("taking the offer unpins the top, and nothing else", () =>
+        {
+            Assert.DoesNotContain(
+                window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<Anchored>(),
+                pin => pin.Entity == top.Id);
+            Assert.Equal(relationships - 1, window.CurrentDesign!.Sketch.Relationships.Count);
+            Assert.Equal(top, window.CurrentDesign!.Sketch.Find<Box>(top.Id));
+        });
+    });
+
     /// <summary>The help text the plan canvas's automation element for a part carries.</summary>
     static string? PartHelpText(MainWindow window, EntityId part) =>
         Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(window.Canvas)
