@@ -14,6 +14,17 @@ namespace Napkin.App.Editing;
 /// among a continuum to land on the same four stops.
 /// </para>
 /// <para>
+/// <strong>In place</strong> (#75). <see cref="SetOrientation"/> keeps the anchor — the local
+/// south-west-bottom corner — where it is, so on its own a turn swings the part about that corner,
+/// and three of the six face-up results put the part below its anchor: a leg standing on the floor
+/// would go through it. So the command sets the part back down where it was: the low corner of its
+/// extent — its least X, Y and Z — is the same after the turn as before, and the part still sits on
+/// whatever it sat on. That is a <see cref="SetPosition"/> after the turn, in one
+/// <see cref="Batch"/>, and exact: an extent is the anchor plus or minus stored sizes. A part pinned
+/// where it is cannot be moved, so it turns about its anchor as the kernel's request does, and the
+/// message says so.
+/// </para>
+/// <para>
 /// A part held by a place in its own frame — a <see cref="Flush"/>, a <see cref="Coincident"/>, an
 /// <see cref="AxisDistance"/>, a <see cref="Centered"/> — is refused a turn by the updater
 /// (<see cref="RejectionReason.OrientationWithRelationships"/>, &#xA7;2.4), and the message says to
@@ -48,12 +59,39 @@ public static class SelectionTurn
         }
 
         Orientation turned = box.Orientation.TurnedAbout(axis, quarterTurns);
+        bool pinned = IsPinned(editor.Sketch, box.Id);
         string what = $"Turned {editor.NameOf(box.Id)} a quarter turn about {axis}"
-                      + (quarterTurns < 0 ? ", the other way" : string.Empty);
+                      + (quarterTurns < 0 ? ", the other way" : string.Empty)
+                      + (pinned ? ", about the corner it is pinned by" : string.Empty);
 
         editor.BeginGesture(what);
-        UpdateResult result = editor.Apply(SetOrientation.To(box.Id, turned), what);
+        UpdateResult result = editor.Apply(RequestFor(box, turned, pinned), what);
         editor.EndGesture();
         return result;
     }
+
+    /// <summary>
+    /// What turning a box to an orientation asks of the updater: the turn, then — unless the box is
+    /// pinned — the move that puts the low corner of its extent back where it was.
+    /// </summary>
+    public static Request RequestFor(Box box, Orientation turned, bool pinned)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        SetOrientation turn = SetOrientation.To(box.Id, turned);
+        if (pinned)
+        {
+            return turn;
+        }
+
+        Point3 lowBefore = SpaceSnapResolver.Extent(box).Low;
+        Point3 lowAfter = SpaceSnapResolver.Extent(box with { FaceUp = turned.FaceUp, Rotation = turned.Rotation }).Low;
+        Vector3 back = lowBefore - lowAfter;
+        return back == Vector3.Zero
+            ? turn
+            : Batch.Of(turn, new SetPosition(box.Id, box.Anchor + back));
+    }
+
+    static bool IsPinned(Sketch sketch, EntityId id) =>
+        sketch.RelationshipsInOrder.OfType<Anchored>().Any(anchored => anchored.Entity == id);
 }

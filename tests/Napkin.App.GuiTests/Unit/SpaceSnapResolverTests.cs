@@ -213,7 +213,7 @@ public class SpaceSnapResolverTests
     }
 
     [Fact]
-    public void Turning_the_selected_part_is_one_set_orientation_and_one_undo()
+    public void Turning_the_selected_part_is_one_undo_and_turning_back_restores_it()
     {
         Box block = Block(0, 0, 0, 4, 2, 1);
         DesignEditor editor = new();
@@ -225,10 +225,13 @@ public class SpaceSnapResolverTests
         Assert.IsType<Solved>(result);
         Box turned = editor.Sketch.Find<Box>(block.Id)!;
         Assert.Equal(new Orientation(BoxFace.North, Angle.Zero), turned.Orientation);
-        Assert.Equal(block.Anchor, turned.Anchor);
 
+        // In place (#75): the low corner of the extent stays, so the anchor is what moves.
+        Assert.Equal(SpaceSnapResolver.Extent(block).Low, SpaceSnapResolver.Extent(turned).Low);
+
+        // Turned back, it is the block it was, anchor and all.
         SelectionTurn.Turn(editor, Axis.X, -1);
-        Assert.Equal(Orientation.AsDrawn, editor.Sketch.Find<Box>(block.Id)!.Orientation);
+        Assert.Equal(block, editor.Sketch.Find<Box>(block.Id));
 
         Assert.True(editor.Undo());
         Assert.Equal(BoxFace.North, editor.Sketch.Find<Box>(block.Id)!.FaceUp);
