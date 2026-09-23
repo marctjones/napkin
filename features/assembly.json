@@ -18,6 +18,15 @@
       "milestone": "backlog",
       "issue": null,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-03",
+      "area": "ui",
+      "title": "The Part panel follows an edit made in the 3D view",
+      "acceptance": "Resize a coffee-table apron's depth by its top face handle in the 3D view; the Part panel shows the new depth without reselecting, renaming it and pressing Apply keeps that depth and states no typed depth, and two undos bring back both the original name and depth in the panel.",
+      "milestone": "backlog",
+      "issue": 69,
+      "kind": "workflow"
     }
   ]
 }
