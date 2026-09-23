@@ -202,10 +202,10 @@ public sealed record Box(
     /// </summary>
     /// <remarks>
     /// For a <see cref="BoxFace.Top"/> box this is the plan corner it always was — the local
-    /// upright at that corner stands vertical and projects to this point. It is what a
-    /// <see cref="CornerRef"/> means until docs/design/assembly-model.md &#xA7;10 step 3 replaces
-    /// corner references with features; the plan canvas reads a box's corners through
-    /// <see cref="Footprint"/> instead, because a tipped box's plan south-west is not its blank's.
+    /// upright at that corner stands vertical and projects to this point — where a
+    /// <see cref="FeatureRef"/> to <see cref="BoxFeature.LocalUpright"/> is, on X and Y. The plan
+    /// canvas reads a box's corners through <see cref="Footprint"/> instead, because a tipped box's
+    /// plan south-west is not its blank's.
     /// </remarks>
     public Point2 Corner(BoxCorner which) => Vertex(which, BoxLevel.Bottom).XY;
 

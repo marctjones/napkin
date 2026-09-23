@@ -190,9 +190,9 @@ public abstract record AssignmentTarget
 public sealed record ParamTarget(ParamRef Param) : AssignmentTarget;
 
 /// <summary>One axis of a point.</summary>
-/// <param name="Point">Which point.</param>
+/// <param name="Point">Which place.</param>
 /// <param name="Axis">Which axis of it.</param>
-public sealed record PointAxisTarget(PointRef Point, Axis Axis) : AssignmentTarget;
+public sealed record PointAxisTarget(PlaceRef Point, Axis Axis) : AssignmentTarget;
 
 /// <summary>How a value was arrived at: the chain of relationships back to the request.</summary>
 /// <param name="Target">What was assigned.</param>
@@ -266,4 +266,12 @@ public enum RejectionReason
     /// docs/design/geometry-model.md &#xA7;10.
     /// </summary>
     UnsupportedRequest,
+
+    /// <summary>
+    /// The relationship pairs places that do not fix the axes it needs — a <see cref="Flush"/>
+    /// between a face pointing up and one pointing north, a <see cref="Coincident"/> between a face
+    /// and a vertex — so it could never hold (<c>docs/design/assembly-model.md</c> &#xA7;2.3). The
+    /// <see cref="Rejected.Detail"/> names both places and the axes each fixes.
+    /// </summary>
+    PlacesNotComparable,
 }

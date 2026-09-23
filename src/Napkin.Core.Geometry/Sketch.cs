@@ -41,6 +41,26 @@ public enum ValidationErrorKind
     /// A box's cuts leave nothing of the blank — shaped-parts invariant 9.
     /// </summary>
     NonPositiveArea,
+
+    /// <summary>
+    /// A relationship pairs places that do not fix the axes it needs — a <see cref="Flush"/> between
+    /// a face pointing up and one pointing north, a <see cref="Coincident"/> between a face and a
+    /// vertex (<c>docs/design/assembly-model.md</c> &#xA7;2.3).
+    /// </summary>
+    PlacesNotComparable,
+
+    /// <summary>
+    /// A <see cref="FeatureRef"/> names no faces — <c>default(BoxFeature)</c> — which is not one,
+    /// two or three mutually adjacent faces (<c>docs/design/assembly-model.md</c> invariant 12).
+    /// </summary>
+    NotAFeature,
+
+    /// <summary>
+    /// A dimension measures something that does not lie in the plan once the owning box's
+    /// orientation is applied — a box's depth on a box lying as drawn, a width standing vertical, a
+    /// span along Z (<c>docs/design/assembly-model.md</c> invariant 13, &#xA7;7.3).
+    /// </summary>
+    MeasurandLeavesThePlan,
 }
 
 /// <summary>One thing wrong with a sketch.</summary>
@@ -139,45 +159,174 @@ public sealed record Sketch(
     public Relationship? Find(RelationshipId id)
         => Relationships.TryGetValue(id, out Relationship? relationship) ? relationship : null;
 
-    /// <summary>Where a referenced point is.</summary>
-    /// <exception cref="InvalidOperationException">The reference dangles or names the wrong kind of entity.</exception>
-    public Point2 PointOf(PointRef reference)
+    /// <summary>
+    /// What a reference fixes: a coordinate on each world axis it speaks about
+    /// (<c>docs/design/assembly-model.md</c> &#xA7;2.2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A <see cref="FeatureRef"/> is read through the box's orientation: each face of the feature is
+    /// perpendicular to the world axis <see cref="Orientation.Normal"/> gives it, and its coordinate
+    /// there is the anchor's plus, for a face at the far end of its local axis
+    /// (<see cref="BoxFace.East"/>, <see cref="BoxFace.North"/>, <see cref="BoxFace.Top"/>), the size
+    /// along that axis with the sign the orientation gives (&#xA7;2.1). An anchor component plus or
+    /// minus a stored size: exact for all 24 orientations. The feature is the blank's, so a cut never
+    /// moves it (&#xA7;2.5).
+    /// </para>
+    /// <para>
+    /// A box whose rotation is not a quarter turn — reachable only from a solver-written file — has
+    /// side faces that are not axis-aligned. Its top and bottom as tipped still fix Z; an edge
+    /// standing vertical still fixes X and Y, at a point that rounds as <see cref="Box.Vertex"/>
+    /// does; one side face alone fixes nothing, because it is a slanted plane. That is the reading
+    /// the checker's tolerance class needs, and the direct updater refuses such a sketch before it
+    /// would ask.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">The reference dangles, names the wrong kind of entity, or names no feature.</exception>
+    public Place PlaceOf(PlaceRef reference)
     {
         ArgumentNullException.ThrowIfNull(reference);
 
-        return reference switch
+        switch (reference)
         {
-            NodeRef node => Require<Node>(node.Node, reference).Position,
-            CornerRef corner => Require<Box>(corner.Box, reference).Corner(corner.Corner),
-            CenterRef centre => Require<Box>(centre.Box, reference).Center.XY,
-            _ => throw new InvalidOperationException($"Unknown point reference {reference}."),
-        };
+            case NodeRef nodeRef:
+            {
+                Point2 position = Require<Node>(nodeRef.Node, reference).Position;
+                return new Place(position.X, position.Y, null);
+            }
+
+            case SegmentRef segmentRef:
+            {
+                (Point2 from, Point2 to) = SegmentEnds(segmentRef, reference);
+                bool sameX = from.X == to.X;
+                bool sameY = from.Y == to.Y;
+                return (sameX, sameY) switch
+                {
+                    (true, false) => Place.On(Axis.X, from.X),
+                    (false, true) => Place.On(Axis.Y, from.Y),
+
+                    // A diagonal is not axis-aligned, and a segment with no length has no direction.
+                    _ => default,
+                };
+            }
+
+            case CenterRef centre:
+            {
+                Point3 at = Require<Box>(centre.Box, reference).Center;
+                return new Place(at.X, at.Y, at.Z);
+            }
+
+            case FeatureRef featureRef:
+                return FeaturePlace(Require<Box>(featureRef.Box, reference), featureRef.Feature, reference);
+
+            default:
+                throw new InvalidOperationException($"Unknown place reference {reference}.");
+        }
     }
 
-    /// <summary>The two ends of a referenced edge.</summary>
-    /// <exception cref="InvalidOperationException">The reference dangles or names the wrong kind of entity.</exception>
-    public (Point2 From, Point2 To) EdgeOf(EdgeRef reference)
+    /// <summary>
+    /// Where a place is in the plan, when it fixes both X and Y — a node, a centre, a vertex, an edge
+    /// standing vertical — or <see langword="null"/> when it does not. What the solver-reserved kinds
+    /// that measure between plan points (<see cref="Distance"/>, <see cref="Symmetric"/>) read.
+    /// </summary>
+    internal Point2? PlanPointOf(PlaceRef reference)
+        => PlaceOf(reference) is { X: { } x, Y: { } y } ? new Point2(x, y) : null;
+
+    /// <summary>
+    /// The line a place draws in the plan, as two points on it — a segment's two nodes, or the two
+    /// footprint corners a side face is seen between from above — or <see langword="null"/> when it
+    /// draws none. What the checker's tolerance class measures a slanted <see cref="Flush"/> and the
+    /// solver-reserved angular kinds against, where a <see cref="Place"/> has nothing to say.
+    /// </summary>
+    internal (Point2 From, Point2 To)? PlanLineOf(PlaceRef reference)
     {
         ArgumentNullException.ThrowIfNull(reference);
 
         switch (reference)
         {
             case SegmentRef segmentRef:
-            {
-                Segment segment = Require<Segment>(segmentRef.Segment, reference);
-                return (Require<Node>(segment.Start, reference).Position, Require<Node>(segment.End, reference).Position);
-            }
+                return SegmentEnds(segmentRef, reference);
 
-            case BoxEdgeRef boxEdge:
+            case FeatureRef featureRef when featureRef.Feature.Faces is [var face]:
             {
-                Box box = Require<Box>(boxEdge.Box, reference);
-                (BoxCorner from, BoxCorner to) = Box.Ends(boxEdge.Edge);
-                return (box.Corner(from), box.Corner(to));
+                Footprint footprint = Require<Box>(featureRef.Box, reference).Footprint();
+                if (footprint.SideOf(face) is not { } side)
+                {
+                    return null;
+                }
+
+                (BoxCorner from, BoxCorner to) = Box.Ends(side);
+                return (footprint.Corner(from), footprint.Corner(to));
             }
 
             default:
-                throw new InvalidOperationException($"Unknown edge reference {reference}.");
+                return null;
         }
+    }
+
+    private (Point2 From, Point2 To) SegmentEnds(SegmentRef segmentRef, object reference)
+    {
+        Segment segment = Require<Segment>(segmentRef.Segment, reference);
+        return (Require<Node>(segment.Start, reference).Position, Require<Node>(segment.End, reference).Position);
+    }
+
+    private static Place FeaturePlace(Box box, BoxFeature feature, PlaceRef reference)
+    {
+        ImmutableArray<BoxFace> faces = feature.Faces;
+        if (faces.IsEmpty)
+        {
+            throw new InvalidOperationException(
+                $"{reference} names no faces, which is not a feature (assembly-model invariant 12). "
+                + "Validate the sketch before evaluating its geometry.");
+        }
+
+        // One local point on every face of the feature: at the far end of a local axis for East,
+        // North and Top, at the near end otherwise. The local axes the feature does not fix stay at
+        // zero, and a signed permutation never carries them onto an axis it does.
+        Vector3 local = Vector3.Zero;
+        foreach (BoxFace face in faces)
+        {
+            local = face switch
+            {
+                BoxFace.East => local.WithComponent(Axis.X, box.Width),
+                BoxFace.North => local.WithComponent(Axis.Y, box.Height),
+                BoxFace.Top => local.WithComponent(Axis.Z, box.Depth),
+                _ => local,
+            };
+        }
+
+        Point3 world = box.World(local);
+        Place place = default;
+
+        if (box.Orientation.IsExact)
+        {
+            foreach (BoxFace face in faces)
+            {
+                Axis axis = box.Orientation.Normal(face).Axis;
+                place = place.With(axis, world.Component(axis));
+            }
+
+            return place;
+        }
+
+        // Off the quarter turns: the tip is still exact and the spin is about Z, so a face whose
+        // tipped normal is vertical still fixes Z, and two side faces together are an edge standing
+        // vertical, which fixes X and Y at a rounded point. One side face alone is a slanted plane.
+        Orientation tip = new(box.FaceUp, Angle.Zero);
+        int sides = 0;
+        foreach (BoxFace face in faces)
+        {
+            if (tip.Normal(face).Axis == Axis.Z)
+            {
+                place = place.With(Axis.Z, world.Z);
+            }
+            else
+            {
+                sides++;
+            }
+        }
+
+        return sides == 2 ? place.With(Axis.X, world.X).With(Axis.Y, world.Y) : place;
     }
 
     /// <summary>The current value of a referenced size.</summary>
@@ -202,7 +351,7 @@ public sealed record Sketch(
 
             case SegmentLengthRef length:
             {
-                (Point2 from, Point2 to) = EdgeOf(new SegmentRef(length.Segment));
+                (Point2 from, Point2 to) = SegmentEnds(new SegmentRef(length.Segment), reference);
                 return (to - from).Magnitude();
             }
 
@@ -213,9 +362,11 @@ public sealed record Sketch(
 
     /// <summary>
     /// Checks referential integrity, positive sizes and duplicate relationships — invariants 1, 2
-    /// and 4 of design &#xA7;2.5 — and a box's cuts against invariants 5 to 9 of
-    /// <c>docs/design/shaped-parts-model.md</c> &#xA7;1.6. Invariant 3, that every relationship
-    /// holds, is <see cref="RelationshipChecker.Check(Sketch)"/>.
+    /// and 4 of design &#xA7;2.5 — a box's cuts against invariants 5 to 9 of
+    /// <c>docs/design/shaped-parts-model.md</c> &#xA7;1.6, and invariants 10, 12 and 13 of
+    /// <c>docs/design/assembly-model.md</c> &#xA7;1.6 with the legality of each relationship's
+    /// places (&#xA7;2.3, <see cref="PlaceRules"/>). Invariant 3, that every relationship holds, is
+    /// <see cref="RelationshipChecker.Check(Sketch)"/>.
     /// </summary>
     public ValidationResult Validate()
     {
@@ -262,9 +413,16 @@ public sealed record Sketch(
                     break;
 
                 case Dimension dimension:
-                    foreach (ValidationError error in MeasurandErrors(dimension))
+                    List<ValidationError> measurandErrors = [.. MeasurandErrors(dimension)];
+                    foreach (ValidationError error in measurandErrors)
                     {
                         errors.Add(error);
+                    }
+
+                    // Invariant 13, judged only on a measurand that resolves.
+                    if (measurandErrors.Count == 0 && PlaceRules.MeasurandRefusal(this, dimension) is { } leaves)
+                    {
+                        errors.Add(leaves);
                     }
 
                     if (dimension.Drives is { } driving && !Relationships.ContainsKey(driving))
@@ -281,9 +439,17 @@ public sealed record Sketch(
         List<Relationship> inOrder = [.. RelationshipsInOrder];
         foreach (Relationship relationship in inOrder)
         {
-            foreach (ValidationError error in ReferenceErrors(relationship))
+            List<ValidationError> referenceErrors = [.. ReferenceErrors(relationship)];
+            foreach (ValidationError error in referenceErrors)
             {
                 errors.Add(error);
+            }
+
+            // §2.3's legality. A dangling reference has already been reported and has no place to
+            // compare; the rule itself skips any place it cannot read.
+            if (referenceErrors.Count == 0 && PlaceRules.Refusal(this, relationship) is { } refusal)
+            {
+                errors.Add(refusal);
             }
         }
 
@@ -374,7 +540,7 @@ public sealed record Sketch(
 
     /// <summary>
     /// Every way a relationship's references can fail to resolve: an id the sketch does not have,
-    /// or an id that names the wrong kind of entity — a <see cref="CornerRef"/> on a node, say.
+    /// or an id that names the wrong kind of entity — a <see cref="FeatureRef"/> on a node, say.
     /// Both are referential integrity, and #6's loader needs both, because
     /// <see cref="RelationshipChecker"/> runs straight after <see cref="Validate"/> and would
     /// throw rather than report.
@@ -412,20 +578,53 @@ public sealed record Sketch(
         };
     }
 
-    private IEnumerable<ValidationError> ReferenceErrors(PointRef reference, string what) => reference switch
+    private IEnumerable<ValidationError> ReferenceErrors(PlaceRef reference, string what) => reference switch
     {
         NodeRef node => KindErrors(node.Node, what, entity => entity is Node, nameof(Node)),
-        CornerRef corner => KindErrors(corner.Box, what, entity => entity is Box, nameof(Box)),
+        SegmentRef segmentRef => KindErrors(segmentRef.Segment, what, entity => entity is Segment, nameof(Segment)),
         CenterRef centre => KindErrors(centre.Box, what, entity => entity is Box, nameof(Box)),
+        FeatureRef feature => KindErrors(feature.Box, what, entity => entity is Box, nameof(Box))
+            .Concat(FeatureErrors(feature, what)),
         _ => [],
     };
 
-    private IEnumerable<ValidationError> ReferenceErrors(EdgeRef reference, string what) => reference switch
+    /// <summary>
+    /// What a reference fixes, or <see langword="null"/> when it cannot be read — it dangles, names
+    /// the wrong kind of entity, or names no feature. For the legality rules, which run inside
+    /// <see cref="Validate"/> and must report rather than throw.
+    /// </summary>
+    internal Place? TryPlaceOf(PlaceRef reference)
     {
-        BoxEdgeRef boxEdge => KindErrors(boxEdge.Box, what, entity => entity is Box, nameof(Box)),
-        SegmentRef segmentRef => KindErrors(segmentRef.Segment, what, entity => entity is Segment, nameof(Segment)),
-        _ => [],
-    };
+        bool resolves = reference switch
+        {
+            NodeRef node => Find<Node>(node.Node) is not null,
+            SegmentRef segmentRef => Find<Segment>(segmentRef.Segment) is { } segment
+                                     && Find<Node>(segment.Start) is not null
+                                     && Find<Node>(segment.End) is not null,
+            CenterRef centre => Find<Box>(centre.Box) is not null,
+            FeatureRef feature => Find<Box>(feature.Box) is not null && !feature.Feature.Faces.IsEmpty,
+            _ => false,
+        };
+
+        return resolves ? PlaceOf(reference) : null;
+    }
+
+    /// <summary>
+    /// Invariant 12 (<c>docs/design/assembly-model.md</c> &#xA7;1.6): a feature names one, two or
+    /// three mutually adjacent faces, in <see cref="BoxFace"/> order. <see cref="BoxFeature"/>'s
+    /// factories cannot build anything else, and its one field is the set of faces, which it lists
+    /// in that order, so the only feature that can reach a sketch and break the invariant is
+    /// <c>default(BoxFeature)</c>, which names none.
+    /// </summary>
+    private static IEnumerable<ValidationError> FeatureErrors(FeatureRef reference, string what)
+    {
+        if (reference.Feature.Faces.IsEmpty)
+        {
+            yield return new ValidationError(
+                ValidationErrorKind.NotAFeature,
+                $"{what} a feature of box {reference.Box} that names no faces; a feature is one face, two adjacent faces or three.");
+        }
+    }
 
     private IEnumerable<ValidationError> ReferenceErrors(ParamRef reference, string what) => reference switch
     {
