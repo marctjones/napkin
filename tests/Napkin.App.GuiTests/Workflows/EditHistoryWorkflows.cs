@@ -194,7 +194,9 @@ public class EditHistoryWorkflows
         ToggleButton lumber = window.Toolbox.CategoryButtons[StockCategory.DimensionalLumber];
         app.Click(CentreOf(window, lumber));
         app.Click(CentreOf(window, window.Toolbox.ButtonFor("2x4")!));
-        app.Drag(At(window, Point2.Inches(-12, -6)), At(window, Point2.Inches(0, -6)), At(window, Point2.Inches(12, -6)));
+        // Below the drawer, which stays open over the upper left of the sheet: Plex rows are a little
+        // taller than the default font's, and the drawer now reaches the point this drag used to start at.
+        app.Drag(At(window, Point2.Inches(-12, -14)), At(window, Point2.Inches(0, -14)), At(window, Point2.Inches(12, -14)));
         app.Click(CentreOf(window, lumber));
 
         Box board = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>());
