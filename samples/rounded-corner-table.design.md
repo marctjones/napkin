@@ -34,12 +34,12 @@ below is a **finished** dimension of this design: it is stated here, not looked 
 |---|---|---|
 | Top, in plan | 48" × 24" | 4'-0" by 2'-0" — the blank, before the corners are rounded |
 | Top, corner radius | 1" | at all four corners |
-| Top, thickness | 3/4" | **Stated, not in the scene** — the plan view has no third dimension. |
+| Top, thickness | 3/4" | Not in the plan view, which has no third dimension; in the scene as the top's `depth`. |
 | Leg, in plan | 2 1/2" × 2 1/2" | four of them, identical |
-| Leg, length | 16 1/4" | **Stated, not in the scene**, for the same reason. |
+| Leg, length | 16 1/4" | Not in the plan view; in the scene as each leg's `depth`. |
 | Leg inset from each edge of the top | 1 1/2" | the top overhangs the leg frame all round |
 | Apron thickness, in plan | 3/4" | |
-| Apron width (the vertical face) | 3 1/2" | **Stated, not in the scene**, for the same reason. |
+| Apron width (the vertical face) | 3 1/2" | Not in the plan view; in the scene as each apron's `depth`. |
 | Apron faces | flush with the outer faces of the legs | |
 | Long aprons (south, north) | run between the legs along X | length derived in the expectations |
 | Short aprons (west, east) | run between the legs along Y | length derived in the expectations |
@@ -63,5 +63,20 @@ placed at the positions the expectations file derives; this sample does not repe
 table's full web of relationships, because what it is here to demonstrate is the cuts.
 
 Thickness, leg length and apron face width are in the table above and in
-`rounded-corner-table.expected.json` under `statedNotInScene`, so that nothing tests napkin for a
-number the scene does not carry.
+`rounded-corner-table.expected.json` under `statedNotInScene` — the plan view cannot show them —
+and each is also the `depth` of the boxes it belongs to (scene format version 4).
+
+## Where each part is in space
+
+The coffee table's frame, so the coffee table's heights, worked the same way by hand from the
+stated dimensions (units of 1/1024"; every part `faceUp` `top`, every value a multiple of 256):
+
+| Part | `depth` | `anchor.z` | Derivation |
+|---|---|---|---|
+| Legs (all four) | 16640 | 0 | On the floor; depth is the stated length, 16 1/4" × 1024 = 16640, so their tops are at 16640. |
+| Top | 768 | 16640 | Its underside on the legs' tops at 16640; depth is the stated thickness, 3/4" × 1024 = 768. |
+| Aprons (all four) | 3584 | 13056 | Depth is the stated 3 1/2" face, × 1024 = 3584; upper edge flush with the top's underside at 16640, so z = 16640 − 3584 = 13056. |
+
+No relationship holds any of these heights — this sample's three relationships are the top's
+anchor and its two plan sizes — and the rounded corners are cut through the top's full depth, in
+its own frame, so neither its outline nor its cut-list row changes.
