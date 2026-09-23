@@ -129,6 +129,7 @@ public sealed class CanvasView : Control
     Point2 _gestureWorldAtPress;
     Box? _gestureBoxAtPress;
     UpdateResult? _gestureRefusal;
+    EntityId[] _moving = [];
     EntityId? _pressedOnPart;
     Point2 _pressedOnPartAt;
     SnapPlan? _snap;
@@ -905,6 +906,20 @@ public sealed class CanvasView : Control
                 InvalidateVisual();
                 return true;
 
+            case Key.M:
+                if (editor.Selection.Count == 0)
+                {
+                    return false;
+                }
+
+                if (SelectionCommands.Mirror(editor, modifiers.HasFlag(KeyModifiers.Shift) ? Axis.Y : Axis.X) is { } mirrored)
+                {
+                    BringIntoView(mirrored);
+                }
+
+                InvalidateVisual();
+                return true;
+
             case Key.C:
                 if (SelectionCommands.PartToShape(editor) is { } part)
                 {
@@ -992,9 +1007,15 @@ public sealed class CanvasView : Control
         _gestureRefusal = null;
         _snap = null;
 
+        // A drag on one of several selected parts moves them all (#87); the one grabbed is the one
+        // that snaps, and the others go with it.
+        _moving = _gesture == Gesture.Move && editor.Selection.Contains(box.Id) && editor.Selection.Count > 1
+            ? [.. SelectionCommands.SelectedBoxes(editor).Select(selected => selected.Id)]
+            : [box.Id];
+
         editor.BeginGesture(
             _gesture == Gesture.Move
-                ? $"Moved {editor.NameOf(box.Id)}"
+                ? _moving.Length > 1 ? $"Moved {_moving.Length} parts" : $"Moved {editor.NameOf(box.Id)}"
                 : $"Resized {editor.NameOf(box.Id)}");
 
         pointer.Capture(this);
@@ -1011,18 +1032,22 @@ public sealed class CanvasView : Control
 
         if (_gesture == Gesture.Move)
         {
+            // The parts moving with the grabbed one are not things to snap to.
             SnapPlan plan = SnapResolver.Resolve(
                 editor.Design.Sketch,
                 box,
                 _gestureAnchorAtPress + sincePress,
                 GridStepInches,
-                ModelLength(SnapRadiusPixels));
+                ModelLength(SnapRadiusPixels),
+                _moving);
 
             _snap = plan;
             Vector2 delta = plan.Anchor - box.Footprint().Anchor;
             if (delta != Vector2.Zero)
             {
-                Remember(editor.ApplyQuietly(Drag.InPlan(_gestureEntity, delta)));
+                Remember(editor.ApplyQuietly(_moving.Length == 1
+                    ? Drag.InPlan(_gestureEntity, delta)
+                    : Batch.Of([.. _moving.Select(id => (Request)Drag.InPlan(id, delta))])));
             }
 
             InvalidateVisual();
@@ -1085,7 +1110,7 @@ public sealed class CanvasView : Control
         _gestureRefusal = null;
 
         string what = gesture == Gesture.Move
-            ? $"Moved {editor.NameOf(_gestureEntity)}"
+            ? _moving.Length > 1 ? $"Moved {_moving.Length} parts" : $"Moved {editor.NameOf(_gestureEntity)}"
             : $"Resized {editor.NameOf(_gestureEntity)}";
 
         // A snap is stated only when the part got to where it put it: one it never reached — a

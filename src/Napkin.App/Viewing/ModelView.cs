@@ -22,6 +22,12 @@ public enum SelectionCommand
 
     /// <summary>Open it in the shape workshop.</summary>
     Shape,
+
+    /// <summary>Copy it across the drawing's middle, east to west (#87).</summary>
+    MirrorEastWest,
+
+    /// <summary>Copy it across the drawing's middle, north to south (#87).</summary>
+    MirrorNorthSouth,
 }
 
 /// <summary>
@@ -99,6 +105,8 @@ public sealed class ModelView : Control
     UpdateResult? _gestureRefusal;
     ModelPick? _pressedOnPart;
     readonly System.Text.StringBuilder _typed = new();
+    EntityId[] _moving = [];
+    Box? _groupAtPress;
     Typeable? _typeable;
     EntityId? _hovered;
     System.Collections.Immutable.ImmutableHashSet<EntityId> _attention = [];
@@ -306,9 +314,31 @@ public sealed class ModelView : Control
     /// <summary>Where a model point is drawn in this control, in pixels.</summary>
     public Point ScreenOf(Point3 point) => _camera.Project(point);
 
-    /// <summary>The selected part's handles as they are drawn now: empty unless exactly one part is selected.</summary>
+    /// <summary>
+    /// The selection's handles as they are drawn now: one part's arrows and face handles, or — for
+    /// several parts — arrows from the middle of them all, which move them together (#87).
+    /// </summary>
     public IReadOnlyList<ModelHandle> Handles =>
-        _editor?.OnlySelectedBox is { } box ? ModelHandles.Of(box, _camera) : [];
+        _editor is not { } editor ? []
+        : editor.OnlySelectedBox is { } box ? ModelHandles.Of(box, _camera)
+        : GroupOf(editor) is { } group ? ModelHandles.Arrows(group, _camera)
+        : [];
+
+    /// <summary>
+    /// Several selected parts as one box — their combined extent, lying as drawn — for their arrows
+    /// and for snapping them as one; null unless more than one part is selected.
+    /// </summary>
+    static Box? GroupOf(DesignEditor editor)
+    {
+        Box[] boxes = SelectionCommands.SelectedBoxes(editor);
+        if (boxes.Length < 2 || boxes.Any(box => !box.Orientation.IsExact))
+        {
+            return null;
+        }
+
+        (Point3 low, Point3 high) = GroupCopy.Extent(boxes);
+        return new Box(EntityId.New(), LayerId.Default, low, high.X - low.X, high.Y - low.Y, high.Z - low.Z, BoxFace.Top, Angle.Zero);
+    }
 
     /// <summary>The move arrow along a world axis on the selected part, when it is drawn.</summary>
     public ModelHandle? MoveHandle(Axis axis) =>
@@ -478,6 +508,14 @@ public sealed class ModelView : Control
             && ModelHandles.At(selected, _camera, position, HandleGrabPixels) is { } handle)
         {
             BeginEdit(e.Pointer, selected, handle.Kind == ModelHandleKind.Move ? Gesture.MoveAxis : Gesture.Resize, handle, []);
+            return;
+        }
+
+        if (GroupOf(editor) is { } group
+            && ModelHandles.Nearest(ModelHandles.Arrows(group, _camera), position, HandleGrabPixels) is { } groupArrow
+            && SelectionCommands.SelectedBoxes(editor) is [var first, ..])
+        {
+            BeginEdit(e.Pointer, first, Gesture.MoveAxis, groupArrow, [], group);
             return;
         }
 
@@ -805,6 +843,10 @@ public sealed class ModelView : Control
                 SelectionCommandRequested?.Invoke(this, SelectionCommand.Duplicate);
                 return true;
 
+            case Key.M when editor.Selection.Count > 0:
+                SelectionCommandRequested?.Invoke(this, modifiers.HasFlag(KeyModifiers.Shift) ? SelectionCommand.MirrorNorthSouth : SelectionCommand.MirrorEastWest);
+                return true;
+
             case Key.C:
                 SelectionCommandRequested?.Invoke(this, SelectionCommand.Shape);
                 return true;
@@ -823,12 +865,18 @@ public sealed class ModelView : Control
         pointer.Capture(this);
     }
 
-    void BeginEdit(IPointer pointer, Box box, Gesture gesture, ModelHandle? handle, Axis[] plane)
+    void BeginEdit(IPointer pointer, Box box, Gesture gesture, ModelHandle? handle, Axis[] plane, Box? group = null)
     {
         if (_editor is not { } editor)
         {
             return;
         }
+
+        // A drag on one of several selected parts, or on their arrows, moves them all (#87).
+        _moving = gesture is Gesture.MoveAxis or Gesture.MovePlane && editor.Selection.Contains(box.Id) && editor.Selection.Count > 1
+            ? [.. SelectionCommands.SelectedBoxes(editor).Select(selected => selected.Id)]
+            : [box.Id];
+        _groupAtPress = _moving.Length > 1 ? group : null;
 
         _gesture = gesture;
         _gestureEntity = box.Id;
@@ -841,11 +889,11 @@ public sealed class ModelView : Control
         // An arrow or a face handle can be given an exact length by typing it (#79); a slide in a
         // face's plane has two axes, and no one number says where it goes.
         _typed.Clear();
-        _typeable = handle is { } grabbed && gesture is Gesture.MoveAxis or Gesture.Resize
+        _typeable = handle is { } grabbed && gesture is Gesture.MoveAxis or Gesture.Resize && _moving.Length == 1
             ? new Typeable(gesture, box.Id, box, grabbed.Axis, grabbed.Face, editor.Design, null)
             : null;
 
-        editor.BeginGesture(gesture == Gesture.Resize ? $"Resized {editor.NameOf(box.Id)}" : $"Moved {editor.NameOf(box.Id)}");
+        editor.BeginGesture(gesture == Gesture.Resize ? $"Resized {editor.NameOf(box.Id)}" : Moved(editor, box.Id));
         pointer.Capture(this);
     }
 
@@ -870,8 +918,19 @@ public sealed class ModelView : Control
                     return;
                 }
 
+                if (_groupAtPress is { } groupAtPress)
+                {
+                    // Several parts on their shared arrows: snap their combined extent as one box, to
+                    // what is not moving with them, and state nothing — no one part's face caught.
+                    Box group = groupAtPress with { Anchor = groupAtPress.Anchor + (box.Anchor - atPress.Anchor) };
+                    Point3 wantedGroup = groupAtPress.Anchor + Vector3.Along(handle.Axis, ToLength(inches));
+                    SpaceSnapPlan groupPlan = SpaceSnapResolver.Resolve(editor.Sketch, group, wantedGroup, [handle.Axis], GridStepInches, radius, _moving);
+                    MoveBy(editor, groupPlan.Anchor - group.Anchor, groupPlan with { Relationships = [] });
+                    break;
+                }
+
                 Point3 wanted = atPress.Anchor + Vector3.Along(handle.Axis, ToLength(inches));
-                MoveTo(editor, box, SpaceSnapResolver.Resolve(editor.Sketch, box, wanted, [handle.Axis], GridStepInches, radius));
+                MoveTo(editor, box, SpaceSnapResolver.Resolve(editor.Sketch, box, wanted, [handle.Axis], GridStepInches, radius, _moving));
                 break;
             }
 
@@ -885,7 +944,7 @@ public sealed class ModelView : Control
                 Point3 wanted = atPress.Anchor
                                 + Vector3.Along(_planeAxes[0], ToLength(along.First))
                                 + Vector3.Along(_planeAxes[1], ToLength(along.Second));
-                MoveTo(editor, box, SpaceSnapResolver.Resolve(editor.Sketch, box, wanted, _planeAxes, GridStepInches, radius));
+                MoveTo(editor, box, SpaceSnapResolver.Resolve(editor.Sketch, box, wanted, _planeAxes, GridStepInches, radius, _moving));
                 break;
             }
 
@@ -930,17 +989,24 @@ public sealed class ModelView : Control
         }
     }
 
-    void MoveTo(DesignEditor editor, Box box, SpaceSnapPlan plan)
+    void MoveTo(DesignEditor editor, Box box, SpaceSnapPlan plan) => MoveBy(editor, plan.Anchor - box.Anchor, plan);
+
+    /// <summary>Moves the part being dragged — and the others selected with it (#87) — by a displacement.</summary>
+    void MoveBy(DesignEditor editor, Vector3 delta, SpaceSnapPlan plan)
     {
         _snap = plan;
-        Vector3 delta = plan.Anchor - box.Anchor;
         if (delta != Vector3.Zero)
         {
-            Remember(editor.ApplyQuietly(new Drag(_gestureEntity, delta)));
+            Remember(editor.ApplyQuietly(_moving.Length > 1
+                ? Batch.Of([.. _moving.Select(id => (Request)new Drag(id, delta))])
+                : new Drag(_gestureEntity, delta)));
         }
 
         InvalidateVisual();
     }
+
+    string Moved(DesignEditor editor, EntityId id) =>
+        _moving.Length > 1 ? $"Moved {_moving.Length} parts" : $"Moved {editor.NameOf(id)}";
 
     /// <summary>
     /// Keeps the last refusal of a live gesture's quiet steps, so the drop can say why a part that
@@ -990,7 +1056,15 @@ public sealed class ModelView : Control
 
         string what = gesture == Gesture.Resize
             ? $"Resized {editor.NameOf(_gestureEntity)}"
-            : $"Moved {editor.NameOf(_gestureEntity)}";
+            : Moved(editor, _gestureEntity);
+
+        // A group's arrows snap a box that stands for them all, not the part this gesture names.
+        if (_groupAtPress is not null && plan is not null)
+        {
+            plan = plan with { Anchor = editor.Sketch.Find<Box>(_gestureEntity)?.Anchor ?? plan.Anchor };
+        }
+
+        _groupAtPress = null;
 
         // A snap is stated only when the part got to where it put it: one it never reached — a
         // pinned part dragged at another — is not a relationship, and stating it would conflict.

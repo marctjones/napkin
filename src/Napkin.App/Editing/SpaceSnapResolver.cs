@@ -77,13 +77,15 @@ public static class SpaceSnapResolver
     /// <param name="dragged">The axes being dragged; the others stay where <paramref name="moving"/> has them.</param>
     /// <param name="gridStepInches">The grid step in force at this zoom.</param>
     /// <param name="radius">How near a face has to be to catch.</param>
+    /// <param name="ignoring">Parts that are not to be snapped to — the others moving with it (#87).</param>
     public static SpaceSnapPlan Resolve(
         Sketch sketch,
         Box moving,
         Point3 wantedAnchor,
         IReadOnlyCollection<Axis> dragged,
         double gridStepInches,
-        Length radius)
+        Length radius,
+        IReadOnlyCollection<EntityId>? ignoring = null)
     {
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(moving);
@@ -101,7 +103,7 @@ public static class SpaceSnapResolver
             (Point3 myLow, Point3 myHigh) = Extent(moving with { Anchor = wanted });
             foreach (Box other in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
             {
-                if (other.Id == moving.Id || !other.Orientation.IsExact)
+                if (other.Id == moving.Id || !other.Orientation.IsExact || (ignoring?.Contains(other.Id) ?? false))
                 {
                     continue;
                 }

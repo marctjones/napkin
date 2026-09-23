@@ -108,6 +108,15 @@
       "milestone": "backlog",
       "issue": 79,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-13",
+      "area": "ui",
+      "title": "Mirror, duplicate and move several parts at once",
+      "acceptance": "M on the coffee table's south-west leg puts a mirror copy at 44\" to 46 1/2\" east-west; a leg and its apron duplicated together are selected copies held to each other as the originals are; and the pair's shared Z arrow in the 3D view raises both by the same amount.",
+      "milestone": "backlog",
+      "issue": 87,
+      "kind": "workflow"
     }
   ]
 }

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Napkin.Core.Geometry;
 
 namespace Napkin.App.Editing;
@@ -70,55 +71,106 @@ public static class SelectionCommands
     }
 
     /// <summary>
-    /// Makes a copy of the selected part beside it and selects it
-    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.6).
+    /// Makes a copy of the selected parts beside them and selects the copies
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.6, #87).
     /// </summary>
     /// <remarks>
     /// <para>
     /// <strong>A duplicate is a value copy.</strong> The blank, its cuts, the part — stock, species,
     /// plan axes, quantity — the depth and the name are all carried across by the record's own
-    /// <c>with</c>; the copy gets a new id, a new anchor and <em>no relationships</em>. It is
-    /// unrelated until somebody snaps it, exactly like a part just drawn. Four duplicates of one
-    /// gusset are equal by value, so the cut list groups them into one row of four on its own.
+    /// <c>with</c>; each copy gets a new id and a new anchor. Of the relationships, only the ones
+    /// <em>among</em> the copied parts come too (<see cref="GroupCopy"/>): copy a leg and the apron
+    /// flush to it and the copies are flush to each other; copy one part and it is unrelated until
+    /// somebody snaps it, exactly like a part just drawn. Four duplicates of one gusset are equal by
+    /// value, so the cut list groups them into one row of four on its own.
     /// </para>
     /// <para>
-    /// <strong>Beside it, clear of it</strong> (#71): along the narrower of its two plan sides —
-    /// east when it is narrower east–west, north otherwise — by its own extent that way and one grid
-    /// step of the view that asked. So the copy never overlaps the original, lines up with it on the
-    /// other two axes, and has the shortest way to go to be seen.
+    /// <strong>Beside them, clear of them</strong> (#71): along the narrower of the selection's two
+    /// plan sides — east when it is narrower east–west, north otherwise — by its own extent that way
+    /// and one grid step of the view that asked. So the copies never overlap the originals, line up
+    /// with them on the other two axes, and have the shortest way to go to be seen. One undo step.
     /// </para>
     /// </remarks>
     /// <param name="editor">The drawing.</param>
     /// <param name="gridStepInches">The grid step in force in the view that asked.</param>
-    /// <returns>The copy's id, or <see langword="null"/> when nothing was copied.</returns>
+    /// <returns>The first copy's id, or <see langword="null"/> when nothing was copied.</returns>
     public static EntityId? Duplicate(DesignEditor editor, double gridStepInches)
     {
         ArgumentNullException.ThrowIfNull(editor);
 
-        if (editor.OnlySelectedBox is not { } source)
+        Box[] boxes = SelectedBoxes(editor);
+        if (boxes.Length == 0)
         {
-            editor.Say(
-                EditSeverity.Hint,
-                editor.Selection.Count == 0
-                    ? "Select a part to duplicate it."
-                    : "Duplicate copies one part at a time; select just the one.");
+            editor.Say(EditSeverity.Hint, "Select a part to duplicate it.");
             return null;
         }
 
-        Box copy = source with
-        {
-            Id = EntityId.New(),
-            Anchor = source.Anchor + BesideOffset(source, gridStepInches),
-        };
+        (Point3 low, Point3 high) = GroupCopy.Extent(boxes);
+        (ImmutableList<Request> requests, ImmutableDictionary<EntityId, EntityId> copies) =
+            GroupCopy.Duplicate(editor.Sketch, boxes, BesideOffset(low, high, gridStepInches));
 
-        string what = $"Duplicated {editor.NameOf(source.Id)}";
+        string what = boxes.Length == 1 ? $"Duplicated {editor.NameOf(boxes[0].Id)}" : $"Duplicated {boxes.Length} parts";
         editor.BeginGesture(what);
         EntityId? made = null;
-        if (editor.Apply(new AddEntity(copy), what) is Succeeded)
+        if (editor.Apply(Batch.Of([.. requests]), what) is Succeeded)
         {
-            editor.Select(copy.Id);
-            editor.Say(EditSeverity.Done, $"{what} as {editor.NameOf(copy.Id)}.");
-            made = copy.Id;
+            editor.SelectAll(copies.Values);
+            made = copies[boxes[0].Id];
+            editor.Say(
+                EditSeverity.Done,
+                boxes.Length == 1 ? $"{what} as {editor.NameOf(made.Value)}." : $"{what}, with the relationships among them.");
+        }
+
+        editor.EndGesture();
+        return made;
+    }
+
+    /// <summary>
+    /// Makes mirror copies of the selected parts across the middle of the drawing, east–west or
+    /// north–south, and selects them (#87): a left leg's right-hand twin, an apron and the leg it is
+    /// flush to at the other end of the table.
+    /// </summary>
+    /// <remarks>
+    /// The mirror is the drawing's centre plane across <paramref name="axis"/> — for a table, its
+    /// middle — so one leg mirrored lands where the opposite leg goes, rather than on itself as it
+    /// would across its own middle. The relationships among the copied parts are mirrored with them
+    /// (<see cref="GroupCopy"/>); a part with cuts is refused by name, because the copy would carry
+    /// its cuts the wrong way round. One undo step.
+    /// </remarks>
+    /// <param name="editor">The drawing.</param>
+    /// <param name="axis">The world axis the mirror reverses: X for east–west, Y for north–south.</param>
+    /// <returns>The first copy's id, or <see langword="null"/> when nothing was copied.</returns>
+    public static EntityId? Mirror(DesignEditor editor, Axis axis)
+    {
+        ArgumentNullException.ThrowIfNull(editor);
+
+        Box[] boxes = SelectedBoxes(editor);
+        if (boxes.Length == 0)
+        {
+            editor.Say(EditSeverity.Hint, "Select a part to mirror it.");
+            return null;
+        }
+
+        (Point3 low, Point3 high) = GroupCopy.Extent(editor.Sketch.Entities.Values.OfType<Box>());
+        Length plane = (low.Component(axis) + high.Component(axis)).Divide(2, Rounding.HalfToEven);
+        string way = axis == Axis.X ? "east–west" : "north–south";
+        if (GroupCopy.Mirror(editor.Sketch, boxes, axis, plane, out Box? refused) is not { } mirrored)
+        {
+            editor.Say(
+                EditSeverity.Problem,
+                $"Mirroring did not happen: {editor.NameOf(refused!.Id)} has cuts, and a mirror copy would carry them the "
+                + "wrong way round. Duplicate it and shape the copy instead.");
+            return null;
+        }
+
+        string what = boxes.Length == 1 ? $"Mirrored {editor.NameOf(boxes[0].Id)} {way}" : $"Mirrored {boxes.Length} parts {way}";
+        editor.BeginGesture(what);
+        EntityId? made = null;
+        if (editor.Apply(Batch.Of([.. mirrored.Requests]), what) is Succeeded)
+        {
+            editor.SelectAll(mirrored.Copies.Values);
+            made = mirrored.Copies[boxes[0].Id];
+            editor.Say(EditSeverity.Done, $"{what}, across the middle of the drawing.");
         }
 
         editor.EndGesture();
@@ -134,12 +186,25 @@ public static class SelectionCommands
         ArgumentNullException.ThrowIfNull(box);
 
         (Point3 low, Point3 high) = SpaceSnapResolver.Extent(box);
+        return BesideOffset(low, high, gridStepInches);
+    }
+
+    /// <summary>How far copies of what spans an extent are put from it: past it along its narrower plan axis, and a grid step more.</summary>
+    public static Vector3 BesideOffset(Point3 low, Point3 high, double gridStepInches)
+    {
         Length step = new(SnapGrid.UnitsPerStep(gridStepInches));
         Length across = high.X - low.X;
         Length along = high.Y - low.Y;
         return across <= along
             ? Vector3.Along(Axis.X, across + step)
             : Vector3.Along(Axis.Y, along + step);
+    }
+
+    /// <summary>The selected boxes, in id order.</summary>
+    public static Box[] SelectedBoxes(DesignEditor editor)
+    {
+        ArgumentNullException.ThrowIfNull(editor);
+        return [.. editor.Selection.OrderBy(id => id).Select(editor.Sketch.Find<Box>).OfType<Box>()];
     }
 
     /// <summary>

@@ -1190,6 +1190,12 @@ real thing; none is this design.
 - **Nodes and segments in space.** Plan-plane construction geometry, at Z = 0 (§1.4).
 - **Groups, sub-assemblies, exploded views.** "Move the whole table" is what `Drag` already does
   through the rigid group of relationships (geometry-model §4.4); there is no separate grouping.
+  (**#87, 2026-09-23:** a *selection* of several parts is not a group but can be acted on at once:
+  moved — by a drag on any of them, or by arrows from the middle of them all, which snap their
+  combined extent and state nothing — duplicated with the relationships among them, and mirrored
+  across the drawing's centre plane east–west or north–south, the relationships among the copies
+  mirrored with them. A mirror copy keeps each part's orientation, which makes it the exact mirror
+  image of a plain block; a part with cuts is refused rather than copied the wrong way round.)
 - **The building module reading a wall's height.** A wall now has a `Depth`; the rules engine
   does not read it, and no header or bracing table in this design's scope needs it.
 - **Saving the camera.** The 3D view's camera is UI state, like `ViewTransform`, and is not in the
