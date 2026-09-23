@@ -130,6 +130,7 @@ public sealed class CanvasView : Control
     Box? _gestureBoxAtPress;
     SnapPlan? _snap;
     EntityId? _hovered;
+    System.Collections.Immutable.ImmutableHashSet<EntityId> _attention = [];
 
     static CanvasView() => FocusableProperty.OverrideDefaultValue<CanvasView>(true);
 
@@ -263,6 +264,26 @@ public sealed class CanvasView : Control
     /// being dragged, panned or drawn: a gesture's own part is what it is about, not a hover.
     /// </summary>
     public EntityId? HoveredPart => _hovered;
+
+    /// <summary>
+    /// Parts to draw attention to, outlined in the problem colour: the ones a conflict or a refused
+    /// turn names (#72), or the ones a relationship row under the pointer holds (#77).
+    /// </summary>
+    public System.Collections.Immutable.ImmutableHashSet<EntityId> Attention
+    {
+        get => _attention;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (_attention.SetEquals(value))
+            {
+                return;
+            }
+
+            _attention = value;
+            InvalidateVisual();
+        }
+    }
 
     /// <summary>
     /// The stock item the pointer is holding, picked from the toolbox, or null when it holds none.
@@ -1352,9 +1373,28 @@ public sealed class CanvasView : Control
         }
 
         DrawBlankHints(context, palette, sketch);
+        DrawAttention(context, palette, sketch);
         DrawSelection(context, palette, sketch);
         DrawSnapIndicator(context, palette);
         DrawRectanglePreview(context, palette);
+    }
+
+    /// <summary>A wide outline in the problem colour round each part in <see cref="Attention"/>, under the selection's.</summary>
+    void DrawAttention(DrawingContext context, CanvasPalette palette, Sketch sketch)
+    {
+        if (_attention.IsEmpty)
+        {
+            return;
+        }
+
+        Pen pen = new(new SolidColorBrush(palette.Snap, 0.85), 4.5) { LineJoin = PenLineJoin.Round };
+        foreach (EntityId id in _attention.OrderBy(entity => entity))
+        {
+            if (sketch.Find<Box>(id) is { } box)
+            {
+                context.DrawGeometry(null, pen, Outline(box));
+            }
+        }
     }
 
     void DrawSelection(DrawingContext context, CanvasPalette palette, Sketch sketch)
