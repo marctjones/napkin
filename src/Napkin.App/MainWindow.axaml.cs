@@ -122,6 +122,7 @@ public partial class MainWindow : Window
         ModelDrawing.HoveredPartChanged += (_, _) => UpdateRelationships();
         ModelDrawing.PointerModelPositionChanged += (_, point) => UpdateCursorReadout(point);
         ModelDrawing.PlanRequested += (_, _) => ShowPlanView();
+        ModelDrawing.PlacementChanged += (_, _) => UpdateToolButtons();
         ModelDrawing.SelectionCommandRequested += (_, command) => RunSelectionCommand(command);
         StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
         StockToolboxPanel.CategoryChanged += (_, _) => OnStockCategoryChanged();
@@ -790,6 +791,18 @@ public partial class MainWindow : Window
 
         CloseWorkshop();
         CloseDimensionEditor(focusCanvas: false);
+
+        // What the plan's tools were holding comes along: the 3D view places it on the face under
+        // the pointer (#74, assembly-model §6 as amended).
+        if (DrawingCanvas.ArmedStock is { } held)
+        {
+            ModelDrawing.Arm(held);
+        }
+        else if (DrawingCanvas.Tool == EditTool.Rectangle)
+        {
+            ModelDrawing.ArmPlainBoard();
+        }
+
         DrawingCanvas.ArmStock(null);
         DrawingCanvas.Tool = EditTool.Select;
 
@@ -798,8 +811,10 @@ public partial class MainWindow : Window
         ShowViewChrome();
         Editor.Say(
             EditSeverity.Hint,
-            "3D view: drag a part to slide it, or empty space to orbit; on a selected part drag an arrow "
-            + "to move it along that axis or a square to resize it; X, Y and Z turn it. V goes back to the plan.");
+            ModelDrawing.Placement.IsArmed
+                ? $"3D view: holding {ModelDrawing.Placement.Holding} — click or drag on a face, or the floor, to place it; Escape puts it down."
+                : "3D view: drag a part to slide it, or empty space to orbit; on a selected part drag an arrow "
+                  + "to move it along that axis or a square to resize it; X, Y and Z turn it. V goes back to the plan.");
     }
 
     /// <summary>Shows the plan canvas again, as it was left.</summary>
@@ -810,9 +825,21 @@ public partial class MainWindow : Window
             return;
         }
 
+        // What the 3D view was holding goes back to the plan's tools.
+        if (ModelDrawing.Placement.Stock is { } held)
+        {
+            DrawingCanvas.ArmStock(held);
+        }
+        else if (ModelDrawing.Placement.PlainBoard)
+        {
+            DrawingCanvas.Tool = EditTool.Rectangle;
+        }
+
+        ModelDrawing.Disarm();
         ModelDrawing.IsVisible = false;
         DrawingCanvas.IsVisible = true;
         ShowViewChrome();
+        UpdateToolButtons();
     }
 
     /// <summary>The chrome that differs between the two views: the turn buttons, the menu's tick, the readouts.</summary>
@@ -2298,6 +2325,14 @@ public partial class MainWindow : Window
 
     void UpdateToolButtons()
     {
+        if (IsShowingModel)
+        {
+            SelectToolButton.IsChecked = !ModelDrawing.Placement.IsArmed;
+            RectangleToolButton.IsChecked = ModelDrawing.Placement.PlainBoard;
+            StockToolboxPanel.ShowArmed(ModelDrawing.Placement.Stock, inModel: true);
+            return;
+        }
+
         SelectToolButton.IsChecked = DrawingCanvas.Tool == EditTool.Select;
         RectangleToolButton.IsChecked = DrawingCanvas.Tool == EditTool.Rectangle;
         StockToolboxPanel.ShowArmed(DrawingCanvas.ArmedStock);
@@ -2316,6 +2351,10 @@ public partial class MainWindow : Window
         if (StockToolboxPanel.Category is null)
         {
             DrawingCanvas.ArmStock(null);
+            if (ModelDrawing.Placement.Stock is not null)
+            {
+                ModelDrawing.Disarm();
+            }
         }
 
         UpdateToolbox();
@@ -2350,10 +2389,27 @@ public partial class MainWindow : Window
     /// </summary>
     void PickStock(StockItem item)
     {
-        // Stock is placed on the plan (assembly-model §6), so picking some brings the plan back.
-        if (StockTool.CanPlace(item))
+        // In the 3D view stock is placed on the face under the pointer (#74); in the plan, dragged
+        // out on the paper.
+        if (IsShowingModel)
         {
-            ShowPlanView();
+            if (ModelDrawing.Arm(item))
+            {
+                Editor.Say(
+                    EditSeverity.Hint,
+                    $"Holding {item.Name} — actual {item.ActualSizeText}. Click on a face, or the floor, to place 24\" of it, "
+                    + "or drag along the face for its length; Escape puts it down.");
+            }
+            else
+            {
+                Editor.Say(
+                    EditSeverity.Hint,
+                    $"{item.HoverText}. napkin does not place fasteners on the drawing yet, so there is nothing to place.");
+            }
+
+            UpdateToolButtons();
+            FocusDrawing();
+            return;
         }
 
         if (DrawingCanvas.ArmStock(item))
@@ -2719,15 +2775,27 @@ public partial class MainWindow : Window
     void OnSelectToolClicked(object? sender, RoutedEventArgs e)
     {
         DrawingCanvas.Tool = EditTool.Select;
+        ModelDrawing.Disarm();
         UpdateToolButtons();
         FocusDrawing();
     }
 
     void OnRectangleToolClicked(object? sender, RoutedEventArgs e)
     {
-        // Drawing is the plan's (assembly-model §6): asking for the rectangle brings the plan back.
-        ShowPlanView();
-        DrawingCanvas.Tool = EditTool.Rectangle;
+        // In the 3D view the rectangle tool is a plain board to place on a face (#74).
+        if (IsShowingModel)
+        {
+            ModelDrawing.ArmPlainBoard();
+            Editor.Say(
+                EditSeverity.Hint,
+                "Holding a plain board, 24\" × 12\" × 3/4\". Click on a face, or the floor, to place it, or drag along "
+                + "the face for its size; Escape puts it down.");
+        }
+        else
+        {
+            DrawingCanvas.Tool = EditTool.Rectangle;
+        }
+
         UpdateToolButtons();
         FocusDrawing();
     }
