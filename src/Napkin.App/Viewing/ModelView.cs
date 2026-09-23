@@ -857,14 +857,19 @@ public sealed class ModelView : Control
         double g = (style.Fill.G * alpha) + (background.G * (1 - alpha));
         double b = (style.Fill.B * alpha) + (background.B * (1 - alpha));
 
-        double shade = normal.DominantAxis().Axis switch
+        // Up-facing is lifted towards white, the X-facing sides keep the part's own colour, and the
+        // Y-facing sides are taken down: light, medium, dark.
+        (double lift, double shade) = normal.DominantAxis().Axis switch
         {
-            Axis.Z => 1.0,
-            Axis.X => 0.86,
-            _ => 0.72,
+            Axis.Z => (0.4, 1.0),
+            Axis.X => (0.0, 0.94),
+            _ => (0.0, 0.76),
         };
 
-        return Color.FromRgb(Channel(r * shade), Channel(g * shade), Channel(b * shade));
+        return Color.FromRgb(
+            Channel(((r + ((255 - r) * lift)) * shade)),
+            Channel(((g + ((255 - g) * lift)) * shade)),
+            Channel(((b + ((255 - b) * lift)) * shade)));
 
         static byte Channel(double value) => (byte)Math.Clamp(Math.Round(value), 0, 255);
     }

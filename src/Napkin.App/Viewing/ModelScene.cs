@@ -86,25 +86,171 @@ public sealed class ModelScene
     }
 
     /// <summary>
-    /// The polygons a camera can see, furthest first: every one facing away culled, the rest sorted
-    /// by the furthest point of each along the view (&#xA7;8.4). Per face, not per box, so that a
-    /// part standing in front of another draws over it.
+    /// The polygons a camera can see, in the order to paint them, furthest first: every one facing
+    /// away culled, the rest sorted by the furthest point of each along the view (&#xA7;8.4), then put
+    /// right wherever two that overlap on the screen are provably the other way round. Per face,
+    /// not per box, so that a part standing in front of another draws over it.
     /// </summary>
     /// <remarks>
-    /// The painter's algorithm fails on cyclic overlap and on solids that pass through each other,
-    /// and &#xA7;8.4 accepts that rather than paying for a depth buffer: two parts sharing space are
-    /// not detected by design (&#xA7;6), and the drawing is honestly wrong in the overlap. Ties keep
-    /// the scene's own order, so the same drawing paints the same way every time.
+    /// <para>
+    /// <strong>Why the sort alone is not enough.</strong> The furthest-point key orders small faces
+    /// well and large ones badly: a table top's upper face reaches far back, so on the key alone it
+    /// is painted before the aprons under it, and they show through it. So the key is the starting
+    /// order and a tie-break, and for each pair of polygons whose screen boxes overlap the classic
+    /// plane tests decide which is behind — one lies wholly on the far side of the other's plane, or
+    /// the other wholly on the near side of its. Those are the painter's own tests (Newell, Newell
+    /// and Sancha), not a depth buffer: still one pass of flat polygons over Avalonia's 2D drawing.
+    /// </para>
+    /// <para>
+    /// The painter's algorithm still fails on cyclic overlap and on solids that pass through each
+    /// other, and &#xA7;8.4 accepts that: two parts sharing space are not detected by design
+    /// (&#xA7;6). A cycle is broken at its furthest polygon, and the drawing is honestly wrong in the
+    /// overlap. Every choice falls back to the scene's own order, so the same drawing paints the
+    /// same way every time.
+    /// </para>
     /// </remarks>
-    public IReadOnlyList<ScenePolygon> BackToFront(Camera camera) =>
-    [
-        .. Polygons
-            .Select((polygon, index) => (polygon, index))
-            .Where(entry => entry.polygon.FacesTowards(camera))
-            .OrderByDescending(entry => entry.polygon.FurthestDepth(camera))
-            .ThenBy(entry => entry.index)
-            .Select(entry => entry.polygon),
-    ];
+    public IReadOnlyList<ScenePolygon> BackToFront(Camera camera)
+    {
+        List<Painted> visible =
+        [
+            .. Polygons
+                .Select((polygon, index) => (polygon, index))
+                .Where(entry => entry.polygon.FacesTowards(camera))
+                .OrderByDescending(entry => entry.polygon.FurthestDepth(camera))
+                .ThenBy(entry => entry.index)
+                .Select(entry => new Painted(entry.polygon, ScreenBox(camera, entry.polygon))),
+        ];
+
+        int count = visible.Count;
+        List<int>[] after = [.. Enumerable.Range(0, count).Select(_ => new List<int>())];
+        int[] waiting = new int[count];
+        for (int i = 0; i < count; i++)
+        {
+            for (int j = i + 1; j < count; j++)
+            {
+                if (!visible[i].Screen.Overlaps(visible[j].Screen))
+                {
+                    continue;
+                }
+
+                switch (Behind(visible[i].Polygon, visible[j].Polygon))
+                {
+                    case < 0:
+                        after[i].Add(j);
+                        waiting[j]++;
+                        break;
+
+                    case > 0:
+                        after[j].Add(i);
+                        waiting[i]++;
+                        break;
+                }
+            }
+        }
+
+        // Kahn's topological order, always taking the earliest ready polygon in the sorted order, and
+        // breaking a cycle — should there be one — at the earliest one left.
+        List<ScenePolygon> order = new(count);
+        bool[] done = new bool[count];
+        SortedSet<int> ready = [.. Enumerable.Range(0, count).Where(i => waiting[i] == 0)];
+        int earliestLeft = 0;
+        while (order.Count < count)
+        {
+            int next;
+            if (ready.Count > 0)
+            {
+                next = ready.Min;
+                ready.Remove(next);
+            }
+            else
+            {
+                while (done[earliestLeft])
+                {
+                    earliestLeft++;
+                }
+
+                next = earliestLeft;
+            }
+
+            done[next] = true;
+            order.Add(visible[next].Polygon);
+            foreach (int later in after[next])
+            {
+                if (--waiting[later] == 0 && !done[later])
+                {
+                    ready.Add(later);
+                }
+            }
+        }
+
+        return order;
+    }
+
+    /// <summary>
+    /// Which of two polygons both facing the eye is behind the other: negative when the first is,
+    /// positive when the second is, zero when the plane tests cannot tell — coplanar, or crossing.
+    /// </summary>
+    /// <remarks>
+    /// For a polygon facing the eye its outward normal points towards the eye, so the positive side
+    /// of its plane is the near side.
+    /// </remarks>
+    public static int Behind(ScenePolygon first, ScenePolygon second)
+    {
+        ArgumentNullException.ThrowIfNull(first);
+        ArgumentNullException.ThrowIfNull(second);
+
+        bool firstFirst = AllOnSide(first, second, near: false) || AllOnSide(second, first, near: true);
+        bool secondFirst = AllOnSide(second, first, near: false) || AllOnSide(first, second, near: true);
+        return (firstFirst, secondFirst) switch
+        {
+            (true, false) => -1,
+            (false, true) => 1,
+            _ => 0,
+        };
+    }
+
+    /// <summary>Whether every corner of one polygon is on the near (or far) side of another's plane, or on it.</summary>
+    static bool AllOnSide(ScenePolygon polygon, ScenePolygon plane, bool near)
+    {
+        const double Tolerance = 1e-7;
+        Vector3d origin = plane.Points[0];
+        foreach (Vector3d point in polygon.Points)
+        {
+            double side = Vector3d.Dot(plane.Normal, point - origin);
+            if (near ? side < -Tolerance : side > Tolerance)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static ScreenRect ScreenBox(Camera camera, ScenePolygon polygon)
+    {
+        double left = double.PositiveInfinity, top = double.PositiveInfinity;
+        double right = double.NegativeInfinity, bottom = double.NegativeInfinity;
+        foreach (Vector3d point in polygon.Points)
+        {
+            Avalonia.Point at = camera.Project(point);
+            left = Math.Min(left, at.X);
+            right = Math.Max(right, at.X);
+            top = Math.Min(top, at.Y);
+            bottom = Math.Max(bottom, at.Y);
+        }
+
+        return new ScreenRect(left, top, right, bottom);
+    }
+
+    readonly record struct ScreenRect(double Left, double Top, double Right, double Bottom)
+    {
+        // Strictly: polygons that only touch along an edge do not hide one another.
+        public bool Overlaps(ScreenRect other) =>
+            Left < other.Right - 1e-6 && other.Left < Right - 1e-6
+            && Top < other.Bottom - 1e-6 && other.Top < Bottom - 1e-6;
+    }
+
+    readonly record struct Painted(ScenePolygon Polygon, ScreenRect Screen);
 
     /// <summary>The polygons of one solid.</summary>
     public static IEnumerable<ScenePolygon> PolygonsOf(EntityId box, Solid solid)
