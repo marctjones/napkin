@@ -43,10 +43,10 @@ public sealed class StockAssignmentTests
         // §9.1 test 11c: assigning "1x6" to a flat part sets its width to 5 1/2" through the
         // updater, exactly, and a drag on that edge is then refused.
         LumberStock lumber = Lumber("1x6");
-        Part part = new("1x6", Species: null, Quantity: 1, Length.Inches(1), Flat);
+        Part part = new("1x6", Species: null, Quantity: 1, Flat);
 
         // Drawn 48" long and 8" across: the length is the person's, the width is the yard's.
-        (Sketch sketch, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part);
+        (Sketch sketch, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part, depth: Length.Inches(1));
 
         Solved result = Assert.IsType<Solved>(
             Updater.Apply(sketch, StockAssignment.RequestsFor(sketch, box, part, lumber)));
@@ -56,8 +56,14 @@ public sealed class StockAssignmentTests
         Assert.Equal(lumber.Width, assigned.Height);
         Assert.Equal(5632, assigned.Height.Units);
 
-        // The thickness is the one dimension the plan cannot hold, so §1.2 sets it on the part.
-        Assert.Equal(lumber.Thickness, assigned.Part!.OutOfPlane);
+        // The thickness is the one dimension the plan cannot hold: the box's depth, which the yard
+        // states through the updater like the width (assembly-model §1.2).
+        Assert.Equal(lumber.Thickness, assigned.Depth);
+        Assert.Equal(
+            lumber.Thickness,
+            Assert.Single(
+                result.Sketch.RelationshipsInOrder.OfType<ParamValue>(),
+                value => value.Param.Equals(new BoxDepthRef(box.Id))).Value);
 
         // And the cut list now says a 1x6's real size, which is the whole point of the step.
         CutListRow row = Assert.Single(CutList.Of(result.Sketch, Library));
@@ -74,8 +80,8 @@ public sealed class StockAssignmentTests
         // any typed dimension, and a drag never silently overrides a number somebody stated
         // (geometry-model §4.1). The yard is the one who stated this one.
         LumberStock lumber = Lumber("1x6");
-        Part part = new("1x6", Species: null, Quantity: 1, Length.Inches(1), Flat);
-        (Sketch sketch, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part);
+        Part part = new("1x6", Species: null, Quantity: 1, Flat);
+        (Sketch sketch, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part, depth: Length.Inches(1));
 
         Sketch assigned = Assert.IsType<Solved>(
             Updater.Apply(sketch, StockAssignment.RequestsFor(sketch, box, part, lumber))).Sketch;
@@ -96,8 +102,8 @@ public sealed class StockAssignmentTests
         // §1.2: a LumberStock drawn as a footprint fixes both plan dimensions — the blank is the
         // stock's cross-section — and leaves only the length, which is out of plane, free.
         LumberStock lumber = Lumber("2x4");
-        Part part = new("2x4", Species: null, Quantity: 1, Length.Inches(30), Footprint);
-        (Sketch sketch, Box box) = OneBox(Length.Inches(4), Length.Inches(2), part);
+        Part part = new("2x4", Species: null, Quantity: 1, Footprint);
+        (Sketch sketch, Box box) = OneBox(Length.Inches(4), Length.Inches(2), part, depth: Length.Inches(30));
 
         Solved result = Assert.IsType<Solved>(
             Updater.Apply(sketch, StockAssignment.RequestsFor(sketch, box, part, lumber)));
@@ -107,7 +113,7 @@ public sealed class StockAssignmentTests
         Assert.Equal(lumber.Thickness, assigned.Height);
 
         // The length is the free one, so it is left exactly as the design stated it.
-        Assert.Equal(Length.Inches(30), assigned.Part!.OutOfPlane);
+        Assert.Equal(Length.Inches(30), assigned.Depth);
 
         // Both are driven now, so neither edge of the footprint can be dragged.
         foreach (BoxEdge edge in new[] { BoxEdge.North, BoxEdge.East })
@@ -124,8 +130,8 @@ public sealed class StockAssignmentTests
     {
         // §1.2: a plywood shelf is any size you like, at the panel's thickness.
         StockItem panel = Find("3/4 plywood");
-        Part part = new("3/4 plywood", Species: null, Quantity: 1, Length.Inches(1), Flat);
-        (Sketch sketch, Box box) = OneBox(Length.Inches(36), Length.Inches(11), part);
+        Part part = new("3/4 plywood", Species: null, Quantity: 1, Flat);
+        (Sketch sketch, Box box) = OneBox(Length.Inches(36), Length.Inches(11), part, depth: Length.Inches(1));
 
         Solved result = Assert.IsType<Solved>(
             Updater.Apply(sketch, StockAssignment.RequestsFor(sketch, box, part, panel)));
@@ -133,7 +139,7 @@ public sealed class StockAssignmentTests
         Box assigned = result.Sketch.Find<Box>(box.Id)!;
         Assert.Equal(Length.Inches(36), assigned.Width);
         Assert.Equal(Length.Inches(11), assigned.Height);
-        Assert.Equal(((PanelStock)panel).Thickness, assigned.Part!.OutOfPlane);
+        Assert.Equal(((PanelStock)panel).Thickness, assigned.Depth);
 
         // Nothing drives either plan dimension, so a shelf can still be dragged to size.
         Assert.IsType<Solved>(
@@ -147,8 +153,8 @@ public sealed class StockAssignmentTests
         // §1.2: the surfaced thickness is what the piece finishes at; the rough one is what you
         // pay for. And hardwood comes in random widths, so both plan dimensions stay free.
         HardwoodStock hardwood = (HardwoodStock)Find("4/4");
-        Part part = new("4/4", Species: "walnut", Quantity: 1, Length.Inches(1), Flat);
-        (Sketch sketch, Box box) = OneBox(Length.Inches(24), Length.Inches(6), part);
+        Part part = new("4/4", Species: "walnut", Quantity: 1, Flat);
+        (Sketch sketch, Box box) = OneBox(Length.Inches(24), Length.Inches(6), part, depth: Length.Inches(1));
 
         Solved result = Assert.IsType<Solved>(
             Updater.Apply(sketch, StockAssignment.RequestsFor(sketch, box, part, hardwood)));
@@ -156,8 +162,8 @@ public sealed class StockAssignmentTests
         Box assigned = result.Sketch.Find<Box>(box.Id)!;
         Assert.Equal(Length.Inches(24), assigned.Width);
         Assert.Equal(Length.Inches(6), assigned.Height);
-        Assert.Equal(hardwood.SurfacedTwoSides, assigned.Part!.OutOfPlane);
-        Assert.NotEqual(hardwood.RoughThickness, assigned.Part!.OutOfPlane);
+        Assert.Equal(hardwood.SurfacedTwoSides, assigned.Depth);
+        Assert.NotEqual(hardwood.RoughThickness, assigned.Depth);
     }
 
     [Fact]
@@ -169,8 +175,8 @@ public sealed class StockAssignmentTests
         Assert.Empty(StockAssignment.Fixes(null));
         Assert.Empty(StockAssignment.Fixes(Find("16d")));
 
-        Part part = new(Stock: null, Species: null, Quantity: 1, Length.Inches(1), Flat);
-        (Sketch sketch, Box box) = OneBox(Length.Inches(40), Length.Inches(9), part);
+        Part part = new(Stock: null, Species: null, Quantity: 1, Flat);
+        (Sketch sketch, Box box) = OneBox(Length.Inches(40), Length.Inches(9), part, depth: Length.Inches(1));
 
         Batch batch = StockAssignment.RequestsFor(sketch, box, part, stock: null);
         Assert.IsType<SetPart>(Assert.Single(batch.Requests));
@@ -178,7 +184,7 @@ public sealed class StockAssignmentTests
         Box assigned = Assert.IsType<Solved>(Updater.Apply(sketch, batch)).Sketch.Find<Box>(box.Id)!;
         Assert.Equal(Length.Inches(40), assigned.Width);
         Assert.Equal(Length.Inches(9), assigned.Height);
-        Assert.Equal(Length.Inches(1), assigned.Part!.OutOfPlane);
+        Assert.Equal(Length.Inches(1), assigned.Depth);
     }
 
     [Fact]
@@ -219,8 +225,8 @@ public sealed class StockAssignmentTests
         // change to that number, not a second ParamValue on the same size — which would be
         // Rejected(DuplicateRelationship) and would refuse the assignment for no honest reason.
         LumberStock lumber = Lumber("1x6");
-        Part part = new("1x6", Species: null, Quantity: 1, Length.Inches(1), Flat);
-        (Sketch drawn, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part);
+        Part part = new("1x6", Species: null, Quantity: 1, Flat);
+        (Sketch drawn, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part, depth: Length.Inches(1));
 
         RelationshipId typed = RelationshipId.New();
         Sketch sketch = Assert.IsType<Solved>(Updater.Apply(
@@ -230,7 +236,9 @@ public sealed class StockAssignmentTests
 
         Batch batch = StockAssignment.RequestsFor(sketch, box, part, lumber);
         Assert.Contains(batch.Requests, request => request is SetParameter parameter && parameter.Driving == typed);
-        Assert.DoesNotContain(batch.Requests, request => request is AddRelationship);
+        Assert.DoesNotContain(
+            batch.Requests,
+            request => request is AddRelationship { Relationship: ParamValue { Param: BoxHeightRef } });
 
         Solved result = Assert.IsType<Solved>(Updater.Apply(sketch, batch));
 
@@ -254,8 +262,8 @@ public sealed class StockAssignmentTests
         // through the updater. The case where that resize no longer fits a cut is the test below.
         LumberStock wider = Lumber("1x6");
         LumberStock narrower = Lumber("1x4");
-        Part part = new("1x6", Species: null, Quantity: 1, Length.Inches(1), Flat);
-        (Sketch drawn, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part);
+        Part part = new("1x6", Species: null, Quantity: 1, Flat);
+        (Sketch drawn, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part, depth: Length.Inches(1));
 
         Sketch onA1x6 = Assert.IsType<Solved>(
             Updater.Apply(drawn, StockAssignment.RequestsFor(drawn, box, part, wider))).Sketch;
@@ -293,8 +301,8 @@ public sealed class StockAssignmentTests
         // the library, which carries their citation; the setback is 4", chosen between them.
         LumberStock wider = Lumber("1x6");
         LumberStock narrower = Lumber("1x4");
-        Part part = new("1x6", Species: null, Quantity: 1, Length.Inches(1), Flat);
-        (Sketch drawn, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part);
+        Part part = new("1x6", Species: null, Quantity: 1, Flat);
+        (Sketch drawn, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part, depth: Length.Inches(1));
 
         Sketch onA1x6 = Assert.IsType<Solved>(
             Updater.Apply(drawn, StockAssignment.RequestsFor(drawn, box, part, wider))).Sketch;
@@ -333,8 +341,8 @@ public sealed class StockAssignmentTests
         // old stock. The batch sets the width first and the height second, so this pins the
         // height: if the batch were not atomic the width would already be the 2x4's.
         LumberStock lumber = Lumber("2x4");
-        Part leg = new("2x4", Species: null, Quantity: 1, Length.Inches(30), Footprint);
-        Part plain = new(Stock: null, Species: null, Quantity: 1, Length.Inches(30), Footprint);
+        Part leg = new("2x4", Species: null, Quantity: 1, Footprint);
+        Piece plain = new(Stock: null, Species: null, Quantity: 1, Length.Inches(30), Footprint);
 
         Sketch drawn = Design.WithParts(
             ("Leg", Length.Inches(4).Units, Length.Inches(2).Units, plain),
@@ -373,10 +381,69 @@ public sealed class StockAssignmentTests
         Assert.NotEqual(lumber.Width, unchanged.Width);
     }
 
-    /// <summary>One box with one part on it, drawn at the given plan size.</summary>
-    private static (Sketch Sketch, Box Box) OneBox(Length width, Length height, Part part)
+    [Fact]
+    [Trait("Feature", "CUT-001")]
+    public void A_depth_typed_before_the_stock_was_chosen_is_changed_rather_than_duplicated()
     {
-        Sketch sketch = Design.WithParts(("Part", width.Units, height.Units, part));
+        // assembly-model §1.2: the thickness of a flat part is its depth, stated through the
+        // updater exactly as a width is — so a depth somebody typed is the number the stock changes.
+        LumberStock lumber = Lumber("1x6");
+        Part part = new("1x6", Species: null, Quantity: 1, Flat);
+        (Sketch drawn, Box box) = OneBox(Length.Inches(48), Length.Inches(8), part, depth: Length.Inches(1));
+
+        RelationshipId typed = RelationshipId.New();
+        Sketch sketch = Assert.IsType<Solved>(Updater.Apply(
+            drawn,
+            new AddRelationship(new ParamValue(typed, new BoxDepthRef(box.Id), Length.Inches(1)))))
+            .Sketch;
+
+        Batch batch = StockAssignment.RequestsFor(sketch, box, part, lumber);
+        Assert.Contains(batch.Requests, request => request is SetParameter parameter && parameter.Driving == typed);
+
+        Solved result = Assert.IsType<Solved>(Updater.Apply(sketch, batch));
+        Assert.Equal(lumber.Thickness, result.Sketch.Find<Box>(box.Id)!.Depth);
+        Assert.Equal(lumber.Thickness, ((ParamValue)result.Sketch.Find(typed)!).Value);
+        Assert.Contains(box.Id, result.Changes.Resized);
+        Assert.True(StockAssignment.FixesDepth(part, lumber));
+        Assert.False(StockAssignment.FixesDepth(part with { PlanAxes = Footprint }, lumber));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-001")]
+    public void A_depth_the_stock_cannot_have_is_a_conflict_like_any_other()
+    {
+        // The special case is gone: the out-of-plane value used to be set on the part directly,
+        // "nothing else depending on it". Now a depth held by something else conflicts, and the
+        // whole assignment is refused — the part keeps its old depth and its old stock.
+        LumberStock lumber = Lumber("1x6");
+        Part part = new("1x6", Species: null, Quantity: 1, Flat);
+        Piece plain = new(Stock: null, Species: null, Quantity: 1, Length.Inches(1), Flat);
+
+        Sketch drawn = Design.WithParts(
+            ("Shelf", Length.Inches(48).Units, Length.Inches(8).Units, plain),
+            ("Stop", Length.Inches(48).Units, Length.Inches(8).Units, plain));
+        Box[] boxes = [.. drawn.Entities.Values.OfType<Box>().OrderBy(box => box.Id)];
+
+        Sketch pinned = Assert.IsType<Solved>(Updater.Apply(drawn, Batch.Of(
+            new AddRelationship(new EqualParam(
+                RelationshipId.New(), new BoxDepthRef(boxes[1].Id), new BoxDepthRef(boxes[0].Id))),
+            new AddRelationship(new ParamValue(
+                RelationshipId.New(), new BoxDepthRef(boxes[1].Id), Length.Inches(1)))))).Sketch;
+
+        OverConstrained refused = Assert.IsType<OverConstrained>(
+            Updater.Apply(pinned, StockAssignment.RequestsFor(pinned, boxes[0], part, lumber)));
+        Assert.Contains("depth", refused.Conflict.Summary, StringComparison.Ordinal);
+
+        Box unchanged = pinned.Find<Box>(boxes[0].Id)!;
+        Assert.Equal(Length.Inches(1), unchanged.Depth);
+        Assert.Null(unchanged.Part!.Stock);
+    }
+
+    /// <summary>One box with one part on it, drawn at the given plan size and depth.</summary>
+    private static (Sketch Sketch, Box Box) OneBox(Length width, Length height, Part part, Length depth)
+    {
+        Sketch sketch = Design.WithParts(
+            ("Part", width.Units, height.Units, new Piece(part.Stock, part.Species, part.Quantity, depth, part.PlanAxes)));
         return (sketch, sketch.Entities.Values.OfType<Box>().Single());
     }
 

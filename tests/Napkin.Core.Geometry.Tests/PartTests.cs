@@ -1,19 +1,22 @@
 namespace Napkin.Core.Geometry.Tests;
 
 /// <summary>
-/// The part model: two finished dimensions in the plan and one out of it, named by
-/// <see cref="PlanAxes"/> (docs/design/parts-and-cut-list.md §1.1).
+/// The part model: a box's three sizes named by <see cref="PlanAxes"/>
+/// (docs/design/parts-and-cut-list.md §1.1; the third is the box's depth since
+/// docs/design/assembly-model.md §1.2).
 /// </summary>
 public class PartTests
 {
     /// <summary>Units of 1/1024 inch, the way the file and the fixtures state a length.</summary>
-    private static Box Box(long widthUnits, long heightUnits, int quarterTurns = 0) => new(
-        EntityId.New(),
-        LayerId.Default,
-        Point2.Inches(10, 20),
-        new Length(widthUnits),
-        new Length(heightUnits),
-        Angle.Zero.Rotate90(quarterTurns));
+    private static Box Box(long widthUnits, long heightUnits, int quarterTurns = 0, long depthUnits = 768)
+        => Napkin.Core.Geometry.Box.AsDrawn(
+            EntityId.New(),
+            LayerId.Default,
+            Point2.Inches(10, 20),
+            new Length(widthUnits),
+            new Length(heightUnits),
+            new Length(depthUnits),
+            Angle.Zero.Rotate90(quarterTurns));
 
     [Trait("Feature", "CUT-002")]
     [Theory]
@@ -28,14 +31,15 @@ public class PartTests
         long boxHeight,
         PartDimension x,
         PartDimension y,
-        long outOfPlane,
+        long depth,
         long length,
         long width,
         long thickness)
     {
-        Part part = new(null, null, 1, new Length(outOfPlane), new PlanAxes(x, y));
+        // §9.1 test 19: SizeOn reads the box's Depth for the name neither plan axis claims.
+        Part part = new(null, null, 1, new PlanAxes(x, y));
 
-        FinishedSize size = part.SizeOn(Box(boxWidth, boxHeight));
+        FinishedSize size = part.SizeOn(Box(boxWidth, boxHeight, depthUnits: depth));
 
         Assert.Equal(new Length(length), size.Length);
         Assert.Equal(new Length(width), size.Width);
@@ -52,9 +56,9 @@ public class PartTests
     {
         // The whole point of reading the box's stored parameters rather than the distance between
         // its derived corners: turning a part does not change what it is.
-        Part part = new(null, null, 1, Length.Inches(3), new PlanAxes(PartDimension.Length, PartDimension.Width));
+        Part part = new(null, null, 1, new PlanAxes(PartDimension.Length, PartDimension.Width));
 
-        FinishedSize size = part.SizeOn(Box(10240, 4096, quarterTurns));
+        FinishedSize size = part.SizeOn(Box(10240, 4096, quarterTurns, depthUnits: 3072));
 
         Assert.Equal(Length.Inches(10), size.Length);
         Assert.Equal(Length.Inches(4), size.Width);
@@ -93,13 +97,21 @@ public class PartTests
     {
         PlanAxes axes = new(PartDimension.Length, PartDimension.Width);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Part(null, null, 0, Length.Inches(1), axes));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Part(null, null, -1, Length.Inches(1), axes));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Part(null, null, 1, Length.Zero, axes));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Part(null, null, 1, Length.Inches(-1), axes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Part(null, null, 0, axes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Part(null, null, -1, axes));
 
-        // Four legs drawn once, and the thinnest thing a tape shows.
-        Assert.Equal(4, new Part(null, null, 4, new Length(1), axes).Quantity);
+        // Four legs drawn once.
+        Assert.Equal(4, new Part(null, null, 4, axes).Quantity);
+
+        // The thickness is the box's depth now, and it is the box that must have one
+        // (assembly-model §1.6 invariant 10): the thinnest thing a tape shows is fine, nothing is not.
+        Box thin = Box(10240, 4096, depthUnits: 1);
+        Assert.True(Sketch.Empty.WithEntity(thin).Validate().IsValid);
+        ValidationResult flat = Sketch.Empty.WithEntity(thin with { Depth = Length.Zero }).Validate();
+        Assert.Equal(ValidationErrorKind.NonPositiveSize, Assert.Single(flat.Errors).Kind);
+        Assert.Equal(
+            RejectionReason.NonPositiveSize,
+            Assert.IsType<Rejected>(new DirectUpdater().Apply(Sketch.Empty, new AddEntity(thin with { Depth = Length.Inches(-1) }))).Reason);
     }
 
     [Trait("Feature", "CUT-001")]
@@ -107,7 +119,7 @@ public class PartTests
     public void A_part_is_a_value_and_carries_what_it_was_given()
     {
         PlanAxes axes = new(PartDimension.Width, PartDimension.Thickness);
-        Part part = new("2x4", "Douglas fir", 4, Length.Inches(16), axes);
+        Part part = new("2x4", "Douglas fir", 4, axes);
 
         Assert.Equal("2x4", part.Stock);
         Assert.Equal("Douglas fir", part.Species);
@@ -132,7 +144,7 @@ public class PartTests
         // the first time somebody moved a leg.
         SketchBuilder builder = new();
         EntityId id = builder.AddBox(0, 0, 10, 4);
-        Part part = new("2x4", "Douglas fir", 4, Length.Inches(16), new PlanAxes(PartDimension.Length, PartDimension.Width));
+        Part part = new("2x4", "Douglas fir", 4, new PlanAxes(PartDimension.Length, PartDimension.Width));
 
         Sketch sketch = builder.Sketch.WithEntity(
             ((Box)builder.Sketch.Find(id)!) with { Name = "Leg, south-west", Part = part });
@@ -140,7 +152,7 @@ public class PartTests
         DirectUpdater updater = new();
         foreach (Request request in new Request[]
         {
-            new Drag(id, new Vector2(Length.Inches(3), Length.Inches(2))),
+            Drag.InPlan(id, new Vector2(Length.Inches(3), Length.Inches(2))),
             new DragEdge(id, BoxEdge.East, Length.Inches(2)),
             new SetRotation(id, Angle.Zero.Rotate90(1)),
             new SetPosition(id, Point2.Inches(20, 30)),
@@ -158,7 +170,7 @@ public class PartTests
 
         // The box really did change under all that: this is not a test of a no-op.
         Box final = Assert.IsType<Box>(sketch.Find(id));
-        Assert.Equal(Point2.Inches(20, 30), final.Anchor);
+        Assert.Equal(Point3.Inches(20, 30, 0), final.Anchor);
         Assert.Equal(Length.Inches(12), final.Width);
     }
 
@@ -171,7 +183,7 @@ public class PartTests
         SketchBuilder builder = new();
         EntityId id = builder.AddBox(0, 0, 10, 4);
         DirectUpdater updater = new();
-        Part part = new("2x4", null, 2, Length.Inches(2), new PlanAxes(PartDimension.Length, PartDimension.Width));
+        Part part = new("2x4", null, 2, new PlanAxes(PartDimension.Length, PartDimension.Width));
 
         Solved named = Assert.IsType<Solved>(updater.Apply(builder.Sketch, new SetName(id, "Rail, front")));
         Assert.Equal("Rail, front", named.Sketch.Find(id)!.Name);
@@ -202,7 +214,7 @@ public class PartTests
         EntityId node = builder.AddNode(0, 0);
         EntityId missing = EntityId.New();
         DirectUpdater updater = new();
-        Part part = new(null, null, 1, Length.Inches(1), new PlanAxes(PartDimension.Length, PartDimension.Width));
+        Part part = new(null, null, 1, new PlanAxes(PartDimension.Length, PartDimension.Width));
 
         Assert.Equal(
             RejectionReason.UnknownEntity,

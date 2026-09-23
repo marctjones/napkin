@@ -33,7 +33,7 @@ internal sealed class SketchBuilder
     public EntityId AddBox(Point2 anchor, Length width, Length height, Angle rotation)
     {
         EntityId id = NextEntity();
-        Sketch = Sketch.WithEntity(new Box(id, LayerId.Default, anchor, width, height, rotation));
+        Sketch = Sketch.WithEntity(Box.AsDrawn(id, LayerId.Default, anchor, width, height, Box.DefaultDepth, rotation));
         return id;
     }
 
@@ -42,7 +42,7 @@ internal sealed class SketchBuilder
     {
         EntityId id = NextEntity();
         Sketch = Sketch.WithEntity(
-            new Box(id, LayerId.Default, Point2.Inches(x, y), Length.Inches(width), Length.Inches(height), Angle.Zero)
+            Box.AsDrawn(id, LayerId.Default, Point2.Inches(x, y), Length.Inches(width), Length.Inches(height), Box.DefaultDepth, Angle.Zero) with
             {
                 Cuts = [.. cuts],
             });
@@ -141,7 +141,7 @@ internal static class SketchAssert
     {
         Box box = sketch.Find<Box>(id) ?? throw new InvalidOperationException($"No box {id}.");
 
-        Assert.Equal(Point2.Inches(x, y), box.Anchor);
+        Assert.Equal(Point3.Inches(x, y, 0), box.Anchor);
         Assert.Equal(Length.Inches(width), box.Width);
         Assert.Equal(Length.Inches(height), box.Height);
     }

@@ -1,10 +1,8 @@
-using System.Globalization;
-
 namespace Napkin.Core.Geometry;
 
 /// <summary>
-/// One of the three finished dimensions a part has. A plan view holds two of them; the third is
-/// the one <see cref="Part.OutOfPlane"/> carries.
+/// One of the three finished dimensions a part has. The box's width and height are two of them and
+/// its <see cref="Box.Depth"/> is the third.
 /// </summary>
 public enum PartDimension
 {
@@ -24,11 +22,10 @@ public enum PartDimension
 /// </summary>
 /// <remarks>
 /// <para>
-/// The remaining name — the one neither axis claims — is the out-of-plane dimension, and its value
-/// is the one number the part stores itself (<c>docs/design/parts-and-cut-list.md</c> §1.1).
-/// Nothing is stored twice: two of the three come from the box's parameters and one from the part,
-/// which is what keeps <c>CUT-002</c> true by construction — there is no second copy of an in-plan
-/// dimension that could drift from the box's.
+/// The remaining name — the one neither axis claims — lies along local Z, and its value is the
+/// box's <see cref="Box.Depth"/> (<c>docs/design/assembly-model.md</c> §1.2). Nothing is stored
+/// twice: all three are stored parameters of one box, which is what keeps <c>CUT-002</c> true by
+/// construction — there is no second copy of a dimension that could drift from the box's.
 /// </para>
 /// <para>
 /// A box 40&#x2033; &#xD7; 3/4&#x2033; could be a 40&#x2033;-long piece on edge or a 3/4&#x2033;
@@ -60,7 +57,7 @@ public readonly record struct PlanAxes
     /// <summary>The dimension the box's stored <see cref="Box.Height"/> is.</summary>
     public PartDimension Y { get; }
 
-    /// <summary>The one name neither axis claims, whose value is <see cref="Part.OutOfPlane"/>.</summary>
+    /// <summary>The one name neither axis claims: the one along local Z, whose value is <see cref="Box.Depth"/>.</summary>
     public PartDimension OutOfPlane
         => (PartDimension.Length != X && PartDimension.Length != Y) ? PartDimension.Length
             : (PartDimension.Width != X && PartDimension.Width != Y) ? PartDimension.Width
@@ -76,8 +73,8 @@ public readonly record struct PlanAxes
 public readonly record struct FinishedSize(Length Length, Length Width, Length Thickness);
 
 /// <summary>
-/// What a <see cref="Box"/> needs to be a piece somebody cuts: the dimension a plan view cannot
-/// hold, which of the three the plan's two axes are, and which stock it comes from.
+/// What a <see cref="Box"/> needs to be a piece somebody cuts: which of its three sizes are the
+/// part's length, width and thickness, and which stock it comes from.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -94,16 +91,14 @@ public readonly record struct FinishedSize(Length Length, Length Width, Length T
 /// <param name="Stock">The nominal name the materials library resolves — "2x4" — or <see langword="null"/> for a part whose dimensions are its own.</param>
 /// <param name="Species">Free text, set in the properties panel after placing. Never interpreted by this build.</param>
 /// <param name="Quantity">How many identical copies this one box stands for; at least 1.</param>
-/// <param name="OutOfPlane">The value of the one dimension the plan cannot show; greater than zero.</param>
-/// <param name="PlanAxes">Which of the three dimensions the box's stored width and height are.</param>
+/// <param name="PlanAxes">Which of the three dimensions the box's stored width and height are; the third is its depth.</param>
 public sealed record Part(
     string? Stock,
     string? Species,
     int Quantity,
-    Length OutOfPlane,
     PlanAxes PlanAxes)
 {
-    /// <inheritdoc cref="Part(string?, string?, int, Length, PlanAxes)"/>
+    /// <inheritdoc cref="Part(string?, string?, int, PlanAxes)"/>
     public int Quantity { get; init; } = Quantity >= 1
         ? Quantity
         : throw new ArgumentOutOfRangeException(
@@ -111,22 +106,17 @@ public sealed record Part(
             Quantity,
             "A part stands for at least one piece.");
 
-    /// <inheritdoc cref="Part(string?, string?, int, Length, PlanAxes)"/>
-    public Length OutOfPlane { get; init; } = OutOfPlane > Length.Zero
-        ? OutOfPlane
-        : throw new ArgumentOutOfRangeException(
-            nameof(OutOfPlane),
-            OutOfPlane.Units.ToString(CultureInfo.InvariantCulture),
-            "A part's out-of-plane dimension must be greater than zero.");
-
     /// <summary>
     /// The three finished dimensions of this part on <paramref name="box"/>.
     /// </summary>
     /// <remarks>
-    /// Reads the box's <em>stored</em> <see cref="Box.Width"/> and <see cref="Box.Height"/> and
-    /// never the distance between its derived corners, so a part typed 10&#x2033; wide still
-    /// measures 10&#x2033; after it is rotated 37&#xB0; (<c>CUT-002</c>, geometry model §2.3).
-    /// <see cref="Box.Rotation"/> is not read at all.
+    /// Reads the box's <em>stored</em> <see cref="Box.Width"/>, <see cref="Box.Height"/> and
+    /// <see cref="Box.Depth"/> by <see cref="PlanAxes"/>, and never the distance between its
+    /// derived corners, so a part typed 10&#x2033; wide still measures 10&#x2033; after it is
+    /// rotated 37&#xB0; (<c>CUT-002</c>, geometry model §2.3). Placement —
+    /// <see cref="Box.Anchor"/>, <see cref="Box.FaceUp"/>, <see cref="Box.Rotation"/> — is not read
+    /// at all, so a leg standing up and a leg lying down are the same leg
+    /// (<c>docs/design/assembly-model.md</c> §5).
     /// </remarks>
     /// <param name="box">The box this part is on.</param>
     public FinishedSize SizeOn(Box box)
@@ -142,5 +132,5 @@ public sealed record Part(
     private Length Value(PartDimension which, Box box)
         => which == PlanAxes.X ? box.Width
             : which == PlanAxes.Y ? box.Height
-            : OutOfPlane;
+            : box.Depth;
 }

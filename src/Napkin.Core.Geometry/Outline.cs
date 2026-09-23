@@ -31,8 +31,8 @@ public sealed record ArcByCenter(Point2 From, Point2 To, Point2 Center) : Outlin
 public sealed record ArcThrough(Point2 From, Point2 Through, Point2 To) : OutlineSegment(From, To);
 
 /// <summary>
-/// The closed boundary of what is left of a blank, in world coordinates, counter-clockwise in the
-/// box's local frame (<c>docs/design/shaped-parts-model.md</c> §1.5).
+/// The closed boundary of what is left of a blank, in the box's local XY frame, counter-clockwise
+/// (<c>docs/design/shaped-parts-model.md</c> §1.5, <c>docs/design/assembly-model.md</c> §7.2).
 /// </summary>
 /// <remarks>
 /// The walk starts along the south edge, at the south-west corner or at whatever a cut there left
@@ -111,13 +111,13 @@ internal static class OutlineBuilder
         (BoxEdge.West, BoxCorner.NorthWest, BoxCorner.SouthWest),
     ];
 
-    /// <summary>The boundary of a blank, in world coordinates or in its own local frame.</summary>
-    internal static Outline Build(Box box, bool world)
+    /// <summary>The boundary of a blank, in its own local XY frame.</summary>
+    internal static Outline Build(Box box)
     {
         Dictionary<CutSite, Cut> bySite = CutsBySite(box);
         ImmutableArray<OutlineSegment>.Builder segments = ImmutableArray.CreateBuilder<OutlineSegment>();
 
-        Point2 Place(Vector2 local) => world ? box.Anchor + local.Rotate(box.Rotation) : new Point2(local.Dx, local.Dy);
+        static Point2 Place(Vector2 local) => new(local.Dx, local.Dy);
 
         foreach ((BoxEdge edge, BoxCorner from, BoxCorner to) in Walk)
         {

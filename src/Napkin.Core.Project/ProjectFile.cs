@@ -204,14 +204,29 @@ public static class ProjectFile
         // A sketch that does not validate would be written into a file this build refuses to
         // open. Saving it would turn a bug in the editor into a drawing the user cannot get back.
         ValidationResult validation = sketch.Validate();
-        return validation.IsValid
-            ? null
-            : new NotSaved(
+        if (!validation.IsValid)
+        {
+            return new NotSaved(
             [
                 .. validation.Errors.Select(error => new SaveProblem(
                     SaveProblemKind.InvalidSketch,
                     $"The drawing is not one napkin could open again: {error.Message}")),
             ]);
+        }
+
+        // The same reasoning for a box this format cannot spell: written, it would open again as a
+        // different box (SceneWriter.Unspellable).
+        List<SaveProblem> unspellable =
+        [
+            .. sketch.Entities.Values
+                .OfType<Box>()
+                .OrderBy(box => box.Id)
+                .Select(SceneWriter.Unspellable)
+                .OfType<string>()
+                .Select(why => new SaveProblem(SaveProblemKind.Unwritable, why)),
+        ];
+
+        return unspellable.Count == 0 ? null : new NotSaved([.. unspellable]);
     }
 
     private static NotSaved Unwritable(string message)

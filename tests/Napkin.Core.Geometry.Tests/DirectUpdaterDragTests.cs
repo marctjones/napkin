@@ -20,10 +20,10 @@ public class DirectUpdaterDragTests
 
         Solved result = Assert.IsType<Solved>(Updater.Apply(
             builder.Sketch,
-            new Drag(a, new Vector2(Length.Inches(5), Length.Inches(7)))));
+            Drag.InPlan(a, new Vector2(Length.Inches(5), Length.Inches(7)))));
 
         // The flush is on vertical edges, so it blocks X and not Y.
-        Assert.Equal(new Vector2(Length.Zero, Length.Inches(7)), result.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(Length.Zero, Length.Inches(7), Length.Zero), result.Changes.AppliedDelta);
         SketchAssert.BoxIs(result.Sketch, a, 0, 7, 30, 4);
         SketchAssert.BoxIs(result.Sketch, b, 30, 0, 10, 4);
         SketchAssert.IsConsistent(result.Sketch);
@@ -41,10 +41,10 @@ public class DirectUpdaterDragTests
 
         Solved result = Assert.IsType<Solved>(Updater.Apply(
             builder.Sketch,
-            new Drag(box, new Vector2(Length.Inches(5), Length.Inches(5)))));
+            Drag.InPlan(box, new Vector2(Length.Inches(5), Length.Inches(5)))));
 
         // A drag is a question, not a demand: the answer "no" is not a conflict.
-        Assert.Equal(Vector2.Zero, result.Changes.AppliedDelta);
+        Assert.Equal(Vector3.Zero, result.Changes.AppliedDelta);
         Assert.Empty(result.Changes.Moved);
         SketchAssert.BoxIs(result.Sketch, box, 0, 0, 10, 10);
     }
@@ -71,14 +71,14 @@ public class DirectUpdaterDragTests
         // never overrides one: the flushes block Y, the AxisDistance blocks X. Design §7.1 case 13
         // expects the Y component zeroed and X free, which contradicts §4.4's own rule that an
         // AxisDistance along X blocks X; §4.4 wins. See docs/design/geometry-model.md §10.
-        Solved pinned = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new Drag(opening, wanted)));
-        Assert.Equal(Vector2.Zero, pinned.Changes.AppliedDelta);
+        Solved pinned = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, Drag.InPlan(opening, wanted)));
+        Assert.Equal(Vector3.Zero, pinned.Changes.AppliedDelta);
 
         // Remove the number and the opening slides along the wall, but not out of it.
         Solved freed = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new RemoveRelationship(along)));
-        Solved dragged = Assert.IsType<Solved>(Updater.Apply(freed.Sketch, new Drag(opening, wanted)));
+        Solved dragged = Assert.IsType<Solved>(Updater.Apply(freed.Sketch, Drag.InPlan(opening, wanted)));
 
-        Assert.Equal(new Vector2(Length.Inches(10), Length.Zero), dragged.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(Length.Inches(10), Length.Zero, Length.Zero), dragged.Changes.AppliedDelta);
         SketchAssert.BoxIs(dragged.Sketch, opening, 46, 0, 36, 6);
         SketchAssert.BoxIs(dragged.Sketch, wall, 0, 0, 120, 6);
         SketchAssert.IsConsistent(dragged.Sketch);
@@ -94,10 +94,10 @@ public class DirectUpdaterDragTests
 
         Solved result = Assert.IsType<Solved>(Updater.Apply(
             builder.Sketch,
-            new Drag(a, new Vector2(Length.Inches(5), Length.Inches(7)))));
+            Drag.InPlan(a, new Vector2(Length.Inches(5), Length.Inches(7)))));
 
         // The flush couples X, so B comes along on X; it is free on Y, so it stays.
-        Assert.Equal(new Vector2(Length.Inches(5), Length.Inches(7)), result.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(Length.Inches(5), Length.Inches(7), Length.Zero), result.Changes.AppliedDelta);
         SketchAssert.BoxIs(result.Sketch, a, 5, 7, 30, 4);
         SketchAssert.BoxIs(result.Sketch, b, 35, 0, 10, 4);
         SketchAssert.IsConsistent(result.Sketch);
@@ -114,7 +114,7 @@ public class DirectUpdaterDragTests
 
         Solved result = Assert.IsType<Solved>(Updater.Apply(
             builder.Sketch,
-            new Drag(start, new Vector2(Length.Inches(3), Length.Inches(4)))));
+            Drag.InPlan(start, new Vector2(Length.Inches(3), Length.Inches(4)))));
 
         Assert.Equal(Point2.Inches(3, 4), result.Sketch.Find<Node>(start)!.Position);
         Assert.Equal(Point2.Inches(10, 4), result.Sketch.Find<Node>(end)!.Position);
@@ -131,21 +131,21 @@ public class DirectUpdaterDragTests
         Solved east = Assert.IsType<Solved>(
             Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.East, Length.Inches(5))));
         SketchAssert.BoxIs(east.Sketch, box, 10, 0, 35, 4);
-        Assert.Equal(new Vector2(Length.Inches(5), Length.Zero), east.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(Length.Inches(5), Length.Zero, Length.Zero), east.Changes.AppliedDelta);
         Assert.Contains(box, east.Changes.Resized);
 
         // Grabbing the anchor's own edge moves the anchor and leaves the far edge.
         Solved west = Assert.IsType<Solved>(
             Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.West, Length.Inches(5))));
         SketchAssert.BoxIs(west.Sketch, box, 5, 0, 35, 4);
-        Assert.Equal(new Vector2(-Length.Inches(5), Length.Zero), west.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(-Length.Inches(5), Length.Zero, Length.Zero), west.Changes.AppliedDelta);
         Assert.Equal(Point2.Inches(40, 0), west.Sketch.Find<Box>(box)!.Corner(BoxCorner.SouthEast));
 
         // And north grows the height.
         Solved north = Assert.IsType<Solved>(
             Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.North, Length.Inches(2))));
         SketchAssert.BoxIs(north.Sketch, box, 10, 0, 30, 6);
-        Assert.Equal(new Vector2(Length.Zero, Length.Inches(2)), north.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(Length.Zero, Length.Inches(2), Length.Zero), north.Changes.AppliedDelta);
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public class DirectUpdaterDragTests
         Solved result = Assert.IsType<Solved>(
             Updater.Apply(builder.Sketch, new DragEdge(a, BoxEdge.East, Length.Inches(5))));
 
-        Assert.Equal(Vector2.Zero, result.Changes.AppliedDelta);
+        Assert.Equal(Vector3.Zero, result.Changes.AppliedDelta);
         SketchAssert.BoxIs(result.Sketch, a, 0, 0, 30, 4);
         Assert.True(result.Changes.IsEmpty);
 
@@ -209,6 +209,6 @@ public class DirectUpdaterDragTests
 
         // The box's local +X points along global +Y at a quarter turn.
         SketchAssert.BoxIs(result.Sketch, box, 0, 0, 35, 4);
-        Assert.Equal(new Vector2(Length.Zero, Length.Inches(5)), result.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(Length.Zero, Length.Inches(5), Length.Zero), result.Changes.AppliedDelta);
     }
 }

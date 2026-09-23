@@ -81,7 +81,10 @@ public sealed record Rejected(RejectionReason Reason, ValidationError? Detail = 
 /// </param>
 /// <param name="RelationshipsAdded">Relationships added.</param>
 /// <param name="RelationshipsRemoved">Relationships removed.</param>
-/// <param name="AppliedDelta">For a drag, what actually happened; <see langword="null"/> otherwise.</param>
+/// <param name="AppliedDelta">
+/// For a drag, what actually happened, in the world; <see langword="null"/> otherwise. A plan-canvas
+/// drag's has a zero Z (docs/design/assembly-model.md &#xA7;2.4).
+/// </param>
 public sealed record ChangeSet(
     ImmutableHashSet<EntityId> Added,
     ImmutableHashSet<EntityId> Removed,
@@ -90,7 +93,7 @@ public sealed record ChangeSet(
     ImmutableHashSet<EntityId> Modified,
     ImmutableHashSet<RelationshipId> RelationshipsAdded,
     ImmutableHashSet<RelationshipId> RelationshipsRemoved,
-    Vector2? AppliedDelta)
+    Vector3? AppliedDelta)
 {
     /// <summary>Nothing changed.</summary>
     public static readonly ChangeSet Empty = new(

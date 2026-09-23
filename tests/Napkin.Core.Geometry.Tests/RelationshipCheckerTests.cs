@@ -125,7 +125,7 @@ public class RelationshipCheckerTests
 
         Assert.True(RelationshipChecker.Check(builder.Sketch).AllHold);
 
-        Sketch nudged = builder.Sketch.WithEntity(builder.BoxOf(shelf) with { Anchor = Point2.Inches(1, 10) });
+        Sketch nudged = builder.Sketch.WithEntity(builder.BoxOf(shelf) with { Anchor = Point3.Inches(1, 10, 0) });
         Violation violation = Assert.Single(RelationshipChecker.Check(nudged).Violations);
         Assert.Equal(Length.Inches(1), violation.Residual);
         Assert.True(violation.Exact);

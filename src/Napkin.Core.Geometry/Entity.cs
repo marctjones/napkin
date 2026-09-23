@@ -49,37 +49,73 @@ public sealed record Segment(EntityId Id, LayerId Layer, EntityId Start, EntityI
 }
 
 /// <summary>
-/// A rectangle defined by its parameters, not its corners: furniture parts, walls, openings.
+/// A block defined by its parameters, not its corners: furniture parts, walls, openings. It has a
+/// position and one of the 24 axis-aligned orientations in space
+/// (<c>docs/design/assembly-model.md</c> §1.1).
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>Parametric on purpose.</strong> A box stores what the user typed — its width and
-/// height — and derives its corners. The cut list (#8) reads <see cref="Width"/> and
-/// <see cref="Height"/>, so a 10&#x2033; part is 10&#x2033; even when it is rotated 37&#xB0; and
-/// its rounded corners are 10.0004&#x2033; apart. Corners of right-angle-rotated boxes are exact
-/// sums and never round (design &#xA7;2.3).
+/// <strong>Parametric on purpose.</strong> A box stores what the user typed — its width, height
+/// and depth — and derives its corners. The cut list (#8) reads <see cref="Width"/>,
+/// <see cref="Height"/> and <see cref="Depth"/>, so a 10&#x2033; part is 10&#x2033; even when it is
+/// rotated 37&#xB0; and its rounded corners are 10.0004&#x2033; apart. Corners of boxes turned by
+/// right angles are exact sums and never round (design &#xA7;2.3, assembly-model &#xA7;1.3).
 /// </para>
 /// <para>
-/// A wall in plan view is a box whose <see cref="Width"/> is its length and <see cref="Height"/>
-/// its thickness; an opening is a box related to its wall. The building module (#18) adds what a
-/// wall supports on its own types that reference the box by id; the geometry kernel knows nothing
-/// about headers.
+/// <strong>The plain-English trap</strong> (assembly-model &#xA7;1.2): <see cref="Height"/> is the
+/// size along <em>local Y</em> — the plan-view depth of the footprint — and <see cref="Depth"/> is
+/// the size along local Z, which for a box lying as drawn is what a person would call its height or
+/// thickness.
+/// </para>
+/// <para>
+/// A box whose <see cref="Anchor"/> Z is zero, whose <see cref="FaceUp"/> is
+/// <see cref="BoxFace.Top"/> and whose <see cref="Rotation"/> is a right-angle multiple is the
+/// plan box napkin had before assembly-model in every respect: same corners in the plan, same
+/// relationships, same cut-list row, same drawing.
+/// </para>
+/// <para>
+/// A wall in plan view is a box whose <see cref="Width"/> is its length, <see cref="Height"/> its
+/// thickness and <see cref="Depth"/> its height; an opening is a box related to its wall. The
+/// building module (#18) adds what a wall supports on its own types that reference the box by id;
+/// the geometry kernel knows nothing about headers.
 /// </para>
 /// </remarks>
 /// <param name="Id">The entity's identity.</param>
 /// <param name="Layer">The layer the box is drawn on.</param>
-/// <param name="Anchor">The local origin corner, <see cref="BoxCorner.SouthWest"/> in the local frame.</param>
+/// <param name="Anchor">The local origin corner: south-west-bottom in the local frame.</param>
 /// <param name="Width">Along local X; must be greater than zero.</param>
 /// <param name="Height">Along local Y; must be greater than zero.</param>
-/// <param name="Rotation">About <paramref name="Anchor"/>; right-angle multiples only in the first beta.</param>
+/// <param name="Depth">Along local Z; must be greater than zero. What a part's third, out-of-plan dimension is.</param>
+/// <param name="FaceUp">Which local face points to world +Z. <see cref="BoxFace.Top"/> is the box as drawn.</param>
+/// <param name="Rotation">The spin about world Z, about <paramref name="Anchor"/>; right-angle multiples only in the direct updater.</param>
 public sealed record Box(
     EntityId Id,
     LayerId Layer,
-    Point2 Anchor,
+    Point3 Anchor,
     Length Width,
     Length Height,
+    Length Depth,
+    BoxFace FaceUp,
     Angle Rotation) : Entity(Id, Layer)
 {
+    /// <summary>
+    /// The depth a box gets when nothing says otherwise: 3/4&#x2033;, 768 units — what the
+    /// rectangle tool draws (<c>docs/design/assembly-model.md</c> &#xA7;11 decision 7). A design
+    /// choice for a default, visible and editable in the properties panel; not a stock dimension.
+    /// </summary>
+    public static readonly Length DefaultDepth = new(768);
+
+    /// <summary>A box as drawn — top up, at the plan datum Z = 0 — from its plan anchor and its three sizes.</summary>
+    /// <param name="id">The entity's identity.</param>
+    /// <param name="layer">The layer the box is drawn on.</param>
+    /// <param name="anchor">The anchor in the plan; Z is zero.</param>
+    /// <param name="width">Along local X.</param>
+    /// <param name="height">Along local Y.</param>
+    /// <param name="depth">Along local Z.</param>
+    /// <param name="rotation">The spin about world Z.</param>
+    public static Box AsDrawn(EntityId id, LayerId layer, Point2 anchor, Length width, Length height, Length depth, Angle rotation)
+        => new(id, layer, new Point3(anchor.X, anchor.Y, Length.Zero), width, height, depth, BoxFace.Top, rotation);
+
     /// <summary>
     /// What this box is a piece of, or <see langword="null"/> when it is not a part — a wall, an
     /// opening.
@@ -115,34 +151,87 @@ public sealed record Box(
     }
 
     /// <summary>
-    /// The shape that is left: derived, never stored (§1.5). In world coordinates,
-    /// counter-clockwise in the box's local frame, starting along the south edge.
+    /// The shape that is left: derived, never stored (shaped-parts §1.5). In the blank's own local
+    /// XY frame — the cap of the solid — with the south-west corner at the origin,
+    /// counter-clockwise, starting along the south edge.
     /// </summary>
-    public Outline Outline() => OutlineBuilder.Build(this, world: true);
+    /// <remarks>
+    /// Local, not world, since docs/design/assembly-model.md §7.2: the world form of a tipped box's
+    /// outline is not a plan shape at all. Whoever places it — the plan canvas, by the box's
+    /// orientation — does so from this and the box's anchor and orientation.
+    /// </remarks>
+    public Outline Outline() => OutlineBuilder.Build(this);
 
     /// <inheritdoc/>
     public override Entity OnLayer(LayerId layer) => this with { Layer = layer };
 
     /// <summary>
-    /// Where a corner is. Exact when <see cref="Rotation"/> is a right-angle multiple; otherwise
-    /// it rounds through <see cref="Length.FromInches"/>, which only the solver path reaches.
+    /// How the box is turned: which face is up, then the spin (<c>docs/design/assembly-model.md</c>
+    /// &#xA7;1.3). Derived from the two stored fields, which are its one spelling.
     /// </summary>
-    public Point2 Corner(BoxCorner which) => Anchor + LocalOffset(which).Rotate(Rotation);
+    public Orientation Orientation => new(FaceUp, Rotation);
 
     /// <summary>
-    /// The centre. Rounds by at most half a unit when a side is an odd number of units.
+    /// Where a local point of the box lands in the world: <c>Anchor + Rz(Rotation) · Tip(FaceUp) · p</c>
+    /// (&#xA7;1.3). Exact for all 24 orientations: every component is an anchor coordinate plus or
+    /// minus a component of <paramref name="local"/>.
     /// </summary>
-    public Point2 Center => Anchor + new Vector2(
+    public Point3 World(Vector3 local) => Anchor + Orientation.Apply(local);
+
+    /// <summary>
+    /// Where a vertex is: the corner of the blank as drawn, at the bottom (local z = 0) or the top
+    /// (local z = <see cref="Depth"/>). Exact for all 24 orientations when <see cref="Rotation"/> is
+    /// a right-angle multiple; otherwise X and Y round through <see cref="Length.FromInches"/>,
+    /// which only the solver path reaches.
+    /// </summary>
+    public Point3 Vertex(BoxCorner corner, BoxLevel level)
+    {
+        Vector2 plan = LocalOffset(corner);
+        Length z = level switch
+        {
+            BoxLevel.Bottom => Length.Zero,
+            BoxLevel.Top => Depth,
+            _ => throw new ArgumentOutOfRangeException(nameof(level), level, "Not a box level."),
+        };
+
+        return World(new Vector3(plan.Dx, plan.Dy, z));
+    }
+
+    /// <summary>
+    /// Where a corner of the blank as drawn is, in the plan: the X and Y of its bottom vertex.
+    /// </summary>
+    /// <remarks>
+    /// For a <see cref="BoxFace.Top"/> box this is the plan corner it always was — the local
+    /// upright at that corner stands vertical and projects to this point. It is what a
+    /// <see cref="CornerRef"/> means until docs/design/assembly-model.md &#xA7;10 step 3 replaces
+    /// corner references with features; the plan canvas reads a box's corners through
+    /// <see cref="Footprint"/> instead, because a tipped box's plan south-west is not its blank's.
+    /// </remarks>
+    public Point2 Corner(BoxCorner which) => Vertex(which, BoxLevel.Bottom).XY;
+
+    /// <summary>
+    /// The centre, in space. Rounds by at most half a unit per axis when a size is an odd number
+    /// of units: each half-size is rounded first, then placed exactly.
+    /// </summary>
+    public Point3 Center => World(new Vector3(
         Width.Divide(2, Rounding.HalfToEven),
-        Height.Divide(2, Rounding.HalfToEven)).Rotate(Rotation);
+        Height.Divide(2, Rounding.HalfToEven),
+        Depth.Divide(2, Rounding.HalfToEven)));
+
+    /// <summary>
+    /// What the plan view sees of this box: a rectangle spun by <see cref="Rotation"/> about the
+    /// anchor (<c>docs/design/assembly-model.md</c> &#xA7;7.1). For a <see cref="BoxFace.Top"/>
+    /// box it is the anchor's X and Y, no offset, <see cref="Width"/> by <see cref="Height"/>.
+    /// </summary>
+    public Footprint Footprint() => Geometry.Footprint.Of(this);
 
     /// <summary>The size along <paramref name="axis"/> of the box's <em>local</em> frame.</summary>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="axis"/> is not X or Y.</exception>
     public Length Size(Axis axis) => axis switch
     {
         Axis.X => Width,
         Axis.Y => Height,
-        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "A plan box has a size along local X and Y only."),
+        Axis.Z => Depth,
+        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "Not an axis."),
     };
 
     /// <summary>The displacement from the anchor to a corner, before rotation.</summary>
@@ -179,6 +268,8 @@ public sealed record Box(
            && Anchor == other!.Anchor
            && Width == other.Width
            && Height == other.Height
+           && Depth == other.Depth
+           && FaceUp == other.FaceUp
            && Rotation == other.Rotation
            && Part == other.Part
            && _cuts.SequenceEqual(other._cuts);
@@ -191,6 +282,8 @@ public sealed record Box(
         hash.Add(Anchor);
         hash.Add(Width);
         hash.Add(Height);
+        hash.Add(Depth);
+        hash.Add(FaceUp);
         hash.Add(Rotation);
         hash.Add(Part);
         foreach (Cut cut in _cuts)

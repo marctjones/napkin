@@ -26,12 +26,13 @@ internal static class Containers
     {
         get
         {
-            Box box = new(
+            Box box = Box.AsDrawn(
                 new EntityId(Guid.Parse("0192f1a0-0000-4000-8000-00000000000a")),
                 LayerId.Default,
                 Point2.Origin,
                 new Length(30720),
                 new Length(4096),
+                Box.DefaultDepth,
                 Angle.Zero);
 
             return Sketch.Empty

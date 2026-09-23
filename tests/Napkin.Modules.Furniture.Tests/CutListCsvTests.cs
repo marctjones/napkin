@@ -240,12 +240,12 @@ public sealed class CutListCsvTests
         Assert.Throws<ArgumentNullException>(() => CutListCsv.Parse(null!));
     }
 
-    private static Part Leg => new(
+    private static Piece Leg => new(
         null, null, 1, new Length(16640), new PlanAxes(PartDimension.Width, PartDimension.Thickness));
 
-    private static Part Apron => new(
+    private static Piece Apron => new(
         null, null, 1, new Length(3584), new PlanAxes(PartDimension.Length, PartDimension.Thickness));
 
-    private static Part Top => new(
+    private static Piece Top => new(
         null, null, 1, new Length(768), new PlanAxes(PartDimension.Length, PartDimension.Width));
 }

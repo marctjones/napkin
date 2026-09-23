@@ -196,12 +196,13 @@ public sealed class SceneWriterTests
         // has to spell them the way the format says, and the proof is that the reader's binder
         // consumes the writer's bytes all the way to the checker and stops there — one problem,
         // naming the kind, and nothing about a field.
-        Box box = new(
+        Box box = Box.AsDrawn(
             new EntityId(Guid.Parse("0192f1a0-0000-4000-8000-00000000000a")),
             LayerId.Default,
             Point2.Origin,
             new Length(8192),
             new Length(8192),
+            Box.DefaultDepth,
             Angle.Zero);
 
         RelationshipId id = new(Guid.Parse("0192f1a0-0000-4000-8000-000000000001"));

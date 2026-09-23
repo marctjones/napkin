@@ -99,6 +99,7 @@ internal static class SceneNames
     internal const string BoxEdge = "boxEdge";
     internal const string BoxWidth = "boxWidth";
     internal const string BoxHeight = "boxHeight";
+    internal const string BoxDepth = "boxDepth";
     internal const string SegmentLength = "segmentLength";
     internal const string AxisMeasurand = "axis";
 

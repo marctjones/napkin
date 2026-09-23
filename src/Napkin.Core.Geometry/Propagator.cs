@@ -16,6 +16,14 @@ internal enum ScalarKind
 
     /// <summary>A box's height, along its local Y.</summary>
     Height,
+
+    /// <summary>
+    /// A box's depth, along its local Z (docs/design/assembly-model.md §1.2). Only
+    /// <see cref="ParamValue"/> and <see cref="EqualParam"/> on a <see cref="BoxDepthRef"/> reach
+    /// it until §10 step 3 gives the relationships features that stand on it; no plan corner of a
+    /// box lying as drawn depends on it.
+    /// </summary>
+    Depth,
 }
 
 /// <summary>One number the propagator can assign.</summary>
@@ -128,9 +136,16 @@ internal sealed class Propagator
             ScalarKind.X => box.Anchor.X,
             ScalarKind.Y => box.Anchor.Y,
             ScalarKind.Width => box.Width,
-            _ => box.Height,
+            ScalarKind.Height => box.Height,
+            ScalarKind.Depth => box.Depth,
+            _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "Not a scalar kind."),
         },
-        Node node => key.Kind == ScalarKind.X ? node.Position.X : node.Position.Y,
+        Node node => key.Kind switch
+        {
+            ScalarKind.X => node.Position.X,
+            ScalarKind.Y => node.Position.Y,
+            _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "A node has only an X and a Y."),
+        },
         _ => Length.Zero,
     };
 
@@ -139,6 +154,7 @@ internal sealed class Propagator
     {
         ScalarKind.Width => new ParamTarget(new BoxWidthRef(key.Entity)),
         ScalarKind.Height => new ParamTarget(new BoxHeightRef(key.Entity)),
+        ScalarKind.Depth => new ParamTarget(new BoxDepthRef(key.Entity)),
         ScalarKind.X or ScalarKind.Y => new PointAxisTarget(
             sketch.Find(key.Entity) is Box
                 ? new CornerRef(key.Entity, BoxCorner.SouthWest)
@@ -177,10 +193,10 @@ internal sealed class Propagator
             }
 
             bool hasSizes = _sketch.Find(anchored.Entity) is Box;
-            foreach (ScalarKind kind in new[] { ScalarKind.X, ScalarKind.Y, ScalarKind.Width, ScalarKind.Height })
+            foreach (ScalarKind kind in new[] { ScalarKind.X, ScalarKind.Y, ScalarKind.Width, ScalarKind.Height, ScalarKind.Depth })
             {
                 ScalarKey key = new(anchored.Entity, kind);
-                if (requestOwns.Contains(key) || (!hasSizes && kind is ScalarKind.Width or ScalarKind.Height))
+                if (requestOwns.Contains(key) || (!hasSizes && kind is ScalarKind.Width or ScalarKind.Height or ScalarKind.Depth))
                 {
                     continue;
                 }
@@ -374,8 +390,9 @@ internal sealed class Propagator
     /// <see cref="int.MaxValue"/> when neither of its sizes changed.
     /// </summary>
     /// <remarks>
-    /// Both sizes count, not the one along the axis in hand: a box rotated by a quarter turn has
-    /// its width along Y.
+    /// Both plan sizes count, not the one along the axis in hand: a box rotated by a quarter turn
+    /// has its width along Y. The depth does not: no plan position of a box lying as drawn depends
+    /// on it, so a depth that changed is no reason for a box to keep its place in the plan.
     /// </remarks>
     private int DistanceFromTheRequest(ScalarKey key)
     {
@@ -813,6 +830,7 @@ internal sealed class Propagator
         {
             BoxWidthRef width => $"The width of {width.Box}",
             BoxHeightRef height => $"The height of {height.Box}",
+            BoxDepthRef depth => $"The depth of {depth.Box}",
             SegmentLengthRef length => $"The length of {length.Segment}",
             _ => "A size",
         },
@@ -862,6 +880,10 @@ internal sealed class Propagator
 
             case BoxHeightRef height:
                 key = new ScalarKey(height.Box, ScalarKind.Height);
+                break;
+
+            case BoxDepthRef depth:
+                key = new ScalarKey(depth.Box, ScalarKind.Depth);
                 break;
 
             default:

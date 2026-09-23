@@ -245,7 +245,7 @@ public sealed class SceneReaderRejectionTests
     [Theory]
     [InlineData("\"type\": \"box\"", "\"type\": \"cube\"", "cube")]
     [InlineData("\"kind\": \"paramValue\"", "\"kind\": \"almostEqual\"", "almostEqual")]
-    [InlineData("\"kind\": \"boxWidth\"", "\"kind\": \"boxDepth\"", "boxDepth")]
+    [InlineData("\"kind\": \"boxWidth\"", "\"kind\": \"boxLength\"", "boxLength")]
     [Trait("Feature", "PRJ-002")]
     public void A_type_or_kind_this_build_does_not_know_is_refused_and_named(
         string original, string replacement, string named)

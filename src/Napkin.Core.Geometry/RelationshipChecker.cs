@@ -418,7 +418,7 @@ public static class RelationshipChecker
     {
         switch (reference)
         {
-            case BoxWidthRef or BoxHeightRef:
+            case BoxWidthRef or BoxHeightRef or BoxDepthRef:
                 // What the user typed, stored as typed, whatever the rotation.
                 return true;
 

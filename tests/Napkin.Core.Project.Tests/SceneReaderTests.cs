@@ -13,20 +13,20 @@ public sealed class SceneReaderTests
     public void A_scene_loads_to_the_sketch_it_describes_by_value()
     {
         Sketch expected = Sketch.Empty
-            .WithEntity(new Box(
+            .WithEntity(Box.AsDrawn(
                 new EntityId(Guid.Parse(Scenes.BoxId)),
                 LayerId.Default,
                 new Point2(Length.Zero, Length.Zero),
                 new Length(30720),
                 new Length(4096),
-                Angle.Zero)
+                new Length(768),
+                Angle.Zero) with
             {
                 Name = "Shelf",
                 Part = new Part(
                     "1x6",
                     Species: null,
                     Quantity: 1,
-                    new Length(768),
                     new PlanAxes(PartDimension.Length, PartDimension.Width)),
             })
             .WithRelationship(new ParamValue(

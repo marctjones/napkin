@@ -84,21 +84,25 @@ public static class StockAssignment
     /// in order:
     /// </para>
     /// <list type="number">
+    /// <item>the <see cref="SetPart"/> that makes the box this part;</item>
     /// <item>
-    /// the <see cref="SetPart"/> that makes the box this part, carrying the out-of-plane dimension
-    /// from the stock when the fixed dimension is the out-of-plane one — a flat 1x6's ¾&#x2033;
-    /// thickness — since §1.2 sets that value on the part directly, nothing else depending on it;
-    /// </item>
-    /// <item>
-    /// a request for each <em>in-plan</em> dimension the stock fixes: an
-    /// <c>AddRelationship(ParamValue(…))</c> where nothing drives that size, because a fixed size
-    /// is a stated fact and the yard is the one who states it — or a <see cref="SetParameter"/> on
-    /// the <see cref="ParamValue"/> already driving it, so that a width typed before the stock was
-    /// chosen is a change to that number rather than a second owner for it
-    /// (<c>docs/design/geometry-model.md</c> §4.1; without this the assignment would be
-    /// <see cref="RejectionReason.DuplicateRelationship"/>).
+    /// a request for each dimension the stock fixes, on whichever of <see cref="BoxWidthRef"/>,
+    /// <see cref="BoxHeightRef"/> and <see cref="BoxDepthRef"/> <see cref="PlanAxes"/> puts it:
+    /// an <c>AddRelationship(ParamValue(…))</c> where nothing drives that size, because a fixed
+    /// size is a stated fact and the yard is the one who states it — or a
+    /// <see cref="SetParameter"/> on the <see cref="ParamValue"/> already driving it, so that a
+    /// width typed before the stock was chosen is a change to that number rather than a second
+    /// owner for it (<c>docs/design/geometry-model.md</c> §4.1; without this the assignment would
+    /// be <see cref="RejectionReason.DuplicateRelationship"/>).
     /// </item>
     /// </list>
+    /// <para>
+    /// All three go through the updater alike. The out-of-plane dimension — a flat 1x6's
+    /// ¾&#x2033; thickness — was once set on the part directly, "nothing else depending on it"; it
+    /// is the box's <see cref="Box.Depth"/> now, and a <see cref="Flush"/> on a top or bottom face
+    /// can depend on it, so it is a <see cref="ParamValue"/> on the depth like the other two and a
+    /// conflict on it is reported like any other (<c>docs/design/assembly-model.md</c> §1.2).
+    /// </para>
     /// <para>
     /// A dimension the stock fixes is driven from then on, so a drag on that edge is
     /// <see cref="RejectionReason.DrivenSize"/> — not because cuts or stock are special, but
@@ -128,21 +132,20 @@ public static class StockAssignment
         ImmutableArray<FixedDimension> fixes = Fixes(stock);
         PlanAxes axes = part.PlanAxes;
 
-        // The one name neither axis claims is the out-of-plane one, and a stock that fixes it sets
-        // it on the part rather than on the box: a plan view has two axes, and this is the third.
-        Length outOfPlane = ValueFor(fixes, axes.OutOfPlane) ?? part.OutOfPlane;
-
         ImmutableList<Request>.Builder requests = ImmutableList.CreateBuilder<Request>();
-        requests.Add(new SetPart(box.Id, part with { OutOfPlane = outOfPlane }));
+        requests.Add(new SetPart(box.Id, part));
 
-        if (ValueFor(fixes, axes.X) is { } width)
+        foreach ((PartDimension name, ParamRef size) in (ReadOnlySpan<(PartDimension, ParamRef)>)
+                 [
+                     (axes.X, new BoxWidthRef(box.Id)),
+                     (axes.Y, new BoxHeightRef(box.Id)),
+                     (axes.OutOfPlane, new BoxDepthRef(box.Id)),
+                 ])
         {
-            requests.Add(SizeRequest(sketch, new BoxWidthRef(box.Id), width));
-        }
-
-        if (ValueFor(fixes, axes.Y) is { } height)
-        {
-            requests.Add(SizeRequest(sketch, new BoxHeightRef(box.Id), height));
+            if (ValueFor(fixes, name) is { } value)
+            {
+                requests.Add(SizeRequest(sketch, size, value));
+            }
         }
 
         return new Batch(requests.ToImmutable());
@@ -163,10 +166,30 @@ public static class StockAssignment
     }
 
     /// <summary>
-    /// The request that puts a size at a value: one number, one owner (geometry model §4.1).
+    /// Whether <paramref name="stock"/> fixes the dimension of <paramref name="part"/> that lies
+    /// along the box's local Z — whether its depth is the yard's to state.
     /// </summary>
-    private static Request SizeRequest(Sketch sketch, ParamRef size, Length value)
+    /// <param name="part">The part, for which of its dimensions is out of the plan.</param>
+    /// <param name="stock">The library item, or <see langword="null"/> for no stock.</param>
+    public static bool FixesDepth(Part part, StockItem? stock)
     {
+        ArgumentNullException.ThrowIfNull(part);
+        return ValueFor(Fixes(stock), part.PlanAxes.OutOfPlane) is not null;
+    }
+
+    /// <summary>
+    /// The request that puts a size at a value: one number, one owner (geometry model §4.1). A
+    /// <see cref="SetParameter"/> on the <see cref="ParamValue"/> that already drives
+    /// <paramref name="size"/>, or a new <see cref="ParamValue"/> where nothing does.
+    /// </summary>
+    /// <param name="sketch">The design, read for the relationship that drives the size.</param>
+    /// <param name="size">The size to state.</param>
+    /// <param name="value">What to state it as.</param>
+    public static Request SizeRequest(Sketch sketch, ParamRef size, Length value)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(size);
+
         foreach (Relationship relationship in sketch.RelationshipsInOrder)
         {
             if (relationship is ParamValue driving && driving.Param == size)

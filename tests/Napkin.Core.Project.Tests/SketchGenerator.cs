@@ -124,16 +124,21 @@ internal static class SketchGenerator
                     width = boxes[0].Width;
                 }
 
-                Box box = new(
+                // Format version 3 stores a depth only on a part (its out-of-plane dimension); a box
+                // that is not a part is read back at the default depth, so that is what it has here
+                // (assembly-model §10 step 5 gives every box a depth in the file).
+                Part? part = NextPart();
+                Box box = Box.AsDrawn(
                     new EntityId(NextGuid()),
                     NextLayer(),
                     new Point2(NextCoordinate(), NextCoordinate()),
                     width,
                     height,
-                    RightAngles[random.Next(RightAngles.Length)])
+                    part is null ? Box.DefaultDepth : NextSize(),
+                    RightAngles[random.Next(RightAngles.Length)]) with
                 {
                     Name = NextName(),
-                    Part = NextPart(),
+                    Part = part,
                 };
 
                 boxes.Add(box);
@@ -387,7 +392,6 @@ internal static class SketchGenerator
                 StockNames[random.Next(StockNames.Length)],
                 SpeciesNames[random.Next(SpeciesNames.Length)],
                 random.Next(1, 13),
-                NextSize(),
                 new PlanAxes(x, y));
         }
 

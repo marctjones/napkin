@@ -269,7 +269,7 @@ public class DirectUpdaterPropagationTests
 
         Box rotated = result.Sketch.Find<Box>(box)!;
         Assert.Equal(Angle.Right, rotated.Rotation);
-        Assert.Equal(Point2.Inches(10, 20), rotated.Anchor);
+        Assert.Equal(Point3.Inches(10, 20, 0), rotated.Anchor);
         Assert.Equal(Point2.Inches(10, 50), rotated.Corner(BoxCorner.SouthEast));
 
         // A rotation leaves the anchor where it is, so it is neither a move nor a resize.

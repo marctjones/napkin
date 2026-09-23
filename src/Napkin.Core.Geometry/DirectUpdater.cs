@@ -103,7 +103,7 @@ public sealed class DirectUpdater : IGeometryUpdater
 
         if (entity is Box box)
         {
-            if (box.Width <= Length.Zero || box.Height <= Length.Zero)
+            if (box.Width <= Length.Zero || box.Height <= Length.Zero || box.Depth <= Length.Zero)
             {
                 return new Rejected(RejectionReason.NonPositiveSize);
             }
@@ -448,6 +448,7 @@ public sealed class DirectUpdater : IGeometryUpdater
     {
         ParamValue { Param: BoxWidthRef width } => new HashSet<ScalarKey> { new(width.Box, ScalarKind.Width) },
         ParamValue { Param: BoxHeightRef height } => new HashSet<ScalarKey> { new(height.Box, ScalarKind.Height) },
+        ParamValue { Param: BoxDepthRef depth } => new HashSet<ScalarKey> { new(depth.Box, ScalarKind.Depth) },
         _ => ImmutableHashSet<ScalarKey>.Empty,
     };
 
@@ -555,6 +556,13 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.DanglingReference);
         }
 
+        if (request.Delta.Dz != Length.Zero)
+        {
+            // docs/design/assembly-model.md §10 step 4 teaches the rigid group a Z axis. Until
+            // then a drag along Z is refused out loud rather than applied along X and Y only.
+            return new Rejected(RejectionReason.UnsupportedRequest);
+        }
+
         // The rigid group is per axis, because a Flush on a vertical edge blocks X and not Y, and
         // an AxisDistance along X blocks X and not Y (design §4.4).
         HashSet<EntityId> alongX = RigidGroup(sketch, seed, Axis.X);
@@ -584,7 +592,9 @@ public sealed class DirectUpdater : IGeometryUpdater
 
         // A drag that goes nowhere is not a conflict: it is a question that got the answer "no".
         AssertHolds(result);
-        return new Solved(result, ChangeSet.Empty with { Moved = moved.ToImmutable(), AppliedDelta = applied });
+        return new Solved(
+            result,
+            ChangeSet.Empty with { Moved = moved.ToImmutable(), AppliedDelta = new Vector3(applied.Dx, applied.Dy, Length.Zero) });
     }
 
     private UpdateResult ApplyDragEdge(Sketch sketch, DragEdge request)
@@ -623,11 +633,22 @@ public sealed class DirectUpdater : IGeometryUpdater
         Length delta = newSize - currentSize;
 
         // Grabbing the anchor's own edge moves the anchor; grabbing the far edge leaves it. Either
-        // way the opposite edge stays put, so both anchor coordinates are seeded and pinned.
-        Vector2 anchorShift = request.Edge is BoxEdge.West or BoxEdge.South
-            ? Vector2.Along(localAxis, -delta).Rotate(box.Rotation)
-            : Vector2.Zero;
-        Point2 anchor = box.Anchor + anchorShift;
+        // way the opposite edge stays put, so both anchor coordinates are seeded and pinned. The
+        // shift is the local one turned into the world by the box's orientation, the 3D form of
+        // "rotated by the box's rotation" (docs/design/assembly-model.md §2.4), so its sign is
+        // right for a box whose local origin face is not south-west in the plan.
+        Vector3 anchorShift = request.Edge is BoxEdge.West or BoxEdge.South
+            ? box.Orientation.Apply(Vector3.Along(localAxis, -delta))
+            : Vector3.Zero;
+
+        if (anchorShift.Dz != Length.Zero)
+        {
+            // This edge's local axis stands vertical — the box is tipped — so moving it moves the
+            // anchor along Z, which the propagator cannot do before §10 step 4 (DragFace).
+            return new Rejected(RejectionReason.UnsupportedRequest);
+        }
+
+        Point3 anchor = box.Anchor + anchorShift;
 
         ScalarKey sizeKey = new(request.Box, alongWidth ? ScalarKind.Width : ScalarKind.Height);
         Dictionary<ScalarKey, Length> seeds = new()
@@ -652,7 +673,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         {
             // Best effort: a Flush to an anchored box blocks the edge entirely, and the edge then
             // does not move at all.
-            return new Solved(sketch, ChangeSet.Empty with { AppliedDelta = Vector2.Zero });
+            return new Solved(sketch, ChangeSet.Empty with { AppliedDelta = Vector3.Zero });
         }
 
         Sketch written = Write(sketch, propagated.Assignments, out ImmutableHashSet<EntityId> moved, out ImmutableHashSet<EntityId> resized);
@@ -664,11 +685,11 @@ public sealed class DirectUpdater : IGeometryUpdater
         // move at all. Nothing partial is ever handed back.
         if (CutsStillFit(written, resized) is not null)
         {
-            return new Solved(sketch, ChangeSet.Empty with { AppliedDelta = Vector2.Zero });
+            return new Solved(sketch, ChangeSet.Empty with { AppliedDelta = Vector3.Zero });
         }
 
         Length outward = request.Edge is BoxEdge.West or BoxEdge.South ? -delta : delta;
-        Vector2 applied = Vector2.Along(localAxis, outward).Rotate(box.Rotation);
+        Vector3 applied = box.Orientation.Apply(Vector3.Along(localAxis, outward));
 
         return new Solved(
             written,
@@ -783,23 +804,26 @@ public sealed class DirectUpdater : IGeometryUpdater
             {
                 case Box box:
                 {
-                    Point2 anchor = new(Value(ScalarKind.X), Value(ScalarKind.Y));
+                    // The propagator has no Z scalar before §10 step 4, so the anchor keeps its Z.
+                    Point3 anchor = box.Anchor with { X = Value(ScalarKind.X), Y = Value(ScalarKind.Y) };
                     Length width = Value(ScalarKind.Width);
                     Length height = Value(ScalarKind.Height);
+                    Length depth = Value(ScalarKind.Depth);
 
                     if (anchor != box.Anchor)
                     {
                         movedBuilder.Add(id);
                     }
 
-                    if (width != box.Width || height != box.Height)
+                    bool sizeChanged = width != box.Width || height != box.Height || depth != box.Depth;
+                    if (sizeChanged)
                     {
                         resizedBuilder.Add(id);
                     }
 
-                    if (anchor != box.Anchor || width != box.Width || height != box.Height)
+                    if (anchor != box.Anchor || sizeChanged)
                     {
-                        result = result.WithEntity(box with { Anchor = anchor, Width = width, Height = height });
+                        result = result.WithEntity(box with { Anchor = anchor, Width = width, Height = height, Depth = depth });
                     }
 
                     break;
@@ -878,14 +902,49 @@ public sealed class DirectUpdater : IGeometryUpdater
 
     private static bool CanPropagate(Sketch sketch, Relationship relationship) => relationship switch
     {
-        Anchored or Coincident or AxisDistance or Centered => true,
-        ParamValue paramValue => paramValue.Param is BoxWidthRef or BoxHeightRef,
-        EqualParam equalParam => equalParam.A is BoxWidthRef or BoxHeightRef
-                                 && equalParam.B is BoxWidthRef or BoxHeightRef,
+        Anchored => true,
+        Coincident coincident => InThePlan(sketch, coincident.A) && InThePlan(sketch, coincident.B),
+        AxisDistance distance => InThePlan(sketch, distance.From) && InThePlan(sketch, distance.To),
+        Centered centered => InThePlan(sketch, centered.Middle)
+                             && InThePlan(sketch, centered.A)
+                             && InThePlan(sketch, centered.B),
+        ParamValue paramValue => IsBoxSize(paramValue.Param),
+        EqualParam equalParam => IsBoxSize(equalParam.A) && IsBoxSize(equalParam.B),
         Horizontal horizontal => horizontal.Edge is SegmentRef,
         Vertical vertical => vertical.Edge is SegmentRef,
-        Flush flush => FlushNormalAxis(sketch, flush) is not null,
+        Flush flush => InThePlan(sketch, flush.A)
+                       && InThePlan(sketch, flush.B)
+                       && FlushNormalAxis(sketch, flush) is not null,
         _ => false,
+    };
+
+    private static bool IsBoxSize(ParamRef param) => param is BoxWidthRef or BoxHeightRef or BoxDepthRef;
+
+    /// <summary>
+    /// Whether a point reference means what the plan propagator reads it as: a box's corner or
+    /// centre on a box lying as drawn, or anything that is not a box's.
+    /// </summary>
+    /// <remarks>
+    /// A <see cref="CornerRef"/> names a corner of the blank in its local frame, and the
+    /// propagator places it in the plan as a <see cref="BoxFace.Top"/> box would. For a box that
+    /// is tipped or turned over that is not where the blank's corner is, and a relationship on it
+    /// would be held at the wrong place without a word. docs/design/assembly-model.md &#xA7;10
+    /// step 3 replaces these references with features that fix world axes through the
+    /// orientation; until then a positional relationship on a box that is not
+    /// <see cref="BoxFace.Top"/> up is one this updater cannot hold.
+    /// </remarks>
+    private static bool InThePlan(Sketch sketch, PointRef reference) => reference switch
+    {
+        CornerRef corner => sketch.Find<Box>(corner.Box) is not { } box || box.FaceUp == BoxFace.Top,
+        CenterRef centre => sketch.Find<Box>(centre.Box) is not { } box || box.FaceUp == BoxFace.Top,
+        _ => true,
+    };
+
+    /// <inheritdoc cref="InThePlan(Sketch, PointRef)"/>
+    private static bool InThePlan(Sketch sketch, EdgeRef reference) => reference switch
+    {
+        BoxEdgeRef edge => sketch.Find<Box>(edge.Box) is not { } box || box.FaceUp == BoxFace.Top,
+        _ => true,
     };
 
     private static Axis? FlushNormalAxis(Sketch sketch, Flush flush)
@@ -973,7 +1032,7 @@ public sealed class DirectUpdater : IGeometryUpdater
 
     private static Sketch Translate(Sketch sketch, EntityId id, Vector2 shift) => sketch.Find(id) switch
     {
-        Box box => sketch.WithEntity(box with { Anchor = box.Anchor + shift }),
+        Box box => sketch.WithEntity(box with { Anchor = box.Anchor + new Vector3(shift.Dx, shift.Dy, Length.Zero) }),
         Node node => sketch.WithEntity(node with { Position = node.Position + shift }),
         _ => sketch,
     };
@@ -1053,6 +1112,7 @@ public sealed class DirectUpdater : IGeometryUpdater
     {
         BoxWidthRef width => sketch.Find<Box>(width.Box) is not null,
         BoxHeightRef height => sketch.Find<Box>(height.Box) is not null,
+        BoxDepthRef depth => sketch.Find<Box>(depth.Box) is not null,
         SegmentLengthRef length => ReferenceResolves(sketch, new SegmentRef(length.Segment)),
         _ => false,
     };

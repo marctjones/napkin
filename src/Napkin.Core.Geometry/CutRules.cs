@@ -333,7 +333,7 @@ internal static class CutRules
     /// </summary>
     private static void SomethingIsLeft(Box box, ImmutableList<ValidationError>.Builder errors)
     {
-        Outline outline = OutlineBuilder.Build(box, world: false);
+        Outline outline = box.Outline();
         if (Area.TwiceSignedPolygon(outline.Vertices) <= Int128.Zero)
         {
             errors.Add(new ValidationError(
