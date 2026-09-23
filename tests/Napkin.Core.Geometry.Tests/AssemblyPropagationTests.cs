@@ -492,6 +492,69 @@ public class AssemblyPropagationTests
         SketchAssert.IsConsistent(result.Sketch);
     }
 
+    // ---- The edges of the new requests ---------------------------------------------------------
+
+    [Fact]
+    public void PuttingAnAnchoredBoxAtAnotherHeightIsAConflictNamingTheAnchorAndTheHeight()
+    {
+        SketchBuilder builder = new();
+        EntityId box = builder.AddBox(Point3.Inches(0, 0, 16), 40, 20, 1);
+        RelationshipId anchor = builder.Anchor(box);
+
+        OverConstrained conflict = Assert.IsType<OverConstrained>(Updater.Apply(
+            builder.Sketch, new SetPosition(box, Point3.Inches(0, 0, 17))));
+
+        Assert.Equal([anchor], conflict.Conflict.Relationships);
+        Assert.All(
+            conflict.Conflict.Derivations,
+            derivation => Assert.Equal(
+                new PointAxisTarget(new FeatureRef(box, BoxFeature.Vertex(BoxCorner.SouthWest, BoxLevel.Bottom)), Axis.Z),
+                derivation.Target));
+        Assert.Contains("The Z of", conflict.Conflict.Summary, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ASegmentDraggedInSpaceMovesItsNodesInThePlanOnly()
+    {
+        SketchBuilder builder = new();
+        EntityId start = builder.AddNode(0, 0);
+        EntityId end = builder.AddNode(10, 0);
+        EntityId segment = builder.AddSegment(start, end);
+
+        Solved result = Assert.IsType<Solved>(Updater.Apply(
+            builder.Sketch, new Drag(segment, new Vector3(Length.Inches(1), Length.Inches(2), Length.Inches(3)))));
+
+        Assert.Equal(new Vector3(Length.Inches(1), Length.Inches(2), Length.Zero), result.Changes.AppliedDelta);
+        Assert.Equal(Point2.Inches(1, 2), result.Sketch.Find<Node>(start)!.Position);
+        Assert.Equal(Point2.Inches(11, 2), result.Sketch.Find<Node>(end)!.Position);
+    }
+
+    [Fact]
+    public void TheNewRequestsRefuseWhatTheyCannotReadBeforeTouchingAnything()
+    {
+        SketchBuilder builder = new();
+        EntityId box = builder.AddBox(Point3.Origin, 10, 4, 1);
+        EntityId missing = SketchBuilder.EntityIdAt(99);
+
+        Assert.Equal(new Rejected(RejectionReason.UnknownEntity), Updater.Apply(builder.Sketch, new DragFace(missing, BoxFace.Top, Length.Inches(1))));
+        Assert.Equal(new Rejected(RejectionReason.UnknownEntity), Updater.Apply(builder.Sketch, new Drag(missing, Vector3.Zero)));
+        Assert.Equal(new Rejected(RejectionReason.UnsupportedRequest), Updater.Apply(builder.Sketch, new DragFace(box, (BoxFace)17, Length.Inches(1))));
+
+        // A box off the quarter turns — a solver-written file — puts the whole sketch outside the
+        // direct updater's domain, for every geometry request.
+        builder.AddBox(Point2.Origin, Length.Inches(20), Length.Inches(4), Angle.Degrees(45));
+        foreach (Request request in new Request[]
+        {
+            new DragFace(box, BoxFace.Top, Length.Inches(1)),
+            new Drag(box, Vector3.Along(Axis.Z, Length.Inches(1))),
+            new SetOrientation(box, BoxFace.North, Angle.Zero),
+            new SetPosition(box, Point3.Inches(0, 0, 1)),
+        })
+        {
+            Assert.Equal(new Rejected(RejectionReason.RotationNotSupported), Updater.Apply(builder.Sketch, request));
+        }
+    }
+
     private static (SketchBuilder Builder, EntityId Top, EntityId Leg, RelationshipId Depth) TopOnALeg()
     {
         SketchBuilder builder = new();
