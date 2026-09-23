@@ -74,6 +74,7 @@ internal static class SketchGenerator
         private readonly Random random = new(seed);
         private readonly List<Layer> layers = [];
         private readonly List<Box> boxes = [];
+        private readonly List<Box> spaced = [];
         private readonly List<Node> nodes = [];
         private readonly List<Segment> segments = [];
         private readonly List<Relationship> relationships = [];
@@ -124,24 +125,55 @@ internal static class SketchGenerator
                     width = boxes[0].Width;
                 }
 
-                // Format version 3 stores a depth only on a part (its out-of-plane dimension); a box
-                // that is not a part is read back at the default depth, so that is what it has here
-                // (assembly-model §10 step 5 gives every box a depth in the file).
-                Part? part = NextPart();
+                // Lying as drawn and on the plan datum: the relationships below are measured off
+                // these boxes' plan corners and edges, which are their local uprights and side faces
+                // only for a box that is top up. The depth is anything, part or not (format
+                // version 4 stores it on every box).
                 Box box = Box.AsDrawn(
                     new EntityId(NextGuid()),
                     NextLayer(),
                     new Point2(NextCoordinate(), NextCoordinate()),
                     width,
                     height,
-                    part is null ? Box.DefaultDepth : NextSize(),
+                    NextSize(),
                     RightAngles[random.Next(RightAngles.Length)]) with
                 {
                     Name = NextName(),
-                    Part = part,
+                    Part = NextPart(),
                 };
 
                 boxes.Add(box);
+                Add(box);
+            }
+
+            PlaceBoxesInSpace();
+        }
+
+        /// <summary>
+        /// Boxes off the plan datum and turned every way (<c>docs/design/assembly-model.md</c>
+        /// &#xA7;1.3): one for each of the six faces that can be up, at a Z that is as likely to be
+        /// below the datum as above it, at any of the four spins. Relationships reach them through
+        /// features and measured Z spans (<see cref="RelateInSpace"/>).
+        /// </summary>
+        private void PlaceBoxesInSpace()
+        {
+            foreach (BoxFace up in Enum.GetValues<BoxFace>())
+            {
+                Box box = new(
+                    new EntityId(NextGuid()),
+                    NextLayer(),
+                    new Point3(NextCoordinate(), NextCoordinate(), NextCoordinate()),
+                    NextSize(),
+                    NextSize(),
+                    NextSize(),
+                    up,
+                    RightAngles[random.Next(RightAngles.Length)])
+                {
+                    Name = NextName(),
+                    Part = NextPart(),
+                };
+
+                spaced.Add(box);
                 Add(box);
             }
         }
@@ -280,7 +312,55 @@ internal static class SketchGenerator
             Relate(new Centered(NextRelationshipId(), new NodeRef(midpoint.Id), from, to, axis));
 
             RelateBoxEdges();
+            RelateInSpace();
         }
+
+        /// <summary>
+        /// The boxes in space, reached the way &#xA7;2.3 allows: a depth held at its value, and
+        /// signed Z spans measured between a face, an edge, a vertex and a centre that all fix Z —
+        /// so that every shape of feature reference, one face to three, is in the round trip, and
+        /// the "z" axis with them.
+        /// </summary>
+        private void RelateInSpace()
+        {
+            foreach (Box box in spaced)
+            {
+                if (random.Next(2) == 0)
+                {
+                    Relate(new ParamValue(NextRelationshipId(), new BoxDepthRef(box.Id), box.Depth));
+                }
+            }
+
+            // The face that is up fixes Z, and so do an edge along it and a vertex on it.
+            Box first = spaced[random.Next(spaced.Count)];
+            Box second = spaced[random.Next(spaced.Count)];
+            Box third = spaced[random.Next(spaced.Count)];
+
+            PlaceRef face = new FeatureRef(first.Id, BoxFeature.Face(first.FaceUp));
+            PlaceRef edge = new FeatureRef(second.Id, BoxFeature.Edge(second.FaceUp, SideOf(second.FaceUp)));
+            PlaceRef vertex = new FeatureRef(
+                third.Id,
+                BoxFeature.Vertex(third.FaceUp, SideOf(third.FaceUp), OtherSideOf(third.FaceUp)));
+
+            RelateAlongZ(face, vertex);
+            RelateAlongZ(edge, new CenterRef(first.Id));
+        }
+
+        private void RelateAlongZ(PlaceRef from, PlaceRef to)
+            => Relate(new AxisDistance(
+                NextRelationshipId(),
+                from,
+                to,
+                Axis.Z,
+                sketch.PlaceOf(to)[Axis.Z] - sketch.PlaceOf(from)[Axis.Z]));
+
+        /// <summary>A face that meets <paramref name="face"/> at an edge.</summary>
+        private static BoxFace SideOf(BoxFace face)
+            => face is BoxFace.Bottom or BoxFace.Top ? BoxFace.South : BoxFace.Bottom;
+
+        /// <summary>A face that meets both <paramref name="face"/> and <see cref="SideOf"/> it.</summary>
+        private static BoxFace OtherSideOf(BoxFace face)
+            => face is BoxFace.East or BoxFace.West ? BoxFace.South : BoxFace.West;
 
         /// <summary>
         /// The angular kinds, between box edges. Both directions are stored angles on right-angle

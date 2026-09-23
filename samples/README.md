@@ -10,7 +10,8 @@ Three hand-crafted designs, in the scene format documented in
 | A table with rounded corners | `rounded-corner-table.design.md`, `rounded-corner-table.scene.json`, `rounded-corner-table.expected.json` |
 
 `tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts
-it matches its `*.expected.json` exactly, in integer units;
+it matches its `*.expected.json` exactly, in integer units, and checks every box of all three —
+its plan position and size and, since format version 4, its height, depth and face-up;
 `tests/Napkin.Modules.Furniture.Tests` does the same for all three fixtures' cut lists, and for the
 rounded-corner table's outline.
 
@@ -65,7 +66,7 @@ after re-doing the arithmetic by hand and writing the new derivation down.
   sentence its top's rounded corners read as; and `wall-with-window.expected.json`'s is empty
   because neither of its boxes is a part. The
   thicknesses and lengths the plan view cannot hold are still written in each `design.md` and
-  repeated under `statedNotInScene`; they are now also in the scene, as each part's `outOfPlane`.
+  repeated under `statedNotInScene`; they are now also in the scene, as each box's `depth`.
 - **No header size, stud count or bracing length** in the wall fixture. Those expectations are
   added in M4 and M5 by a person reading the relevant row of Connecticut's published adopted text
   and citing the page it came from — never from memory, and never from napkin's own output.
@@ -111,10 +112,18 @@ the scene is what is being checked, which is the wrong way round only if they ar
 disagree silently.
 
 The coffee table's nine boxes are all parts; the wall and its opening are not, so they carry
-`"part": null`. A part's third dimension — the one a plan view cannot hold — is `outOfPlane`, and
-every value of it here is one of the three numbers already listed under `statedNotInScene`:
-3/4″ = 768, 16 1/4″ = 16640 and 3 1/2″ = 3584 units. Nothing was invented to make a cut list
-possible.
+`"part": null`. A part's third dimension — the one a plan view cannot hold — is its box's `depth`
+(scene format version 4; it was the part's `outOfPlane` until then), and every value of it here is
+one of the three numbers already listed under `statedNotInScene`: 3/4″ = 768, 16 1/4″ = 16640 and
+3 1/2″ = 3584 units. Nothing was invented to make a cut list possible.
+
+**Every box is placed in space** (format version 4): an `anchor.z`, a `depth` and a `faceUp`.
+In the two tables every value is arithmetic on the stated dimensions — legs on the floor, the
+top's underside on the legs' tops, the aprons' upper edges flush under it — derived by hand in each
+`design.md` and in each box's `derivation`; no relationship holds any of it in Z. **The wall's
+are placeholders**: its design states no wall height, opening height or sill, so the wall and the
+opening carry `z` 0 and `depth` 768, what the version-3 reader gave a box that was not a part,
+until the design states real ones (`wall-with-window.design.md`).
 
 **Layers are named "Default".** The viewer styles a part by the name of the layer it is on — a
 part on "Parts" is drawn as furniture, one on "Wall" as a wall, one on "Opening" as a dashed hole —

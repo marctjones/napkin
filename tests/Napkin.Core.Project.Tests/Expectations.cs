@@ -47,8 +47,11 @@ internal sealed record ExpectedBox(
     string Name,
     long AnchorXUnits,
     long AnchorYUnits,
+    long AnchorZUnits,
     long WidthUnits,
     long HeightUnits,
+    long DepthUnits,
+    string FaceUp,
     long RotationArcseconds);
 
 internal sealed record ExpectedPart(

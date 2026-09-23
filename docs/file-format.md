@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 3
+# The napkin project file — container version 1, scene format version 4
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -13,7 +13,7 @@ supported:
 | `*.scene.json` | One plain scene document, on its own | `SceneReader.Read` | `SceneWriter.Write` |
 
 The scene document is the same either way — the container wraps it, it does not change it. A file
-written by hand in a text editor, such as the two in [`samples/`](../samples), is a plain scene
+written by hand in a text editor, such as the three in [`samples/`](../samples), is a plain scene
 document and stays one.
 
 ## The rules that matter most
@@ -25,7 +25,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 3` and nothing else. A file from an older *or* a
+   `"containerVersion": 1` and `"formatVersion": 4` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
@@ -43,11 +43,22 @@ document and stays one.
    is a strict superset — a box with no cuts is the box version 2 described, in every respect —
    but the format has no optional fields, so a plain rectangle writes `"cuts": []` and a file
    without the field is not a version-3 file.
+
+   **Version 4** put every box in space
+   ([`docs/design/assembly-model.md`](./design/assembly-model.md) §10): a box's `anchor` gained a
+   `z`, and the box gained a `depth` and a `faceUp`; a part lost `outOfPlane`, whose value is the
+   box's `depth`; and the `corner` and `boxEdge` references gave way to one `feature` reference
+   naming the faces of a box that meet at a place. Every version-3 file is refused, including the
+   three this repository had committed until they were rewritten in the same change. The *model*
+   is again a strict superset — a box lying as drawn (`"faceUp": "top"`) on the floor (`"z": 0`)
+   is the box version 3 described, in every respect — and again the format has no optional fields.
 3. **Reading is strict and never repairs.** An unknown field, a field written twice, an id that is
    not a GUID, an id that names nothing, an id that names the wrong kind of entity, a non-positive
    size, an un-normalised rotation, cuts out of site order, a cut that does not fit the blank it is
-   on, a duplicated id, two relationships saying the same thing, and a relationship kind this build
-   cannot hold are each a refusal naming what was wrong. Nothing is opened approximately.
+   on, a feature whose faces are repeated, opposite or out of order, two places a relationship
+   cannot compare, a dimension that measures out of the plan, a duplicated id, two relationships
+   saying the same thing, and a relationship kind this build cannot hold are each a refusal naming
+   what was wrong. Nothing is opened approximately.
 4. **A file must satisfy its own relationships.** After the scene is bound, `Sketch.Validate()` and
    `RelationshipChecker.Check` both run. A file whose geometry does not hold its own stated
    relationships — written by a buggy build, or edited by hand — is refused with the violations
@@ -169,7 +180,7 @@ Two places where the bytes legitimately differ:
 
 ```json
 {
-  "formatVersion": 3,
+  "formatVersion": 4,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ … ],
   "entities": [ … ],
@@ -179,7 +190,7 @@ Two places where the bytes legitimately differ:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `formatVersion` | integer | Exactly `3`. Judged before anything else is read. |
+| `formatVersion` | integer | Exactly `4`. Judged before anything else is read. |
 | `units` | object | `length` is exactly `"inch/1024"`, `angle` is exactly `"arcsecond"`. The unit is named in the file so that a reader never has to assume one. |
 | `layers` | array | Every layer, in the order the UI shows them. |
 | `entities` | array | Every entity, in any order; ids may be referred to before they appear. |
@@ -210,20 +221,41 @@ Every entity has `id`, `type`, `layer` and `name`. `type` is one of `box`, `dime
 
 ```json
 { "id": "…", "type": "box", "layer": "…", "name": "Leg, south-west",
-  "anchor": { "x": 0, "y": 0 }, "width": 30720, "height": 3584, "rotation": 0,
-  "part": null, "cuts": [] }
+  "anchor": { "x": 1536, "y": 1536, "z": 0 },
+  "width": 2560, "height": 2560, "depth": 16640,
+  "faceUp": "top", "rotation": 0,
+  "part": { "stock": null, "species": null, "quantity": 1,
+            "planAxes": { "x": "width", "y": "thickness" } },
+  "cuts": [] }
 ```
 
 | `type` | Fields |
 |---|---|
-| `node` | `position`: `{ "x": <integer>, "y": <integer> }` |
+| `node` | `position`: `{ "x": <integer>, "y": <integer> }` — a node is plan construction geometry, at the plan datum, and has no `z` |
 | `segment` | `start`, `end`: ids of two `node` entities |
-| `box` | `anchor`: a point, the box's south-west corner in its own frame; `width` and `height`: integers greater than zero, along the box's local X and Y; `rotation`: arcseconds, `0 ≤ rotation < 1296000`; `part`: below, or `null`; `cuts`: below, `[]` for a plain rectangle |
+| `box` | `anchor`: `{ "x", "y", "z" }`, three integers — the box's south-west-bottom corner in its own frame; `width`, `height` and `depth`: integers greater than zero, along the box's local X, Y and Z; `faceUp`: which of its six faces points up, one of `top`, `bottom`, `north`, `south`, `east`, `west`; `rotation`: arcseconds, `0 ≤ rotation < 1296000`; `part`: below, or `null`; `cuts`: below, `[]` for a plain rectangle |
 | `dimension` | `measures`, `drives`, `placement` — below |
 
-A box is parametric: it stores the width and height that were typed and derives its corners, so a
-30-inch part stays 30 inches whatever its rotation. In plan view a wall is a box whose `width` is
-its length and whose `height` is its thickness; an opening is a box related to its wall.
+A box is parametric: it stores the three sizes that were typed and derives its corners, so a
+30-inch part stays 30 inches however it is turned. In plan view a wall is a box whose `width` is
+its length, whose `height` is its thickness and whose `depth` is its height; an opening is a box
+related to its wall, its `depth` the opening's height and its `anchor.z` its sill.
+
+**Where a box is, and which way it is turned.** The three sizes are along the box's *own* axes;
+`faceUp` and `rotation` say how those axes sit in the world, and `anchor` is where the box's own
+origin is. `faceUp` is the face tipped to point up — `top` is the box as drawn, `bottom` turned
+over, `north` tipped back, `south` tipped forward, `east` and `west` tipped over sideways — and
+`rotation` is then the spin about the vertical, through the anchor, that the plan view has always
+shown. Six faces and four quarter turns are the 24 orientations a block can take, each with one
+spelling. Which world axis each of the box's own axes lands on for each `faceUp` is fixed by the
+table in [`docs/design/assembly-model.md`](./design/assembly-model.md) §1.3, and every corner is
+an exact sum of the anchor and the sizes. X runs east, Y north, Z up; a box lying as drawn on the
+floor has `"faceUp": "top"` and `"z": 0`.
+
+**`height` is not how tall the box stands.** It is the size along the box's own Y — the plan's
+depth of its footprint — and has been since the first version; the size along its own Z, which
+for a box lying as drawn is what a person would call its height or thickness, is `depth`. The
+names are the 3D-graphics convention (width × height × depth).
 
 **Rotation is stored normalised.** `Angle` normalises into [0°, 360°), so a file saying `1296000`
 would load as `0` and the sketch would no longer equal the file; such a file is refused rather
@@ -238,8 +270,15 @@ than quietly normalised.
   "placement": { "offset": 8192, "side": "north" } }
 ```
 
-- `measures` is either a **size reference** (`boxWidth`, `boxHeight`, `segmentLength` — the shapes
-  below) or a **span**: `{ "kind": "axis", "from": <point>, "to": <point>, "axis": "x" }`.
+- `measures` is either a **size reference** (`boxWidth`, `boxHeight`, `boxDepth`,
+  `segmentLength` — the shapes below) or a **span**: `{ "kind": "axis", "from": <place>, "to":
+  <place>, "axis": "x" }`.
+- **A dimension lies in the plan** (`docs/design/assembly-model.md` §7.3, invariant 13): what it
+  measures must lie along world X or Y once the box it belongs to is turned. A span's `axis` is
+  `x` or `y` and both of its places must fix that axis; a size is refused when the box's `faceUp`
+  stands that size vertical — `boxDepth` on a box lying as drawn, `boxWidth` on a box standing on
+  its `east` or `west` face, `boxHeight` on one standing on `north` or `south`. Such a number is not
+  lost: it is held by a `paramValue` or an `axisDistance`, which have no drawing to fit.
 - `drives` is the id of the `paramValue` or `axisDistance` relationship that owns the number, or
   `null` for a reference dimension. **A dimension never stores a length of its own**: its value is
   always computed from the geometry it measures (geometry design §3.3).
@@ -260,7 +299,7 @@ and a file's placements are worth writing with that in mind:
    rightmost. A side parallel to the measurement falls back to that axis's default rather than
    drawing the line through the geometry.
 
-Both samples are placed against that reading. In `wall-with-window` the opening's width carries
+The samples are placed against that reading. In `wall-with-window` the opening's width carries
 `"offset": 512` on `north`, so its line lands at y = 5632 + 512 = 6144 — the same height as the two
 reference dimensions either side of it, which measure from corners at y = 0 with `"offset": 6144`.
 The three then read as one dimension string: 4'-6" | 3'-0" | 4'-6".
@@ -277,14 +316,13 @@ called (`docs/design/parts-and-cut-list.md` §3).
 ### Parts
 
 `part` is a required field on a box. It is `null` on a box that is not a piece anybody cuts — a
-wall, an opening — and otherwise an object with exactly these five fields:
+wall, an opening — and otherwise an object with exactly these four fields:
 
 ```json
 "part": {
   "stock": "2x4",
   "species": "Douglas fir",
   "quantity": 1,
-  "outOfPlane": 16640,
   "planAxes": { "x": "width", "y": "thickness" }
 }
 ```
@@ -294,22 +332,16 @@ wall, an opening — and otherwise an object with exactly these five fields:
 | `stock` | string or `null` | A nominal name the materials library resolves, spelled however a yard spells it: `"2 x 4"` and `"2x4"` normalise to one stock | it is neither a string nor `null` |
 | `species` | string or `null` | Free text, set after placing. Never interpreted by this build | it is neither a string nor `null` |
 | `quantity` | integer | How many identical copies this one box stands for, for the four legs a person draws once. At least 1 | it is not an integer, or is less than 1 |
-| `outOfPlane` | integer | The one dimension the plan cannot show, in units. Greater than zero | it is not an integer, or is zero or negative |
 | `planAxes` | object | `x` and `y`, each exactly one of `length`, `width`, `thickness` | a key is missing, a value is not one of the three, or `x` and `y` name the same one |
 
-**A part has three finished dimensions and the file stores two of them on the box.** `planAxes`
-says which of `length`, `width` and `thickness` the box's stored `width` is and which its stored
-`height` is; the remaining name is the one `outOfPlane` carries. Nothing is stored twice, so a
-part's listed size cannot drift from the box the person is drawing, and a rotated part still lists
-what was typed.
+A part written with the `outOfPlane` field version 3 had is refused as an unknown field.
 
-**In memory the third size is the box's `Depth`** (`docs/design/assembly-model.md` §1.2), and
-until that design's §10 step 5 gives the box its own `depth`, `faceUp` and `anchor.z`, this
-version reads a part's `outOfPlane` as its box's depth, reads a box that is not a part at the
-3/4-inch default depth (768 units) lying as drawn at the plan datum, and writes the depth back as
-`outOfPlane`. A drawing holding a box this version cannot say — turned onto a side or over, off
-the plan, or a plain box at another depth — is refused by the writer rather than saved as a
-different box. A typed depth is a `paramValue` on a `boxDepth` size.
+**A part has three finished dimensions and the box stores all three.** `planAxes` says which of
+`length`, `width` and `thickness` the box's `width` is and which its `height` is; the remaining
+name is its `depth`. Nothing is stored twice, so a part's listed size cannot drift from the box
+the person is drawing, and a part lists the same however it is turned or wherever it is placed:
+the cut list reads the three sizes and never `anchor`, `faceUp` or `rotation`. A typed depth is a
+`paramValue` on a `boxDepth` size, as a typed width is on `boxWidth`.
 
 **`stock` is a name, not an id, and is not validated at load.** The reader checks that it is a
 string; it does *not* check that this build's materials library carries it — the same stance the
@@ -319,8 +351,10 @@ refused for being malformed, never for naming something this build has not heard
 
 ### Cuts
 
-`cuts` is a required field on a box. It is `[]` on a plain rectangle — which is every box in both
-samples — and otherwise lists what has been cut off the blank, one object per cut:
+`cuts` is a required field on a box. It is `[]` on a plain rectangle — which is every box in the
+coffee table and the wall, and all but the top of the rounded-corner table — and otherwise lists
+what has been cut off the blank, one object per cut. A cut is drawn on the box's own X–Y face and
+runs square through its whole `depth`, so it turns with the box:
 
 ```json
 "cuts": [
@@ -342,10 +376,9 @@ taper never shrinks the size the cut list reads, and a file says what a person d
 what that produced. The reasoning is
 [`docs/design/shaped-parts-model.md`](./design/shaped-parts-model.md) §1.1.
 
-**Corners and edges are named in the box's own local frame**, before rotation, with the spellings
-references already use: `southWest`, `southEast`, `northEast`, `northWest` for a corner, and
-`south`, `east`, `north`, `west` for an edge. Every stored value is a whole number of units, like
-every other length.
+**Corners and edges are named in the box's own local frame**, before it is turned:
+`southWest`, `southEast`, `northEast`, `northWest` for a corner, and `south`, `east`, `north`,
+`west` for an edge. Every stored value is a whole number of units, like every other length.
 
 **Cuts are stored in site order**, which is `southWest`, `southEast`, `northEast`, `northWest`,
 `south`, `east`, `north`, `west`. A file out of that order is refused rather than quietly
@@ -368,47 +401,61 @@ third catches.
 Every reference is an object with a `kind`, so that no shape has to be guessed from which fields
 are present.
 
-| Refers to | `kind` | Fields |
-|---|---|---|
-| a point | `node` | `node`: a node's id |
-| | `corner` | `box`: a box's id; `corner`: `southWest`, `southEast`, `northEast`, `northWest` |
-| | `center` | `box`: a box's id |
-| an edge | `segment` | `segment`: a segment's id |
-| | `boxEdge` | `box`: a box's id; `edge`: `south`, `east`, `north`, `west` |
-| a size | `boxWidth` | `box`: a box's id |
-| | `boxHeight` | `box`: a box's id |
-| | `boxDepth` | `box`: a box's id — the part's `outOfPlane` dimension, which is the box's depth |
-| | `segmentLength` | `segment`: a segment's id |
+| Refers to | `kind` | Fields | Fixes |
+|---|---|---|---|
+| a place | `node` | `node`: a node's id | X and Y |
+| | `segment` | `segment`: a segment's id | Y when it is horizontal, X when it is vertical |
+| | `center` | `box`: a box's id | X, Y and Z |
+| | `feature` | `box`: a box's id; `faces`: one, two or three of `south`, `east`, `north`, `west`, `bottom`, `top` | one axis per face |
+| a size | `boxWidth` | `box`: a box's id | |
+| | `boxHeight` | `box`: a box's id | |
+| | `boxDepth` | `box`: a box's id | |
+| | `segmentLength` | `segment`: a segment's id | |
 
-Corners and edges are named in the box's own local frame, before rotation. An axis is `x` or `y`.
+An axis is `x`, `y` or `z`.
 
-**In memory a box's corner and edge are features** (`docs/design/assembly-model.md` §2.2): until
-that design's §10 step 5 gives the file its `feature` reference, this version reads a `corner` as
-the blank's local upright — the edge along its local Z at that corner — and a `boxEdge` as the
-side face of the same name, which on a box lying as drawn (the only kind this version holds) mean
-what they always meant. The writer spells those two back the same way and refuses any other
-feature — a vertex, a top or bottom face, a horizontal edge — rather than saving it as a different
-one. Whether a relationship's places can be paired at all is judged at load by what each fixes
-(§2.3): a `flush` between a box's east edge and another's north edge, which lie on different axes,
-is refused as an invalid value naming both.
+**A feature is the faces that meet at it** (`docs/design/assembly-model.md` §1.5): one face, the
+edge where two meet, or the corner where three meet, named in the box's own frame before it is
+turned — `bottom` is its own z = 0 and `top` its own z = `depth`. So `["north"]` is a face,
+`["south", "west"]` the edge along the box's own Z at the blank's south-west corner (what
+version 3 called a `corner`), and `["south", "west", "top"]` the top of that edge. The faces are
+written in the order `south`, `east`, `north`, `west`, `bottom`, `top`, so that a feature has one
+spelling; a file with them in another order, with a face named twice, with two opposite faces
+(`south` and `north`, `east` and `west`, `bottom` and `top` never meet), or with none or more than
+three, is refused rather than repaired. The `corner` and `boxEdge` kinds of version 3 are refused,
+and the message says what replaced them.
+
+**What a place fixes, in the world.** A face is perpendicular to one world axis and fixes its
+coordinate on it; which axis depends on how the box is turned — a box's `top` fixes Z when it
+lies as drawn and X when it stands on its `east` face. An edge fixes the two axes its faces do, a
+corner all three. A `center` fixes all three, rounding by half a unit on an odd size.
+
+**Whether two places can be related is judged at load, by what each fixes** (§2.3): a
+`coincident` needs two or three axes both places fix — two corners, two parallel edges, a node and
+an edge standing upright, never a face; a `flush` needs two planes, both places fixing exactly
+one axis and the same one; an `axisDistance` needs both places to fix its axis, and a `centered`
+all three. A pairing that fails — a `flush` between one box's `east` face and another's `north`,
+or a `flush` of a face with an edge — is refused as an invalid value naming both places and what
+each fixes.
 
 ### Relationships
 
 Every relationship has `id` and `kind`. Relationships are stored, never inferred from position:
-two corners at the same coordinates are not coincident unless a `coincident` says so.
+two corners at the same coordinates are not coincident unless a `coincident` says so, and a leg
+standing exactly under a top is not held there unless a `flush` says so.
 
 **Held by this build** (the rectilinear set the direct updater handles):
 
 | `kind` | Fields | Meaning |
 |---|---|---|
 | `anchored` | `entity` | The entity does not move in response to other entities. |
-| `coincident` | `a`, `b`: points | Two points are the same point. |
-| `horizontal`, `vertical` | `edge` | A segment is axis-aligned. |
-| `flush` | `a`, `b`: edges | Two parallel axis-aligned edges lie on the same line. |
-| `axisDistance` | `from`, `to`: points; `axis`; `distance`: integer | Signed distance `to − from` along one axis. This is what a driving linear dimension between two points is. |
+| `coincident` | `a`, `b`: places | The same place: equal on every axis both fix. |
+| `horizontal`, `vertical` | `edge`: a `segment` or a `feature` | A line is axis-aligned. |
+| `flush` | `a`, `b`: places | The same plane: two faces coplanar, or a face and an axis-aligned segment. |
+| `axisDistance` | `from`, `to`: places; `axis`; `distance`: integer | Signed distance `to − from` along one axis, `x`, `y` or `z`. Along `x` or `y` it is what a driving linear dimension between two places is. |
 | `paramValue` | `param`: a size; `value`: integer | A size is held at a value. This is what a driving dimension on a part's size is, and it is the one owner of that number. |
 | `equalParam` | `a`, `b`: sizes | Two sizes are equal — four identical legs. |
-| `centered` | `middle`, `a`, `b`: points; `axis` | `middle` is midway between `a` and `b` along the axis. |
+| `centered` | `middle`, `a`, `b`: places; `axis` | `middle` is midway between `a` and `b` along the axis, `x`, `y` or `z`. |
 
 Two of those load but are not editable: the direct updater treats `horizontal` and `vertical` on a
 box edge, and `paramValue`/`equalParam` over a `segmentLength`, as things it can check but not
@@ -417,10 +464,10 @@ M1 is read-only, so such a file opens and draws; M2's editing has to say so.
 
 **Reserved for the constraint solver** (#28). These kinds are part of the format so that files and
 the UI have names for them, but a build without the solver refuses a file containing one, naming
-the kind rather than crashing: `parallel` and `perpendicular` (`a`, `b`: edges), `angleBetween`
-(`a`, `b`: edges; `angle`: arcseconds), `distance` (`a`, `b`: points; `value`), `pointOnEdge`
-(`point`, `edge`), `symmetric` (`a`, `b`: points; `mirror`: an edge), `tangent` (`a`, `b`: edges)
-and `radius` (`arc`, `value`).
+the kind rather than crashing: `parallel` and `perpendicular` (`a`, `b`: lines), `angleBetween`
+(`a`, `b`: lines; `angle`: arcseconds), `distance` (`a`, `b`: places; `value`), `pointOnEdge`
+(`point`: a place, `edge`: a line), `symmetric` (`a`, `b`: places; `mirror`: a line), `tangent`
+(`a`, `b`: lines) and `radius` (`arc`, `value`). A line is a `segment` or a `feature`.
 
 ## An annotated example
 
@@ -429,22 +476,27 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 ```jsonc
 {
-  "formatVersion": 3,                                  // exactly 3, judged first
+  "formatVersion": 4,                                  // exactly 4, judged first
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
   "entities": [
-    // The wall: 144" x 1024 = 147456 units long, 5.5" x 1024 = 5632 units thick. A wall is not a
-    // piece anybody cuts, so its part is null — which is a statement, not an omission — and
-    // nothing has been cut off it, which "cuts": [] says the same way.
+    // The wall: 144" x 1024 = 147456 units long, 5.5" x 1024 = 5632 units thick, lying as drawn
+    // on the floor. Its depth is its height, which this sample's design does not state: 768 is a
+    // placeholder (samples/wall-with-window.design.md). A wall is not a piece anybody cuts, so its
+    // part is null — which is a statement, not an omission — and nothing has been cut off it,
+    // which "cuts": [] says the same way.
     { "id": "30000000-0000-4000-8000-000000000001", "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall",
-      "anchor": { "x": 0, "y": 0 }, "width": 147456, "height": 5632, "rotation": 0,
+      "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 147456, "height": 5632, "depth": 768,
+      "faceUp": "top", "rotation": 0,
       "part": null, "cuts": [] },
 
     // The opening: 36" = 36864 units wide, the full thickness of the wall, starting 54" along.
+    // Its anchor z would be its sill and its depth its height — placeholders here, like the wall's.
     { "id": "30000000-0000-4000-8000-000000000002", "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001", "name": "Opening",
-      "anchor": { "x": 55296, "y": 0 }, "width": 36864, "height": 5632, "rotation": 0,
+      "anchor": { "x": 55296, "y": 0, "z": 0 }, "width": 36864, "height": 5632, "depth": 768,
+      "faceUp": "top", "rotation": 0,
       "part": null, "cuts": [] },
 
     // A driving dimension: the relationship named in "drives" owns the number 147456; this
@@ -456,12 +508,13 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
       "placement": { "offset": 12288, "side": "south" } },
 
     // A reference dimension: it measures the span from the wall's west end to the opening and
-    // owns nothing, so "drives" is null. It reads 4'-6".
+    // owns nothing, so "drives" is null. It reads 4'-6". Each end is the edge where a box's south
+    // and west faces meet: on a box lying as drawn, the plan's south-west corner.
     { "id": "30000000-0000-4000-8000-000000000006", "type": "dimension",
       "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall west end to opening",
       "measures": { "kind": "axis",
-        "from": { "kind": "corner", "box": "30000000-0000-4000-8000-000000000001", "corner": "southWest" },
-        "to":   { "kind": "corner", "box": "30000000-0000-4000-8000-000000000002", "corner": "southWest" },
+        "from": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "west"] },
+        "to":   { "kind": "feature", "box": "30000000-0000-4000-8000-000000000002", "faces": ["south", "west"] },
         "axis": "x" },
       "drives": null,
       "placement": { "offset": 6144, "side": "north" } }
@@ -471,16 +524,16 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
       "param": { "kind": "boxWidth", "box": "30000000-0000-4000-8000-000000000001" },
       "value": 147456 },
 
-    // The opening runs the full thickness of the wall …
+    // The opening runs the full thickness of the wall: their south faces are one plane …
     { "id": "40000000-0000-4000-8000-000000000006", "kind": "flush",
-      "a": { "kind": "boxEdge", "box": "30000000-0000-4000-8000-000000000001", "edge": "south" },
-      "b": { "kind": "boxEdge", "box": "30000000-0000-4000-8000-000000000002", "edge": "south" } },
+      "a": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south"] },
+      "b": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000002", "faces": ["south"] } },
 
     // … and sits in the middle of it: the opening's centre is midway between the wall's two ends.
     { "id": "40000000-0000-4000-8000-000000000008", "kind": "centered",
       "middle": { "kind": "center", "box": "30000000-0000-4000-8000-000000000002" },
-      "a": { "kind": "corner", "box": "30000000-0000-4000-8000-000000000001", "corner": "southWest" },
-      "b": { "kind": "corner", "box": "30000000-0000-4000-8000-000000000001", "corner": "southEast" },
+      "a": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "west"] },
+      "b": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "east"] },
       "axis": "x" }
   ]
 }
@@ -547,8 +600,8 @@ here, each because the outline is ambiguous under strict reading:
 
 1. **Every reference carries an explicit `kind`.** §6's example writes a box-edge reference as
    `{ "box": …, "edge": … }` and a size as `{ "kind": "boxWidth", "box": … }`. Telling a
-   `center` reference (`{ "box": … }`) from a `corner` reference by which fields are present is
-   exactly the sort of guess that strict reading is meant to remove, so every point, edge and size
+   `center` reference (`{ "box": … }`) from a `feature` reference by which fields are present is
+   exactly the sort of guess that strict reading is meant to remove, so every place and size
    reference names its kind.
 2. **The scene's stamp stays in the scene, and the manifest gets its own.** §6 puts
    `formatVersion` and `units` in `manifest.json`. They head the scene document instead, and the

@@ -142,16 +142,13 @@ public static class SceneWriter
                 break;
 
             case Box box:
-                if (Unspellable(box) is { } why)
-                {
-                    throw new NotSupportedException(why);
-                }
-
-                WritePoint(writer, SceneNames.Anchor, box.Anchor.XY);
+                WritePoint(writer, SceneNames.Anchor, box.Anchor);
                 writer.WriteNumber(SceneNames.Width, box.Width.Units);
                 writer.WriteNumber(SceneNames.Height, box.Height.Units);
+                writer.WriteNumber(SceneNames.Depth, box.Depth.Units);
+                writer.WriteString(SceneNames.FaceUp, SceneNames.Of(box.FaceUp));
                 writer.WriteNumber(SceneNames.Rotation, box.Rotation.Arcseconds);
-                WritePart(writer, box.Part, box.Depth);
+                WritePart(writer, box.Part);
                 WriteCuts(writer, box.Cuts);
                 break;
 
@@ -183,44 +180,11 @@ public static class SceneWriter
     }
 
     /// <summary>
-    /// Why this box cannot be written in format version 3, or <see langword="null"/> when it can.
-    /// </summary>
-    /// <remarks>
-    /// Version 3 is a plan format: a box in it lies as drawn at the plan datum, and its depth is
-    /// its part's out-of-plane dimension or, for a box that is not a part, the rectangle tool's
-    /// default. A box in space that is anything else would be written as a different box and read
-    /// back as that, so it is refused rather than quietly flattened. docs/design/assembly-model.md
-    /// §10 step 5 gives the file the fields to say it.
-    /// </remarks>
-    internal static string? Unspellable(Box box)
-    {
-        ArgumentNullException.ThrowIfNull(box);
-
-        if (box.FaceUp != BoxFace.Top)
-        {
-            return $"Box {box.Id} is turned {box.FaceUp} up, and this file format can only store a box lying as drawn.";
-        }
-
-        if (box.Anchor.Z != Length.Zero)
-        {
-            return $"Box {box.Id} is {box.Anchor.Z} above the plan, and this file format can only store a box on the plan.";
-        }
-
-        if (box.Part is null && box.Depth != Box.DefaultDepth)
-        {
-            return $"Box {box.Id} is {box.Depth} deep and is not a part, and this file format can only store "
-                   + $"the depth of a part (a plain box is read back {Box.DefaultDepth} deep).";
-        }
-
-        return null;
-    }
-
-    /// <summary>
     /// A box's part, or <c>"part": null</c> for a box that is not a piece anybody cuts. Written
     /// even when there is nothing to say, because the format has no optional fields. The part's
-    /// out-of-plane dimension is the box's depth.
+    /// third dimension is not written here: it is the box's <c>depth</c>, stored once.
     /// </summary>
-    private static void WritePart(Utf8JsonWriter writer, Part? part, Length depth)
+    private static void WritePart(Utf8JsonWriter writer, Part? part)
     {
         if (part is null)
         {
@@ -249,7 +213,6 @@ public static class SceneWriter
         }
 
         writer.WriteNumber(SceneNames.Quantity, part.Quantity);
-        writer.WriteNumber(SceneNames.OutOfPlane, depth.Units);
 
         writer.WriteStartObject(SceneNames.PlanAxes);
         writer.WriteString(SceneNames.X, SceneNames.Of(part.PlanAxes.X));
@@ -336,30 +299,30 @@ public static class SceneWriter
 
             case Coincident coincident:
                 writer.WriteString(SceneNames.Kind, SceneNames.Coincident);
-                WritePointRef(writer, SceneNames.A, coincident.A);
-                WritePointRef(writer, SceneNames.B, coincident.B);
+                WritePlaceRef(writer, SceneNames.A, coincident.A);
+                WritePlaceRef(writer, SceneNames.B, coincident.B);
                 break;
 
             case Horizontal horizontal:
                 writer.WriteString(SceneNames.Kind, SceneNames.Horizontal);
-                WriteEdgeRef(writer, SceneNames.Edge, horizontal.Edge);
+                WritePlaceRef(writer, SceneNames.Edge, horizontal.Edge);
                 break;
 
             case Vertical vertical:
                 writer.WriteString(SceneNames.Kind, SceneNames.Vertical);
-                WriteEdgeRef(writer, SceneNames.Edge, vertical.Edge);
+                WritePlaceRef(writer, SceneNames.Edge, vertical.Edge);
                 break;
 
             case Flush flush:
                 writer.WriteString(SceneNames.Kind, SceneNames.Flush);
-                WriteEdgeRef(writer, SceneNames.A, flush.A);
-                WriteEdgeRef(writer, SceneNames.B, flush.B);
+                WritePlaceRef(writer, SceneNames.A, flush.A);
+                WritePlaceRef(writer, SceneNames.B, flush.B);
                 break;
 
             case AxisDistance axisDistance:
                 writer.WriteString(SceneNames.Kind, SceneNames.AxisDistance);
-                WritePointRef(writer, SceneNames.From, axisDistance.From);
-                WritePointRef(writer, SceneNames.To, axisDistance.To);
+                WritePlaceRef(writer, SceneNames.From, axisDistance.From);
+                WritePlaceRef(writer, SceneNames.To, axisDistance.To);
                 writer.WriteString(SceneNames.Axis, SceneNames.Of(axisDistance.Axis));
                 writer.WriteNumber(SceneNames.Distance, axisDistance.Distance.Units);
                 break;
@@ -378,55 +341,55 @@ public static class SceneWriter
 
             case Centered centered:
                 writer.WriteString(SceneNames.Kind, SceneNames.Centered);
-                WritePointRef(writer, SceneNames.Middle, centered.Middle);
-                WritePointRef(writer, SceneNames.A, centered.A);
-                WritePointRef(writer, SceneNames.B, centered.B);
+                WritePlaceRef(writer, SceneNames.Middle, centered.Middle);
+                WritePlaceRef(writer, SceneNames.A, centered.A);
+                WritePlaceRef(writer, SceneNames.B, centered.B);
                 writer.WriteString(SceneNames.Axis, SceneNames.Of(centered.Axis));
                 break;
 
             case Geometry.Parallel parallel:
                 writer.WriteString(SceneNames.Kind, SceneNames.Parallel);
-                WriteEdgeRef(writer, SceneNames.A, parallel.A);
-                WriteEdgeRef(writer, SceneNames.B, parallel.B);
+                WritePlaceRef(writer, SceneNames.A, parallel.A);
+                WritePlaceRef(writer, SceneNames.B, parallel.B);
                 break;
 
             case Perpendicular perpendicular:
                 writer.WriteString(SceneNames.Kind, SceneNames.Perpendicular);
-                WriteEdgeRef(writer, SceneNames.A, perpendicular.A);
-                WriteEdgeRef(writer, SceneNames.B, perpendicular.B);
+                WritePlaceRef(writer, SceneNames.A, perpendicular.A);
+                WritePlaceRef(writer, SceneNames.B, perpendicular.B);
                 break;
 
             case AngleBetween angleBetween:
                 writer.WriteString(SceneNames.Kind, SceneNames.AngleBetween);
-                WriteEdgeRef(writer, SceneNames.A, angleBetween.A);
-                WriteEdgeRef(writer, SceneNames.B, angleBetween.B);
+                WritePlaceRef(writer, SceneNames.A, angleBetween.A);
+                WritePlaceRef(writer, SceneNames.B, angleBetween.B);
                 writer.WriteNumber(SceneNames.Angle, angleBetween.Angle.Arcseconds);
                 break;
 
             case Distance distance:
                 writer.WriteString(SceneNames.Kind, SceneNames.Distance);
-                WritePointRef(writer, SceneNames.A, distance.A);
-                WritePointRef(writer, SceneNames.B, distance.B);
+                WritePlaceRef(writer, SceneNames.A, distance.A);
+                WritePlaceRef(writer, SceneNames.B, distance.B);
                 writer.WriteNumber(SceneNames.Value, distance.Value.Units);
                 break;
 
             case PointOnEdge pointOnEdge:
                 writer.WriteString(SceneNames.Kind, SceneNames.PointOnEdge);
-                WritePointRef(writer, SceneNames.Point, pointOnEdge.Point);
-                WriteEdgeRef(writer, SceneNames.Edge, pointOnEdge.Edge);
+                WritePlaceRef(writer, SceneNames.Point, pointOnEdge.Point);
+                WritePlaceRef(writer, SceneNames.Edge, pointOnEdge.Edge);
                 break;
 
             case Symmetric symmetric:
                 writer.WriteString(SceneNames.Kind, SceneNames.Symmetric);
-                WritePointRef(writer, SceneNames.A, symmetric.A);
-                WritePointRef(writer, SceneNames.B, symmetric.B);
-                WriteEdgeRef(writer, SceneNames.Mirror, symmetric.Mirror);
+                WritePlaceRef(writer, SceneNames.A, symmetric.A);
+                WritePlaceRef(writer, SceneNames.B, symmetric.B);
+                WritePlaceRef(writer, SceneNames.Mirror, symmetric.Mirror);
                 break;
 
             case Tangent tangent:
                 writer.WriteString(SceneNames.Kind, SceneNames.Tangent);
-                WriteEdgeRef(writer, SceneNames.A, tangent.A);
-                WriteEdgeRef(writer, SceneNames.B, tangent.B);
+                WritePlaceRef(writer, SceneNames.A, tangent.A);
+                WritePlaceRef(writer, SceneNames.B, tangent.B);
                 break;
 
             case Radius radius:
@@ -446,11 +409,10 @@ public static class SceneWriter
     // References
     // ---------------------------------------------------------------------------------------
 
-    // Version 3 has point slots and edge slots, and names a box's place by a plan corner or a plan
-    // edge of a box lying as drawn: a local upright and a side face. Any other feature — a vertex, a
-    // top or bottom face — has no version-3 spelling until docs/design/assembly-model.md §10 step 5
-    // gives the file the feature reference, and is refused rather than saved as something else.
-    private static void WritePointRef(Utf8JsonWriter writer, string name, PlaceRef reference)
+    // One writer for every place, whichever slot it is in: what a slot may hold is the reader's
+    // and the kernel's business (docs/design/assembly-model.md §2.2), and this type writes whatever
+    // it is given so that a test can see the reader refuse it for the right reason.
+    private static void WritePlaceRef(Utf8JsonWriter writer, string name, PlaceRef reference)
     {
         writer.WriteStartObject(name);
 
@@ -461,10 +423,9 @@ public static class SceneWriter
                 WriteId(writer, SceneNames.Node, node.Node.Value);
                 break;
 
-            case FeatureRef feature when SceneNames.TryCornerOf(feature.Feature, out BoxCorner corner):
-                writer.WriteString(SceneNames.Kind, SceneNames.Corner);
-                WriteId(writer, SceneNames.Box, feature.Box.Value);
-                writer.WriteString(SceneNames.Corner, SceneNames.Of(corner));
+            case SegmentRef segment:
+                writer.WriteString(SceneNames.Kind, SceneNames.Segment);
+                WriteId(writer, SceneNames.Segment, segment.Segment.Value);
                 break;
 
             case CenterRef center:
@@ -472,28 +433,18 @@ public static class SceneWriter
                 WriteId(writer, SceneNames.Box, center.Box.Value);
                 break;
 
-            default:
-                throw Unwritable(reference);
-        }
-
-        writer.WriteEndObject();
-    }
-
-    private static void WriteEdgeRef(Utf8JsonWriter writer, string name, PlaceRef reference)
-    {
-        writer.WriteStartObject(name);
-
-        switch (reference)
-        {
-            case SegmentRef segment:
-                writer.WriteString(SceneNames.Kind, SceneNames.Segment);
-                WriteId(writer, SceneNames.Segment, segment.Segment.Value);
-                break;
-
-            case FeatureRef feature when SceneNames.TryEdgeOf(feature.Feature, out BoxEdge edge):
-                writer.WriteString(SceneNames.Kind, SceneNames.BoxEdge);
+            case FeatureRef feature:
+                // The faces in BoxFace order, which is the order BoxFeature lists them in: a
+                // feature has one spelling in memory and in the file.
+                writer.WriteString(SceneNames.Kind, SceneNames.Feature);
                 WriteId(writer, SceneNames.Box, feature.Box.Value);
-                writer.WriteString(SceneNames.Edge, SceneNames.Of(edge));
+                writer.WriteStartArray(SceneNames.Faces);
+                foreach (BoxFace face in feature.Feature.Faces)
+                {
+                    writer.WriteStringValue(SceneNames.Of(face));
+                }
+
+                writer.WriteEndArray();
                 break;
 
             default:
@@ -553,8 +504,8 @@ public static class SceneWriter
 
             case AxisMeasurand span:
                 writer.WriteString(SceneNames.Kind, SceneNames.AxisMeasurand);
-                WritePointRef(writer, SceneNames.From, span.From);
-                WritePointRef(writer, SceneNames.To, span.To);
+                WritePlaceRef(writer, SceneNames.From, span.From);
+                WritePlaceRef(writer, SceneNames.To, span.To);
                 writer.WriteString(SceneNames.Axis, SceneNames.Of(span.Axis));
                 break;
 
@@ -574,6 +525,15 @@ public static class SceneWriter
         writer.WriteStartObject(name);
         writer.WriteNumber(SceneNames.X, point.X.Units);
         writer.WriteNumber(SceneNames.Y, point.Y.Units);
+        writer.WriteEndObject();
+    }
+
+    private static void WritePoint(Utf8JsonWriter writer, string name, Point3 point)
+    {
+        writer.WriteStartObject(name);
+        writer.WriteNumber(SceneNames.X, point.X.Units);
+        writer.WriteNumber(SceneNames.Y, point.Y.Units);
+        writer.WriteNumber(SceneNames.Z, point.Z.Units);
         writer.WriteEndObject();
     }
 

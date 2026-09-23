@@ -46,9 +46,9 @@ public class FileDesignSourceTests
     {
         DesignLoadException failure = Refuse("from-the-future.scene.json", BadScenes.WrongVersion);
 
-        // Both versions by name: the file's, and the one this build reads. "2" on its own would
+        // Both versions by name: the file's, and the one this build reads. "3" on its own would
         // be satisfied by any GUID in the message.
-        Assert.Contains("format version 2", Assert.Single(failure.Problems), StringComparison.Ordinal);
+        Assert.Contains("format version 3", Assert.Single(failure.Problems), StringComparison.Ordinal);
         Assert.Contains(
             $"format version {SceneReader.FormatVersion.ToString(CultureInfo.InvariantCulture)}",
             failure.Message,

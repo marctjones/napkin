@@ -46,8 +46,16 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
     /// change; a box with no cuts writes <c>"cuts": []</c>, because the format has no optional
     /// fields.
     /// </para>
+    /// <para>
+    /// Version 4 put a box in space (<c>docs/design/assembly-model.md</c> &#xA7;10): every box gained
+    /// an <c>anchor.z</c>, a <c>depth</c> and a <c>faceUp</c>; a part lost <c>outOfPlane</c>, whose
+    /// value is the box's depth; and the <c>corner</c> and <c>boxEdge</c> references gave way to one
+    /// <c>feature</c> reference naming one, two or three faces of a box. Every version-3 file is
+    /// refused, including the three this repository committed until they were rewritten in the same
+    /// change.
+    /// </para>
     /// </remarks>
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);
