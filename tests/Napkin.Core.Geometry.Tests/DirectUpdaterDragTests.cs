@@ -36,7 +36,7 @@ public class DirectUpdaterDragTests
         SketchBuilder builder = new();
         EntityId box = builder.AddBox(0, 0, 10, 10);
         EntityId node = builder.AddNode(0, 0);
-        builder.Add(id => new Coincident(id, new CornerRef(box, BoxCorner.SouthWest), new NodeRef(node)));
+        builder.Add(id => new Coincident(id, TestRefs.Corner(box, BoxCorner.SouthWest), new NodeRef(node)));
         builder.Anchor(node);
 
         Solved result = Assert.IsType<Solved>(Updater.Apply(
@@ -60,8 +60,8 @@ public class DirectUpdaterDragTests
         builder.Flush(wall, BoxEdge.North, opening, BoxEdge.North);
         RelationshipId along = builder.Add(id => new AxisDistance(
             id,
-            new CornerRef(wall, BoxCorner.SouthWest),
-            new CornerRef(opening, BoxCorner.SouthWest),
+            TestRefs.Corner(wall, BoxCorner.SouthWest),
+            TestRefs.Corner(opening, BoxCorner.SouthWest),
             Axis.X,
             Length.Inches(36)));
 

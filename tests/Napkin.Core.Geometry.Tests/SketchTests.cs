@@ -65,7 +65,7 @@ public class SketchTests
         EntityId ghost = SketchBuilder.EntityIdAt(99);
         builder.Add(id => new Coincident(
             id,
-            new CornerRef(box, BoxCorner.NorthEast),
+            TestRefs.Corner(box, BoxCorner.NorthEast),
             new NodeRef(ghost)));
 
         ValidationResult result = builder.Sketch.Validate();
@@ -192,14 +192,14 @@ public class SketchTests
         EntityId other = builder.AddNode(1, 6);
         EntityId segment = builder.AddSegment(node, other);
 
-        Assert.Equal(Point2.Inches(40, 28), builder.Sketch.PointOf(new CornerRef(box, BoxCorner.NorthEast)));
-        Assert.Equal(Point2.Inches(25, 24), builder.Sketch.PointOf(new CenterRef(box)));
-        Assert.Equal(Point2.Inches(1, 2), builder.Sketch.PointOf(new NodeRef(node)));
+        Assert.Equal(Point2.Inches(40, 28), builder.Sketch.PlanPoint(TestRefs.Corner(box, BoxCorner.NorthEast)));
+        Assert.Equal(Point2.Inches(25, 24), builder.Sketch.PlanPoint(new CenterRef(box)));
+        Assert.Equal(Point2.Inches(1, 2), builder.Sketch.PlanPoint(new NodeRef(node)));
         Assert.Equal(Length.Inches(30), builder.Sketch.ValueOf(new BoxWidthRef(box)));
         Assert.Equal(Length.Inches(8), builder.Sketch.ValueOf(new BoxHeightRef(box)));
         Assert.Equal(Length.Inches(4), builder.Sketch.ValueOf(new SegmentLengthRef(segment)));
         Assert.Equal(
             (Point2.Inches(40, 20), Point2.Inches(40, 28)),
-            builder.Sketch.EdgeOf(new BoxEdgeRef(box, BoxEdge.East)));
+            builder.Sketch.PlanLine(TestRefs.Edge(box, BoxEdge.East)));
     }
 }

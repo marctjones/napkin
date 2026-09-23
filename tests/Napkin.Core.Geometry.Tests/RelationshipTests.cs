@@ -12,8 +12,8 @@ public class RelationshipTests
     [Fact]
     public void TwoRelationshipsSayingTheSameThingAreStructurallyIdentical()
     {
-        Flush first = new(RelationshipId.New(), new BoxEdgeRef(BoxA, BoxEdge.East), new BoxEdgeRef(BoxB, BoxEdge.West));
-        Flush second = new(RelationshipId.New(), new BoxEdgeRef(BoxA, BoxEdge.East), new BoxEdgeRef(BoxB, BoxEdge.West));
+        Flush first = new(RelationshipId.New(), TestRefs.Edge(BoxA, BoxEdge.East), TestRefs.Edge(BoxB, BoxEdge.West));
+        Flush second = new(RelationshipId.New(), TestRefs.Edge(BoxA, BoxEdge.East), TestRefs.Edge(BoxB, BoxEdge.West));
 
         Assert.NotEqual(first, second);                                     // different ids
         Assert.True(Relationship.AreStructurallyIdentical(first, second));  // same statement
@@ -22,9 +22,9 @@ public class RelationshipTests
     [Fact]
     public void DifferentReferencesAreNotStructurallyIdentical()
     {
-        Flush east = new(RelationshipId.New(), new BoxEdgeRef(BoxA, BoxEdge.East), new BoxEdgeRef(BoxB, BoxEdge.West));
-        Flush north = new(RelationshipId.New(), new BoxEdgeRef(BoxA, BoxEdge.North), new BoxEdgeRef(BoxB, BoxEdge.West));
-        Flush swapped = new(RelationshipId.New(), new BoxEdgeRef(BoxB, BoxEdge.West), new BoxEdgeRef(BoxA, BoxEdge.East));
+        Flush east = new(RelationshipId.New(), TestRefs.Edge(BoxA, BoxEdge.East), TestRefs.Edge(BoxB, BoxEdge.West));
+        Flush north = new(RelationshipId.New(), TestRefs.Edge(BoxA, BoxEdge.North), TestRefs.Edge(BoxB, BoxEdge.West));
+        Flush swapped = new(RelationshipId.New(), TestRefs.Edge(BoxB, BoxEdge.West), TestRefs.Edge(BoxA, BoxEdge.East));
 
         Assert.False(Relationship.AreStructurallyIdentical(east, north));
 
@@ -35,8 +35,8 @@ public class RelationshipTests
     [Fact]
     public void DifferentKindsAreNotStructurallyIdentical()
     {
-        Parallel parallel = new(RelationshipId.New(), new BoxEdgeRef(BoxA, BoxEdge.East), new BoxEdgeRef(BoxB, BoxEdge.West));
-        Flush flush = new(RelationshipId.New(), new BoxEdgeRef(BoxA, BoxEdge.East), new BoxEdgeRef(BoxB, BoxEdge.West));
+        Parallel parallel = new(RelationshipId.New(), TestRefs.Edge(BoxA, BoxEdge.East), TestRefs.Edge(BoxB, BoxEdge.West));
+        Flush flush = new(RelationshipId.New(), TestRefs.Edge(BoxA, BoxEdge.East), TestRefs.Edge(BoxB, BoxEdge.West));
 
         Assert.False(Relationship.AreStructurallyIdentical(parallel, flush));
     }
@@ -61,17 +61,17 @@ public class RelationshipTests
         RelationshipId id = RelationshipId.New();
 
         AssertReferences(new Anchored(id, BoxA), BoxA);
-        AssertReferences(new Coincident(id, new CornerRef(BoxA, BoxCorner.NorthEast), new NodeRef(BoxB)), BoxA, BoxB);
+        AssertReferences(new Coincident(id, TestRefs.Corner(BoxA, BoxCorner.NorthEast), new NodeRef(BoxB)), BoxA, BoxB);
         AssertReferences(new Horizontal(id, new SegmentRef(BoxA)), BoxA);
         AssertReferences(new Vertical(id, new SegmentRef(BoxA)), BoxA);
-        AssertReferences(new Flush(id, new BoxEdgeRef(BoxA, BoxEdge.East), new BoxEdgeRef(BoxB, BoxEdge.West)), BoxA, BoxB);
+        AssertReferences(new Flush(id, TestRefs.Edge(BoxA, BoxEdge.East), TestRefs.Edge(BoxB, BoxEdge.West)), BoxA, BoxB);
         AssertReferences(
             new AxisDistance(id, new CenterRef(BoxA), new CenterRef(BoxB), Axis.X, Length.Inches(4)),
             BoxA, BoxB);
         AssertReferences(new ParamValue(id, new BoxWidthRef(BoxA), Length.Inches(4)), BoxA);
         AssertReferences(new EqualParam(id, new BoxWidthRef(BoxA), new BoxHeightRef(BoxB)), BoxA, BoxB);
         AssertReferences(
-            new Centered(id, new CenterRef(c), new CornerRef(BoxA, BoxCorner.SouthWest), new CornerRef(BoxB, BoxCorner.SouthEast), Axis.X),
+            new Centered(id, new CenterRef(c), TestRefs.Corner(BoxA, BoxCorner.SouthWest), TestRefs.Corner(BoxB, BoxCorner.SouthEast), Axis.X),
             c, BoxA, BoxB);
 
         // The kinds reserved for the solver (#28) exist from #5 so that the file format and the

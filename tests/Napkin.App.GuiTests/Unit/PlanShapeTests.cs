@@ -151,8 +151,8 @@ public class PlanShapeTests
     [Fact]
     public void A_snap_onto_a_box_on_its_side_lines_the_part_up_and_states_nothing_it_cannot_name()
     {
-        // The target stands East up: its plan west side is the blank's top, which no BoxEdgeRef
-        // can name before step 3, so the snap lands the part and states no Flush.
+        // The target stands East up: its plan west side is the blank's top, which the snap does
+        // not name until it reads features through the footprint, so it lands the part and states no Flush.
         Box standing = Blank(BoxFace.East) with { Id = EditingBuilder.Id(0) };
         Box moving = Box.AsDrawn(EditingBuilder.Id(1), LayerId.Default, Point2.Inches(0, 25), Length.Inches(4), Length.Inches(4), Box.DefaultDepth, Angle.Zero);
         Sketch sketch = Sketch.Empty.WithEntity(standing).WithEntity(moving);

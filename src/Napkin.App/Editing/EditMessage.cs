@@ -195,6 +195,8 @@ public static class EditMessages
             "the cut does not fit the blank it is on. Make the blank bigger, or the cut smaller.",
         RejectionReason.NoSuchCut => "there is no cut there to take off.",
         RejectionReason.UnsupportedRequest => "this build does not do that yet.",
+        RejectionReason.PlacesNotComparable =>
+            "those two places do not lie along a common line or plane, so that relationship could never hold.",
         _ => "the drawing could not do it.",
     };
 

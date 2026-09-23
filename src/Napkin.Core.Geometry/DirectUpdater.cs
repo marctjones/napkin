@@ -134,6 +134,14 @@ public sealed class DirectUpdater : IGeometryUpdater
                 return new Rejected(RejectionReason.DanglingReference);
             }
 
+            // Invariant 13: a dimension lies in the plan, so one that would measure along world Z
+            // has nowhere to be drawn (docs/design/assembly-model.md §7.3). The number is not lost:
+            // it is a ParamValue or an AxisDistance, which needs no drawing.
+            if (PlaceRules.MeasurandRefusal(sketch, dimension) is { } leaves)
+            {
+                return new Rejected(RejectionReason.UnsupportedRequest, leaves);
+            }
+
             if (dimension.Drives is { } driving && !sketch.Relationships.ContainsKey(driving))
             {
                 return new Rejected(RejectionReason.UnknownRelationship);
@@ -387,6 +395,13 @@ public sealed class DirectUpdater : IGeometryUpdater
         if (relationship is ParamValue paramValue && paramValue.Value <= Length.Zero)
         {
             return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        // §2.3: a pairing that can never hold is refused, not stored and quietly violated. The
+        // loader asks the same question through Sketch.Validate.
+        if (PlaceRules.Refusal(sketch, relationship) is { } notComparable)
+        {
+            return new Rejected(RejectionReason.PlacesNotComparable, notComparable);
         }
 
         Sketch target = sketch.WithRelationship(relationship);
@@ -900,12 +915,30 @@ public sealed class DirectUpdater : IGeometryUpdater
         return null;
     }
 
+    /// <summary>
+    /// Whether the propagator can hold this relationship: a kind it knows, on places it reads, along
+    /// axes it has scalars for.
+    /// </summary>
+    /// <remarks>
+    /// Legal and holdable are two questions. <see cref="PlaceRules"/> says whether a pairing could
+    /// ever hold — a <c>Coincident</c> between two vertices can, and is legal. This says whether
+    /// this build can keep it holding, and before docs/design/assembly-model.md &#xA7;10 step 4 the
+    /// propagator has no Z scalar: a relationship that speaks about world Z — two vertices, two
+    /// centres, a flush between a top and a bottom face, a distance or a centring along Z — is
+    /// <see cref="RejectionReason.UnsupportedRelationship"/> here, out loud, rather than held on X
+    /// and Y alone. The same stance <see cref="Drag"/> takes on a delta along Z.
+    /// </remarks>
     private static bool CanPropagate(Sketch sketch, Relationship relationship) => relationship switch
     {
         Anchored => true,
-        Coincident coincident => InThePlan(sketch, coincident.A) && InThePlan(sketch, coincident.B),
-        AxisDistance distance => InThePlan(sketch, distance.From) && InThePlan(sketch, distance.To),
-        Centered centered => InThePlan(sketch, centered.Middle)
+        Coincident coincident => InThePlan(sketch, coincident.A)
+                                 && InThePlan(sketch, coincident.B)
+                                 && !Place.Common(sketch.PlaceOf(coincident.A), sketch.PlaceOf(coincident.B)).Contains(Axis.Z),
+        AxisDistance distance => distance.Axis != Axis.Z
+                                 && InThePlan(sketch, distance.From)
+                                 && InThePlan(sketch, distance.To),
+        Centered centered => centered.Axis != Axis.Z
+                             && InThePlan(sketch, centered.Middle)
                              && InThePlan(sketch, centered.A)
                              && InThePlan(sketch, centered.B),
         ParamValue paramValue => IsBoxSize(paramValue.Param),
@@ -914,57 +947,35 @@ public sealed class DirectUpdater : IGeometryUpdater
         Vertical vertical => vertical.Edge is SegmentRef,
         Flush flush => InThePlan(sketch, flush.A)
                        && InThePlan(sketch, flush.B)
-                       && FlushNormalAxis(sketch, flush) is not null,
+                       && FlushNormalAxis(sketch, flush) is Axis.X or Axis.Y,
         _ => false,
     };
 
     private static bool IsBoxSize(ParamRef param) => param is BoxWidthRef or BoxHeightRef or BoxDepthRef;
 
     /// <summary>
-    /// Whether a point reference means what the plan propagator reads it as: a box's corner or
-    /// centre on a box lying as drawn, or anything that is not a box's.
+    /// Whether a place is one the plan propagator reads correctly: a feature or the centre of a box
+    /// lying as drawn, or anything that is not a box's.
     /// </summary>
     /// <remarks>
-    /// A <see cref="CornerRef"/> names a corner of the blank in its local frame, and the
-    /// propagator places it in the plan as a <see cref="BoxFace.Top"/> box would. For a box that
-    /// is tipped or turned over that is not where the blank's corner is, and a relationship on it
-    /// would be held at the wrong place without a word. docs/design/assembly-model.md &#xA7;10
-    /// step 3 replaces these references with features that fix world axes through the
-    /// orientation; until then a positional relationship on a box that is not
-    /// <see cref="BoxFace.Top"/> up is one this updater cannot hold.
+    /// <see cref="Sketch.PlaceOf"/> reads a feature through any of the 24 orientations, and the
+    /// propagator's offsets are turned the same way. What the propagator does not yet have is the
+    /// rest of a tipped box: its Z scalar, and a depth that moves a plan face (a box standing on its
+    /// east face has its depth along plan X). Both are docs/design/assembly-model.md &#xA7;10 step
+    /// 4; until then a positional relationship on a box that is not <see cref="BoxFace.Top"/> up is
+    /// one this updater cannot hold.
     /// </remarks>
-    private static bool InThePlan(Sketch sketch, PointRef reference) => reference switch
+    private static bool InThePlan(Sketch sketch, PlaceRef reference) => reference switch
     {
-        CornerRef corner => sketch.Find<Box>(corner.Box) is not { } box || box.FaceUp == BoxFace.Top,
-        CenterRef centre => sketch.Find<Box>(centre.Box) is not { } box || box.FaceUp == BoxFace.Top,
+        CenterRef or FeatureRef => sketch.Find<Box>(reference.Owner) is not { } box || box.FaceUp == BoxFace.Top,
         _ => true,
     };
 
-    /// <inheritdoc cref="InThePlan(Sketch, PointRef)"/>
-    private static bool InThePlan(Sketch sketch, EdgeRef reference) => reference switch
-    {
-        BoxEdgeRef edge => sketch.Find<Box>(edge.Box) is not { } box || box.FaceUp == BoxFace.Top,
-        _ => true,
-    };
-
+    /// <summary>The one axis both places of a flush fix, or null when they do not share exactly one.</summary>
     private static Axis? FlushNormalAxis(Sketch sketch, Flush flush)
-    {
-        Axis? first = NormalAxisOf(sketch.EdgeOf(flush.A));
-        return first is { } axis && NormalAxisOf(sketch.EdgeOf(flush.B)) == axis ? axis : null;
-    }
-
-    private static Axis? NormalAxisOf((Point2 From, Point2 To) edge)
-    {
-        bool sameX = edge.From.X == edge.To.X;
-        bool sameY = edge.From.Y == edge.To.Y;
-
-        if (sameX == sameY)
-        {
-            return null;
-        }
-
-        return sameX ? Axis.X : Axis.Y;
-    }
+        => sketch.PlaceOf(flush.A).Axes is [var first] && sketch.PlaceOf(flush.B).Axes is [var second] && first == second
+            ? first
+            : null;
 
     private static HashSet<EntityId> RigidGroup(Sketch sketch, HashSet<EntityId> seed, Axis axis)
     {
@@ -1091,29 +1102,16 @@ public sealed class DirectUpdater : IGeometryUpdater
         _ => relationship.References.All(id => sketch.Find(id) is not null),
     };
 
-    private static bool ReferenceResolves(Sketch sketch, PointRef reference) => reference switch
-    {
-        NodeRef node => sketch.Find<Node>(node.Node) is not null,
-        CornerRef corner => sketch.Find<Box>(corner.Box) is not null,
-        CenterRef centre => sketch.Find<Box>(centre.Box) is not null,
-        _ => false,
-    };
-
-    private static bool ReferenceResolves(Sketch sketch, EdgeRef reference) => reference switch
-    {
-        SegmentRef segmentRef => sketch.Find<Segment>(segmentRef.Segment) is { } segment
-                                 && sketch.Find<Node>(segment.Start) is not null
-                                 && sketch.Find<Node>(segment.End) is not null,
-        BoxEdgeRef boxEdge => sketch.Find<Box>(boxEdge.Box) is not null,
-        _ => false,
-    };
+    // A feature naming no faces is not a feature (docs/design/assembly-model.md invariant 12), and
+    // there is nothing there to refer to.
+    private static bool ReferenceResolves(Sketch sketch, PlaceRef reference) => sketch.TryPlaceOf(reference) is not null;
 
     private static bool ReferenceResolves(Sketch sketch, ParamRef reference) => reference switch
     {
         BoxWidthRef width => sketch.Find<Box>(width.Box) is not null,
         BoxHeightRef height => sketch.Find<Box>(height.Box) is not null,
         BoxDepthRef depth => sketch.Find<Box>(depth.Box) is not null,
-        SegmentLengthRef length => ReferenceResolves(sketch, new SegmentRef(length.Segment)),
+        SegmentLengthRef length => ReferenceResolves(sketch, (PlaceRef)new SegmentRef(length.Segment)),
         _ => false,
     };
 }

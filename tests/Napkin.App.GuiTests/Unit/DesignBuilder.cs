@@ -126,8 +126,8 @@ public sealed class DesignBuilder
     public EntityId AddDistanceDimension(
         string name,
         LayerId layer,
-        PointRef from,
-        PointRef to,
+        PlaceRef from,
+        PlaceRef to,
         Axis axis,
         DimensionSide side,
         Length offset)

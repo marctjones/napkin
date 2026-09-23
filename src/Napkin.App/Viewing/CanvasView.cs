@@ -1545,15 +1545,8 @@ public sealed class CanvasView : Control
 
         foreach (Relationship relationship in relationships)
         {
-            foreach (CornerRef corner in RelationshipSites.CornersOf(relationship))
-            {
-                corners.Add((corner.Box, corner.Corner));
-            }
-
-            foreach (BoxEdgeRef edge in RelationshipSites.EdgesOf(relationship))
-            {
-                edges.Add((edge.Box, edge.Edge));
-            }
+            corners.UnionWith(RelationshipSites.CornersOf(relationship));
+            edges.UnionWith(RelationshipSites.EdgesOf(relationship));
         }
 
         if (corners.Count == 0 && edges.Count == 0)

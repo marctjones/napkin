@@ -69,8 +69,8 @@ public class EditMessageTests
         Sketch sketch = design.Sketch
             .WithRelationship(new Flush(
                 flushId,
-                new BoxEdgeRef(EditingBuilder.Id(0), BoxEdge.East),
-                new BoxEdgeRef(EditingBuilder.Id(1), BoxEdge.West)))
+                LocalFeatures.Edge(EditingBuilder.Id(0), BoxEdge.East),
+                LocalFeatures.Edge(EditingBuilder.Id(1), BoxEdge.West)))
             .WithRelationship(new Anchored(pinId, EditingBuilder.Id(1)));
 
         EditMessage message = EditMessages.For(
@@ -159,8 +159,8 @@ public class EditMessageTests
 
         Relationship relationship = kind switch
         {
-            _ when kind == typeof(Flush) => new Flush(id, new BoxEdgeRef(one, BoxEdge.East), new BoxEdgeRef(two, BoxEdge.West)),
-            _ when kind == typeof(Coincident) => new Coincident(id, new CornerRef(one, BoxCorner.SouthEast), new CornerRef(two, BoxCorner.SouthWest)),
+            _ when kind == typeof(Flush) => new Flush(id, LocalFeatures.Edge(one, BoxEdge.East), LocalFeatures.Edge(two, BoxEdge.West)),
+            _ when kind == typeof(Coincident) => new Coincident(id, LocalFeatures.Corner(one, BoxCorner.SouthEast), LocalFeatures.Corner(two, BoxCorner.SouthWest)),
             _ when kind == typeof(Anchored) => new Anchored(id, one),
             _ when kind == typeof(ParamValue) => new ParamValue(id, new BoxWidthRef(one), Length.Feet(2)),
             _ => new EqualParam(id, new BoxWidthRef(one), new BoxWidthRef(two)),
@@ -177,8 +177,8 @@ public class EditMessageTests
         Design design = EditingBuilder.Design(EditingBuilder.At(0, 0, 24, 12));
         Napkin.Core.Geometry.Parallel reserved = new(
             RelationshipId.New(),
-            new BoxEdgeRef(EditingBuilder.Id(0), BoxEdge.South),
-            new BoxEdgeRef(EditingBuilder.Id(0), BoxEdge.North));
+            LocalFeatures.Edge(EditingBuilder.Id(0), BoxEdge.South),
+            LocalFeatures.Edge(EditingBuilder.Id(0), BoxEdge.North));
 
         string text = RelationshipText.Describe(design.Sketch, reserved, Name, AtSixteenths);
 

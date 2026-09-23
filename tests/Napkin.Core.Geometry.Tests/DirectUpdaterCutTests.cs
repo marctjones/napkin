@@ -449,7 +449,7 @@ public class DirectUpdaterCutTests
         Solved placed = Assert.IsType<Solved>(Updater.Apply(
             builder.Sketch,
             new AddRelationship(new Coincident(
-                SketchBuilder.RelationshipIdAt(2), new CornerRef(shaped, BoxCorner.NorthEast), new NodeRef(pin)))));
+                SketchBuilder.RelationshipIdAt(2), TestRefs.Corner(shaped, BoxCorner.NorthEast), new NodeRef(pin)))));
 
         Assert.Equal(Point2.Inches(100, 100), placed.Sketch.Find<Box>(shaped)!.Corner(BoxCorner.NorthEast));
         SketchAssert.BoxIs(placed.Sketch, shaped, 76, 88, 24, 12);
@@ -493,11 +493,11 @@ public class DirectUpdaterCutTests
 
         Sketch seated = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, Batch.Of(
             new AddRelationship(new Flush(
-                SketchBuilder.RelationshipIdAt(1), new BoxEdgeRef(a, BoxEdge.South), new BoxEdgeRef(board, BoxEdge.North))),
+                SketchBuilder.RelationshipIdAt(1), TestRefs.Edge(a, BoxEdge.South), TestRefs.Edge(board, BoxEdge.North))),
             new AddRelationship(new Flush(
-                SketchBuilder.RelationshipIdAt(2), new BoxEdgeRef(b, BoxEdge.West), new BoxEdgeRef(a, BoxEdge.East))),
+                SketchBuilder.RelationshipIdAt(2), TestRefs.Edge(b, BoxEdge.West), TestRefs.Edge(a, BoxEdge.East))),
             new AddRelationship(new Flush(
-                SketchBuilder.RelationshipIdAt(3), new BoxEdgeRef(b, BoxEdge.South), new BoxEdgeRef(board, BoxEdge.North)))))).Sketch;
+                SketchBuilder.RelationshipIdAt(3), TestRefs.Edge(b, BoxEdge.South), TestRefs.Edge(board, BoxEdge.North)))))).Sketch;
 
         SketchAssert.IsConsistent(seated);
         SketchAssert.BoxIs(seated, a, 0, 4, 6, 6);
@@ -542,7 +542,7 @@ public class DirectUpdaterCutTests
         RelationshipId rail = builder.Add(id => new ParamValue(id, new BoxWidthRef(b), Length.Inches(2)));
         builder.Add(id => new EqualParam(id, new BoxWidthRef(b), new BoxHeightRef(a)));
         builder.Add(id => new Coincident(
-            id, new CornerRef(a, BoxCorner.NorthEast), new CornerRef(b, BoxCorner.NorthEast)));
+            id, TestRefs.Corner(a, BoxCorner.NorthEast), TestRefs.Corner(b, BoxCorner.NorthEast)));
 
         // Nothing is anchored: anchoring a rail would stop its width following the EqualParam,
         // which is an ordinary conflict and not what this case is about.

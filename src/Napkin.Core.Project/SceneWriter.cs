@@ -446,7 +446,11 @@ public static class SceneWriter
     // References
     // ---------------------------------------------------------------------------------------
 
-    private static void WritePointRef(Utf8JsonWriter writer, string name, PointRef reference)
+    // Version 3 has point slots and edge slots, and names a box's place by a plan corner or a plan
+    // edge of a box lying as drawn: a local upright and a side face. Any other feature — a vertex, a
+    // top or bottom face — has no version-3 spelling until docs/design/assembly-model.md §10 step 5
+    // gives the file the feature reference, and is refused rather than saved as something else.
+    private static void WritePointRef(Utf8JsonWriter writer, string name, PlaceRef reference)
     {
         writer.WriteStartObject(name);
 
@@ -457,10 +461,10 @@ public static class SceneWriter
                 WriteId(writer, SceneNames.Node, node.Node.Value);
                 break;
 
-            case CornerRef corner:
+            case FeatureRef feature when SceneNames.TryCornerOf(feature.Feature, out BoxCorner corner):
                 writer.WriteString(SceneNames.Kind, SceneNames.Corner);
-                WriteId(writer, SceneNames.Box, corner.Box.Value);
-                writer.WriteString(SceneNames.Corner, SceneNames.Of(corner.Corner));
+                WriteId(writer, SceneNames.Box, feature.Box.Value);
+                writer.WriteString(SceneNames.Corner, SceneNames.Of(corner));
                 break;
 
             case CenterRef center:
@@ -475,7 +479,7 @@ public static class SceneWriter
         writer.WriteEndObject();
     }
 
-    private static void WriteEdgeRef(Utf8JsonWriter writer, string name, EdgeRef reference)
+    private static void WriteEdgeRef(Utf8JsonWriter writer, string name, PlaceRef reference)
     {
         writer.WriteStartObject(name);
 
@@ -486,10 +490,10 @@ public static class SceneWriter
                 WriteId(writer, SceneNames.Segment, segment.Segment.Value);
                 break;
 
-            case BoxEdgeRef boxEdge:
+            case FeatureRef feature when SceneNames.TryEdgeOf(feature.Feature, out BoxEdge edge):
                 writer.WriteString(SceneNames.Kind, SceneNames.BoxEdge);
-                WriteId(writer, SceneNames.Box, boxEdge.Box.Value);
-                writer.WriteString(SceneNames.Edge, SceneNames.Of(boxEdge.Edge));
+                WriteId(writer, SceneNames.Box, feature.Box.Value);
+                writer.WriteString(SceneNames.Edge, SceneNames.Of(edge));
                 break;
 
             default:

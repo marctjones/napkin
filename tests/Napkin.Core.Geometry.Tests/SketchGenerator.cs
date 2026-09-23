@@ -154,8 +154,8 @@ internal sealed class SketchGenerator
             int index = i;
             bool flipped = _random.Next(2) == 0;
             adds.Add(current => current.WithRelationship(flipped
-                ? new Flush(NextRelationshipId(), new BoxEdgeRef(row[index + 1], trailing), new BoxEdgeRef(row[index], leading))
-                : new Flush(NextRelationshipId(), new BoxEdgeRef(row[index], leading), new BoxEdgeRef(row[index + 1], trailing))));
+                ? new Flush(NextRelationshipId(), TestRefs.Edge(row[index + 1], trailing), TestRefs.Edge(row[index], leading))
+                : new Flush(NextRelationshipId(), TestRefs.Edge(row[index], leading), TestRefs.Edge(row[index + 1], trailing))));
 
             if (tied)
             {
@@ -411,9 +411,9 @@ internal sealed class SketchGenerator
             {
                 Box other = allBoxes[(allBoxes.IndexOf(box) + 1) % allBoxes.Count];
                 choices.Add(new AddRelationship(new Flush(
-                    NextRelationshipId(), new BoxEdgeRef(box.Id, RandomEdge()), new BoxEdgeRef(other.Id, RandomEdge()))));
+                    NextRelationshipId(), TestRefs.Edge(box.Id, RandomEdge()), TestRefs.Edge(other.Id, RandomEdge()))));
                 choices.Add(new AddRelationship(new Coincident(
-                    NextRelationshipId(), new CornerRef(box.Id, RandomCorner()), new CornerRef(other.Id, RandomCorner()))));
+                    NextRelationshipId(), TestRefs.Corner(box.Id, RandomCorner()), TestRefs.Corner(other.Id, RandomCorner()))));
                 choices.Add(new AddRelationship(new EqualParam(
                     NextRelationshipId(), new BoxWidthRef(box.Id), new BoxWidthRef(other.Id))));
             }
@@ -555,8 +555,8 @@ internal sealed class SketchGenerator
     private Sketch DeriveFlush(Sketch sketch, List<Box> boxes)
     {
         (Box first, Box second) = TwoOf(boxes);
-        BoxEdgeRef edgeOfFirst = new(first.Id, RandomEdge());
-        BoxEdgeRef edgeOfSecond = new(second.Id, RandomEdge());
+        FeatureRef edgeOfFirst = TestRefs.Edge(first.Id, RandomEdge());
+        FeatureRef edgeOfSecond = TestRefs.Edge(second.Id, RandomEdge());
 
         Axis? axis = SharedNormalAxis(sketch, edgeOfFirst, edgeOfSecond);
         if (axis is not { } normal)
@@ -564,8 +564,8 @@ internal sealed class SketchGenerator
             return sketch;
         }
 
-        Length gap = sketch.EdgeOf(edgeOfFirst).From.Component(normal)
-                     - sketch.EdgeOf(edgeOfSecond).From.Component(normal);
+        Length gap = sketch.PlanLine(edgeOfFirst).From.Component(normal)
+                     - sketch.PlanLine(edgeOfSecond).From.Component(normal);
 
         Sketch derived = sketch
             .WithEntity(second with { Anchor = second.Anchor + Vector3.Along(normal, gap) })
@@ -578,10 +578,10 @@ internal sealed class SketchGenerator
     {
         Box box = boxes[_random.Next(boxes.Count)];
         Node node = nodes[_random.Next(nodes.Count)];
-        CornerRef corner = new(box.Id, RandomCorner());
+        FeatureRef corner = TestRefs.Corner(box.Id, RandomCorner());
 
         Sketch derived = sketch
-            .WithEntity(node with { Position = sketch.PointOf(corner) })
+            .WithEntity(node with { Position = sketch.PlanPoint(corner) })
             .WithRelationship(new Coincident(NextRelationshipId(), corner, new NodeRef(node.Id)));
 
         return Keep(sketch, derived);
@@ -591,10 +591,10 @@ internal sealed class SketchGenerator
     {
         (Box first, Box second) = TwoOf(boxes);
         Axis axis = _random.Next(2) == 0 ? Axis.X : Axis.Y;
-        CornerRef from = new(first.Id, RandomCorner());
-        CornerRef to = new(second.Id, RandomCorner());
+        FeatureRef from = TestRefs.Corner(first.Id, RandomCorner());
+        FeatureRef to = TestRefs.Corner(second.Id, RandomCorner());
 
-        Length distance = sketch.PointOf(to).Component(axis) - sketch.PointOf(from).Component(axis);
+        Length distance = sketch.PlanPoint(to).Component(axis) - sketch.PlanPoint(from).Component(axis);
 
         return Keep(sketch, sketch.WithRelationship(
             new AxisDistance(NextRelationshipId(), from, to, axis, distance)));
@@ -606,8 +606,8 @@ internal sealed class SketchGenerator
         Axis axis = _random.Next(2) == 0 ? Axis.X : Axis.Y;
 
         Length target = RoundedMidpoint(
-            sketch.PointOf(new NodeRef(chosen[1].Id)).Component(axis),
-            sketch.PointOf(new NodeRef(chosen[2].Id)).Component(axis));
+            sketch.PlanPoint(new NodeRef(chosen[1].Id)).Component(axis),
+            sketch.PlanPoint(new NodeRef(chosen[2].Id)).Component(axis));
 
         Sketch derived = sketch
             .WithEntity(chosen[0] with { Position = chosen[0].Position.WithComponent(axis, target) })
@@ -624,10 +624,10 @@ internal sealed class SketchGenerator
     /// <summary>The midpoint the propagator and the checker both use.</summary>
     private static Length RoundedMidpoint(Length a, Length b) => (a + b).Divide(2, Rounding.HalfToEven);
 
-    private static Axis? SharedNormalAxis(Sketch sketch, EdgeRef first, EdgeRef second)
+    private static Axis? SharedNormalAxis(Sketch sketch, PlaceRef first, PlaceRef second)
     {
-        Axis? a = NormalAxis(sketch.EdgeOf(first));
-        return a is { } axis && NormalAxis(sketch.EdgeOf(second)) == axis ? axis : null;
+        Axis? a = NormalAxis(sketch.PlanLine(first));
+        return a is { } axis && NormalAxis(sketch.PlanLine(second)) == axis ? axis : null;
     }
 
     private static Axis? NormalAxis((Point2 From, Point2 To) edge)
