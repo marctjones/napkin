@@ -95,7 +95,7 @@ internal sealed class SketchBuilder
 
     /// <summary>Holds two box edges flush.</summary>
     public RelationshipId Flush(EntityId a, BoxEdge edgeOfA, EntityId b, BoxEdge edgeOfB)
-        => Add(id => new Flush(id, new BoxEdgeRef(a, edgeOfA), new BoxEdgeRef(b, edgeOfB)));
+        => Add(id => new Flush(id, TestRefs.Edge(a, edgeOfA), TestRefs.Edge(b, edgeOfB)));
 
     /// <summary>Drives a box's width.</summary>
     public RelationshipId WidthIs(EntityId box, Length value)

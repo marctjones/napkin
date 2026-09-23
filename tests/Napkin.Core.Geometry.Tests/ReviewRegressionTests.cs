@@ -20,7 +20,7 @@ public class ReviewRegressionTests
         EntityId b = builder.AddBox(30, 0, 10, 4);
         RelationshipId widthOfA = builder.WidthIs(a, Length.Inches(30));
         builder.HeightIs(b, Length.Inches(4));
-        builder.Add(id => new Flush(id, new BoxEdgeRef(b, BoxEdge.West), new BoxEdgeRef(a, BoxEdge.East)));
+        builder.Add(id => new Flush(id, TestRefs.Edge(b, BoxEdge.West), TestRefs.Edge(a, BoxEdge.East)));
 
         Solved result = Assert.IsType<Solved>(
             Updater.Apply(builder.Sketch, new SetParameter(widthOfA, Length.Inches(40))));
@@ -46,7 +46,7 @@ public class ReviewRegressionTests
             new Coincident(
                 SketchBuilder.RelationshipIdAt(99),
                 new NodeRef(node),
-                new CornerRef(box, BoxCorner.SouthWest)))));
+                TestRefs.Corner(box, BoxCorner.SouthWest)))));
 
         Assert.Equal(Point2.Inches(5, 5), result.Sketch.Find<Node>(node)!.Position);
         SketchAssert.BoxIs(result.Sketch, box, 5, 5, 10, 4);
@@ -154,7 +154,7 @@ public class ReviewRegressionTests
         // be a load error and not an exception out of the checker.
         Sketch sketch = builder.Sketch.WithRelationship(new Coincident(
             SketchBuilder.RelationshipIdAt(99),
-            new CornerRef(node, BoxCorner.SouthWest),
+            TestRefs.Corner(node, BoxCorner.SouthWest),
             new NodeRef(other)));
 
         Assert.Contains(
@@ -182,7 +182,7 @@ public class ReviewRegressionTests
             "segmentLengthOnABox" => builder.Sketch.WithRelationship(
                 new ParamValue(SketchBuilder.RelationshipIdAt(99), new SegmentLengthRef(box), Length.Inches(4))),
             "boxEdgeOnASegment" => builder.Sketch.WithRelationship(
-                new Horizontal(SketchBuilder.RelationshipIdAt(99), new BoxEdgeRef(segment, BoxEdge.South))),
+                new Horizontal(SketchBuilder.RelationshipIdAt(99), TestRefs.Edge(segment, BoxEdge.South))),
             _ => builder.Sketch.WithEntity(new Dimension(
                 SketchBuilder.EntityIdAt(50),
                 LayerId.Default,

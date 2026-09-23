@@ -196,8 +196,8 @@ public sealed class SampleFixtureTests
     private static Length Measure(Sketch sketch, Dimension dimension) => dimension.Measures switch
     {
         ParamMeasurand param => sketch.ValueOf(param.Param),
-        AxisMeasurand axis => sketch.PointOf(axis.To).Component(axis.Axis)
-                              - sketch.PointOf(axis.From).Component(axis.Axis),
+        AxisMeasurand axis => sketch.PlanPoint(axis.To).Component(axis.Axis)
+                              - sketch.PlanPoint(axis.From).Component(axis.Axis),
         _ => throw new InvalidOperationException($"Unknown measurand {dimension.Measures}."),
     };
 

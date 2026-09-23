@@ -281,8 +281,8 @@ public class DrawWorkflows
 
             Flush stored = Assert.Single(
                 window.CurrentDesign!.Sketch.Relationships.Values.OfType<Flush>());
-            Assert.Equal(new BoxEdgeRef(left, BoxEdge.East), stored.A);
-            Assert.Equal(new BoxEdgeRef(right, BoxEdge.West), stored.B);
+            Assert.Equal(LocalFeatures.Edge(left, BoxEdge.East), stored.A);
+            Assert.Equal(LocalFeatures.Edge(right, BoxEdge.West), stored.B);
 
             // The moved part is selected and has relationships, so the list is open to them.
             Assert.True(window.IsRelationshipListExpanded, "the list stayed a badge with a related part selected.");

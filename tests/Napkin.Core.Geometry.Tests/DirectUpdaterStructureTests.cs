@@ -65,8 +65,8 @@ public class DirectUpdaterStructureTests
 
         UpdateResult result = Updater.Apply(builder.Sketch, new AddRelationship(new Parallel(
             SketchBuilder.RelationshipIdAt(99),
-            new BoxEdgeRef(a, BoxEdge.South),
-            new BoxEdgeRef(b, BoxEdge.South))));
+            TestRefs.Edge(a, BoxEdge.South),
+            TestRefs.Edge(b, BoxEdge.South))));
 
         Assert.Equal(new Rejected(RejectionReason.UnsupportedRelationship), result);
         Assert.DoesNotContain(typeof(Parallel), Updater.SupportedRelationships);
@@ -180,8 +180,8 @@ public class DirectUpdaterStructureTests
             new Rejected(RejectionReason.DuplicateRelationship),
             Updater.Apply(builder.Sketch, new AddRelationship(new Flush(
                 SketchBuilder.RelationshipIdAt(99),
-                new BoxEdgeRef(a, BoxEdge.East),
-                new BoxEdgeRef(b, BoxEdge.West)))));
+                TestRefs.Edge(a, BoxEdge.East),
+                TestRefs.Edge(b, BoxEdge.West)))));
     }
 
     [Fact]
