@@ -191,6 +191,44 @@ public sealed class SampleFixtureTests
         Assert.Equal(first, second);
     }
 
+    /// <summary>
+    /// docs/design/assembly-model.md §9.1 case 18 is worked on this sample's top: loaded from the
+    /// file, its solid is two caps of four straight runs and four quarter-circle arcs, and eight
+    /// sides — the four edges' quads, each <c>Of</c> its face, and the four corners' curved patches,
+    /// <c>Of</c> none. Every X and Y is on the 1&#x2033; grid; Z is the underside at 16640 or the
+    /// top at 17408. The geometry tests hold the same box's solid point for point.
+    /// </summary>
+    [Fact]
+    public void The_rounded_corner_tables_top_extrudes_into_the_solid_case_18_works()
+    {
+        (Sketch sketch, _) = Load("rounded-corner-table");
+        Box top = Assert.IsType<Box>(sketch.Find(new EntityId(Guid.Parse("50000000-0000-4000-8000-000000000001"))));
+
+        Solid solid = top.Solid();
+
+        Assert.Equal(10, solid.Faces.Length);
+        foreach (SolidFace cap in solid.Faces[..2])
+        {
+            Assert.Equal(4, cap.Boundary.Count(segment => segment is StraightSegment3));
+            Assert.Equal(4, cap.Boundary.Count(segment => segment is ArcByCenter3));
+        }
+
+        Assert.Equal(
+            new BoxFace?[] { BoxFace.Bottom, BoxFace.Top, BoxFace.South, null, BoxFace.East, null, BoxFace.North, null, BoxFace.West, null },
+            solid.Faces.Select(face => face.Of));
+
+        foreach (SolidSegment segment in solid.Faces.SelectMany(face => face.Boundary))
+        {
+            Point3[] points = segment is ArcByCenter3 arc ? [arc.From, arc.To, arc.Center] : [segment.From, segment.To];
+            foreach (Point3 point in points)
+            {
+                Assert.Equal(0, point.X.Units % 1024);
+                Assert.Equal(0, point.Y.Units % 1024);
+                Assert.Contains(point.Z.Units, new long[] { 16640, 17408 });
+            }
+        }
+    }
+
     internal static string SampleDirectory => Path.Combine(AppContext.BaseDirectory, "samples");
 
     private static (Sketch Sketch, Expectations Expected) Load(string fixture)

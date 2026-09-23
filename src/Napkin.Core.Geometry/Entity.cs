@@ -162,6 +162,18 @@ public sealed record Box(
     /// </remarks>
     public Outline Outline() => OutlineBuilder.Build(this);
 
+    /// <summary>
+    /// The shape in space: the local <see cref="Outline"/> extruded along local Z from 0 to
+    /// <see cref="Depth"/>, then oriented (<c>docs/design/assembly-model.md</c> &#xA7;4.1). Derived,
+    /// never stored.
+    /// </summary>
+    /// <remarks>
+    /// Every vertex is <see cref="World"/> of an outline point at local z = 0 or <see cref="Depth"/>,
+    /// so it is exact for all 24 orientations. A box with no cuts gives six quads, one per
+    /// <see cref="BoxFace"/>.
+    /// </remarks>
+    public Solid Solid() => SolidBuilder.Build(this);
+
     /// <inheritdoc/>
     public override Entity OnLayer(LayerId layer) => this with { Layer = layer };
 
