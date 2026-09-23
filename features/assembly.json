@@ -27,6 +27,15 @@
       "milestone": "backlog",
       "issue": 69,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-04",
+      "area": "ui",
+      "title": "The relationship list and the Part panel share one column",
+      "acceptance": "At 900x600 with a coffee-table leg selected in the plan, and again with an apron picked in the 3D view, the open relationship list and the Part panel do not overlap each other or the status bar, the list scrolls because its 33 rows do not fit, and the selected part's rows come first.",
+      "milestone": "backlog",
+      "issue": 73,
+      "kind": "workflow"
     }
   ]
 }

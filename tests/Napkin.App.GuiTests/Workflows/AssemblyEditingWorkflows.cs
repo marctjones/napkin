@@ -1,6 +1,8 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Input;
 
+using Napkin.App.Editing;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
@@ -78,4 +80,82 @@ public class AssemblyEditingWorkflows
             Assert.Equal(apron.Depth.Format(window.Editor.LabelFormat).Text, window.OutOfPlaneField.Text);
         });
     });
+
+    [GuiWorkflow("GUI-ASSEM-04")]
+    public void The_relationship_list_and_the_part_panel_share_one_column_without_overlapping() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        // The coffee table carries 33 relationships: far more rows than a 900x600 window has room
+        // for beside the Part panel.
+        OpenSample(app, window, "Coffee table");
+        Box leg = BoxNamed(window, "Leg, north-east");
+        app.Click(OnPlan(window, leg.Center.XY));
+
+        app.Expect("in the plan, the list is open above the Part panel, neither over the other or the status bar", () =>
+        {
+            AssertSidePanelsApart(window);
+            Assert.Contains("Leg, north-east", window.RelationshipsOnScreen[0], StringComparison.Ordinal);
+        });
+
+        app.SaveFrame("plan-side-panels");
+
+        // The same in the 3D view, and after picking another part there.
+        app.Press(Key.V);
+        Box apron = BoxNamed(window, "Apron, long, south");
+
+        // Low on the apron's south face, well clear of the top's edge: the top overhangs the apron
+        // and hides its upper half from this view (and #89: an edge a few pixels away wins a click).
+        Point3 low = SpaceSnapResolver.Extent(apron).Low;
+        Vector3d onFace = new((low.X + (apron.Width.Divide(2, Rounding.HalfToEven))).ToInches(), low.Y.ToInches(), low.Z.ToInches() + 0.75);
+        Point onApron = InModel(window, window.Model.Camera.Project(onFace));
+        app.MoveTo(onApron);
+        app.Click(onApron);
+
+        app.Expect("in the 3D view, with the apron picked, the two panels are still apart and its rows come first", () =>
+        {
+            Assert.True(
+                window.Editor.OnlySelected == apron.Id,
+                $"the click picked {(window.Editor.OnlySelected is { } picked ? window.Editor.NameOf(picked) : "nothing")}, not the apron.");
+            AssertSidePanelsApart(window);
+            Assert.Contains("Apron, long, south", window.RelationshipsOnScreen[0], StringComparison.Ordinal);
+        });
+
+        app.SaveFrame("3d-side-panels");
+
+        // Nothing selected: the Part panel goes. The list stays open while the pointer rests on the
+        // apron (#62's hover), and closes to its badge once the pointer is off every part.
+        app.Press(Key.Escape);
+
+        app.Expect("with nothing selected there is no Part panel, and the hovered apron keeps the list open", () =>
+        {
+            Assert.False(window.IsShowingProperties);
+            Assert.True(window.IsRelationshipListExpanded);
+        });
+
+        app.MoveTo(InModel(window, new Point(40, window.Model.Bounds.Height / 2)));
+
+        app.Expect("off every part, the list is a badge again", () => Assert.False(window.IsRelationshipListExpanded));
+    });
+
+    static void AssertSidePanelsApart(MainWindow window)
+    {
+        Assert.True(window.IsShowingProperties, "the Part panel is not showing.");
+        Assert.True(window.IsRelationshipListExpanded, "the relationship list is not open.");
+
+        Rect list = BoundsIn(window, window.Relationships);
+        Rect panel = BoundsIn(window, window.Properties);
+        Rect status = BoundsIn(window, window.StatusLine);
+
+        Assert.False(list.Intersects(panel), $"the list {list} overlaps the Part panel {panel}.");
+        Assert.True(list.Bottom <= status.Top, $"the list {list} runs into the status bar {status}.");
+        Assert.True(panel.Bottom <= status.Top, $"the Part panel {panel} runs into the status bar {status}.");
+
+        // The list is longer than its room, so it scrolls rather than spilling.
+        ScrollViewer scroller = window.FindControl<ScrollViewer>("RelationshipsScroller")!;
+        Assert.True(scroller.Extent.Height > scroller.Viewport.Height, "the list fit, so this proved nothing about overflow.");
+    }
+
+    static Rect BoundsIn(Visual root, Visual control) =>
+        new(control.TranslatePoint(new Point(0, 0), root)!.Value, control.Bounds.Size);
 }
