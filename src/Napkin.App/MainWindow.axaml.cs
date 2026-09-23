@@ -2021,8 +2021,10 @@ public partial class MainWindow : Window
     /// <remarks>
     /// Expanded, it shows the whole list, not only the selected part's rows: the sentences are the
     /// same ones it has always shown, and which part is selected only decides whether the drawing
-    /// has something to say that is worth the room. The panel stays off the screen while the shape
-    /// workshop is open, whatever changes underneath it.
+    /// has something to say that is worth the room — and which rows come first, so that when the
+    /// list is longer than the room the Part panel leaves it (#73), what is about the part in play
+    /// is at the top rather than scrolled out of sight. The panel stays off the screen while the
+    /// shape workshop is open, whatever changes underneath it.
     /// </remarks>
     void UpdateRelationships()
     {
@@ -2033,7 +2035,7 @@ public partial class MainWindow : Window
         RelationshipsList.Children.Clear();
         if (expanded)
         {
-            foreach (RelationshipEntry entry in entries)
+            foreach (RelationshipEntry entry in entries.OrderBy(entry => entry.Entities.Any(IsInPlay) ? 0 : 1))
             {
                 RelationshipsList.Children.Add(new TextBlock
                 {

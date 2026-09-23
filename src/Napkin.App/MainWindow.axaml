@@ -529,104 +529,124 @@
                                   VerticalAlignment="Top"
                                   Margin="10,56,10,10" />
 
-            <!-- What the drawing says about itself, in words. Read-only on purpose, and not
-                 hit-testable, so it never takes a click or a wheel turn meant for the drawing.
-                 On demand (#62): a small count badge until a part that has relationships is
-                 selected or under the pointer, and only then the sentences themselves. -->
-            <Border Name="RelationshipsPanel"
-                    IsVisible="False"
-                    IsHitTestVisible="False"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Top"
-                    Margin="10"
-                    Padding="10,8"
-                    MaxWidth="260"
-                    MaxHeight="320"
-                    CornerRadius="4"
-                    BorderThickness="1">
-                <StackPanel Spacing="5">
-                    <TextBlock Name="RelationshipsHeadline"
-                               Text="Relationships"
-                               FontSize="12"
-                               FontWeight="SemiBold" />
-                    <StackPanel Name="RelationshipsList" Spacing="3" IsVisible="False" />
-                </StackPanel>
-            </Border>
-
             <!--
-                What the selected part is, as opposed to where it is: its name, the one dimension
-                the plan cannot hold, which of the three the drawing is showing, and what stock it
-                is cut from. This is the only way a box somebody drew becomes a piece somebody
-                cuts (docs/design/parts-and-cut-list.md §1).
+                One column owns the right-hand side (#73): the relationship list above, the Part
+                panel below it. They used to be placed independently in the same corner, so a long
+                list ran under the panel and on under the status bar. Now the list gets whatever
+                height the panel leaves and scrolls inside it; the two never overlap.
             -->
-            <Border Name="PropertiesPanel"
-                    IsVisible="False"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Bottom"
-                    Margin="10"
-                    Padding="10,8"
-                    Width="248"
-                    CornerRadius="4"
-                    BorderThickness="1">
-                <StackPanel Spacing="6">
-                    <TextBlock Name="PropertiesHeadline"
-                               Text="Part"
-                               FontSize="12"
-                               FontWeight="SemiBold" />
+            <Grid Name="SidePanels"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Stretch"
+                  Margin="10"
+                  RowDefinitions="*,Auto">
 
-                    <TextBox Name="PartNameBox" FontSize="12" PlaceholderText="Name" />
+                <!-- What the drawing says about itself, in words. Read-only on purpose, and not
+                     hit-testable, so it never takes a click or a wheel turn meant for the drawing.
+                     On demand (#62): a small count badge until a part that has relationships is
+                     selected or under the pointer, and only then the sentences themselves. -->
+                <Border Name="RelationshipsPanel"
+                        Grid.Row="0"
+                        IsVisible="False"
+                        IsHitTestVisible="False"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Padding="10,8"
+                        MaxWidth="260"
+                        MaxHeight="320"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <DockPanel>
+                        <TextBlock Name="RelationshipsHeadline"
+                                   DockPanel.Dock="Top"
+                                   Text="Relationships"
+                                   FontSize="12"
+                                   FontWeight="SemiBold" />
+                        <ScrollViewer Name="RelationshipsScroller"
+                                      Margin="0,5,0,0"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Auto">
+                            <StackPanel Name="RelationshipsList" Spacing="3" IsVisible="False" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
 
-                    <!-- Every box has a depth, part or not (assembly-model §1.2, §11 decision 7). -->
-                    <Grid ColumnDefinitions="Auto,*">
-                        <TextBlock Name="OutOfPlaneCaption" Grid.Column="0"
-                                   Text="Depth" FontSize="11"
-                                   VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBox Name="OutOfPlaneBox" Grid.Column="1" FontSize="12"
-                                 PlaceholderText="3/4&quot;" />
-                    </Grid>
+                <!--
+                    What the selected part is, as opposed to where it is: its name, the one dimension
+                    the plan cannot hold, which of the three the drawing is showing, and what stock it
+                    is cut from. This is the only way a box somebody drew becomes a piece somebody
+                    cuts (docs/design/parts-and-cut-list.md §1).
+                -->
+                <Border Name="PropertiesPanel"
+                        Grid.Row="1"
+                        IsVisible="False"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Margin="0,8,0,0"
+                        Padding="10,8"
+                        Width="248"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <StackPanel Spacing="6">
+                        <TextBlock Name="PropertiesHeadline"
+                                   Text="Part"
+                                   FontSize="12"
+                                   FontWeight="SemiBold" />
 
-                    <CheckBox Name="IsPartCheck"
-                              Content="This is a piece to cut"
-                              FontSize="12"
-                              IsCheckedChanged="OnIsPartChanged"
-                              ToolTip.Tip="A wall or an opening is a box nobody cuts, and stays off the cut list." />
+                        <TextBox Name="PartNameBox" FontSize="12" PlaceholderText="Name" />
 
-                    <StackPanel Name="PartFields" Spacing="6" IsVisible="False">
-                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Across" FontSize="11"
+                        <!-- Every box has a depth, part or not (assembly-model §1.2, §11 decision 7). -->
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Name="OutOfPlaneCaption" Grid.Column="0"
+                                       Text="Depth" FontSize="11"
                                        VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <ComboBox Name="PlanXBox" Grid.Row="0" Grid.Column="1" FontSize="12"
-                                      HorizontalAlignment="Stretch" Margin="0,0,0,4" />
-
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Up" FontSize="11"
-                                       VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <ComboBox Name="PlanYBox" Grid.Row="1" Grid.Column="1" FontSize="12"
-                                      HorizontalAlignment="Stretch" Margin="0,0,0,4" />
-
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Qty" FontSize="11"
-                                       VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBox Name="QuantityBox" Grid.Row="2" Grid.Column="1" FontSize="12"
-                                     PlaceholderText="1" />
+                            <TextBox Name="OutOfPlaneBox" Grid.Column="1" FontSize="12"
+                                     PlaceholderText="3/4&quot;" />
                         </Grid>
 
-                        <TextBox Name="StockBox" FontSize="12" PlaceholderText="Stock, e.g. 2x4" />
-                        <TextBlock Name="StockReadout" FontSize="10" Opacity="0.8" TextWrapping="Wrap" />
-                        <TextBox Name="SpeciesBox" FontSize="12" PlaceholderText="Species" />
+                        <CheckBox Name="IsPartCheck"
+                                  Content="This is a piece to cut"
+                                  FontSize="12"
+                                  IsCheckedChanged="OnIsPartChanged"
+                                  ToolTip.Tip="A wall or an opening is a box nobody cuts, and stays off the cut list." />
+
+                        <StackPanel Name="PartFields" Spacing="6" IsVisible="False">
+                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Across" FontSize="11"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox Name="PlanXBox" Grid.Row="0" Grid.Column="1" FontSize="12"
+                                          HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Up" FontSize="11"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox Name="PlanYBox" Grid.Row="1" Grid.Column="1" FontSize="12"
+                                          HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Qty" FontSize="11"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBox Name="QuantityBox" Grid.Row="2" Grid.Column="1" FontSize="12"
+                                         PlaceholderText="1" />
+                            </Grid>
+
+                            <TextBox Name="StockBox" FontSize="12" PlaceholderText="Stock, e.g. 2x4" />
+                            <TextBlock Name="StockReadout" FontSize="10" Opacity="0.8" TextWrapping="Wrap" />
+                            <TextBox Name="SpeciesBox" FontSize="12" PlaceholderText="Species" />
+                        </StackPanel>
+
+                        <Button Name="ApplyPartButton"
+                                Content="Apply"
+                                FontSize="12"
+                                Padding="10,3"
+                                HorizontalAlignment="Right"
+                                Click="OnApplyPartClicked" />
+
+                        <TextBlock Name="PropertiesError"
+                                   IsVisible="False"
+                                   FontSize="11"
+                                   TextWrapping="Wrap" />
                     </StackPanel>
-
-                    <Button Name="ApplyPartButton"
-                            Content="Apply"
-                            FontSize="12"
-                            Padding="10,3"
-                            HorizontalAlignment="Right"
-                            Click="OnApplyPartClicked" />
-
-                    <TextBlock Name="PropertiesError"
-                               IsVisible="False"
-                               FontSize="11"
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
+                </Border>
+            </Grid>
 
             <!-- Its colours come from the canvas palette in the code-behind, not from a theme
                  resource: the panel sits on the drawing, so it should be lit the same way, and a
