@@ -638,6 +638,90 @@ public class AssemblyEditingWorkflows
         app.SaveFrame("pair-raised");
     });
 
+    [GuiWorkflow("GUI-ASSEM-14")]
+    public void A_2x4_is_placed_on_the_top_and_dragged_out_on_the_floor_in_the_3D_view() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+        Box top = BoxNamed(window, "Top");
+        app.Press(Key.Escape);
+        app.Press(Key.V);
+
+        // Pick a 2x4 from the toolbox with the 3D view showing: it stays the 3D view.
+        app.Click(CentreOf(window, window.Toolbox.CategoryButtons[Napkin.Core.Materials.StockCategory.DimensionalLumber]));
+        app.Click(CentreOf(window, window.Toolbox.ItemButtons.Single(button => (button.Content as string) == "2x4")));
+
+        // Rest the pointer on the top's upper face: the preview lies flat on it.
+        Point onTop = InModel(window, window.Model.Camera.Project(new Vector3d(20, 12, 17)));
+        app.MoveTo(onTop);
+
+        app.Expect("the 3D view is still showing, and a 2x4 would lie flat on the top", () =>
+        {
+            Assert.True(window.IsShowingModel);
+            PlacementPreview preview = window.Model.PlacementPreview
+                ?? throw new InvalidOperationException("No preview under the pointer.");
+            Assert.Equal(Length.Inches(17), SpaceSnapResolver.Extent(preview.Box).Low.Z);
+            Assert.Equal("2x4", preview.Part!.Stock);
+        });
+
+        app.SaveFrame("2x4-over-the-top");
+        Sketch before = window.CurrentDesign!.Sketch;
+        app.Click(onTop);
+
+        EntityId placed = window.Editor.OnlySelected ?? throw new InvalidOperationException("Nothing was placed.");
+        app.Expect("one new 2x4 on the top, held there by a flush of the top's upper face and its underside", () =>
+        {
+            Sketch after = window.CurrentDesign!.Sketch;
+            Box board = after.Find<Box>(placed)!;
+            Assert.False(before.Entities.ContainsKey(placed));
+            Assert.Equal(before.Entities.Count + 1, after.Entities.Count);
+            Assert.Equal("2x4", board.Part!.Stock);
+            Assert.Equal(Length.Inches(17), SpaceSnapResolver.Extent(board).Low.Z);
+            Assert.Contains(
+                after.RelationshipsInOrder.OfType<Flush>(),
+                flush => flush.A == new FeatureRef(top.Id, BoxFeature.Face(BoxFace.Top))
+                         && flush.B == new FeatureRef(placed, BoxFeature.Face(BoxFace.Bottom)));
+            Assert.StartsWith("Placed a 2x4 on Top's top face", window.MessageOnScreen, StringComparison.Ordinal);
+        });
+
+        app.SaveFrame("2x4-on-the-top");
+
+        // One undo takes the part, its stock and the flush.
+        app.Chord(Key.Z);
+
+        app.Expect("one undo leaves the drawing as it was", () =>
+        {
+            Assert.Equal(before.Entities.Count, window.CurrentDesign!.Sketch.Entities.Count);
+            Assert.Equal(before.Relationships.Count, window.CurrentDesign!.Sketch.Relationships.Count);
+        });
+
+        // On the floor, clear of the table: drag 30" north for its length.
+        Point from = InModel(window, window.Model.Camera.Project(new Vector3d(60, -10, 0)));
+        Point to = InModel(window, window.Model.Camera.Project(new Vector3d(60, 20, 0)));
+        app.Drag(from, new Point((from.X + to.X) / 2, (from.Y + to.Y) / 2), to);
+
+        app.Expect("a 2x4 as long as the drag lies on the floor, held by nothing", () =>
+        {
+            Sketch after = window.CurrentDesign!.Sketch;
+            Box board = after.Find<Box>(window.Editor.OnlySelected!.Value)!;
+            (Point3 low, Point3 high) = SpaceSnapResolver.Extent(board);
+            Assert.Equal(Length.Zero, low.Z);
+            Assert.True(high.Y - low.Y >= Length.Inches(28), $"it is {(high.Y - low.Y).ToInches()}\" long.");
+            Assert.Equal(Length.Inches(3, 1, 2), high.X - low.X);
+            Assert.DoesNotContain(after.RelationshipsInOrder, relationship => relationship.References.Contains(board.Id) && relationship is not ParamValue);
+            Assert.StartsWith("Placed a 2x4 on the floor", window.MessageOnScreen, StringComparison.Ordinal);
+        });
+
+        // Escape puts the 2x4 down.
+        app.Press(Key.Escape);
+        app.Expect("nothing is held any more", () =>
+        {
+            Assert.False(window.Model.Placement.IsArmed);
+            Assert.Null(window.Model.PlacementPreview);
+        });
+    });
+
     /// <summary>The help text the plan canvas's automation element for a part carries.</summary>
     static string? PartHelpText(MainWindow window, EntityId part) =>
         Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(window.Canvas)

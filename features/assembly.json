@@ -117,6 +117,15 @@
       "milestone": "backlog",
       "issue": 87,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-14",
+      "area": "ui",
+      "title": "Place a part in the 3D view on the face under the pointer",
+      "acceptance": "With the 3D view showing, a 2x4 picked from the toolbox previews lying flat on the coffee table's top, a click places it there with its stock and a Flush of the top's upper face and its underside, one undo removes it all, a drag on the floor places a 2x4 as long as the drag held by nothing, and Escape puts the 2x4 down.",
+      "milestone": "backlog",
+      "issue": 74,
+      "kind": "workflow"
     }
   ]
 }

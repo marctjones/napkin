@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Napkin.App.Editing;
 using Napkin.Core.Geometry;
+using Napkin.Core.Materials;
 
 namespace Napkin.App.Viewing;
 
@@ -107,6 +108,11 @@ public sealed class ModelView : Control
     readonly System.Text.StringBuilder _typed = new();
     EntityId[] _moving = [];
     Box? _groupAtPress;
+    readonly PlacementTool _placement = new();
+    PlacementPreview? _preview;
+    PlacementFace? _placeFace;
+    Point3 _placeFrom;
+    EntityId _previewId = EntityId.New();
     Typeable? _typeable;
     EntityId? _hovered;
     System.Collections.Immutable.ImmutableHashSet<EntityId> _attention = [];
@@ -121,6 +127,9 @@ public sealed class ModelView : Control
 
     /// <summary>Raised as the pointer moves, with the point on a part under it, or null.</summary>
     public event EventHandler<Vector3d?>? PointerModelPositionChanged;
+
+    /// <summary>Raised when what the view holds to place changes: picked up, put down (#74).</summary>
+    public event EventHandler? PlacementChanged;
 
     /// <summary>Raised when a person asks to go back to the plan.</summary>
     public event EventHandler? PlanRequested;
@@ -261,6 +270,48 @@ public sealed class ModelView : Control
                         _ => "Depth",
                     };
         }
+    }
+
+    /// <summary>What the view holds to place on a face (#74): a stock size, a plain board, or nothing.</summary>
+    public PlacementTool Placement => _placement;
+
+    /// <summary>The part as it would be placed where the pointer is now, or null.</summary>
+    public PlacementPreview? PlacementPreview => _placement.IsArmed ? _preview : null;
+
+    /// <summary>Picks up a stock size to place, or puts everything down with null.</summary>
+    /// <returns><see langword="false"/> when it cannot be placed — a fastener.</returns>
+    public bool Arm(StockItem? item)
+    {
+        bool armed = _placement.Arm(item);
+        AfterPlacementChange();
+        return armed;
+    }
+
+    /// <summary>Picks up a plain board to place: the rectangle tool, in the 3D view.</summary>
+    public void ArmPlainBoard()
+    {
+        _placement.ArmPlainBoard();
+        AfterPlacementChange();
+    }
+
+    /// <summary>Puts down whatever is held.</summary>
+    public void Disarm()
+    {
+        if (!_placement.IsArmed)
+        {
+            return;
+        }
+
+        _placement.Disarm();
+        AfterPlacementChange();
+    }
+
+    void AfterPlacementChange()
+    {
+        _preview = null;
+        _placeFace = null;
+        InvalidateVisual();
+        PlacementChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>The part the pointer is resting on, or null.</summary>
@@ -492,6 +543,23 @@ public sealed class ModelView : Control
         _typed.Clear();
         Focus();
 
+        // Holding something to place: a press on a face — or on the floor — starts placing it.
+        if (_placement.IsArmed && properties.IsLeftButtonPressed && !e.KeyModifiers.HasFlag(KeyModifiers.Shift)
+            && _editor is { } placing && FaceUnder(position, placing) is { } under)
+        {
+            if (under.Face is null)
+            {
+                placing.Say(EditSeverity.Hint, "That face is a cut, not a flat face of the blank: place it on a flat face, or on the floor.");
+                return;
+            }
+
+            _placeFace = under.Face;
+            _placeFrom = under.Point;
+            _preview = Shaped(placing, _placeFrom);
+            Begin(e.Pointer, Gesture.Placing);
+            return;
+        }
+
         if (properties.IsMiddleButtonPressed
             || (properties.IsLeftButtonPressed && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && !OnSelection(position)))
         {
@@ -581,7 +649,25 @@ public sealed class ModelView : Control
                 ContinueEdit(position);
                 break;
 
+            case Gesture.Placing when _editor is { } placing && _placeFace is { } face:
+                // A drag along the face states the length, as the plan's stock tool does.
+                if (OnFace(position, face) is { } to)
+                {
+                    _preview = Shaped(placing, to) ?? _preview;
+                    InvalidateVisual();
+                }
+
+                break;
+
             default:
+                if (_placement.IsArmed && _editor is { } hovering)
+                {
+                    _preview = FaceUnder(position, hovering) is { Face: { } face } under
+                        ? ShapedOn(hovering, face, under.Point, under.Point)
+                        : null;
+                    InvalidateVisual();
+                }
+
                 ModelPick? pick = PickAt(position);
                 Hover(pick?.Box);
                 PointerModelPositionChanged?.Invoke(this, pick?.Point);
@@ -600,6 +686,21 @@ public sealed class ModelView : Control
         {
             CompleteEdit();
             e.Pointer.Capture(null);
+            return;
+        }
+
+        if (gesture == Gesture.Placing)
+        {
+            _gesture = Gesture.None;
+            e.Pointer.Capture(null);
+            bool dragged = Math.Abs(position.X - _pressedAt.X) > 2 || Math.Abs(position.Y - _pressedAt.Y) > 2;
+            PlacementPreview? placed = dragged ? _preview : (_editor is { } editor ? Shaped(editor, _placeFrom) : null);
+            if (placed is not null)
+            {
+                Place(placed);
+            }
+
+            _placeFace = null;
             return;
         }
 
@@ -690,6 +791,14 @@ public sealed class ModelView : Control
 
     bool HandleTypingKey(Key key)
     {
+        if (key == Key.Escape && _placement.IsArmed)
+        {
+            string holding = _placement.Holding;
+            Disarm();
+            _editor?.Say(EditSeverity.Done, $"Put down {holding}.");
+            return true;
+        }
+
         if (_typed.Length == 0)
         {
             return false;
@@ -1159,6 +1268,92 @@ public sealed class ModelView : Control
             ((a.X * sincePress.Y) - (a.Y * sincePress.X)) / determinant);
     }
 
+    /// <summary>
+    /// The face under a point of the view a part could be placed on, and the point on it — on the
+    /// grid across the face, exactly on it along its normal — or the floor, where no part is under
+    /// the pointer; null when the pointer is on neither. A face a cut made comes back with no face.
+    /// </summary>
+    (PlacementFace? Face, Point3 Point)? FaceUnder(Point position, DesignEditor editor)
+    {
+        if (ModelPicker.SurfaceAt(editor.Sketch, Scene, _camera, position) is { } surface)
+        {
+            if (surface.Face is not { } hitFace || editor.Sketch.Find<Box>(surface.Box) is not { Orientation.IsExact: true } box)
+            {
+                return (null, default);
+            }
+
+            PlacementFace face = PlacementFace.Of(box, hitFace);
+            return (face, OnGrid(face, surface.Point));
+        }
+
+        return ModelPicker.FloorAt(_camera, position) is { } floor
+            ? (PlacementFace.Floor, OnGrid(PlacementFace.Floor, floor))
+            : null;
+    }
+
+    /// <summary>Where the pointer is on a face's plane, on the grid across it.</summary>
+    Point3? OnFace(Point position, PlacementFace face) =>
+        ModelPicker.PlaneAt(_camera, position, face.Normal, face.Coordinate.ToInches()) is { } at ? OnGrid(face, at) : null;
+
+    Point3 OnGrid(PlacementFace face, Vector3d at)
+    {
+        (Axis u, Axis v) = face.Plane;
+        return Point3.Origin
+            .WithComponent(u, SnapGrid.Snap(ToLength(at.Component(u)), GridStepInches))
+            .WithComponent(v, SnapGrid.Snap(ToLength(at.Component(v)), GridStepInches))
+            .WithComponent(face.Normal, face.Coordinate);
+    }
+
+    PlacementPreview? Shaped(DesignEditor editor, Point3 to) =>
+        _placeFace is { } face ? ShapedOn(editor, face, _placeFrom, to) : null;
+
+    PlacementPreview? ShapedOn(DesignEditor editor, PlacementFace face, Point3 from, Point3 to) =>
+        _placement.Shape(editor.Sketch, face, from, to, editor.LayerForNewParts(), _previewId, string.Empty, GridStepInches, ModelLength(SnapRadiusPixels));
+
+    /// <summary>
+    /// Puts the part down (#74): added with its stock, then held by the flush against the face it
+    /// rests on and whatever its edges caught — one undo step — and selected. What is held stays
+    /// held, for the next one.
+    /// </summary>
+    void Place(PlacementPreview preview)
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        Box named = preview.Box with { Name = editor.NextPartName() };
+        preview = preview with { Box = named };
+        _previewId = EntityId.New();
+
+        string where = preview.Face is { Target: { } target, TargetFace: { } targetFace }
+            ? $"{editor.NameOf(target)}'s {WorldWords.Feature(editor.Sketch.Find<Box>(target), BoxFeature.Face(targetFace))}"
+            : "the floor";
+        string what = $"Placed {_placement.Holding} on {where}";
+        (Request add, System.Collections.Immutable.ImmutableList<Relationship> holds) = PlacementTool.Requests(editor.Sketch, preview);
+
+        editor.BeginGesture(what);
+        if (editor.Apply(add, what) is Succeeded)
+        {
+            int held = 0;
+            foreach (Relationship hold in holds)
+            {
+                if (editor.CanHold(hold) && !editor.AlreadyStates(hold)
+                    && editor.Apply(new AddRelationship(hold), what) is Succeeded)
+                {
+                    held++;
+                }
+            }
+
+            editor.Select(named.Id);
+            editor.Say(EditSeverity.Done, $"{what} as {editor.NameOf(named.Id)}{(held > 0 ? ", held there" : string.Empty)}.");
+        }
+
+        editor.EndGesture();
+        _preview = null;
+        InvalidateVisual();
+    }
+
     void PickOn(Point position, KeyModifiers modifiers)
     {
         if (_editor is not { } editor)
@@ -1263,9 +1458,45 @@ public sealed class ModelView : Control
             DrawSnapIndicator(context, palette, sketch, plan);
         }
 
+        DrawPreview(context, palette);
         DrawHandles(context, palette);
         DrawReadout(context, palette);
         DrawAxes(context);
+    }
+
+    /// <summary>The part as it would be placed, faint, the faces the eye could see (#74).</summary>
+    void DrawPreview(DrawingContext context, CanvasPalette palette)
+    {
+        if (PlacementPreview is not { Box: { } box })
+        {
+            return;
+        }
+
+        SolidColorBrush fill = new(palette.Selection, 0.22);
+        Pen edge = new(new SolidColorBrush(palette.Selection, 0.9), 1.2) { LineJoin = PenLineJoin.Round };
+        foreach (BoxFace face in (BoxFace[])[BoxFace.South, BoxFace.East, BoxFace.North, BoxFace.West, BoxFace.Bottom, BoxFace.Top])
+        {
+            (Axis axis, bool positive) = box.Orientation.Normal(face);
+            if (Vector3d.Dot(Vector3d.Along(axis, positive), _camera.TowardViewer) <= 1e-6)
+            {
+                continue;
+            }
+
+            StreamGeometry outline = new();
+            using (StreamGeometryContext figure = outline.Open())
+            {
+                Point3[] corners = [.. ModelHandles.CornersOf(box, face)];
+                figure.BeginFigure(_camera.Project(corners[0]), isFilled: true);
+                foreach (Point3 corner in corners.Skip(1))
+                {
+                    figure.LineTo(_camera.Project(corner));
+                }
+
+                figure.EndFigure(isClosed: true);
+            }
+
+            context.DrawGeometry(fill, edge, outline);
+        }
     }
 
     /// <summary>The live readout, on a small plate just below and right of the pointer (#86).</summary>
@@ -1644,6 +1875,7 @@ public sealed class ModelView : Control
     {
         None,
         Pending,
+        Placing,
         Orbit,
         Pan,
         MoveAxis,

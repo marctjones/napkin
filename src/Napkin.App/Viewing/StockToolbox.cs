@@ -61,6 +61,7 @@ public sealed class StockToolbox : Border
     readonly List<Button> _itemButtons = [];
     readonly List<Path> _glyphs = [];
     StockItem? _armed;
+    bool _inModel;
     StockItem? _hovered;
     CanvasPalette _palette = CanvasPalette.Light;
 
@@ -257,9 +258,16 @@ public sealed class StockToolbox : Border
     /// Marks the item the pointer is holding, or none: the same item stays marked while it is
     /// armed, so a person can see what the next drag will place.
     /// </summary>
-    public void ShowArmed(StockItem? armed)
+    public void ShowArmed(StockItem? armed) => ShowArmed(armed, inModel: false);
+
+    /// <summary>
+    /// Shows which item is held, and says how it is placed in the view that is showing: dragged on
+    /// the paper in the plan, set down on a face in the 3D view (#74).
+    /// </summary>
+    public void ShowArmed(StockItem? armed, bool inModel)
     {
         _armed = armed;
+        _inModel = inModel;
         UpdateItemHighlight();
         UpdateReadout();
     }
@@ -296,7 +304,9 @@ public sealed class StockToolbox : Border
     void UpdateReadout() => _readout.Text = _hovered is { } hovered
         ? hovered.HoverText
         : _armed is { } armed
-            ? $"Holding {armed.Name}: drag on the paper to place it. Escape puts it down."
+            ? _inModel
+                ? $"Holding {armed.Name}: click on a face, or the floor, to place it. Escape puts it down."
+                : $"Holding {armed.Name}: drag on the paper to place it. Escape puts it down."
             : IdleText;
 
     /// <summary>
