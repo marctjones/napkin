@@ -359,17 +359,19 @@ public sealed class CanvasView : Control
     /// A part's size as text, in the same format as the dimension labels drawn beside it.
     /// </summary>
     internal string? PartSize(EntityId id) =>
-        Design?.Sketch.Find<Box>(id) is { } box ? $"{Label(box.Width)} × {Label(box.Height)}" : null;
+        Design?.Sketch.Find<Box>(id)?.Footprint() is { } footprint
+            ? $"{Label(footprint.PlanWidth)} × {Label(footprint.PlanHeight)}"
+            : null;
 
     /// <summary>
     /// Where a part is drawn, in canvas pixels: the rectangle <see cref="Outline"/> traces, taken
     /// from the same two corners and the same view transform.
     /// </summary>
     internal Rect? PartRectangle(EntityId id) =>
-        Design?.Sketch.Find<Box>(id) is { } box
+        Design?.Sketch.Find<Box>(id)?.Footprint() is { } footprint
             ? new Rect(
-                _view.ToScreen(box.Corner(BoxCorner.SouthWest)),
-                _view.ToScreen(box.Corner(BoxCorner.NorthEast))).Normalize()
+                _view.ToScreen(footprint.Corner(BoxCorner.SouthWest)),
+                _view.ToScreen(footprint.Corner(BoxCorner.NorthEast))).Normalize()
             : null;
 
     /// <summary>What one dimension reads, found by the label of the design it belongs to.</summary>
@@ -547,7 +549,7 @@ public sealed class CanvasView : Control
         Box copy = source with
         {
             Id = EntityId.New(),
-            Anchor = source.Anchor + new Vector2(step, step),
+            Anchor = source.Anchor + new Vector3(step, step, Length.Zero),
         };
 
         string what = $"Duplicated {editor.NameOf(source.Id)}";
@@ -975,7 +977,7 @@ public sealed class CanvasView : Control
         string what = moving.Count == 1 ? $"Moved {editor.NameOf(moving[0])}" : $"Moved {moving.Count} parts";
 
         editor.BeginGesture(what);
-        editor.Apply(Batch.Of([.. moving.Select(id => (Request)new Drag(id, delta))]), what);
+        editor.Apply(Batch.Of([.. moving.Select(id => (Request)Drag.InPlan(id, delta))]), what);
         editor.EndGesture();
     }
 
@@ -997,7 +999,7 @@ public sealed class CanvasView : Control
         _gesture = grip == BoxGrip.Body ? Gesture.Move : Gesture.Resize;
         _gestureEntity = box.Id;
         _gestureGrip = grip;
-        _gestureAnchorAtPress = box.Anchor;
+        _gestureAnchorAtPress = box.Footprint().Anchor;
         _gestureWorldAtPress = world;
         _gestureBoxAtPress = box;
         _snap = null;
@@ -1029,10 +1031,10 @@ public sealed class CanvasView : Control
                 ModelLength(SnapRadiusPixels));
 
             _snap = plan;
-            Vector2 delta = plan.Anchor - box.Anchor;
+            Vector2 delta = plan.Anchor - box.Footprint().Anchor;
             if (delta != Vector2.Zero)
             {
-                editor.ApplyQuietly(new Drag(_gestureEntity, delta));
+                editor.ApplyQuietly(Drag.InPlan(_gestureEntity, delta));
             }
 
             InvalidateVisual();
@@ -1043,10 +1045,18 @@ public sealed class CanvasView : Control
         // edge does not accumulate the difference and jump when it comes free.
         Box atPress = _gestureBoxAtPress!;
         List<Request> requests = [];
-        foreach (BoxEdge edge in BoxGeometry.EdgesOf(_gestureGrip))
+        foreach (BoxEdge side in BoxGeometry.EdgesOf(_gestureGrip))
         {
-            Length wantedSize = OutwardSize(atPress, edge) + SnappedOutward(atPress, edge, sincePress);
-            Length delta = wantedSize - OutwardSize(box, edge);
+            // The handle is on a side of the footprint; what moves is the edge of the blank the
+            // plan sees there. None, for a side the plan sees as the blank's top or bottom — the
+            // resize along a depth is §10 step 4's DragFace.
+            if (BoxGeometry.LocalEdge(atPress, side) is not { } edge)
+            {
+                continue;
+            }
+
+            Length wantedSize = OutwardSize(atPress, side) + SnappedOutward(atPress, side, sincePress);
+            Length delta = wantedSize - OutwardSize(box, side);
             if (delta != Length.Zero)
             {
                 requests.Add(new DragEdge(_gestureEntity, edge, delta));
@@ -1195,7 +1205,8 @@ public sealed class CanvasView : Control
             return string.Empty;
         }
 
-        return $"{Label(box.Width)} by {Label(box.Height)}";
+        Footprint footprint = box.Footprint();
+        return $"{Label(footprint.PlanWidth)} by {Label(footprint.PlanHeight)}";
     }
 
     /// <summary>
@@ -1220,8 +1231,7 @@ public sealed class CanvasView : Control
         return snapped - size;
     }
 
-    static Length OutwardSize(Box box, BoxEdge edge) =>
-        edge is BoxEdge.East or BoxEdge.West ? box.Width : box.Height;
+    static Length OutwardSize(Box box, BoxEdge side) => BoxGeometry.SizeAcross(box, side);
 
     void PickOn(Point position, KeyModifiers modifiers)
     {
@@ -1658,12 +1668,11 @@ public sealed class CanvasView : Control
                 continue;
             }
 
-            Point from = hit.Axis == Axis.X
-                ? _view.ToScreen(new Point2(hit.Coordinate, hit.From))
-                : _view.ToScreen(new Point2(hit.From, hit.Coordinate));
-            Point to = hit.Axis == Axis.X
-                ? _view.ToScreen(new Point2(hit.Coordinate, hit.To))
-                : _view.ToScreen(new Point2(hit.To, hit.Coordinate));
+            // A plan snap holds X or Y; Point2.WithComponent refuses anything else rather than
+            // drawing a Z snap as a Y one.
+            Axis across = hit.Axis == Axis.X ? Axis.Y : Axis.X;
+            Point from = _view.ToScreen(Point2.Origin.WithComponent(hit.Axis, hit.Coordinate).WithComponent(across, hit.From));
+            Point to = _view.ToScreen(Point2.Origin.WithComponent(hit.Axis, hit.Coordinate).WithComponent(across, hit.To));
 
             context.DrawLine(pen, from, to);
 
@@ -1742,18 +1751,21 @@ public sealed class CanvasView : Control
     /// </remarks>
     StreamGeometry Outline(Box box)
     {
-        if (!box.Cuts.IsEmpty)
+        // A shaped part whose cap the plan sees is its cut outline, placed by the orientation; a
+        // part on its side is its footprint, on which no cut shows (assembly-model §7.2).
+        if (!box.Cuts.IsEmpty && PlanShape.ShowsCap(box))
         {
-            return OutlineDrawing.GeometryOf(box.Outline(), _view.ToScreen);
+            return OutlineDrawing.GeometryOf(PlanShape.Outline(box), _view.ToScreen);
         }
 
+        Footprint footprint = box.Footprint();
         StreamGeometry outline = new();
         using (StreamGeometryContext geometry = outline.Open())
         {
-            geometry.BeginFigure(_view.ToScreen(box.Corner(BoxCorner.SouthWest)), isFilled: true);
-            geometry.LineTo(_view.ToScreen(box.Corner(BoxCorner.SouthEast)));
-            geometry.LineTo(_view.ToScreen(box.Corner(BoxCorner.NorthEast)));
-            geometry.LineTo(_view.ToScreen(box.Corner(BoxCorner.NorthWest)));
+            geometry.BeginFigure(_view.ToScreen(footprint.Corner(BoxCorner.SouthWest)), isFilled: true);
+            geometry.LineTo(_view.ToScreen(footprint.Corner(BoxCorner.SouthEast)));
+            geometry.LineTo(_view.ToScreen(footprint.Corner(BoxCorner.NorthEast)));
+            geometry.LineTo(_view.ToScreen(footprint.Corner(BoxCorner.NorthWest)));
             geometry.EndFigure(isClosed: true);
         }
 
@@ -1813,8 +1825,8 @@ public sealed class CanvasView : Control
                 context,
                 palette,
                 label,
-                _view.ToScreen(box.Corner(BoxCorner.SouthWest)),
-                _view.ToScreen(box.Corner(BoxCorner.NorthEast)));
+                _view.ToScreen(box.Footprint().Corner(BoxCorner.SouthWest)),
+                _view.ToScreen(box.Footprint().Corner(BoxCorner.NorthEast)));
         }
     }
 

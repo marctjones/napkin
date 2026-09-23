@@ -11,7 +11,7 @@ public class OutlineTests
     private static Box Blank(params Cut[] cuts) => Blank(Point2.Origin, Angle.Zero, cuts);
 
     private static Box Blank(Point2 anchor, Angle rotation, params Cut[] cuts)
-        => new(SketchBuilder.EntityIdAt(1), LayerId.Default, anchor, Length.Inches(48), Length.Inches(24), rotation)
+        => Box.AsDrawn(SketchBuilder.EntityIdAt(1), LayerId.Default, anchor, Length.Inches(48), Length.Inches(24), Box.DefaultDepth, rotation) with
         {
             Cuts = [.. cuts],
         };
@@ -237,13 +237,14 @@ public class OutlineTests
     [Fact]
     public void Golden2_TheMiddleOfAnOddEdgeRoundsByHalfAUnitAndNothingElseDoes()
     {
-        Box odd = new(
+        Box odd = Box.AsDrawn(
             SketchBuilder.EntityIdAt(1),
             LayerId.Default,
             Point2.Origin,
             new Length(49153),
             Length.Inches(24),
-            Angle.Zero)
+            Box.DefaultDepth,
+            Angle.Zero) with
         {
             Cuts = [new CurvedEdge(BoxEdge.North, Bow.Outward, Length.Inches(2))],
         };
@@ -273,19 +274,33 @@ public class OutlineTests
         Point2 anchor = Point2.Inches(5, 7);
         Angle rotation = Angle.Zero.Rotate90(quarterTurns);
 
-        Outline upright = Blank(anchor, Angle.Zero, cuts).Outline();
-        Outline turned = Blank(anchor, rotation, cuts).Outline();
+        Box uprightBox = Blank(anchor, Angle.Zero, cuts);
+        Box turnedBox = Blank(anchor, rotation, cuts);
 
+        // The outline is the blank's own, in its local frame (assembly-model §7.2): where the box is
+        // and how it is turned do not change it at all.
+        Assert.Equal(Blank(cuts).Outline(), turnedBox.Outline());
+        Assert.Equal(uprightBox.Outline(), turnedBox.Outline());
+
+        // Placed through the box, it is the unturned placement turned about the anchor, exactly.
         Point2 Turn(Point2 point) => anchor + (point - anchor).Rotate(rotation);
 
         Assert.Equal(
-            upright.Segments.Select(segment => (OutlineSegment)(segment switch
-            {
-                ArcByCenter arc => new ArcByCenter(Turn(arc.From), Turn(arc.To), Turn(arc.Center)),
-                ArcThrough arc => new ArcThrough(Turn(arc.From), Turn(arc.Through), Turn(arc.To)),
-                _ => new StraightSegment(Turn(segment.From), Turn(segment.To)),
-            })),
-            turned.Segments);
+            uprightBox.Outline().Segments.Select(segment => Placed(uprightBox, segment, Turn)),
+            turnedBox.Outline().Segments.Select(segment => Placed(turnedBox, segment, point => point)));
+    }
+
+    /// <summary>A local outline segment placed in the plan by its box, then mapped.</summary>
+    private static OutlineSegment Placed(Box box, OutlineSegment segment, Func<Point2, Point2> then)
+    {
+        Point2 At(Point2 local) => then(box.World(new Vector3(local.X, local.Y, Length.Zero)).XY);
+
+        return segment switch
+        {
+            ArcByCenter arc => new ArcByCenter(At(arc.From), At(arc.To), At(arc.Center)),
+            ArcThrough arc => new ArcThrough(At(arc.From), At(arc.Through), At(arc.To)),
+            _ => new StraightSegment(At(segment.From), At(segment.To)),
+        };
     }
 
     [Trait("Feature", "GEO-007")]

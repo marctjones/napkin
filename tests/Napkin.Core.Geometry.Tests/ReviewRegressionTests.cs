@@ -89,9 +89,9 @@ public class ReviewRegressionTests
         builder.Add(id => new Centered(id, new NodeRef(centre), new NodeRef(left), new NodeRef(right), Axis.X));
 
         Solved result = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new Drag(left, new Vector2(new Length(1), Length.Zero))));
+            Updater.Apply(builder.Sketch, Drag.InPlan(left, new Vector2(new Length(1), Length.Zero))));
 
-        Assert.Equal(new Vector2(new Length(1), Length.Zero), result.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(new Length(1), Length.Zero, Length.Zero), result.Changes.AppliedDelta);
         Assert.Equal(1, result.Sketch.Find<Node>(left)!.Position.X.Units);
         Assert.Equal(3, result.Sketch.Find<Node>(centre)!.Position.X.Units);
         Assert.Equal(4, result.Sketch.Find<Node>(right)!.Position.X.Units);
@@ -263,7 +263,7 @@ public class ReviewRegressionTests
             Updater.Apply(builder.Sketch, new SetPosition(dimension, Point2.Inches(1, 1))));
         Assert.Equal(
             new Rejected(RejectionReason.DanglingReference),
-            Updater.Apply(builder.Sketch, new Drag(dimension, new Vector2(Length.Inches(1), Length.Zero))));
+            Updater.Apply(builder.Sketch, Drag.InPlan(dimension, new Vector2(Length.Inches(1), Length.Zero))));
     }
 
     [Theory]

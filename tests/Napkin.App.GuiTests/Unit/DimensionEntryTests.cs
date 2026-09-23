@@ -139,7 +139,7 @@ public class DimensionEntryTests
         // Move the part and the same call reads the same sizes: the value is computed from the
         // geometry every time, never cached (docs/design/geometry-model.md §3.3).
         Sketch moved = design.Sketch.WithEntity(
-            design.Box(0) with { Anchor = Point2.Inches(50, 50), Width = Length.Inches(31) });
+            design.Box(0) with { Anchor = Point3.Inches(50, 50, 0), Width = Length.Inches(31) });
 
         Assert.True(SelectionDimensions.TryFor(
             moved, box, SizeAxis.Width, offset, out var after, out _));

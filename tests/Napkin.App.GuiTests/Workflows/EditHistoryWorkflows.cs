@@ -237,7 +237,7 @@ public class EditHistoryWorkflows
         });
 
         // Into the shape workshop on the board, and clip a corner.
-        app.Click(At(window, Part(window, board.Id).Center));
+        app.Click(At(window, Part(window, board.Id).Center.XY));
         app.Press(Key.C);
         app.Drag(
             InWorkshop(window, Point2.Origin),
@@ -288,7 +288,7 @@ public class EditHistoryWorkflows
         window.CurrentDesign!.Sketch.Find<Box>(id)
         ?? throw new InvalidOperationException($"{id} is not in the drawing.");
 
-    static Point2 Centre(MainWindow window, EntityId id) => Part(window, id).Center;
+    static Point2 Centre(MainWindow window, EntityId id) => Part(window, id).Center.XY;
 
     /// <summary>The window coordinate a model point is drawn at.</summary>
     static Point At(MainWindow window, Point2 world) =>

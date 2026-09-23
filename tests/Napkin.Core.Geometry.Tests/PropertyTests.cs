@@ -209,7 +209,8 @@ public class PropertyTests
             // Dragging is never OverConstrained by design: a drag is a question, not a demand.
             Solved result = Assert.IsType<Solved>(Updater.Apply(sketch, request));
             Assert.True(result.Changes.AppliedDelta.HasValue, $"{because}: a drag must report what it applied");
-            Vector2 applied = result.Changes.AppliedDelta!.Value;
+            Vector3 applied = result.Changes.AppliedDelta!.Value;
+            Assert.Equal(Length.Zero, applied.Dz);
 
             Assert.True(
                 applied.Dx == request.Delta.Dx || applied.Dx == Length.Zero,
@@ -219,7 +220,7 @@ public class PropertyTests
                 $"{because}: Y was partly applied, as {applied.Dy}");
 
             Assert.True(
-                PositionOf(result.Sketch, request.Id) - PositionOf(sketch, request.Id) == applied,
+                PositionOf(result.Sketch, request.Id) - PositionOf(sketch, request.Id) == applied.XY,
                 $"{because}: the entity did not move by the delta that was reported");
         }
     }
@@ -749,7 +750,7 @@ public class PropertyTests
 
     private static Point2 PositionOf(Sketch sketch, EntityId id) => sketch.Find(id) switch
     {
-        Box box => box.Anchor,
+        Box box => box.Anchor.XY,
         Node node => node.Position,
         _ => Point2.Origin,
     };

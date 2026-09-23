@@ -11,7 +11,7 @@ public class CutTests
 
     /// <summary>A 48&#x2033; &#xD7; 24&#x2033; blank with the given cuts.</summary>
     private static Box Blank(params Cut[] cuts)
-        => new(SketchBuilder.EntityIdAt(1), LayerId.Default, Point2.Origin, Length.Inches(48), Length.Inches(24), Angle.Zero)
+        => Box.AsDrawn(SketchBuilder.EntityIdAt(1), LayerId.Default, Point2.Origin, Length.Inches(48), Length.Inches(24), Box.DefaultDepth, Angle.Zero) with
         {
             Cuts = [.. cuts],
         };

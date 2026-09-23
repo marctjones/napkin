@@ -20,31 +20,33 @@ namespace Napkin.App.GuiTests.Unit;
 public class CutToolTests
 {
     /// <summary>A 48&#x2033; &#xD7; 24&#x2033; blank in its own frame, the size &#xA7;9.1 works in.</summary>
-    static Box Blank() => CutTool.Local(new Box(
+    static Box Blank() => CutTool.Local(Box.AsDrawn(
         EntityId.New(),
         LayerId.Default,
         Point2.Inches(30, 40),
         Length.Inches(48),
         Length.Inches(24),
+        Box.DefaultDepth,
         Angle.Zero));
 
     [Fact]
     public void A_blank_in_its_own_frame_is_at_the_origin_and_unrotated_with_its_cuts_intact()
     {
-        Box drawn = new Box(
+        Box drawn = Box.AsDrawn(
             EntityId.New(),
             LayerId.Default,
             Point2.Inches(30, 40),
             Length.Inches(48),
             Length.Inches(24),
-            Angle.Right)
+            Box.DefaultDepth,
+            Angle.Right) with
         {
             Cuts = [new RoundedCorner(BoxCorner.NorthEast, Length.Inches(1))],
         };
 
         Box local = CutTool.Local(drawn);
 
-        Assert.Equal(Point2.Origin, local.Anchor);
+        Assert.Equal(Point3.Origin, local.Anchor);
         Assert.Equal(Angle.Zero, local.Rotation);
         Assert.Equal(drawn.Cuts, local.Cuts);
         Assert.Equal(drawn.Id, local.Id);
@@ -406,12 +408,13 @@ public class CutToolTests
     [Fact]
     public void A_full_mitre_sets_both_setbacks_to_the_narrow_dimension_in_one_cut()
     {
-        Box rail = CutTool.Local(new Box(
+        Box rail = CutTool.Local(Box.AsDrawn(
             EntityId.New(),
             LayerId.Default,
             Point2.Origin,
             Length.Inches(36),
             Length.Inches(2),
+            Box.DefaultDepth,
             Angle.Zero));
 
         CornerCut mitre = CutAngle.FullMitre(rail, BoxCorner.SouthEast);

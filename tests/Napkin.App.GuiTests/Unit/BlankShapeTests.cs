@@ -107,11 +107,12 @@ public class BlankShapeTests
         Assert.Empty(RelationshipSites.EdgesOf(new Anchored(RelationshipId.New(), a)));
     }
 
-    static Box Blank() => new(
+    static Box Blank() => Box.AsDrawn(
         EntityId.New(),
         Layer,
         Point2.Origin,
         Length.Inches(12),
         Length.Inches(8),
+        Box.DefaultDepth,
         Angle.Zero);
 }

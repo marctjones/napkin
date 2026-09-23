@@ -147,11 +147,12 @@ public class OutlineHitTestTests
             BoxGeometry.GripAt(gusset, Point2.Inches(6, 6), tolerance));
     }
 
-    static Box Blank(long width, long height) => new(
+    static Box Blank(long width, long height) => Box.AsDrawn(
         EntityId.New(),
         Layer,
         Point2.Origin,
         Length.Inches(width),
         Length.Inches(height),
+        Box.DefaultDepth,
         Angle.Zero);
 }

@@ -27,7 +27,7 @@ static class EditingBuilder
         {
             EntityId id = Id(i);
             (Point2 anchor, Length width, Length height) = boxes[i];
-            sketch = sketch.WithEntity(new Box(id, LayerId.Default, anchor, width, height, Angle.Zero));
+            sketch = sketch.WithEntity(Napkin.Core.Geometry.Box.AsDrawn(id, LayerId.Default, anchor, width, height, Napkin.Core.Geometry.Box.DefaultDepth, Angle.Zero));
             labels.Add(id, $"Part {i + 1}");
         }
 

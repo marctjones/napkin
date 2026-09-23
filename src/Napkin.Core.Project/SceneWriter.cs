@@ -142,11 +142,16 @@ public static class SceneWriter
                 break;
 
             case Box box:
-                WritePoint(writer, SceneNames.Anchor, box.Anchor);
+                if (Unspellable(box) is { } why)
+                {
+                    throw new NotSupportedException(why);
+                }
+
+                WritePoint(writer, SceneNames.Anchor, box.Anchor.XY);
                 writer.WriteNumber(SceneNames.Width, box.Width.Units);
                 writer.WriteNumber(SceneNames.Height, box.Height.Units);
                 writer.WriteNumber(SceneNames.Rotation, box.Rotation.Arcseconds);
-                WritePart(writer, box.Part);
+                WritePart(writer, box.Part, box.Depth);
                 WriteCuts(writer, box.Cuts);
                 break;
 
@@ -178,10 +183,44 @@ public static class SceneWriter
     }
 
     /// <summary>
-    /// A box's part, or <c>"part": null</c> for a box that is not a piece anybody cuts. Written
-    /// even when there is nothing to say, because the format has no optional fields.
+    /// Why this box cannot be written in format version 3, or <see langword="null"/> when it can.
     /// </summary>
-    private static void WritePart(Utf8JsonWriter writer, Part? part)
+    /// <remarks>
+    /// Version 3 is a plan format: a box in it lies as drawn at the plan datum, and its depth is
+    /// its part's out-of-plane dimension or, for a box that is not a part, the rectangle tool's
+    /// default. A box in space that is anything else would be written as a different box and read
+    /// back as that, so it is refused rather than quietly flattened. docs/design/assembly-model.md
+    /// §10 step 5 gives the file the fields to say it.
+    /// </remarks>
+    internal static string? Unspellable(Box box)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        if (box.FaceUp != BoxFace.Top)
+        {
+            return $"Box {box.Id} is turned {box.FaceUp} up, and this file format can only store a box lying as drawn.";
+        }
+
+        if (box.Anchor.Z != Length.Zero)
+        {
+            return $"Box {box.Id} is {box.Anchor.Z} above the plan, and this file format can only store a box on the plan.";
+        }
+
+        if (box.Part is null && box.Depth != Box.DefaultDepth)
+        {
+            return $"Box {box.Id} is {box.Depth} deep and is not a part, and this file format can only store "
+                   + $"the depth of a part (a plain box is read back {Box.DefaultDepth} deep).";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// A box's part, or <c>"part": null</c> for a box that is not a piece anybody cuts. Written
+    /// even when there is nothing to say, because the format has no optional fields. The part's
+    /// out-of-plane dimension is the box's depth.
+    /// </summary>
+    private static void WritePart(Utf8JsonWriter writer, Part? part, Length depth)
     {
         if (part is null)
         {
@@ -210,7 +249,7 @@ public static class SceneWriter
         }
 
         writer.WriteNumber(SceneNames.Quantity, part.Quantity);
-        writer.WriteNumber(SceneNames.OutOfPlane, part.OutOfPlane.Units);
+        writer.WriteNumber(SceneNames.OutOfPlane, depth.Units);
 
         writer.WriteStartObject(SceneNames.PlanAxes);
         writer.WriteString(SceneNames.X, SceneNames.Of(part.PlanAxes.X));
@@ -479,6 +518,11 @@ public static class SceneWriter
             case BoxHeightRef height:
                 writer.WriteString(SceneNames.Kind, SceneNames.BoxHeight);
                 WriteId(writer, SceneNames.Box, height.Box.Value);
+                break;
+
+            case BoxDepthRef depth:
+                writer.WriteString(SceneNames.Kind, SceneNames.BoxDepth);
+                WriteId(writer, SceneNames.Box, depth.Box.Value);
                 break;
 
             case SegmentLengthRef length:

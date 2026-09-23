@@ -100,12 +100,12 @@ public class DirectUpdaterStructureTests
         Assert.Equal(
             new Rejected(RejectionReason.NonPositiveSize),
             Updater.Apply(builder.Sketch, new AddEntity(
-                new Box(EntityId.New(), LayerId.Default, Point2.Origin, Length.Zero, Length.Inches(4), Angle.Zero))));
+                Box.AsDrawn(EntityId.New(), LayerId.Default, Point2.Origin, Length.Zero, Length.Inches(4), Box.DefaultDepth, Angle.Zero))));
 
         Assert.Equal(
             new Rejected(RejectionReason.RotationNotSupported),
-            Updater.Apply(builder.Sketch, new AddEntity(new Box(
-                EntityId.New(), LayerId.Default, Point2.Origin, Length.Inches(4), Length.Inches(4), Angle.Degrees(45)))));
+            Updater.Apply(builder.Sketch, new AddEntity(Box.AsDrawn(
+                EntityId.New(), LayerId.Default, Point2.Origin, Length.Inches(4), Length.Inches(4), Box.DefaultDepth, Angle.Degrees(45)))));
 
         Assert.Equal(
             new Rejected(RejectionReason.DanglingReference),

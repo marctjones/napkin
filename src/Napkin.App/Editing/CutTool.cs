@@ -91,7 +91,7 @@ public sealed class CutTool
     public static Box Local(Box box)
     {
         ArgumentNullException.ThrowIfNull(box);
-        return box with { Anchor = Point2.Origin, Rotation = Angle.Zero };
+        return box with { Anchor = Point3.Origin, FaceUp = BoxFace.Top, Rotation = Angle.Zero };
     }
 
     /// <summary>Every site the workshop offers as a target, in the order they are drawn.</summary>

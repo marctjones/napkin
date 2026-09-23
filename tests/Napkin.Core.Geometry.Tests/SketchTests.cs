@@ -177,7 +177,7 @@ public class SketchTests
         EntityId untouched = builder.AddBox(0, 0, 10, 10);
         EntityId moved = builder.AddBox(20, 0, 10, 10);
 
-        Sketch after = builder.Sketch.WithEntity(builder.BoxOf(moved) with { Anchor = Point2.Inches(21, 0) });
+        Sketch after = builder.Sketch.WithEntity(builder.BoxOf(moved) with { Anchor = Point3.Inches(21, 0, 0) });
 
         Assert.Same(builder.Sketch.Entities[untouched], after.Entities[untouched]);
         Assert.NotSame(builder.Sketch.Entities[moved], after.Entities[moved]);

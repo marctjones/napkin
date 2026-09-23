@@ -65,13 +65,14 @@ public sealed class CutFormatTests
 
     /// <summary>The two blanks built by hand, so that the file above has something to be equal to.</summary>
     private static Sketch TheTwoBlanks => Sketch.Empty
-        .WithEntity(new Box(
+        .WithEntity(Box.AsDrawn(
             new EntityId(Guid.Parse(BlankId)),
             LayerId.Default,
             new Point2(Length.Zero, Length.Zero),
             new Length(49152),
             new Length(24576),
-            Angle.Zero)
+            Box.DefaultDepth,
+            Angle.Zero) with
         {
             Name = "Top",
             Cuts =
@@ -81,13 +82,14 @@ public sealed class CutFormatTests
                 new CurvedEdge(BoxEdge.North, Bow.Inward, new Length(2048)),
             ],
         })
-        .WithEntity(new Box(
+        .WithEntity(Box.AsDrawn(
             new EntityId(Guid.Parse(BowedId)),
             LayerId.Default,
             new Point2(Length.Zero, new Length(40960)),
             new Length(49152),
             new Length(24576),
-            Angle.Zero)
+            Box.DefaultDepth,
+            Angle.Zero) with
         {
             Name = "Shelf front",
             Cuts = [new CurvedEdge(BoxEdge.South, Bow.Outward, new Length(2048))],

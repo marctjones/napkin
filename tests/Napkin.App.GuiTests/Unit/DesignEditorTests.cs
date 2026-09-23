@@ -26,7 +26,7 @@ public class DesignEditorTests
         editor.Open(EditingBuilder.Design(EditingBuilder.At(0, 0, 24, 12)));
         Sketch before = editor.Sketch;
 
-        editor.Apply(new Drag(EditingBuilder.Id(0), new Vector2(Length.Inches(5), Length.Zero)), "Moved Part 1");
+        editor.Apply(Drag.InPlan(EditingBuilder.Id(0), new Vector2(Length.Inches(5), Length.Zero)), "Moved Part 1");
         Assert.NotSame(before, editor.Sketch);
         Assert.Equal(Length.Inches(5).Units, editor.Sketch.Find<Box>(EditingBuilder.Id(0))!.Anchor.X.Units);
 
@@ -45,12 +45,12 @@ public class DesignEditorTests
 
         EntityId first = EntityId.New();
         editor.Apply(
-            new AddEntity(new Box(first, LayerId.Default, Point2.Origin, Length.Inches(10), Length.Inches(10), Angle.Zero)),
+            new AddEntity(Box.AsDrawn(first, LayerId.Default, Point2.Origin, Length.Inches(10), Length.Inches(10), Box.DefaultDepth, Angle.Zero)),
             "Drew a part");
 
         EntityId second = EntityId.New();
         editor.Apply(
-            new AddEntity(new Box(second, LayerId.Default, Point2.Inches(20, 0), Length.Inches(10), Length.Inches(10), Angle.Zero)),
+            new AddEntity(Box.AsDrawn(second, LayerId.Default, Point2.Inches(20, 0), Length.Inches(10), Length.Inches(10), Box.DefaultDepth, Angle.Zero)),
             "Drew a part");
 
         Assert.Equal("Part 1", editor.NameOf(first));
@@ -67,8 +67,8 @@ public class DesignEditorTests
         // puts it on the entity.
         DesignEditor editor = new();
         Sketch sketch = Sketch.Empty
-            .WithEntity(new Box(EditingBuilder.Id(0), LayerId.Default, Point2.Origin, Length.Inches(10), Length.Inches(10), Angle.Zero))
-            .WithEntity(new Box(EditingBuilder.Id(1), LayerId.Default, Point2.Inches(20, 0), Length.Inches(10), Length.Inches(10), Angle.Zero));
+            .WithEntity(Box.AsDrawn(EditingBuilder.Id(0), LayerId.Default, Point2.Origin, Length.Inches(10), Length.Inches(10), Box.DefaultDepth, Angle.Zero))
+            .WithEntity(Box.AsDrawn(EditingBuilder.Id(1), LayerId.Default, Point2.Inches(20, 0), Length.Inches(10), Length.Inches(10), Box.DefaultDepth, Angle.Zero));
 
         editor.Open(Design.Unlabelled("From a file", sketch));
 
@@ -90,7 +90,7 @@ public class DesignEditorTests
         editor.BeginGesture("Moved Part 1");
         for (int i = 0; i < 20; i++)
         {
-            editor.ApplyQuietly(new Drag(EditingBuilder.Id(0), new Vector2(Length.Inches(1), Length.Zero)));
+            editor.ApplyQuietly(Drag.InPlan(EditingBuilder.Id(0), new Vector2(Length.Inches(1), Length.Zero)));
         }
 
         Assert.Empty(committed);
@@ -117,7 +117,7 @@ public class DesignEditorTests
         editor.GestureCommitted += (_, gesture) => committed.Add(gesture);
 
         editor.BeginGesture("Moved Part 1");
-        editor.ApplyQuietly(new Drag(EditingBuilder.Id(0), Vector2.Zero));
+        editor.ApplyQuietly(Drag.InPlan(EditingBuilder.Id(0), Vector2.Zero));
         editor.EndGesture();
 
         Assert.Empty(committed);
@@ -173,7 +173,7 @@ public class DesignEditorTests
         editor.Open(EditingBuilder.Design(EditingBuilder.At(0, 0, 24, 12)));
 
         UpdateResult result = editor.Apply(
-            new Drag(EditingBuilder.Id(0), new Vector2(Length.Inches(1), Length.Zero)),
+            Drag.InPlan(EditingBuilder.Id(0), new Vector2(Length.Inches(1), Length.Zero)),
             "Moved Part 1");
 
         Assert.IsType<UnderConstrained>(result);

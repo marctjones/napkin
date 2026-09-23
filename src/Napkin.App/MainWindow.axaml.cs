@@ -43,14 +43,13 @@ namespace Napkin.App;
 public partial class MainWindow : Window
 {
     /// <summary>
-    /// What the properties panel offers when a plain box is about to become a part: 3/4 inch
-    /// thick, lying flat. Nothing about a box says which it is, so something has to be first.
+    /// What the properties panel offers when a plain box is about to become a part: lying flat,
+    /// its depth its thickness. Nothing about a box says which it is, so something has to be first.
     /// </summary>
     static readonly Part DefaultPart = new(
         Stock: null,
         Species: null,
         Quantity: 1,
-        new Length(768),
         new PlanAxes(PartDimension.Length, PartDimension.Width));
 
     readonly List<MenuItem> _sampleItems = [];
@@ -955,7 +954,10 @@ public partial class MainWindow : Window
     /// <summary>The box that says whether the selection is a piece to cut.</summary>
     public CheckBox IsPartField => IsPartCheck;
 
-    /// <summary>The field the out-of-plane dimension is typed into.</summary>
+    /// <summary>
+    /// The field the box's depth — for a part, its out-of-plane dimension — is typed into. Every box
+    /// has one (docs/design/assembly-model.md §1.2), so it is shown for a plain box too.
+    /// </summary>
     public TextBox OutOfPlaneField => OutOfPlaneBox;
 
     /// <summary>The field the quantity is typed into.</summary>
@@ -1013,7 +1015,7 @@ public partial class MainWindow : Window
             Part part = box.Part ?? DefaultPart;
             PlanXBox.SelectedItem = SceneWords.Of(part.PlanAxes.X);
             PlanYBox.SelectedItem = SceneWords.Of(part.PlanAxes.Y);
-            OutOfPlaneBox.Text = part.OutOfPlane.Format(Editor.LabelFormat).Text;
+            OutOfPlaneBox.Text = box.Depth.Format(Editor.LabelFormat).Text;
             QuantityBox.Text = part.Quantity.ToString(CultureInfo.InvariantCulture);
             StockBox.Text = part.Stock ?? string.Empty;
             SpeciesBox.Text = part.Species ?? string.Empty;
@@ -1044,13 +1046,15 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// The out-of-plane field is labelled with the dimension it actually is, which follows from
-    /// the two the plan is showing: the third name is the one neither axis claims.
+    /// The depth field is labelled with the dimension it actually is: for a part, the one the
+    /// plan's two axes leave, and for a plain box simply its depth.
     /// </summary>
     void UpdateOutOfPlaneCaption()
-        => OutOfPlaneCaption.Text = ChosenAxes() is { } axes
-            ? SceneWords.Of(axes.OutOfPlane)
-            : "Third";
+        => OutOfPlaneCaption.Text = IsPartCheck.IsChecked != true
+            ? "Depth"
+            : ChosenAxes() is { } axes
+                ? SceneWords.Of(axes.OutOfPlane)
+                : "Third";
 
     /// <summary>
     /// What the library says about the stock that was typed — the same hover line the picker
@@ -1097,6 +1101,7 @@ public partial class MainWindow : Window
         }
 
         PartFields.IsVisible = IsPartCheck.IsChecked == true;
+        UpdateOutOfPlaneCaption();
     }
 
     void OnApplyPartClicked(object? sender, RoutedEventArgs e) => ApplyProperties();
@@ -1118,6 +1123,7 @@ public partial class MainWindow : Window
         }
 
         Part? part = null;
+        PlanAxes? chosen = null;
         if (IsPartCheck.IsChecked == true)
         {
             if (ChosenAxes() is not { } axes)
@@ -1125,14 +1131,18 @@ public partial class MainWindow : Window
                 return Complain("A part's two plan dimensions have to be different ones.");
             }
 
-            if (!Length.TryParse(OutOfPlaneBox.Text, out Length outOfPlane, out _)
-                || outOfPlane <= Length.Zero)
-            {
-                return Complain(
-                    $"{SceneWords.Of(axes.OutOfPlane)} has to be a length greater than zero, "
-                    + "like 3/4\" or 1' 4 1/4\".");
-            }
+            chosen = axes;
+        }
 
+        if (!Length.TryParse(OutOfPlaneBox.Text, out Length depth, out _) || depth <= Length.Zero)
+        {
+            return Complain(
+                $"{(chosen is { } named ? SceneWords.Of(named.OutOfPlane) : "Depth")} has to be a length greater than zero, "
+                + "like 3/4\" or 1' 4 1/4\".");
+        }
+
+        if (chosen is { } planAxes)
+        {
             if (!int.TryParse(
                     QuantityBox.Text,
                     NumberStyles.None,
@@ -1147,15 +1157,20 @@ public partial class MainWindow : Window
                 Blank(StockBox.Text),
                 Blank(SpeciesBox.Text),
                 quantity,
-                outOfPlane,
-                axes);
+                planAxes);
         }
 
         PropertiesError.IsVisible = false;
 
         string name = PartNameBox.Text ?? string.Empty;
+        List<Request> requests = [new SetName(box.Id, name), Assignment(box, part)];
+        if (DepthRequest(box, part, depth) is { } typedDepth)
+        {
+            requests.Add(typedDepth);
+        }
+
         Editor.Apply(
-            Batch.Of(new SetName(box.Id, name), Assignment(box, part)),
+            Batch.Of([.. requests]),
             part is null ? "make it a plain box" : "set what this part is");
 
         ShowProperties();
@@ -1191,11 +1206,25 @@ public partial class MainWindow : Window
             return new SetPart(box.Id, null);
         }
 
-        StockItem? stock = MaterialsLibrary.Shipped.TryFind(part.Stock, out StockItem item)
-            ? item
-            : null;
+        return StockAssignment.RequestsFor(Editor.Sketch, box, part, StockFor(part));
+    }
 
-        return StockAssignment.RequestsFor(Editor.Sketch, box, part, stock);
+    static StockItem? StockFor(Part part)
+        => MaterialsLibrary.Shipped.TryFind(part.Stock, out StockItem item) ? item : null;
+
+    /// <summary>
+    /// What a typed depth puts to the editor: a <see cref="ParamValue"/> on the box's depth, exactly
+    /// as a typed width is one on its width (docs/design/assembly-model.md §1.2) — or nothing, when
+    /// the depth is what it already was, or when the part's stock fixes it and so states it itself.
+    /// </summary>
+    Request? DepthRequest(Box box, Part? part, Length depth)
+    {
+        if (depth == box.Depth || (part is not null && StockAssignment.FixesDepth(part, StockFor(part))))
+        {
+            return null;
+        }
+
+        return StockAssignment.SizeRequest(Editor.Sketch, new BoxDepthRef(box.Id), depth);
     }
 
     // ---------------------------------------------------------------------------------------

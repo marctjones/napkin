@@ -126,6 +126,17 @@ public sealed record BoxHeightRef(EntityId Box) : ParamRef
     public override EntityId Owner => Box;
 }
 
+/// <summary>
+/// A box's depth, along its local Z (<c>docs/design/assembly-model.md</c> §2.2). A typed depth is a
+/// <see cref="ParamValue"/> on this, exactly as a typed width is one on <see cref="BoxWidthRef"/>.
+/// </summary>
+/// <param name="Box">The box.</param>
+public sealed record BoxDepthRef(EntityId Box) : ParamRef
+{
+    /// <inheritdoc/>
+    public override EntityId Owner => Box;
+}
+
 /// <summary>A segment's length.</summary>
 /// <param name="Segment">The segment.</param>
 public sealed record SegmentLengthRef(EntityId Segment) : ParamRef

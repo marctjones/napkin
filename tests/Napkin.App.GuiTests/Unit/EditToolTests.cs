@@ -140,7 +140,7 @@ public class EditToolTests
     [Fact]
     public void Corner_handles_win_over_edge_handles_and_edges_over_the_body()
     {
-        Box box = new(EntityId.New(), LayerId.Default, Point2.Inches(0, 0), Length.Inches(20), Length.Inches(10), Angle.Zero);
+        Box box = Box.AsDrawn(EntityId.New(), LayerId.Default, Point2.Inches(0, 0), Length.Inches(20), Length.Inches(10), Box.DefaultDepth, Angle.Zero);
         Length tolerance = Length.Inches(1);
 
         Assert.Equal(BoxGrip.SouthWest, BoxGeometry.GripAt(box, Point2.Inches(0, 0), tolerance));
@@ -162,7 +162,7 @@ public class EditToolTests
     [Fact]
     public void An_edge_grows_when_the_pointer_moves_away_from_the_box()
     {
-        Box box = new(EntityId.New(), LayerId.Default, Point2.Inches(0, 0), Length.Inches(20), Length.Inches(10), Angle.Zero);
+        Box box = Box.AsDrawn(EntityId.New(), LayerId.Default, Point2.Inches(0, 0), Length.Inches(20), Length.Inches(10), Box.DefaultDepth, Angle.Zero);
         Vector2 rightAndUp = new(Length.Inches(3), Length.Inches(2));
 
         Assert.Equal(Length.Inches(3).Units, BoxGeometry.OutwardDelta(box, BoxEdge.East, rightAndUp).Units);
@@ -176,12 +176,13 @@ public class EditToolTests
     {
         // The edges are named in the box's own frame, so dragging the pointer right grows the
         // edge that is pointing right — which on a box turned a quarter turn is its north edge.
-        Box turned = new(
+        Box turned = Box.AsDrawn(
             EntityId.New(),
             LayerId.Default,
             Point2.Inches(0, 0),
             Length.Inches(20),
             Length.Inches(10),
+            Box.DefaultDepth,
             Angle.Right);
 
         Vector2 right = new(Length.Inches(3), Length.Zero);
@@ -193,7 +194,7 @@ public class EditToolTests
     [Fact]
     public void A_box_knows_its_four_axis_aligned_edges_and_where_they_sit()
     {
-        Box box = new(EntityId.New(), LayerId.Default, Point2.Inches(2, 3), Length.Inches(20), Length.Inches(10), Angle.Zero);
+        Box box = Box.AsDrawn(EntityId.New(), LayerId.Default, Point2.Inches(2, 3), Length.Inches(20), Length.Inches(10), Box.DefaultDepth, Angle.Zero);
         List<EdgeLine> edges = [.. BoxGeometry.AxisAlignedEdges(box)];
 
         Assert.Equal(4, edges.Count);

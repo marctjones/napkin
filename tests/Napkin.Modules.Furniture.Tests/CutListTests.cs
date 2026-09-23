@@ -160,13 +160,14 @@ public sealed class CutListTests
     {
         // A wall and an opening are boxes nobody cuts. That is not an error and not an empty row.
         Sketch sketch = Design.WithParts(("Shelf", 10240, 768, Apron))
-            .WithEntity(new Box(
+            .WithEntity(Box.AsDrawn(
                 EntityId.New(),
                 LayerId.Default,
                 Point2.Inches(0, 0),
                 new Length(147456),
                 new Length(5632),
-                Angle.Zero) { Name = "Wall" });
+                Box.DefaultDepth,
+                Angle.Zero) with { Name = "Wall" });
 
         Assert.Single(CutList.Of(sketch, Library));
     }
@@ -197,7 +198,7 @@ public sealed class CutListTests
         Sketch sketch = Design.WithParts(
             ("Thin", 10240, 512, Apron),
             ("Thick", 10240, 1024, Apron),
-            ("Wide", 10240, 512, Apron with { OutOfPlane = new Length(7168) }));
+            ("Wide", 10240, 512, Apron with { Depth = new Length(7168) }));
 
         ImmutableArray<CutListRow> rows = CutList.Of(sketch, Library);
 
@@ -283,7 +284,7 @@ public sealed class CutListTests
         Box copy = source with
         {
             Id = EntityId.New(),
-            Anchor = source.Anchor + new Vector2(Length.Inches(8), Length.Zero),
+            Anchor = source.Anchor + new Vector3(Length.Inches(8), Length.Zero, Length.Zero),
         };
 
         Sketch both = Assert.IsType<Solved>(
@@ -500,7 +501,7 @@ public sealed class CutListTests
         // list in this build yet (#9, CUT-005), so this asserts the property it will rest on: the
         // same design with and without cuts gives rows that are identical in everything but the
         // cuts and the sentences derived from them.
-        (string Name, long Width, long Height, Part Part)[] parts =
+        (string Name, long Width, long Height, Piece Part)[] parts =
         [
             ("Top", 49152, 24576, Top with { Stock = "1x6" }),
             ("Leg, south-west", 2560, 2560, Leg),
@@ -540,13 +541,13 @@ public sealed class CutListTests
     }
 
     /// <summary>A top lying flat: length across X, width up Y, 3/4" of thickness out of plane.</summary>
-    private static Part Top => new(
+    private static Piece Top => new(
         null, null, 1, new Length(768), new PlanAxes(PartDimension.Length, PartDimension.Width));
 
-    private static Part Leg => new(
+    private static Piece Leg => new(
         null, null, 1, new Length(16640), new PlanAxes(PartDimension.Width, PartDimension.Thickness));
 
     /// <summary>An apron on edge: length across X, thickness up Y, 3 1/2" of face out of plane.</summary>
-    private static Part Apron => new(
+    private static Piece Apron => new(
         null, null, 1, new Length(3584), new PlanAxes(PartDimension.Length, PartDimension.Thickness));
 }

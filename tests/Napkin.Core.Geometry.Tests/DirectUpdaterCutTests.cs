@@ -235,7 +235,7 @@ public class DirectUpdaterCutTests
             Updater.Apply(builder.Sketch, new DragEdge(blank, BoxEdge.East, Length.Inches(-40))));
 
         // Best effort, and the applied delta is what actually happened: 36" of the 40" asked for.
-        Assert.Equal(new Vector2(Length.Inches(-36), Length.Zero), clamped.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(Length.Inches(-36), Length.Zero, Length.Zero), clamped.Changes.AppliedDelta);
         SketchAssert.BoxIs(clamped.Sketch, blank, 0, 0, 12, 24);
         Assert.Equal(blank, Assert.Single(clamped.Changes.Resized));
         SketchAssert.IsConsistent(clamped.Sketch);
@@ -244,7 +244,7 @@ public class DirectUpdaterCutTests
         Solved fromTheWest = Assert.IsType<Solved>(
             Updater.Apply(builder.Sketch, new DragEdge(blank, BoxEdge.West, Length.Inches(-40))));
 
-        Assert.Equal(new Vector2(Length.Inches(36), Length.Zero), fromTheWest.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(Length.Inches(36), Length.Zero, Length.Zero), fromTheWest.Changes.AppliedDelta);
         SketchAssert.BoxIs(fromTheWest.Sketch, blank, 36, 0, 12, 24);
     }
 
@@ -259,7 +259,7 @@ public class DirectUpdaterCutTests
         Solved grown = Assert.IsType<Solved>(
             Updater.Apply(builder.Sketch, new DragEdge(blank, BoxEdge.East, Length.Inches(10))));
 
-        Assert.Equal(new Vector2(Length.Inches(10), Length.Zero), grown.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(Length.Inches(10), Length.Zero, Length.Zero), grown.Changes.AppliedDelta);
         SketchAssert.BoxIs(grown.Sketch, blank, 0, 0, 58, 24);
 
         // A blank with no cuts has no floor, so a drag past nothing is still refused rather than
@@ -288,7 +288,7 @@ public class DirectUpdaterCutTests
         Solved blocked = Assert.IsType<Solved>(
             Updater.Apply(builder.Sketch, new DragEdge(plain, BoxEdge.East, Length.Inches(-16))));
 
-        Assert.Equal(Vector2.Zero, blocked.Changes.AppliedDelta);
+        Assert.Equal(Vector3.Zero, blocked.Changes.AppliedDelta);
         Assert.True(blocked.Changes.IsEmpty);
         SketchAssert.BoxIs(blocked.Sketch, plain, 0, 40, 20, 20);
         SketchAssert.BoxIs(blocked.Sketch, shaped, 0, 0, 20, 20);
@@ -309,13 +309,14 @@ public class DirectUpdaterCutTests
         // Such a blank cannot be reached through the updater — Validate and AddEntity both refuse
         // it — but DragEdge does not re-validate what it was handed, and clamping to a floor that
         // does not exist would be worse than clamping to where it already is.
-        Box broken = new(
+        Box broken = Box.AsDrawn(
             SketchBuilder.EntityIdAt(1),
             LayerId.Default,
             Point2.Origin,
             Length.Inches(10),
             Length.Inches(10),
-            Angle.Zero)
+            Box.DefaultDepth,
+            Angle.Zero) with
         {
             Cuts = [new CornerCut(BoxCorner.SouthWest, Length.Inches(20), Length.Inches(1))],
         };
@@ -326,7 +327,7 @@ public class DirectUpdaterCutTests
         Solved held = Assert.IsType<Solved>(
             Updater.Apply(sketch, new DragEdge(broken.Id, BoxEdge.East, Length.Inches(-4))));
 
-        Assert.Equal(Vector2.Zero, held.Changes.AppliedDelta);
+        Assert.Equal(Vector3.Zero, held.Changes.AppliedDelta);
         Assert.Equal(Length.Inches(10), held.Sketch.Find<Box>(broken.Id)!.Width);
     }
 
@@ -357,14 +358,31 @@ public class DirectUpdaterCutTests
         Assert.Empty(result.Changes.Moved);
         Assert.Empty(result.Changes.Resized);
 
+        // The outline is in the blank's own frame (assembly-model §7.2), so turning the box does
+        // not change it; placed in the plan, every point of it turns exactly about the anchor.
+        Box after = result.Sketch.Find<Box>(blank)!;
         ImmutableArray<OutlineSegment> was = before.Outline().Segments;
-        ImmutableArray<OutlineSegment> now = result.Sketch.Find<Box>(blank)!.Outline().Segments;
+        ImmutableArray<OutlineSegment> now = after.Outline().Segments;
 
-        Assert.Equal(was.Length, now.Length);
+        Assert.Equal(was, now);
         for (int i = 0; i < was.Length; i++)
         {
-            Assert.Equal(Turned(before.Anchor, was[i], quarterTurn), now[i]);
+            Assert.Equal(Turned(before.Anchor.XY, Placed(before, was[i]), quarterTurn), Placed(after, now[i]));
         }
+    }
+
+    /// <summary>One segment of a blank's local outline, placed in the plan by the box it is on.</summary>
+    private static OutlineSegment Placed(Box box, OutlineSegment segment)
+    {
+        Point2 At(Point2 local) => box.World(new Vector3(local.X, local.Y, Length.Zero)).XY;
+
+        return segment switch
+        {
+            StraightSegment straight => new StraightSegment(At(straight.From), At(straight.To)),
+            ArcByCenter arc => new ArcByCenter(At(arc.From), At(arc.To), At(arc.Center)),
+            ArcThrough arc => new ArcThrough(At(arc.From), At(arc.Through), At(arc.To)),
+            _ => throw new InvalidOperationException($"Unknown segment {segment.GetType().Name}."),
+        };
     }
 
     /// <summary>One segment of an outline, rotated about the anchor by a right-angle multiple.</summary>
@@ -439,9 +457,9 @@ public class DirectUpdaterCutTests
 
         // A drag cannot pull it off the pin, either.
         Solved held = Assert.IsType<Solved>(
-            Updater.Apply(placed.Sketch, new Drag(shaped, new Vector2(Length.Inches(5), Length.Inches(5)))));
+            Updater.Apply(placed.Sketch, Drag.InPlan(shaped, new Vector2(Length.Inches(5), Length.Inches(5)))));
 
-        Assert.Equal(Vector2.Zero, held.Changes.AppliedDelta);
+        Assert.Equal(Vector3.Zero, held.Changes.AppliedDelta);
         placed = held;
 
         // Nothing moves when the cut goes: the virtual corner was the blank's corner all along.
@@ -488,9 +506,9 @@ public class DirectUpdaterCutTests
         // Dragging A along the shared vertical line drags B with it; the board is only tied on the
         // horizontal lines, so it stays where it is.
         Solved dragged = Assert.IsType<Solved>(
-            Updater.Apply(seated, new Drag(a, new Vector2(Length.Inches(10), Length.Zero))));
+            Updater.Apply(seated, Drag.InPlan(a, new Vector2(Length.Inches(10), Length.Zero))));
 
-        Assert.Equal(new Vector2(Length.Inches(10), Length.Zero), dragged.Changes.AppliedDelta);
+        Assert.Equal(new Vector3(Length.Inches(10), Length.Zero, Length.Zero), dragged.Changes.AppliedDelta);
         SketchAssert.BoxIs(dragged.Sketch, a, 10, 4, 6, 6);
         SketchAssert.BoxIs(dragged.Sketch, b, 16, 4, 6, 6);
         SketchAssert.BoxIs(dragged.Sketch, board, 0, 0, 48, 4);
@@ -571,19 +589,21 @@ public class DirectUpdaterCutTests
     }
 
     /// <summary>
-    /// The one segment of a blank's outline that its single corner cut produced. Every other run
-    /// of an unrotated blank's boundary is along an axis, so the mitre is the only diagonal.
+    /// The one segment of a blank's outline that its single corner cut produced, placed in the
+    /// plan. Every other run of a blank's boundary is along an axis of its own frame, so the mitre
+    /// is the only diagonal.
     /// </summary>
     private static StraightSegment CutSegment(Sketch sketch, EntityId blank)
     {
+        Box box = sketch.Find<Box>(blank)!;
         List<StraightSegment> diagonals =
         [
-            .. sketch.Find<Box>(blank)!.Outline().Segments
+            .. box.Outline().Segments
                 .OfType<StraightSegment>()
                 .Where(segment => segment.From.X != segment.To.X && segment.From.Y != segment.To.Y),
         ];
 
-        return Assert.Single(diagonals);
+        return (StraightSegment)Placed(box, Assert.Single(diagonals));
     }
 
     // ---------------------------------------------------------------------------------------
@@ -610,11 +630,12 @@ public class DirectUpdaterCutTests
         Box original = builder.BoxOf(source) with
         {
             Name = "Gusset",
-            Part = new Part("1x6", Species: null, Quantity: 1, Length.Inches(1), new PlanAxes(PartDimension.Length, PartDimension.Width)),
+            Depth = Length.Inches(1),
+            Part = new Part("1x6", Species: null, Quantity: 1, new PlanAxes(PartDimension.Length, PartDimension.Width)),
         };
         Sketch withPart = builder.Sketch.WithEntity(original);
 
-        Vector2 offset = new(Length.Inches(8), Length.Zero);
+        Vector3 offset = new(Length.Inches(8), Length.Zero, Length.Zero);
         Box copy = original with { Id = SketchBuilder.EntityIdAt(9), Anchor = original.Anchor + offset };
 
         Solved result = Assert.IsType<Solved>(Updater.Apply(withPart, new AddEntity(copy)));

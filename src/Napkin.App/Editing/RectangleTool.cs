@@ -108,7 +108,9 @@ public sealed class RectangleTool
             return false;
         }
 
-        request = new AddEntity(new Box(id, layer, anchor, width, height, Angle.Zero) { Name = name });
+        // A bare rectangle lies as drawn at the plan datum, and every box now has a depth: the
+        // visible, editable 3/4" default of docs/design/assembly-model.md §11 decision 7.
+        request = new AddEntity(Box.AsDrawn(id, layer, anchor, width, height, Box.DefaultDepth, Angle.Zero) with { Name = name });
         return true;
     }
 }

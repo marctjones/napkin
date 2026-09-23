@@ -507,6 +507,15 @@
 
                     <TextBox Name="PartNameBox" FontSize="12" PlaceholderText="Name" />
 
+                    <!-- Every box has a depth, part or not (assembly-model §1.2, §11 decision 7). -->
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Name="OutOfPlaneCaption" Grid.Column="0"
+                                   Text="Depth" FontSize="11"
+                                   VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox Name="OutOfPlaneBox" Grid.Column="1" FontSize="12"
+                                 PlaceholderText="3/4&quot;" />
+                    </Grid>
+
                     <CheckBox Name="IsPartCheck"
                               Content="This is a piece to cut"
                               FontSize="12"
@@ -514,7 +523,7 @@
                               ToolTip.Tip="A wall or an opening is a box nobody cuts, and stays off the cut list." />
 
                     <StackPanel Name="PartFields" Spacing="6" IsVisible="False">
-                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Across" FontSize="11"
                                        VerticalAlignment="Center" Margin="0,0,8,0" />
                             <ComboBox Name="PlanXBox" Grid.Row="0" Grid.Column="1" FontSize="12"
@@ -525,15 +534,9 @@
                             <ComboBox Name="PlanYBox" Grid.Row="1" Grid.Column="1" FontSize="12"
                                       HorizontalAlignment="Stretch" Margin="0,0,0,4" />
 
-                            <TextBlock Name="OutOfPlaneCaption" Grid.Row="2" Grid.Column="0"
-                                       Text="Thickness" FontSize="11"
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Qty" FontSize="11"
                                        VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBox Name="OutOfPlaneBox" Grid.Row="2" Grid.Column="1" FontSize="12"
-                                     PlaceholderText="3/4&quot;" Margin="0,0,0,4" />
-
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Qty" FontSize="11"
-                                       VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBox Name="QuantityBox" Grid.Row="3" Grid.Column="1" FontSize="12"
+                            <TextBox Name="QuantityBox" Grid.Row="2" Grid.Column="1" FontSize="12"
                                      PlaceholderText="1" />
                         </Grid>
 

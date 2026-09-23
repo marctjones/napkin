@@ -338,7 +338,7 @@ internal sealed class SceneBinder
         long? width = ReadInteger(fields, SceneNames.Width);
         long? height = ReadInteger(fields, SceneNames.Height);
         long? rotation = ReadInteger(fields, SceneNames.Rotation);
-        (bool partRead, Part? part) = ReadPart(fields);
+        (bool partRead, Part? part, Length? outOfPlane) = ReadPart(fields);
         (bool cutsRead, ImmutableList<Cut> cuts) = ReadCuts(fields);
 
         if (width is { } w && w <= 0)
@@ -370,9 +370,21 @@ internal sealed class SceneBinder
             rotation = null;
         }
 
+        // Format version 3 is a plan format: every box in it lies as drawn at the plan datum, and
+        // its third size is its part's out-of-plane dimension, or the rectangle tool's default for a
+        // box that is not a part. docs/design/assembly-model.md §10 step 5 gives the file a depth,
+        // a face-up and a Z of its own; until then this is what a version-3 box means.
         return anchor is { } corner && width is { } wide && height is { } tall && rotation is { } turn
             && partRead && cutsRead
-            ? new Box(id, layer, corner, new Length(wide), new Length(tall), new Angle(turn))
+            ? new Box(
+                id,
+                layer,
+                new Point3(corner.X, corner.Y, Length.Zero),
+                new Length(wide),
+                new Length(tall),
+                outOfPlane ?? Box.DefaultDepth,
+                BoxFace.Top,
+                new Angle(turn))
             {
                 Part = part,
                 Cuts = cuts,
@@ -588,23 +600,23 @@ internal sealed class SceneBinder
     /// <see langword="null"/> both for a well-formed <c>"part": null</c> and for a refusal — the
     /// flag is what tells them apart.
     /// </returns>
-    private (bool Read, Part? Part) ReadPart(JsonFields fields)
+    private (bool Read, Part? Part, Length? OutOfPlane) ReadPart(JsonFields fields)
     {
         JsonElement? element = Take(fields, SceneNames.Part);
         if (element is not { } value)
         {
-            return (false, null);
+            return (false, null, null);
         }
 
         if (value.ValueKind == JsonValueKind.Null)
         {
-            return (true, null);
+            return (true, null, null);
         }
 
         JsonFields? part = ReadFields(value, $"{fields.Path}/{SceneNames.Part}", $"\"{SceneNames.Part}\"");
         if (part is null)
         {
-            return (false, null);
+            return (false, null, null);
         }
 
         // The stock name is not checked against this build's materials library, deliberately: a
@@ -636,9 +648,11 @@ internal sealed class SceneBinder
             outOfPlane = null;
         }
 
+        // The part's out-of-plane dimension is the box's depth now (assembly-model §1.2); the file
+        // keeps it on the part until §10 step 5 moves it onto the box.
         return stockRead && speciesRead && quantity is { } pieces && outOfPlane is { } units && planAxes is { } axes
-            ? (true, new Part(stock, species, (int)pieces, new Length(units), axes))
-            : (false, null);
+            ? (true, new Part(stock, species, (int)pieces, axes), new Length(units))
+            : (false, null, null);
     }
 
     private PlanAxes? ReadPlanAxes(JsonFields part)
@@ -1081,11 +1095,14 @@ internal sealed class SceneBinder
             SceneNames.BoxHeight => ReadEntityReference(fields, SceneNames.Box, typeof(Box)) is { } height
                 ? new BoxHeightRef(height)
                 : null,
+            SceneNames.BoxDepth => ReadEntityReference(fields, SceneNames.Box, typeof(Box)) is { } depth
+                ? new BoxDepthRef(depth)
+                : null,
             SceneNames.SegmentLength => ReadEntityReference(fields, SceneNames.Segment, typeof(Segment)) is { } segment
                 ? new SegmentLengthRef(segment)
                 : null,
             _ => UnknownRefKind<ParamRef>(
-                fields, kind, "a size", SceneNames.BoxWidth, SceneNames.BoxHeight, SceneNames.SegmentLength),
+                fields, kind, "a size", SceneNames.BoxWidth, SceneNames.BoxHeight, SceneNames.BoxDepth, SceneNames.SegmentLength),
         };
     }
 

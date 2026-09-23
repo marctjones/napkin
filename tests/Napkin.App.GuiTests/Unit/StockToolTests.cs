@@ -205,12 +205,15 @@ public class StockToolTests
 
         Part part = placed.Part!;
         Assert.Equal("2x4", part.Stock);
-        Assert.Equal(lumber.Thickness, part.OutOfPlane);
+        Assert.Equal(lumber.Thickness, placed.Depth);
         Assert.Equal(new FinishedSize(Length.Inches(30), lumber.Width, lumber.Thickness), part.SizeOn(placed));
 
-        ParamValue driving = Assert.Single(editor.Sketch.RelationshipsInOrder.OfType<ParamValue>());
-        Assert.Equal(new BoxHeightRef(id), driving.Param);
-        Assert.Equal(lumber.Width, driving.Value);
+        // The yard states the width and, since assembly-model §1.2, the thickness too: the depth is
+        // a ParamValue through the updater like the other fixed size, not a field set directly.
+        List<ParamValue> driving = [.. editor.Sketch.RelationshipsInOrder.OfType<ParamValue>()];
+        Assert.Equal(2, driving.Count);
+        Assert.Equal(lumber.Width, Assert.Single(driving, value => value.Param == new BoxHeightRef(id)).Value);
+        Assert.Equal(lumber.Thickness, Assert.Single(driving, value => value.Param == new BoxDepthRef(id)).Value);
 
         // And that is exactly what the properties panel's assignment would state for the same box
         // and part: one function decides it for both paths.
@@ -239,12 +242,15 @@ public class StockToolTests
             Box placed = editor.Sketch.Find<Box>(id)!;
             Length thickness = Assert.Single(StockAssignment.Fixes(item)).Value;
             Assert.Equal(item.Name, placed.Part!.Stock);
-            Assert.Equal(thickness, placed.Part.OutOfPlane);
+            Assert.Equal(thickness, placed.Depth);
             Assert.Equal(Length.Inches(20), placed.Width);
             Assert.Equal(Length.Inches(12), placed.Height);
 
-            // Both plan dimensions are the design's own, so nothing drives either of them.
-            Assert.Empty(editor.Sketch.RelationshipsInOrder.OfType<ParamValue>());
+            // Both plan dimensions are the design's own, so nothing drives either of them; the
+            // thickness is stated on the depth.
+            ParamValue depth = Assert.Single(editor.Sketch.RelationshipsInOrder.OfType<ParamValue>());
+            Assert.Equal(new BoxDepthRef(id), depth.Param);
+            Assert.Equal(thickness, depth.Value);
         }
     }
 }

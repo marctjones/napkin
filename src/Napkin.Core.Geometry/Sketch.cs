@@ -149,7 +149,7 @@ public sealed record Sketch(
         {
             NodeRef node => Require<Node>(node.Node, reference).Position,
             CornerRef corner => Require<Box>(corner.Box, reference).Corner(corner.Corner),
-            CenterRef centre => Require<Box>(centre.Box, reference).Center,
+            CenterRef centre => Require<Box>(centre.Box, reference).Center.XY,
             _ => throw new InvalidOperationException($"Unknown point reference {reference}."),
         };
     }
@@ -197,6 +197,9 @@ public sealed record Sketch(
             case BoxHeightRef height:
                 return Require<Box>(height.Box, reference).Height;
 
+            case BoxDepthRef depth:
+                return Require<Box>(depth.Box, reference).Depth;
+
             case SegmentLengthRef length:
             {
                 (Point2 from, Point2 to) = EdgeOf(new SegmentRef(length.Segment));
@@ -236,6 +239,14 @@ public sealed record Sketch(
                         errors.Add(new ValidationError(
                             ValidationErrorKind.NonPositiveSize,
                             $"Box {box.Id} is {box.Width} by {box.Height}; both must be greater than zero."));
+                    }
+
+                    // docs/design/assembly-model.md §1.6, invariant 10.
+                    if (box.Depth <= Length.Zero)
+                    {
+                        errors.Add(new ValidationError(
+                            ValidationErrorKind.NonPositiveSize,
+                            $"Box {box.Id} is {box.Depth} deep; its depth must be greater than zero."));
                     }
 
                     foreach (ValidationError error in CutRules.Errors(box))
@@ -420,6 +431,7 @@ public sealed record Sketch(
     {
         BoxWidthRef width => KindErrors(width.Box, what, entity => entity is Box, nameof(Box)),
         BoxHeightRef height => KindErrors(height.Box, what, entity => entity is Box, nameof(Box)),
+        BoxDepthRef depth => KindErrors(depth.Box, what, entity => entity is Box, nameof(Box)),
         SegmentLengthRef length => KindErrors(length.Segment, what, entity => entity is Segment, nameof(Segment)),
         _ => [],
     };

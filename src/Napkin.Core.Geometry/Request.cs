@@ -134,9 +134,21 @@ public sealed record RemoveCut(EntityId Box, CutSite Site) : Request;
 /// relationships allow. Best effort: a drag is a question, not a demand, so it is never
 /// <see cref="OverConstrained"/>.
 /// </summary>
+/// <remarks>
+/// The delta is in space (docs/design/assembly-model.md &#xA7;2.4); a plan-canvas drag is one with
+/// a zero Z. The direct updater moves along X and Y only until &#xA7;10 step 4 gives the
+/// propagator a Z scalar and the rigid group a Z axis, and until then refuses a non-zero Z as
+/// <see cref="RejectionReason.UnsupportedRequest"/> rather than dropping it.
+/// </remarks>
 /// <param name="Id">The entity being dragged.</param>
 /// <param name="Delta">Where the user wants it to go, relative to where it is.</param>
-public sealed record Drag(EntityId Id, Vector2 Delta) : Request;
+public sealed record Drag(EntityId Id, Vector3 Delta) : Request
+{
+    /// <summary>A drag in the plan: the delta's X and Y, with no Z.</summary>
+    /// <param name="id">The entity being dragged.</param>
+    /// <param name="delta">The displacement in the plan.</param>
+    public static Drag InPlan(EntityId id, Vector2 delta) => new(id, new Vector3(delta.Dx, delta.Dy, Length.Zero));
+}
 
 /// <summary>
 /// Drags one edge of a box — a resize handle. Best effort.

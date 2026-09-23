@@ -83,7 +83,7 @@ public sealed class DesignBuilder
                 nameof(key));
         }
 
-        _sketch = _sketch.WithEntity(new Box(id, layer, anchor, width, height, Angle.Zero));
+        _sketch = _sketch.WithEntity(Box.AsDrawn(id, layer, anchor, width, height, Box.DefaultDepth, Angle.Zero));
         if (label is not null)
         {
             _labels[id] = label;

@@ -130,12 +130,13 @@ internal sealed class SketchGenerator
 
             sizes.Add(size);
             row.Add(id);
-            sketch = sketch.WithEntity(new Box(
+            sketch = sketch.WithEntity(Box.AsDrawn(
                 id,
                 LayerId.Default,
                 axis == Axis.X ? new Point2(along, across) : new Point2(across, along),
                 axis == Axis.X ? size : other,
                 axis == Axis.X ? other : size,
+                Box.DefaultDepth,
                 Angle.Zero));
 
             along += size;
@@ -243,12 +244,13 @@ internal sealed class SketchGenerator
         int boxes = _random.Next(1, 7);
         for (int i = 0; i < boxes; i++)
         {
-            sketch = sketch.WithEntity(new Box(
+            sketch = sketch.WithEntity(Box.AsDrawn(
                 NextEntityId(),
                 LayerId.Default,
                 new Point2(NextCoordinate(), NextCoordinate()),
                 NextSize(),
                 NextSize(),
+                Box.DefaultDepth,
                 Angle.Zero.Rotate90(_random.Next(0, 4))));
         }
 
@@ -299,13 +301,14 @@ internal sealed class SketchGenerator
             Length width = NextSize();
             Length height = NextSize();
 
-            sketch = sketch.WithEntity(new Box(
+            sketch = sketch.WithEntity(Box.AsDrawn(
                 NextEntityId(),
                 LayerId.Default,
                 new Point2(NextCoordinate(), NextCoordinate()),
                 width,
                 height,
-                Angle.Zero.Rotate90(_random.Next(0, 4)))
+                Box.DefaultDepth,
+                Angle.Zero.Rotate90(_random.Next(0, 4))) with
             {
                 Cuts = NextCuts(width, height),
             });
@@ -389,7 +392,7 @@ internal sealed class SketchGenerator
 
         EntityId entity = PickEntity(sketch, anything: true);
         choices.Add(new SetPosition(entity, new Point2(NextCoordinate(), NextCoordinate())));
-        choices.Add(new Drag(entity, new Vector2(NextDelta(), NextDelta())));
+        choices.Add(Drag.InPlan(entity, new Vector2(NextDelta(), NextDelta())));
         choices.Add(new SetLayer(entity, LayerId.Default));
         choices.Add(new RemoveEntity(entity));
 
@@ -400,9 +403,9 @@ internal sealed class SketchGenerator
             choices.Add(new SetRotation(box.Id, Angle.Zero.Rotate90(_random.Next(0, 4))));
             choices.Add(new DragEdge(box.Id, RandomEdge(), NextDelta()));
             choices.Add(new AddRelationship(new ParamValue(NextRelationshipId(), new BoxWidthRef(box.Id), NextSize())));
-            choices.Add(new AddEntity(new Box(
+            choices.Add(new AddEntity(Box.AsDrawn(
                 NextEntityId(), LayerId.Default, new Point2(NextCoordinate(), NextCoordinate()),
-                NextSize(), NextSize(), Angle.Zero)));
+                NextSize(), NextSize(), Box.DefaultDepth, Angle.Zero)));
 
             if (allBoxes.Count > 1)
             {
@@ -471,7 +474,7 @@ internal sealed class SketchGenerator
 
     /// <summary>A drag of something that can carry coordinates.</summary>
     internal Drag NextDrag(Sketch sketch)
-        => new(PickEntity(sketch, anything: false), new Vector2(NextDelta(), NextDelta()));
+        => Drag.InPlan(PickEntity(sketch, anything: false), new Vector2(NextDelta(), NextDelta()));
 
     /// <summary>The same sketch with its dictionaries built in a different insertion order.</summary>
     internal Sketch Shuffle(Sketch sketch)
@@ -565,7 +568,7 @@ internal sealed class SketchGenerator
                      - sketch.EdgeOf(edgeOfSecond).From.Component(normal);
 
         Sketch derived = sketch
-            .WithEntity(second with { Anchor = second.Anchor + Vector2.Along(normal, gap) })
+            .WithEntity(second with { Anchor = second.Anchor + Vector3.Along(normal, gap) })
             .WithRelationship(new Flush(NextRelationshipId(), edgeOfFirst, edgeOfSecond));
 
         return Keep(sketch, derived);
