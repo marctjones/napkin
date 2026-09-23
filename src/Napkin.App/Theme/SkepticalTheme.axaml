@@ -1,0 +1,189 @@
+<!-- Vendored from marctjones/skepticalengineering-design@1c15e5b (avalonia/SkepticalTheme.axaml). Do not hand-edit: regenerate there, then re-copy. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Generated from tokens/tokens.json (skpt.cl style.css (2026-09) + excise logo; extended for desktop apps) — do not
+    hand-edit; regenerate instead with scripts/generate_theme_axaml.py.
+    Every color token is exposed twice, Se<Name>Color and Se<Name>Brush, in both
+    ThemeDictionaries. Wire it in Application.Resources with FluentTheme, alongside
+    WorkbenchIcons.axaml:
+
+      <Application.Styles><FluentTheme/></Application.Styles>
+      <Application.Resources><ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries>
+          <ResourceInclude Source="avares://YourApp/Theme/SkepticalTheme.axaml"/>
+          <ResourceInclude Source="avares://YourApp/Theme/WorkbenchIcons.axaml"/>
+        </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary></Application.Resources>
+
+    RequestedThemeVariant on the Application or a Window picks "Light" or "Dark".
+  -->
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <!-- Paper -->
+      <Color x:Key="SePaperColor">#f8f8f6</Color>
+      <SolidColorBrush x:Key="SePaperBrush" Color="{StaticResource SePaperColor}"/>
+      <Color x:Key="SePaperSunkColor">#efefe9</Color>
+      <SolidColorBrush x:Key="SePaperSunkBrush" Color="{StaticResource SePaperSunkColor}"/>
+      <Color x:Key="SeRuleColor">#dcdcd4</Color>
+      <SolidColorBrush x:Key="SeRuleBrush" Color="{StaticResource SeRuleColor}"/>
+      <Color x:Key="SeRuleSoftColor">#e4e4dc</Color>
+      <SolidColorBrush x:Key="SeRuleSoftBrush" Color="{StaticResource SeRuleSoftColor}"/>
+      <Color x:Key="SeInkColor">#1c1c1c</Color>
+      <SolidColorBrush x:Key="SeInkBrush" Color="{StaticResource SeInkColor}"/>
+      <Color x:Key="SeInkBodyColor">#2a2a28</Color>
+      <SolidColorBrush x:Key="SeInkBodyBrush" Color="{StaticResource SeInkBodyColor}"/>
+      <Color x:Key="SeInkMutedColor">#505048</Color>
+      <SolidColorBrush x:Key="SeInkMutedBrush" Color="{StaticResource SeInkMutedColor}"/>
+      <Color x:Key="SeInkQuietColor">#686860</Color>
+      <SolidColorBrush x:Key="SeInkQuietBrush" Color="{StaticResource SeInkQuietColor}"/>
+      <Color x:Key="SeInkLabelColor">#888880</Color>
+      <SolidColorBrush x:Key="SeInkLabelBrush" Color="{StaticResource SeInkLabelColor}"/>
+      <Color x:Key="SeBenchColor">#1c1c1c</Color>
+      <SolidColorBrush x:Key="SeBenchBrush" Color="{StaticResource SeBenchColor}"/>
+      <Color x:Key="SeBenchHeadingColor">#e0e0d8</Color>
+      <SolidColorBrush x:Key="SeBenchHeadingBrush" Color="{StaticResource SeBenchHeadingColor}"/>
+      <Color x:Key="SeBenchTextColor">#a0a090</Color>
+      <SolidColorBrush x:Key="SeBenchTextBrush" Color="{StaticResource SeBenchTextColor}"/>
+      <Color x:Key="SeBenchLinkColor">#808078</Color>
+      <SolidColorBrush x:Key="SeBenchLinkBrush" Color="{StaticResource SeBenchLinkColor}"/>
+      <Color x:Key="SeBenchQuietColor">#686860</Color>
+      <SolidColorBrush x:Key="SeBenchQuietBrush" Color="{StaticResource SeBenchQuietColor}"/>
+      <Color x:Key="SeBenchRuleColor">#505048</Color>
+      <SolidColorBrush x:Key="SeBenchRuleBrush" Color="{StaticResource SeBenchRuleColor}"/>
+      <Color x:Key="SeMossColor">#4a7c4a</Color>
+      <SolidColorBrush x:Key="SeMossBrush" Color="{StaticResource SeMossColor}"/>
+      <Color x:Key="SeMossInkColor">#3a5c3a</Color>
+      <SolidColorBrush x:Key="SeMossInkBrush" Color="{StaticResource SeMossInkColor}"/>
+      <Color x:Key="SeMossTintColor">#f0f4f0</Color>
+      <SolidColorBrush x:Key="SeMossTintBrush" Color="{StaticResource SeMossTintColor}"/>
+      <Color x:Key="SeOchreColor">#9a8a50</Color>
+      <SolidColorBrush x:Key="SeOchreBrush" Color="{StaticResource SeOchreColor}"/>
+      <Color x:Key="SeOchreInkColor">#6a6030</Color>
+      <SolidColorBrush x:Key="SeOchreInkBrush" Color="{StaticResource SeOchreInkColor}"/>
+      <Color x:Key="SeOchreTintColor">#f8f6f0</Color>
+      <SolidColorBrush x:Key="SeOchreTintBrush" Color="{StaticResource SeOchreTintColor}"/>
+      <Color x:Key="SeRustColor">#9a4a3a</Color>
+      <SolidColorBrush x:Key="SeRustBrush" Color="{StaticResource SeRustColor}"/>
+      <Color x:Key="SeRustInkColor">#7a3526</Color>
+      <SolidColorBrush x:Key="SeRustInkBrush" Color="{StaticResource SeRustInkColor}"/>
+      <Color x:Key="SeRustTintColor">#f8f1ee</Color>
+      <SolidColorBrush x:Key="SeRustTintBrush" Color="{StaticResource SeRustTintColor}"/>
+      <Color x:Key="SeSlateColor">#232b36</Color>
+      <SolidColorBrush x:Key="SeSlateBrush" Color="{StaticResource SeSlateColor}"/>
+      <Color x:Key="SeVerdigrisColor">#43beb0</Color>
+      <SolidColorBrush x:Key="SeVerdigrisBrush" Color="{StaticResource SeVerdigrisColor}"/>
+      <Color x:Key="SeFocusColor">#3a5c3a</Color>
+      <SolidColorBrush x:Key="SeFocusBrush" Color="{StaticResource SeFocusColor}"/>
+      <!-- Measured, not assumed (docs/avalonia-usage.md "Accent color: a real gap"): 
+           overriding this key resolves correctly on lookup but does NOT retint 
+           FluentTheme's own accent-classed control chrome. Kept for anything that DOES 
+           read it via plain DynamicResource; style Button/etc. against SeMossBrush 
+           directly for anything Fluent-templated. -->
+      <Color x:Key="SystemAccentColor">#4a7c4a</Color>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <!-- Bench -->
+      <Color x:Key="SePaperColor">#1c1c1c</Color>
+      <SolidColorBrush x:Key="SePaperBrush" Color="{StaticResource SePaperColor}"/>
+      <Color x:Key="SePaperSunkColor">#242422</Color>
+      <SolidColorBrush x:Key="SePaperSunkBrush" Color="{StaticResource SePaperSunkColor}"/>
+      <Color x:Key="SeRuleColor">#3a3a36</Color>
+      <SolidColorBrush x:Key="SeRuleBrush" Color="{StaticResource SeRuleColor}"/>
+      <Color x:Key="SeRuleSoftColor">#2e2e2b</Color>
+      <SolidColorBrush x:Key="SeRuleSoftBrush" Color="{StaticResource SeRuleSoftColor}"/>
+      <Color x:Key="SeInkColor">#e0e0d8</Color>
+      <SolidColorBrush x:Key="SeInkBrush" Color="{StaticResource SeInkColor}"/>
+      <Color x:Key="SeInkBodyColor">#c8c8c0</Color>
+      <SolidColorBrush x:Key="SeInkBodyBrush" Color="{StaticResource SeInkBodyColor}"/>
+      <Color x:Key="SeInkMutedColor">#a0a090</Color>
+      <SolidColorBrush x:Key="SeInkMutedBrush" Color="{StaticResource SeInkMutedColor}"/>
+      <Color x:Key="SeInkQuietColor">#909088</Color>
+      <SolidColorBrush x:Key="SeInkQuietBrush" Color="{StaticResource SeInkQuietColor}"/>
+      <Color x:Key="SeInkLabelColor">#808078</Color>
+      <SolidColorBrush x:Key="SeInkLabelBrush" Color="{StaticResource SeInkLabelColor}"/>
+      <Color x:Key="SeBenchColor">#141413</Color>
+      <SolidColorBrush x:Key="SeBenchBrush" Color="{StaticResource SeBenchColor}"/>
+      <Color x:Key="SeBenchHeadingColor">#e0e0d8</Color>
+      <SolidColorBrush x:Key="SeBenchHeadingBrush" Color="{StaticResource SeBenchHeadingColor}"/>
+      <Color x:Key="SeBenchTextColor">#a0a090</Color>
+      <SolidColorBrush x:Key="SeBenchTextBrush" Color="{StaticResource SeBenchTextColor}"/>
+      <Color x:Key="SeBenchLinkColor">#808078</Color>
+      <SolidColorBrush x:Key="SeBenchLinkBrush" Color="{StaticResource SeBenchLinkColor}"/>
+      <Color x:Key="SeBenchQuietColor">#686860</Color>
+      <SolidColorBrush x:Key="SeBenchQuietBrush" Color="{StaticResource SeBenchQuietColor}"/>
+      <Color x:Key="SeBenchRuleColor">#505048</Color>
+      <SolidColorBrush x:Key="SeBenchRuleBrush" Color="{StaticResource SeBenchRuleColor}"/>
+      <Color x:Key="SeMossColor">#80a080</Color>
+      <SolidColorBrush x:Key="SeMossBrush" Color="{StaticResource SeMossColor}"/>
+      <Color x:Key="SeMossInkColor">#a0c0a0</Color>
+      <SolidColorBrush x:Key="SeMossInkBrush" Color="{StaticResource SeMossInkColor}"/>
+      <Color x:Key="SeMossTintColor">#223022</Color>
+      <SolidColorBrush x:Key="SeMossTintBrush" Color="{StaticResource SeMossTintColor}"/>
+      <Color x:Key="SeOchreColor">#c8b878</Color>
+      <SolidColorBrush x:Key="SeOchreBrush" Color="{StaticResource SeOchreColor}"/>
+      <Color x:Key="SeOchreInkColor">#d8c890</Color>
+      <SolidColorBrush x:Key="SeOchreInkBrush" Color="{StaticResource SeOchreInkColor}"/>
+      <Color x:Key="SeOchreTintColor">#2c2a20</Color>
+      <SolidColorBrush x:Key="SeOchreTintBrush" Color="{StaticResource SeOchreTintColor}"/>
+      <Color x:Key="SeRustColor">#d08070</Color>
+      <SolidColorBrush x:Key="SeRustBrush" Color="{StaticResource SeRustColor}"/>
+      <Color x:Key="SeRustInkColor">#e0a090</Color>
+      <SolidColorBrush x:Key="SeRustInkBrush" Color="{StaticResource SeRustInkColor}"/>
+      <Color x:Key="SeRustTintColor">#3a2420</Color>
+      <SolidColorBrush x:Key="SeRustTintBrush" Color="{StaticResource SeRustTintColor}"/>
+      <Color x:Key="SeSlateColor">#232b36</Color>
+      <SolidColorBrush x:Key="SeSlateBrush" Color="{StaticResource SeSlateColor}"/>
+      <Color x:Key="SeVerdigrisColor">#43beb0</Color>
+      <SolidColorBrush x:Key="SeVerdigrisBrush" Color="{StaticResource SeVerdigrisColor}"/>
+      <Color x:Key="SeFocusColor">#a0c0a0</Color>
+      <SolidColorBrush x:Key="SeFocusBrush" Color="{StaticResource SeFocusColor}"/>
+      <!-- Measured, not assumed (docs/avalonia-usage.md "Accent color: a real gap"): 
+           overriding this key resolves correctly on lookup but does NOT retint 
+           FluentTheme's own accent-classed control chrome. Kept for anything that DOES 
+           read it via plain DynamicResource; style Button/etc. against SeMossBrush 
+           directly for anything Fluent-templated. -->
+      <Color x:Key="SystemAccentColor">#80a080</Color>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!--
+    Fonts are not bundled here (docs/avalonia-usage.md). These fall back to the system
+    fonts tokens.json itself names until the consumer adds the IBM Plex Mono/Serif/Sans
+    OFL 1.1 TTFs under Assets/Fonts as AvaloniaResource and switches each key to, e.g.:
+      avares://YourApp/Assets/Fonts/#IBM Plex Mono
+  -->
+  <FontFamily x:Key="SeFontMono">IBM Plex Mono, Consolas, Liberation Mono, monospace</FontFamily>
+  <FontFamily x:Key="SeFontSerif">IBM Plex Serif, Georgia, serif</FontFamily>
+  <FontFamily x:Key="SeFontSans">IBM Plex Sans, Segoe UI, system-ui, sans-serif</FontFamily>
+
+  <!-- Type sizes named in avalonia-usage.md, so a consumer can set them without duplicating the numbers. -->
+  <x:Double x:Key="SeFontSizeAppTitle">13</x:Double>
+  <x:Double x:Key="SeFontSizeAppBody">13</x:Double>
+  <x:Double x:Key="SeFontSizeAppSmall">11.5</x:Double>
+  <x:Double x:Key="SeFontSizeAppDoc">15</x:Double>
+  <x:Double x:Key="SeFontSizeAppData">12.5</x:Double>
+
+  <!-- Spacing: the 4px scale; space-6 (24px) is the grid unit. -->
+  <x:Double x:Key="SeSpace1">4</x:Double>
+  <x:Double x:Key="SeSpace2">8</x:Double>
+  <x:Double x:Key="SeSpace3">12</x:Double>
+  <x:Double x:Key="SeSpace4">16</x:Double>
+  <x:Double x:Key="SeSpace6">24</x:Double>
+  <x:Double x:Key="SeSpace8">32</x:Double>
+  <x:Double x:Key="SeSpace12">48</x:Double>
+  <x:Double x:Key="SeSpace16">64</x:Double>
+
+  <!-- Shape: nearly square by intent (docs/README §Shape). radius-md is the default control corner. -->
+  <CornerRadius x:Key="SeRadiusNone">0</CornerRadius>
+  <CornerRadius x:Key="SeRadiusSm">3</CornerRadius>
+  <CornerRadius x:Key="SeRadiusMd">4</CornerRadius>
+  <CornerRadius x:Key="ControlCornerRadius">4</CornerRadius>
+  <CornerRadius x:Key="OverlayCornerRadius">4</CornerRadius>
+
+  <!-- Stroke: every border and divider is 1px; the focus ring is 2px, offset 2px (docs/README §Interaction states). -->
+  <x:Double x:Key="SeStrokeHairline">1</x:Double>
+  <x:Double x:Key="SeStrokeIcon">1.5</x:Double>
+  <x:Double x:Key="SeStrokeFocus">2</x:Double>
+  <Thickness x:Key="SeFocusThickness">2</Thickness>
+</ResourceDictionary>

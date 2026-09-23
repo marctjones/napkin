@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\napkin.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +23,18 @@
     <ProjectReference Include="..\Napkin.Interop.SketchUp\Napkin.Interop.SketchUp.csproj" />
     <ProjectReference Include="..\Napkin.Interop.Pdf\Napkin.Interop.Pdf.csproj" />
     <ProjectReference Include="..\Napkin.Core.Project\Napkin.Core.Project.csproj" />
+  </ItemGroup>
+
+  <!-- The app's icon, and the design system's fonts (docs/third-party-notices.md). The three OFL
+       license files ship next to the executable as well as inside it: the license requires its
+       notice to travel with every copy of the fonts, and a person should be able to find it without
+       unpacking a resource. -->
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <Content Include="Assets\Fonts\LICENSE-IBM-Plex-*.txt"
+             Link="licenses\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- The samples ship inside the build. They are the app's samples, not test data: the Samples

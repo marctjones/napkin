@@ -6,6 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="740"
         x:Class="Napkin.App.MainWindow"
         Title="napkin"
+        Icon="/Assets/napkin-256.png"
         Width="1100" Height="740"
         MinWidth="560" MinHeight="380">
 
