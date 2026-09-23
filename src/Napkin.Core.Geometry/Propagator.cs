@@ -139,14 +139,26 @@ internal sealed class Propagator
     {
         ScalarKind.Width => new ParamTarget(new BoxWidthRef(key.Entity)),
         ScalarKind.Height => new ParamTarget(new BoxHeightRef(key.Entity)),
-        _ => new PointAxisTarget(
+        ScalarKind.X or ScalarKind.Y => new PointAxisTarget(
             sketch.Find(key.Entity) is Box
                 ? new CornerRef(key.Entity, BoxCorner.SouthWest)
                 : new NodeRef(key.Entity),
             key.Kind == ScalarKind.X ? Axis.X : Axis.Y),
+        _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "Not a scalar kind."),
     };
 
-    private static ScalarKind KindOf(Axis axis) => axis == Axis.X ? ScalarKind.X : ScalarKind.Y;
+    /// <summary>The position scalar along a plan axis.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="axis"/> is <see cref="Axis.Z"/>. The propagator has no Z scalar until
+    /// docs/design/assembly-model.md &#xA7;10 step 4, and reading a Z request as a Y one would move
+    /// the wrong coordinate without a word.
+    /// </exception>
+    private static ScalarKind KindOf(Axis axis) => axis switch
+    {
+        Axis.X => ScalarKind.X,
+        Axis.Y => ScalarKind.Y,
+        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "The propagator has no Z scalar yet (assembly-model §10 step 4)."),
+    };
 
     private PropagationResult Propagate(
         IReadOnlyDictionary<ScalarKey, Length> seeds,
@@ -804,7 +816,7 @@ internal sealed class Propagator
             SegmentLengthRef length => $"The length of {length.Segment}",
             _ => "A size",
         },
-        PointAxisTarget point => $"{(point.Axis == Axis.X ? "The X" : "The Y")} of {point.Point.Owner}",
+        PointAxisTarget point => $"The {point.Axis} of {point.Point.Owner}",
         _ => "A value",
     };
 

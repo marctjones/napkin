@@ -107,8 +107,14 @@ internal static class CutRules
         return new Length(low);
     }
 
-    private static bool Fits(Box box, Axis axis, Length size)
-        => Errors(axis == Axis.X ? box with { Width = size } : box with { Height = size }).IsEmpty;
+    // A cut is in the blank's local XY frame (shaped-parts §1.4), so only a width or a height can
+    // be too small for one; no cut claims any of the depth.
+    private static bool Fits(Box box, Axis axis, Length size) => axis switch
+    {
+        Axis.X => Errors(box with { Width = size }).IsEmpty,
+        Axis.Y => Errors(box with { Height = size }).IsEmpty,
+        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "A cut claims room along local X and Y only."),
+    };
 
     /// <summary>
     /// Invariant 6: one cut of any kind per corner, and a curved edge counts at both of its

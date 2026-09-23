@@ -1658,12 +1658,11 @@ public sealed class CanvasView : Control
                 continue;
             }
 
-            Point from = hit.Axis == Axis.X
-                ? _view.ToScreen(new Point2(hit.Coordinate, hit.From))
-                : _view.ToScreen(new Point2(hit.From, hit.Coordinate));
-            Point to = hit.Axis == Axis.X
-                ? _view.ToScreen(new Point2(hit.Coordinate, hit.To))
-                : _view.ToScreen(new Point2(hit.To, hit.Coordinate));
+            // A plan snap holds X or Y; Point2.WithComponent refuses anything else rather than
+            // drawing a Z snap as a Y one.
+            Axis across = hit.Axis == Axis.X ? Axis.Y : Axis.X;
+            Point from = _view.ToScreen(Point2.Origin.WithComponent(hit.Axis, hit.Coordinate).WithComponent(across, hit.From));
+            Point to = _view.ToScreen(Point2.Origin.WithComponent(hit.Axis, hit.Coordinate).WithComponent(across, hit.To));
 
             context.DrawLine(pen, from, to);
 

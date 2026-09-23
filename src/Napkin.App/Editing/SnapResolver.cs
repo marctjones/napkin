@@ -227,7 +227,13 @@ public static class SnapResolver
         IEnumerable<Point2> corners = ((BoxCorner[])
             [BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest])
             .Select(landed.Corner);
-        List<Length> across = [.. corners.Select(corner => axis == Axis.X ? corner.Y : corner.X)];
+        Axis other = axis switch
+        {
+            Axis.X => Axis.Y,
+            Axis.Y => Axis.X,
+            _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "The plan snaps along X and Y only."),
+        };
+        List<Length> across = [.. corners.Select(corner => corner.Component(other))];
         return new SnapHit(axis, coordinate, SnapKind.Grid, Target: null, across.Min(), across.Max());
     }
 

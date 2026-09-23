@@ -232,6 +232,13 @@ public static class DimensionLayout
         DimensionPlacement placement)
     {
         Length offset = placement.Offset;
+        if (axis is not (Axis.X or Axis.Y))
+        {
+            // A dimension is drawn in the plan (docs/design/assembly-model.md §7.3); one along Z
+            // has nowhere to go, and drawing it as a Y dimension would be a silent lie.
+            throw new ArgumentOutOfRangeException(nameof(axis), axis, "A plan dimension runs along X or Y.");
+        }
+
         if (axis == Axis.X)
         {
             bool below = placement.Side == DimensionSide.South;

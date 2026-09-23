@@ -151,11 +151,21 @@ public static class RelationshipText
         _ => edge.ToString(),
     };
 
+    // Three ways, not two: in the plan "above" is +Y, so Z needs words of its own, and reading a Z
+    // as a Y here would describe a height as a place on the page.
     static string Direction(Axis axis, Length distance) => axis switch
     {
         Axis.X => distance >= Length.Zero ? "right of" : "left of",
-        _ => distance >= Length.Zero ? "above" : "below",
+        Axis.Y => distance >= Length.Zero ? "above" : "below",
+        Axis.Z => distance >= Length.Zero ? "higher than" : "lower than",
+        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "Not an axis."),
     };
 
-    static string Across(Axis axis) => axis == Axis.X ? "left to right" : "top to bottom";
+    static string Across(Axis axis) => axis switch
+    {
+        Axis.X => "left to right",
+        Axis.Y => "top to bottom",
+        Axis.Z => "bottom to top",
+        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "Not an axis."),
+    };
 }

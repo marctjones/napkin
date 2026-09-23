@@ -137,7 +137,13 @@ public sealed record Box(
         Height.Divide(2, Rounding.HalfToEven)).Rotate(Rotation);
 
     /// <summary>The size along <paramref name="axis"/> of the box's <em>local</em> frame.</summary>
-    public Length Size(Axis axis) => axis == Axis.X ? Width : Height;
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="axis"/> is not X or Y.</exception>
+    public Length Size(Axis axis) => axis switch
+    {
+        Axis.X => Width,
+        Axis.Y => Height,
+        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "A plan box has a size along local X and Y only."),
+    };
 
     /// <summary>The displacement from the anchor to a corner, before rotation.</summary>
     public Vector2 LocalOffset(BoxCorner which) => which switch
