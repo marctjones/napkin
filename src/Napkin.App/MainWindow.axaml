@@ -19,7 +19,19 @@
     -->
     <DockPanel>
 
-        <Menu Name="MainMenu" DockPanel.Dock="Top">
+        <Menu Name="MainMenu"
+              DockPanel.Dock="Top"
+              Background="{DynamicResource SeBenchBrush}"
+              Foreground="{DynamicResource SeBenchHeadingBrush}">
+            <Menu.Resources>
+                <!-- Fluent's top-level items read these, not the Menu's Foreground: the bench
+                     stays dark in both themes, so the item text stays bench-light too. -->
+                <SolidColorBrush x:Key="MenuBarItemForeground" Color="{DynamicResource SeBenchHeadingColor}" />
+                <SolidColorBrush x:Key="MenuBarItemForegroundPointerOver" Color="{DynamicResource SeBenchHeadingColor}" />
+                <SolidColorBrush x:Key="MenuBarItemForegroundPressed" Color="{DynamicResource SeBenchHeadingColor}" />
+                <SolidColorBrush x:Key="MenuBarItemBackgroundPointerOver" Color="{DynamicResource SeBenchRuleColor}" />
+                <SolidColorBrush x:Key="MenuBarItemBackgroundPressed" Color="{DynamicResource SeBenchRuleColor}" />
+            </Menu.Resources>
             <MenuItem Name="FileMenu" Header="_File">
                 <MenuItem Name="NewMenuItem"
                           Header="_New"
@@ -138,8 +150,10 @@
 
         <Border Name="StatusBar"
                 DockPanel.Dock="Bottom"
+                Background="{DynamicResource SeBenchBrush}"
+                TextElement.Foreground="{DynamicResource SeBenchTextBrush}"
                 BorderThickness="0,1,0,0"
-                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                BorderBrush="{DynamicResource SeBenchRuleBrush}">
             <StackPanel>
 
                 <!-- Every update result lands here and stays until the next edit: what was done,
@@ -149,7 +163,7 @@
                         IsVisible="False"
                         Padding="12,6"
                         BorderThickness="0,0,0,1"
-                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                        BorderBrush="{DynamicResource SeBenchRuleBrush}">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Name="MessageText"
                                    Grid.Column="0"
@@ -159,6 +173,8 @@
                         <Button Name="MessageOfferButton"
                                 Grid.Column="1"
                                 IsVisible="False"
+                                Background="{DynamicResource SeBenchRuleBrush}"
+                                Foreground="{DynamicResource SeBenchHeadingBrush}"
                                 Margin="12,0,0,0"
                                 Padding="8,3"
                                 FontSize="12"
@@ -170,12 +186,13 @@
                     <TextBlock Name="DesignText"
                                Grid.Column="0"
                                FontSize="12"
-                               Opacity="0.75"
+                               FontFamily="{DynamicResource SeFontMono}"
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Name="CursorText"
                                Grid.Column="1"
                                FontSize="12"
+                               FontFamily="{DynamicResource SeFontMono}"
                                Margin="16,0"
                                MinWidth="190"
                                TextAlignment="Right"
@@ -183,6 +200,7 @@
                     <TextBlock Name="ZoomText"
                                Grid.Column="2"
                                FontSize="12"
+                               FontFamily="{DynamicResource SeFontMono}"
                                MinWidth="86"
                                TextAlignment="Right"
                                VerticalAlignment="Center" />
@@ -406,6 +424,17 @@
                     category icons, which are appended in the code-behind: they are StockToolbox's,
                     and always on the toolbar, so real stock is one click away.
                 -->
+                <Border.Resources>
+                    <!-- The active tool: a moss outline on a moss wash. Fluent's checked state is
+                         accent-blue and does not follow SystemAccentColor (design-repo
+                         docs/avalonia-usage.md), so the states are set here. -->
+                    <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="#334A7C4A" />
+                    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="#444A7C4A" />
+                    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="#554A7C4A" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{DynamicResource SeMossColor}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{DynamicResource SeMossColor}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="{DynamicResource SeMossColor}" />
+                </Border.Resources>
                 <Border.Styles>
                     <!-- The icons have no words, so a tooltip is each one's label: it shows as soon
                          as the pointer is on it, as the stock drawer's size tooltips do — for every

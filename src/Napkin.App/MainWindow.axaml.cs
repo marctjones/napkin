@@ -2161,7 +2161,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
+        // The message bar is on the bench, which is dark in both themes, so it always reads
+        // with the dark palette.
+        CanvasPalette palette = CanvasPalette.Dark;
         MessageText.Text = message.Text;
         MessageText.Foreground = new SolidColorBrush(message.Severity switch
         {
