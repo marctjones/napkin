@@ -497,6 +497,21 @@ public class ReferenceTests
         Assert.Equal(4, sketch.Validate().Errors.Count(error => error.Kind == ValidationErrorKind.PlacesNotComparable));
     }
 
+    [Fact]
+    public void APlaceTooFarOutToAddUpIsLeftToTheCheckerRatherThanThrownFromValidate()
+    {
+        // The loader validates, then checks under a guard that reports an overflow as a file out
+        // of range. The legality rule reads places too, so it must not throw first.
+        Box far = new(SketchBuilder.EntityIdAt(1), LayerId.Default, new Point3(new Length(long.MaxValue - 10), Length.Zero, Length.Zero), Length.Inches(1), Length.Inches(1), Length.Inches(1), BoxFace.Top, Angle.Zero);
+        Box near = Lying(2, "Near", Point3.Origin, 1, 1, 1);
+        Sketch sketch = Sketch.Empty.WithEntity(far).WithEntity(near)
+            .WithRelationship(new Flush(RelationshipId.New(), TestRefs.Edge(far.Id, BoxEdge.East), TestRefs.Edge(near.Id, BoxEdge.West)))
+            .WithEntity(DimensionOf(3, new AxisMeasurand(TestRefs.Corner(far.Id, BoxCorner.NorthEast), TestRefs.Corner(near.Id, BoxCorner.SouthWest), Axis.X)));
+
+        Assert.True(sketch.Validate().IsValid);
+        Assert.Throws<OverflowException>(() => RelationshipChecker.Check(sketch));
+    }
+
     // ---- §2.5: features are the blank's ------------------------------------------------------
 
     [Fact]

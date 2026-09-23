@@ -125,7 +125,7 @@ public static class PlaceRules
                         $"measures along {span.Axis}. A dimension lies in the plan and measures along X or Y.");
                 }
 
-                if (sketch.TryPlaceOf(span.From) is not { } from || sketch.TryPlaceOf(span.To) is not { } to)
+                if (Readable(sketch, span.From) is not { } from || Readable(sketch, span.To) is not { } to)
                 {
                     return null;
                 }
@@ -202,7 +202,7 @@ public static class PlaceRules
                 return null;
             }
 
-            if (sketch.TryPlaceOf(references[i]) is not { } place)
+            if (Readable(sketch, references[i]) is not { } place)
             {
                 return null;
             }
@@ -211,6 +211,21 @@ public static class PlaceRules
         }
 
         return places;
+    }
+
+    // What a place fixes, or nothing when it cannot be read — including a place whose coordinates
+    // overflow, which is the checker's to report as a file out of range, not this rule's to throw
+    // from inside Sketch.Validate.
+    private static Place? Readable(Sketch sketch, PlaceRef reference)
+    {
+        try
+        {
+            return sketch.TryPlaceOf(reference);
+        }
+        catch (OverflowException)
+        {
+            return null;
+        }
     }
 
     private static string Fixes(Sketch sketch, PlaceRef reference, Place place)
