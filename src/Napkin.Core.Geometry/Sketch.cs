@@ -61,6 +61,15 @@ public enum ValidationErrorKind
     /// span along Z (<c>docs/design/assembly-model.md</c> invariant 13, &#xA7;7.3).
     /// </summary>
     MeasurandLeavesThePlan,
+
+    /// <summary>
+    /// A relationship names a place of a box in the box's own frame, and turning the box would
+    /// change which place in the world that is (<c>docs/design/assembly-model.md</c> &#xA7;2.4).
+    /// Never a fault of a sketch, so <see cref="Sketch.Validate"/> never reports it: it is the
+    /// <see cref="Rejected.Detail"/> of <see cref="RejectionReason.OrientationWithRelationships"/>,
+    /// naming the relationship to remove, the way a cut refusal's detail names the cut.
+    /// </summary>
+    TurnWouldReinterpret,
 }
 
 /// <summary>One thing wrong with a sketch.</summary>

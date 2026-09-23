@@ -102,8 +102,8 @@ public static class BoxGeometry
 
     /// <summary>
     /// The edge of the blank a side of the footprint is, or <see langword="null"/> when the plan
-    /// sees that side as the blank's top or bottom — a box standing on a side, whose resize along
-    /// its depth is &#xA7;10 step 4's <c>DragFace</c>, not a <see cref="DragEdge"/>.
+    /// sees that side as the blank's top or bottom — a box standing on a side. A resize handle
+    /// wants <see cref="Footprint.FaceAt"/> instead, which names that top or bottom too.
     /// </summary>
     public static BoxEdge? LocalEdge(Box box, BoxEdge planSide)
     {
@@ -151,7 +151,7 @@ public static class BoxGeometry
 
     /// <summary>
     /// The edges a grip drags. A corner drags two, which is why a corner resize is one
-    /// <see cref="Batch"/> of two <see cref="DragEdge"/>s rather than two separate edits.
+    /// <see cref="Batch"/> of two <see cref="DragFace"/>s rather than two separate edits.
     /// </summary>
     public static ImmutableArray<BoxEdge> EdgesOf(BoxGrip grip) => grip switch
     {

@@ -87,12 +87,12 @@ public sealed class StockAssignmentTests
             Updater.Apply(sketch, StockAssignment.RequestsFor(sketch, box, part, lumber))).Sketch;
 
         Rejected refused = Assert.IsType<Rejected>(
-            Updater.Apply(assigned, new DragEdge(box.Id, BoxEdge.North, Length.Inches(2))));
+            Updater.Apply(assigned, new DragFace(box.Id, BoxFace.North, Length.Inches(2))));
         Assert.Equal(RejectionReason.DrivenSize, refused.Reason);
 
         // The free dimension is still free: dragging the end of the board still lengthens it.
         Assert.IsType<Solved>(
-            Updater.Apply(assigned, new DragEdge(box.Id, BoxEdge.East, Length.Inches(2))));
+            Updater.Apply(assigned, new DragFace(box.Id, BoxFace.East, Length.Inches(2))));
     }
 
     [Fact]
@@ -116,10 +116,10 @@ public sealed class StockAssignmentTests
         Assert.Equal(Length.Inches(30), assigned.Depth);
 
         // Both are driven now, so neither edge of the footprint can be dragged.
-        foreach (BoxEdge edge in new[] { BoxEdge.North, BoxEdge.East })
+        foreach (BoxFace face in new[] { BoxFace.North, BoxFace.East })
         {
             Rejected refused = Assert.IsType<Rejected>(
-                Updater.Apply(result.Sketch, new DragEdge(box.Id, edge, Length.Inches(1))));
+                Updater.Apply(result.Sketch, new DragFace(box.Id, face, Length.Inches(1))));
             Assert.Equal(RejectionReason.DrivenSize, refused.Reason);
         }
     }
@@ -143,7 +143,7 @@ public sealed class StockAssignmentTests
 
         // Nothing drives either plan dimension, so a shelf can still be dragged to size.
         Assert.IsType<Solved>(
-            Updater.Apply(result.Sketch, new DragEdge(box.Id, BoxEdge.North, Length.Inches(1))));
+            Updater.Apply(result.Sketch, new DragFace(box.Id, BoxFace.North, Length.Inches(1))));
     }
 
     [Fact]

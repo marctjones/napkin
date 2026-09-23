@@ -11,6 +11,13 @@ internal enum ScalarKind
     /// <summary>A box's anchor Y, or a node's Y.</summary>
     Y,
 
+    /// <summary>
+    /// A box's anchor Z (docs/design/assembly-model.md &#xA7;3.1). A node has none: it is plan-plane
+    /// construction geometry at Z = 0 (&#xA7;1.4), and no place a node owns fixes Z, so nothing ever
+    /// asks for one.
+    /// </summary>
+    Z,
+
     /// <summary>A box's width, along its local X.</summary>
     Width,
 
@@ -18,10 +25,9 @@ internal enum ScalarKind
     Height,
 
     /// <summary>
-    /// A box's depth, along its local Z (docs/design/assembly-model.md §1.2). Only
-    /// <see cref="ParamValue"/> and <see cref="EqualParam"/> on a <see cref="BoxDepthRef"/> assign
-    /// it: a feature's offset reads it, but the positional relationships the direct updater holds
-    /// before §10 step 4 are on boxes lying as drawn and along X and Y, where no feature depends on it.
+    /// A box's depth, along its local Z (docs/design/assembly-model.md §1.2). Like the other two
+    /// sizes, only <see cref="ParamValue"/> and <see cref="EqualParam"/> assign it; a feature's
+    /// offset reads it on whichever world axis the box's orientation stands it along.
     /// </summary>
     Depth,
 }
@@ -77,6 +83,16 @@ internal sealed record Conflicted(ConflictReport Report) : PropagationResult;
 /// such a chain still unsatisfied, <see cref="RunPhase"/> gives that chain its one reference
 /// scalar and runs the queue again. This is what makes the answer independent of relationship ids
 /// and of which way round each relationship was written.
+/// </para>
+/// <para>
+/// <strong>Three axes, one algorithm</strong> (docs/design/assembly-model.md &#xA7;3.1). A box has
+/// six scalars — its anchor's X, Y and Z and its three sizes — and every coordinate a relationship
+/// reads is one anchor component plus or minus one size, chosen by the feature's faces and turned
+/// by the box's orientation (<see cref="FeatureOffset"/>). So a <see cref="Side"/> is still
+/// "one base scalar plus an offset from sizes", whichever axis it is on and whichever size stands
+/// along it, and nothing above is told how many axes there are. The two phases are unchanged:
+/// sizes settle first, all three of them, and then every position along every axis is worked out
+/// from final sizes.
 /// </para>
 /// </remarks>
 internal sealed class Propagator
@@ -135,6 +151,7 @@ internal sealed class Propagator
         {
             ScalarKind.X => box.Anchor.X,
             ScalarKind.Y => box.Anchor.Y,
+            ScalarKind.Z => box.Anchor.Z,
             ScalarKind.Width => box.Width,
             ScalarKind.Height => box.Height,
             ScalarKind.Depth => box.Depth,
@@ -160,20 +177,22 @@ internal sealed class Propagator
                 ? new FeatureRef(key.Entity, BoxFeature.LocalUpright(BoxCorner.SouthWest))
                 : new NodeRef(key.Entity),
             key.Kind == ScalarKind.X ? Axis.X : Axis.Y),
+
+        // The anchor is the blank's south-west-bottom vertex; its local upright, which names the
+        // anchor's X and Y above, fixes Z only when the box is tipped, so Z names the vertex.
+        ScalarKind.Z => new PointAxisTarget(
+            new FeatureRef(key.Entity, BoxFeature.Vertex(BoxCorner.SouthWest, BoxLevel.Bottom)),
+            Axis.Z),
         _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "Not a scalar kind."),
     };
 
-    /// <summary>The position scalar along a plan axis.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// <paramref name="axis"/> is <see cref="Axis.Z"/>. The propagator has no Z scalar until
-    /// docs/design/assembly-model.md &#xA7;10 step 4, and reading a Z request as a Y one would move
-    /// the wrong coordinate without a word.
-    /// </exception>
-    private static ScalarKind KindOf(Axis axis) => axis switch
+    /// <summary>The position scalar along a world axis.</summary>
+    internal static ScalarKind KindOf(Axis axis) => axis switch
     {
         Axis.X => ScalarKind.X,
         Axis.Y => ScalarKind.Y,
-        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "The propagator has no Z scalar yet (assembly-model §10 step 4)."),
+        Axis.Z => ScalarKind.Z,
+        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "Not an axis."),
     };
 
     private PropagationResult Propagate(
@@ -192,11 +211,12 @@ internal sealed class Propagator
                 continue;
             }
 
-            bool hasSizes = _sketch.Find(anchored.Entity) is Box;
-            foreach (ScalarKind kind in new[] { ScalarKind.X, ScalarKind.Y, ScalarKind.Width, ScalarKind.Height, ScalarKind.Depth })
+            // A box has six scalars to hold (assembly-model §2.3); a node has its X and Y.
+            bool isBox = _sketch.Find(anchored.Entity) is Box;
+            foreach (ScalarKind kind in new[] { ScalarKind.X, ScalarKind.Y, ScalarKind.Z, ScalarKind.Width, ScalarKind.Height, ScalarKind.Depth })
             {
                 ScalarKey key = new(anchored.Entity, kind);
-                if (requestOwns.Contains(key) || (!hasSizes && kind is ScalarKind.Width or ScalarKind.Height or ScalarKind.Depth))
+                if (requestOwns.Contains(key) || (!isBox && kind is not (ScalarKind.X or ScalarKind.Y)))
                 {
                     continue;
                 }
@@ -390,15 +410,26 @@ internal sealed class Propagator
     /// <see cref="int.MaxValue"/> when neither of its sizes changed.
     /// </summary>
     /// <remarks>
-    /// Both plan sizes count, not the one along the axis in hand: a box rotated by a quarter turn
-    /// has its width along Y. The depth does not: no plan position of a box lying as drawn depends
-    /// on it, so a depth that changed is no reason for a box to keep its place in the plan.
+    /// <para>
+    /// All three sizes count, not the one along the axis in hand: a box turned by a quarter turn
+    /// has its width along Y, and a box tipped on its east face has its depth along X
+    /// (docs/design/assembly-model.md &#xA7;3.1 — the rule is per scalar and does not care which
+    /// local size sits on which world axis).
+    /// </para>
+    /// <para>
+    /// The depth counts since &#xA7;10 step 4, which is what gives the anchor rule its meaning along
+    /// Z: four legs flush under a top with nothing anchored, one leg's depth typed and the others
+    /// following through <see cref="EqualParam"/>, is a chain along Z whose sides are all free, and
+    /// the typed leg keeping its anchor is what makes the top rise rather than the legs sink
+    /// (&#xA7;9.1 case 10). A depth that changed on a box lying as drawn moves only Z coordinates,
+    /// so it never unsettles a chain along X or Y, and the plan's tie-breaks are the ones they were.
+    /// </para>
     /// </remarks>
     private int DistanceFromTheRequest(ScalarKey key)
     {
         int best = int.MaxValue;
 
-        foreach (ScalarKind kind in new[] { ScalarKind.Width, ScalarKind.Height })
+        foreach (ScalarKind kind in new[] { ScalarKind.Width, ScalarKind.Height, ScalarKind.Depth })
         {
             if (_assigned.TryGetValue(new ScalarKey(key.Entity, kind), out Assignment? assignment)
                 && assignment.Changed
@@ -942,8 +973,9 @@ internal sealed class Propagator
         }
     }
 
-    private ImmutableArray<ScalarKey> SizesOf(EntityId box)
-        => [new ScalarKey(box, ScalarKind.Width), new ScalarKey(box, ScalarKind.Height)];
+    // Every size a feature's offset can read: under a tip, any of the three lands on any world axis.
+    private static ImmutableArray<ScalarKey> SizesOf(EntityId box)
+        => [new ScalarKey(box, ScalarKind.Width), new ScalarKey(box, ScalarKind.Height), new ScalarKey(box, ScalarKind.Depth)];
 
     /// <summary>
     /// Where a feature is from the box's anchor, in the world, for the sizes worked out so far: one

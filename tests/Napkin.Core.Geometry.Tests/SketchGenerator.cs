@@ -89,26 +89,27 @@ internal sealed class SketchGenerator
 
     /// <summary>
     /// A row of 3 to 6 parts, each flush with the next along one axis: a bookcase, a run of
-    /// cabinets, a wall of studs.
+    /// cabinets, a wall of studs — or, along Z, a stack: a top on legs on a plinth.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Everything about the row that could decide the answer by accident is randomised: which
-    /// part is anchored (or none), which part carries the driving dimension, whether the widths
-    /// are tied together with <see cref="EqualParam"/>, the order the relationships are added in
-    /// — which is the order their ids come in — and which way round each one is written.
+    /// Everything about the row that could decide the answer by accident is randomised: the axis,
+    /// which part is anchored (or none), which part carries the driving dimension, whether the
+    /// sizes along the row are tied together with <see cref="EqualParam"/>, the order the
+    /// relationships are added in — which is the order their ids come in — and which way round
+    /// each one is written.
     /// </para>
     /// <para>
-    /// The parts are unrotated, so that "the next one to the east" is unambiguous; rotated boxes
-    /// are covered by the scattered sketches. Sizes and coordinates come from the same generators
-    /// as everything else, so a row can start at a negative coordinate and can have odd-unit
-    /// widths.
+    /// The parts lie as drawn and unrotated, so that "the next one to the east" or "the next one
+    /// up" is unambiguous; turned and tipped boxes are covered by the scattered sketches. Sizes and
+    /// coordinates come from the same generators as everything else, so a row can start at a
+    /// negative coordinate and can have odd-unit sizes.
     /// </para>
     /// </remarks>
     internal Sketch NextRow()
     {
         int parts = _random.Next(3, 7);
-        Axis axis = _random.Next(2) == 0 ? Axis.X : Axis.Y;
+        Axis axis = (Axis)_random.Next(3);
         bool tied = _random.Next(3) == 0;
         Length common = NextSize();
 
@@ -120,33 +121,31 @@ internal sealed class SketchGenerator
         List<EntityId> row = [];
         List<Length> sizes = [];
         Length along = NextCoordinate();
-        Length across = NextCoordinate();
 
         for (int i = 0; i < parts; i++)
         {
             Length size = tied ? common : NextSize();
-            Length other = NextSize();
             EntityId id = NextEntityId();
 
             sizes.Add(size);
             row.Add(id);
-            sketch = sketch.WithEntity(Box.AsDrawn(
-                id,
-                LayerId.Default,
-                axis == Axis.X ? new Point2(along, across) : new Point2(across, along),
-                axis == Axis.X ? size : other,
-                axis == Axis.X ? other : size,
-                Box.DefaultDepth,
-                Angle.Zero));
+
+            Point3 anchor = new Point3(NextCoordinate(), NextCoordinate(), NextCoordinate()).WithComponent(axis, along);
+            Vector3 sizes3 = new Vector3(NextSize(), NextSize(), NextSize()).WithComponent(axis, size);
+            sketch = sketch.WithEntity(new Box(
+                id, LayerId.Default, anchor, sizes3.Dx, sizes3.Dy, sizes3.Dz, BoxFace.Top, Angle.Zero));
 
             along += size;
-            across = NextCoordinate();
         }
 
-        (BoxEdge leading, BoxEdge trailing) = axis == Axis.X
-            ? (BoxEdge.East, BoxEdge.West)
-            : (BoxEdge.North, BoxEdge.South);
-        ParamRef Size(int i) => axis == Axis.X ? new BoxWidthRef(row[i]) : new BoxHeightRef(row[i]);
+        (BoxFace leading, BoxFace trailing) = axis switch
+        {
+            Axis.X => (BoxFace.East, BoxFace.West),
+            Axis.Y => (BoxFace.North, BoxFace.South),
+            _ => (BoxFace.Top, BoxFace.Bottom),
+        };
+        ParamRef Size(int i) => SizeRef(row[i], axis);
+        FeatureRef Face(int i, BoxFace face) => new(row[i], BoxFeature.Face(face));
 
         List<Func<Sketch, Sketch>> adds = [];
         for (int i = 0; i < parts - 1; i++)
@@ -154,8 +153,8 @@ internal sealed class SketchGenerator
             int index = i;
             bool flipped = _random.Next(2) == 0;
             adds.Add(current => current.WithRelationship(flipped
-                ? new Flush(NextRelationshipId(), TestRefs.Edge(row[index + 1], trailing), TestRefs.Edge(row[index], leading))
-                : new Flush(NextRelationshipId(), TestRefs.Edge(row[index], leading), TestRefs.Edge(row[index + 1], trailing))));
+                ? new Flush(NextRelationshipId(), Face(index + 1, trailing), Face(index, leading))
+                : new Flush(NextRelationshipId(), Face(index, leading), Face(index + 1, trailing))));
 
             if (tied)
             {
@@ -244,14 +243,7 @@ internal sealed class SketchGenerator
         int boxes = _random.Next(1, 7);
         for (int i = 0; i < boxes; i++)
         {
-            sketch = sketch.WithEntity(Box.AsDrawn(
-                NextEntityId(),
-                LayerId.Default,
-                new Point2(NextCoordinate(), NextCoordinate()),
-                NextSize(),
-                NextSize(),
-                Box.DefaultDepth,
-                Angle.Zero.Rotate90(_random.Next(0, 4))));
+            sketch = sketch.WithEntity(NextBox());
         }
 
         int nodes = _random.Next(0, 4);
@@ -391,8 +383,12 @@ internal sealed class SketchGenerator
         List<Request> choices = [];
 
         EntityId entity = PickEntity(sketch, anything: true);
-        choices.Add(new SetPosition(entity, new Point2(NextCoordinate(), NextCoordinate())));
-        choices.Add(Drag.InPlan(entity, new Vector2(NextDelta(), NextDelta())));
+
+        // A node lies at the plan datum, so its Z is zero — except now and then, to ask the
+        // updater the question it refuses.
+        Length z = sketch.Find(entity) is Node && _random.Next(4) != 0 ? Length.Zero : NextCoordinate();
+        choices.Add(new SetPosition(entity, new Point3(NextCoordinate(), NextCoordinate(), z)));
+        choices.Add(new Drag(entity, NextDelta3()));
         choices.Add(new SetLayer(entity, LayerId.Default));
         choices.Add(new RemoveEntity(entity));
 
@@ -400,22 +396,24 @@ internal sealed class SketchGenerator
         if (allBoxes.Count > 0)
         {
             Box box = allBoxes[_random.Next(allBoxes.Count)];
-            choices.Add(new SetRotation(box.Id, Angle.Zero.Rotate90(_random.Next(0, 4))));
-            choices.Add(new DragEdge(box.Id, RandomEdge(), NextDelta()));
-            choices.Add(new AddRelationship(new ParamValue(NextRelationshipId(), new BoxWidthRef(box.Id), NextSize())));
-            choices.Add(new AddEntity(Box.AsDrawn(
-                NextEntityId(), LayerId.Default, new Point2(NextCoordinate(), NextCoordinate()),
-                NextSize(), NextSize(), Box.DefaultDepth, Angle.Zero)));
+            choices.Add(new SetOrientation(box.Id, RandomFace(), Angle.Zero.Rotate90(_random.Next(0, 4))));
+            choices.Add(new DragFace(box.Id, RandomFace(), NextDelta()));
+            choices.Add(new AddRelationship(new ParamValue(NextRelationshipId(), SizeRef(box.Id, RandomAxis()), NextSize())));
+            choices.Add(new AddEntity(NextBox()));
 
             if (allBoxes.Count > 1)
             {
                 Box other = allBoxes[(allBoxes.IndexOf(box) + 1) % allBoxes.Count];
                 choices.Add(new AddRelationship(new Flush(
-                    NextRelationshipId(), TestRefs.Edge(box.Id, RandomEdge()), TestRefs.Edge(other.Id, RandomEdge()))));
+                    NextRelationshipId(), FaceOf(box.Id), FaceOf(other.Id))));
                 choices.Add(new AddRelationship(new Coincident(
-                    NextRelationshipId(), TestRefs.Corner(box.Id, RandomCorner()), TestRefs.Corner(other.Id, RandomCorner()))));
+                    NextRelationshipId(), PlanUpright(box), PlanUpright(other))));
+                choices.Add(new AddRelationship(new Coincident(
+                    NextRelationshipId(), VertexOf(box.Id), VertexOf(other.Id))));
+                choices.Add(new AddRelationship(new AxisDistance(
+                    NextRelationshipId(), VertexOf(box.Id), VertexOf(other.Id), RandomAxis(), NextDelta())));
                 choices.Add(new AddRelationship(new EqualParam(
-                    NextRelationshipId(), new BoxWidthRef(box.Id), new BoxWidthRef(other.Id))));
+                    NextRelationshipId(), SizeRef(box.Id, RandomAxis()), SizeRef(other.Id, RandomAxis()))));
             }
         }
 
@@ -450,10 +448,9 @@ internal sealed class SketchGenerator
         }
 
         Box box = boxes[_random.Next(boxes.Count)];
-        List<Request> choices = [new DragEdge(box.Id, RandomEdge(), NextDelta())];
+        List<Request> choices = [new DragFace(box.Id, RandomFace(), NextDelta())];
 
-        ParamRef size = _random.Next(2) == 0 ? new BoxWidthRef(box.Id) : new BoxHeightRef(box.Id);
-        choices.Add(new AddRelationship(new ParamValue(NextRelationshipId(), size, NextSize())));
+        choices.Add(new AddRelationship(new ParamValue(NextRelationshipId(), SizeRef(box.Id, RandomAxis()), NextSize())));
 
         if (NextSetParameter(sketch) is { } typed)
         {
@@ -472,9 +469,9 @@ internal sealed class SketchGenerator
             : new SetParameter(drivers[_random.Next(drivers.Count)].Id, NextSize());
     }
 
-    /// <summary>A drag of something that can carry coordinates.</summary>
+    /// <summary>A drag of something that can carry coordinates, in space.</summary>
     internal Drag NextDrag(Sketch sketch)
-        => Drag.InPlan(PickEntity(sketch, anything: false), new Vector2(NextDelta(), NextDelta()));
+        => new(PickEntity(sketch, anything: false), NextDelta3());
 
     /// <summary>The same sketch with its dictionaries built in a different insertion order.</summary>
     internal Sketch Shuffle(Sketch sketch)
@@ -509,7 +506,8 @@ internal sealed class SketchGenerator
 
     // -----------------------------------------------------------------------------------------
     // Deriving relationships: move the entity that should follow, then keep the attempt only if
-    // the sketch is still valid and everything in it still holds.
+    // the sketch is still valid and everything in it still holds. Every place is read through
+    // Sketch.PlaceOf, so a derivation is right for any of the 24 orientations and along Z.
     // -----------------------------------------------------------------------------------------
 
     private Sketch TryDerive(Sketch sketch)
@@ -517,7 +515,7 @@ internal sealed class SketchGenerator
         List<Box> boxes = [.. sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id)];
         List<Node> nodes = [.. sketch.Entities.Values.OfType<Node>().OrderBy(node => node.Id)];
 
-        return _random.Next(0, 6) switch
+        return _random.Next(0, 8) switch
         {
             0 when boxes.Count > 0 => DeriveParamValue(sketch, boxes),
             1 when boxes.Count > 1 => DeriveEqualParam(sketch, boxes),
@@ -525,6 +523,8 @@ internal sealed class SketchGenerator
             3 when boxes.Count > 0 && nodes.Count > 0 => DeriveCoincident(sketch, boxes, nodes),
             4 when boxes.Count > 1 => DeriveAxisDistance(sketch, boxes),
             5 when nodes.Count > 2 => DeriveCentered(sketch, nodes),
+            6 when boxes.Count > 1 => DeriveBoxCoincident(sketch, boxes),
+            7 when boxes.Count > 2 => DeriveBoxCentered(sketch, boxes),
             _ => sketch,
         };
     }
@@ -532,22 +532,29 @@ internal sealed class SketchGenerator
     private Sketch DeriveParamValue(Sketch sketch, List<Box> boxes)
     {
         Box box = boxes[_random.Next(boxes.Count)];
-        bool width = _random.Next(2) == 0;
+        Axis axis = RandomAxis();
 
-        ParamRef param = width ? new BoxWidthRef(box.Id) : new BoxHeightRef(box.Id);
-        Length value = width ? box.Width : box.Height;
-
-        return Keep(sketch, sketch.WithRelationship(new ParamValue(NextRelationshipId(), param, value)));
+        return Keep(sketch, sketch.WithRelationship(new ParamValue(NextRelationshipId(), SizeRef(box.Id, axis), box.Size(axis))));
     }
 
     private Sketch DeriveEqualParam(Sketch sketch, List<Box> boxes)
     {
         (Box first, Box second) = TwoOf(boxes);
+        Axis ofFirst = RandomAxis();
+        Axis ofSecond = _random.Next(2) == 0 ? ofFirst : RandomAxis();
 
-        // Derive: the second box takes the first's width, then the relationship is true.
+        // Derive: the second box takes the first's size, then the relationship is true — a leg's
+        // depth equal to another's, or to an apron's width.
+        Box resized = ofSecond switch
+        {
+            Axis.X => second with { Width = first.Size(ofFirst) },
+            Axis.Y => second with { Height = first.Size(ofFirst) },
+            _ => second with { Depth = first.Size(ofFirst) },
+        };
+
         Sketch derived = sketch
-            .WithEntity(second with { Width = first.Width })
-            .WithRelationship(new EqualParam(NextRelationshipId(), new BoxWidthRef(first.Id), new BoxWidthRef(second.Id)));
+            .WithEntity(resized)
+            .WithRelationship(new EqualParam(NextRelationshipId(), SizeRef(first.Id, ofFirst), SizeRef(second.Id, ofSecond)));
 
         return Keep(sketch, derived);
     }
@@ -555,21 +562,20 @@ internal sealed class SketchGenerator
     private Sketch DeriveFlush(Sketch sketch, List<Box> boxes)
     {
         (Box first, Box second) = TwoOf(boxes);
-        FeatureRef edgeOfFirst = TestRefs.Edge(first.Id, RandomEdge());
-        FeatureRef edgeOfSecond = TestRefs.Edge(second.Id, RandomEdge());
+        FeatureRef faceOfFirst = FaceOf(first.Id);
+        FeatureRef faceOfSecond = FaceOf(second.Id);
 
-        Axis? axis = SharedNormalAxis(sketch, edgeOfFirst, edgeOfSecond);
-        if (axis is not { } normal)
+        // Two faces are in one plane only when they are perpendicular to the same world axis.
+        if (sketch.PlaceOf(faceOfFirst).Axes is not [var normal] || sketch.PlaceOf(faceOfSecond).Axes is not [var other] || other != normal)
         {
             return sketch;
         }
 
-        Length gap = sketch.PlanLine(edgeOfFirst).From.Component(normal)
-                     - sketch.PlanLine(edgeOfSecond).From.Component(normal);
+        Length gap = sketch.PlaceOf(faceOfFirst)[normal] - sketch.PlaceOf(faceOfSecond)[normal];
 
         Sketch derived = sketch
             .WithEntity(second with { Anchor = second.Anchor + Vector3.Along(normal, gap) })
-            .WithRelationship(new Flush(NextRelationshipId(), edgeOfFirst, edgeOfSecond));
+            .WithRelationship(new Flush(NextRelationshipId(), faceOfFirst, faceOfSecond));
 
         return Keep(sketch, derived);
     }
@@ -578,7 +584,9 @@ internal sealed class SketchGenerator
     {
         Box box = boxes[_random.Next(boxes.Count)];
         Node node = nodes[_random.Next(nodes.Count)];
-        FeatureRef corner = TestRefs.Corner(box.Id, RandomCorner());
+
+        // A node meets a plan upright — whichever local edge stands vertical at that plan corner.
+        FeatureRef corner = PlanUpright(box);
 
         Sketch derived = sketch
             .WithEntity(node with { Position = sketch.PlanPoint(corner) })
@@ -587,17 +595,46 @@ internal sealed class SketchGenerator
         return Keep(sketch, derived);
     }
 
+    /// <summary>
+    /// Two boxes held at a common place: two vertices on all three axes, or two plan uprights on X
+    /// and Y — a leg's top corner under a top's, a stud at a plate's corner.
+    /// </summary>
+    private Sketch DeriveBoxCoincident(Sketch sketch, List<Box> boxes)
+    {
+        (Box first, Box second) = TwoOf(boxes);
+        bool vertices = _random.Next(2) == 0;
+        FeatureRef ofFirst = vertices ? VertexOf(first.Id) : PlanUpright(first);
+        FeatureRef ofSecond = vertices ? VertexOf(second.Id) : PlanUpright(second);
+
+        Place a = sketch.PlaceOf(ofFirst);
+        Place b = sketch.PlaceOf(ofSecond);
+        Vector3 shift = Vector3.Zero;
+        foreach (Axis axis in Place.Common(a, b))
+        {
+            shift = shift.WithComponent(axis, a[axis] - b[axis]);
+        }
+
+        Sketch derived = sketch
+            .WithEntity(second with { Anchor = second.Anchor + shift })
+            .WithRelationship(new Coincident(NextRelationshipId(), ofFirst, ofSecond));
+
+        return Keep(sketch, derived);
+    }
+
     private Sketch DeriveAxisDistance(Sketch sketch, List<Box> boxes)
     {
         (Box first, Box second) = TwoOf(boxes);
-        Axis axis = _random.Next(2) == 0 ? Axis.X : Axis.Y;
-        FeatureRef from = TestRefs.Corner(first.Id, RandomCorner());
-        FeatureRef to = TestRefs.Corner(second.Id, RandomCorner());
+        Axis axis = RandomAxis();
+        PlaceRef from = NextPlaceOn(first);
+        PlaceRef to = NextPlaceOn(second);
 
-        Length distance = sketch.PlanPoint(to).Component(axis) - sketch.PlanPoint(from).Component(axis);
+        if (sketch.PlaceOf(from).Coordinate(axis) is not { } start || sketch.PlaceOf(to).Coordinate(axis) is not { } end)
+        {
+            return sketch;
+        }
 
         return Keep(sketch, sketch.WithRelationship(
-            new AxisDistance(NextRelationshipId(), from, to, axis, distance)));
+            new AxisDistance(NextRelationshipId(), from, to, axis, end - start)));
     }
 
     private Sketch DeriveCentered(Sketch sketch, List<Node> nodes)
@@ -621,21 +658,57 @@ internal sealed class SketchGenerator
         return Keep(sketch, derived);
     }
 
+    /// <summary>
+    /// A box's centre midway between a face of each of two others, along any axis — a shelf
+    /// centred between a bottom and a lid, a stretcher between two legs.
+    /// </summary>
+    private Sketch DeriveBoxCentered(Sketch sketch, List<Box> boxes)
+    {
+        List<Box> chosen = Shuffled(boxes).Take(3).ToList();
+        Axis axis = RandomAxis();
+
+        if (FaceFixing(sketch, chosen[1], axis) is not { } a || FaceFixing(sketch, chosen[2], axis) is not { } b)
+        {
+            return sketch;
+        }
+
+        CenterRef middle = new(chosen[0].Id);
+        Length target = RoundedMidpoint(sketch.PlaceOf(a)[axis], sketch.PlaceOf(b)[axis]);
+        Length shift = target - sketch.PlaceOf(middle)[axis];
+
+        Sketch derived = sketch
+            .WithEntity(chosen[0] with { Anchor = chosen[0].Anchor + Vector3.Along(axis, shift) })
+            .WithRelationship(new Centered(NextRelationshipId(), middle, a, b, axis));
+
+        return Keep(sketch, derived);
+    }
+
     /// <summary>The midpoint the propagator and the checker both use.</summary>
     private static Length RoundedMidpoint(Length a, Length b) => (a + b).Divide(2, Rounding.HalfToEven);
 
-    private static Axis? SharedNormalAxis(Sketch sketch, PlaceRef first, PlaceRef second)
+    /// <summary>One of the two faces of a box perpendicular to a world axis, picked at random.</summary>
+    private FeatureRef? FaceFixing(Sketch sketch, Box box, Axis axis)
     {
-        Axis? a = NormalAxis(sketch.PlanLine(first));
-        return a is { } axis && NormalAxis(sketch.PlanLine(second)) == axis ? axis : null;
+        foreach (BoxFace face in Shuffled(Enum.GetValues<BoxFace>()))
+        {
+            FeatureRef reference = new(box.Id, BoxFeature.Face(face));
+            if (sketch.PlaceOf(reference).Axes is [var only] && only == axis)
+            {
+                return reference;
+            }
+        }
+
+        return null;
     }
 
-    private static Axis? NormalAxis((Point2 From, Point2 To) edge)
+    /// <summary>A place on a box that fixes some axes: a vertex, a face, a plan upright or the centre.</summary>
+    private PlaceRef NextPlaceOn(Box box) => _random.Next(4) switch
     {
-        bool sameX = edge.From.X == edge.To.X;
-        bool sameY = edge.From.Y == edge.To.Y;
-        return sameX == sameY ? null : sameX ? Axis.X : Axis.Y;
-    }
+        0 => VertexOf(box.Id),
+        1 => FaceOf(box.Id),
+        2 => PlanUpright(box),
+        _ => new CenterRef(box.Id),
+    };
 
     /// <summary>Keeps the attempt only if it left a sketch that is valid and holds together.</summary>
     private static Sketch Keep(Sketch before, Sketch attempt)
@@ -662,6 +735,44 @@ internal sealed class SketchGenerator
     }
 
     private BoxEdge RandomEdge() => (BoxEdge)_random.Next(0, 4);
+
+    private BoxFace RandomFace() => (BoxFace)_random.Next(0, 6);
+
+    private Axis RandomAxis() => (Axis)_random.Next(0, 3);
+
+    /// <summary>
+    /// A box in space: half of them lying as drawn and half tipped onto a random face, at any
+    /// quarter-turn spin, at the plan datum or above or below it, with a depth that is the default
+    /// or anything else (docs/design/assembly-model.md &#xA7;9.2).
+    /// </summary>
+    private Box NextBox() => new(
+        NextEntityId(),
+        LayerId.Default,
+        new Point3(NextCoordinate(), NextCoordinate(), _random.Next(3) == 0 ? Length.Zero : NextCoordinate()),
+        NextSize(),
+        NextSize(),
+        _random.Next(3) == 0 ? Box.DefaultDepth : NextSize(),
+        _random.Next(2) == 0 ? BoxFace.Top : RandomFace(),
+        Angle.Zero.Rotate90(_random.Next(0, 4)));
+
+    /// <summary>The size of a box along one of its local axes, as a reference.</summary>
+    private static ParamRef SizeRef(EntityId box, Axis local) => local switch
+    {
+        Axis.X => new BoxWidthRef(box),
+        Axis.Y => new BoxHeightRef(box),
+        _ => new BoxDepthRef(box),
+    };
+
+    private FeatureRef FaceOf(EntityId box) => new(box, BoxFeature.Face(RandomFace()));
+
+    private FeatureRef VertexOf(EntityId box)
+        => new(box, BoxFeature.Vertex(RandomCorner(), _random.Next(2) == 0 ? BoxLevel.Bottom : BoxLevel.Top));
+
+    /// <summary>The edge that stands vertical at a random corner of a box's footprint: fixes X and Y.</summary>
+    private FeatureRef PlanUpright(Box box) => new(box.Id, box.Footprint().UprightAt(RandomCorner()));
+
+    /// <summary>A movement in space: along Z half the time, in the plan otherwise.</summary>
+    private Vector3 NextDelta3() => new(NextDelta(), NextDelta(), _random.Next(2) == 0 ? Length.Zero : NextDelta());
 
     private BoxCorner RandomCorner() => (BoxCorner)_random.Next(0, 4);
 

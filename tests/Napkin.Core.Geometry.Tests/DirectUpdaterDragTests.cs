@@ -2,7 +2,7 @@ namespace Napkin.Core.Geometry.Tests;
 
 /// <summary>
 /// The best-effort golden cases 7 and 8 of docs/design/geometry-model.md &#xA7;7.1, the drag
-/// clause of case 13, and &#xA7;8 step 9's <see cref="DragEdge"/> cases.
+/// clause of case 13, and &#xA7;8 step 9's <see cref="DragFace"/> cases.
 /// </summary>
 public class DirectUpdaterDragTests
 {
@@ -122,34 +122,34 @@ public class DirectUpdaterDragTests
     }
 
     [Fact]
-    public void DragEdgeGrowsABoxFromTheEdgeThatWasGrabbed()
+    public void DragFaceGrowsABoxFromTheEdgeThatWasGrabbed()
     {
         SketchBuilder builder = new();
         EntityId box = builder.AddBox(10, 0, 30, 4);
 
         // Grabbing the far edge leaves the anchor alone.
         Solved east = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.East, Length.Inches(5))));
+            Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.East, Length.Inches(5))));
         SketchAssert.BoxIs(east.Sketch, box, 10, 0, 35, 4);
         Assert.Equal(new Vector3(Length.Inches(5), Length.Zero, Length.Zero), east.Changes.AppliedDelta);
         Assert.Contains(box, east.Changes.Resized);
 
         // Grabbing the anchor's own edge moves the anchor and leaves the far edge.
         Solved west = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.West, Length.Inches(5))));
+            Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.West, Length.Inches(5))));
         SketchAssert.BoxIs(west.Sketch, box, 5, 0, 35, 4);
         Assert.Equal(new Vector3(-Length.Inches(5), Length.Zero, Length.Zero), west.Changes.AppliedDelta);
         Assert.Equal(Point2.Inches(40, 0), west.Sketch.Find<Box>(box)!.Corner(BoxCorner.SouthEast));
 
         // And north grows the height.
         Solved north = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.North, Length.Inches(2))));
+            Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.North, Length.Inches(2))));
         SketchAssert.BoxIs(north.Sketch, box, 10, 0, 30, 6);
         Assert.Equal(new Vector3(Length.Zero, Length.Inches(2), Length.Zero), north.Changes.AppliedDelta);
     }
 
     [Fact]
-    public void DragEdgeAgainstAFlushToAnAnchoredBoxDoesNotMoveTheEdgeAtAll()
+    public void DragFaceAgainstAFlushToAnAnchoredBoxDoesNotMoveTheEdgeAtAll()
     {
         SketchBuilder builder = new();
         EntityId a = builder.AddBox(0, 0, 30, 4);
@@ -158,7 +158,7 @@ public class DirectUpdaterDragTests
         builder.Anchor(b);
 
         Solved result = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(a, BoxEdge.East, Length.Inches(5))));
+            Updater.Apply(builder.Sketch, new DragFace(a, BoxFace.East, Length.Inches(5))));
 
         Assert.Equal(Vector3.Zero, result.Changes.AppliedDelta);
         SketchAssert.BoxIs(result.Sketch, a, 0, 0, 30, 4);
@@ -166,14 +166,14 @@ public class DirectUpdaterDragTests
 
         // The opposite edge is free, though: the anchor moves and the flush still holds.
         Solved west = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(a, BoxEdge.West, Length.Inches(5))));
+            Updater.Apply(builder.Sketch, new DragFace(a, BoxFace.West, Length.Inches(5))));
         SketchAssert.BoxIs(west.Sketch, a, -5, 0, 35, 4);
         SketchAssert.IsConsistent(west.Sketch);
     }
 
     [Trait("Feature", "GEO-013")]
     [Fact]
-    public void DragEdgeNeverOverridesANumberTheUserTyped()
+    public void DragFaceNeverOverridesANumberTheUserTyped()
     {
         SketchBuilder builder = new();
         EntityId box = builder.AddBox(0, 0, 30, 4);
@@ -181,31 +181,31 @@ public class DirectUpdaterDragTests
 
         Assert.Equal(
             new Rejected(RejectionReason.DrivenSize),
-            Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.East, Length.Inches(5))));
+            Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.East, Length.Inches(5))));
 
         // The height is not driven, so that handle still works.
-        Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.North, Length.Inches(2))));
+        Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.North, Length.Inches(2))));
     }
 
     [Fact]
-    public void DragEdgeWillNotShrinkABoxToNothing()
+    public void DragFaceWillNotShrinkABoxToNothing()
     {
         SketchBuilder builder = new();
         EntityId box = builder.AddBox(0, 0, 30, 4);
 
         Assert.Equal(
             new Rejected(RejectionReason.NonPositiveSize),
-            Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.East, -Length.Inches(30))));
+            Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.East, -Length.Inches(30))));
     }
 
     [Fact]
-    public void DragEdgeOnARotatedBoxMovesTheEdgeInTheDirectionItFaces()
+    public void DragFaceOnARotatedBoxMovesTheEdgeInTheDirectionItFaces()
     {
         SketchBuilder builder = new();
         EntityId box = builder.AddBox(0, 0, 30, 4, quarterTurns: 1);
 
         Solved result = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.East, Length.Inches(5))));
+            Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.East, Length.Inches(5))));
 
         // The box's local +X points along global +Y at a quarter turn.
         SketchAssert.BoxIs(result.Sketch, box, 0, 0, 35, 4);

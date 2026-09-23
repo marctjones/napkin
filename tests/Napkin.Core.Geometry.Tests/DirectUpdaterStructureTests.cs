@@ -162,10 +162,10 @@ public class DirectUpdaterStructureTests
             Updater.Apply(sketch, new SetLayer(SketchBuilder.EntityIdAt(99), LayerId.Default)));
         Assert.Equal(
             new Rejected(RejectionReason.UnknownEntity),
-            Updater.Apply(sketch, new SetPosition(SketchBuilder.EntityIdAt(99), Point2.Origin)));
+            Updater.Apply(sketch, SetPosition.InPlan(SketchBuilder.EntityIdAt(99), Point2.Origin)));
         Assert.Equal(
             new Rejected(RejectionReason.UnknownEntity),
-            Updater.Apply(sketch, new SetRotation(SketchBuilder.EntityIdAt(99), Angle.Right)));
+            Updater.Apply(sketch, new SetOrientation(SketchBuilder.EntityIdAt(99), BoxFace.Top, Angle.Right)));
     }
 
     [Fact]

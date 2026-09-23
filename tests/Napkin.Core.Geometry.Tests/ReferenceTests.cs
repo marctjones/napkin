@@ -339,7 +339,7 @@ public class ReferenceTests
     }
 
     [Fact]
-    public void Case11_TwoVerticesAreComparableOnAllThreeAxesAndWaitForTheZPropagator()
+    public void Case11_TwoVerticesAreComparableOnAllThreeAxesAndHeldOnAllThree()
     {
         Box top = Lying(1, "Top", Point3.Inches(0, 0, 16), 40, 20, 1);
         Box leg = Lying(2, "Leg", Point3.Origin, 2, 2, 16);
@@ -361,10 +361,27 @@ public class ReferenceTests
         Assert.Equal(new Length(1), violation.Residual);
         Assert.True(violation.Exact);
 
-        // Holding it through an edit is §10 step 4's: this build says so rather than holding X and Y only.
-        Assert.Equal(
-            new Rejected(RejectionReason.UnsupportedRelationship),
-            DirectUpdater.Instance.Apply(sketch, new AddRelationship(coincident)));
+        // Since §10 step 4 it is held on all three. Added where it already holds, nothing moves.
+        Solved held = Assert.IsType<Solved>(DirectUpdater.Instance.Apply(sketch, new AddRelationship(coincident)));
+        Assert.Empty(held.Changes.Moved);
+
+        // Added to the lifted top, the second place follows the first: the leg rises one unit.
+        Solved followed = Assert.IsType<Solved>(DirectUpdater.Instance.Apply(
+            sketch.WithEntity(top with { Anchor = top.Anchor with { Z = top.Anchor.Z + new Length(1) } }),
+            new AddRelationship(coincident)));
+        Assert.Equal(new Point3(Length.Zero, Length.Zero, new Length(1)), followed.Sketch.Find<Box>(leg.Id)!.Anchor);
+        Assert.Equal([leg.Id], followed.Changes.Moved);
+
+        // Case 11's propagation half: with one end anchored, a drag of either along any axis
+        // applies zero on all three, because the two vertices share all three.
+        Sketch anchored = held.Sketch.WithRelationship(new Anchored(RelationshipId.New(), leg.Id));
+        Vector3 anywhere = new(Length.Inches(1), Length.Inches(2), Length.Inches(3));
+        foreach (EntityId dragged in new[] { top.Id, leg.Id })
+        {
+            Solved drag = Assert.IsType<Solved>(DirectUpdater.Instance.Apply(anchored, new Drag(dragged, anywhere)));
+            Assert.Equal(Vector3.Zero, drag.Changes.AppliedDelta);
+            Assert.Empty(drag.Changes.Moved);
+        }
     }
 
     [Fact]
@@ -387,7 +404,7 @@ public class ReferenceTests
     }
 
     [Fact]
-    public void AFlushBetweenTwoPlanFacesIsStillHeldAndOneBetweenTwoCapsWaitsForZ()
+    public void AFlushBetweenTwoPlanFacesIsStillHeldAndOneBetweenTwoCapsIsHeldOnZ()
     {
         SketchBuilder builder = new();
         EntityId left = builder.AddBox(0, 0, 10, 4);
@@ -403,7 +420,12 @@ public class ReferenceTests
             new FeatureRef(left, BoxFeature.Face(BoxFace.Top)),
             new FeatureRef(right, BoxFeature.Face(BoxFace.Bottom)));
         Assert.Null(PlaceRules.Refusal(sketch, caps));
-        Assert.Equal(new Rejected(RejectionReason.UnsupportedRelationship), DirectUpdater.Instance.Apply(sketch, new AddRelationship(caps)));
+
+        // The second place follows the first: the right box rises onto the left one's top, along Z only.
+        Solved stacked = Assert.IsType<Solved>(DirectUpdater.Instance.Apply(sketch, new AddRelationship(caps)));
+        Assert.Equal(new Point3(Length.Inches(12), Length.Zero, Box.DefaultDepth), stacked.Sketch.Find<Box>(right)!.Anchor);
+        Assert.Equal([right], stacked.Changes.Moved);
+        SketchAssert.IsConsistent(stacked.Sketch);
     }
 
     [Fact]

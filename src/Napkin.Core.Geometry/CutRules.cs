@@ -56,7 +56,7 @@ internal static class CutRules
 
     /// <summary>
     /// The smallest size along one axis of the blank at which its cuts still fit it — what a
-    /// <see cref="DragEdge"/> clamps to, so that a blank cannot be dragged shorter than its cuts
+    /// <see cref="DragFace"/> clamps a side face to, so that a blank cannot be dragged shorter than its cuts
     /// the way it cannot be dragged through an anchored neighbour
     /// (<c>docs/design/shaped-parts-model.md</c> §2.3).
     /// </summary>

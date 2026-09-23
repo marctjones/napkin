@@ -5,7 +5,9 @@ namespace Napkin.Core.Geometry.Tests;
 /// <summary>
 /// Properties P1 to P8 and P10 of docs/design/geometry-model.md &#xA7;7.2, and P1 for the cuts
 /// and P11 of docs/design/shaped-parts-model.md &#xA7;9.2. P9 (serialization)
-/// waits for #6.
+/// waits for #6. Since docs/design/assembly-model.md &#xA7;10 step 4 they run over three axes:
+/// the generator places boxes on all six faces and at any height, relates them along Z, and asks
+/// for <see cref="SetOrientation"/>, <see cref="DragFace"/> on all six faces and drags in space.
 /// </summary>
 /// <remarks>
 /// Seeded loops rather than a property-testing package: <c>Napkin.Core.Geometry</c> takes no
@@ -97,8 +99,8 @@ public class PropertyTests
                     break;
 
                 case AxisDistance distance:
-                    Length actual = succeeded.Sketch.PlanPoint(distance.To).Component(distance.Axis)
-                                    - succeeded.Sketch.PlanPoint(distance.From).Component(distance.Axis);
+                    Length actual = succeeded.Sketch.PlaceOf(distance.To)[distance.Axis]
+                                    - succeeded.Sketch.PlaceOf(distance.From)[distance.Axis];
                     Assert.True(actual == request.Value, $"{because}: the distance is {actual}, not {request.Value}");
                     break;
 
@@ -210,18 +212,27 @@ public class PropertyTests
             Solved result = Assert.IsType<Solved>(Updater.Apply(sketch, request));
             Assert.True(result.Changes.AppliedDelta.HasValue, $"{because}: a drag must report what it applied");
             Vector3 applied = result.Changes.AppliedDelta!.Value;
-            Assert.Equal(Length.Zero, applied.Dz);
+
+            // Best effort per axis, over all three (assembly-model §9.2).
+            foreach (Axis axis in new[] { Axis.X, Axis.Y, Axis.Z })
+            {
+                Assert.True(
+                    applied.Component(axis) == request.Delta.Component(axis) || applied.Component(axis) == Length.Zero,
+                    $"{because}: {axis} was partly applied, as {applied.Component(axis)}");
+            }
 
             Assert.True(
-                applied.Dx == request.Delta.Dx || applied.Dx == Length.Zero,
-                $"{because}: X was partly applied, as {applied.Dx}");
-            Assert.True(
-                applied.Dy == request.Delta.Dy || applied.Dy == Length.Zero,
-                $"{because}: Y was partly applied, as {applied.Dy}");
-
-            Assert.True(
-                PositionOf(result.Sketch, request.Id) - PositionOf(sketch, request.Id) == applied.XY,
+                PositionOf(result.Sketch, request.Id) - PositionOf(sketch, request.Id) == applied,
                 $"{because}: the entity did not move by the delta that was reported");
+
+            // Never worse: an axis the rigid group leaves free is applied in full. The group
+            // reaches along an axis only through a relationship coupling that axis, so an entity
+            // with nothing on it moves wherever it is asked, bar a node's missing Z.
+            if (!sketch.Relationships.Values.Any(relationship => relationship.References.Contains(request.Id)))
+            {
+                Vector3 expected = sketch.Find(request.Id) is Node ? request.Delta with { Dz = Length.Zero } : request.Delta;
+                Assert.True(applied == expected, $"{because}: a free entity was held back, applying {applied}");
+            }
         }
     }
 
@@ -455,12 +466,13 @@ public class PropertyTests
     /// which is the one thing §2.3 lets the cuts decide.
     /// </summary>
     /// <remarks>
-    /// <see cref="DragEdge"/> is excluded, and the exclusion is the design's own doing rather than
-    /// a weakening of the property: §2.3 makes <c>DragEdge</c> <em>clamp</em> instead of refusing,
-    /// because it is best effort, so a shaped blank legitimately ends up a different size from a
-    /// plain one and the result is <see cref="Solved"/> rather than the
-    /// <c>Rejected(CutDoesNotFit)</c> that §9.2's wording allows for. Every other request kind is
-    /// exact and takes the refusal.
+    /// <see cref="DragFace"/> on a side face is excluded, and the exclusion is the design's own
+    /// doing rather than a weakening of the property: §2.3 makes it <em>clamp</em> instead of
+    /// refusing, because it is best effort, so a shaped blank legitimately ends up a different size
+    /// from a plain one and the result is <see cref="Solved"/> rather than the
+    /// <c>Rejected(CutDoesNotFit)</c> that §9.2's wording allows for. A drag of the bottom or the
+    /// top stays in: a cut never reaches either (assembly-model §2.4, §4.2), so nothing clamps it.
+    /// Every other request kind is exact and takes the refusal.
     /// </remarks>
     [Trait("Feature", "GEO-015")]
     [Theory]
@@ -476,7 +488,7 @@ public class PropertyTests
             Request request = generator.NextRequest(plain);
             string because = Because(seed, iteration, request);
 
-            if (request is DragEdge)
+            if (request is DragFace { Face: not (BoxFace.Bottom or BoxFace.Top) })
             {
                 continue;
             }
@@ -518,10 +530,11 @@ public class PropertyTests
                 box.Anchor == other.Anchor
                 && box.Width == other.Width
                 && box.Height == other.Height
-                && box.Rotation == other.Rotation,
-                $"{because}: box {box.Id} is {other.Anchor} {other.Width}x{other.Height} at "
-                + $"{other.Rotation} with cuts and {box.Anchor} {box.Width}x{box.Height} at "
-                + $"{box.Rotation} without");
+                && box.Depth == other.Depth
+                && box.Orientation == other.Orientation,
+                $"{because}: box {box.Id} is {other.Anchor} {other.Width}x{other.Height}x{other.Depth} at "
+                + $"{other.Orientation} with cuts and {box.Anchor} {box.Width}x{box.Height}x{box.Depth} at "
+                + $"{box.Orientation} without");
         }
     }
 
@@ -595,13 +608,18 @@ public class PropertyTests
 
                 // The clamp's own signature: the edge ended up leaving the blank bigger than the
                 // drag asked for, which is the one thing only a clamp does.
-                if (request is DragEdge edge
+                if (request is DragFace face
                     && result is Succeeded dragged
-                    && shaped.Find<Box>(edge.Box) is { } before
-                    && dragged.Sketch.Find<Box>(edge.Box) is { } after)
+                    && shaped.Find<Box>(face.Box) is { } before
+                    && dragged.Sketch.Find<Box>(face.Box) is { } after)
                 {
-                    Axis axis = edge.Edge is BoxEdge.East or BoxEdge.West ? Axis.X : Axis.Y;
-                    clampedDrags += before.Size(axis) + edge.Delta < after.Size(axis) ? 1 : 0;
+                    Axis axis = face.Face switch
+                    {
+                        BoxFace.East or BoxFace.West => Axis.X,
+                        BoxFace.South or BoxFace.North => Axis.Y,
+                        _ => Axis.Z,
+                    };
+                    clampedDrags += before.Size(axis) + face.Delta < after.Size(axis) ? 1 : 0;
                 }
             }
         }
@@ -662,6 +680,11 @@ public class PropertyTests
         int rows = 0;
         int rowsResized = 0;
         int longestRow = 0;
+        int tippedBoxes = 0;
+        int heldAlongZ = 0;
+        int liftedByADrag = 0;
+        int zHeldBackByADrag = 0;
+        int turned = 0;
         HashSet<RejectionReason> reasons = [];
 
         foreach (int seed in Enumerable.Range(1, 8))
@@ -672,6 +695,10 @@ public class PropertyTests
             {
                 Sketch sketch = generator.NextSketch();
                 oddSpans += CentredOddSpans(sketch);
+
+                // Three axes (assembly-model §9.2): boxes on every face, relationships along Z.
+                tippedBoxes += sketch.Entities.Values.OfType<Box>().Count(box => box.FaceUp != BoxFace.Top);
+                heldAlongZ += sketch.RelationshipsInOrder.Count(relationship => SpeaksAboutZ(sketch, relationship));
 
                 // Issue #49 is about a row of three or more parts. Without this the properties
                 // could pass while never propagating along one.
@@ -687,10 +714,12 @@ public class PropertyTests
                     }
                 }
 
-                switch (Updater.Apply(sketch, generator.NextRequest(sketch)))
+                Request request = generator.NextRequest(sketch);
+                switch (Updater.Apply(sketch, request))
                 {
-                    case Succeeded:
+                    case Succeeded done:
                         succeeded++;
+                        turned += request is SetOrientation && !done.Changes.Modified.IsEmpty ? 1 : 0;
                         break;
 
                     case OverConstrained:
@@ -712,6 +741,13 @@ public class PropertyTests
                 {
                     dragsBlocked++;
                 }
+
+                if (drag.Delta.Dz != Length.Zero)
+                {
+                    liftedByADrag += result.Changes.AppliedDelta!.Value.Dz != Length.Zero ? 1 : 0;
+                    zHeldBackByADrag += result.Changes.AppliedDelta!.Value.Dz == Length.Zero
+                                        && sketch.Find(drag.Id) is Box ? 1 : 0;
+                }
             }
         }
 
@@ -719,7 +755,9 @@ public class PropertyTests
                         + $"rejection reasons [{string.Join(", ", reasons.Order())}], "
                         + $"drags applied {dragsApplied}, drags blocked {dragsBlocked}, "
                         + $"odd centred spans {oddSpans}, "
-                        + $"rows of three or more {rows} (longest {longestRow}), resized {rowsResized}";
+                        + $"rows of three or more {rows} (longest {longestRow}), resized {rowsResized}, "
+                        + $"tipped boxes {tippedBoxes}, relationships along Z {heldAlongZ}, "
+                        + $"drags lifted {liftedByADrag}, box drags held on Z {zHeldBackByADrag}, turns {turned}";
 
         Assert.True(succeeded > 100, counts);
         Assert.True(overConstrained > 0, counts);
@@ -736,23 +774,43 @@ public class PropertyTests
         // The half-unit Centered case (Fable review of #35, finding 2) is only reachable when a
         // span is an odd number of units, which a 1/16" grid can never produce.
         Assert.True(oddSpans > 0, counts);
+
+        // Three axes: without these the properties could pass while every sketch lay flat in the
+        // plan. Tipped boxes, relationships held along Z, drags that lift and drags a relationship
+        // holds down, and turns that went through.
+        Assert.True(tippedBoxes > 100, counts);
+        Assert.True(heldAlongZ > 50, counts);
+        Assert.True(liftedByADrag > 0, counts);
+        Assert.True(zHeldBackByADrag > 0, counts);
+        Assert.True(turned > 0, counts);
+        Assert.Contains(RejectionReason.OrientationWithRelationships, reasons);
     }
 
     /// <summary>How many Centered relationships in this sketch span an odd number of units.</summary>
     private static int CentredOddSpans(Sketch sketch)
         => sketch.RelationshipsInOrder
             .OfType<Centered>()
-            .Count(centred => (sketch.PlanPoint(centred.A).Component(centred.Axis)
-                               + sketch.PlanPoint(centred.B).Component(centred.Axis)).Units % 2 != 0);
+            .Count(centred => (sketch.PlaceOf(centred.A)[centred.Axis]
+                               + sketch.PlaceOf(centred.B)[centred.Axis]).Units % 2 != 0);
+
+    /// <summary>Whether a relationship holds something along world Z.</summary>
+    private static bool SpeaksAboutZ(Sketch sketch, Relationship relationship) => relationship switch
+    {
+        Flush flush => sketch.PlaceOf(flush.A).Axes is [Axis.Z],
+        Coincident coincident => Place.Common(sketch.PlaceOf(coincident.A), sketch.PlaceOf(coincident.B)).Contains(Axis.Z),
+        AxisDistance distance => distance.Axis == Axis.Z,
+        Centered centred => centred.Axis == Axis.Z,
+        _ => false,
+    };
 
     private static string Because(int seed, int iteration, Request request)
-        => $"seed {seed}, iteration {iteration}, request {request.GetType().Name}";
+        => $"seed {seed}, iteration {iteration}, request {request}";
 
-    private static Point2 PositionOf(Sketch sketch, EntityId id) => sketch.Find(id) switch
+    private static Point3 PositionOf(Sketch sketch, EntityId id) => sketch.Find(id) switch
     {
-        Box box => box.Anchor.XY,
-        Node node => node.Position,
-        _ => Point2.Origin,
+        Box box => box.Anchor,
+        Node node => new Point3(node.Position.X, node.Position.Y, Length.Zero),
+        _ => Point3.Origin,
     };
 
     private static RelationshipId? OwnRelationshipOf(Request request)
@@ -766,7 +824,8 @@ public class PropertyTests
     {
         SetPosition position => [position.Id],
         Drag drag => [drag.Id],
-        DragEdge dragEdge => [dragEdge.Box],
+        DragFace dragFace => [dragFace.Box],
+        SetOrientation turn => [turn.Box],
         SetParameter parameter => sketch.Find(parameter.Driving)?.References,
         _ => null,
     };

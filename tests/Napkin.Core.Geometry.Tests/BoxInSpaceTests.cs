@@ -379,18 +379,20 @@ public class BoxInSpaceTests
         Assert.Contains("deep", error.Message, StringComparison.Ordinal);
     }
 
-    // ---- Before steps 3 and 4 ---------------------------------------------------------------
+    // ---- Moving and resizing in space (§10 step 4) ---------------------------------------------
 
     [Fact]
-    public void ADragAlongZIsRefusedOutLoudUntilThePropagatorHasAZ()
+    public void ADragAlongZLiftsAFreeBoxAndAPlanDragReportsAZeroZ()
     {
         SketchBuilder builder = new();
         EntityId box = builder.AddBox(0, 0, 10, 4);
 
-        Rejected refused = Assert.IsType<Rejected>(new DirectUpdater().Apply(
+        Solved lifted = Assert.IsType<Solved>(new DirectUpdater().Apply(
             builder.Sketch,
             new Drag(box, new Vector3(Length.Zero, Length.Zero, Length.Inches(1)))));
-        Assert.Equal(RejectionReason.UnsupportedRequest, refused.Reason);
+        Assert.Equal(new Vector3(Length.Zero, Length.Zero, Length.Inches(1)), lifted.Changes.AppliedDelta);
+        Assert.Equal(Point3.Inches(0, 0, 1), lifted.Sketch.Find<Box>(box)!.Anchor);
+        Assert.Equal([box], lifted.Changes.Moved);
 
         // A plan drag reports a zero Z.
         Solved moved = Assert.IsType<Solved>(new DirectUpdater().Apply(
@@ -399,7 +401,27 @@ public class BoxInSpaceTests
     }
 
     [Fact]
-    public void APlanMoveOfABoxInSpaceKeepsItsHeightAndItsTurn()
+    public void ANodeHasNoZToMove()
+    {
+        // Nodes are plan-plane construction geometry at Z = 0 (§1.4): a drag applies none of a Z,
+        // and a position above the datum is refused rather than flattened.
+        SketchBuilder builder = new();
+        EntityId node = builder.AddNode(1, 2);
+        DirectUpdater updater = new();
+
+        Solved dragged = Assert.IsType<Solved>(updater.Apply(
+            builder.Sketch, new Drag(node, new Vector3(Length.Inches(1), Length.Zero, Length.Inches(3)))));
+        Assert.Equal(new Vector3(Length.Inches(1), Length.Zero, Length.Zero), dragged.Changes.AppliedDelta);
+        Assert.Equal(Point2.Inches(2, 2), dragged.Sketch.Find<Node>(node)!.Position);
+
+        Assert.Equal(
+            RejectionReason.UnsupportedRequest,
+            Assert.IsType<Rejected>(updater.Apply(builder.Sketch, new SetPosition(node, Point3.Inches(1, 2, 3)))).Reason);
+        Assert.IsType<Solved>(updater.Apply(builder.Sketch, SetPosition.InPlan(node, Point2.Inches(5, 5))));
+    }
+
+    [Fact]
+    public void AMoveOfABoxInSpaceKeepsItsTurnAndSetPositionPlacesItsAnchorInSpace()
     {
         Box raised = CaseBox(BoxFace.North, 1);
         Sketch sketch = Sketch.Empty.WithEntity(raised);
@@ -410,9 +432,11 @@ public class BoxInSpaceTests
         Assert.Equal(raised.Anchor + new Vector3(Length.Inches(1), Length.Zero, Length.Zero), dragged.Anchor);
         Assert.Equal(BoxFace.North, dragged.FaceUp);
 
-        Box placed = Assert.IsType<Solved>(updater.Apply(
-            sketch, new SetPosition(raised.Id, Point2.Inches(3, 4)))).Sketch.Find<Box>(raised.Id)!;
-        Assert.Equal(new Point3(Length.Inches(3), Length.Inches(4), raised.Anchor.Z), placed.Anchor);
+        Solved placed = Assert.IsType<Solved>(updater.Apply(sketch, new SetPosition(raised.Id, Point3.Inches(3, 4, 5))));
+        Box after = placed.Sketch.Find<Box>(raised.Id)!;
+        Assert.Equal(Point3.Inches(3, 4, 5), after.Anchor);
+        Assert.Equal(raised.Orientation, after.Orientation);
+        Assert.Equal([raised.Id], placed.Changes.Moved);
     }
 
     [Fact]
@@ -424,7 +448,7 @@ public class BoxInSpaceTests
         Sketch sketch = Sketch.Empty.WithEntity(over);
 
         Solved grown = Assert.IsType<Solved>(new DirectUpdater().Apply(
-            sketch, new DragEdge(over.Id, BoxEdge.South, Length.Inches(1))));
+            sketch, new DragFace(over.Id, BoxFace.South, Length.Inches(1))));
         Box after = grown.Sketch.Find<Box>(over.Id)!;
 
         Assert.Equal(new Length(H) + Length.Inches(1), after.Height);
@@ -436,24 +460,31 @@ public class BoxInSpaceTests
     }
 
     [Fact]
-    public void ResizingAnEdgeThatStandsVerticalWaitsForDragFace()
+    public void ResizingAFaceThatStandsVerticalMovesTheAnchorAlongZ()
     {
-        // North up: local Y points up, so moving the south edge would move the anchor along Z.
+        // North up: local Y points up, so the blank's south face is its underside, and dragging it
+        // outward by an inch moves the anchor down an inch while the north face — now on top —
+        // stays where it was.
         Box tipped = CaseBox(BoxFace.North, 0);
 
+        Solved grown = Assert.IsType<Solved>(new DirectUpdater().Apply(
+            Sketch.Empty.WithEntity(tipped), new DragFace(tipped.Id, BoxFace.South, Length.Inches(1))));
+        Box after = grown.Sketch.Find<Box>(tipped.Id)!;
+
+        Assert.Equal(new Length(H) + Length.Inches(1), after.Height);
+        Assert.Equal(tipped.Anchor - Vector3.Along(Axis.Z, Length.Inches(1)), after.Anchor);
+        Assert.Equal(Vector3.Along(Axis.Z, -Length.Inches(1)), grown.Changes.AppliedDelta);
         Assert.Equal(
-            RejectionReason.UnsupportedRequest,
-            Assert.IsType<Rejected>(new DirectUpdater().Apply(
-                Sketch.Empty.WithEntity(tipped), new DragEdge(tipped.Id, BoxEdge.South, Length.Inches(1)))).Reason);
+            tipped.Vertex(BoxCorner.NorthEast, BoxLevel.Top),
+            after.Vertex(BoxCorner.NorthEast, BoxLevel.Top));
     }
 
     [Fact]
-    public void APositionalRelationshipOnATippedBoxIsJudgedByItsFeaturesAndWaitsForTheZPropagator()
+    public void APositionalRelationshipOnATippedBoxIsJudgedByItsFeaturesAndHeldThroughThem()
     {
-        // Since step 3 a feature fixes world axes through the orientation, so a pairing on a tipped
-        // box is legal or not by what it fixes. A legal one still waits for step 4, whose
-        // propagator knows a tipped box's Z and the depth that stands in its plan: it is refused
-        // rather than held at the wrong place, and sizes still work.
+        // A feature fixes world axes through the orientation, so a pairing on a tipped box is legal
+        // or not by what it fixes (step 3), and since step 4 a legal one is held: the propagator
+        // knows a tipped box's Z and the depth that stands in its plan.
         SketchBuilder builder = new();
         EntityId drawn = builder.AddBox(0, 0, 10, 4);
         EntityId node = builder.AddNode(0, 0);
@@ -470,10 +501,17 @@ public class BoxInSpaceTests
         })
         {
             Assert.Null(PlaceRules.Refusal(sketch, relationship));
-            Assert.Equal(
-                RejectionReason.UnsupportedRelationship,
-                Assert.IsType<Rejected>(updater.Apply(sketch, new AddRelationship(relationship))).Reason);
+            Solved held = Assert.IsType<Solved>(updater.Apply(sketch, new AddRelationship(relationship)));
+            SketchAssert.IsConsistent(held.Sketch, relationship.GetType().Name);
+            Assert.NotEmpty(held.Changes.Moved);
         }
+
+        // East up, the blank's top faces plan west at x = -D. Held flush with the drawn box's west
+        // face at x = 0, the second place follows the first: the tipped box moves east by D, and
+        // along X only.
+        Solved flush = Assert.IsType<Solved>(updater.Apply(sketch, new AddRelationship(new Flush(
+            RelationshipId.New(), TestRefs.Edge(drawn, BoxEdge.West), new FeatureRef(tipped.Id, BoxFeature.Face(BoxFace.Top))))));
+        Assert.Equal(new Point3(new Length(D), Length.Zero, Length.Zero), flush.Sketch.Find<Box>(tipped.Id)!.Anchor);
 
         // The blank's south-west corner, standing on its east face, is an edge along plan Y at
         // ground level: it fixes Y and Z, and shares only Y with a plan upright. And the drawn
