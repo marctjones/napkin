@@ -455,12 +455,13 @@ public class PropertyTests
     /// which is the one thing §2.3 lets the cuts decide.
     /// </summary>
     /// <remarks>
-    /// <see cref="DragEdge"/> is excluded, and the exclusion is the design's own doing rather than
-    /// a weakening of the property: §2.3 makes <c>DragEdge</c> <em>clamp</em> instead of refusing,
-    /// because it is best effort, so a shaped blank legitimately ends up a different size from a
-    /// plain one and the result is <see cref="Solved"/> rather than the
-    /// <c>Rejected(CutDoesNotFit)</c> that §9.2's wording allows for. Every other request kind is
-    /// exact and takes the refusal.
+    /// <see cref="DragFace"/> on a side face is excluded, and the exclusion is the design's own
+    /// doing rather than a weakening of the property: §2.3 makes it <em>clamp</em> instead of
+    /// refusing, because it is best effort, so a shaped blank legitimately ends up a different size
+    /// from a plain one and the result is <see cref="Solved"/> rather than the
+    /// <c>Rejected(CutDoesNotFit)</c> that §9.2's wording allows for. A drag of the bottom or the
+    /// top stays in: a cut never reaches either (assembly-model §2.4, §4.2), so nothing clamps it.
+    /// Every other request kind is exact and takes the refusal.
     /// </remarks>
     [Trait("Feature", "GEO-015")]
     [Theory]
@@ -476,7 +477,7 @@ public class PropertyTests
             Request request = generator.NextRequest(plain);
             string because = Because(seed, iteration, request);
 
-            if (request is DragEdge)
+            if (request is DragFace { Face: not (BoxFace.Bottom or BoxFace.Top) })
             {
                 continue;
             }
@@ -595,13 +596,18 @@ public class PropertyTests
 
                 // The clamp's own signature: the edge ended up leaving the blank bigger than the
                 // drag asked for, which is the one thing only a clamp does.
-                if (request is DragEdge edge
+                if (request is DragFace face
                     && result is Succeeded dragged
-                    && shaped.Find<Box>(edge.Box) is { } before
-                    && dragged.Sketch.Find<Box>(edge.Box) is { } after)
+                    && shaped.Find<Box>(face.Box) is { } before
+                    && dragged.Sketch.Find<Box>(face.Box) is { } after)
                 {
-                    Axis axis = edge.Edge is BoxEdge.East or BoxEdge.West ? Axis.X : Axis.Y;
-                    clampedDrags += before.Size(axis) + edge.Delta < after.Size(axis) ? 1 : 0;
+                    Axis axis = face.Face switch
+                    {
+                        BoxFace.East or BoxFace.West => Axis.X,
+                        BoxFace.South or BoxFace.North => Axis.Y,
+                        _ => Axis.Z,
+                    };
+                    clampedDrags += before.Size(axis) + face.Delta < after.Size(axis) ? 1 : 0;
                 }
             }
         }
@@ -766,7 +772,7 @@ public class PropertyTests
     {
         SetPosition position => [position.Id],
         Drag drag => [drag.Id],
-        DragEdge dragEdge => [dragEdge.Box],
+        DragFace dragFace => [dragFace.Box],
         SetParameter parameter => sketch.Find(parameter.Driving)?.References,
         _ => null,
     };

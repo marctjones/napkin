@@ -234,10 +234,12 @@ public enum RejectionReason
     RotationNotSupported,
 
     /// <summary>
-    /// The box has relationships that rotating it would reinterpret. The canvas offers to remove
-    /// them first (design &#xA7;4.4).
+    /// The box has relationships that turning it would reinterpret, or a dimension a turn would
+    /// stand along world Z (<c>docs/design/assembly-model.md</c> &#xA7;2.4, invariant 13). The
+    /// <see cref="Rejected.Detail"/> names which; the canvas offers to remove it first. Once
+    /// <c>RotationWithRelationships</c>: the same rule, one axis up.
     /// </summary>
-    RotationWithRelationships,
+    OrientationWithRelationships,
 
     /// <summary>A <see cref="ParamValue"/> drives that size, so a drag must not override it.</summary>
     DrivenSize,

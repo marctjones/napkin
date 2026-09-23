@@ -91,17 +91,52 @@ public sealed record SetPart(EntityId Box, Part? Part) : Request;
 /// <param name="Value">The new value.</param>
 public sealed record SetParameter(RelationshipId Driving, Length Value) : Request;
 
-/// <summary>Puts an entity at typed coordinates. Exact.</summary>
+/// <summary>Puts an entity at typed coordinates in space. Exact.</summary>
+/// <remarks>
+/// A node lies at the plan datum (docs/design/assembly-model.md &#xA7;1.4), so a position for one
+/// with a Z other than zero is <see cref="RejectionReason.UnsupportedRequest"/>.
+/// </remarks>
 /// <param name="Id">The box or node to move.</param>
 /// <param name="Anchor">Where its anchor — or, for a node, the node itself — goes.</param>
-public sealed record SetPosition(EntityId Id, Point2 Anchor) : Request;
+public sealed record SetPosition(EntityId Id, Point3 Anchor) : Request
+{
+    /// <summary>A position in the plan, at Z = 0: where a node goes, or a box on the plan datum.</summary>
+    /// <param name="id">The box or node to move.</param>
+    /// <param name="anchor">Where it goes in the plan.</param>
+    public static SetPosition InPlan(EntityId id, Point2 anchor) => new(id, new Point3(anchor.X, anchor.Y, Length.Zero));
+}
 
 /// <summary>
-/// Rotates a box about its anchor. Exact, and right-angle multiples only in the direct updater.
+/// Turns a box to one of the 24 orientations: which local face points up, then a spin about world
+/// Z (docs/design/assembly-model.md &#xA7;1.3, &#xA7;2.4). Exact, about the anchor, which stays
+/// where it is — so the box is in <see cref="ChangeSet.Modified"/>, neither moved nor resized.
 /// </summary>
-/// <param name="Box">The box to rotate.</param>
-/// <param name="Rotation">The new rotation.</param>
-public sealed record SetRotation(EntityId Box, Angle Rotation) : Request;
+/// <remarks>
+/// <para>
+/// One request rather than a face-up beside a rotation, because a quarter turn about world X
+/// changes both fields at once and the canvas must never be able to land a box between two
+/// spellings.
+/// </para>
+/// <para>
+/// <see cref="RejectionReason.RotationNotSupported"/> when <paramref name="Rotation"/> is not a
+/// quarter turn. <see cref="RejectionReason.OrientationWithRelationships"/> when the box has a
+/// <see cref="Coincident"/>, <see cref="Flush"/>, <see cref="AxisDistance"/> or
+/// <see cref="Centered"/> — each names a place in the box's own frame, which the turn would move —
+/// or a <see cref="Dimension"/> whose measurand would stand along world Z after the turn (invariant
+/// 13). The <see cref="Rejected.Detail"/> names which. <see cref="Anchored"/>,
+/// <see cref="ParamValue"/> and <see cref="EqualParam"/> turn with the box and mean what they meant.
+/// </para>
+/// </remarks>
+/// <param name="Box">The box to turn.</param>
+/// <param name="FaceUp">The local face that is to point to world +Z.</param>
+/// <param name="Rotation">The spin about world Z; right-angle multiples only in the direct updater.</param>
+public sealed record SetOrientation(EntityId Box, BoxFace FaceUp, Angle Rotation) : Request
+{
+    /// <summary>The same turn, spelled as an <see cref="Geometry.Orientation"/>.</summary>
+    /// <param name="box">The box to turn.</param>
+    /// <param name="orientation">Where it is to end up.</param>
+    public static SetOrientation To(EntityId box, Orientation orientation) => new(box, orientation.FaceUp, orientation.Rotation);
+}
 
 /// <summary>
 /// Adds a cut to a blank, or replaces the cut already at the same site. Exact, and never moves
@@ -136,9 +171,9 @@ public sealed record RemoveCut(EntityId Box, CutSite Site) : Request;
 /// </summary>
 /// <remarks>
 /// The delta is in space (docs/design/assembly-model.md &#xA7;2.4); a plan-canvas drag is one with
-/// a zero Z. The direct updater moves along X and Y only until &#xA7;10 step 4 gives the
-/// propagator a Z scalar and the rigid group a Z axis, and until then refuses a non-zero Z as
-/// <see cref="RejectionReason.UnsupportedRequest"/> rather than dropping it.
+/// a zero Z. Each axis is applied in full or not at all: the rigid group is worked out per axis,
+/// and an axis along which the group reaches an anchored entity goes nowhere. A node has no Z, so
+/// a drag of a node or a segment applies none.
 /// </remarks>
 /// <param name="Id">The entity being dragged.</param>
 /// <param name="Delta">Where the user wants it to go, relative to where it is.</param>
@@ -151,20 +186,32 @@ public sealed record Drag(EntityId Id, Vector3 Delta) : Request
 }
 
 /// <summary>
-/// Drags one edge of a box — a resize handle. Best effort.
+/// Drags one face of a box — a resize handle. Best effort.
 /// </summary>
 /// <remarks>
-/// If a <see cref="ParamValue"/> drives the size that edge controls the request is
+/// <para>
+/// The size along the local axis normal to the face changes; the opposite face stays where it
+/// is, so grabbing a face at the local origin — <see cref="BoxFace.West"/>,
+/// <see cref="BoxFace.South"/>, <see cref="BoxFace.Bottom"/> — moves the anchor, the way the
+/// orientation turns that local axis (docs/design/assembly-model.md &#xA7;2.4).
+/// </para>
+/// <para>
+/// If a <see cref="ParamValue"/> drives the size that face controls the request is
 /// <see cref="RejectionReason.DrivenSize"/> and the canvas points at the dimension to edit
-/// instead: a drag never silently overrides a number the user typed (design &#xA7;4.1).
+/// instead: a drag never silently overrides a number the user typed (design &#xA7;4.1). A side
+/// face is clamped so the blank is never dragged shorter than its cuts claim
+/// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.3); the bottom and top are clamped by nothing,
+/// because a cut never reaches them, and a drag through the opposite face is
+/// <see cref="RejectionReason.NonPositiveSize"/>.
+/// </para>
 /// </remarks>
 /// <param name="Box">The box being resized.</param>
-/// <param name="Edge">Which edge the user grabbed, in the box's local frame.</param>
+/// <param name="Face">Which face the user grabbed, in the box's local frame.</param>
 /// <param name="Delta">
-/// How far to move the edge along its outward normal. Positive grows the box; the opposite edge
+/// How far to move the face along its outward normal. Positive grows the box; the opposite face
 /// stays where it is.
 /// </param>
-public sealed record DragEdge(EntityId Box, BoxEdge Edge, Length Delta) : Request;
+public sealed record DragFace(EntityId Box, BoxFace Face, Length Delta) : Request;
 
 /// <summary>
 /// Several requests as one. Atomic: either all of them apply or none does. This is how the canvas

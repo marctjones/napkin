@@ -183,7 +183,7 @@ public static class EditMessages
         RejectionReason.DuplicateEntity => "there is already a part with that id.",
         RejectionReason.DanglingReference => "it referred to something that is not there.",
         RejectionReason.RotationNotSupported => "this build turns parts by quarter turns only.",
-        RejectionReason.RotationWithRelationships =>
+        RejectionReason.OrientationWithRelationships =>
             "turning this part would change what its relationships mean. Remove them first.",
         RejectionReason.DrivenSize =>
             "a typed dimension owns that size, so dragging must not quietly override it. Edit the "

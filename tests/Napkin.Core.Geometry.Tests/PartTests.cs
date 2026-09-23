@@ -153,9 +153,9 @@ public class PartTests
         foreach (Request request in new Request[]
         {
             Drag.InPlan(id, new Vector2(Length.Inches(3), Length.Inches(2))),
-            new DragEdge(id, BoxEdge.East, Length.Inches(2)),
-            new SetRotation(id, Angle.Zero.Rotate90(1)),
-            new SetPosition(id, Point2.Inches(20, 30)),
+            new DragFace(id, BoxFace.East, Length.Inches(2)),
+            new SetOrientation(id, BoxFace.Top, Angle.Zero.Rotate90(1)),
+            SetPosition.InPlan(id, Point2.Inches(20, 30)),
             new SetLayer(id, LayerId.Default),
         })
         {

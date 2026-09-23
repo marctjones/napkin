@@ -4,7 +4,7 @@ namespace Napkin.Core.Geometry.Tests;
 
 /// <summary>
 /// The updater golden cases 7 to 11d of docs/design/shaped-parts-model.md &#xA7;9.1: the two cut
-/// requests of &#xA7;2.2, the post-write fit check and the <see cref="DragEdge"/> clamp of
+/// requests of &#xA7;2.2, the post-write fit check and the <see cref="DragFace"/> clamp of
 /// &#xA7;2.3, and the relationship readings of &#xA7;2.1 and &#xA7;2.5.
 /// </summary>
 public class DirectUpdaterCutTests
@@ -218,7 +218,7 @@ public class DirectUpdaterCutTests
     }
 
     // ---------------------------------------------------------------------------------------
-    // Test 9: the DragEdge clamp
+    // Test 9: the DragFace clamp
     // ---------------------------------------------------------------------------------------
 
     [Trait("Feature", "GEO-012")]
@@ -232,7 +232,7 @@ public class DirectUpdaterCutTests
             0, 0, 48, 24, new CornerCut(BoxCorner.SouthEast, Length.Inches(12), Length.Inches(6)));
 
         Solved clamped = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(blank, BoxEdge.East, Length.Inches(-40))));
+            Updater.Apply(builder.Sketch, new DragFace(blank, BoxFace.East, Length.Inches(-40))));
 
         // Best effort, and the applied delta is what actually happened: 36" of the 40" asked for.
         Assert.Equal(new Vector3(Length.Inches(-36), Length.Zero, Length.Zero), clamped.Changes.AppliedDelta);
@@ -242,7 +242,7 @@ public class DirectUpdaterCutTests
 
         // Dragging the west edge east is the same clamp with the anchor moving instead.
         Solved fromTheWest = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(blank, BoxEdge.West, Length.Inches(-40))));
+            Updater.Apply(builder.Sketch, new DragFace(blank, BoxFace.West, Length.Inches(-40))));
 
         Assert.Equal(new Vector3(Length.Inches(36), Length.Zero, Length.Zero), fromTheWest.Changes.AppliedDelta);
         SketchAssert.BoxIs(fromTheWest.Sketch, blank, 36, 0, 12, 24);
@@ -257,7 +257,7 @@ public class DirectUpdaterCutTests
             0, 0, 48, 24, new CornerCut(BoxCorner.SouthEast, Length.Inches(12), Length.Inches(6)));
 
         Solved grown = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(blank, BoxEdge.East, Length.Inches(10))));
+            Updater.Apply(builder.Sketch, new DragFace(blank, BoxFace.East, Length.Inches(10))));
 
         Assert.Equal(new Vector3(Length.Inches(10), Length.Zero, Length.Zero), grown.Changes.AppliedDelta);
         SketchAssert.BoxIs(grown.Sketch, blank, 0, 0, 58, 24);
@@ -268,7 +268,7 @@ public class DirectUpdaterCutTests
         Assert.Equal(
             RejectionReason.NonPositiveSize,
             Assert.IsType<Rejected>(Updater.Apply(
-                builder.Sketch, new DragEdge(plain, BoxEdge.East, Length.Inches(-20)))).Reason);
+                builder.Sketch, new DragFace(plain, BoxFace.East, Length.Inches(-20)))).Reason);
     }
 
     [Trait("Feature", "GEO-012")]
@@ -286,7 +286,7 @@ public class DirectUpdaterCutTests
         builder.EqualWidths(plain, shaped);
 
         Solved blocked = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(plain, BoxEdge.East, Length.Inches(-16))));
+            Updater.Apply(builder.Sketch, new DragFace(plain, BoxFace.East, Length.Inches(-16))));
 
         Assert.Equal(Vector3.Zero, blocked.Changes.AppliedDelta);
         Assert.True(blocked.Changes.IsEmpty);
@@ -295,7 +295,7 @@ public class DirectUpdaterCutTests
 
         // Growing through the same EqualParam is fine, and both boxes follow.
         Solved grown = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(plain, BoxEdge.East, Length.Inches(10))));
+            Updater.Apply(builder.Sketch, new DragFace(plain, BoxFace.East, Length.Inches(10))));
 
         SketchAssert.BoxIs(grown.Sketch, plain, 0, 40, 30, 20);
         SketchAssert.BoxIs(grown.Sketch, shaped, 0, 0, 30, 20);
@@ -307,7 +307,7 @@ public class DirectUpdaterCutTests
     public void Case9_ABlankThatAlreadyDoesNotFitItsCutsCannotBeDraggedSmaller()
     {
         // Such a blank cannot be reached through the updater — Validate and AddEntity both refuse
-        // it — but DragEdge does not re-validate what it was handed, and clamping to a floor that
+        // it — but DragFace does not re-validate what it was handed, and clamping to a floor that
         // does not exist would be worse than clamping to where it already is.
         Box broken = Box.AsDrawn(
             SketchBuilder.EntityIdAt(1),
@@ -325,7 +325,7 @@ public class DirectUpdaterCutTests
         Assert.False(sketch.Validate().IsValid);
 
         Solved held = Assert.IsType<Solved>(
-            Updater.Apply(sketch, new DragEdge(broken.Id, BoxEdge.East, Length.Inches(-4))));
+            Updater.Apply(sketch, new DragFace(broken.Id, BoxFace.East, Length.Inches(-4))));
 
         Assert.Equal(Vector3.Zero, held.Changes.AppliedDelta);
         Assert.Equal(Length.Inches(10), held.Sketch.Find<Box>(broken.Id)!.Width);
@@ -352,7 +352,7 @@ public class DirectUpdaterCutTests
         Box before = builder.BoxOf(blank);
         Angle quarterTurn = Angle.Zero.Rotate90(1);
 
-        Solved result = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new SetRotation(blank, quarterTurn)));
+        Solved result = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new SetOrientation(blank, BoxFace.Top, quarterTurn)));
 
         Assert.Equal(blank, Assert.Single(result.Changes.Modified));
         Assert.Empty(result.Changes.Moved);

@@ -391,7 +391,7 @@ internal sealed class SketchGenerator
         List<Request> choices = [];
 
         EntityId entity = PickEntity(sketch, anything: true);
-        choices.Add(new SetPosition(entity, new Point2(NextCoordinate(), NextCoordinate())));
+        choices.Add(SetPosition.InPlan(entity, new Point2(NextCoordinate(), NextCoordinate())));
         choices.Add(Drag.InPlan(entity, new Vector2(NextDelta(), NextDelta())));
         choices.Add(new SetLayer(entity, LayerId.Default));
         choices.Add(new RemoveEntity(entity));
@@ -400,8 +400,8 @@ internal sealed class SketchGenerator
         if (allBoxes.Count > 0)
         {
             Box box = allBoxes[_random.Next(allBoxes.Count)];
-            choices.Add(new SetRotation(box.Id, Angle.Zero.Rotate90(_random.Next(0, 4))));
-            choices.Add(new DragEdge(box.Id, RandomEdge(), NextDelta()));
+            choices.Add(new SetOrientation(box.Id, BoxFace.Top, Angle.Zero.Rotate90(_random.Next(0, 4))));
+            choices.Add(new DragFace(box.Id, RandomFace(), NextDelta()));
             choices.Add(new AddRelationship(new ParamValue(NextRelationshipId(), new BoxWidthRef(box.Id), NextSize())));
             choices.Add(new AddEntity(Box.AsDrawn(
                 NextEntityId(), LayerId.Default, new Point2(NextCoordinate(), NextCoordinate()),
@@ -450,7 +450,7 @@ internal sealed class SketchGenerator
         }
 
         Box box = boxes[_random.Next(boxes.Count)];
-        List<Request> choices = [new DragEdge(box.Id, RandomEdge(), NextDelta())];
+        List<Request> choices = [new DragFace(box.Id, RandomFace(), NextDelta())];
 
         ParamRef size = _random.Next(2) == 0 ? new BoxWidthRef(box.Id) : new BoxHeightRef(box.Id);
         choices.Add(new AddRelationship(new ParamValue(NextRelationshipId(), size, NextSize())));
@@ -662,6 +662,8 @@ internal sealed class SketchGenerator
     }
 
     private BoxEdge RandomEdge() => (BoxEdge)_random.Next(0, 4);
+
+    private BoxFace RandomFace() => (BoxFace)_random.Next(0, 6);
 
     private BoxCorner RandomCorner() => (BoxCorner)_random.Next(0, 4);
 

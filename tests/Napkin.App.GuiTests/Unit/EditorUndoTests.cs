@@ -71,7 +71,7 @@ public class EditorUndoTests
         editor.Select(EditingBuilder.Id(0));
 
         editor.Apply(Drag.InPlan(EditingBuilder.Id(0), FiveInchesEast), "Moved Part 1");
-        editor.Apply(new DragEdge(EditingBuilder.Id(0), BoxEdge.East, Length.Inches(3)), "Resized Part 1");
+        editor.Apply(new DragFace(EditingBuilder.Id(0), BoxFace.East, Length.Inches(3)), "Resized Part 1");
 
         editor.Undo();
         Assert.Equal(EditingBuilder.Id(0), editor.OnlySelected);

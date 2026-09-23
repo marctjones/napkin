@@ -24,7 +24,7 @@ public sealed record DimensionEditRequested(EntityId Box, SizeAxis Axis);
 /// <para>
 /// <strong>Every change goes through the updater.</strong> The canvas holds a
 /// <see cref="DesignEditor"/> and issues <see cref="Request"/>s to it: a move is
-/// <see cref="Drag"/>, a handle is <see cref="DragEdge"/> (a corner handle is one
+/// <see cref="Drag"/>, a handle is <see cref="DragFace"/> (a corner handle is one
 /// <see cref="Batch"/> of two), drawing a part is <see cref="AddEntity"/>, a snap adds a
 /// <see cref="Flush"/> or a <see cref="Coincident"/>, and Delete is
 /// <see cref="RemoveEntity"/>. There is no code path in this control that builds a
@@ -1047,19 +1047,15 @@ public sealed class CanvasView : Control
         List<Request> requests = [];
         foreach (BoxEdge side in BoxGeometry.EdgesOf(_gestureGrip))
         {
-            // The handle is on a side of the footprint; what moves is the edge of the blank the
-            // plan sees there. None, for a side the plan sees as the blank's top or bottom — the
-            // resize along a depth is §10 step 4's DragFace.
-            if (BoxGeometry.LocalEdge(atPress, side) is not { } edge)
-            {
-                continue;
-            }
-
+            // The handle is on a side of the footprint; what moves is the face of the blank the
+            // plan sees there — for a box standing on a side, possibly its top or bottom, which
+            // resizes its depth (docs/design/assembly-model.md §7.2).
+            BoxFace face = atPress.Footprint().FaceAt(side);
             Length wantedSize = OutwardSize(atPress, side) + SnappedOutward(atPress, side, sincePress);
             Length delta = wantedSize - OutwardSize(box, side);
             if (delta != Length.Zero)
             {
-                requests.Add(new DragEdge(_gestureEntity, edge, delta));
+                requests.Add(new DragFace(_gestureEntity, face, delta));
             }
         }
 

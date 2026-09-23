@@ -109,7 +109,7 @@ public class ReviewRegressionTests
 
         Solved result = Assert.IsType<Solved>(Updater.Apply(
             builder.Sketch,
-            new SetPosition(centre, Point2.Origin with { X = new Length(3) })));
+            SetPosition.InPlan(centre, Point2.Origin with { X = new Length(3) })));
 
         Assert.Equal(3, result.Sketch.Find<Node>(centre)!.Position.X.Units);
         Assert.Equal(1, result.Sketch.Find<Node>(left)!.Position.X.Units);
@@ -219,7 +219,7 @@ public class ReviewRegressionTests
         RelationshipId anchorOnTheRight = builder.Anchor(right);
 
         OverConstrained result = Assert.IsType<OverConstrained>(
-            Updater.Apply(builder.Sketch, new SetPosition(centre, Point2.Inches(9, 0))));
+            Updater.Apply(builder.Sketch, SetPosition.InPlan(centre, Point2.Inches(9, 0))));
 
         // The left end is free; the right one is what stops this, so it is what the report names.
         Assert.Contains(anchorOnTheRight, result.Conflict.Relationships);
@@ -236,13 +236,13 @@ public class ReviewRegressionTests
         // Anchored holds an entity still; it does not stop the user resizing it with a handle.
         // Before the revert the east handle worked and the west one silently refused.
         Solved east = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.East, Length.Inches(5))));
+            Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.East, Length.Inches(5))));
         Solved west = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.West, Length.Inches(5))));
+            Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.West, Length.Inches(5))));
         Solved north = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.North, Length.Inches(2))));
+            Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.North, Length.Inches(2))));
         Solved south = Assert.IsType<Solved>(
-            Updater.Apply(builder.Sketch, new DragEdge(box, BoxEdge.South, Length.Inches(2))));
+            Updater.Apply(builder.Sketch, new DragFace(box, BoxFace.South, Length.Inches(2))));
 
         SketchAssert.BoxIs(east.Sketch, box, 10, 10, 35, 4);
         SketchAssert.BoxIs(west.Sketch, box, 5, 10, 35, 4);
@@ -260,7 +260,7 @@ public class ReviewRegressionTests
         // A dimension's placement is canvas data; it has no anchor to set and nothing to drag.
         Assert.Equal(
             new Rejected(RejectionReason.DanglingReference),
-            Updater.Apply(builder.Sketch, new SetPosition(dimension, Point2.Inches(1, 1))));
+            Updater.Apply(builder.Sketch, SetPosition.InPlan(dimension, Point2.Inches(1, 1))));
         Assert.Equal(
             new Rejected(RejectionReason.DanglingReference),
             Updater.Apply(builder.Sketch, Drag.InPlan(dimension, new Vector2(Length.Inches(1), Length.Zero))));
@@ -334,7 +334,7 @@ public class ReviewRegressionTests
         SketchAssert.IsConsistent(result.Sketch);
 
         // Its position is still held.
-        Assert.IsType<OverConstrained>(Updater.Apply(builder.Sketch, new SetPosition(box, Point2.Inches(0, 0))));
+        Assert.IsType<OverConstrained>(Updater.Apply(builder.Sketch, SetPosition.InPlan(box, Point2.Inches(0, 0))));
     }
 
     [Fact]
