@@ -10,7 +10,8 @@ Three hand-crafted designs, in the scene format documented in
 | A table with rounded corners | `rounded-corner-table.design.md`, `rounded-corner-table.scene.json`, `rounded-corner-table.expected.json` |
 
 `tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts
-it matches its `*.expected.json` exactly, in integer units;
+it matches its `*.expected.json` exactly, in integer units, and checks every box of all three —
+its plan position and size and, since format version 4, its height, depth and face-up;
 `tests/Napkin.Modules.Furniture.Tests` does the same for all three fixtures' cut lists, and for the
 rounded-corner table's outline.
 

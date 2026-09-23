@@ -51,8 +51,8 @@ internal sealed class SceneBinder
         }
 
         // Every id a reference names exists and names the right kind of entity. This runs before
-        // anything evaluates geometry, because the checker reads a corner off whatever entity an
-        // id names and cannot be asked about a corner of a node.
+        // anything evaluates geometry, because the checker reads a feature off whatever entity an
+        // id names and cannot be asked about a feature of a node.
         ResolveReferences();
         if (problems.Count > 0)
         {
