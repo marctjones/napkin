@@ -158,6 +158,12 @@ public sealed class CanvasView : Control
     public event EventHandler<EntityId>? ShapeRequested;
 
     /// <summary>
+    /// Raised when a person asks for the 3D view — <c>V</c>, the key the 3D view answers with to go
+    /// back. The window owns both views and decides which one is showing (assembly-model &#xA7;8.1).
+    /// </summary>
+    public event EventHandler? ModelViewRequested;
+
+    /// <summary>
     /// Raised when the set of parts on the canvas changes — one drawn, one deleted, a different
     /// design opened — so the automation peer can rebuild its children.
     /// </summary>
@@ -938,6 +944,20 @@ public sealed class CanvasView : Control
 
             case Key.C:
                 ShapeSelection();
+                return true;
+
+            // A quarter turn of the selected part about a world axis, Shift the other way: the same
+            // command the 3D view has (docs/design/assembly-model.md §8.3). About Z it is the plan's
+            // own turn in place; about X or Y it stands the part on a side, and the footprint shows it.
+            case Key.X or Key.Y or Key.Z:
+                SelectionTurn.Turn(
+                    editor,
+                    key switch { Key.X => Axis.X, Key.Y => Axis.Y, _ => Axis.Z },
+                    modifiers.HasFlag(KeyModifiers.Shift) ? -1 : 1);
+                return true;
+
+            case Key.V:
+                ModelViewRequested?.Invoke(this, EventArgs.Empty);
                 return true;
 
             case Key.Tab when editor.OnlySelectedBox is { } forWidth:

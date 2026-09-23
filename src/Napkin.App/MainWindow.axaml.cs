@@ -83,6 +83,9 @@ public partial class MainWindow : Window
         BuildSamplesMenu();
         BuildKeyBindings();
 
+        // The window opens on the plan; View says so the way Samples marks the open sample.
+        PlanViewMenuItem.Icon = new TextBlock { Text = "✓" };
+
         DrawingCanvas.ViewChanged += (_, _) =>
         {
             UpdateZoomReadout();
@@ -94,6 +97,17 @@ public partial class MainWindow : Window
         DrawingCanvas.DimensionEditRequested += (_, request) =>
             OpenDimensionEditor(request.Box, request.Axis);
         DrawingCanvas.ShapeRequested += (_, box) => OpenWorkshop(box);
+        DrawingCanvas.ModelViewRequested += (_, _) => ShowModelView();
+
+        // The 3D view: the same editor, so the same drawing, selection and undo (assembly-model
+        // §8.1). What it asks of the selection is done by the plan canvas's own commands, so there
+        // is one Delete, one Pin, one Duplicate.
+        ModelDrawing.Editor = Editor;
+        ModelDrawing.ViewChanged += (_, _) => UpdateZoomReadout();
+        ModelDrawing.HoveredPartChanged += (_, _) => UpdateRelationships();
+        ModelDrawing.PointerModelPositionChanged += (_, point) => UpdateCursorReadout(point);
+        ModelDrawing.PlanRequested += (_, _) => ShowPlanView();
+        ModelDrawing.SelectionCommandRequested += (_, command) => RunSelectionCommand(command);
         StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
         StockToolboxPanel.CategoryChanged += (_, _) => OnStockCategoryChanged();
 
@@ -104,8 +118,8 @@ public partial class MainWindow : Window
 
         // A click on a category icon or an item gives the keyboard back to the drawing, so Escape
         // still reaches it; the toolbox has nothing to type into.
-        ToolBar.AddHandler(Button.ClickEvent, (_, _) => DrawingCanvas.Focus());
-        StockToolboxPanel.AddHandler(Button.ClickEvent, (_, _) => DrawingCanvas.Focus());
+        ToolBar.AddHandler(Button.ClickEvent, (_, _) => FocusDrawing());
+        StockToolboxPanel.AddHandler(Button.ClickEvent, (_, _) => FocusDrawing());
 
         WorkshopDrawing.Editor = Editor;
         WorkshopDrawing.SelectedCutChanged += (_, _) => ShowCut();
@@ -127,7 +141,7 @@ public partial class MainWindow : Window
 
         // The canvas takes focus when the window opens so the keys steer the drawing, not the
         // menu bar. Anything a person clicks afterwards is welcome to take it.
-        Opened += (_, _) => DrawingCanvas.Focus();
+        Opened += (_, _) => FocusDrawing();
 
         // The cut list is a reading of this drawing, so it goes when the drawing does rather than
         // being left behind as a window with no design under it.
@@ -157,7 +171,7 @@ public partial class MainWindow : Window
 
         UpdateToolButtons();
         UpdateZoomReadout();
-        UpdateCursorReadout(null);
+        UpdateCursorReadout((Point2?)null);
     }
 
     /// <summary>The drawing being edited, and the one place a sketch is ever replaced.</summary>
@@ -652,7 +666,7 @@ public partial class MainWindow : Window
         Func<Task>? then = _afterAnswer;
         _afterAnswer = null;
         UnsavedBackdrop.IsVisible = false;
-        DrawingCanvas.Focus();
+        FocusDrawing();
         return then;
     }
 
@@ -698,6 +712,132 @@ public partial class MainWindow : Window
     /// <summary>The title: the file's name, marked with an asterisk while there are unsaved changes.</summary>
     void UpdateTitle() =>
         Title = Editor.HasUnsavedChanges ? $"napkin — {DocumentName}*" : $"napkin — {DocumentName}";
+
+    // ---------------------------------------------------------------------------------------
+    // The 3D view (docs/design/assembly-model.md §8)
+    // ---------------------------------------------------------------------------------------
+
+    /// <summary>The 3D view.</summary>
+    public ModelView Model => ModelDrawing;
+
+    /// <summary>Whether the window is showing the 3D view rather than the plan.</summary>
+    public bool IsShowingModel => ModelDrawing.IsVisible;
+
+    /// <summary>The <em>View &#x2192; Plan</em> item.</summary>
+    public MenuItem PlanViewMenuEntry => PlanViewMenuItem;
+
+    /// <summary>The <em>View &#x2192; 3D</em> item.</summary>
+    public MenuItem ModelViewMenuEntry => ModelViewMenuItem;
+
+    /// <summary>The three turn buttons, about X, Y and Z, shown on the toolbar in the 3D view.</summary>
+    public IReadOnlyList<Button> TurnButtons => [TurnXToolButton, TurnYToolButton, TurnZToolButton];
+
+    /// <summary>
+    /// Shows the 3D view in the plan canvas's place: a mode the window is in, over the same
+    /// document, selection, editor and undo stack (&#xA7;8.1, &#xA7;11 decision 13).
+    /// </summary>
+    /// <remarks>
+    /// Nothing about the drawing changes, and nothing about the plan does either — its view, its
+    /// tool and its snap settings are all where they were when it comes back. What the plan's tools
+    /// hold is put down: drawing a rectangle or placing stock is the plan's (&#xA7;6), and asking for
+    /// either from the 3D view brings the plan back.
+    /// </remarks>
+    public void ShowModelView()
+    {
+        if (IsShowingModel)
+        {
+            return;
+        }
+
+        CloseWorkshop();
+        CloseDimensionEditor(focusCanvas: false);
+        DrawingCanvas.ArmStock(null);
+        DrawingCanvas.Tool = EditTool.Select;
+
+        DrawingCanvas.IsVisible = false;
+        ModelDrawing.IsVisible = true;
+        ShowViewChrome();
+        Editor.Say(
+            EditSeverity.Hint,
+            "3D view: drag to orbit; select a part, then drag an arrow to move it along that axis or "
+            + "a square to resize it; X, Y and Z turn it. V goes back to the plan.");
+    }
+
+    /// <summary>Shows the plan canvas again, as it was left.</summary>
+    public void ShowPlanView()
+    {
+        if (!IsShowingModel)
+        {
+            return;
+        }
+
+        ModelDrawing.IsVisible = false;
+        DrawingCanvas.IsVisible = true;
+        ShowViewChrome();
+    }
+
+    /// <summary>The chrome that differs between the two views: the turn buttons, the menu's tick, the readouts.</summary>
+    void ShowViewChrome()
+    {
+        bool model = IsShowingModel;
+        foreach (Button button in TurnButtons)
+        {
+            button.IsVisible = model;
+        }
+
+        PlanViewMenuItem.Icon = model ? null : new TextBlock { Text = "✓" };
+        ModelViewMenuItem.Icon = model ? new TextBlock { Text = "✓" } : null;
+
+        UpdateZoomReadout();
+        if (model)
+        {
+            UpdateCursorReadout((Vector3d?)null);
+        }
+        else
+        {
+            UpdateCursorReadout((Point2?)null);
+        }
+
+        UpdateRelationships();
+        UpdateMenuEnablement();
+        FocusDrawing();
+    }
+
+    /// <summary>Gives the keyboard to whichever view of the drawing is showing.</summary>
+    void FocusDrawing()
+    {
+        if (IsShowingModel)
+        {
+            ModelDrawing.Focus();
+        }
+        else
+        {
+            DrawingCanvas.Focus();
+        }
+    }
+
+    /// <summary>What the 3D view asks of the selection, done by the plan canvas's own commands.</summary>
+    void RunSelectionCommand(SelectionCommand command)
+    {
+        switch (command)
+        {
+            case SelectionCommand.Delete:
+                DrawingCanvas.DeleteSelection();
+                break;
+
+            case SelectionCommand.Pin:
+                DrawingCanvas.PinSelection();
+                break;
+
+            case SelectionCommand.Duplicate:
+                DrawingCanvas.DuplicateSelection();
+                break;
+
+            case SelectionCommand.Shape:
+                DrawingCanvas.ShapeSelection();
+                break;
+        }
+    }
 
     // ---------------------------------------------------------------------------------------
     // Undo and redo (#11)
@@ -846,7 +986,7 @@ public partial class MainWindow : Window
 
         if (focusCanvas)
         {
-            DrawingCanvas.Focus();
+            FocusDrawing();
         }
     }
 
@@ -1361,7 +1501,7 @@ public partial class MainWindow : Window
         UpdateRelationships();
         UpdateMenuEnablement();
         ShowProperties();
-        DrawingCanvas.Focus();
+        FocusDrawing();
     }
 
     /// <summary>
@@ -1751,6 +1891,11 @@ public partial class MainWindow : Window
         PinMenuItem.IsEnabled = PinToolButton.IsEnabled = anything;
         ShapeMenuItem.IsEnabled = ShapeToolButton.IsEnabled = shapeable;
 
+        bool turnable = Editor.OnlySelectedBox is not null && !IsShapingPart;
+        TurnXMenuItem.IsEnabled = TurnXToolButton.IsEnabled = turnable;
+        TurnYMenuItem.IsEnabled = TurnYToolButton.IsEnabled = turnable;
+        TurnZMenuItem.IsEnabled = TurnZToolButton.IsEnabled = turnable;
+
         // The shape workshop covers the paper and takes the toolbar's stock icons with it, so the
         // menu's way in to the same stock goes too: there is no paper to drag it onto.
         StockMenu.IsEnabled = !IsShapingPart;
@@ -1836,7 +1981,9 @@ public partial class MainWindow : Window
     /// Whether a part is one the relationship list should open for: selected, or resting under the
     /// pointer. Hovering is the quick look; selecting keeps it open while the pointer goes elsewhere.
     /// </summary>
-    bool IsInPlay(EntityId id) => Editor.Selection.Contains(id) || DrawingCanvas.HoveredPart == id;
+    bool IsInPlay(EntityId id) =>
+        Editor.Selection.Contains(id)
+        || (IsShowingModel ? ModelDrawing.HoveredPart == id : DrawingCanvas.HoveredPart == id);
 
     void UpdateToolButtons()
     {
@@ -1892,6 +2039,12 @@ public partial class MainWindow : Window
     /// </summary>
     void PickStock(StockItem item)
     {
+        // Stock is placed on the plan (assembly-model §6), so picking some brings the plan back.
+        if (StockTool.CanPlace(item))
+        {
+            ShowPlanView();
+        }
+
         if (DrawingCanvas.ArmStock(item))
         {
             Editor.Say(
@@ -1905,7 +2058,7 @@ public partial class MainWindow : Window
                 $"{item.HoverText}. napkin does not place fasteners on the drawing yet, so there is nothing to drag.");
         }
 
-        DrawingCanvas.Focus();
+        FocusDrawing();
     }
 
     /// <summary>
@@ -2002,7 +2155,7 @@ public partial class MainWindow : Window
         StockToolboxPanel.ApplyPalette(palette);
 
         // The tool icons are drawn the way the stock category icons are, so the row reads as one.
-        foreach (Button button in ToolButtons)
+        foreach (Button button in ToolButtons.Concat(TurnButtons))
         {
             if (button.Content is Avalonia.Controls.Shapes.Path glyph)
             {
@@ -2091,6 +2244,11 @@ public partial class MainWindow : Window
         DuplicateMenuItem.InputGesture = new KeyGesture(Key.D);
         PinMenuItem.InputGesture = new KeyGesture(Key.P);
         DeleteMenuItem.InputGesture = new KeyGesture(Key.Delete);
+        TurnXMenuItem.InputGesture = new KeyGesture(Key.X);
+        TurnYMenuItem.InputGesture = new KeyGesture(Key.Y);
+        TurnZMenuItem.InputGesture = new KeyGesture(Key.Z);
+        PlanViewMenuItem.InputGesture = new KeyGesture(Key.V);
+        ModelViewMenuItem.InputGesture = new KeyGesture(Key.V);
         UpdateMenuEnablement();
     }
 
@@ -2222,6 +2380,17 @@ public partial class MainWindow : Window
         // cannot reach HandleViewKey and zoom the drawing. Whether Avalonia's own TextBox already
         // stops every one of those keys is not something to rely on, and the headless platform
         // cannot be used to find out — it routes them differently from a real backend.
+        if (IsShowingModel)
+        {
+            if (!ModelDrawing.IsFocused && !IsShapingPart && !PropertiesPanel.IsKeyboardFocusWithin
+                && ModelDrawing.HandleViewKey(e.Key, e.KeyModifiers))
+            {
+                e.Handled = true;
+            }
+
+            return;
+        }
+
         if (!DrawingCanvas.IsFocused && !IsEditingDimension && !IsShapingPart
             && !PropertiesPanel.IsKeyboardFocusWithin
             && DrawingCanvas.HandleViewKey(e.Key, e.KeyModifiers))
@@ -2238,14 +2407,16 @@ public partial class MainWindow : Window
     {
         DrawingCanvas.Tool = EditTool.Select;
         UpdateToolButtons();
-        DrawingCanvas.Focus();
+        FocusDrawing();
     }
 
     void OnRectangleToolClicked(object? sender, RoutedEventArgs e)
     {
+        // Drawing is the plan's (assembly-model §6): asking for the rectangle brings the plan back.
+        ShowPlanView();
         DrawingCanvas.Tool = EditTool.Rectangle;
         UpdateToolButtons();
-        DrawingCanvas.Focus();
+        FocusDrawing();
     }
 
     void OnDuplicateClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.DuplicateSelection();
@@ -2258,11 +2429,51 @@ public partial class MainWindow : Window
 
     void OnCutListClicked(object? sender, RoutedEventArgs e) => OpenCutList();
 
-    void OnZoomToFitClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.ZoomToFit();
+    void OnZoomToFitClicked(object? sender, RoutedEventArgs e)
+    {
+        if (IsShowingModel)
+        {
+            ModelDrawing.ZoomToFit();
+        }
+        else
+        {
+            DrawingCanvas.ZoomToFit();
+        }
+    }
 
-    void OnZoomInClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.ZoomIn();
+    void OnZoomInClicked(object? sender, RoutedEventArgs e)
+    {
+        if (IsShowingModel)
+        {
+            ModelDrawing.ZoomIn();
+        }
+        else
+        {
+            DrawingCanvas.ZoomIn();
+        }
+    }
 
-    void OnZoomOutClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.ZoomOut();
+    void OnZoomOutClicked(object? sender, RoutedEventArgs e)
+    {
+        if (IsShowingModel)
+        {
+            ModelDrawing.ZoomOut();
+        }
+        else
+        {
+            DrawingCanvas.ZoomOut();
+        }
+    }
+
+    void OnPlanViewClicked(object? sender, RoutedEventArgs e) => ShowPlanView();
+
+    void OnModelViewClicked(object? sender, RoutedEventArgs e) => ShowModelView();
+
+    void OnTurnXClicked(object? sender, RoutedEventArgs e) => SelectionTurn.Turn(Editor, Axis.X, 1);
+
+    void OnTurnYClicked(object? sender, RoutedEventArgs e) => SelectionTurn.Turn(Editor, Axis.Y, 1);
+
+    void OnTurnZClicked(object? sender, RoutedEventArgs e) => SelectionTurn.Turn(Editor, Axis.Z, 1);
 
     void OnExitClicked(object? sender, RoutedEventArgs e) => _ = WhenChangesAreSafe("quitting", CloseNow);
 
@@ -2282,7 +2493,15 @@ public partial class MainWindow : Window
 
     void UpdateZoomReadout() => ZoomText.Text = string.Create(
         CultureInfo.InvariantCulture,
-        $"Zoom {DrawingCanvas.View.ZoomPercent:0.#}%");
+        $"Zoom {(IsShowingModel ? ModelDrawing.Camera.ZoomPercent : DrawingCanvas.View.ZoomPercent):0.#}%");
+
+    /// <summary>Where on a part the pointer is in the 3D view, in feet, inches and fractions.</summary>
+    void UpdateCursorReadout(Vector3d? point) => CursorText.Text = point is { } at
+        ? $"x {Show(Near(at.X))}   y {Show(Near(at.Y))}   z {Show(Near(at.Z))}"
+        : "x —   y —   z —";
+
+    /// <summary>A display value: the pointer's position rounded onto the grid, as the plan's readout is.</summary>
+    static Length Near(double inches) => Length.FromInches(inches, Rounding.HalfAwayFromZero);
 
     void UpdateCursorReadout(Point2? point) => CursorText.Text = point is { } position
         ? $"x {Show(position.X)}   y {Show(position.Y)}"

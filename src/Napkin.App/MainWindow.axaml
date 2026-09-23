@@ -77,6 +77,21 @@
                           Click="OnDeleteClicked"
                           ToolTip.Tip="Remove the selection, with its relationships." />
                 <Separator />
+                <!-- A quarter turn about a world axis (assembly-model §8.3): a command, not a drag.
+                     Shift with the key turns the other way. -->
+                <MenuItem Name="TurnXMenuItem"
+                          Header="Turn about _X"
+                          Click="OnTurnXClicked"
+                          ToolTip.Tip="Turn the selected part a quarter turn about the east-west axis. Shift+X turns it back." />
+                <MenuItem Name="TurnYMenuItem"
+                          Header="Turn about _Y"
+                          Click="OnTurnYClicked"
+                          ToolTip.Tip="Turn the selected part a quarter turn about the north-south axis. Shift+Y turns it back." />
+                <MenuItem Name="TurnZMenuItem"
+                          Header="Turn about _Z"
+                          Click="OnTurnZClicked"
+                          ToolTip.Tip="Turn the selected part a quarter turn about the vertical axis. Shift+Z turns it back." />
+                <Separator />
                 <!-- The toolbar's stock icons, by menu: one submenu per category, one item per
                      size, built in the code-behind from the same library the toolbox lists. -->
                 <MenuItem Name="StockMenu"
@@ -90,6 +105,17 @@
             <MenuItem Name="SamplesMenu" Header="Sa_mples" />
 
             <MenuItem Name="ViewMenu" Header="_View">
+                <!-- The two views of one drawing: the plan, and the 3D view (assembly-model §8.1).
+                     Same document, same selection, same undo; V switches between them. -->
+                <MenuItem Name="PlanViewMenuItem"
+                          Header="_Plan"
+                          Click="OnPlanViewClicked"
+                          ToolTip.Tip="The drawing from above, where parts are drawn, placed from stock and shaped." />
+                <MenuItem Name="ModelViewMenuItem"
+                          Header="_3D"
+                          Click="OnModelViewClicked"
+                          ToolTip.Tip="The drawing in three dimensions: turn parts, and move and resize them along any axis." />
+                <Separator />
                 <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
                 <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />
                 <MenuItem Name="ZoomOutMenuItem" Header="Zoom _Out" Click="OnZoomOutClicked" />
@@ -161,6 +187,13 @@
         -->
         <Panel>
             <viewing:CanvasView Name="DrawingCanvas" />
+
+            <!--
+                The 3D view (docs/design/assembly-model.md §8): a mode the window is in, as the shape
+                workshop is, over the same editor, selection and undo stack as the plan. It takes the
+                plan canvas's place while it shows, and the chrome floats over it the same way.
+            -->
+            <viewing:ModelView Name="ModelDrawing" IsVisible="False" />
 
             <!--
                 The shape workshop (docs/design/shaped-parts-model.md §7.1): a sheet over the
@@ -444,6 +477,42 @@
                         <!-- A waste bin: lid with its handle, and a tapered body with two ribs. -->
                         <Path Classes="toolGlyph"
                               Data="M7,1 L11,1 L11,3 L7,3 Z M2,3 L16,3 L16,5 L2,5 Z M3.5,5 L14.5,5 L13.5,17 L4.5,17 Z M7.5,7.5 L7.5,14.5 M10.5,7.5 L10.5,14.5" />
+                    </Button>
+
+                    <!-- The 3D view's three turn commands (assembly-model §8.3). Shown only there:
+                         the plan's toolbar is the plan's, and X, Y and Z do the same from either. -->
+                    <Button Name="TurnXToolButton"
+                            IsVisible="False"
+                            Padding="5"
+                            Click="OnTurnXClicked"
+                            AutomationProperties.Name="Turn about X"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Turn about X: a quarter turn of the selected part about the east-west axis, Shift the other way (X)">
+                        <!-- A block with a curled arrow round a horizontal axis. -->
+                        <Path Classes="toolGlyph"
+                              Data="M4,7 L14,7 L14,13 L4,13 Z M1,10 L17,10 M9,2 C13,2 15,4 15,5 M15,5 L13,5 M15,5 L15,3" />
+                    </Button>
+                    <Button Name="TurnYToolButton"
+                            IsVisible="False"
+                            Padding="5"
+                            Click="OnTurnYClicked"
+                            AutomationProperties.Name="Turn about Y"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Turn about Y: a quarter turn of the selected part about the north-south axis, Shift the other way (Y)">
+                        <!-- A block with a curled arrow round a receding axis. -->
+                        <Path Classes="toolGlyph"
+                              Data="M5,5 L13,5 L13,13 L5,13 Z M3,15 L15,3 M2,9 C2,5 4,3 6,2 M6,2 L6,4 M6,2 L4,2" />
+                    </Button>
+                    <Button Name="TurnZToolButton"
+                            IsVisible="False"
+                            Padding="5"
+                            Click="OnTurnZClicked"
+                            AutomationProperties.Name="Turn about Z"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Turn about Z: a quarter turn of the selected part about the vertical axis, Shift the other way (Z)">
+                        <!-- A block with a curled arrow round a vertical axis. -->
+                        <Path Classes="toolGlyph"
+                              Data="M5,6 L13,6 L13,15 L5,15 Z M9,1 L9,17 M3,4 C5,2 13,2 15,4 M15,4 L13,4 M15,4 L15,2" />
                     </Button>
 
                     <Border Name="ToolRowDivider" Width="1" Margin="4,3" />
