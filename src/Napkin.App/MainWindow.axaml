@@ -614,12 +614,12 @@
 
                         <StackPanel Name="PartFields" Spacing="6" IsVisible="False">
                             <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Across" FontSize="11"
+                                <TextBlock Name="PlanXCaption" Grid.Row="0" Grid.Column="0" Text="East–west" FontSize="11"
                                            VerticalAlignment="Center" Margin="0,0,8,0" />
                                 <ComboBox Name="PlanXBox" Grid.Row="0" Grid.Column="1" FontSize="12"
                                           HorizontalAlignment="Stretch" Margin="0,0,0,4" />
 
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Up" FontSize="11"
+                                <TextBlock Name="PlanYCaption" Grid.Row="1" Grid.Column="0" Text="North–south" FontSize="11"
                                            VerticalAlignment="Center" Margin="0,0,8,0" />
                                 <ComboBox Name="PlanYBox" Grid.Row="1" Grid.Column="1" FontSize="12"
                                           HorizontalAlignment="Stretch" Margin="0,0,0,4" />

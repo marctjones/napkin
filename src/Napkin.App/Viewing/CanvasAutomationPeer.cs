@@ -158,6 +158,13 @@ public sealed class PartAutomationPeer : ControlAutomationPeer, IValueProvider
 
     /// <inheritdoc/>
     /// <remarks>
+    /// How the part is turned, as the mark drawn inside it says (#82): "↑ length" for a leg lying on
+    /// its side, "turned over", or nothing for a part as drawn.
+    /// </remarks>
+    protected override string? GetHelpTextCore() => Owner.PartStance(_part);
+
+    /// <inheritdoc/>
+    /// <remarks>
     /// The whole entity id, not <see cref="EntityId.ToString"/>'s first eight characters: that is a
     /// display abbreviation and two parts of one design can share it, while an automation id is
     /// what a client uses to say "this one and not that one".
