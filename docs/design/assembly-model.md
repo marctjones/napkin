@@ -1004,7 +1004,8 @@ reads nothing else about its placement.** `CutListRow` gains what it needs to sa
   box's feature snaps to a strut end as to any point. The orientation glyph of §7.2 is not drawn;
   a diagonal silhouette is its own glyph.
 - **Creating one.** Two clicks. In the 3D view, each click is a point on what the ray hits (§8.2),
-  snapped to the grid step: a face, or an edge — and the edge matters, because the default
+  snapped to the grid step — the same face-under-the-pointer picking the 3D stock tool places
+  parts with (§6, #74): a face, or an edge — and the edge matters, because the default
   isometric camera looks from above and a rail's underside is culled (§8.4), so the click that
   puts a leg's top under the rail lands on the rail's **lower edge**, which is its visible lower
   silhouette, is picked by §8.2 step 4, and fixes Y and Z exactly with X taken from the pointer
@@ -1187,6 +1188,20 @@ real thing; none is this design.
   side (§7.1), but the rectangle tool, the stock tool, the snap resolver and the workshop operate
   in the plan view only in this slice. Generalising the plan editor to the six axis-aligned views
   is a natural later step and is named as such, not done.
+
+  **Amended for placement (#74, 2026-09-23 — Marc asked for every recommendation of the 3D review
+  to be implemented).** The stock tool and the rectangle tool's plain board work in the 3D view by
+  *placing on the face under the pointer*: the part rests on that face — or on the floor grid, at
+  Z = 0, where there is none — lying flat against it, its thickness along the face's normal, on
+  the side the face faces. A click places a default length (24″; a plain board 24″ × 12″); a drag
+  along the face sets the length the way the plan's stock tool does, the tool itself fed the
+  face-plane coordinates of the press and the pointer. The part's edges snap to the faces of
+  other parts in that plane and to the grid on a click. The drop is one undo step: the
+  `AddEntity` with its stock assignment, `Flush(target face, the part's face against it)`, and the
+  edge snaps — each relationship put to the updater as a snap is. Nothing represents the floor, so
+  a part placed on it states no flush. A face a cut made is refused with a hint: it is not a
+  plane the part could rest on. Turning the preview before placing it is #92. Everything else in
+  this bullet stands: the workshop, dimensions and the plan's own drawing gestures stay the plan's.
 - **Nodes and segments in space.** Plan-plane construction geometry, at Z = 0 (§1.4).
 - **Groups, sub-assemblies, exploded views.** "Move the whole table" is what `Drag` already does
   through the rigid group of relationships (geometry-model §4.4); there is no separate grouping.

@@ -124,6 +124,61 @@ public static class ModelPicker
     }
 
     /// <summary>
+    /// The face the ray through a screen point meets first — no edge or vertex, only a surface a
+    /// part could be set down on (#74) — or <see langword="null"/> when it meets none.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ModelPick.Face"/> is <see langword="null"/> for a face a cut made: not a plane of
+    /// the blank, so nothing is placed on it.
+    /// </remarks>
+    public static ModelPick? SurfaceAt(Sketch sketch, ModelScene scene, Camera camera, Point screen)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(scene);
+
+        (Vector3d origin, Vector3d direction) = camera.Ray(screen);
+        if (NearestSurface(sketch, scene, origin, direction) is not { } hit)
+        {
+            return null;
+        }
+
+        BoxFeature feature = hit.Face is { } face ? BoxFeature.Face(face) : BoxFeature.Face(sketch.Find<Box>(hit.Box)!.FaceUp);
+        return new ModelPick(hit.Box, feature, hit.Face, hit.NormalAxis, hit.Distance, hit.Point);
+    }
+
+    /// <summary>
+    /// Where the ray through a screen point meets the floor — the plan datum, Z = 0 — seen from above
+    /// it; <see langword="null"/> when the eye is level with the floor or under it.
+    /// </summary>
+    public static Vector3d? FloorAt(Camera camera, Point screen)
+    {
+        (Vector3d origin, Vector3d direction) = camera.Ray(screen);
+        if (direction.Z > -1e-9)
+        {
+            return null;
+        }
+
+        double t = -origin.Z / direction.Z;
+        return origin + (direction * t);
+    }
+
+    /// <summary>
+    /// Where the ray through a screen point meets the plane across a world axis at a coordinate, in
+    /// inches; <see langword="null"/> when the ray runs along the plane.
+    /// </summary>
+    public static Vector3d? PlaneAt(Camera camera, Point screen, Axis axis, double coordinate)
+    {
+        (Vector3d origin, Vector3d direction) = camera.Ray(screen);
+        double along = direction.Component(axis);
+        if (Math.Abs(along) < 1e-9)
+        {
+            return null;
+        }
+
+        return origin + (direction * ((coordinate - origin.Component(axis)) / along));
+    }
+
+    /// <summary>
     /// Where a ray, taken as a line, first enters a plain box: the standard slab test in the box's
     /// own frame. Null when it misses.
     /// </summary>
