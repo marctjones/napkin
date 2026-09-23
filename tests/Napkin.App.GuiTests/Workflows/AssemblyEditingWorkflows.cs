@@ -574,6 +574,70 @@ public class AssemblyEditingWorkflows
             Assert.Equal(apron, window.CurrentDesign!.Sketch.Find<Box>(apron.Id)));
     });
 
+    [GuiWorkflow("GUI-ASSEM-13")]
+    public void Mirror_a_leg_then_duplicate_a_leg_and_its_apron_together_and_move_the_pair_in_3D() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+        Box leg = BoxNamed(window, "Leg, south-west");
+        Box apron = BoxNamed(window, "Apron, long, south");
+
+        // Mirror the south-west leg east to west, by key: its twin lands where the south-east leg is.
+        app.Click(OnPlan(window, leg.Center.XY));
+        app.Press(Key.M);
+
+        app.Expect("the mirror copy is 44\" to 46 1/2\" east-west, at the leg's north-south place and height", () =>
+        {
+            Box twin = window.CurrentDesign!.Sketch.Find<Box>(window.Editor.OnlySelected!.Value)!;
+            Assert.NotEqual(leg.Id, twin.Id);
+            (Point3 low, Point3 high) = SpaceSnapResolver.Extent(twin);
+            Assert.Equal(new Point3(Length.Inches(44), SpaceSnapResolver.Extent(leg).Low.Y, Length.Zero), low);
+            Assert.Equal(Length.Inches(46, 1, 2), high.X);
+        });
+
+        app.Chord(Key.Z);
+
+        // Select the leg and the apron against it, and duplicate them together.
+        app.Click(OnPlan(window, leg.Center.XY));
+        app.Click(OnPlan(window, apron.Center.XY), MouseButton.Left, KeyModifiers.Shift);
+        Sketch before = window.CurrentDesign!.Sketch;
+        app.Press(Key.D);
+
+        EntityId[] copies = [.. window.Editor.Selection];
+        app.Expect("two copies, selected, held to each other the way the originals are", () =>
+        {
+            Assert.Equal(2, copies.Length);
+            Assert.All(copies, copy => Assert.False(before.Entities.ContainsKey(copy)));
+            Assert.Contains(
+                window.CurrentDesign!.Sketch.RelationshipsInOrder,
+                relationship => relationship.References.Distinct().Count() == 2 && relationship.References.All(copies.Contains));
+        });
+
+        // In the 3D view the pair has one set of arrows; raise them both by the Z arrow.
+        app.Press(Key.V);
+        Box firstBefore = window.CurrentDesign!.Sketch.Find<Box>(copies[0])!;
+        Box secondBefore = window.CurrentDesign!.Sketch.Find<Box>(copies[1])!;
+        ModelHandle arrow = window.Model.MoveHandle(Axis.Z)
+            ?? throw new InvalidOperationException("The pair has no Z arrow.");
+        double perInch = -window.Model.Camera.ProjectDirection(Vector3d.UnitZ).Y;
+        double up = perInch * window.Model.GridStepInches * 2;
+        app.Drag(InModel(window, arrow.At), InModel(window, arrow.At - new Vector(0, up / 2)), InModel(window, arrow.At - new Vector(0, up)));
+
+        app.Expect("both copies went up together, by the same amount, and the originals stayed", () =>
+        {
+            Box first = window.CurrentDesign!.Sketch.Find<Box>(copies[0])!;
+            Box second = window.CurrentDesign!.Sketch.Find<Box>(copies[1])!;
+            Vector3 moved = first.Anchor - firstBefore.Anchor;
+            Assert.True(moved.Dz > Length.Zero, "the pair did not go up.");
+            Assert.Equal(moved, second.Anchor - secondBefore.Anchor);
+            Assert.Equal(leg, window.CurrentDesign!.Sketch.Find<Box>(leg.Id));
+            Assert.Equal("Moved 2 parts.", window.MessageOnScreen);
+        });
+
+        app.SaveFrame("pair-raised");
+    });
+
     /// <summary>The help text the plan canvas's automation element for a part carries.</summary>
     static string? PartHelpText(MainWindow window, EntityId part) =>
         Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(window.Canvas)

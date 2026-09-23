@@ -140,14 +140,28 @@ public static class ModelHandles
         others.Any(other => Distance(other.At, at) < Separation);
 
     /// <summary>
+    /// Only the move arrows, from the centre of a box — for several parts selected at once, whose
+    /// combined extent this box stands for (#87): they move together, and no one face of theirs is
+    /// the one to resize.
+    /// </summary>
+    public static ImmutableArray<ModelHandle> Arrows(Box box, Camera camera) =>
+        [.. Of(box, camera).Where(handle => handle.Kind == ModelHandleKind.Move)];
+
+    /// <summary>
     /// The handle a point has hold of: the nearest one within the tolerance, arrows winning a tie
     /// because a move is the more common gesture and the arrow the smaller target.
     /// </summary>
-    public static ModelHandle? At(Box box, Camera camera, Point point, double tolerance)
+    public static ModelHandle? At(Box box, Camera camera, Point point, double tolerance) =>
+        Nearest(Of(box, camera), point, tolerance);
+
+    /// <summary>Of some handles, the nearest to a point within the tolerance; the first wins a tie.</summary>
+    public static ModelHandle? Nearest(IEnumerable<ModelHandle> handles, Point point, double tolerance)
     {
+        ArgumentNullException.ThrowIfNull(handles);
+
         ModelHandle? best = null;
         double nearest = double.PositiveInfinity;
-        foreach (ModelHandle handle in Of(box, camera))
+        foreach (ModelHandle handle in handles)
         {
             double distance = Distance(handle.At, point);
             if (distance <= tolerance && distance < nearest - 1e-9)

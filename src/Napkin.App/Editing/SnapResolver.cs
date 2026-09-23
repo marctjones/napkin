@@ -87,12 +87,14 @@ public static class SnapResolver
     /// <param name="wantedAnchor">Where the pointer puts the box's anchor.</param>
     /// <param name="gridStepInches">The grid step in force at this zoom.</param>
     /// <param name="radius">How near a target has to be to catch.</param>
+    /// <param name="ignoring">Parts that are not to be snapped to — the others moving with it (#87).</param>
     public static SnapPlan Resolve(
         Sketch sketch,
         Box moving,
         Point2 wantedAnchor,
         double gridStepInches,
-        Length radius)
+        Length radius,
+        IReadOnlyCollection<EntityId>? ignoring = null)
     {
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(moving);
@@ -105,7 +107,7 @@ public static class SnapResolver
 
         foreach (Box other in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
         {
-            if (other.Id == moving.Id)
+            if (other.Id == moving.Id || (ignoring?.Contains(other.Id) ?? false))
             {
                 continue;
             }
