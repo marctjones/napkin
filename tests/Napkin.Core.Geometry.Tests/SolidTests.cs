@@ -289,6 +289,49 @@ public class SolidTests
         Assert.Equal(box.Vertex(BoxCorner.NorthEast, BoxLevel.Top), solid.Faces[1].Boundary[2].From);
     }
 
+    /// <summary>
+    /// A solid is a value: the same box gives an equal solid with an equal hash, however many times
+    /// it is derived, and a face differs from another that differs only in what it is
+    /// <c>Of</c>.
+    /// </summary>
+    [Fact]
+    public void TwoSolidsOfOneBoxAreEqualByValue()
+    {
+        Box box = CaseBox(BoxFace.East, 1) with { Cuts = [new RoundedCorner(BoxCorner.NorthWest, Length.Inches(2))] };
+
+        Solid first = box.Solid();
+        Solid second = box.Solid();
+
+        Assert.NotSame(first, second);
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+        Assert.Equal(first.Faces[3].GetHashCode(), second.Faces[3].GetHashCode());
+        Assert.False(first.Equals(null));
+        Assert.False(first.Faces[0].Equals(null));
+
+        Assert.NotEqual(first, CaseBox(BoxFace.East, 1).Solid());
+        Assert.NotEqual(first.Faces[2], first.Faces[2] with { Of = null });
+    }
+
+    /// <summary>
+    /// A segment kind the solid does not know is refused, not silently drawn as a straight line —
+    /// so a new outline segment cannot reach the solid without the solid learning it.
+    /// </summary>
+    [Fact]
+    public void ASegmentKindTheSolidDoesNotKnowIsRefused()
+    {
+        Box box = CaseBox(BoxFace.Top, 0);
+
+        Assert.Throws<InvalidOperationException>(
+            () => SolidBuilder.Lift(box, new StrayOutlineSegment(Point2.Origin, Point2.Inches(1, 0)), Length.Zero));
+        Assert.Throws<InvalidOperationException>(
+            () => SolidBuilder.Reversed(new StraySolidSegment(Point3.Origin, Point3.Inches(1, 0, 0))));
+    }
+
+    private sealed record StrayOutlineSegment(Point2 From, Point2 To) : OutlineSegment(From, To);
+
+    private sealed record StraySolidSegment(Point3 From, Point3 To) : SolidSegment(From, To);
+
     // ---- Helpers --------------------------------------------------------------------------------
 
     private static Box CaseBox(BoxFace faceUp, int quarterTurns) => new(

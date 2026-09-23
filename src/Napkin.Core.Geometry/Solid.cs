@@ -162,7 +162,7 @@ internal static class SolidBuilder
     }
 
     /// <summary>An outline segment lifted to local height <paramref name="z"/> and placed in the world.</summary>
-    private static SolidSegment Lift(Box box, OutlineSegment segment, Length z)
+    internal static SolidSegment Lift(Box box, OutlineSegment segment, Length z)
     {
         Point3 At(Point2 local) => box.World(new Vector3(local.X, local.Y, z));
 
@@ -176,7 +176,7 @@ internal static class SolidBuilder
     }
 
     /// <summary>The same piece of boundary, walked the other way.</summary>
-    private static SolidSegment Reversed(SolidSegment segment) => segment switch
+    internal static SolidSegment Reversed(SolidSegment segment) => segment switch
     {
         StraightSegment3 straight => new StraightSegment3(straight.To, straight.From),
         ArcByCenter3 arc => new ArcByCenter3(arc.To, arc.From, arc.Center),
