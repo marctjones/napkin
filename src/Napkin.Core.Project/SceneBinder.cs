@@ -334,30 +334,18 @@ internal sealed class SceneBinder
 
     private Entity? ReadBox(JsonFields fields, EntityId id, LayerId layer)
     {
-        Point2? anchor = ReadPoint(fields, SceneNames.Anchor);
+        Point3? anchor = ReadPoint3(fields, SceneNames.Anchor);
         long? width = ReadInteger(fields, SceneNames.Width);
         long? height = ReadInteger(fields, SceneNames.Height);
+        long? depth = ReadInteger(fields, SceneNames.Depth);
+        BoxFace? faceUp = ReadFaceUp(fields);
         long? rotation = ReadInteger(fields, SceneNames.Rotation);
-        (bool partRead, Part? part, Length? outOfPlane) = ReadPart(fields);
+        (bool partRead, Part? part) = ReadPart(fields);
         (bool cutsRead, ImmutableList<Cut> cuts) = ReadCuts(fields);
 
-        if (width is { } w && w <= 0)
-        {
-            Add(
-                LoadProblemKind.InvalidValue,
-                $"{fields.Path}/{SceneNames.Width}",
-                $"A box's width must be greater than zero; this one is {w.ToString(CultureInfo.InvariantCulture)} units.");
-            width = null;
-        }
-
-        if (height is { } h && h <= 0)
-        {
-            Add(
-                LoadProblemKind.InvalidValue,
-                $"{fields.Path}/{SceneNames.Height}",
-                $"A box's height must be greater than zero; this one is {h.ToString(CultureInfo.InvariantCulture)} units.");
-            height = null;
-        }
+        width = RefuseNonPositive(fields, SceneNames.Width, width);
+        height = RefuseNonPositive(fields, SceneNames.Height, height);
+        depth = RefuseNonPositive(fields, SceneNames.Depth, depth);
 
         if (rotation is { } r && (r < 0 || r >= Angle.FullTurn))
         {
@@ -370,26 +358,56 @@ internal sealed class SceneBinder
             rotation = null;
         }
 
-        // Format version 3 is a plan format: every box in it lies as drawn at the plan datum, and
-        // its third size is its part's out-of-plane dimension, or the rectangle tool's default for a
-        // box that is not a part. docs/design/assembly-model.md §10 step 5 gives the file a depth,
-        // a face-up and a Z of its own; until then this is what a version-3 box means.
-        return anchor is { } corner && width is { } wide && height is { } tall && rotation is { } turn
-            && partRead && cutsRead
-            ? new Box(
-                id,
-                layer,
-                new Point3(corner.X, corner.Y, Length.Zero),
-                new Length(wide),
-                new Length(tall),
-                outOfPlane ?? Box.DefaultDepth,
-                BoxFace.Top,
-                new Angle(turn))
+        return anchor is { } corner && width is { } wide && height is { } tall && depth is { } deep
+            && faceUp is { } up && rotation is { } turn && partRead && cutsRead
+            ? new Box(id, layer, corner, new Length(wide), new Length(tall), new Length(deep), up, new Angle(turn))
             {
                 Part = part,
                 Cuts = cuts,
             }
             : null;
+    }
+
+    /// <summary>
+    /// One of a box's three sizes, refused when it is zero or negative: a box has an extent along
+    /// every one of its local axes (invariants 2 and 10).
+    /// </summary>
+    private long? RefuseNonPositive(JsonFields fields, string name, long? size)
+    {
+        if (size is not { } units || units > 0)
+        {
+            return size;
+        }
+
+        Add(
+            LoadProblemKind.InvalidValue,
+            $"{fields.Path}/{name}",
+            $"A box's {name} must be greater than zero; this one is {units.ToString(CultureInfo.InvariantCulture)} units.");
+        return null;
+    }
+
+    /// <summary>
+    /// Which of a box's six local faces points up (<c>docs/design/assembly-model.md</c> &#xA7;1.3):
+    /// <c>top</c> for a box lying as drawn.
+    /// </summary>
+    private BoxFace? ReadFaceUp(JsonFields fields)
+    {
+        string? text = ReadText(fields, SceneNames.FaceUp);
+        if (text is null)
+        {
+            return null;
+        }
+
+        if (!SceneNames.TryFace(text, out BoxFace face))
+        {
+            Add(
+                LoadProblemKind.UnknownValue,
+                $"{fields.Path}/{SceneNames.FaceUp}",
+                $"\"{text}\" is not a face of a box. The faces are: {SceneNames.List(SceneNames.BoxFaces)}.");
+            return null;
+        }
+
+        return face;
     }
 
     /// <summary>
@@ -600,23 +618,23 @@ internal sealed class SceneBinder
     /// <see langword="null"/> both for a well-formed <c>"part": null</c> and for a refusal — the
     /// flag is what tells them apart.
     /// </returns>
-    private (bool Read, Part? Part, Length? OutOfPlane) ReadPart(JsonFields fields)
+    private (bool Read, Part? Part) ReadPart(JsonFields fields)
     {
         JsonElement? element = Take(fields, SceneNames.Part);
         if (element is not { } value)
         {
-            return (false, null, null);
+            return (false, null);
         }
 
         if (value.ValueKind == JsonValueKind.Null)
         {
-            return (true, null, null);
+            return (true, null);
         }
 
         JsonFields? part = ReadFields(value, $"{fields.Path}/{SceneNames.Part}", $"\"{SceneNames.Part}\"");
         if (part is null)
         {
-            return (false, null, null);
+            return (false, null);
         }
 
         // The stock name is not checked against this build's materials library, deliberately: a
@@ -625,7 +643,6 @@ internal sealed class SceneBinder
         (bool stockRead, string? stock) = ReadTextOrNull(part, SceneNames.Stock);
         (bool speciesRead, string? species) = ReadTextOrNull(part, SceneNames.Species);
         long? quantity = ReadInteger(part, SceneNames.Quantity);
-        long? outOfPlane = ReadInteger(part, SceneNames.OutOfPlane);
         PlanAxes? planAxes = ReadPlanAxes(part);
         RejectUnknownFields(part);
 
@@ -638,21 +655,12 @@ internal sealed class SceneBinder
             quantity = null;
         }
 
-        if (outOfPlane is { } third && third <= 0)
-        {
-            Add(
-                LoadProblemKind.InvalidValue,
-                $"{part.Path}/{SceneNames.OutOfPlane}",
-                "A part's out-of-plane dimension must be greater than zero; this one is "
-                + $"{third.ToString(CultureInfo.InvariantCulture)} units.");
-            outOfPlane = null;
-        }
-
-        // The part's out-of-plane dimension is the box's depth now (assembly-model §1.2); the file
-        // keeps it on the part until §10 step 5 moves it onto the box.
-        return stockRead && speciesRead && quantity is { } pieces && outOfPlane is { } units && planAxes is { } axes
-            ? (true, new Part(stock, species, (int)pieces, axes), new Length(units))
-            : (false, null, null);
+        // A part's third dimension is its box's depth, which the box stores (format version 4,
+        // assembly-model §1.2). A version-3 part's "outOfPlane" is therefore an unknown field here,
+        // refused like any other, rather than a second copy of a number the box already holds.
+        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes
+            ? (true, new Part(stock, species, (int)pieces, axes))
+            : (false, null);
     }
 
     private PlanAxes? ReadPlanAxes(JsonFields part)
@@ -826,34 +834,34 @@ internal sealed class SceneBinder
 
             case SceneNames.Coincident:
             {
-                PlaceRef? a = ReadPointRef(fields, SceneNames.A);
-                PlaceRef? b = ReadPointRef(fields, SceneNames.B);
+                PlaceRef? a = ReadPlaceRef(fields, SceneNames.A);
+                PlaceRef? b = ReadPlaceRef(fields, SceneNames.B);
                 return a is not null && b is not null ? new Coincident(id, a, b) : null;
             }
 
             case SceneNames.Horizontal:
             {
-                PlaceRef? edge = ReadEdgeRef(fields, SceneNames.Edge);
+                PlaceRef? edge = ReadLineRef(fields, SceneNames.Edge);
                 return edge is not null ? new Horizontal(id, edge) : null;
             }
 
             case SceneNames.Vertical:
             {
-                PlaceRef? edge = ReadEdgeRef(fields, SceneNames.Edge);
+                PlaceRef? edge = ReadLineRef(fields, SceneNames.Edge);
                 return edge is not null ? new Vertical(id, edge) : null;
             }
 
             case SceneNames.Flush:
             {
-                PlaceRef? a = ReadEdgeRef(fields, SceneNames.A);
-                PlaceRef? b = ReadEdgeRef(fields, SceneNames.B);
+                PlaceRef? a = ReadPlaceRef(fields, SceneNames.A);
+                PlaceRef? b = ReadPlaceRef(fields, SceneNames.B);
                 return a is not null && b is not null ? new Flush(id, a, b) : null;
             }
 
             case SceneNames.AxisDistance:
             {
-                PlaceRef? from = ReadPointRef(fields, SceneNames.From);
-                PlaceRef? to = ReadPointRef(fields, SceneNames.To);
+                PlaceRef? from = ReadPlaceRef(fields, SceneNames.From);
+                PlaceRef? to = ReadPlaceRef(fields, SceneNames.To);
                 Axis? axis = ReadAxis(fields);
                 long? distance = ReadInteger(fields, SceneNames.Distance);
                 return from is not null && to is not null && axis is { } along && distance is { } units
@@ -877,9 +885,9 @@ internal sealed class SceneBinder
 
             case SceneNames.Centered:
             {
-                PlaceRef? middle = ReadPointRef(fields, SceneNames.Middle);
-                PlaceRef? a = ReadPointRef(fields, SceneNames.A);
-                PlaceRef? b = ReadPointRef(fields, SceneNames.B);
+                PlaceRef? middle = ReadPlaceRef(fields, SceneNames.Middle);
+                PlaceRef? a = ReadPlaceRef(fields, SceneNames.A);
+                PlaceRef? b = ReadPlaceRef(fields, SceneNames.B);
                 Axis? axis = ReadAxis(fields);
                 return middle is not null && a is not null && b is not null && axis is { } along
                     ? new Centered(id, middle, a, b, along)
@@ -888,22 +896,22 @@ internal sealed class SceneBinder
 
             case SceneNames.Parallel:
             {
-                PlaceRef? a = ReadEdgeRef(fields, SceneNames.A);
-                PlaceRef? b = ReadEdgeRef(fields, SceneNames.B);
+                PlaceRef? a = ReadLineRef(fields, SceneNames.A);
+                PlaceRef? b = ReadLineRef(fields, SceneNames.B);
                 return a is not null && b is not null ? new Geometry.Parallel(id, a, b) : null;
             }
 
             case SceneNames.Perpendicular:
             {
-                PlaceRef? a = ReadEdgeRef(fields, SceneNames.A);
-                PlaceRef? b = ReadEdgeRef(fields, SceneNames.B);
+                PlaceRef? a = ReadLineRef(fields, SceneNames.A);
+                PlaceRef? b = ReadLineRef(fields, SceneNames.B);
                 return a is not null && b is not null ? new Perpendicular(id, a, b) : null;
             }
 
             case SceneNames.AngleBetween:
             {
-                PlaceRef? a = ReadEdgeRef(fields, SceneNames.A);
-                PlaceRef? b = ReadEdgeRef(fields, SceneNames.B);
+                PlaceRef? a = ReadLineRef(fields, SceneNames.A);
+                PlaceRef? b = ReadLineRef(fields, SceneNames.B);
                 long? angle = ReadInteger(fields, SceneNames.Angle);
                 return a is not null && b is not null && angle is { } arcseconds
                     ? new AngleBetween(id, a, b, new Angle(arcseconds))
@@ -912,8 +920,8 @@ internal sealed class SceneBinder
 
             case SceneNames.Distance:
             {
-                PlaceRef? a = ReadPointRef(fields, SceneNames.A);
-                PlaceRef? b = ReadPointRef(fields, SceneNames.B);
+                PlaceRef? a = ReadPlaceRef(fields, SceneNames.A);
+                PlaceRef? b = ReadPlaceRef(fields, SceneNames.B);
                 long? value = ReadInteger(fields, SceneNames.Value);
                 return a is not null && b is not null && value is { } units
                     ? new Distance(id, a, b, new Length(units))
@@ -922,23 +930,23 @@ internal sealed class SceneBinder
 
             case SceneNames.PointOnEdge:
             {
-                PlaceRef? point = ReadPointRef(fields, SceneNames.Point);
-                PlaceRef? edge = ReadEdgeRef(fields, SceneNames.Edge);
+                PlaceRef? point = ReadPlaceRef(fields, SceneNames.Point);
+                PlaceRef? edge = ReadLineRef(fields, SceneNames.Edge);
                 return point is not null && edge is not null ? new PointOnEdge(id, point, edge) : null;
             }
 
             case SceneNames.Symmetric:
             {
-                PlaceRef? a = ReadPointRef(fields, SceneNames.A);
-                PlaceRef? b = ReadPointRef(fields, SceneNames.B);
-                PlaceRef? mirror = ReadEdgeRef(fields, SceneNames.Mirror);
+                PlaceRef? a = ReadPlaceRef(fields, SceneNames.A);
+                PlaceRef? b = ReadPlaceRef(fields, SceneNames.B);
+                PlaceRef? mirror = ReadLineRef(fields, SceneNames.Mirror);
                 return a is not null && b is not null && mirror is not null ? new Symmetric(id, a, b, mirror) : null;
             }
 
             case SceneNames.Tangent:
             {
-                PlaceRef? a = ReadEdgeRef(fields, SceneNames.A);
-                PlaceRef? b = ReadEdgeRef(fields, SceneNames.B);
+                PlaceRef? a = ReadLineRef(fields, SceneNames.A);
+                PlaceRef? b = ReadLineRef(fields, SceneNames.B);
                 return a is not null && b is not null ? new Tangent(id, a, b) : null;
             }
 
@@ -979,7 +987,14 @@ internal sealed class SceneBinder
     // References
     // -----------------------------------------------------------------------------------------
 
-    private PlaceRef? ReadPointRef(JsonFields parent, string name)
+    /// <summary>
+    /// A place — a node, a segment, a box's centre or a feature of a box — in a slot that takes
+    /// any of them (<c>docs/design/assembly-model.md</c> &#xA7;2.2). Whether the places a
+    /// relationship pairs can be compared at all is judged afterwards, by what each fixes, in
+    /// <see cref="Sketch.Validate"/> (&#xA7;2.3, <see cref="PlaceRules"/>): the file's shape is this
+    /// reader's business and the pairing is the kernel's.
+    /// </summary>
+    private PlaceRef? ReadPlaceRef(JsonFields parent, string name)
     {
         JsonFields? fields = ReadObject(parent, name);
         if (fields is null)
@@ -994,39 +1009,24 @@ internal sealed class SceneBinder
             SceneNames.Node => ReadEntityReference(fields, SceneNames.Node, typeof(Node)) is { } node
                 ? new NodeRef(node)
                 : null,
-            SceneNames.Corner => ReadCornerRef(fields),
+            SceneNames.Segment => ReadSegmentRef(fields),
             SceneNames.Center => ReadEntityReference(fields, SceneNames.Box, typeof(Box)) is { } box
                 ? new CenterRef(box)
                 : null,
-            _ => UnknownRefKind<PlaceRef>(fields, kind, "a point", SceneNames.Node, SceneNames.Corner, SceneNames.Center),
+            SceneNames.Feature => ReadFeatureRef(fields),
+            _ => UnknownPlaceKind(fields, kind, "a place", SceneNames.PlaceKinds),
         };
 
         RejectUnknownFields(fields);
         return reference;
     }
 
-    private PlaceRef? ReadCornerRef(JsonFields fields)
-    {
-        EntityId? box = ReadEntityReference(fields, SceneNames.Box, typeof(Box));
-        string? corner = ReadText(fields, SceneNames.Corner);
-        if (box is not { } target || corner is null)
-        {
-            return null;
-        }
-
-        if (!SceneNames.TryCorner(corner, out BoxCorner which))
-        {
-            Add(
-                LoadProblemKind.UnknownValue,
-                $"{fields.Path}/{SceneNames.Corner}",
-                $"\"{corner}\" is not a corner. The corners are: southWest, southEast, northEast, northWest.");
-            return null;
-        }
-
-        return new FeatureRef(target, BoxFeature.LocalUpright(which));
-    }
-
-    private PlaceRef? ReadEdgeRef(JsonFields parent, string name)
+    /// <summary>
+    /// A line — a segment, or a feature of a box — in the slots of the kinds that are about lines:
+    /// <c>horizontal</c>, <c>vertical</c> and the solver's angular kinds. A node or a centre has no
+    /// direction for them to be about.
+    /// </summary>
+    private PlaceRef? ReadLineRef(JsonFields parent, string name)
     {
         JsonFields? fields = ReadObject(parent, name);
         if (fields is null)
@@ -1038,36 +1038,156 @@ internal sealed class SceneBinder
         PlaceRef? reference = kind switch
         {
             null => null,
-            SceneNames.Segment => ReadEntityReference(fields, SceneNames.Segment, typeof(Segment)) is { } segment
-                ? new SegmentRef(segment)
-                : null,
-            SceneNames.BoxEdge => ReadBoxEdgeRef(fields),
-            _ => UnknownRefKind<PlaceRef>(fields, kind, "an edge", SceneNames.Segment, SceneNames.BoxEdge),
+            SceneNames.Segment => ReadSegmentRef(fields),
+            SceneNames.Feature => ReadFeatureRef(fields),
+            _ => UnknownPlaceKind(fields, kind, "a line", SceneNames.LineKinds),
         };
 
         RejectUnknownFields(fields);
         return reference;
     }
 
-    private PlaceRef? ReadBoxEdgeRef(JsonFields fields)
+    private PlaceRef? ReadSegmentRef(JsonFields fields)
+        => ReadEntityReference(fields, SceneNames.Segment, typeof(Segment)) is { } segment ? new SegmentRef(segment) : null;
+
+    /// <summary>
+    /// A feature of a box: <c>{ "kind": "feature", "box": …, "faces": ["south", "west"] }</c> — one
+    /// face, the edge where two meet, or the vertex where three meet (&#xA7;1.5).
+    /// </summary>
+    /// <remarks>
+    /// The faces are held to invariant 12 here, where the file can be told exactly what is wrong
+    /// with them: one to three faces the format spells, none repeated, no two opposite, and in
+    /// <see cref="BoxFace"/> order. <strong>The order is judged, not fixed</strong>, as a box's cuts
+    /// are: a feature is the set of its faces and has one spelling, so a file that spells it
+    /// another way is refused rather than quietly re-ordered.
+    /// </remarks>
+    private PlaceRef? ReadFeatureRef(JsonFields fields)
     {
         EntityId? box = ReadEntityReference(fields, SceneNames.Box, typeof(Box));
-        string? edge = ReadText(fields, SceneNames.Edge);
-        if (box is not { } target || edge is null)
+        BoxFeature? feature = ReadFaces(fields);
+        return box is { } target && feature is { } which ? new FeatureRef(target, which) : null;
+    }
+
+    private BoxFeature? ReadFaces(JsonFields fields)
+    {
+        string path = $"{fields.Path}/{SceneNames.Faces}";
+        int before = problems.Count;
+        List<BoxFace> faces = [];
+
+        foreach ((JsonElement item, string itemPath) in ReadArray(fields, SceneNames.Faces))
+        {
+            if (item.ValueKind != JsonValueKind.String)
+            {
+                Add(LoadProblemKind.Malformed, itemPath, $"Expected a face, as text, and found {Describe(item)}.");
+                continue;
+            }
+
+            string text = item.GetString() ?? string.Empty;
+            if (!SceneNames.TryFace(text, out BoxFace face))
+            {
+                Add(
+                    LoadProblemKind.UnknownValue,
+                    itemPath,
+                    $"\"{text}\" is not a face of a box. The faces are: {SceneNames.List(SceneNames.BoxFaces)}.");
+                continue;
+            }
+
+            faces.Add(face);
+        }
+
+        // A missing field, a field that is not an array, or a face that is not one of the six has
+        // already been reported, and there is no set of faces to judge.
+        if (problems.Count > before)
         {
             return null;
         }
 
-        if (!SceneNames.TryEdge(edge, out BoxEdge which))
+        if (faces.Count is < 1 or > 3)
+        {
+            Add(
+                LoadProblemKind.InvalidValue,
+                path,
+                $"A feature is one face, the edge where two faces meet, or the vertex where three meet; this one names "
+                + $"{faces.Count.ToString(CultureInfo.InvariantCulture)}.");
+            return null;
+        }
+
+        for (int i = 0; i < faces.Count; i++)
+        {
+            for (int j = i + 1; j < faces.Count; j++)
+            {
+                if (faces[i] == faces[j])
+                {
+                    Add(
+                        LoadProblemKind.InvalidValue,
+                        path,
+                        $"A feature names each of its faces once; \"{SceneNames.Of(faces[i])}\" is named twice.");
+                    return null;
+                }
+
+                if (Opposite(faces[i], faces[j]))
+                {
+                    Add(
+                        LoadProblemKind.InvalidValue,
+                        path,
+                        $"\"{SceneNames.Of(faces[i])}\" and \"{SceneNames.Of(faces[j])}\" are opposite faces of a box and "
+                        + "never meet, so no feature has both.");
+                    return null;
+                }
+            }
+        }
+
+        for (int i = 1; i < faces.Count; i++)
+        {
+            if (faces[i - 1] > faces[i])
+            {
+                Add(
+                    LoadProblemKind.InvalidValue,
+                    path,
+                    $"A feature's faces are written in the order {SceneNames.List(SceneNames.BoxFaces)}, so that a "
+                    + $"file has one spelling of one feature; this one has \"{SceneNames.Of(faces[i])}\" after "
+                    + $"\"{SceneNames.Of(faces[i - 1])}\". A file out of order is refused rather than quietly sorted.");
+                return null;
+            }
+        }
+
+        return faces.Count switch
+        {
+            1 => BoxFeature.Face(faces[0]),
+            2 => BoxFeature.Edge(faces[0], faces[1]),
+            _ => BoxFeature.Vertex(faces[0], faces[1], faces[2]),
+        };
+    }
+
+    // Two faces on the same local axis: south and north, east and west, bottom and top. BoxFace
+    // declares them in that pairing, south-east-north-west then bottom-top, so a side's opposite is
+    // two further round and a cap's is the other cap.
+    private static bool Opposite(BoxFace a, BoxFace b)
+        => a != b && (a, b) switch
+        {
+            (<= BoxFace.West, <= BoxFace.West) => Math.Abs((int)a - (int)b) == 2,
+            (>= BoxFace.Bottom, >= BoxFace.Bottom) => true,
+            _ => false,
+        };
+
+    /// <summary>
+    /// A reference kind this build does not read — and for the two format version 4 removed, what
+    /// replaced them.
+    /// </summary>
+    private PlaceRef? UnknownPlaceKind(JsonFields fields, string kind, string what, string[] kinds)
+    {
+        if (kind is SceneNames.RemovedCorner or SceneNames.RemovedBoxEdge)
         {
             Add(
                 LoadProblemKind.UnknownValue,
-                $"{fields.Path}/{SceneNames.Edge}",
-                $"\"{edge}\" is not an edge. The edges are: south, east, north, west.");
+                $"{fields.Path}/{SceneNames.Kind}",
+                $"\"{kind}\" is a reference kind of format version 3, which version 4 replaced: a box's corner or edge "
+                + $"is now a \"{SceneNames.Feature}\" naming the faces that meet there — a corner of the blank as "
+                + "[\"south\", \"west\"], and a plan edge as the side face [\"north\"].");
             return null;
         }
 
-        return new FeatureRef(target, BoxFeature.Face(SceneNames.FaceOf(which)));
+        return UnknownRefKind<PlaceRef>(fields, kind, what, kinds);
     }
 
     private ParamRef? ReadParamRef(JsonFields parent, string name)
@@ -1118,8 +1238,8 @@ internal sealed class SceneBinder
         if (fields.Peek(SceneNames.Kind) == SceneNames.AxisMeasurand)
         {
             ReadText(fields, SceneNames.Kind);
-            PlaceRef? from = ReadPointRef(fields, SceneNames.From);
-            PlaceRef? to = ReadPointRef(fields, SceneNames.To);
+            PlaceRef? from = ReadPlaceRef(fields, SceneNames.From);
+            PlaceRef? to = ReadPlaceRef(fields, SceneNames.To);
             Axis? axis = ReadAxis(fields);
             measurand = from is not null && to is not null && axis is { } along
                 ? new AxisMeasurand(from, to, along)
@@ -1292,6 +1412,28 @@ internal sealed class SceneBinder
         return x is { } across && y is { } up ? new Point2(new Length(across), new Length(up)) : null;
     }
 
+    /// <summary>
+    /// A point in space: a box's anchor (format version 4). A node stays a plan point, at the plan
+    /// datum, so it keeps <see cref="ReadPoint"/> (<c>docs/design/assembly-model.md</c> &#xA7;1.4).
+    /// </summary>
+    private Point3? ReadPoint3(JsonFields parent, string name)
+    {
+        JsonFields? fields = ReadObject(parent, name);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        long? x = ReadInteger(fields, SceneNames.X);
+        long? y = ReadInteger(fields, SceneNames.Y);
+        long? z = ReadInteger(fields, SceneNames.Z);
+        RejectUnknownFields(fields);
+
+        return x is { } across && y is { } up && z is { } high
+            ? new Point3(new Length(across), new Length(up), new Length(high))
+            : null;
+    }
+
     private Axis? ReadAxis(JsonFields fields)
     {
         string? text = ReadText(fields, SceneNames.Axis);
@@ -1305,7 +1447,7 @@ internal sealed class SceneBinder
             Add(
                 LoadProblemKind.UnknownValue,
                 $"{fields.Path}/{SceneNames.Axis}",
-                $"\"{text}\" is not an axis. The axes are: x, y.");
+                $"\"{text}\" is not an axis. The axes are: x, y, z.");
             return null;
         }
 

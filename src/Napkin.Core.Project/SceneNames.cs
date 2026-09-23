@@ -31,6 +31,7 @@ internal static class SceneNames
     internal const string Layer = "layer";
     internal const string X = "x";
     internal const string Y = "y";
+    internal const string Z = "z";
     internal const string Axis = "axis";
     internal const string Value = "value";
 
@@ -45,6 +46,7 @@ internal static class SceneNames
     internal const string Anchor = "anchor";
     internal const string Width = "width";
     internal const string Height = "height";
+    internal const string FaceUp = "faceUp";
     internal const string Rotation = "rotation";
     internal const string Measures = "measures";
     internal const string Drives = "drives";
@@ -57,7 +59,6 @@ internal static class SceneNames
     internal const string Stock = "stock";
     internal const string Species = "species";
     internal const string Quantity = "quantity";
-    internal const string OutOfPlane = "outOfPlane";
     internal const string PlanAxes = "planAxes";
 
     // The three finished dimensions a part has. "length" is also the units object's length field
@@ -66,10 +67,11 @@ internal static class SceneNames
     internal const string PartWidth = "width";
     internal const string PartThickness = "thickness";
 
-    // The cuts on a box's blank (format version 3). "corner" and "edge" are the names a reference
-    // already uses for the same things, and "radius" is the relationship kind's spelling reused
+    // The cuts on a box's blank (format version 3). "corner" and "edge" name a corner and an edge
+    // of the blank in its own local frame, and "radius" is the relationship kind's spelling reused
     // for the value a rounded corner stores — one spelling per word, as "length" is both a unit
-    // and a part's dimension.
+    // and a part's dimension. "depth" is both a curved edge's depth and a box's own (format
+    // version 4): each is how far something reaches along the axis it is measured on.
     internal const string Cuts = "cuts";
     internal const string CornerCut = "cornerCut";
     internal const string RoundedCorner = "roundedCorner";
@@ -92,11 +94,22 @@ internal static class SceneNames
     internal const string North = "north";
     internal const string West = "west";
 
-    // References.
+    // The two faces a plan cannot see, which with the four sides above are the six faces of a box
+    // in its own local frame (format version 4).
+    internal const string Bottom = "bottom";
+    internal const string Top = "top";
+
+    // References. "corner" and "edge" are also the fields a cut names its site with.
     internal const string Corner = "corner";
     internal const string Center = "center";
     internal const string Edge = "edge";
-    internal const string BoxEdge = "boxEdge";
+    internal const string Feature = "feature";
+    internal const string Faces = "faces";
+
+    // The two reference kinds format version 4 removed in favour of "feature", spelled here only so
+    // that a file still using one is told what replaced it.
+    internal const string RemovedCorner = "corner";
+    internal const string RemovedBoxEdge = "boxEdge";
     internal const string BoxWidth = "boxWidth";
     internal const string BoxHeight = "boxHeight";
     internal const string BoxDepth = "boxDepth";
@@ -144,6 +157,18 @@ internal static class SceneNames
     /// <summary>Every kind of cut the format spells out, for a message that lists them.</summary>
     internal static readonly string[] CutKinds = [CornerCut, CurvedEdge, RoundedCorner];
 
+    /// <summary>
+    /// The six faces of a box in <see cref="BoxFace"/> order, which is the order a feature's
+    /// <c>faces</c> are written in, for a message that says what the order is.
+    /// </summary>
+    internal static readonly string[] BoxFaces = [South, East, North, West, Bottom, Top];
+
+    /// <summary>The four ways of referring to a place, for a message that lists them.</summary>
+    internal static readonly string[] PlaceKinds = [Center, Feature, Node, Segment];
+
+    /// <summary>The two ways of referring to a line, for a message that lists them.</summary>
+    internal static readonly string[] LineKinds = [Feature, Segment];
+
     /// <summary>The two ways a curved edge bows, for a message that lists them.</summary>
     internal static readonly string[] Bows = [Outward, Inward];
 
@@ -167,6 +192,7 @@ internal static class SceneNames
         {
             case X: axis = Geometry.Axis.X; return true;
             case Y: axis = Geometry.Axis.Y; return true;
+            case Z: axis = Geometry.Axis.Z; return true;
             default: axis = default; return false;
         }
     }
@@ -192,6 +218,20 @@ internal static class SceneNames
             case North: edge = Geometry.BoxEdge.North; return true;
             case West: edge = Geometry.BoxEdge.West; return true;
             default: edge = default; return false;
+        }
+    }
+
+    internal static bool TryFace(string text, out BoxFace face)
+    {
+        switch (text)
+        {
+            case South: face = BoxFace.South; return true;
+            case East: face = BoxFace.East; return true;
+            case North: face = BoxFace.North; return true;
+            case West: face = BoxFace.West; return true;
+            case Bottom: face = BoxFace.Bottom; return true;
+            case Top: face = BoxFace.Top; return true;
+            default: face = default; return false;
         }
     }
 
@@ -228,7 +268,7 @@ internal static class SceneNames
         }
     }
 
-    // The write direction of the four spelled-out value sets. Each is the exact inverse of the
+    // The write direction of the spelled-out value sets. Each is the exact inverse of the
     // Try… above it: a spelling added on one side without the other stops compiling here, which is
     // the point of keeping both directions in one file.
 
@@ -236,6 +276,7 @@ internal static class SceneNames
     {
         Geometry.Axis.X => X,
         Geometry.Axis.Y => Y,
+        Geometry.Axis.Z => Z,
         _ => throw Unknown(nameof(axis), axis),
     };
 
@@ -257,51 +298,16 @@ internal static class SceneNames
         _ => throw Unknown(nameof(edge), edge),
     };
 
-    /// <summary>
-    /// The side face a version-3 <c>boxEdge</c> reference names: until docs/design/assembly-model.md
-    /// &#xA7;10 step 5 gives the file the <c>feature</c> reference, a box's plan edge is the face of
-    /// the same name on a box lying as drawn, which is the only kind version 3 holds.
-    /// </summary>
-    internal static BoxFace FaceOf(Geometry.BoxEdge edge) => edge switch
+    internal static string Of(BoxFace face) => face switch
     {
-        Geometry.BoxEdge.South => BoxFace.South,
-        Geometry.BoxEdge.East => BoxFace.East,
-        Geometry.BoxEdge.North => BoxFace.North,
-        Geometry.BoxEdge.West => BoxFace.West,
-        _ => throw Unknown(nameof(edge), edge),
+        BoxFace.South => South,
+        BoxFace.East => East,
+        BoxFace.North => North,
+        BoxFace.West => West,
+        BoxFace.Bottom => Bottom,
+        BoxFace.Top => Top,
+        _ => throw Unknown(nameof(face), face),
     };
-
-    /// <summary>The corner whose local upright this feature is, for a version-3 <c>corner</c> reference.</summary>
-    internal static bool TryCornerOf(BoxFeature feature, out BoxCorner corner)
-    {
-        foreach (BoxCorner candidate in (BoxCorner[])[BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest])
-        {
-            if (BoxFeature.LocalUpright(candidate) == feature)
-            {
-                corner = candidate;
-                return true;
-            }
-        }
-
-        corner = default;
-        return false;
-    }
-
-    /// <summary>The plan edge whose side face this feature is, for a version-3 <c>boxEdge</c> reference.</summary>
-    internal static bool TryEdgeOf(BoxFeature feature, out Geometry.BoxEdge edge)
-    {
-        foreach (Geometry.BoxEdge candidate in (Geometry.BoxEdge[])[Geometry.BoxEdge.South, Geometry.BoxEdge.East, Geometry.BoxEdge.North, Geometry.BoxEdge.West])
-        {
-            if (BoxFeature.Face(FaceOf(candidate)) == feature)
-            {
-                edge = candidate;
-                return true;
-            }
-        }
-
-        edge = default;
-        return false;
-    }
 
     internal static string Of(Geometry.Bow bow) => bow switch
     {

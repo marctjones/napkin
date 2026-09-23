@@ -110,6 +110,7 @@ public sealed class SceneWriterTests
     [Theory]
     [InlineData("coffee-table")]
     [InlineData("wall-with-window")]
+    [InlineData("rounded-corner-table")]
     [Trait("Feature", "PRJ-007")]
     public void A_hand_written_sample_reads_back_equal_after_being_rewritten(string fixture)
     {
@@ -229,7 +230,7 @@ public sealed class SceneWriterTests
     {
         string text = SceneWriter.WriteToText(Sketch.Empty);
 
-        Assert.StartsWith("{\n  \"formatVersion\": 3,\n", text, StringComparison.Ordinal);
+        Assert.StartsWith("{\n  \"formatVersion\": 4,\n", text, StringComparison.Ordinal);
         Assert.Contains("\"units\": {\n    \"length\": \"inch/1024\",\n    \"angle\": \"arcsecond\"\n  }", text, StringComparison.Ordinal);
         Assert.Equal(FormatStamp.CurrentVersion, SceneWriter.FormatVersion);
     }

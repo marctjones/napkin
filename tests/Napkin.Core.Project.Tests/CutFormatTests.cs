@@ -19,13 +19,13 @@ public sealed class CutFormatTests
     /// </summary>
     private const string EveryKindOfCut = """
         {
-          "formatVersion": 3,
+          "formatVersion": 4,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Top",
-              "anchor": { "x": 0, "y": 0 }, "width": 49152, "height": 24576, "rotation": 0,
+              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 49152, "height": 24576, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": null,
               "cuts": [
                 { "kind": "roundedCorner", "corner": "southWest", "radius": 1024 },
@@ -34,7 +34,7 @@ public sealed class CutFormatTests
               ] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Shelf front",
-              "anchor": { "x": 0, "y": 40960 }, "width": 49152, "height": 24576, "rotation": 0,
+              "anchor": { "x": 0, "y": 40960, "z": 0 }, "width": 49152, "height": 24576, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": null,
               "cuts": [
                 { "kind": "curvedEdge", "edge": "south", "bow": "outward", "depth": 2048 }

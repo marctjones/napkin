@@ -34,6 +34,7 @@ public sealed class SampleFixtureTests
     [Theory]
     [InlineData("coffee-table")]
     [InlineData("wall-with-window")]
+    [InlineData("rounded-corner-table")]
     [Trait("Feature", "PRJ-001")]
     public void Every_part_is_where_and_what_the_expectations_say(string fixture)
     {
@@ -55,6 +56,13 @@ public sealed class SampleFixtureTests
             Assert.Equal(part.WidthUnits, box.Width.Units);
             Assert.Equal(part.HeightUnits, box.Height.Units);
             Assert.Equal(part.RotationArcseconds, box.Rotation.Arcseconds);
+
+            // In space (format version 4, docs/design/assembly-model.md §9 case 22): the height
+            // above the floor, the size along the box's own Z and the face that is up, each worked
+            // out by hand in the sample's design file.
+            Assert.Equal(part.AnchorZUnits, box.Anchor.Z.Units);
+            Assert.Equal(part.DepthUnits, box.Depth.Units);
+            Assert.Equal(part.FaceUp, FaceName(box.FaceUp));
         }
 
         Assert.Equal(expected.Boxes.Count, sketch.Entities.Values.OfType<Box>().Count());
@@ -160,6 +168,7 @@ public sealed class SampleFixtureTests
     [Theory]
     [InlineData("coffee-table")]
     [InlineData("wall-with-window")]
+    [InlineData("rounded-corner-table")]
     [Trait("Feature", "PRJ-003")]
     public void A_sample_satisfies_its_own_relationships_and_validates(string fixture)
     {
@@ -172,6 +181,7 @@ public sealed class SampleFixtureTests
     [Theory]
     [InlineData("coffee-table")]
     [InlineData("wall-with-window")]
+    [InlineData("rounded-corner-table")]
     [Trait("Feature", "PRJ-001")]
     public void Reading_a_sample_twice_gives_the_same_value(string fixture)
     {
@@ -199,6 +209,21 @@ public sealed class SampleFixtureTests
         AxisMeasurand axis => sketch.PlanPoint(axis.To).Component(axis.Axis)
                               - sketch.PlanPoint(axis.From).Component(axis.Axis),
         _ => throw new InvalidOperationException($"Unknown measurand {dimension.Measures}."),
+    };
+
+    /// <summary>
+    /// A face as the expectations spell it — spelled out here rather than read from the reader's
+    /// own table, for the reason <see cref="KindOf"/> is.
+    /// </summary>
+    private static string FaceName(BoxFace face) => face switch
+    {
+        BoxFace.South => "south",
+        BoxFace.East => "east",
+        BoxFace.North => "north",
+        BoxFace.West => "west",
+        BoxFace.Bottom => "bottom",
+        BoxFace.Top => "top",
+        _ => face.ToString(),
     };
 
     /// <summary>
