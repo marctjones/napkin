@@ -100,6 +100,33 @@ public class GroupCopyTests
         Assert.Equal(SpaceSnapResolver.Extent(legCopy).Low.X, SpaceSnapResolver.Extent(apronCopy).High.X);
     }
 
+    [Theory]
+    [InlineData("Leg", new string[0], "Leg (2)")]
+    [InlineData("Leg", new[] { "Leg (2)" }, "Leg (3)")]
+    [InlineData("Leg (2)", new[] { "Leg", "Leg (2)" }, "Leg (3)")]
+    [InlineData("Leg (9)", new[] { "Leg (9)", "Leg (10)" }, "Leg (11)")]
+    [InlineData("", new string[0], "")]
+    public void A_copy_is_named_after_its_original_with_the_next_free_number(string name, string[] others, string expected)
+    {
+        HashSet<string> taken = [name, .. others];
+
+        Assert.Equal(expected, GroupCopy.CopyName(name, taken));
+    }
+
+    [Fact]
+    public void Duplicated_and_mirrored_copies_have_names_of_their_own()
+    {
+        DesignEditor editor = Table();
+        editor.Select(Leg.Id);
+
+        EntityId duplicate = SelectionCommands.Duplicate(editor, 1)!.Value;
+        editor.Select(Leg.Id);
+        EntityId mirrored = SelectionCommands.Mirror(editor, Axis.X)!.Value;
+
+        Assert.Equal("Leg (2)", editor.NameOf(duplicate));
+        Assert.Equal("Leg (3)", editor.NameOf(mirrored));
+    }
+
     [Fact]
     public void A_part_with_cuts_is_not_mirrored_the_wrong_way_round()
     {

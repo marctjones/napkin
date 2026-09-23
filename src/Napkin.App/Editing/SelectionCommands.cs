@@ -77,8 +77,8 @@ public static class SelectionCommands
     /// <remarks>
     /// <para>
     /// <strong>A duplicate is a value copy.</strong> The blank, its cuts, the part — stock, species,
-    /// plan axes, quantity — the depth and the name are all carried across by the record's own
-    /// <c>with</c>; each copy gets a new id and a new anchor. Of the relationships, only the ones
+    /// plan axes, quantity — and the depth are all carried across by the record's own <c>with</c>;
+    /// each copy gets a new id, a new anchor and its original's name with a number (#91). Of the relationships, only the ones
     /// <em>among</em> the copied parts come too (<see cref="GroupCopy"/>): copy a leg and the apron
     /// flush to it and the copies are flush to each other; copy one part and it is unrelated until
     /// somebody snaps it, exactly like a part just drawn. Four duplicates of one gusset are equal by
@@ -107,7 +107,7 @@ public static class SelectionCommands
 
         (Point3 low, Point3 high) = GroupCopy.Extent(boxes);
         (ImmutableList<Request> requests, ImmutableDictionary<EntityId, EntityId> copies) =
-            GroupCopy.Duplicate(editor.Sketch, boxes, BesideOffset(low, high, gridStepInches));
+            GroupCopy.Duplicate(editor.Sketch, boxes, BesideOffset(low, high, gridStepInches), editor.NameOf);
 
         string what = boxes.Length == 1 ? $"Duplicated {editor.NameOf(boxes[0].Id)}" : $"Duplicated {boxes.Length} parts";
         editor.BeginGesture(what);
@@ -154,7 +154,7 @@ public static class SelectionCommands
         (Point3 low, Point3 high) = GroupCopy.Extent(editor.Sketch.Entities.Values.OfType<Box>());
         Length plane = (low.Component(axis) + high.Component(axis)).Divide(2, Rounding.HalfToEven);
         string way = axis == Axis.X ? "east–west" : "north–south";
-        if (GroupCopy.Mirror(editor.Sketch, boxes, axis, plane, out Box? refused) is not { } mirrored)
+        if (GroupCopy.Mirror(editor.Sketch, boxes, axis, plane, out Box? refused, editor.NameOf) is not { } mirrored)
         {
             editor.Say(
                 EditSeverity.Problem,

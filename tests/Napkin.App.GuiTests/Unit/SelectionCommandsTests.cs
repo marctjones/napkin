@@ -35,7 +35,7 @@ public class SelectionCommandsTests
         bool apartInY = copyLow.Y >= high.Y || copyHigh.Y <= low.Y;
         Assert.True(apartInX || apartInY, "the copy overlaps the original.");
         Assert.Equal(low.Z, copyLow.Z);
-        Assert.Equal(leg with { Id = copyId, Anchor = copy.Anchor }, copy);
+        Assert.Equal(leg with { Id = copyId, Anchor = copy.Anchor, Name = copy.Name }, copy);
         Assert.Equal(copyId, editor.OnlySelected);
     }
 
