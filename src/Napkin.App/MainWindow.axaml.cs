@@ -886,6 +886,21 @@ public partial class MainWindow : Window
 
                 break;
 
+            case SelectionCommand.MirrorEastWest or SelectionCommand.MirrorNorthSouth:
+                if (SelectionCommands.Mirror(Editor, command == SelectionCommand.MirrorEastWest ? Axis.X : Axis.Y) is { } mirrored)
+                {
+                    if (IsShowingModel)
+                    {
+                        ModelDrawing.BringIntoView(mirrored);
+                    }
+                    else
+                    {
+                        DrawingCanvas.BringIntoView(mirrored);
+                    }
+                }
+
+                break;
+
             case SelectionCommand.Shape:
                 if (SelectionCommands.PartToShape(Editor) is { } part)
                 {
@@ -2085,6 +2100,7 @@ public partial class MainWindow : Window
         bool shapeable = Editor.OnlySelected is not null && !IsShapingPart;
         DeleteMenuItem.IsEnabled = DeleteToolButton.IsEnabled = anything;
         PinMenuItem.IsEnabled = PinToolButton.IsEnabled = anything;
+        MirrorEastWestMenuItem.IsEnabled = MirrorNorthSouthMenuItem.IsEnabled = anything;
         ShapeMenuItem.IsEnabled = ShapeToolButton.IsEnabled = shapeable;
 
         bool turnable = Editor.OnlySelectedBox is not null && !IsShapingPart;
@@ -2537,6 +2553,8 @@ public partial class MainWindow : Window
         RectangleToolMenuItem.InputGesture = new KeyGesture(Key.R);
         ShapeMenuItem.InputGesture = new KeyGesture(Key.C);
         DuplicateMenuItem.InputGesture = new KeyGesture(Key.D);
+        MirrorEastWestMenuItem.InputGesture = new KeyGesture(Key.M);
+        MirrorNorthSouthMenuItem.InputGesture = new KeyGesture(Key.M, KeyModifiers.Shift);
         PinMenuItem.InputGesture = new KeyGesture(Key.P);
         DeleteMenuItem.InputGesture = new KeyGesture(Key.Delete);
         TurnXMenuItem.InputGesture = new KeyGesture(Key.X);
@@ -2715,6 +2733,10 @@ public partial class MainWindow : Window
     }
 
     void OnDuplicateClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Duplicate);
+
+    void OnMirrorEastWestClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.MirrorEastWest);
+
+    void OnMirrorNorthSouthClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.MirrorNorthSouth);
 
     void OnPinClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Pin);
 

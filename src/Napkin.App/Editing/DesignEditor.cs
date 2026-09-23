@@ -325,6 +325,13 @@ public sealed class DesignEditor
     public void Select(EntityId? id) =>
         ReplaceSelection(id is { } one && _design.Sketch.Find(one) is not null ? [one] : []);
 
+    /// <summary>Selects exactly these entities — the ones that exist — and nothing else.</summary>
+    public void SelectAll(IEnumerable<EntityId> ids)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        ReplaceSelection([.. ids.Where(id => _design.Sketch.Find(id) is not null)]);
+    }
+
     /// <summary>Adds an entity to the selection, or takes it out again.</summary>
     public void ToggleSelected(EntityId id) =>
         ReplaceSelection(_selection.Contains(id) ? _selection.Remove(id) : _selection.Add(id));

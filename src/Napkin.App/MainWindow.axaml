@@ -67,7 +67,15 @@
                 <MenuItem Name="DuplicateMenuItem"
                           Header="D_uplicate"
                           Click="OnDuplicateClicked"
-                          ToolTip.Tip="Copy the selected part and put the copy beside it." />
+                          ToolTip.Tip="Copy the selected parts, with the relationships among them, and put the copies beside them." />
+                <MenuItem Name="MirrorEastWestMenuItem"
+                          Header="_Mirror copy east–west"
+                          Click="OnMirrorEastWestClicked"
+                          ToolTip.Tip="Copy the selected parts to the other side of the drawing's middle, east to west: a left leg's right-hand twin." />
+                <MenuItem Name="MirrorNorthSouthMenuItem"
+                          Header="Mirror copy _north–south"
+                          Click="OnMirrorNorthSouthClicked"
+                          ToolTip.Tip="Copy the selected parts to the other side of the drawing's middle, north to south." />
                 <MenuItem Name="PinMenuItem"
                           Header="_Pin in place"
                           Click="OnPinClicked"
