@@ -52,7 +52,8 @@ public class AssemblyWorkflows
         app.SaveFrame("3d-leg-selected");
 
         // The fixture's leg is held by flushes and distances named in its own frame, and turning it
-        // would change what they mean: the updater refuses, and says to remove them first (§2.4).
+        // would change what they mean: the updater refuses, and the message offers to let go of
+        // them and turn (§2.4, #76) — not taken here; GUI-ASSEM-05 takes it.
         app.Press(Key.X);
 
         app.Expect("a leg held in place by its relationships is refused a turn, and nothing changes", () =>
@@ -61,7 +62,8 @@ public class AssemblyWorkflows
             Assert.Equal(BoxFace.Top, unturned.FaceUp);
             Assert.Equal(leg, unturned);
             Assert.Contains("did not happen", window.MessageOnScreen, StringComparison.Ordinal);
-            Assert.Contains("Remove them first", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Contains("would change what they mean", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.StartsWith("Let go of", window.OfferText, StringComparison.Ordinal);
         });
 
         // A copy of the leg is unrelated until it is snapped (shaped-parts §2.6): that one turns.

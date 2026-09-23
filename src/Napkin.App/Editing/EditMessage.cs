@@ -17,23 +17,27 @@ public enum EditSeverity
 }
 
 /// <summary>
+/// A way out of a message: the words on its button, and what pressing it asks of the editor — one
+/// request, applied as one undo step.
+/// </summary>
+/// <param name="Text">The button's wording.</param>
+/// <param name="Request">What taking the offer applies.</param>
+/// <param name="What">What taking it did, for the message and the undo menu: "Removed: …".</param>
+public sealed record EditOffer(string Text, Request Request, string What);
+
+/// <summary>
 /// What to show about the last edit: one sentence, what to highlight, and — when there is one —
 /// the way out.
 /// </summary>
 /// <param name="Severity">How loudly to show it.</param>
 /// <param name="Text">The message, in plain words.</param>
-/// <param name="Highlight">Relationships the canvas should draw attention to.</param>
-/// <param name="OfferToRemove">
-/// A relationship the person could remove to resolve a conflict, or null when there is nothing to
-/// offer.
-/// </param>
-/// <param name="OfferText">The wording of that offer, for a button.</param>
+/// <param name="Highlight">Relationships the views should draw attention to (#72).</param>
+/// <param name="Offer">The way out, or null when there is nothing to offer.</param>
 public sealed record EditMessage(
     EditSeverity Severity,
     string Text,
     ImmutableList<RelationshipId> Highlight,
-    RelationshipId? OfferToRemove = null,
-    string? OfferText = null)
+    EditOffer? Offer = null)
 {
     /// <summary>A message with nothing to highlight and nothing to offer.</summary>
     public static EditMessage Plain(EditSeverity severity, string text) =>
@@ -129,14 +133,14 @@ public static class EditMessages
         // anything else: unpinning a part is often exactly what the person meant to do.
         Relationship? removable = involved.FirstOrDefault();
 
+        string? removing = removable is null ? null : RelationshipText.Describe(before, removable, nameOf, format);
         return new EditMessage(
             EditSeverity.Problem,
             $"{what} would not hold. {summary}{named}",
             [.. report.Relationships],
-            removable?.Id,
             removable is null
                 ? null
-                : "Remove: " + RelationshipText.Describe(before, removable, nameOf, format));
+                : new EditOffer("Remove: " + removing, new RemoveRelationship(removable.Id), "Removed: " + removing));
     }
 
     static string Freedom(FreedomReport freedom, Func<EntityId, string> nameOf)

@@ -36,6 +36,24 @@
       "milestone": "backlog",
       "issue": 73,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-05",
+      "area": "ui",
+      "title": "A refused turn offers to let go of the relationships and turn",
+      "acceptance": "Pressing X on a coffee-table leg in the 3D view is refused, outlines exactly the parts the relationships holding it by place name, and offers 'Let go of N and turn'; taking the offer turns the leg in place and removes exactly those relationships, and one undo restores the drawing.",
+      "milestone": "backlog",
+      "issue": 76,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-06",
+      "area": "ui",
+      "title": "Remove a relationship from its row in the list",
+      "acceptance": "With a coffee-table leg selected, resting the pointer on the first row of the relationship list outlines the parts that relationship holds, clicking the row's remove button removes only that relationship without moving any part, and undo brings it back.",
+      "milestone": "backlog",
+      "issue": 77,
+      "kind": "workflow"
     }
   ]
 }

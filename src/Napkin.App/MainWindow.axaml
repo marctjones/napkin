@@ -541,10 +541,10 @@
                   Margin="10"
                   RowDefinitions="*,Auto">
 
-                <!-- What the drawing says about itself, in words. Read-only on purpose, and not
-                     hit-testable, so it never takes a click or a wheel turn meant for the drawing.
-                     On demand (#62): a small count badge until a part that has relationships is
-                     selected or under the pointer, and only then the sentences themselves. -->
+                <!-- What the drawing says about itself, in words. On demand (#62): a small count
+                     badge until a part that has relationships is selected or under the pointer,
+                     and only then the sentences themselves — each with a button that removes it,
+                     and resting the pointer on one outlines the parts it holds (#77). -->
                 <Border Name="RelationshipsPanel"
                         Grid.Row="0"
                         IsVisible="False"
@@ -566,7 +566,9 @@
                                       Margin="0,5,0,0"
                                       HorizontalScrollBarVisibility="Disabled"
                                       VerticalScrollBarVisibility="Auto">
-                            <StackPanel Name="RelationshipsList" Spacing="3" IsVisible="False" />
+                            <!-- A gutter on the right for the scroll bar, which overlays the
+                                 content: without it the bar sits on the rows' remove buttons. -->
+                            <StackPanel Name="RelationshipsList" Spacing="3" IsVisible="False" Margin="0,0,14,0" />
                         </ScrollViewer>
                     </DockPanel>
                 </Border>

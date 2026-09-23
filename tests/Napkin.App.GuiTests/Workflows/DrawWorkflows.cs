@@ -396,13 +396,17 @@ public class DrawWorkflows
             Assert.Equal(
                 Length.Inches(12).Units,
                 window.CurrentDesign!.Sketch.Find<Box>(left)!.Width.Units);
-            Assert.True(window.IsOfferingToRemoveRelationship, "the conflict offered no way out.");
+            Assert.True(window.IsOfferingAWayOut, "the conflict offered no way out.");
+
+            // Both parts the conflicting relationships hold are outlined on the drawing (#72).
+            Assert.Contains(left, window.AttentionOnScreen);
+            Assert.Contains(right, window.AttentionOnScreen);
         });
 
         app.SaveFrame("conflict");
 
         // Take the way out, and the same edit goes through.
-        app.Click(CentreOf(window, window.RemoveOfferButton));
+        app.Click(CentreOf(window, window.OfferButton));
         app.Expect("removing one of the conflicting relationships leaves the rest alone", () =>
         {
             Assert.True(
@@ -411,6 +415,9 @@ public class DrawWorkflows
             Assert.Equal(
                 Length.Inches(12).Units,
                 window.CurrentDesign!.Sketch.Find<Box>(left)!.Width.Units);
+
+            // The conflict is over, and so is the outline.
+            Assert.Empty(window.AttentionOnScreen);
         });
 
         app.SaveFrame("conflict-resolved");

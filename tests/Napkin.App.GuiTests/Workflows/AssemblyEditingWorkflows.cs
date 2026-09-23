@@ -138,6 +138,109 @@ public class AssemblyEditingWorkflows
         app.Expect("off every part, the list is a badge again", () => Assert.False(window.IsRelationshipListExpanded));
     });
 
+    [GuiWorkflow("GUI-ASSEM-05")]
+    public void A_refused_turn_offers_to_let_go_and_turn_in_one_step() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+        Box leg = BoxNamed(window, "Leg, north-east");
+        app.Click(OnPlan(window, leg.Center.XY));
+        app.Press(Key.V);
+
+        Sketch before = window.CurrentDesign!.Sketch;
+        IReadOnlyList<Relationship> holding = SelectionTurn.HeldByPlace(before, leg.Id);
+        app.Press(Key.X);
+
+        app.Expect("the turn is refused, the parts holding the leg are outlined, and there is a way out", () =>
+        {
+            Assert.Same(before, window.CurrentDesign!.Sketch);
+            Assert.NotEmpty(holding);
+            Assert.Contains("did not happen", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Equal($"Let go of {holding.Count} and turn", window.OfferText);
+
+            // Everything those relationships hold is outlined, the leg among them.
+            HashSet<EntityId> held = [.. holding.SelectMany(relationship => relationship.References)];
+            Assert.Contains(leg.Id, window.AttentionOnScreen);
+            Assert.True(held.SetEquals(window.AttentionOnScreen), "the outline is not the parts the refusal names.");
+        });
+
+        app.SaveFrame("turn-refused");
+        app.Click(CentreOf(window, window.OfferButton));
+
+        app.Expect("the leg turned in place, exactly the relationships holding it by place are gone, the rest stay", () =>
+        {
+            Sketch after = window.CurrentDesign!.Sketch;
+            Box turned = after.Find<Box>(leg.Id)!;
+            Assert.Equal(BoxFace.North, turned.FaceUp);
+            Assert.Equal(SpaceSnapResolver.Extent(leg).Low, SpaceSnapResolver.Extent(turned).Low);
+
+            Assert.Empty(SelectionTurn.HeldByPlace(after, leg.Id));
+            Assert.Equal(before.Relationships.Count - holding.Count, after.Relationships.Count);
+            Assert.All(holding, relationship => Assert.False(after.Relationships.ContainsKey(relationship.Id)));
+            Assert.Empty(window.AttentionOnScreen);
+        });
+
+        app.SaveFrame("let-go-and-turned");
+
+        // One undo puts the leg and every relationship back.
+        app.Chord(Key.Z);
+
+        app.Expect("one undo restores the drawing exactly as it was", () =>
+        {
+            Sketch restored = window.CurrentDesign!.Sketch;
+            Assert.Equal(leg, restored.Find<Box>(leg.Id));
+            Assert.Equal(before.Relationships.Count, restored.Relationships.Count);
+            Assert.All(holding, relationship => Assert.Equal(relationship, restored.Relationships[relationship.Id]));
+        });
+    });
+
+    [GuiWorkflow("GUI-ASSEM-06")]
+    public void A_relationship_is_removed_from_its_row_in_the_list() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+        Box leg = BoxNamed(window, "Leg, north-east");
+        app.Click(OnPlan(window, leg.Center.XY));
+        app.Press(Key.V);
+
+        // The leg's rows come first; take the first, and rest the pointer on it.
+        Sketch before = window.CurrentDesign!.Sketch;
+        string sentence = window.RelationshipsOnScreen[0];
+        Relationship said = before.RelationshipsInOrder.Single(relationship =>
+            RelationshipText.Describe(before, relationship, window.Editor.NameOf, window.Editor.LabelFormat) == sentence);
+        Control row = window.RelationshipRow(sentence)!;
+        app.MoveTo(CentreOf(window, row));
+
+        app.Expect("resting on the row outlines the parts it holds, and nothing else", () =>
+        {
+            Assert.True(said.References.ToHashSet().SetEquals(window.AttentionOnScreen));
+            Assert.Contains(leg.Id, window.AttentionOnScreen);
+        });
+
+        app.SaveFrame("row-under-pointer");
+        app.Click(CentreOf(window, window.RemoveRelationshipButton(sentence)!));
+
+        app.Expect("the relationship is gone, the parts did not move, and the list no longer says it", () =>
+        {
+            Sketch after = window.CurrentDesign!.Sketch;
+            Assert.False(after.Relationships.ContainsKey(said.Id));
+            Assert.Equal(before.Relationships.Count - 1, after.Relationships.Count);
+            Assert.All(before.Entities.Values.OfType<Box>(), box => Assert.Equal(box, after.Find<Box>(box.Id)));
+            Assert.DoesNotContain(sentence, window.RelationshipsOnScreen);
+            Assert.StartsWith("Removed:", window.MessageOnScreen, StringComparison.Ordinal);
+        });
+
+        app.Chord(Key.Z);
+
+        app.Expect("undo brings it back", () =>
+        {
+            Assert.Equal(said, window.CurrentDesign!.Sketch.Relationships[said.Id]);
+            Assert.Contains(sentence, window.RelationshipsOnScreen);
+        });
+    });
+
     static void AssertSidePanelsApart(MainWindow window)
     {
         Assert.True(window.IsShowingProperties, "the Part panel is not showing.");

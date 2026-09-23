@@ -97,6 +97,7 @@ public sealed class ModelView : Control
     Axis[] _planeAxes = [];
     SpaceSnapPlan? _snap;
     EntityId? _hovered;
+    System.Collections.Immutable.ImmutableHashSet<EntityId> _attention = [];
 
     static ModelView() => FocusableProperty.OverrideDefaultValue<ModelView>(true);
 
@@ -174,6 +175,26 @@ public sealed class ModelView : Control
 
     /// <summary>The part the pointer is resting on, or null.</summary>
     public EntityId? HoveredPart => _hovered;
+
+    /// <summary>
+    /// Parts to draw attention to, their edges in the problem colour: the ones a conflict or a
+    /// refused turn names (#72), or the ones a relationship row under the pointer holds (#77).
+    /// </summary>
+    public System.Collections.Immutable.ImmutableHashSet<EntityId> Attention
+    {
+        get => _attention;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (_attention.SetEquals(value))
+            {
+                return;
+            }
+
+            _attention = value;
+            InvalidateVisual();
+        }
+    }
 
     /// <summary>Whether a part is being moved or resized right now.</summary>
     public bool IsEditing => _gesture is Gesture.MoveAxis or Gesture.MovePlane or Gesture.Resize;
@@ -821,6 +842,7 @@ public sealed class ModelView : Control
             DrawPolygon(context, palette, palette.StyleFor(layer), polygon);
         }
 
+        DrawAttention(context, palette);
         DrawSelection(context, palette, editor);
         DrawVirtualFeatures(context, sketch, sketch.RelationshipsInOrder, palette.Dimension);
         if (_snap is { } plan)
@@ -897,6 +919,27 @@ public sealed class ModelView : Control
             Channel(((b + ((255 - b) * lift)) * shade)));
 
         static byte Channel(double value) => (byte)Math.Clamp(Math.Round(value), 0, 255);
+    }
+
+    /// <summary>
+    /// The edges the eye can see of each part in <see cref="Attention"/>, wide and in the problem
+    /// colour, under the selection's — on top of what stands in front, as the selection is.
+    /// </summary>
+    void DrawAttention(DrawingContext context, CanvasPalette palette)
+    {
+        if (_attention.IsEmpty)
+        {
+            return;
+        }
+
+        Pen pen = new(new SolidColorBrush(palette.Snap, 0.85), 4) { LineJoin = PenLineJoin.Round };
+        foreach (ScenePolygon polygon in Scene.Polygons)
+        {
+            if (_attention.Contains(polygon.Box) && polygon.FacesTowards(_camera))
+            {
+                DrawEdges(context, pen, polygon);
+            }
+        }
     }
 
     void DrawSelection(DrawingContext context, CanvasPalette palette, DesignEditor editor)

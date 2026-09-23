@@ -33,7 +33,7 @@ public class EditMessageTests
 
         Assert.Equal(EditSeverity.Done, message.Severity);
         Assert.Equal("Moved Part 1.", message.Text);
-        Assert.Null(message.OfferToRemove);
+        Assert.Null(message.Offer);
     }
 
     [Fact]
@@ -98,8 +98,9 @@ public class EditMessageTests
         Assert.Contains("pinned", message.Text, StringComparison.Ordinal);
 
         Assert.Equal([flushId, pinId], message.Highlight);
-        Assert.Equal(flushId, message.OfferToRemove);
-        Assert.Contains("Remove:", message.OfferText!, StringComparison.Ordinal);
+        Assert.Equal(new RemoveRelationship(flushId), message.Offer!.Request);
+        Assert.Contains("Remove:", message.Offer.Text, StringComparison.Ordinal);
+        Assert.StartsWith("Removed:", message.Offer.What, StringComparison.Ordinal);
     }
 
     [Fact]
