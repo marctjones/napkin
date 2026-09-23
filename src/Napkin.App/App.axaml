@@ -29,6 +29,12 @@
                  (design-repo docs/avalonia-usage.md), so they are pointed at moss here. -->
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#4A7C4A" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#4A7C4A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#4A7C4A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#3A5C3A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#3A5C3A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#4A7C4A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#3A5C3A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#3A5C3A" />
         </ResourceDictionary>
     </Application.Resources>
 
