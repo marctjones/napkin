@@ -73,6 +73,8 @@ internal static class SceneNames
     // and a part's dimension. "depth" is both a curved edge's depth and a box's own (format
     // version 4): each is how far something reaches along the axis it is measured on.
     internal const string Cuts = "cuts";
+    internal const string Corner = "corner";
+    internal const string Edge = "edge";
     internal const string CornerCut = "cornerCut";
     internal const string RoundedCorner = "roundedCorner";
     internal const string CurvedEdge = "curvedEdge";
@@ -99,22 +101,20 @@ internal static class SceneNames
     internal const string Bottom = "bottom";
     internal const string Top = "top";
 
-    // References. "corner" and "edge" are also the fields a cut names its site with.
-    internal const string Corner = "corner";
+    // References: to a place (format version 4) and to a size.
     internal const string Center = "center";
-    internal const string Edge = "edge";
     internal const string Feature = "feature";
     internal const string Faces = "faces";
-
-    // The two reference kinds format version 4 removed in favour of "feature", spelled here only so
-    // that a file still using one is told what replaced it.
-    internal const string RemovedCorner = "corner";
-    internal const string RemovedBoxEdge = "boxEdge";
     internal const string BoxWidth = "boxWidth";
     internal const string BoxHeight = "boxHeight";
     internal const string BoxDepth = "boxDepth";
     internal const string SegmentLength = "segmentLength";
     internal const string AxisMeasurand = "axis";
+
+    // The two reference kinds format version 4 removed in favour of "feature", spelled here only so
+    // that a file still using one is told what replaced it.
+    internal const string RemovedCorner = "corner";
+    internal const string RemovedBoxEdge = "boxEdge";
 
     // Relationship kinds.
     internal const string Anchored = "anchored";
