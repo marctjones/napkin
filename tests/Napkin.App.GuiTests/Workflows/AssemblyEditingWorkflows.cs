@@ -518,6 +518,62 @@ public class AssemblyEditingWorkflows
         app.SaveFrame("top-raised-by-typing");
     });
 
+    [GuiWorkflow("GUI-ASSEM-12")]
+    public void A_length_typed_after_or_during_a_drag_makes_it_exact_in_one_undo_step() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+        Box apron = BoxNamed(window, "Apron, long, south");
+        app.Click(OnPlan(window, apron.Center.XY));
+        app.Press(Key.V);
+
+        // Drag the Z arrow down a little, then say exactly how far: 3 1/2".
+        double perInch = -window.Model.Camera.ProjectDirection(Vector3d.UnitZ).Y;
+        ModelHandle arrow = window.Model.MoveHandle(Axis.Z)!;
+        app.Drag(InModel(window, arrow.At), InModel(window, arrow.At + new Vector(0, perInch)), InModel(window, arrow.At + new Vector(0, perInch * 2)));
+        app.Type("3 1/2");
+
+        app.Expect("what is typed shows by the pointer, waiting for Enter", () =>
+            Assert.StartsWith("3 1/2 — Enter", window.Model.LiveReadout, StringComparison.Ordinal));
+
+        app.Press(Key.Enter);
+
+        app.Expect("the apron went down exactly 3 1/2\" from where the drag began", () =>
+        {
+            Box moved = window.CurrentDesign!.Sketch.Find<Box>(apron.Id)!;
+            Assert.Equal(apron.Anchor.Z - Length.Inches(3, 1, 2), moved.Anchor.Z);
+            Assert.Equal((apron.Anchor.X, apron.Anchor.Y), (moved.Anchor.X, moved.Anchor.Y));
+            Assert.StartsWith("Moved Apron, long, south down 3 1/2\"", window.MessageOnScreen, StringComparison.Ordinal);
+        });
+
+        // The drag and the typed length are one step: one undo puts the apron back.
+        app.Chord(Key.Z);
+
+        app.Expect("one undo puts the apron back where it was before the drag", () =>
+            Assert.Equal(apron, window.CurrentDesign!.Sketch.Find<Box>(apron.Id)));
+
+        // Now while dragging: grab the top face's handle, pull, type 5 and press Enter before letting go.
+        ModelHandle face = window.Model.FaceHandle(BoxFace.Top)!;
+        app.PressAt(InModel(window, face.At));
+        app.DragTo(InModel(window, face.At - new Vector(0, perInch)));
+        app.Type("5");
+        app.Press(Key.Enter);
+        app.ReleaseAt(InModel(window, face.At - new Vector(0, perInch)));
+
+        app.Expect("typed mid-drag, the apron is exactly 5\" across its top and bottom, grown from its bottom up", () =>
+        {
+            Box grown = window.CurrentDesign!.Sketch.Find<Box>(apron.Id)!;
+            Assert.Equal(Length.Inches(5), grown.Depth);
+            Assert.Equal(apron.Anchor, grown.Anchor);
+        });
+
+        app.Chord(Key.Z);
+
+        app.Expect("and one undo takes that back too", () =>
+            Assert.Equal(apron, window.CurrentDesign!.Sketch.Find<Box>(apron.Id)));
+    });
+
     /// <summary>The help text the plan canvas's automation element for a part carries.</summary>
     static string? PartHelpText(MainWindow window, EntityId part) =>
         Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(window.Canvas)

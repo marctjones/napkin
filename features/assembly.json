@@ -99,6 +99,15 @@
       "milestone": "backlog",
       "issue": 78,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-12",
+      "area": "ui",
+      "title": "Type a length after or during a 3D drag",
+      "acceptance": "In the 3D view, dragging a coffee-table apron's Z arrow down, typing 3 1/2 and pressing Enter leaves it exactly 3 1/2\" below where the drag began; typing 5 and Enter while dragging its top face handle makes it exactly 5\" deep; and one undo takes each back.",
+      "milestone": "backlog",
+      "issue": 79,
+      "kind": "workflow"
     }
   ]
 }

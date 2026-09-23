@@ -1404,6 +1404,13 @@ Nothing stored depends on any of this.
   or `Coincident` the plan snap would.
 - **Everything else** — type a size, add a relationship, delete, duplicate, undo — is the same
   request through the same `DesignEditor` as in the plan view.
+- **Exact numbers (#78, #79, 2026-09-23).** The Part panel carries where a part is — the low corner
+  of its extent, east, north and up, in the world's terms — and applying it states `SetPosition`,
+  so what is held to the part follows. During an arrow or face-handle drag, or right after one,
+  typing a length and pressing Enter replaces what the drag did with exactly that — that far from
+  where it began, the way it was dragged, or that size across the face — as one undo step: the
+  measurements box of other modellers, and the reason §8.3's arrows are worth grabbing at all
+  when the answer is a typed number.
 
 ### 8.4 Rendering: hand-rolled over Avalonia's 2D drawing
 
