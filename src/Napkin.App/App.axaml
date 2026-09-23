@@ -24,6 +24,11 @@
             <FontFamily x:Key="SeFontMono">avares://Napkin.App/Assets/Fonts#IBM Plex Mono</FontFamily>
             <FontFamily x:Key="SeFontSerif">avares://Napkin.App/Assets/Fonts#IBM Plex Serif</FontFamily>
             <FontFamily x:Key="SeFontSans">avares://Napkin.App/Assets/Fonts#IBM Plex Sans</FontFamily>
+
+            <!-- Fluent's focus ring and text selection are accent-blue and ignore SystemAccentColor
+                 (design-repo docs/avalonia-usage.md), so they are pointed at moss here. -->
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#4A7C4A" />
+            <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#4A7C4A" />
         </ResourceDictionary>
     </Application.Resources>
 

@@ -35,46 +35,50 @@ public sealed record CanvasPalette(
     Color Snap,
     Color PreviewFill)
 {
-    /// <summary>Light theme: ink on warm paper.</summary>
+    /// <summary>
+    /// Light theme: ink on paper. Neutrals, selection (moss) and problems (rust) come from the
+    /// Skeptical Engineering tokens; the layer colours below are napkin's own, since the design
+    /// system has no drawing section yet.
+    /// </summary>
     public static readonly CanvasPalette Light = new(
-        Background: Color.Parse("#FBFAF7"),
-        GridMinor: Color.Parse("#ECE8E0"),
-        GridMajor: Color.Parse("#DBD5C9"),
-        Dimension: Color.Parse("#1F6C7B"),
-        Label: Color.Parse("#4A463F"),
-        NodeFill: Color.Parse("#5A554C"),
-        Selection: Color.Parse("#0F6FC6"),
-        Snap: Color.Parse("#C2410C"),
-        PreviewFill: Color.Parse("#1A0F6FC6"))
+        Background: Color.Parse("#F8F8F6"),
+        GridMinor: Color.Parse("#E4E4DC"),
+        GridMajor: Color.Parse("#DCDCD4"),
+        Dimension: Color.Parse("#505048"),
+        Label: Color.Parse("#505048"),
+        NodeFill: Color.Parse("#686860"),
+        Selection: Color.Parse("#4A7C4A"),
+        Snap: Color.Parse("#9A4A3A"),
+        PreviewFill: Color.Parse("#204A7C4A"))
     {
         Styles =
         {
             [DesignLayers.Parts] = new EntityStyle(Color.Parse("#26B07A3B"), Color.Parse("#8A5A22"), 1.4),
             [DesignLayers.Framing] = new EntityStyle(Color.Parse("#1FA08A5A"), Color.Parse("#9A8253"), 1.1),
             [DesignLayers.Wall] = new EntityStyle(Color.Parse("#D8D3C9"), Color.Parse("#4B4843"), 1.8),
-            [DesignLayers.Opening] = new EntityStyle(Color.Parse("#FBFAF7"), Color.Parse("#2F6FA8"), 1.6, Dashed: true),
+            [DesignLayers.Opening] = new EntityStyle(Color.Parse("#F8F8F6"), Color.Parse("#505048"), 1.6, Dashed: true),
         },
         Neutral = new EntityStyle(Color.Parse("#18000000"), Color.Parse("#5A554C"), 1.3),
     };
 
     /// <summary>Dark theme: the same drawing, lit from the other side.</summary>
     public static readonly CanvasPalette Dark = new(
-        Background: Color.Parse("#1E2023"),
-        GridMinor: Color.Parse("#282B2F"),
-        GridMajor: Color.Parse("#343840"),
-        Dimension: Color.Parse("#63C2CE"),
-        Label: Color.Parse("#D3D6DA"),
-        NodeFill: Color.Parse("#B7BBC1"),
-        Selection: Color.Parse("#63A7F0"),
-        Snap: Color.Parse("#F08A4B"),
-        PreviewFill: Color.Parse("#2663A7F0"))
+        Background: Color.Parse("#1C1C1C"),
+        GridMinor: Color.Parse("#2E2E2B"),
+        GridMajor: Color.Parse("#3A3A36"),
+        Dimension: Color.Parse("#A0A090"),
+        Label: Color.Parse("#C8C8C0"),
+        NodeFill: Color.Parse("#A0A090"),
+        Selection: Color.Parse("#6FA86F"),
+        Snap: Color.Parse("#D0806E"),
+        PreviewFill: Color.Parse("#286FA86F"))
     {
         Styles =
         {
             [DesignLayers.Parts] = new EntityStyle(Color.Parse("#2ED9A066"), Color.Parse("#D9A066"), 1.4),
             [DesignLayers.Framing] = new EntityStyle(Color.Parse("#22C0B48F"), Color.Parse("#9A9275"), 1.1),
             [DesignLayers.Wall] = new EntityStyle(Color.Parse("#34383E"), Color.Parse("#C2C6CC"), 1.8),
-            [DesignLayers.Opening] = new EntityStyle(Color.Parse("#1E2023"), Color.Parse("#6FB3E0"), 1.6, Dashed: true),
+            [DesignLayers.Opening] = new EntityStyle(Color.Parse("#1C1C1C"), Color.Parse("#A0A090"), 1.6, Dashed: true),
         },
         Neutral = new EntityStyle(Color.Parse("#22FFFFFF"), Color.Parse("#A9ADB4"), 1.3),
     };
