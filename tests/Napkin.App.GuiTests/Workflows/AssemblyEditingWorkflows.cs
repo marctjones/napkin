@@ -470,6 +470,54 @@ public class AssemblyEditingWorkflows
         });
     });
 
+    [GuiWorkflow("GUI-ASSEM-11")]
+    public void A_typed_height_moves_a_part_exactly_and_what_is_flush_with_it_follows() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+        Box top = BoxNamed(window, "Top");
+        Box apron = BoxNamed(window, "Apron, long, south");
+        app.Click(OnPlan(window, apron.Center.XY));
+        app.Press(Key.V);
+
+        // The fixture draws the apron touching the underside with nothing holding it there: a drag of
+        // its Z arrow away and back states the flush the snap catches.
+        ModelHandle arrow = window.Model.MoveHandle(Axis.Z)!;
+        app.PressAt(InModel(window, arrow.At));
+        app.DragTo(InModel(window, arrow.At + new Vector(0, 20)));
+        app.DragTo(InModel(window, arrow.At));
+        app.ReleaseAt(InModel(window, arrow.At));
+
+        Flush held = new(RelationshipId.New(), new FeatureRef(top.Id, BoxFeature.Face(BoxFace.Bottom)), new FeatureRef(apron.Id, BoxFeature.Face(BoxFace.Top)));
+        app.Expect("the apron is held flush under the top", () =>
+            Assert.Contains(window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<Flush>(), flush => flush.A == held.A && flush.B == held.B));
+
+        // Pick the top, and let go of its pin from its row in the list.
+        app.Click(InModel(window, window.Model.Camera.Project(new Vector3d(24, 12, 17))));
+        app.Click(CentreOf(window, window.RemoveRelationshipButton("Top is pinned where it is.")!));
+
+        // Type how high off the floor it is to be, and press Enter.
+        app.Click(CentreOf(window, window.PositionFields.Up));
+        app.Chord(Key.A);
+        app.Type("20\"");
+        app.Press(Key.Enter);
+
+        app.Expect("the top's underside is exactly 20\" up, and the apron held under it came with it", () =>
+        {
+            Box raised = window.CurrentDesign!.Sketch.Find<Box>(top.Id)!;
+            Assert.Equal(Length.Inches(20), SpaceSnapResolver.Extent(raised).Low.Z);
+            Assert.Equal(top.Anchor.X, raised.Anchor.X);
+            Assert.Equal(top.Anchor.Y, raised.Anchor.Y);
+
+            Box followed = window.CurrentDesign!.Sketch.Find<Box>(apron.Id)!;
+            Assert.Equal(Length.Inches(20), followed.Anchor.Z + followed.Depth);
+            Assert.Equal("1'-8\"", window.PositionFields.Up.Text);
+        });
+
+        app.SaveFrame("top-raised-by-typing");
+    });
+
     /// <summary>The help text the plan canvas's automation element for a part carries.</summary>
     static string? PartHelpText(MainWindow window, EntityId part) =>
         Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(window.Canvas)
@@ -483,7 +531,7 @@ public class AssemblyEditingWorkflows
         Assert.True(window.IsRelationshipListExpanded, "the relationship list is not open.");
 
         Rect list = BoundsIn(window, window.Relationships);
-        Rect panel = BoundsIn(window, window.Properties);
+        Rect panel = BoundsIn(window, window.PropertiesArea);
         Rect status = BoundsIn(window, window.StatusLine);
 
         Assert.False(list.Intersects(panel), $"the list {list} overlaps the Part panel {panel}.");

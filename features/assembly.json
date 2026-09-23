@@ -90,6 +90,15 @@
       "milestone": "backlog",
       "issue": 85,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-11",
+      "area": "ui",
+      "title": "Type where a part is, and what is held to it follows",
+      "acceptance": "With a coffee-table apron snapped flush under the top and the top's pin removed from its row, typing 20\" in the top's Up position field and pressing Enter puts the top's underside exactly 20\" off the floor, keeps it where it was east-west and north-south, and raises the apron with it.",
+      "milestone": "backlog",
+      "issue": 78,
+      "kind": "workflow"
     }
   ]
 }
