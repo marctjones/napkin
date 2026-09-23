@@ -99,11 +99,18 @@ public sealed class PlacementTool
     /// <summary>What is held, in words: "a 2x4", "a plain board".</summary>
     public string Holding => Stock is { } stock ? $"a {stock.Name}" : "a plain board";
 
+    /// <summary>
+    /// How the preview has been turned (#92), in the world's terms, or <see langword="null"/> while
+    /// it lies flat against whatever face it is over.
+    /// </summary>
+    public Orientation? Turned { get; private set; }
+
     /// <summary>Picks up a stock size, or puts everything down with null.</summary>
     /// <returns><see langword="false"/> when the item cannot be placed (a fastener) and nothing was picked up.</returns>
     public bool Arm(StockItem? item)
     {
         PlainBoard = false;
+        Turned = null;
         return _stock.Arm(item);
     }
 
@@ -112,6 +119,18 @@ public sealed class PlacementTool
     {
         _stock.Arm(null);
         PlainBoard = true;
+        Turned = null;
+    }
+
+    /// <summary>
+    /// Turns the preview a quarter turn about a world axis (#92) — from however it lies on the face
+    /// it is over now, or flat on the floor when it is over none. Nothing is placed yet, so nothing
+    /// holds it and a turn is never refused.
+    /// </summary>
+    public void Turn(Axis axis, int quarterTurns, PlacementFace? over)
+    {
+        Orientation from = Turned ?? LyingOn((over ?? PlacementFace.Floor).Plane.U, (over ?? PlacementFace.Floor).Plane.V);
+        Turned = from.TurnedAbout(axis, quarterTurns);
     }
 
     /// <summary>Puts down whatever is held.</summary>
@@ -148,6 +167,11 @@ public sealed class PlacementTool
         if (!IsArmed)
         {
             return null;
+        }
+
+        if (Turned is { } turned)
+        {
+            return ShapeTurned(sketch, face, turned, from, to, layer, id, name, gridStepInches, radius);
         }
 
         Point2 press = face.InPlane(from);
@@ -211,6 +235,83 @@ public sealed class PlacementTool
         {
             // A click's part is where the pointer put it only roughly: its edges line up with the
             // faces of parts it overlaps across the face's plane, or its corner with the grid.
+            SpaceSnapPlan plan = SpaceSnapResolver.Resolve(sketch, box, box.Anchor, [u, v], gridStepInches, radius);
+            box = box with { Anchor = plan.Anchor };
+            snaps = plan.Relationships;
+        }
+
+        return new PlacementPreview(box, face, part, Stock, snaps);
+    }
+
+    /// <summary>
+    /// The part as it would be placed after the preview was turned (#92): its sizes as it lies flat,
+    /// turned as the person turned it, resting on the face with whichever of its faces now faces it.
+    /// </summary>
+    /// <remarks>
+    /// The length rule: the length is the default until a drag states it, and a drag states it only
+    /// along the axis the length now lies on — in the face's plane. Stood on end on the floor, a 2x4's
+    /// length points out of the face, so it keeps its 24″, to be typed or dragged by its face handle
+    /// once it is placed (#79). Otherwise the part is centred on the pointer, on the grid, its edges
+    /// snapped to the faces of the parts it overlaps across the face, as a flat one is.
+    /// </remarks>
+    PlacementPreview? ShapeTurned(
+        Sketch sketch,
+        PlacementFace face,
+        Orientation turned,
+        Point3 from,
+        Point3 to,
+        LayerId layer,
+        EntityId id,
+        string name,
+        double gridStepInches,
+        Length radius)
+    {
+        (Axis u, Axis v) = face.Plane;
+        Axis lengthAxis = turned.Image(Axis.X).Axis;
+        Length dragged = Length.Abs(to.Component(lengthAxis) - from.Component(lengthAxis));
+        bool alongLength = lengthAxis != face.Normal && dragged > Length.Zero;
+
+        Length length = alongLength ? dragged : DefaultLength;
+        Length across;
+        Length thickness;
+        Part? part = null;
+        if (Stock is { } stock)
+        {
+            ImmutableArray<FixedDimension> fixes = StockAssignment.Fixes(stock);
+            thickness = fixes.First(fixed_ => fixed_.Dimension == PartDimension.Thickness).Value;
+            across = fixes.FirstOrDefault(fixed_ => fixed_.Dimension == PartDimension.Width) is { Value: var width } && width > Length.Zero
+                ? width
+                : DefaultWidth;
+            part = new Part(stock.Name, Species: null, Quantity: 1, new PlanAxes(PartDimension.Length, PartDimension.Width));
+        }
+        else
+        {
+            across = DefaultWidth;
+            thickness = Box.DefaultDepth;
+        }
+
+        Box standing = new Box(id, layer, Point3.Origin, length, across, thickness, turned.FaceUp, turned.Rotation) with { Name = name };
+        (Point3 standingLow, Point3 standingHigh) = SpaceSnapResolver.Extent(standing);
+        Vector3 toAnchor = standing.Anchor - standingLow;
+        Vector3 size = standingHigh - standingLow;
+
+        // Centred on the press across the face — from the press to the pointer along the length,
+        // when the drag states it — and resting on the face along its normal.
+        Point3 low = Point3.Origin;
+        foreach (Axis axis in (Axis[])[u, v])
+        {
+            Length half = size.Component(axis).Divide(2, Rounding.HalfToEven);
+            low = low.WithComponent(axis, alongLength && axis == lengthAxis
+                ? Length.Min(from.Component(axis), to.Component(axis))
+                : from.Component(axis) - half);
+        }
+
+        low = low.WithComponent(face.Normal, face.Positive ? face.Coordinate : face.Coordinate - size.Component(face.Normal));
+        Box box = standing with { Anchor = low + toAnchor };
+
+        ImmutableList<Relationship> snaps = [];
+        if (!alongLength)
+        {
             SpaceSnapPlan plan = SpaceSnapResolver.Resolve(sketch, box, box.Anchor, [u, v], gridStepInches, radius);
             box = box with { Anchor = plan.Anchor };
             snaps = plan.Relationships;

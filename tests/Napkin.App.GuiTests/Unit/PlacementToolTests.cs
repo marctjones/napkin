@@ -129,6 +129,66 @@ public class PlacementToolTests
     }
 
     [Fact]
+    public void A_2x4_turned_about_y_stands_on_end_on_the_top_for_its_default_length(/* #92 */)
+    {
+        PlacementTool tool = new();
+        tool.Arm(TwoByFour());
+        PlacementFace upper = PlacementFace.Of(Top, BoxFace.Top);
+        tool.Turn(Axis.Y, 1, upper);
+        Point3 at = Point3.Inches(20, 10, 17);
+
+        PlacementPreview preview = Place(tool, upper, at, at);
+
+        // Its length points up out of the face: 24", resting on the top.
+        (Point3 low, Point3 high) = SpaceSnapResolver.Extent(preview.Box);
+        Assert.Equal(Length.Inches(17), low.Z);
+        Assert.Equal(Length.Inches(24), high.Z - low.Z);
+        Assert.Equal(Axis.Z, preview.Box.Orientation.Image(Axis.X).Axis);
+
+        // And it is held by whichever of its faces now faces down.
+        Flush flush = Assert.IsType<Flush>(PlacementTool.Requests(Table, preview).Holds[0]);
+        BoxFace touching = ((FeatureRef)flush.B).Feature.Faces.Single();
+        Assert.Equal((Axis.Z, false), preview.Box.Orientation.Normal(touching));
+    }
+
+    [Fact]
+    public void A_drag_sets_a_turned_parts_length_only_along_the_axis_it_lies_on(/* #92 */)
+    {
+        // Turned about Z, a 2x4 lying on the floor runs north-south: a drag north states its length.
+        PlacementTool tool = new();
+        tool.Arm(TwoByFour());
+        tool.Turn(Axis.Z, 1, PlacementFace.Floor);
+
+        PlacementPreview north = Place(tool, PlacementFace.Floor, Point3.Inches(60, 0, 0), Point3.Inches(60, 30, 0));
+        (Point3 low, Point3 high) = SpaceSnapResolver.Extent(north.Box);
+        Assert.Equal(Length.Inches(30), high.Y - low.Y);
+        Assert.Equal((Length.Zero, Length.Inches(30)), (low.Y, high.Y));
+
+        // Stood on end instead, the drag cannot state a length that points out of the floor: the
+        // length stays the default however far the drag goes.
+        PlacementTool onEnd = new();
+        onEnd.Arm(TwoByFour());
+        onEnd.Turn(Axis.Y, 1, PlacementFace.Floor);
+        PlacementPreview upright = Place(onEnd, PlacementFace.Floor, Point3.Inches(60, 0, 0), Point3.Inches(60, 30, 0));
+        Assert.Equal(Axis.Z, upright.Box.Orientation.Image(Axis.X).Axis);
+        (Point3 uprightLow, Point3 uprightHigh) = SpaceSnapResolver.Extent(upright.Box);
+        Assert.Equal(PlacementTool.DefaultLength, uprightHigh.Z - uprightLow.Z);
+        Assert.Equal(Length.Zero, uprightLow.Z);
+    }
+
+    [Fact]
+    public void Picking_something_up_again_starts_it_flat()
+    {
+        PlacementTool tool = new();
+        tool.Arm(TwoByFour());
+        tool.Turn(Axis.Y, 1, PlacementFace.Floor);
+        Assert.NotNull(tool.Turned);
+
+        tool.Arm(TwoByFour());
+        Assert.Null(tool.Turned);
+    }
+
+    [Fact]
     public void Nothing_held_places_nothing_and_a_fastener_cannot_be_held()
     {
         PlacementTool tool = new();

@@ -918,6 +918,13 @@ public sealed class ModelView : Control
         }
 
         int turns = modifiers.HasFlag(KeyModifiers.Shift) ? -1 : 1;
+        if (_placement.IsArmed && key is Key.X or Key.Y or Key.Z)
+        {
+            // Holding something to place: the keys turn the preview, not the selection (#92).
+            TurnPreview(key switch { Key.X => Axis.X, Key.Y => Axis.Y, _ => Axis.Z }, turns);
+            return true;
+        }
+
         switch (key)
         {
             case Key.X:
@@ -1309,6 +1316,26 @@ public sealed class ModelView : Control
 
     PlacementPreview? ShapedOn(DesignEditor editor, PlacementFace face, Point3 from, Point3 to) =>
         _placement.Shape(editor.Sketch, face, from, to, editor.LayerForNewParts(), _previewId, string.Empty, GridStepInches, ModelLength(SnapRadiusPixels));
+
+    /// <summary>
+    /// Turns what is held a quarter turn about a world axis before it is placed (#92), and shows it
+    /// turned where the pointer is.
+    /// </summary>
+    public void TurnPreview(Axis axis, int quarterTurns)
+    {
+        if (!_placement.IsArmed || _editor is not { } editor)
+        {
+            return;
+        }
+
+        (PlacementFace? Face, Point3 Point)? under = FaceUnder(_lastPointer, editor);
+        _placement.Turn(axis, quarterTurns, under?.Face);
+        _preview = under is { Face: { } face } over ? ShapedOn(editor, face, over.Point, over.Point) : null;
+        editor.Say(
+            EditSeverity.Hint,
+            $"Turned {_placement.Holding} a quarter turn about {axis}{(quarterTurns < 0 ? ", the other way" : string.Empty)}, to place.");
+        InvalidateVisual();
+    }
 
     /// <summary>
     /// Puts the part down (#74): added with its stock, then held by the flush against the face it

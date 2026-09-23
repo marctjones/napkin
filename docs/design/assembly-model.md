@@ -1200,7 +1200,12 @@ real thing; none is this design.
   `AddEntity` with its stock assignment, `Flush(target face, the part's face against it)`, and the
   edge snaps — each relationship put to the updater as a snap is. Nothing represents the floor, so
   a part placed on it states no flush. A face a cut made is refused with a hint: it is not a
-  plane the part could rest on. Turning the preview before placing it is #92. Everything else in
+  plane the part could rest on. **Turning the preview (#92):** while something is held, X, Y and
+  Z turn the preview a quarter turn about that world axis, and it goes on resting on the face,
+  touching it with whichever of its faces now faces it — nothing holds it yet, so the turn is
+  never refused. Its length is the 24″ default until a drag states it, and a drag states it only
+  along the axis the length now lies on; stood on end, a 2x4's length points out of the face and
+  is typed or dragged by its face handle once placed (§8.3, #79). Everything else in
   this bullet stands: the workshop, dimensions and the plan's own drawing gestures stay the plan's.
 - **Nodes and segments in space.** Plan-plane construction geometry, at Z = 0 (§1.4).
 - **Groups, sub-assemblies, exploded views.** "Move the whole table" is what `Drag` already does
