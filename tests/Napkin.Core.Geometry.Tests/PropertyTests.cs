@@ -667,6 +667,126 @@ public class PropertyTests
         Assert.True(plainBlanks > 0, "no blank was ever left plain");
     }
 
+    /// <summary>
+    /// P17 (assembly-model §9.2): the solid is closed and exact. For every generated box with cuts,
+    /// placed in space, and then turned to each of the 24 orientations in turn: every face's
+    /// boundary closes; the caps are the local outline lifted to 0 and <see cref="Box.Depth"/> and
+    /// wind outward; every side is one outline segment swept square to the caps, its four corners
+    /// on the two caps; and every point of every face is <c>Anchor + Orientation.Apply(local)</c>
+    /// for a point of the outline lifted to 0 or the depth.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Seeds))]
+    public void P17_TheSolidIsClosedAndExact(int seed)
+    {
+        SketchGenerator generator = new(seed);
+
+        for (int iteration = 0; iteration < Iterations / 4; iteration++)
+        {
+            foreach (Box generated in generator.NextShapedSketchInSpace().Entities.Values.OfType<Box>().OrderBy(box => box.Id))
+            {
+                foreach (BoxFace faceUp in Enum.GetValues<BoxFace>())
+                {
+                    for (int q = 0; q < 4; q++)
+                    {
+                        Box box = generated with { FaceUp = faceUp, Rotation = Angle.Right * q };
+                        AssertTheSolidIsClosedAndExact(box, $"seed {seed}, iteration {iteration}, box {box.Id}, {box.Orientation}");
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// P17 would pass on plain boxes alone, so the generator it runs on is shown to carry every cut
+    /// kind, at heights off the plan datum.
+    /// </summary>
+    [Fact]
+    public void TheGeneratorInSpaceReachesEveryCutKindOffTheDatum()
+    {
+        List<Box> boxes = [];
+        foreach (int seed in Enumerable.Range(1, 8))
+        {
+            SketchGenerator generator = new(seed);
+            for (int iteration = 0; iteration < Iterations / 4; iteration++)
+            {
+                boxes.AddRange(generator.NextShapedSketchInSpace().Entities.Values.OfType<Box>());
+            }
+        }
+
+        Assert.True(boxes.Count(box => box.Cuts.OfType<CornerCut>().Any()) > 20);
+        Assert.True(boxes.Count(box => box.Cuts.OfType<RoundedCorner>().Any()) > 20);
+        Assert.True(boxes.Count(box => box.Cuts.OfType<CurvedEdge>().Any()) > 10);
+        Assert.True(boxes.Count(box => box.Anchor.Z != Length.Zero && !box.Cuts.IsEmpty) > 20);
+        Assert.True(boxes.Count(box => box.Depth != Box.DefaultDepth) > 20);
+    }
+
+    private static void AssertTheSolidIsClosedAndExact(Box box, string because)
+    {
+        ImmutableArray<OutlineSegment> outline = box.Outline().Segments;
+        ImmutableArray<SolidFace> faces = box.Solid().Faces;
+
+        Point3 Lift(Point2 local, Length z) => box.Anchor + box.Orientation.Apply(new Vector3(local.X, local.Y, z));
+
+        static IEnumerable<Point2> PointsOfOutline(OutlineSegment segment) => segment switch
+        {
+            ArcByCenter arc => [arc.From, arc.To, arc.Center],
+            ArcThrough arc => [arc.From, arc.Through, arc.To],
+            _ => [segment.From, segment.To],
+        };
+
+        HashSet<Point3> bottomPoints = [.. outline.SelectMany(PointsOfOutline).Select(p => Lift(p, Length.Zero))];
+        HashSet<Point3> topPoints = [.. outline.SelectMany(PointsOfOutline).Select(p => Lift(p, box.Depth))];
+
+        Assert.True(faces.Length == outline.Length + 2, $"{because}: {faces.Length} faces for {outline.Length} outline segments");
+        Assert.True(faces[0].Of == BoxFace.Bottom && faces[1].Of == BoxFace.Top, $"{because}: the caps come first");
+        Assert.True(faces[0].Boundary.Length == outline.Length && faces[1].Boundary.Length == outline.Length, $"{because}: a cap is not the outline");
+
+        // Closed: each segment ends where the next begins, and the last where the first begins.
+        foreach (SolidFace face in faces)
+        {
+            for (int i = 0; i < face.Boundary.Length; i++)
+            {
+                SolidSegment next = face.Boundary[(i + 1) % face.Boundary.Length];
+                Assert.True(face.Boundary[i].To == next.From, $"{because}: a {face.Of?.ToString() ?? "cut"} face's segment {i} does not meet the next");
+            }
+        }
+
+        // Exact: every point is a point of the outline, lifted to its cap's level and placed.
+        Assert.True(faces[0].Boundary.SelectMany(SolidTests.PointsOf).All(bottomPoints.Contains), $"{because}: the bottom cap leaves the outline");
+        Assert.True(faces[1].Boundary.SelectMany(SolidTests.PointsOf).All(topPoints.Contains), $"{because}: the top cap leaves the outline");
+
+        // The caps wind outward: their right-hand normals are the box's own bottom and top normals.
+        foreach (SolidFace cap in faces[..2])
+        {
+            (Axis axis, bool positive) = box.Orientation.Normal(cap.Of!.Value);
+            (Int128 nx, Int128 ny, Int128 nz) = SolidTests.NewellNormal(cap);
+            Int128 along = axis switch { Axis.X => nx, Axis.Y => ny, _ => nz };
+            Int128 across = (axis == Axis.X ? 0 : Int128.Abs(nx)) + (axis == Axis.Y ? 0 : Int128.Abs(ny)) + (axis == Axis.Z ? 0 : Int128.Abs(nz));
+            Assert.True(positive ? along > 0 : along < 0, $"{because}: the {cap.Of} cap winds inward");
+            Assert.True(across == 0, $"{because}: the {cap.Of} cap is not in a plane square to {axis}");
+        }
+
+        // Every side: two corners on the bottom cap, two on the top, joined by rulings square to the
+        // caps — along the box's own local Z, which is what "a cut is square through the cap" means.
+        Vector3 up = box.Orientation.Apply(new Vector3(Length.Zero, Length.Zero, box.Depth));
+        HashSet<BoxFace> sidesSeen = [];
+        foreach (SolidFace side in faces[2..])
+        {
+            Assert.True(side.Boundary.Length == 4, $"{because}: a side of {side.Boundary.Length} segments");
+            Assert.True(side.Of is null || side.Of is BoxFace.South or BoxFace.East or BoxFace.North or BoxFace.West, $"{because}: a side is Of {side.Of}");
+            Assert.True(side.Of is null || sidesSeen.Add(side.Of.Value), $"{because}: two sides are Of {side.Of}");
+
+            Assert.True(bottomPoints.Contains(side.Boundary[0].From) && bottomPoints.Contains(side.Boundary[0].To), $"{because}: a side's lower corners are not on the bottom cap");
+            Assert.True(topPoints.Contains(side.Boundary[2].From) && topPoints.Contains(side.Boundary[2].To), $"{because}: a side's upper corners are not on the top cap");
+            Assert.True(side.Boundary.SelectMany(SolidTests.PointsOf).All(p => bottomPoints.Contains(p) || topPoints.Contains(p)), $"{because}: a side leaves the outline");
+
+            Assert.True(side.Boundary[1] is StraightSegment3 rising && rising.To - rising.From == up, $"{because}: a side's rising ruling is not square to the caps");
+            Assert.True(side.Boundary[3] is StraightSegment3 falling && falling.From - falling.To == up, $"{because}: a side's falling ruling is not square to the caps");
+            Assert.True(side.Boundary[0].GetType() == side.Boundary[2].GetType(), $"{because}: a side's two caps' edges are different kinds");
+        }
+    }
+
     [Fact]
     public void TheGeneratorReachesEveryOutcomeThesePropertiesRelyOn()
     {

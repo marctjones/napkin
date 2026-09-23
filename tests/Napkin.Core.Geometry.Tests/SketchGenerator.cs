@@ -310,6 +310,28 @@ internal sealed class SketchGenerator
     }
 
     /// <summary>
+    /// Unrelated boxes with valid cuts on them, placed in space: tipped onto any face, at any
+    /// quarter-turn spin, at any height, with any depth (docs/design/assembly-model.md &#xA7;9.2 P17).
+    /// </summary>
+    /// <remarks>
+    /// A separate generator from <see cref="NextShapedSketch"/>, whose boxes lie as drawn, so that
+    /// adding this leaves the random stream every existing shaped property sees untouched.
+    /// </remarks>
+    internal Sketch NextShapedSketchInSpace()
+    {
+        Sketch sketch = Sketch.Empty;
+
+        int boxes = _random.Next(1, 5);
+        for (int i = 0; i < boxes; i++)
+        {
+            Box box = NextBox();
+            sketch = sketch.WithEntity(box with { Cuts = NextCuts(box.Width, box.Height) });
+        }
+
+        return sketch;
+    }
+
+    /// <summary>
     /// Cuts that fit the blank they are on, <em>derived</em> from its sizes rather than sampled
     /// and hoped for (design §7.2, shaped parts §9.2).
     /// </summary>
