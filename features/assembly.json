@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "features": [
+    {
+      "id": "GUI-ASSEM-01",
+      "area": "ui",
+      "title": "Turn a part in the 3D view and see its side in the plan",
+      "acceptance": "Select a coffee-table leg in the plan and switch to the 3D view by keyboard; turning it about X is refused because relationships hold it in its own frame, a duplicate of it turned about X has its north face up and a 2 1/2\" by 16 1/4\" footprint in the plan, and one undo makes that footprint square again.",
+      "milestone": "backlog",
+      "issue": null,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-02",
+      "area": "ui",
+      "title": "Set a part under the top in the 3D view",
+      "acceptance": "In the 3D view, drag a coffee-table apron's Z arrow down and then up until the snap catches the top's underside; the drop stores a Flush of the top's bottom face and the apron's top face, the relationship list says so, and typing a 5\" depth in the properties panel grows the apron downward while the top stays where it was.",
+      "milestone": "backlog",
+      "issue": null,
+      "kind": "workflow"
+    }
+  ]
+}

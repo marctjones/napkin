@@ -114,6 +114,7 @@ public static class RelationshipText
         {
             BoxWidthRef width => $"{nameOf(width.Box)}'s width",
             BoxHeightRef height => $"{nameOf(height.Box)}'s height",
+            BoxDepthRef depth => $"{nameOf(depth.Box)}'s depth",
             SegmentLengthRef length => $"{nameOf(length.Segment)}'s length",
             _ => "a size",
         };

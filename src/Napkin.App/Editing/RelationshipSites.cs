@@ -42,6 +42,13 @@ public static class RelationshipSites
         }
     }
 
+    /// <summary>
+    /// Every box feature a relationship refers to, whatever its dimension — the 3D view's question,
+    /// which marks vertices and edges a cut took away as well as the plan's corners.
+    /// </summary>
+    public static IEnumerable<FeatureRef> FeaturesOf(Relationship relationship) =>
+        PlacesOf(relationship).OfType<FeatureRef>();
+
     static IEnumerable<PlaceRef> PlacesOf(Relationship relationship)
     {
         ArgumentNullException.ThrowIfNull(relationship);
