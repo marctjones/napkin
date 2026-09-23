@@ -61,6 +61,7 @@ public partial class MainWindow : Window
     string? _documentPath;
     Func<Task>? _afterAnswer;
     bool _showingProperties;
+    Box? _propertiesShown;
     bool _showingCut;
     EntityId? _editingBox;
     EntityId? _shaping;
@@ -1052,6 +1053,7 @@ public partial class MainWindow : Window
         UpdateRelationships();
         PlaceDimensionEditor();
         UpdateWorkshop();
+        FollowDesignInProperties();
 
         // The cut list follows the drawing: widen a part with the list open and the row changes,
         // because both are readings of one design rather than a drawing and a snapshot of it.
@@ -1136,6 +1138,7 @@ public partial class MainWindow : Window
         if (IsShapingPart || Editor.OnlySelectedBox is not { } box)
         {
             PropertiesPanel.IsVisible = false;
+            _propertiesShown = null;
             ShowCut();
             return;
         }
@@ -1147,18 +1150,8 @@ public partial class MainWindow : Window
             PropertiesError.IsVisible = false;
 
             PartNameBox.Text = box.Name;
-            IsPartCheck.IsChecked = box.Part is not null;
-            PartFields.IsVisible = box.Part is not null;
-
-            FillDimensionChoices();
-
-            Part part = box.Part ?? DefaultPart;
-            PlanXBox.SelectedItem = SceneWords.Of(part.PlanAxes.X);
-            PlanYBox.SelectedItem = SceneWords.Of(part.PlanAxes.Y);
+            FillPartFields(box);
             OutOfPlaneBox.Text = box.Depth.Format(Editor.LabelFormat).Text;
-            QuantityBox.Text = part.Quantity.ToString(CultureInfo.InvariantCulture);
-            StockBox.Text = part.Stock ?? string.Empty;
-            SpeciesBox.Text = part.Species ?? string.Empty;
 
             UpdateOutOfPlaneCaption();
             UpdateStockReadout();
@@ -1168,7 +1161,74 @@ public partial class MainWindow : Window
             _showingProperties = false;
         }
 
+        _propertiesShown = box;
         ShowCut();
+    }
+
+    /// <summary>
+    /// Keeps the panel in step with the design while the same part stays selected (#69).
+    /// </summary>
+    /// <remarks>
+    /// A drag in the 3D view, an undo or a grip on a turned part can change what the panel shows
+    /// without changing the selection, and a panel still showing the old depth would put it back
+    /// — pinned by a typed size — the next time Apply is pressed. Only the fields whose value in
+    /// the design changed are refilled, so a name half-typed in the panel survives a move that did
+    /// not touch the name.
+    /// </remarks>
+    void FollowDesignInProperties()
+    {
+        if (IsShapingPart
+            || _propertiesShown is not { } shown
+            || Editor.OnlySelectedBox is not { } box
+            || box.Id != shown.Id
+            || box == shown)
+        {
+            return;
+        }
+
+        _showingProperties = true;
+        try
+        {
+            if (box.Name != shown.Name)
+            {
+                PartNameBox.Text = box.Name;
+            }
+
+            if (box.Part != shown.Part)
+            {
+                FillPartFields(box);
+            }
+
+            if (box.Depth != shown.Depth)
+            {
+                OutOfPlaneBox.Text = box.Depth.Format(Editor.LabelFormat).Text;
+            }
+
+            UpdateOutOfPlaneCaption();
+            UpdateStockReadout();
+        }
+        finally
+        {
+            _showingProperties = false;
+        }
+
+        _propertiesShown = box;
+    }
+
+    /// <summary>What kind of part the box is: the check box and everything under it.</summary>
+    void FillPartFields(Box box)
+    {
+        IsPartCheck.IsChecked = box.Part is not null;
+        PartFields.IsVisible = box.Part is not null;
+
+        FillDimensionChoices();
+
+        Part part = box.Part ?? DefaultPart;
+        PlanXBox.SelectedItem = SceneWords.Of(part.PlanAxes.X);
+        PlanYBox.SelectedItem = SceneWords.Of(part.PlanAxes.Y);
+        QuantityBox.Text = part.Quantity.ToString(CultureInfo.InvariantCulture);
+        StockBox.Text = part.Stock ?? string.Empty;
+        SpeciesBox.Text = part.Species ?? string.Empty;
     }
 
     void FillDimensionChoices()

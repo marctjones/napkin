@@ -220,12 +220,12 @@ public class AssemblyWorkflows
         app.SaveFrame("3d-apron-deeper");
     });
 
-    static Box BoxNamed(MainWindow window, string name) => window.CurrentDesign!.Sketch.Entities.Values
+    internal static Box BoxNamed(MainWindow window, string name) => window.CurrentDesign!.Sketch.Entities.Values
         .OfType<Box>()
         .Single(box => box.Name == name);
 
     /// <summary>The window coordinate a model point is drawn at on the plan.</summary>
-    static Point OnPlan(MainWindow window, Point2 world)
+    internal static Point OnPlan(MainWindow window, Point2 world)
     {
         Point onCanvas = window.Canvas.View.ToScreen(world);
         Point origin = window.Canvas.TranslatePoint(new Point(0, 0), window)!.Value;
@@ -233,14 +233,14 @@ public class AssemblyWorkflows
     }
 
     /// <summary>The window coordinate a point of the 3D view is at.</summary>
-    static Point InModel(MainWindow window, Point inView)
+    internal static Point InModel(MainWindow window, Point inView)
     {
         Point origin = window.Model.TranslatePoint(new Point(0, 0), window)!.Value;
         return new Point(inView.X + origin.X, inView.Y + origin.Y);
     }
 
     /// <summary>Opens a sample through the Samples menu, with the mouse.</summary>
-    static void OpenSample(AppDriver app, MainWindow window, string sample)
+    internal static void OpenSample(AppDriver app, MainWindow window, string sample)
     {
         app.Click(CentreOf(window, window.SamplesMenuItem));
 
@@ -250,7 +250,7 @@ public class AssemblyWorkflows
         app.Click(CentreOf(window, item));
     }
 
-    static Point CentreOf(Visual root, Visual control)
+    internal static Point CentreOf(Visual root, Visual control)
     {
         Point topLeft = control.TranslatePoint(new Point(0, 0), root)
             ?? throw new InvalidOperationException("The control is not in this window.");
