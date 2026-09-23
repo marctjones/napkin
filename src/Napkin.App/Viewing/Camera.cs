@@ -252,7 +252,14 @@ public readonly record struct Camera(
     /// <paramref name="viewport"/> with a margin all round — keeping this camera's scale and centre
     /// when there is nothing to frame.
     /// </summary>
-    public Camera FitTo(Bounds3 bounds, Size viewport, double marginFraction = ViewTransform.FitMarginFraction)
+    /// <param name="bounds">What to frame.</param>
+    /// <param name="viewport">The view's size.</param>
+    /// <param name="marginFraction">How much of each edge to leave empty, as a fraction of the viewport.</param>
+    /// <param name="coveredRight">
+    /// How many pixels at the right of the viewport something else covers — the window's side
+    /// panels (#90) — so the drawing is framed in what is left.
+    /// </param>
+    public Camera FitTo(Bounds3 bounds, Size viewport, double marginFraction = ViewTransform.FitMarginFraction, double coveredRight = 0)
     {
         if (bounds.IsEmpty || viewport.Width <= 0 || viewport.Height <= 0)
         {
@@ -273,7 +280,8 @@ public readonly record struct Camera(
             maxUp = Math.Max(maxUp, along);
         }
 
-        double usableWidth = Math.Max(viewport.Width * (1 - (2 * marginFraction)), 1);
+        double covered = Math.Clamp(coveredRight, 0, viewport.Width / 2);
+        double usableWidth = Math.Max((viewport.Width - covered) * (1 - (2 * marginFraction)), 1);
         double usableHeight = Math.Max(viewport.Height * (1 - (2 * marginFraction)), 1);
         double width = maxRight - minRight;
         double height = maxUp - minUp;
@@ -288,8 +296,10 @@ public readonly record struct Camera(
             scale = PixelsPerInch;
         }
 
+        // The drawing's middle goes to the middle of the uncovered part: the view's own middle is
+        // half the covered strip further right, in the drawing.
         Vector3d toward = TowardViewer;
-        Vector3d center = (right * ((minRight + maxRight) / 2))
+        Vector3d center = (right * (((minRight + maxRight) / 2) + (covered / 2 / ClampScale(scale))))
                           + (up * ((minUp + maxUp) / 2))
                           + (toward * Vector3d.Dot(bounds.CenterInInches, toward));
 

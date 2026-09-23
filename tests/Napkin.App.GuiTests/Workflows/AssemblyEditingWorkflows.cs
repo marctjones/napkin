@@ -241,6 +241,54 @@ public class AssemblyEditingWorkflows
         });
     });
 
+    [GuiWorkflow("GUI-ASSEM-07")]
+    public void Zoom_to_fit_frames_the_drawing_beside_the_side_panels_in_both_views() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+        Box leg = BoxNamed(window, "Leg, north-east");
+        app.Click(OnPlan(window, leg.Center.XY));
+        app.Chord(Key.D0);
+
+        app.Expect("in the plan, every part is framed left of the Part panel", () =>
+        {
+            Assert.True(window.IsShowingProperties);
+            double panelLeft = BoundsIn(window, window.Properties).Left;
+            foreach (Box box in window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>())
+            {
+                (Point3 low, Point3 high) = SpaceSnapResolver.Extent(box);
+                double right = OnPlan(window, new Point2(high.X, high.Y)).X;
+                Assert.True(right < panelLeft, $"{box.Name} reaches {right}, under the panel at {panelLeft}.");
+            }
+        });
+
+        app.SaveFrame("plan-fitted-beside-panels");
+
+        // The 3D view fits itself on the way in; Home fits it again from the isometric view.
+        app.Press(Key.V);
+        app.Press(Key.Home);
+
+        app.Expect("in the 3D view, every corner of every part is framed left of the Part panel", () =>
+        {
+            Assert.True(window.IsShowingProperties);
+            double panelLeft = BoundsIn(window, window.Properties).Left;
+            foreach (Box box in window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>())
+            {
+                foreach (BoxCorner corner in Enum.GetValues<BoxCorner>())
+                {
+                    foreach (BoxLevel level in Enum.GetValues<BoxLevel>())
+                    {
+                        double x = InModel(window, window.Model.ScreenOf(box.Vertex(corner, level))).X;
+                        Assert.True(x < panelLeft, $"{box.Name} reaches {x}, under the panel at {panelLeft}.");
+                    }
+                }
+            }
+        });
+
+        app.SaveFrame("3d-fitted-beside-panels");
+    });
+
     static void AssertSidePanelsApart(MainWindow window)
     {
         Assert.True(window.IsShowingProperties, "the Part panel is not showing.");

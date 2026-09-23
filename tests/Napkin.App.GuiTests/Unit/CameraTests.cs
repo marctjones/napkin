@@ -248,6 +248,24 @@ public class CameraTests
     }
 
     [Fact]
+    public void Fitting_beside_covered_panels_frames_every_corner_in_what_is_left()
+    {
+        Bounds3 bounds = Bounds3.Of(Point3.Inches(0, 0, 0)).Including(Point3.Inches(48, 24, 17));
+        Camera fitted = Camera.Isometric().FitTo(bounds, Viewport, coveredRight: 280);
+
+        double minX = double.PositiveInfinity, maxX = double.NegativeInfinity;
+        foreach (Vector3d corner in bounds.CornersInInches())
+        {
+            Point at = fitted.Project(corner);
+            minX = Math.Min(minX, at.X);
+            maxX = Math.Max(maxX, at.X);
+        }
+
+        Assert.True(maxX <= 620 + 1e-6, $"a corner is at {maxX}, under the panels.");
+        Assert.Equal(310, (minX + maxX) / 2, 6);
+    }
+
+    [Fact]
     public void Fitting_frames_every_corner_inside_the_margin()
     {
         Bounds3 bounds = Bounds3.Of(Point3.Inches(0, 0, 0)).Including(Point3.Inches(48, 24, 17));

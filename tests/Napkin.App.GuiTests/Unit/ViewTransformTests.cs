@@ -185,6 +185,23 @@ public class ViewTransformTests
     }
 
     [Fact]
+    public void A_fit_beside_covered_panels_frames_the_design_in_what_is_left()
+    {
+        // The window's side column covers the right 280 px (#90): the design is framed, centred,
+        // in the 620 px to its left.
+        Design design = CoffeeTable();
+        WorldBounds extents = SketchExtents.Of(design.Sketch);
+
+        ViewTransform fitted = ViewTransform.Default.FitTo(extents, Viewport, coveredRight: 280);
+
+        Point low = fitted.ToScreen(extents.MinX.ToInches(), extents.MinY.ToInches());
+        Point high = fitted.ToScreen(extents.MaxX.ToInches(), extents.MaxY.ToInches());
+        Assert.True(high.X <= 620 - (620 * ViewTransform.FitMarginFraction) + 1e-6, $"the design reaches {high.X}, under the panels.");
+        Assert.True(low.X >= (620 * ViewTransform.FitMarginFraction) - 1e-6);
+        Assert.Equal(310, (low.X + high.X) / 2, 6);
+    }
+
+    [Fact]
     [Trait("Feature", "CVS-002")]
     public void A_fit_frames_the_whole_design_with_a_margin()
     {
