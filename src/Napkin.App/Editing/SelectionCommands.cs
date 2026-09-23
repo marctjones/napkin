@@ -143,6 +143,32 @@ public static class SelectionCommands
     }
 
     /// <summary>
+    /// What a move or a resize that left the part exactly where it was says at the drop: that it
+    /// stayed put, and — when a pin is why — the way out, unpinning it, as one undo step. Nothing is
+    /// stated about a snap the part never reached.
+    /// </summary>
+    /// <param name="editor">The drawing.</param>
+    /// <param name="id">The part.</param>
+    /// <param name="what">What was attempted: "Moved Top".</param>
+    public static void SayStayedPut(DesignEditor editor, EntityId id, string what)
+    {
+        ArgumentNullException.ThrowIfNull(editor);
+
+        string name = editor.NameOf(id);
+        if (editor.Sketch.RelationshipsInOrder.OfType<Anchored>().FirstOrDefault(pin => pin.Entity == id) is { } pin)
+        {
+            editor.Show(new EditMessage(
+                EditSeverity.Problem,
+                $"{what} did not happen: {name} is pinned where it is.",
+                [pin.Id],
+                new EditOffer("Unpin it", new RemoveRelationship(pin.Id), $"Unpinned {name}")));
+            return;
+        }
+
+        editor.Say(EditSeverity.Hint, $"{name} stayed where it was: what holds it did not let it go further than that.");
+    }
+
+    /// <summary>
     /// The part the shape workshop should open, or <see langword="null"/> after saying why there
     /// is none: the workshop's scope is one box (<c>docs/design/shaped-parts-model.md</c> &#xA7;7.1).
     /// </summary>

@@ -94,7 +94,8 @@ public class ViewerWorkflows
                 $"the point under the pointer moved to {after}, not {wanted}.");
         });
 
-        app.Drag(new Point(450, 300), new Point(500, 340), new Point(540, 380));
+        // A Shift-drag pans wherever it starts; a plain drag that starts on a part moves the part (#85).
+        app.DragWith(KeyModifiers.Shift, new Point(450, 300), new Point(500, 340), new Point(540, 380));
         app.Press(Key.Left);
         app.Expect("moving around the drawing moved nothing in it", () =>
         {
@@ -129,7 +130,8 @@ public class ViewerWorkflows
 
         ViewTransform beforeDrag = canvas.View;
         Point2 under = beforeDrag.ToWorld(probe);
-        app.Drag(new Point(450, 300), new Point(500, 330), new Point(560, 360));
+        // Shift, because the drag starts on the table top: a plain drag there would move it (#85).
+        app.DragWith(KeyModifiers.Shift, new Point(450, 300), new Point(500, 330), new Point(560, 360));
         app.Expect("the drag moved the drawing by exactly the drag, not by more", () =>
         {
             // The model point that was under the pointer is under it still, 110 across and 60
@@ -293,7 +295,7 @@ public class ViewerWorkflows
             // "untouched" means more than "nothing had happened yet".
             app.Chord(Key.D1);
             app.Chord(Key.D0);
-            app.Drag(new Point(430, 300), new Point(480, 330), new Point(520, 350));
+            app.DragWith(KeyModifiers.Shift, new Point(430, 300), new Point(480, 330), new Point(520, 350));
 
             Design opened = window.CurrentDesign!;
             Sketch asOpened = opened.Sketch;

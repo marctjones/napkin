@@ -144,6 +144,34 @@ public sealed class AppDriver
     }
 
     /// <summary>
+    /// <see cref="Drag"/> with modifier keys held throughout — a Shift-drag, which pans the drawing
+    /// wherever it starts, where a plain drag that starts on a part moves the part (#85).
+    /// </summary>
+    /// <param name="modifiers">The keys held from the press to the release.</param>
+    /// <param name="path">At least two points: where the drag starts, then where it goes.</param>
+    public void DragWith(KeyModifiers modifiers, params Point[] path)
+    {
+        if (path.Length < 2)
+        {
+            throw new ArgumentException(
+                "A drag needs a start and at least one further point.", nameof(path));
+        }
+
+        RawInputModifiers raw = ToRaw(modifiers);
+        Target.MouseMove(path[0], raw);
+        Target.MouseDown(path[0], MouseButton.Left, raw);
+        for (var i = 1; i < path.Length; i++)
+        {
+            Target.MouseMove(path[i], raw | RawInputModifiers.LeftMouseButton);
+        }
+
+        Target.MouseUp(path[^1], MouseButton.Left, raw);
+        Settle();
+        Record(GuiActionKind.Pointer,
+            $"drag along {string.Join(" -> ", path.Select(Format))} with {modifiers}");
+    }
+
+    /// <summary>
     /// Presses the left button at a point, and leaves it down.
     /// </summary>
     /// <remarks>

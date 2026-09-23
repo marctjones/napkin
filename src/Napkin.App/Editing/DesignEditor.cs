@@ -245,6 +245,17 @@ public sealed class DesignEditor
         SetMessage(EditMessage.Plain(severity, text));
 
     /// <summary>
+    /// Says what a result was, as <see cref="Apply"/> would have — for a live gesture whose steps
+    /// were applied quietly and one of which was refused: at the drop, a drag that went nowhere
+    /// because the part is pinned says so, with the way out, instead of "Moved Top."
+    /// </summary>
+    public void Report(UpdateResult result, string what)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        SetMessage(EditMessages.For(result, what, _design.Sketch, NameOf, LabelFormat));
+    }
+
+    /// <summary>
     /// Puts a message on the screen as it is — for a command that has more to say about a result
     /// than <see cref="EditMessages.For"/> can, such as a way out of a refused turn (#76).
     /// </summary>
