@@ -722,6 +722,58 @@ public class AssemblyEditingWorkflows
         });
     });
 
+    [GuiWorkflow("GUI-ASSEM-15")]
+    public void A_2x4_turned_on_end_before_it_is_placed_stands_on_the_top() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+        Box top = BoxNamed(window, "Top");
+        app.Press(Key.Escape);
+        app.Press(Key.V);
+        app.Click(CentreOf(window, window.Toolbox.CategoryButtons[Napkin.Core.Materials.StockCategory.DimensionalLumber]));
+        app.Click(CentreOf(window, window.Toolbox.ItemButtons.Single(button => (button.Content as string) == "2x4")));
+
+        // Over the top, stand it on end: Y, a quarter turn about the north-south axis.
+        Point onTop = InModel(window, window.Model.Camera.Project(new Vector3d(20, 12, 17)));
+        app.MoveTo(onTop);
+        app.Press(Key.Y);
+
+        app.Expect("the preview stands on end on the top, 24\" tall", () =>
+        {
+            PlacementPreview preview = window.Model.PlacementPreview
+                ?? throw new InvalidOperationException("No preview under the pointer.");
+            (Point3 low, Point3 high) = SpaceSnapResolver.Extent(preview.Box);
+            Assert.Equal(Length.Inches(17), low.Z);
+            Assert.Equal(Length.Inches(24), high.Z - low.Z);
+        });
+
+        app.SaveFrame("2x4-on-end-over-the-top");
+        Sketch before = window.CurrentDesign!.Sketch;
+        app.Click(onTop);
+
+        EntityId placed = window.Editor.OnlySelected ?? throw new InvalidOperationException("Nothing was placed.");
+        app.Expect("it was placed standing on end, resting on the top, held by a flush of the top's upper face", () =>
+        {
+            Box leg = window.CurrentDesign!.Sketch.Find<Box>(placed)!;
+            (Point3 low, Point3 high) = SpaceSnapResolver.Extent(leg);
+            Assert.Equal(Length.Inches(17), low.Z);
+            Assert.Equal(Length.Inches(24), high.Z - low.Z);
+            Assert.Equal("2x4", leg.Part!.Stock);
+            Assert.Contains(
+                window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<Flush>(),
+                flush => flush.A == new FeatureRef(top.Id, BoxFeature.Face(BoxFace.Top)) && flush.B.Owner == placed);
+        });
+
+        app.Chord(Key.Z);
+
+        app.Expect("one undo removes it and what held it", () =>
+        {
+            Assert.Null(window.CurrentDesign!.Sketch.Find<Box>(placed));
+            Assert.Equal(before.Relationships.Count, window.CurrentDesign!.Sketch.Relationships.Count);
+        });
+    });
+
     /// <summary>The help text the plan canvas's automation element for a part carries.</summary>
     static string? PartHelpText(MainWindow window, EntityId part) =>
         Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(window.Canvas)

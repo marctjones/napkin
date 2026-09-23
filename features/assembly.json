@@ -126,6 +126,15 @@
       "milestone": "backlog",
       "issue": 74,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-15",
+      "area": "ui",
+      "title": "Turn the placement preview before placing it",
+      "acceptance": "Holding a 2x4 in the 3D view over the coffee table's top, Y stands the preview on end 24\" tall on the top, a click places it standing there with its stock and a Flush of the top's upper face, and one undo removes it and the flush.",
+      "milestone": "backlog",
+      "issue": 92,
+      "kind": "workflow"
     }
   ]
 }
