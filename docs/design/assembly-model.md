@@ -1359,7 +1359,12 @@ Nothing stored depends on any of this.
   with the modifier for the other direction. A rotation gizmo with three rings was considered and
   set aside: ring-dragging chooses among a continuum and then snaps to four stops, which is more
   gesture for the same four answers and reintroduces the depth ambiguity the command avoids. This
-  is §11 decision 12.
+  is §11 decision 12. **The command turns a part in place (#75, 2026-09-22):** `SetOrientation`
+  keeps the anchor, so on its own it swings the part about its local south-west-bottom corner and
+  three of the six face-up results land below the anchor — through the floor for a leg standing on
+  it. The command therefore sends `Batch(SetOrientation, SetPosition)` so that the low corner of
+  the part's extent is where it was: the part stays on what it sat on. The request itself is
+  unchanged; a pinned part, which cannot move, still turns about its anchor.
 - **Move.** Per-axis handles: three arrows at the selected part's anchor along world X, Y and Z.
   Dragging one projects the pointer's screen motion onto that axis's projected direction and
   produces `Drag(id, Vector3.Along(axis, d))`, snapped to the grid step and to faces (below). A
