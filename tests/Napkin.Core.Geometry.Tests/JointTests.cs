@@ -240,4 +240,96 @@ public class JointTests
         Assert.NotEqual(a, c);
         Assert.NotEqual(a, withJoint);
     }
+
+    [Trait("Feature", "GEO-016")]
+    [Fact]
+    public void Parts_are_equal_by_value_including_their_hardware()
+    {
+        Part plain = new("1x6", null, 1, new PlanAxes(PartDimension.Length, PartDimension.Width));
+        Part slide = plain with { Hardware = [new HardwareItem("16 in slide, pair", 1)] };
+        Part another = plain with { Hardware = [new HardwareItem("16 in slide, pair", 1)] };
+        Part twoSlides = plain with { Hardware = [new HardwareItem("16 in slide, pair", 2)] };
+
+        Assert.Equal(slide, another);
+        Assert.Equal(slide.GetHashCode(), another.GetHashCode());
+        Assert.NotEqual(plain, slide);
+        Assert.NotEqual(slide, twoSlides);
+    }
+
+    [Trait("Feature", "GEO-016")]
+    [Theory]
+    [InlineData(BoxFace.South, BoxFace.North)]
+    [InlineData(BoxFace.North, BoxFace.South)]
+    [InlineData(BoxFace.East, BoxFace.West)]
+    [InlineData(BoxFace.West, BoxFace.East)]
+    [InlineData(BoxFace.Bottom, BoxFace.Top)]
+    [InlineData(BoxFace.Top, BoxFace.Bottom)]
+    public void The_opposite_of_a_face_is_the_face_on_the_other_side(BoxFace face, BoxFace opposite)
+    {
+        Assert.Equal(opposite, JointRules.Opposite(face));
+    }
+
+    [Trait("Feature", "GEO-016")]
+    [Fact]
+    public void A_box_is_as_thick_across_a_face_as_its_own_size_along_that_faces_normal()
+    {
+        // 2 wide (local x, the east/west normal), 3 tall (local y, the south/north normal), 4 deep (local z).
+        Box box = new(new EntityId(Guid.NewGuid()), LayerId.Default, Point3.Inches(0, 0, 0), Length.Inches(2), Length.Inches(3), Length.Inches(4), BoxFace.Top, Angle.Zero);
+
+        Assert.Equal(Length.Inches(3), JointGeometry.ThicknessAcross(box, BoxFace.South));
+        Assert.Equal(Length.Inches(3), JointGeometry.ThicknessAcross(box, BoxFace.North));
+        Assert.Equal(Length.Inches(2), JointGeometry.ThicknessAcross(box, BoxFace.East));
+        Assert.Equal(Length.Inches(2), JointGeometry.ThicknessAcross(box, BoxFace.West));
+        Assert.Equal(Length.Inches(4), JointGeometry.ThicknessAcross(box, BoxFace.Top));
+        Assert.Equal(Length.Inches(4), JointGeometry.ThicknessAcross(box, BoxFace.Bottom));
+    }
+
+    [Trait("Feature", "GEO-016")]
+    [Fact]
+    public void A_joint_with_a_missing_part_or_a_part_off_the_quarter_turns_has_no_contact()
+    {
+        (Sketch sketch, EntityId leg, EntityId apron) = Frame();
+        Joint joint = Butt(leg, apron);
+
+        // A part that is not in the sketch (a dangling reference) touches nothing.
+        Assert.Null(JointGeometry.Contact(sketch.WithoutEntity(apron).WithRelationship(joint), joint));
+
+        // A part turned 45 degrees is off the quarter turns, whose faces this geometry does not read.
+        Box leaning = sketch.Find<Box>(apron)! with { Rotation = Angle.Degrees(45) };
+        Assert.Null(JointGeometry.Contact(sketch.WithEntity(leaning).WithRelationship(joint), joint));
+    }
+
+    [Trait("Feature", "GEO-016")]
+    [Fact]
+    public void A_joint_on_a_north_south_face_measures_its_depth_against_the_boxs_height()
+    {
+        // Apron y 0..2 (height 2): its south face is y = 0. A stop against the leg's north face would
+        // be cut across the leg's 2 in height, so a 1 in rabbet fits and a 2 in one does not.
+        SketchBuilder builder = new();
+        EntityId leg = builder.AddBox(Point3.Inches(0, 0, 0), 2, 2, 16);
+        EntityId plank = builder.AddBox(Point3.Inches(0, 2, 0), 2, 4, 16);
+        Joint Rabbet(long depth) => new(
+            JointId,
+            new FeatureRef(leg, BoxFeature.Face(BoxFace.North)),
+            new FeatureRef(plank, BoxFeature.Face(BoxFace.South)),
+            JointType.Rabbet, Length.Inches(depth), Fastening.None, false);
+
+        Assert.True(JointGeometry.IsSatisfied(builder.Sketch.WithRelationship(Rabbet(1)), Rabbet(1)));
+        Assert.False(JointGeometry.IsSatisfied(builder.Sketch.WithRelationship(Rabbet(2)), Rabbet(2)));
+        Assert.Equal(Length.Inches(2), JointGeometry.ThicknessAcross(builder.Sketch.Find<Box>(leg)!, BoxFace.North));
+    }
+
+    [Trait("Feature", "GEO-016")]
+    [Fact]
+    public void Validate_reports_a_joint_that_breaks_its_own_rules_and_no_type_outside_the_five_is_allowed_anything()
+    {
+        (Sketch sketch, EntityId leg, EntityId apron) = Frame();
+        Sketch bad = sketch.WithRelationship(Butt(leg, apron, Fastening.None, JointType.Rabbet, depth: null));
+
+        ValidationResult result = bad.Validate();
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.Kind == ValidationErrorKind.InvalidJoint && error.Message.Contains("depth", StringComparison.Ordinal));
+        Assert.Empty(JointRules.AllowedFastenings((JointType)99));
+    }
 }

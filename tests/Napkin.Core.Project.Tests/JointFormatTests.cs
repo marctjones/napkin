@@ -240,4 +240,84 @@ public class JointFormatTests
 
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [Trait("Feature", "PRJ-008")]
+    [InlineData("\"hardware\": [ { \"name\": \"16 in side-mount drawer slide, pair\", \"quantity\": 1 } ]", "\"hardware\": [ 5 ]", "hardware")]
+    [InlineData("{ \"kind\": \"pocketScrew\", \"thickness\": 768, \"size\": \"1-1/4 in coarse\", \"packSize\": 100 },", "\"screw\",", "fastenerChoices")]
+    [InlineData("\"supplies\": [ { \"item\": \"Wood glue\", \"note\": \"\" } ]", "\"supplies\": [ [] ]", "supplies")]
+    [InlineData("\"receiving\": { \"kind\": \"feature\", \"box\": \"0192f1a0-0000-4000-8000-00000000000a\", \"faces\": [\"east\"] }", "\"receiving\": 5", "receiving")]
+    [InlineData("\"fastening\": { \"kind\": \"pocketScrews\", \"count\": 3, \"pocketFace\": \"south\" }", "\"fastening\": \"brads\"", "fastening")]
+    public void A_joinery_field_of_the_wrong_shape_is_refused_as_malformed(string original, string replacement, string named)
+    {
+        Scenes.RefuseWith(Variant((original, replacement)), LoadProblemKind.Malformed, named);
+    }
+
+    [Fact]
+    [Trait("Feature", "PRJ-008")]
+    public void A_build_whose_updater_cannot_hold_a_joint_refuses_the_file_naming_the_kind()
+    {
+        using MemoryStream stream = new(System.Text.Encoding.UTF8.GetBytes(Joined));
+
+        Refused refused = Assert.IsType<Refused>(SceneReader.Read(stream, new NoJoints()));
+
+        Assert.Contains("\"joint\"", refused.Summary, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "PRJ-008")]
+    public void Every_type_fastening_and_fastener_kind_has_one_spelling_each_way_and_no_other()
+    {
+        foreach (JointType type in Enum.GetValues<JointType>())
+        {
+            Assert.True(SceneNames.TryJointType(SceneNames.Of(type), out JointType back));
+            Assert.Equal(type, back);
+        }
+
+        foreach (FasteningKind kind in Enum.GetValues<FasteningKind>())
+        {
+            Assert.True(SceneNames.TryFasteningKind(SceneNames.Of(kind), out FasteningKind back));
+            Assert.Equal(kind, back);
+        }
+
+        foreach (FastenerKind kind in Enum.GetValues<FastenerKind>())
+        {
+            Assert.True(SceneNames.TryFastenerKind(SceneNames.Of(kind), out FastenerKind back));
+            Assert.Equal(kind, back);
+        }
+
+        Assert.Equal(Enum.GetValues<JointType>().Length, SceneNames.JointTypes.Length);
+        Assert.Equal(Enum.GetValues<FasteningKind>().Length, SceneNames.FasteningKinds.Length);
+        Assert.Equal(Enum.GetValues<FastenerKind>().Length, SceneNames.FastenerKinds.Length);
+        Assert.Throws<ArgumentOutOfRangeException>(() => SceneNames.Of((JointType)99));
+        Assert.Throws<ArgumentOutOfRangeException>(() => SceneNames.Of((FasteningKind)99));
+        Assert.Throws<ArgumentOutOfRangeException>(() => SceneNames.Of((FastenerKind)99));
+        Assert.False(SceneNames.TryJointType("dado", out _));
+        Assert.False(SceneNames.TryFasteningKind("glue", out _));
+        Assert.False(SceneNames.TryFastenerKind("screwdriver", out _));
+    }
+
+    [Fact]
+    [Trait("Feature", "PRJ-008")]
+    public void Every_kind_of_fastener_choice_round_trips()
+    {
+        Sketch sketch = Scenes.Accept(Joined) with
+        {
+            FastenerChoices =
+            [
+                .. Enum.GetValues<FastenerKind>().Select((kind, index) => new FastenerChoice(kind, new Length(256 * (index + 1)), $"size {index}", index + 1)),
+            ],
+        };
+
+        Assert.Equal(sketch, Scenes.Accept(SceneWriter.WriteToText(sketch)));
+    }
+
+    /// <summary>An updater that holds no joint, standing in for a build older than joinery.</summary>
+    private sealed class NoJoints : IGeometryUpdater
+    {
+        public System.Collections.Immutable.ImmutableHashSet<Type> SupportedRelationships { get; }
+            = System.Collections.Immutable.ImmutableHashSet<Type>.Empty;
+
+        public UpdateResult Apply(Sketch sketch, Request request) => throw new NotSupportedException();
+    }
 }

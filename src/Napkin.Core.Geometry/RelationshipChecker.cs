@@ -118,7 +118,13 @@ public static class RelationshipChecker
     /// (<see cref="JointGeometry.IsSatisfied"/>). <see cref="Check(Sketch)"/> never lists a joint,
     /// so this is the one place to ask.
     /// </summary>
-    public static bool IsSatisfied(Sketch sketch, Joint joint) => JointGeometry.IsSatisfied(sketch, joint);
+    public static bool IsSatisfied(Sketch sketch, Joint joint)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(joint);
+
+        return Holds(Evaluate(sketch, joint), Tolerances.Default);
+    }
 
     private static bool Holds(Residual residual, Tolerances tolerances)
     {
