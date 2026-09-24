@@ -24,6 +24,12 @@ public sealed class SampleCutListTests
     [InlineData("bookcase")]
     [InlineData("bench")]
     [InlineData("lying-beam")]
+    [InlineData("chain-of-five")]
+    [InlineData("fraction-stress")]
+    [InlineData("scale-extremes")]
+    [InlineData("framing-16-oc")]
+    [InlineData("l-bracket")]
+    [InlineData("overlap")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_cut_list_is_the_one_the_expectations_state(string fixture)
     {
@@ -67,6 +73,12 @@ public sealed class SampleCutListTests
     [InlineData("bookcase")]
     [InlineData("bench")]
     [InlineData("lying-beam")]
+    [InlineData("chain-of-five")]
+    [InlineData("fraction-stress")]
+    [InlineData("scale-extremes")]
+    [InlineData("framing-16-oc")]
+    [InlineData("l-bracket")]
+    [InlineData("overlap")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_csv_is_the_one_the_expectations_state(string fixture)
     {

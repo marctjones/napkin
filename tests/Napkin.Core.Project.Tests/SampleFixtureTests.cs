@@ -172,6 +172,12 @@ public sealed class SampleFixtureTests
     [InlineData("bookcase")]
     [InlineData("bench")]
     [InlineData("lying-beam")]
+    [InlineData("chain-of-five")]
+    [InlineData("fraction-stress")]
+    [InlineData("scale-extremes")]
+    [InlineData("framing-16-oc")]
+    [InlineData("l-bracket")]
+    [InlineData("overlap")]
     [Trait("Feature", "PRJ-003")]
     public void A_sample_satisfies_its_own_relationships_and_validates(string fixture)
     {
@@ -188,6 +194,12 @@ public sealed class SampleFixtureTests
     [InlineData("bookcase")]
     [InlineData("bench")]
     [InlineData("lying-beam")]
+    [InlineData("chain-of-five")]
+    [InlineData("fraction-stress")]
+    [InlineData("scale-extremes")]
+    [InlineData("framing-16-oc")]
+    [InlineData("l-bracket")]
+    [InlineData("overlap")]
     [Trait("Feature", "PRJ-001")]
     public void Reading_a_sample_twice_gives_the_same_value(string fixture)
     {
