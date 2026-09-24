@@ -49,6 +49,9 @@ public enum ValidationErrorKind
     /// </summary>
     PlacesNotComparable,
 
+    /// <summary>A <see cref="Joint"/>'s own fields break a rule of the joinery note (&#xA7;3.3, &#xA7;4.4).</summary>
+    InvalidJoint,
+
     /// <summary>
     /// A <see cref="FeatureRef"/> names no faces — <c>default(BoxFeature)</c> — which is not one,
     /// two or three mutually adjacent faces (<c>docs/design/assembly-model.md</c> invariant 12).
@@ -120,6 +123,12 @@ public sealed record Sketch(
         ImmutableDictionary<EntityId, Entity>.Empty,
         ImmutableDictionary<RelationshipId, Relationship>.Empty,
         ImmutableList.Create(Layer.Default));
+
+    /// <summary>The builder's typed fastener sizes (joinery note &#xA7;7.3), in the order typed.</summary>
+    public ImmutableList<FastenerChoice> FastenerChoices { get; init; } = [];
+
+    /// <summary>The builder's typed supplies checklist (&#xA7;8), in the order typed.</summary>
+    public ImmutableList<SupplyLine> Supplies { get; init; } = [];
 
     /// <summary>
     /// Relationships in id order — never in dictionary order — so that anything iterating them is
@@ -460,6 +469,14 @@ public sealed record Sketch(
             {
                 errors.Add(refusal);
             }
+
+            if (relationship is Joint joint)
+            {
+                foreach (string problem in JointRules.Errors(joint))
+                {
+                    errors.Add(new ValidationError(ValidationErrorKind.InvalidJoint, problem));
+                }
+            }
         }
 
         for (int i = 0; i < inOrder.Count; i++)
@@ -510,7 +527,9 @@ public sealed record Sketch(
             }
         }
 
-        return Layers.SequenceEqual(other.Layers);
+        return Layers.SequenceEqual(other.Layers)
+               && FastenerChoices.SequenceEqual(other.FastenerChoices)
+               && Supplies.SequenceEqual(other.Supplies);
     }
 
     /// <inheritdoc/>
@@ -581,6 +600,7 @@ public sealed record Sketch(
                 .Concat(ReferenceErrors(symmetric.B, what))
                 .Concat(ReferenceErrors(symmetric.Mirror, what)),
             Tangent tangent => ReferenceErrors(tangent.A, what).Concat(ReferenceErrors(tangent.B, what)),
+            Joint joint => ReferenceErrors(joint.Receiving, what).Concat(ReferenceErrors(joint.Inserted, what)),
 
             // Radius names an arc, and there are no arcs yet; any entity it names must at least exist.
             _ => relationship.References.SelectMany(id => KindErrors(id, what, _ => true, "Entity")),

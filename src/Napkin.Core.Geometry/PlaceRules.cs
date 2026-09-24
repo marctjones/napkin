@@ -77,6 +77,14 @@ public static class PlaceRules
                         $"{Fixes(sketch, centered.Middle, middle)}; {Fixes(sketch, centered.A, a)}; "
                         + $"{Fixes(sketch, centered.B, b)}. Centring along {centered.Axis} needs all three to fix {centered.Axis}.");
 
+            case Joint joint when Places(sketch, joint.Receiving, joint.Inserted) is [var receiving, var inserted]:
+                return receiving.Count == 1 && inserted.Count == 1 && receiving.Axes[0] == inserted.Axes[0]
+                    ? null
+                    : NotComparable(
+                        relationship,
+                        $"{Fixes(sketch, joint.Receiving, receiving)}; {Fixes(sketch, joint.Inserted, inserted)}. "
+                        + "A joint needs two faces that can touch: both fixing exactly one axis, the same one.");
+
             default:
                 return null;
         }

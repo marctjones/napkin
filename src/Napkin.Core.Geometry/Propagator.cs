@@ -343,6 +343,9 @@ internal sealed class Propagator
             PointSide(centered.A, centered.Axis).Value,
             PointSide(centered.B, centered.Axis).Value),
 
+        // A joint says nothing about where anything is (joinery note §4.3).
+        Joint => false,
+
         _ => PairsOf(relationship).Any(pair => pair.First.Value != pair.Second.Value),
     };
 
