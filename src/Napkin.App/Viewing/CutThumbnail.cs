@@ -28,6 +28,17 @@ namespace Napkin.App.Viewing;
 /// </remarks>
 public sealed class CutThumbnail : Control
 {
+
+    /// <inheritdoc/>
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == ThemeVariantScope.ActualThemeVariantProperty)
+        {
+            InvalidateVisual();
+        }
+    }
+
     /// <summary>How wide the picture is, in pixels.</summary>
     public const double CellWidth = 44;
 

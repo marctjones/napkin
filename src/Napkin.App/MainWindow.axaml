@@ -26,13 +26,19 @@
               Foreground="{DynamicResource SeBenchHeadingBrush}">
             <Menu.Resources>
                 <!-- Fluent's top-level items read these, not the Menu's Foreground: the bench
-                     stays dark in both themes, so the item text stays bench-light too. -->
-                <SolidColorBrush x:Key="MenuBarItemForeground" Color="{DynamicResource SeBenchHeadingColor}" />
-                <SolidColorBrush x:Key="MenuBarItemForegroundPointerOver" Color="{DynamicResource SeBenchHeadingColor}" />
-                <SolidColorBrush x:Key="MenuBarItemForegroundPressed" Color="{DynamicResource SeBenchHeadingColor}" />
+                     stays dark in both themes, so the item text stays bench-light too (the Styles below,
+                     because the light theme's dark item text showed through the resources alone). -->
                 <SolidColorBrush x:Key="MenuBarItemBackgroundPointerOver" Color="{DynamicResource SeBenchRuleColor}" />
                 <SolidColorBrush x:Key="MenuBarItemBackgroundPressed" Color="{DynamicResource SeBenchRuleColor}" />
             </Menu.Resources>
+            <Menu.Styles>
+                <Style Selector="Menu > MenuItem, Menu > MenuItem:selected, Menu > MenuItem:pressed, Menu > MenuItem:pointerover, Menu > MenuItem:open">
+                    <Setter Property="Foreground" Value="{DynamicResource SeBenchHeadingBrush}" />
+                </Style>
+                <Style Selector="Menu > MenuItem:selected /template/ ContentPresenter#PART_HeaderPresenter, Menu > MenuItem:pressed /template/ ContentPresenter#PART_HeaderPresenter, Menu > MenuItem:pointerover /template/ ContentPresenter#PART_HeaderPresenter">
+                    <Setter Property="Foreground" Value="{DynamicResource SeBenchHeadingBrush}" />
+                </Style>
+            </Menu.Styles>
             <MenuItem Name="FileMenu" Header="_File">
                 <MenuItem Name="NewMenuItem"
                           Header="_New"
@@ -154,6 +160,16 @@
                           Header="_Rulers"
                           Click="OnRulersClicked"
                           ToolTip.Tip="Rulers along the top and left of the plan, in feet, inches and fractions, on the same steps as the grid. The orthographic 3D view shows a scale bar instead, true across the screen: an inch along an axis looks shorter in an isometric view (by about a fifth). A perspective view has neither, because an inch is a different size at every distance in it." />
+                <Separator />
+                <!-- Light, dark, or whichever the operating system is in (and following it live). -->
+                <MenuItem Name="ThemeMenuItem" Header="_Theme">
+                    <MenuItem Name="ThemeLightMenuItem" Header="_Light" Click="OnThemeLightClicked" />
+                    <MenuItem Name="ThemeDarkMenuItem" Header="_Dark" Click="OnThemeDarkClicked" />
+                    <MenuItem Name="ThemeSystemMenuItem"
+                              Header="_Follow system"
+                              Click="OnThemeSystemClicked"
+                              ToolTip.Tip="Wear whichever theme the operating system is in, and change with it." />
+                </MenuItem>
                 <Separator />
                 <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
                 <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />

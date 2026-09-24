@@ -1496,6 +1496,10 @@ public sealed class ModelView : Control
         {
             ZoomToFit();
         }
+        else if (change.Property == ThemeVariantScope.ActualThemeVariantProperty)
+        {
+            InvalidateVisual();
+        }
     }
 
     // -------------------------------------------------------------------------------------

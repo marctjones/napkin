@@ -59,6 +59,17 @@ public sealed record DimensionEditRequested(EntityId Box, SizeAxis Axis);
 /// </remarks>
 public sealed class CanvasView : Control
 {
+
+    /// <inheritdoc/>
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == ThemeVariantScope.ActualThemeVariantProperty)
+        {
+            InvalidateVisual();
+        }
+    }
+
     /// <summary>How much one wheel notch zooms.</summary>
     const double ZoomPerWheelNotch = 1.15;
 
