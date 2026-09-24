@@ -157,7 +157,7 @@ the count rules of §7.2 read.
 | J6 ×2 | Apron, side (inside face) ← Slide cleat (face) | butt | screws | yes | — | 16 × 1 1/2 | 3 each |
 | J7 ×4 | Drawer side (front end, inside face) ← Drawer box front (end) | rabbet | brads | yes | 1/4 | 1/2 × 3 1/2 | 3 each |
 | J8 ×4 | Drawer side (inside face) ← Drawer box back (end) | butt | brads | yes | — | 1/2 × 3 1/2 | 3 each |
-| J9 ×8 | Drawer side / box front / box back (inside face) ← Drawer bottom (edge) | groove | none | no | 1/4 | 1/4 × 16 or 15 5/8 | — |
+| J9 ×8 | Drawer side / box front / box back (inside face) ← Drawer bottom (edge) | groove | none | no | 1/4 | 1/4 × 15 (sides) or 1/4 × 15 5/8 (front, back); the groove itself runs full length | — |
 | J10 ×2 | Drawer front (back face) ← Drawer box front (front face) | butt | screws | no | — | 15 5/8 × 3 1/2 | 3 → **4** (overridden) |
 | J11 ×4 | Top (bottom face) ← Apron, back / side ×2 / Front rail (top edge) | tabletop | clips | no | — | 36, 16, 16, 36 long | 3, 2, 2, 3 |
 
@@ -176,12 +176,12 @@ reads the pair.
 
 ### 3.1 Types
 
-| Type | Plain words | Effect on finished sizes | Cut sentence on the receiving part | Parameters | First? |
+| Type | Plain words | Effect on finished sizes | Cut sentence (on the receiving part, except the tabletop's, which is on the apron — the inserted part, §4.1) | Parameters | First? |
 |---|---|---|---|---|---|
 | `butt` | One part's end or face is stuck against another's face. Nothing is cut. | none | none (pocket holes are a fastening sentence, §6.2) | — | **yes** |
 | `groove` | A slot along a part's length that a panel's edge sits in (drawer bottom). Also called a dado when it runs *across* the part (a shelf into a side); napkin uses one type and words the sentence by direction (§6.2). | the **inserted** panel grows by `depth` on each grooved edge | "Groove the … face: *w* wide, *d* deep, *o* from the … edge, full length." | `depth` | **yes** |
 | `rabbet` | A step cut along an end or edge so the other part's end sits in it (drawer box front into the sides). | the **inserted** part grows by `depth` at each rabbeted end | "Rabbet the … end on the … face: *w* wide, *d* deep." | `depth` | **yes** |
-| `halfLap` | Two parts cross or meet with half the thickness cut from each so they lie in one plane. Drawn **overlapping** (assembly-model §6 allows it); the overlap *is* the lap. | none — drawn is finished | on **both**: "Half-lap the … face at the … end: *l* long, *d* deep, across the width." | none; each lap is half its own part's thickness; refused if the thicknesses differ | **yes** |
+| `halfLap` | Two parts cross or meet with half the thickness cut from each so they lie in one plane. Drawn **overlapping** (assembly-model §6 allows it); the overlap *is* the lap. | none — drawn is finished | on **both**: "Half-lap the … face at the … end: *l* long, *d* deep, across the width." | none; each lap is half its own part's thickness; unsatisfied (§4.3) while the thicknesses differ | **yes** |
 | `tabletop` | A solid or sheet top held to an apron so it can move with the seasons: clips in a slot or recess, or screws in slotted holes. It exists as a type because screwing a top down rigidly is the most common DIY mistake. | none | "Fit *n* tabletop clips along the top edge on the … face (slot or recess per the clip's instructions)." | none | **yes** |
 | `edge` | Two boards glued edge to edge into a wider panel (a solid top from 1x6s). | none | none | — | later |
 | `tenon` | A tongue on the end of a rail into a slot (mortise) in a leg. | the **inserted** rail grows by `depth` at each tenoned end | "Cut a mortise on the … face: *w* wide, *l* long, *d* deep, *o* from the … end." and on the rail "Cut a tenon at the … end: *d* long, *t* thick, *l* wide." | `depth`, `tenonThickness` (design default: a third of the rail's thickness, rounded to the grid) | later |
@@ -284,7 +284,10 @@ From the two drawn boxes and the two faces, the geometry module derives (`JointG
 - for a **rabbet**: its width = the inserted part's thickness; which end of the receiving part it
   is at;
 - for a **halfLap**: the overlap box of the two drawn boxes; its length along each part; and the
-  check that both parts are the same thickness;
+  check that both parts are the same thickness (unsatisfied while they differ);
+- for a **groove** or **rabbet**, the check that `depth` is less than the receiving part's
+  thickness (unsatisfied otherwise, §6.1). A groove is always **through** — "full length" —
+  whatever the contact's extent along it; a stopped groove is not modelled;
 - for **pocket screws**: which end of the inserted part is in the contact.
 
 Nothing above is written to the file. Resize the drawer bottom and the groove offset follows;
@@ -297,13 +300,16 @@ keeps the joint. `RelationshipChecker.Evaluate` gains one arm: the residual is *
 contact rectangle is non-empty and coplanar, and `NotEvaluable` otherwise** — an unsatisfied joint
 draws hollow (§5.3) and the cut list still applies its allowance but marks the row (§6.4). It is
 never deleted for you; a person who moved the web 1″ north wants to be told, not tidied.
+The same residual covers a `depth` that is not less than the receiving part's thickness and a
+half-lap between parts of different thickness.
 
 The updater (`DirectUpdater`, `Propagator.IsUnsatisfied`) gets a named arm for `Joint` that
 **neither propagates it nor refuses a request because of it**. This is the one place the existing
 code needs care: today a check-only relationship (a `horizontal` on a box edge) makes the updater
 refuse a geometry request (file-format.md, "Relationships"); a joint must not, or one joint would
-freeze editing. Deleting either part deletes the joint, as deleting a node deletes the
-relationships on it today. **Duplicating a set of parts duplicates the joints among them**
+freeze editing. Deleting either part removes the joint, handled the way the delete command
+handles the relationships on a deleted entity today (`Sketch.WithoutEntity` itself does not
+cascade; the command does the sweep). **Duplicating a set of parts duplicates the joints among them**
 (shaped-parts §2.6: a duplicate is a value copy of the whole) — that is how drawer B is made from
 drawer A in §9 — and a joint between a copied part and an uncopied one is not duplicated.
 
@@ -327,7 +333,7 @@ Every field required; a version-4 file is refused with the existing message. Sli
 |---|---|---|
 | `type` | one of `butt`, `groove`, `rabbet`, `halfLap`, `tabletop` (later `edge`, `tenon`, `dovetail`) | unknown value |
 | `receiving`, `inserted` | a `feature` reference with exactly one face, on two different boxes | any other reference kind, two or three faces, the same box twice |
-| `depth` | integer > 0, or `null` | `null` for a type that needs it, non-null for a type that does not, ≤ 0, or ≥ the receiving part's thickness |
+| `depth` | integer > 0, or `null` | `null` for a type that needs it, non-null for a type that does not, or ≤ 0 (a depth that is not less than the receiving part's thickness is *unsatisfied*, §6.1, never refused: thickness is editable geometry) |
 | `fastening.kind` | one of §3.2 | unknown, or a pair outside §3.3 |
 | `fastening.count` | integer ≥ 1 or `null` (use the recipe) | 0 or negative; non-null when `kind` is `none` |
 | `fastening.pocketFace` | a face name or `null` | non-null unless `kind` is `pocketScrews`; a face that is `inserted`'s own face or its opposite |
@@ -638,10 +644,10 @@ counting, because the count never needs a dimension.
 | Data | Why a table would help | Source status (to be checked in the fetching task, not here) |
 |---|---|---|
 | Wood screw gauge → diameter, and length by driven-through thickness | offer a size instead of "size not chosen" | ASME B18.6.1 is a paid standard; a recommendation of length by thickness is practice, not a standard, and may have no citable primary source |
-| Pocket screw length by stock thickness | same | jig makers publish charts (vendor data); whether to cite a vendor is Marc's call (§14) |
+| Pocket screw length by stock thickness | same | jig makers publish charts (vendor data); whether to cite a vendor is Marc's call (§13.3) |
 | Brad and finish nail lengths and gauges | same | FF-N-105B (already cited for common nails) covers brads; #119 has the nail rows unverified |
 | Tabletop clip dimensions, slot or recess sizes | a numeric sentence instead of "per the clip's instructions" | vendor data only |
-| Dowel diameters and lengths, biscuit sizes | same | vendor data; biscuit sizes are a de-facto convention with no standard found in this task |
+| Dowel diameters and lengths, biscuit sizes | same | vendor data as far as known; not searched here |
 | Pack sizes | pack arithmetic without typing | a shop fact, not a standard; stays user-typed |
 
 ### 7.7 The tabletop joint, because it is the common mistake
@@ -687,10 +693,13 @@ number is from §2.
 3. **Place the legs.** Stock → Lumber → *2x2*; draw one 1 1/2″ square at (1 1/2, 1 1/2), depth
    16 1/4, name "Leg, south-west"; duplicate three times to the other corners (duplicates are
    value copies).
-4. **Place the aprons, rail and web.** Stock *1x6* standing on edge (`faceUp: north` for an apron
-   drawn as a 36″ × 3/4″ box, depth 5 1/2) between the legs at the back and both sides at Z 10
+4. **Place the aprons, rail and web.** Stock *1x6* standing on edge: a 36″ × 3/4″ plan box with
+   `depth` 5 1/2, `faceUp: top`, `planAxes {x: length, y: thickness}` — exactly how the committed
+   coffee-table sample draws its aprons — between the legs at the back and both sides at Z 10
    3/4; *1x2* front rail the same way at Z 14 3/4; *1x6* web 17 1/2″ front to back, centred. Hold
-   them with `flush` to the legs' outside faces and the top's underside, as today.
+   them with `flush` to the legs' outside faces and the top's underside, as today. Every part in
+   the sample is `faceUp: top`, `rotation: 0`, so each part's own frame is the world frame and
+   the compass names in §6.5 read directly off the plan.
 5. **Join the frame in one gesture.** Marquee the four legs, three aprons, the rail and the web;
    **Shift+J**; the popover lists the 10 touching pairs, pre-selects *Butt / Pocket screws / glue*,
    shows "recipe" counts (3, 3, 3, 3, 3, 3, 3, 2, 2, 2 — 27 in all) and each inserted part's pocket face;
@@ -733,7 +742,8 @@ number is from §2.
 ## 10. Test plan
 
 Feature-catalog ids are the next free `GEO-`, `CUT-` and `GUI-` numbers, assigned when the catalog
-is edited; a new `JOIN-` area is not needed — joints are geometry and cut-list behaviour. The
+is edited; no unit-test `JOIN-` area is needed — joints are geometry and cut-list behaviour — and
+the GUI workflows use `GUI-JOIN-NN`, the catalog's `GUI-<AREA>-<NN>` shape. The
 oracle pattern is `samples/README.md`'s: every expected number hand-derived from §2 with a
 `derivation` string, never regenerated.
 
@@ -826,7 +836,7 @@ bumps touch every `samples/*.json` — land A first and alone.
 | **D** | Recipes, `FastenerList.Of`, fastener choices model; tests 11, 12; the sample's `fasteners` section | Sonnet | new `Napkin.Modules.Furniture/Recipes.cs`, `FastenerList.cs`, `FastenerRow.cs`; `samples/diy-coffee-table-drawers.expected.json` | C |
 | **E** | `HardwareList.Of`, supplies, the glue line, the shopping-list window's three new sections and their CSV; tests 13, 14 | Sonnet | new `HardwareList.cs`, `SuppliesList.cs`, `SuppliesCsv.cs`; `Napkin.App` shopping-list window | D |
 | **F** | The join tool: J / Shift+J popover, direction and type suggestion, pocket-face default, markers in plan, 3D, standard views and parts view, tooltip, properties panel, fastener choices and hardware panels; `GUI-JOIN-01…07` | Sonnet (two commits: F1 tool + markers, F2 panels + storyboard) | `Napkin.App/*` | B for F1; E for F2 |
-| **G** | Cited fastener tables per §7.6, one file each, only those whose primary source can be fetched and read; wire "size not chosen" to offer a table row when one exists; `code-data` | Sonnet, data rule strictly | `Napkin.Core.Materials/data/fasteners-*.json`, `MaterialsLibrary` | D; Marc's §14.3 |
+| **G** | Cited fastener tables per §7.6, one file each, only those whose primary source can be fetched and read; wire "size not chosen" to offer a table row when one exists; `code-data` | Sonnet, data rule strictly | `Napkin.Core.Materials/data/fasteners-*.json`, `MaterialsLibrary` | D; Marc's §13.3 |
 | later | `tenon`, `edge`, `dovetail` types and their sentences; dowel and biscuit recipes | — | — | C |
 
 ---
@@ -840,8 +850,8 @@ bumps touch every `samples/*.json` — land A first and alone.
    (the mistake the feature exists to catch) or splits identical aprons. Test 9 pins both.
 3. **Sentence frames.** Sentences are in the receiving part's own drawn frame; a part drawn on
    edge (`faceUp: north`) has its "bottom edge" where the person expects only if the frame
-   mapping of assembly-model §1.3 is applied consistently. The aprons in §2 are exactly this
-   case.
+   mapping of assembly-model §1.3 is applied consistently. The sample has no turned part (every
+   box is `faceUp: top`), so test 8 needs one turned case of its own.
 4. **Expectation churn.** The CSV header change touches every committed `cutListCsv`; slice C
    pays it once.
 5. **Popover size.** Five types, eight fastenings, depth, count, pocket face and glue is a lot for
