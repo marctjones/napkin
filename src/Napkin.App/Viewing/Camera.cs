@@ -108,6 +108,61 @@ public readonly record struct Camera(
     /// <summary>The nearest a perspective camera draws, in inches in front of the eye.</summary>
     public const double NearClipInches = 0.25;
 
+    /// <summary>
+    /// How far a point is beyond the near plane, in inches: positive when a perspective camera can
+    /// draw it, negative when it is too close to the eye or behind it. Positive everywhere when
+    /// orthographic, which has no near plane.
+    /// </summary>
+    public double BeyondNearPlane(Vector3d point) =>
+        IsPerspective ? EyeDistance + DepthOf(point) - NearClipInches : 1.0;
+
+    /// <summary>
+    /// How far a point is from where its ray starts, along that ray: the distance from the eye in
+    /// perspective, and the depth past the centre plane when orthographic (where every ray starts on
+    /// it). What a picker compares a hit's distance with.
+    /// </summary>
+    public double DistanceAlongRay(Vector3d point)
+    {
+        if (!IsPerspective)
+        {
+            return DepthOf(point);
+        }
+
+        Vector3d fromEye = point - Eye;
+        return Math.Sqrt(Vector3d.Dot(fromEye, fromEye));
+    }
+
+    /// <summary>
+    /// Cuts a segment off at the near plane, so that what is left can be projected. Returns false when
+    /// none of it is in front of the eye. Never changes an orthographic camera's segment.
+    /// </summary>
+    public bool TryClipToNearPlane(ref Vector3d from, ref Vector3d to)
+    {
+        double a = BeyondNearPlane(from);
+        double b = BeyondNearPlane(to);
+        if (a >= 0 && b >= 0)
+        {
+            return true;
+        }
+
+        if (a < 0 && b < 0)
+        {
+            return false;
+        }
+
+        Vector3d crossing = from + ((to - from) * (a / (a - b)));
+        if (a < 0)
+        {
+            from = crossing;
+        }
+        else
+        {
+            to = crossing;
+        }
+
+        return true;
+    }
+
     /// <summary>The isometric azimuth: the eye at the south-east.</summary>
     public const double IsometricAzimuthDegrees = 45.0;
 

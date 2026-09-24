@@ -77,7 +77,7 @@ public static class ModelPicker
         ArgumentNullException.ThrowIfNull(scene);
 
         (Vector3d origin, Vector3d direction) = camera.Ray(screen);
-        SurfaceHit? surface = NearestSurface(sketch, scene, origin, direction);
+        SurfaceHit? surface = NearestSurface(sketch, scene, origin, direction, MinimumDistance(camera));
 
         // A cut face has no name to test a feature against, so on one a feature counts by depth: no
         // further behind the surface than a few grab distances.
@@ -105,7 +105,7 @@ public static class ModelPicker
             Box owner = sketch.Find<Box>(feature.Box)!;
             BoxFace? face = surface is { } onIt && onIt.Box == feature.Box
                 ? onIt.Face
-                : MostFacing(owner, feature.Feature, camera);
+                : MostFacing(owner, feature.Feature, camera, feature.Point);
             Axis axis = surface is { } same && same.Box == feature.Box
                 ? same.NormalAxis
                 : face is { } named ? owner.Orientation.Normal(named).Axis : Axis.Z;
@@ -137,7 +137,7 @@ public static class ModelPicker
         ArgumentNullException.ThrowIfNull(scene);
 
         (Vector3d origin, Vector3d direction) = camera.Ray(screen);
-        if (NearestSurface(sketch, scene, origin, direction) is not { } hit)
+        if (NearestSurface(sketch, scene, origin, direction, MinimumDistance(camera)) is not { } hit)
         {
             return null;
         }
@@ -159,7 +159,34 @@ public static class ModelPicker
         }
 
         double t = -origin.Z / direction.Z;
+        if (camera.IsPerspective && t <= 0)
+        {
+            // An eye level with or under the floor cannot see it, and a ray from it never meets it ahead.
+            return null;
+        }
+
         return origin + (direction * t);
+    }
+
+    /// <summary>
+    /// Where along a line — <paramref name="through"/> plus a multiple of the unit
+    /// <paramref name="direction"/> — the eye ray through a screen point comes closest to it: the
+    /// parameter of that closest point. This is what a drag along an axis means in perspective, where
+    /// one inch does not move the pointer the same distance everywhere. Null when the line points too
+    /// nearly at the eye for the pointer to say anything about it.
+    /// </summary>
+    public static double? ParameterAlongLine(Camera camera, Point screen, Vector3d through, Vector3d direction)
+    {
+        (Vector3d origin, Vector3d ray) = camera.Ray(screen);
+        Vector3d toLine = through - origin;
+        double b = Vector3d.Dot(direction, ray);
+        double denominator = 1 - (b * b);
+        if (denominator < ModelHandles.ShortestUsableFraction * ModelHandles.ShortestUsableFraction)
+        {
+            return null;
+        }
+
+        return ((b * Vector3d.Dot(ray, toLine)) - Vector3d.Dot(direction, toLine)) / denominator;
     }
 
     /// <summary>
@@ -175,7 +202,13 @@ public static class ModelPicker
             return null;
         }
 
-        return origin + (direction * ((coordinate - origin.Component(axis)) / along));
+        double distance = (coordinate - origin.Component(axis)) / along;
+        if (camera.IsPerspective && distance <= 0)
+        {
+            return null;
+        }
+
+        return origin + (direction * distance);
     }
 
     /// <summary>
@@ -293,7 +326,14 @@ public static class ModelPicker
             image.Positive ? world.Component(image.Axis) : -world.Component(image.Axis);
     }
 
-    static SurfaceHit? NearestSurface(Sketch sketch, ModelScene scene, Vector3d origin, Vector3d direction)
+    /// <summary>
+    /// The least distance along a ray a hit may be at. A ray from a perspective eye only sees ahead
+    /// of it, so nothing at or behind the eye counts; an orthographic ray starts on the centre plane,
+    /// and a part in front of that plane is at a negative distance and is picked all the same.
+    /// </summary>
+    static double MinimumDistance(Camera camera) => camera.IsPerspective ? 0 : double.NegativeInfinity;
+
+    static SurfaceHit? NearestSurface(Sketch sketch, ModelScene scene, Vector3d origin, Vector3d direction, double minimumDistance)
     {
         SurfaceHit? nearest = null;
         foreach (Box box in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
@@ -321,7 +361,7 @@ public static class ModelPicker
                     origin + (direction * entry.Distance));
             }
 
-            if (hit is { } found && (nearest is null || found.Distance < nearest.Value.Distance))
+            if (hit is { } found && found.Distance > minimumDistance && (nearest is null || found.Distance < nearest.Value.Distance))
             {
                 nearest = found;
             }
@@ -347,10 +387,15 @@ public static class ModelPicker
             foreach (BoxLevel level in (BoxLevel[])[BoxLevel.Bottom, BoxLevel.Top])
             {
                 Vector3d at = Vector3d.From(box.Vertex(corner, level));
+                if (!camera.IsInFront(at))
+                {
+                    continue;
+                }
+
                 double pixels = Distance(camera.Project(at), screen);
                 if (pixels <= tolerance)
                 {
-                    yield return new FeatureHit(box.Id, BoxFeature.Vertex(corner, level), 0, pixels, camera.DepthOf(at), at);
+                    yield return new FeatureHit(box.Id, BoxFeature.Vertex(corner, level), 0, pixels, camera.DistanceAlongRay(at), at);
                 }
             }
 
@@ -402,6 +447,12 @@ public static class ModelPicker
 
     static FeatureHit? NearSegment(Camera camera, Point screen, Vector3d a, Vector3d b, double tolerance)
     {
+        // Only the part of a segment in front of the eye has a picture to be near.
+        if (!camera.TryClipToNearPlane(ref a, ref b))
+        {
+            return null;
+        }
+
         Point pa = camera.Project(a);
         Point pb = camera.Project(b);
         Vector along = pb - pa;
@@ -417,7 +468,7 @@ public static class ModelPicker
         }
 
         Vector3d at = a + ((b - a) * t);
-        return new FeatureHit(default, default, 1, pixels, camera.DepthOf(at), at);
+        return new FeatureHit(default, default, 1, pixels, camera.DistanceAlongRay(at), at);
     }
 
     /// <summary>
@@ -470,14 +521,15 @@ public static class ModelPicker
             : candidate.Depth < best.Depth;
     }
 
-    static BoxFace? MostFacing(Box box, BoxFeature feature, Camera camera)
+    static BoxFace? MostFacing(Box box, BoxFeature feature, Camera camera, Vector3d at)
     {
+        Vector3d toward = camera.TowardViewerAt(at);
         BoxFace? best = null;
         double facing = double.NegativeInfinity;
         foreach (BoxFace face in feature.Faces)
         {
             (Axis axis, bool positive) = box.Orientation.Normal(face);
-            double towards = Vector3d.Dot(Vector3d.Along(axis, positive), camera.TowardViewer);
+            double towards = Vector3d.Dot(Vector3d.Along(axis, positive), toward);
             if (towards > facing)
             {
                 facing = towards;

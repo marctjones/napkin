@@ -2878,9 +2878,24 @@ public partial class MainWindow : Window
 
     void OnUnsavedCancelClicked(object? sender, RoutedEventArgs e) => KeepEditing();
 
-    void UpdateZoomReadout() => ZoomText.Text = string.Create(
-        CultureInfo.InvariantCulture,
-        $"Zoom {(IsShowingModel ? ModelDrawing.Camera.ZoomPercent : DrawingCanvas.View.ZoomPercent):0.#}%");
+    void UpdateZoomReadout()
+    {
+        ZoomText.Text = IsShowingModel
+            ? string.Create(
+                CultureInfo.InvariantCulture,
+                $"{(ModelDrawing.Projection == CameraProjection.Perspective ? "Perspective" : "Orthographic")} · Zoom {ModelDrawing.Camera.ZoomPercent:0.#}%")
+            : string.Create(CultureInfo.InvariantCulture, $"Zoom {DrawingCanvas.View.ZoomPercent:0.#}%");
+
+        // The projection belongs to the 3D view: the plan has none to choose.
+        bool perspective = ModelDrawing.Projection == CameraProjection.Perspective;
+        OrthographicMenuItem.IsEnabled = PerspectiveMenuItem.IsEnabled = IsShowingModel;
+        OrthographicMenuItem.Icon = perspective ? null : new TextBlock { Text = "✓" };
+        PerspectiveMenuItem.Icon = perspective ? new TextBlock { Text = "✓" } : null;
+    }
+
+    void OnOrthographicClicked(object? sender, RoutedEventArgs e) => ModelDrawing.Projection = CameraProjection.Orthographic;
+
+    void OnPerspectiveClicked(object? sender, RoutedEventArgs e) => ModelDrawing.Projection = CameraProjection.Perspective;
 
     /// <summary>Where on a part the pointer is in the 3D view, in feet, inches and fractions.</summary>
     void UpdateCursorReadout(Vector3d? point) => CursorText.Text = point is { } at

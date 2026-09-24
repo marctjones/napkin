@@ -26,7 +26,55 @@ public sealed record ScenePolygon(
     ImmutableArray<bool> EdgeDrawn)
 {
     /// <summary>Whether the polygon faces the eye of a camera — what survives the cull.</summary>
-    public bool FacesTowards(Camera camera) => Vector3d.Dot(Normal, camera.TowardViewer) > 1e-9;
+    public bool FacesTowards(Camera camera) => camera.IsPerspective
+        ? Vector3d.Dot(Normal, camera.Eye - Points[0]) > 1e-9
+        : Vector3d.Dot(Normal, camera.TowardViewer) > 1e-9;
+
+    /// <summary>
+    /// This polygon as a camera can draw it: itself when every corner is in front of the eye, what is
+    /// left of it after the near plane cuts it when some are not, and <see langword="null"/> when none
+    /// are. Only a perspective camera has a near plane. An edge the cut makes is not a real edge and is
+    /// not drawn.
+    /// </summary>
+    public ScenePolygon? ClippedFor(Camera camera)
+    {
+        ArgumentNullException.ThrowIfNull(camera);
+
+        if (!camera.IsPerspective || Points.All(point => camera.BeyondNearPlane(point) >= 0))
+        {
+            return this;
+        }
+
+        List<Vector3d> kept = [];
+        List<bool> drawn = [];
+        for (int i = 0; i < Points.Length; i++)
+        {
+            Vector3d start = Points[i];
+            Vector3d end = Points[(i + 1) % Points.Length];
+            double a = camera.BeyondNearPlane(start);
+            double b = camera.BeyondNearPlane(end);
+
+            if (a >= 0)
+            {
+                kept.Add(start);
+                drawn.Add(EdgeDrawn[i]);
+                if (b < 0)
+                {
+                    // Leaving: the corner where the edge meets the near plane, then along the plane.
+                    kept.Add(start + ((end - start) * (a / (a - b))));
+                    drawn.Add(false);
+                }
+            }
+            else if (b >= 0)
+            {
+                // Entering: the rest of this edge is real.
+                kept.Add(start + ((end - start) * (a / (a - b))));
+                drawn.Add(EdgeDrawn[i]);
+            }
+        }
+
+        return kept.Count < 3 ? null : this with { Points = [.. kept], EdgeDrawn = [.. drawn] };
+    }
 
     /// <summary>The furthest any of its corners lies along the camera's view: the painter's sort key.</summary>
     public double FurthestDepth(Camera camera)
@@ -114,7 +162,9 @@ public sealed class ModelScene
         List<Painted> visible =
         [
             .. Polygons
-                .Select((polygon, index) => (polygon, index))
+                .Select((polygon, index) => (polygon: polygon.ClippedFor(camera), index))
+                .Where(entry => entry.polygon is not null)
+                .Select(entry => (polygon: entry.polygon!, entry.index))
                 .Where(entry => entry.polygon.FacesTowards(camera))
                 .OrderByDescending(entry => entry.polygon.FurthestDepth(camera))
                 .ThenBy(entry => entry.index)

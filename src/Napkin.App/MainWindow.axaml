@@ -138,6 +138,18 @@
                           Click="OnModelViewClicked"
                           ToolTip.Tip="The drawing in three dimensions: turn parts, and move and resize them along any axis." />
                 <Separator />
+                <!-- How the 3D view looks: orthographic to measure with (a length along an axis is the
+                     same size anywhere), perspective to judge how it looks (things shrink with
+                     distance). O switches. -->
+                <MenuItem Name="OrthographicMenuItem"
+                          Header="_Orthographic"
+                          Click="OnOrthographicClicked"
+                          ToolTip.Tip="Parallel projection, to measure with: equal lengths look equal wherever they are (O switches)." />
+                <MenuItem Name="PerspectiveMenuItem"
+                          Header="Pers_pective"
+                          Click="OnPerspectiveClicked"
+                          ToolTip.Tip="Perspective projection, to judge how it looks: things shrink with distance (O switches)." />
+                <Separator />
                 <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
                 <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />
                 <MenuItem Name="ZoomOutMenuItem" Header="Zoom _Out" Click="OnZoomOutClicked" />

@@ -90,6 +90,7 @@ public sealed class ModelView : Control
     static readonly Color AxisZ = Color.Parse("#2F6FD0");
 
     Camera _camera = Camera.Isometric();
+    CameraProjection _projection = CameraProjection.Orthographic;
     bool _fitPending = true;
     DesignEditor? _editor;
     ModelScene? _scene;
@@ -185,6 +186,20 @@ public sealed class ModelView : Control
             _camera = value;
             InvalidateVisual();
             ViewChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>
+    /// How the 3D view turns space into a picture: orthographic to measure, perspective to judge how
+    /// it looks. Kept when a design is opened or the view is reset.
+    /// </summary>
+    public CameraProjection Projection
+    {
+        get => _projection;
+        set
+        {
+            _projection = value;
+            Camera = _camera with { Projection = value };
         }
     }
 
@@ -448,7 +463,7 @@ public sealed class ModelView : Control
     /// <summary>Back to the isometric view, framing the drawing.</summary>
     public void ResetView()
     {
-        Camera = Camera.Isometric(_camera.Viewport);
+        Camera = Camera.Isometric(_camera.Viewport) with { Projection = _projection };
         ZoomToFit();
     }
 
@@ -479,6 +494,10 @@ public sealed class ModelView : Control
 
             case Key.Home when !command:
                 ResetView();
+                return true;
+
+            case Key.O when !command:
+                Projection = _projection == CameraProjection.Perspective ? CameraProjection.Orthographic : CameraProjection.Perspective;
                 return true;
 
             case Key.Left:
@@ -1029,7 +1048,7 @@ public sealed class ModelView : Control
         {
             case Gesture.MoveAxis when _gestureHandle is { } handle:
             {
-                if (InchesAlong(handle.Direction, sincePress) is not { } inches)
+                if (InchesAlong(handle.Direction, sincePress, ModelHandles.Centre(atPress), position) is not { } inches)
                 {
                     return;
                 }
@@ -1052,7 +1071,7 @@ public sealed class ModelView : Control
 
             case Gesture.MovePlane when _planeAxes.Length == 2:
             {
-                if (InPlane(_planeAxes[0], _planeAxes[1], sincePress) is not { } along)
+                if (InPlane(_planeAxes[0], _planeAxes[1], sincePress, ModelHandles.Centre(atPress), position) is not { } along)
                 {
                     return;
                 }
@@ -1066,7 +1085,7 @@ public sealed class ModelView : Control
 
             case Gesture.Resize when _gestureHandle is { Face: { } face } handle:
             {
-                if (InchesAlong(handle.Direction, sincePress) is not { } inches)
+                if (InchesAlong(handle.Direction, sincePress, ModelHandles.CentreOf(atPress, face), position) is not { } inches)
                 {
                     return;
                 }
@@ -1244,8 +1263,18 @@ public sealed class ModelView : Control
     /// that direction's image on the screen. Null when the direction points too nearly at the eye to
     /// be dragged along.
     /// </summary>
-    double? InchesAlong(Vector3d direction, Vector sincePress)
+    double? InchesAlong(Vector3d direction, Vector sincePress, Vector3d through, Point position)
     {
+        if (_camera.IsPerspective)
+        {
+            // An inch is not the same number of pixels everywhere: the drag is where the eye ray
+            // through the pointer comes closest to the axis line, less where it was at the press.
+            return ModelPicker.ParameterAlongLine(_camera, position, through, direction) is { } now
+                   && ModelPicker.ParameterAlongLine(_camera, _pressedAt, through, direction) is { } then
+                ? now - then
+                : null;
+        }
+
         Vector along = _camera.ProjectDirection(direction);
         double squared = (along.X * along.X) + (along.Y * along.Y);
         if (Math.Sqrt(squared) < ModelHandles.ShortestUsableFraction * _camera.PixelsPerInch)
@@ -1260,8 +1289,24 @@ public sealed class ModelView : Control
     /// How far along two world axes a pointer displacement means, in the plane they span: the one
     /// pair of amounts whose images add up to it. Null when the plane is seen too nearly edge-on.
     /// </summary>
-    (double First, double Second)? InPlane(Axis first, Axis second, Vector sincePress)
+    (double First, double Second)? InPlane(Axis first, Axis second, Vector sincePress, Vector3d through, Point position)
     {
+        if (_camera.IsPerspective)
+        {
+            // Where the eye ray through the pointer meets the plane the two axes span, now and at the press.
+            Axis third = Enum.GetValues<Axis>().Single(axis => axis != first && axis != second);
+            double coordinate = through.Component(third);
+            if (Math.Abs(_camera.Ray(position).Direction.Component(third)) < ModelHandles.ShortestUsableFraction
+                || ModelPicker.PlaneAt(_camera, position, third, coordinate) is not { } now
+                || ModelPicker.PlaneAt(_camera, _pressedAt, third, coordinate) is not { } then)
+            {
+                return null;
+            }
+
+            Vector3d moved = now - then;
+            return (moved.Component(first), moved.Component(second));
+        }
+
         Vector a = _camera.ProjectDirection(Vector3d.Along(first));
         Vector b = _camera.ProjectDirection(Vector3d.Along(second));
         double determinant = (a.X * b.Y) - (a.Y * b.X);
@@ -1426,7 +1471,7 @@ public sealed class ModelView : Control
     void OnEditorDesignOpened(object? sender, EventArgs e)
     {
         // A new design is seen from the default direction, framed, the next time there is room to.
-        _camera = Camera.Isometric(_camera.Viewport);
+        _camera = Camera.Isometric(_camera.Viewport) with { Projection = _projection };
         _fitPending = true;
         if (IsVisible)
         {
@@ -1504,7 +1549,9 @@ public sealed class ModelView : Control
         foreach (BoxFace face in (BoxFace[])[BoxFace.South, BoxFace.East, BoxFace.North, BoxFace.West, BoxFace.Bottom, BoxFace.Top])
         {
             (Axis axis, bool positive) = box.Orientation.Normal(face);
-            if (Vector3d.Dot(Vector3d.Along(axis, positive), _camera.TowardViewer) <= 1e-6)
+            Vector3d faceCentre = ModelHandles.CentreOf(box, face);
+            if (Vector3d.Dot(Vector3d.Along(axis, positive), _camera.TowardViewerAt(faceCentre)) <= 1e-6
+                || !ModelHandles.CornersOf(box, face).All(corner => _camera.IsInFront(Vector3d.From(corner))))
             {
                 continue;
             }
@@ -1620,9 +1667,9 @@ public sealed class ModelView : Control
         }
 
         Pen pen = new(new SolidColorBrush(palette.Snap, 0.85), 4) { LineJoin = PenLineJoin.Round };
-        foreach (ScenePolygon polygon in Scene.Polygons)
+        foreach (ScenePolygon whole in Scene.Polygons)
         {
-            if (_attention.Contains(polygon.Box) && polygon.FacesTowards(_camera))
+            if (_attention.Contains(whole.Box) && whole.ClippedFor(_camera) is { } polygon && polygon.FacesTowards(_camera))
             {
                 DrawEdges(context, pen, polygon);
             }
@@ -1639,9 +1686,9 @@ public sealed class ModelView : Control
         // On top, so the selected part reads through whatever stands in front of it — but only its
         // edges the eye could see were nothing in the way, so it is not a wire frame.
         Pen pen = new(new SolidColorBrush(palette.Selection), 2.2) { LineJoin = PenLineJoin.Round };
-        foreach (ScenePolygon polygon in Scene.Polygons)
+        foreach (ScenePolygon whole in Scene.Polygons)
         {
-            if (editor.Selection.Contains(polygon.Box) && polygon.FacesTowards(_camera))
+            if (editor.Selection.Contains(whole.Box) && whole.ClippedFor(_camera) is { } polygon && polygon.FacesTowards(_camera))
             {
                 DrawEdges(context, pen, polygon);
             }
@@ -1706,6 +1753,11 @@ public sealed class ModelView : Control
         {
             if (hit.Kind == SnapKind.Grid || hit.Target is not { } target || hit.TargetFace is not { } face
                 || sketch.Find<Box>(target) is not { } box)
+            {
+                continue;
+            }
+
+            if (!ModelHandles.CornersOf(box, face).All(corner => _camera.IsInFront(Vector3d.From(corner))))
             {
                 continue;
             }
@@ -1850,12 +1902,21 @@ public sealed class ModelView : Control
         double firstY = Math.Floor(minY / step) * step, lastY = Math.Ceiling(maxY / step) * step;
         for (double x = firstX; x <= lastX + 1e-9; x += step)
         {
-            context.DrawLine(pen, _camera.Project(new Vector3d(x, firstY, 0)), _camera.Project(new Vector3d(x, lastY, 0)));
+            DrawGroundLine(context, pen, new Vector3d(x, firstY, 0), new Vector3d(x, lastY, 0));
         }
 
         for (double y = firstY; y <= lastY + 1e-9; y += step)
         {
-            context.DrawLine(pen, _camera.Project(new Vector3d(firstX, y, 0)), _camera.Project(new Vector3d(lastX, y, 0)));
+            DrawGroundLine(context, pen, new Vector3d(firstX, y, 0), new Vector3d(lastX, y, 0));
+        }
+    }
+
+    /// <summary>A line on the ground, cut off where it would come nearer than the near plane.</summary>
+    void DrawGroundLine(DrawingContext context, Pen pen, Vector3d from, Vector3d to)
+    {
+        if (_camera.TryClipToNearPlane(ref from, ref to))
+        {
+            context.DrawLine(pen, _camera.Project(from), _camera.Project(to));
         }
     }
 

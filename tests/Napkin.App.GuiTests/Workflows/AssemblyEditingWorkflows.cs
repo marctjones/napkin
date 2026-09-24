@@ -774,6 +774,83 @@ public class AssemblyEditingWorkflows
         });
     });
 
+    [GuiWorkflow("GUI-ASSEM-16")]
+    public void The_3D_view_switches_to_perspective_from_the_menu_and_still_edits() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+
+        OpenSample(app, window, "Coffee table");
+
+        // A copy of a leg, free of the pinned table, to edit.
+        app.Click(OnPlan(window, BoxNamed(window, "Leg, south-west").Center.XY));
+        app.Press(Key.D);
+        EntityId copy = window.Editor.OnlySelected!.Value;
+        app.Press(Key.V);
+
+        app.Expect("the 3D view opens orthographic, as the status bar says, with the switch enabled and ticked", () =>
+        {
+            Assert.False(window.Model.Camera.IsPerspective);
+            Assert.Contains("Orthographic", window.ZoomReadout.Text, StringComparison.Ordinal);
+            Assert.True(window.FindControl<MenuItem>("PerspectiveMenuItem")!.IsEnabled);
+            Assert.NotNull(window.FindControl<MenuItem>("OrthographicMenuItem")!.Icon);
+            Assert.Null(window.FindControl<MenuItem>("PerspectiveMenuItem")!.Icon);
+        });
+
+        Camera orthographic = window.Model.Camera;
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("PerspectiveMenuItem")!));
+
+        app.Expect("it is perspective now, framed the same at the centre, and the selection did not change", () =>
+        {
+            Camera camera = window.Model.Camera;
+            Assert.True(camera.IsPerspective);
+            Assert.Equal(orthographic.Center, camera.Center);
+            Assert.Equal(orthographic.PixelsPerInch, camera.PixelsPerInch);
+            Assert.Contains("Perspective", window.ZoomReadout.Text, StringComparison.Ordinal);
+            Assert.NotNull(window.FindControl<MenuItem>("PerspectiveMenuItem")!.Icon);
+            Assert.Equal(copy, window.Editor.OnlySelected);
+        });
+
+        app.SaveFrame("perspective-coffee-table");
+
+        // Orbit with the keyboard; perspective orbits like orthographic does.
+        double azimuth = window.Model.Camera.AzimuthDegrees;
+        app.Press(Key.Left);
+        app.Press(Key.Left);
+
+        app.Expect("the view turned", () => Assert.NotEqual(azimuth, window.Model.Camera.AzimuthDegrees));
+
+        // Pull the copy's top face up by its handle: the drag follows the pointer along the axis.
+        Box before = window.CurrentDesign!.Sketch.Find<Box>(copy)!;
+        ModelHandle top = window.Model.Handles.Single(handle => handle.Kind == ModelHandleKind.Face && handle.Face == BoxFace.Top);
+        Point grab = InModel(window, top.At);
+        app.Drag(grab, grab + new Vector(0, -20), grab + new Vector(0, -40));
+
+        app.Expect("the copy grew taller, in perspective, and is still selected", () =>
+        {
+            Box grown = window.CurrentDesign!.Sketch.Find<Box>(copy)!;
+            Assert.True(grown.Depth > before.Depth, $"the copy is {grown.Depth}, it was {before.Depth}.");
+            Assert.True(grown.Depth < before.Depth + Length.Inches(24), "the drag ran away with the pointer.");
+            Assert.Equal(copy, window.Editor.OnlySelected);
+        });
+
+        app.SaveFrame("perspective-drag-taller");
+        app.Chord(Key.Z);
+
+        app.Expect("one undo puts it back exactly", () =>
+            Assert.Equal(before, window.CurrentDesign!.Sketch.Find<Box>(copy)));
+
+        // O switches back, and the drawing did not change.
+        app.Press(Key.O);
+
+        app.Expect("orthographic again, by the keyboard, and the view still looks from the same side", () =>
+        {
+            Assert.False(window.Model.Camera.IsPerspective);
+            Assert.Contains("Orthographic", window.ZoomReadout.Text, StringComparison.Ordinal);
+            Assert.Equal(before, window.CurrentDesign!.Sketch.Find<Box>(copy));
+        });
+    });
+
     /// <summary>The help text the plan canvas's automation element for a part carries.</summary>
     static string? PartHelpText(MainWindow window, EntityId part) =>
         Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(window.Canvas)
