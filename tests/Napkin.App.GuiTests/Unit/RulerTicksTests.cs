@@ -80,7 +80,7 @@ public class RulerTicksTests
     public void Negative_values_read_with_a_minus_and_zero_reads_zero()
     {
         System.Collections.Immutable.ImmutableArray<RulerTick> ticks = RulerTicks.Ticks(-30, 30, 10);
-        string?[] labels = [.. ticks.Where(t => t.Label is not null).Select(t => t.Label)];
+        string[] labels = [.. ticks.Select(t => t.Label).OfType<string>()];
 
         Assert.Equal(["-2'-0\"", "-1'-0\"", "0\"", "1'-0\"", "2'-0\""], labels);
     }
