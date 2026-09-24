@@ -38,8 +38,6 @@ public sealed record ScenePolygon(
     /// </summary>
     public ScenePolygon? ClippedFor(Camera camera)
     {
-        ArgumentNullException.ThrowIfNull(camera);
-
         if (!camera.IsPerspective || Points.All(point => camera.BeyondNearPlane(point) >= 0))
         {
             return this;
