@@ -805,6 +805,9 @@ public partial class MainWindow : Window
     /// <summary>The three turn buttons, about X, Y and Z, shown on the toolbar in the 3D view.</summary>
     public IReadOnlyList<Button> TurnButtons => [TurnXToolButton, TurnYToolButton, TurnZToolButton];
 
+    /// <summary>The 3D view's quick view-snap buttons (#132), shown only there.</summary>
+    public IReadOnlyList<Button> ViewSnapButtons => [LookXToolButton, LookYToolButton, LookZToolButton, NextSurfaceToolButton];
+
     /// <summary>
     /// Shows the 3D view in the plan canvas's place: a mode the window is in, over the same
     /// document, selection, editor and undo stack (&#xA7;8.1, &#xA7;11 decision 13).
@@ -882,6 +885,12 @@ public partial class MainWindow : Window
         foreach (Button button in TurnButtons)
         {
             button.IsVisible = model;
+        }
+
+        ViewSnapBar.IsVisible = model;
+        foreach (MenuItem item in (MenuItem[])[LookXMenuItem, LookYMenuItem, LookZMenuItem, NextSurfaceMenuItem])
+        {
+            item.IsEnabled = model;
         }
 
         PlanViewMenuItem.Icon = model ? null : new TextBlock { Text = "✓" };
@@ -2558,13 +2567,15 @@ public partial class MainWindow : Window
         RefusalDismissHint.Foreground = new SolidColorBrush(palette.Label);
 
         ToolBar.Background = paper;
+        ViewSnapBar.Background = paper;
+        ViewSnapBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
         ToolBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
         ToolRowDivider.Background = new SolidColorBrush(palette.GridMajor);
         ToolRowActionsDivider.Background = new SolidColorBrush(palette.GridMajor);
         StockToolboxPanel.ApplyPalette(palette);
 
         // The tool icons are drawn the way the stock category icons are, so the row reads as one.
-        foreach (Button button in ToolButtons.Concat(TurnButtons))
+        foreach (Button button in ToolButtons.Concat(TurnButtons).Concat(ViewSnapButtons))
         {
             if (button.Content is Avalonia.Controls.Shapes.Path glyph)
             {
@@ -2909,6 +2920,30 @@ public partial class MainWindow : Window
     void OnTurnYClicked(object? sender, RoutedEventArgs e) => SelectionTurn.Turn(Editor, Axis.Y, 1);
 
     void OnTurnZClicked(object? sender, RoutedEventArgs e) => SelectionTurn.Turn(Editor, Axis.Z, 1);
+
+    void OnLookXClicked(object? sender, RoutedEventArgs e)
+    {
+        ModelDrawing.LookAlong(Axis.X);
+        FocusDrawing();
+    }
+
+    void OnLookYClicked(object? sender, RoutedEventArgs e)
+    {
+        ModelDrawing.LookAlong(Axis.Y);
+        FocusDrawing();
+    }
+
+    void OnLookZClicked(object? sender, RoutedEventArgs e)
+    {
+        ModelDrawing.LookAlong(Axis.Z);
+        FocusDrawing();
+    }
+
+    void OnNextSurfaceClicked(object? sender, RoutedEventArgs e)
+    {
+        ModelDrawing.NextSurface();
+        FocusDrawing();
+    }
 
     void OnExitClicked(object? sender, RoutedEventArgs e) => _ = WhenChangesAreSafe("quitting", CloseNow);
 

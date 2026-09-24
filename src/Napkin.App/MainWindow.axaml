@@ -144,6 +144,15 @@
                           Click="OnModelViewClicked"
                           ToolTip.Tip="The drawing in three dimensions: turn parts, and move and resize them along any axis." />
                 <Separator />
+                <MenuItem Name="LookXMenuItem" Header="Look along _X" Click="OnLookXClicked"
+                          ToolTip.Tip="3D view: from the east; again for the west." />
+                <MenuItem Name="LookYMenuItem" Header="Look along _Y" Click="OnLookYClicked"
+                          ToolTip.Tip="3D view: from the south; again for the north." />
+                <MenuItem Name="LookZMenuItem" Header="Look along _Z" Click="OnLookZClicked"
+                          ToolTip.Tip="3D view: from above; again for below." />
+                <MenuItem Name="NextSurfaceMenuItem" Header="Next _surface" Click="OnNextSurfaceClicked"
+                          ToolTip.Tip="3D view: look square-on at each face of the selected part in turn, or along each axis with nothing selected." />
+                <Separator />
                 <!-- How the 3D view looks: orthographic to measure with (a length along an axis is the
                      same size anywhere), perspective to judge how it looks (things shrink with
                      distance). O switches. -->
@@ -608,6 +617,61 @@
                     </Button>
 
                     <Border Name="ToolRowDivider" Width="1" Margin="4,3" />
+                </StackPanel>
+            </Border>
+
+            <!-- The 3D view's quick view snaps (#132): look along an axis, again for the other side;
+                 the fourth steps through the surfaces. A small strip above the axes gizmo, shown only in 3D. -->
+            <Border Name="ViewSnapBar"
+                    IsVisible="False"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Bottom"
+                    Margin="10,0,10,84"
+                    Padding="3"
+                    CornerRadius="4"
+                    BorderThickness="1">
+                <Border.Styles>
+                    <Style Selector=":is(Button)">
+                        <Setter Property="ToolTip.ShowDelay" Value="0" />
+                    </Style>
+                    <Style Selector="Path.toolGlyph">
+                        <Setter Property="Width" Value="18" />
+                        <Setter Property="Height" Value="18" />
+                        <Setter Property="Stretch" Value="Uniform" />
+                        <Setter Property="StrokeThickness" Value="1.2" />
+                    </Style>
+                </Border.Styles>
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Name="LookXToolButton"
+                            Padding="5" MinWidth="28"
+                            Click="OnLookXClicked"
+                            AutomationProperties.Name="Look along X"
+                            ToolTip.Tip="Look along X: from the east; again for the west">
+                        <TextBlock Text="X" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    </Button>
+                    <Button Name="LookYToolButton"
+                            Padding="5" MinWidth="28"
+                            Click="OnLookYClicked"
+                            AutomationProperties.Name="Look along Y"
+                            ToolTip.Tip="Look along Y: from the south; again for the north">
+                        <TextBlock Text="Y" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    </Button>
+                    <Button Name="LookZToolButton"
+                            Padding="5" MinWidth="28"
+                            Click="OnLookZClicked"
+                            AutomationProperties.Name="Look along Z"
+                            ToolTip.Tip="Look along Z: from above; again for below">
+                        <TextBlock Text="Z" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    </Button>
+                    <Button Name="NextSurfaceToolButton"
+                            Padding="5"
+                            Click="OnNextSurfaceClicked"
+                            AutomationProperties.Name="Next surface"
+                            ToolTip.Tip="Next surface: look square-on at each face of the selected part in turn, or along each axis with nothing selected">
+                        <!-- A square face seen head-on. -->
+                        <Path Classes="toolGlyph"
+                              Data="M3,3 L15,3 L15,15 L3,15 Z M7,7 L11,7 L11,11 L7,11 Z" />
+                    </Button>
                 </StackPanel>
             </Border>
 
