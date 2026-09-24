@@ -1,4 +1,5 @@
 using Avalonia;
+using Napkin.App.Designs;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Xunit;
@@ -331,6 +332,121 @@ public class CameraTests
         // Tipped back: local Y stands up and local Z lies along −Y (§1.3's table).
         Assert.Equal(Point3.Inches(10, -18, 0), bounds.Min);
         Assert.Equal(Point3.Inches(13, 10, 3), bounds.Max);
+    }
+
+    // ---- Equal legs look equal (#93) -------------------------------------------------------
+    //
+    // An orthographic view has no vanishing point, so nothing shrinks with distance: a table's four
+    // legs must project to exactly the same length on screen. They can still *look* unequal, because
+    // the top and aprons hide different amounts of each, but that is occlusion and not projection.
+    // These tests hold the projection to the formula on a real design, from every angle.
+
+    static readonly string[] LegNames = ["Leg, south-west", "Leg, south-east", "Leg, north-west", "Leg, north-east"];
+
+    /// <summary>The bottom and top of a leg's first vertical edge, in inches, read from the scene.</summary>
+    static (Vector3d Foot, Vector3d Head) VerticalEdgeOf(string legName)
+    {
+        Design design = SampleExpectations.Sample("coffee-table").Load();
+        EntityId leg = SampleExpectations.For("coffee-table").Box(legName).EntityId;
+        List<Vector3d> corners = [.. ModelScene.Of(design.Sketch).Polygons.Where(p => p.Box == leg).SelectMany(p => p.Points)];
+        double low = corners.Min(c => c.Z);
+        double high = corners.Max(c => c.Z);
+        Vector3d foot = corners.First(c => c.Z == low);
+        return (foot, foot with { Z = high });
+    }
+
+    static double PixelsBetween(Camera camera, Vector3d from, Vector3d to)
+    {
+        Point a = camera.Project(from);
+        Point b = camera.Project(to);
+        return Math.Sqrt(((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y)));
+    }
+
+    public static TheoryData<double, double, double> EveryView()
+    {
+        TheoryData<double, double, double> views = [];
+        foreach (double zoom in new[] { 0.5, 4, 37.5 })
+        {
+            for (double azimuth = 0; azimuth < 360; azimuth += 15)
+            {
+                foreach (double elevation in new double[] { -80, -35.264, 0, 10, 35.264, 60, 80 })
+                {
+                    views.Add(azimuth, elevation, zoom);
+                }
+            }
+        }
+
+        return views;
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryView))]
+    public void The_four_legs_project_to_the_same_length_and_the_formula_gives_it(double azimuth, double elevation, double pixelsPerInch)
+    {
+        Camera camera = new(azimuth, elevation, 24, 12, 8, pixelsPerInch, Viewport);
+
+        double[] lengths = [.. LegNames.Select(name =>
+        {
+            (Vector3d foot, Vector3d head) = VerticalEdgeOf(name);
+            return PixelsBetween(camera, foot, head);
+        })];
+
+        // The coffee table's legs are 16 1/4" long (samples/coffee-table.expected.json), and a
+        // vertical edge is foreshortened by cos(elevation): that, not the other legs, is the check.
+        double expected = pixelsPerInch * 16.25 * Math.Cos(elevation * Math.PI / 180);
+        foreach (double length in lengths)
+        {
+            Assert.Equal(expected, length, 7);
+        }
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(90)]
+    [InlineData(200)]
+    public void A_leg_is_its_full_length_from_the_side_and_a_point_from_above(double azimuth)
+    {
+        (Vector3d foot, Vector3d head) = VerticalEdgeOf("Leg, north-east");
+
+        Camera side = new(azimuth, 0, 24, 12, 8, 10, Viewport);
+        Camera top = new(azimuth, 90, 24, 12, 8, 10, Viewport);
+
+        Assert.Equal(162.5, PixelsBetween(side, foot, head), 7);
+        Assert.Equal(0, PixelsBetween(top, foot, head), 7);
+    }
+
+    [Theory]
+    [InlineData(20, 35.264)]
+    [InlineData(200, 10)]
+    public void Parallel_edges_stay_parallel_on_screen(double azimuth, double elevation)
+    {
+        Camera camera = new(azimuth, elevation, 24, 12, 8, 10, Viewport);
+
+        Vector Screen(string leg)
+        {
+            (Vector3d foot, Vector3d head) = VerticalEdgeOf(leg);
+            return camera.Project(head) - camera.Project(foot);
+        }
+
+        Vector first = Screen(LegNames[0]);
+        foreach (string other in LegNames.Skip(1))
+        {
+            Vector v = Screen(other);
+            Assert.Equal(first.X, v.X, 7);
+            Assert.Equal(first.Y, v.Y, 7);
+        }
+    }
+
+    [Fact]
+    public void The_test_would_notice_a_wrong_foreshortening()
+    {
+        // Guards the guard: were the vertical edge foreshortened by sin(elevation) instead of
+        // cos(elevation), the formula above would disagree at the isometric elevation.
+        (Vector3d foot, Vector3d head) = VerticalEdgeOf("Leg, south-west");
+        Camera camera = new(30, 35.264, 24, 12, 8, 10, Viewport);
+
+        double wrong = 10 * 16.25 * Math.Sin(35.264 * Math.PI / 180);
+        Assert.NotEqual(wrong, PixelsBetween(camera, foot, head), 3);
     }
 
     static double PixelLength(Vector vector) => Math.Sqrt((vector.X * vector.X) + (vector.Y * vector.Y));
