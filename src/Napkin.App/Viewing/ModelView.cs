@@ -1575,13 +1575,30 @@ public sealed class ModelView : Control
     // Drawing
     // -------------------------------------------------------------------------------------
 
+    SketchLook _look;
+
+    /// <summary>The sketch look (#142): paper and pencil. Drawing only; nothing it changes is stored or picked.</summary>
+    public SketchLook Look
+    {
+        get => _look;
+        set
+        {
+            if (_look != value)
+            {
+                _look = value;
+                InvalidateVisual();
+            }
+        }
+    }
+
     /// <inheritdoc/>
     public override void Render(DrawingContext context)
     {
         base.Render(context);
 
-        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
+        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant, _look);
         context.FillRectangle(new SolidColorBrush(palette.Background), new Rect(Bounds.Size));
+        SketchInk.Paper(context, _look.Paper, new Rect(Bounds.Size));
 
         if (_editor is not { } editor)
         {
@@ -1693,15 +1710,27 @@ public sealed class ModelView : Control
             LineJoin = PenLineJoin.Round,
             DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
         };
-        DrawEdges(context, pen, polygon);
+        DrawEdges(context, pen, polygon, palette.Look.Line, style);
     }
 
-    void DrawEdges(DrawingContext context, Pen pen, ScenePolygon polygon)
+    void DrawEdges(DrawingContext context, Pen pen, ScenePolygon polygon, SketchLine line = SketchLine.Clean, EntityStyle? style = null)
     {
         int count = polygon.Points.Length;
         for (int i = 0; i < count; i++)
         {
-            if (polygon.EdgeDrawn[i])
+            if (polygon.EdgeDrawn[i] && line != SketchLine.Clean && style is not null)
+            {
+                Vector3d p = polygon.Points[i], q = polygon.Points[(i + 1) % count];
+                SketchInk.Stroke(
+                    context,
+                    line,
+                    style.Stroke,
+                    style.Dashed,
+                    _camera.Project(p),
+                    _camera.Project(q),
+                    SketchStroke.SeedOf(p.X + (p.Z * 1.7), p.Y + (p.Z * 0.9), q.X + (q.Z * 1.7), q.Y + (q.Z * 0.9)));
+            }
+            else if (polygon.EdgeDrawn[i])
             {
                 context.DrawLine(pen, _camera.Project(polygon.Points[i]), _camera.Project(polygon.Points[(i + 1) % count]));
             }

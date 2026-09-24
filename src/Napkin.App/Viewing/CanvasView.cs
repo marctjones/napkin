@@ -1549,7 +1549,7 @@ public sealed class CanvasView : Control
         RenderDrawing(context);
         if (_showRulers && Bounds.Width > RulerThickness && Bounds.Height > RulerThickness)
         {
-            DrawRulers(context, CanvasPalette.For(ActualThemeVariant));
+            DrawRulers(context, CanvasPalette.For(ActualThemeVariant, _look));
         }
     }
 
@@ -1620,14 +1620,34 @@ public sealed class CanvasView : Control
     static FormattedText RulerText(string text, IBrush brush) =>
         new(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 9, brush);
 
+    SketchLook _look;
+
+    /// <summary>The sketch look (#142): paper and pencil. Drawing only; nothing it changes is stored or picked.</summary>
+    public SketchLook Look
+    {
+        get => _look;
+        set
+        {
+            if (_look != value)
+            {
+                _look = value;
+                InvalidateVisual();
+            }
+        }
+    }
+
+    static int SeedOf(Point2 a, Point2 b) =>
+        SketchStroke.SeedOf(a.X.ToInches(), a.Y.ToInches(), b.X.ToInches(), b.Y.ToInches());
+
     void RenderDrawing(DrawingContext context)
     {
         base.Render(context);
 
-        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
+        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant, _look);
         Rect viewport = new(Bounds.Size);
         context.FillRectangle(new SolidColorBrush(palette.Background), viewport);
-        if (_showGrid)
+        SketchInk.Paper(context, _look.Paper, viewport);
+        if (_showGrid && _look.Paper is not (SketchPaper.Plain or SketchPaper.Napkin))
         {
             DrawGrid(context, palette, viewport);
         }
@@ -2044,8 +2064,15 @@ public sealed class CanvasView : Control
         double minor = SnapGrid.StepInches(_view.PixelsPerInch);
         double major = SnapGrid.CoarserStepInches(minor, _view.PixelsPerInch);
 
-        Pen minorPen = new(new SolidColorBrush(palette.GridMinor), 1);
-        Pen majorPen = new(new SolidColorBrush(palette.GridMajor), 1);
+        // Graph paper: every fifth line is the heavier one, whatever the ladder's next step is.
+        bool graph = _look.Paper == SketchPaper.Graph;
+        if (graph)
+        {
+            major = minor * 5;
+        }
+
+        Pen minorPen = new(new SolidColorBrush(palette.GridMinor), graph ? 0.8 : 1);
+        Pen majorPen = new(new SolidColorBrush(palette.GridMajor), graph ? 1.3 : 1);
 
         (double left, double top) = _view.ToWorldInches(viewport.TopLeft);
         (double right, double bottom) = _view.ToWorldInches(viewport.BottomRight);
@@ -2084,7 +2111,28 @@ public sealed class CanvasView : Control
             LineJoin = PenLineJoin.Miter,
             DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
         };
-        context.DrawGeometry(new SolidColorBrush(style.Fill), pen, Outline(box));
+        if (palette.Look.Line != SketchLine.Clean && (box.Cuts.IsEmpty || !PlanShape.ShowsCap(box)))
+        {
+            // Sketched: the fill stays flat, the outline is four hand-drawn lines over it.
+            Footprint plain = box.Footprint();
+            Point2[] corners =
+            [
+                plain.Corner(BoxCorner.SouthWest),
+                plain.Corner(BoxCorner.SouthEast),
+                plain.Corner(BoxCorner.NorthEast),
+                plain.Corner(BoxCorner.NorthWest),
+            ];
+            context.DrawGeometry(new SolidColorBrush(style.Fill), null, Outline(box));
+            for (int i = 0; i < 4; i++)
+            {
+                Point2 from = corners[i], to = corners[(i + 1) % 4];
+                SketchInk.Stroke(context, palette.Look.Line, style.Stroke, style.Dashed, _view.ToScreen(from), _view.ToScreen(to), SeedOf(from, to));
+            }
+        }
+        else
+        {
+            context.DrawGeometry(new SolidColorBrush(style.Fill), pen, Outline(box));
+        }
 
         Rect drawn = new Rect(
             _view.ToScreen(box.Footprint().Corner(BoxCorner.SouthWest)),
@@ -2148,6 +2196,12 @@ public sealed class CanvasView : Control
         Point2 end)
     {
         EntityStyle style = palette.StyleFor(layerName);
+        if (palette.Look.Line != SketchLine.Clean)
+        {
+            SketchInk.Stroke(context, palette.Look.Line, style.Stroke, false, _view.ToScreen(start), _view.ToScreen(end), SeedOf(start, end));
+            return;
+        }
+
         context.DrawLine(
             new Pen(new SolidColorBrush(style.Stroke), style.StrokeThickness),
             _view.ToScreen(start),
@@ -2184,19 +2238,34 @@ public sealed class CanvasView : Control
         Pen pen = new(brush, 1);
         Vector direction = along / length;
 
-        DrawExtensionLine(context, pen, from, lineFrom);
-        DrawExtensionLine(context, pen, to, lineTo);
+        // A dimension in its own ink is sketched; one shown in the selection's colour stays clean and readable.
+        bool sketched = palette.Look.Line != SketchLine.Clean && ink == palette.Dimension;
+        int seed = SeedOf(measurement.LineFrom, measurement.LineTo);
+        void Draw(Point p, Point q)
+        {
+            if (sketched)
+            {
+                SketchInk.Stroke(context, SketchLine.Pencil, ink, false, p, q, seed);
+            }
+            else
+            {
+                context.DrawLine(pen, p, q);
+            }
+        }
+
+        DrawExtensionLine(Draw, from, lineFrom);
+        DrawExtensionLine(Draw, to, lineTo);
 
         // A dimension too short for two arrowheads gets them outside, pointing in, and the line
         // stubbed past each end — which is what a draughtsman does with a 1" gap.
         bool tight = length < 3.5 * ArrowLength;
         if (tight)
         {
-            context.DrawLine(pen, lineFrom - (direction * ArrowLength), lineTo + (direction * ArrowLength));
+            Draw(lineFrom - (direction * ArrowLength), lineTo + (direction * ArrowLength));
         }
         else
         {
-            context.DrawLine(pen, lineFrom, lineTo);
+            Draw(lineFrom, lineTo);
         }
 
         DrawArrowhead(context, brush, lineFrom, tight ? direction : -direction);
@@ -2228,7 +2297,7 @@ public sealed class CanvasView : Control
         }
     }
 
-    static void DrawExtensionLine(DrawingContext context, Pen pen, Point measured, Point line)
+    static void DrawExtensionLine(Action<Point, Point> draw, Point measured, Point line)
     {
         Vector away = line - measured;
         double length = away.Length;
@@ -2238,8 +2307,7 @@ public sealed class CanvasView : Control
         }
 
         Vector direction = away / length;
-        context.DrawLine(
-            pen,
+        draw(
             measured + (direction * ExtensionGap),
             line + (direction * ExtensionOvershoot));
     }
