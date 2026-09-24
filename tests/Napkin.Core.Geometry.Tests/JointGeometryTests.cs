@@ -453,4 +453,36 @@ public class JointGeometryTests
         Assert.Equal(In(1), groove.Offset);
         Assert.Equal(BoxFace.South, groove.OffsetFrom);
     }
+
+    [Trait("Feature", "GEO-017")]
+    [Fact]
+    public void A_groove_exactly_in_the_middle_is_measured_from_the_lower_edge_and_a_square_contact_runs_along_the_length()
+    {
+        // A side x 0..0.5, y 0..16 (length), z 0..3 (width); a panel 1/4 thick centred in z: 1.375..1.625, so 1.375 from each edge.
+        Box side = Piece(At(0, 0, 0), 0.5, 16, 3, ThicknessLength);
+        Box panel = Piece(At(0.5, 0, 1.375), 4, 16, 0.25, LengthWidth);
+        Joint centred = Between(side, BoxFace.East, panel, BoxFace.West, JointType.Groove, In(0.25));
+
+        GrooveShape groove = JointGeometry.Of(Sketched(side, panel).WithRelationship(centred), centred)!.Groove!;
+
+        Assert.Equal(In(1.375), groove.Offset);
+        Assert.Equal(BoxFace.Bottom, groove.OffsetFrom);    // a tie is measured from the lower edge
+
+        // A contact 1 in square has no long side: the slot then follows the receiving part's length (y here).
+        Box rail = Piece(At(0, 0, 0), 2, 16, 1, WidthLength);
+        Box peg = Piece(At(0, 5, 1), 1, 1, 1, WidthLength);
+        Joint square = Between(rail, BoxFace.Top, peg, BoxFace.Bottom, JointType.Groove, In(0.25));
+
+        Assert.Equal(GrooveDirection.AlongLength, JointGeometry.Of(Sketched(rail, peg).WithRelationship(square), square)!.Groove!.Direction);
+    }
+
+    [Trait("Feature", "GEO-017")]
+    [Fact]
+    public void Pocket_holes_are_only_reported_when_the_joint_is_held_with_pocket_screws()
+    {
+        (Sketch sketch, Box leg, Box apron) = J1();
+        Joint glued = Between(leg, BoxFace.East, apron, BoxFace.West, JointType.Butt);
+
+        Assert.Null(JointGeometry.Of(sketch.WithRelationship(glued), glued)!.PocketEnd);
+    }
 }
