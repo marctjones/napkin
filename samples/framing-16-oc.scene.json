@@ -1,0 +1,718 @@
+{
+  "formatVersion": 4,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
+  ],
+  "entities": [
+    {
+      "id": "80000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Plate, bottom",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "width": 394752,
+      "height": 3584,
+      "depth": 1536,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Plate, top",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 96768
+      },
+      "width": 394752,
+      "height": 3584,
+      "depth": 1536,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000003",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 1",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000004",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 2",
+      "anchor": {
+        "x": 16384,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000005",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 3",
+      "anchor": {
+        "x": 32768,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000006",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 4",
+      "anchor": {
+        "x": 49152,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000007",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 5",
+      "anchor": {
+        "x": 65536,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000008",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 6",
+      "anchor": {
+        "x": 81920,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000009",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 7",
+      "anchor": {
+        "x": 98304,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000010",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 8",
+      "anchor": {
+        "x": 114688,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000011",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 9",
+      "anchor": {
+        "x": 131072,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000012",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 10",
+      "anchor": {
+        "x": 147456,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000013",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 11",
+      "anchor": {
+        "x": 163840,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000014",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 12",
+      "anchor": {
+        "x": 180224,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000015",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 13",
+      "anchor": {
+        "x": 196608,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000016",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 14",
+      "anchor": {
+        "x": 212992,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000017",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 15",
+      "anchor": {
+        "x": 229376,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000018",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 16",
+      "anchor": {
+        "x": 245760,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000019",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 17",
+      "anchor": {
+        "x": 262144,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000020",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 18",
+      "anchor": {
+        "x": 278528,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000021",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 19",
+      "anchor": {
+        "x": 294912,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000022",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 20",
+      "anchor": {
+        "x": 311296,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000023",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 21",
+      "anchor": {
+        "x": 327680,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000024",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 22",
+      "anchor": {
+        "x": 344064,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000025",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 23",
+      "anchor": {
+        "x": 360448,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000026",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 24",
+      "anchor": {
+        "x": 376832,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "80000000-0000-4000-8000-000000000027",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stud 25",
+      "anchor": {
+        "x": 393216,
+        "y": 0,
+        "z": 1536
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 94720,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    }
+  ],
+  "relationships": []
+}

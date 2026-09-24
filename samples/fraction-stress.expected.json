@@ -1,0 +1,159 @@
+{
+  "fixture": "fraction-stress",
+  "scene": "fraction-stress.scene.json",
+  "design": "fraction-stress.design.md",
+  "derivedBy": "hand, from the stated dimensions in fraction-stress.design.md; never regenerated from napkin's output",
+  "formatVersion": 4,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 4,
+    "pieces": 4,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 46421,
+    "depthUnits": 1088,
+    "heightUnits": 192,
+    "widthText": "≈3'-9 5/16\"",
+    "depthText": "1 1/16\"",
+    "heightText": "3/16\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Rail",
+      "id": "60000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 24512,
+        "y": 1088,
+        "z": 192
+      },
+      "derivation": "23 15/16\" long (383/16), 1 1/16\" wide, 3/16\" thick, all exact at 1/16\": lies flat at the origin. Occupies x 0..23 15/16."
+    },
+    {
+      "name": "Strip",
+      "id": "60000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 25600,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 35936,
+        "y": 80,
+        "z": 64
+      },
+      "derivation": "10 3/32\" long (323/32 = 10336 units), 5/64\" wide (80 units), 1/16\" thick (64 units): all on the 1/1024 grid, none but the thickness on the 1/16 grid. Placed 1\" clear of the rail: x 25..35 3/32."
+    },
+    {
+      "name": "Spacer",
+      "id": "60000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 37888,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 44096,
+        "y": 96,
+        "z": 80
+      },
+      "derivation": "6 1/16\" long (exact), 3/32\" wide (96 units) and 5/64\" thick (80 units) - two off-grid sizes. Placed 1 15/16\" clear of the strip (which ends at 35 3/32): x 37..43 1/16."
+    },
+    {
+      "name": "Third",
+      "id": "60000000-0000-4000-8000-000000000004",
+      "minUnits": {
+        "x": 46080,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 46421,
+        "y": 64,
+        "z": 64
+      },
+      "derivation": "One third of an inch cannot be stored: the closest legal length is 341 units (0.33301\"), what Length.Divide does (geometry-model 1.1 table). 1/16\" x 1/16\" cross-section. x 45..45 341/1024."
+    }
+  ],
+  "totalVolumeCubicUnits": 5222453248,
+  "cutList": [
+    {
+      "label": "Rail",
+      "quantity": 1,
+      "lengthUnits": 24512,
+      "widthUnits": 1088,
+      "thicknessUnits": 192,
+      "lengthText": "1'-11 15/16\"",
+      "widthText": "1 1/16\"",
+      "thicknessText": "3/16\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "60000000-0000-4000-8000-000000000001"
+      ],
+      "derivation": "383/16\" = 23.9375\" = 24512 units; 1 1/16\" = 1088; 3/16\" = 192. All exact at 1/16: 23 15/16 = 1'-11 15/16\"."
+    },
+    {
+      "label": "Strip",
+      "quantity": 1,
+      "lengthUnits": 10336,
+      "widthUnits": 80,
+      "thicknessUnits": 64,
+      "lengthText": "≈10 1/8\"",
+      "widthText": "≈1/16\"",
+      "thicknessText": "1/16\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "60000000-0000-4000-8000-000000000002"
+      ],
+      "derivation": "Length 10336 units; 3/32\" is 1.5 sixteenths, so 10 3/32 shows 10 1/8 - half away from zero (geometry-model 1.4), marked approx. Width 5/64\" = 1.25 sixteenths -> 1/16, approx. Thickness 1/16\" exact, unmarked."
+    },
+    {
+      "label": "Spacer",
+      "quantity": 1,
+      "lengthUnits": 6208,
+      "widthUnits": 96,
+      "thicknessUnits": 80,
+      "lengthText": "6 1/16\"",
+      "widthText": "≈1/8\"",
+      "thicknessText": "≈1/16\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "60000000-0000-4000-8000-000000000003"
+      ],
+      "derivation": "6 1/16\" = 6208 units, exact. Width 3/32\" = 96 units -> 2/16 = 1/8, approx (tie rounds away). Thickness 5/64\" = 80 units -> 1/16, approx."
+    },
+    {
+      "label": "Third",
+      "quantity": 1,
+      "lengthUnits": 341,
+      "widthUnits": 64,
+      "thicknessUnits": 64,
+      "lengthText": "≈5/16\"",
+      "widthText": "1/16\"",
+      "thicknessText": "1/16\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "60000000-0000-4000-8000-000000000004"
+      ],
+      "derivation": "341 units / 1024 x 16 = 5.33 sixteenths -> 5/16, approx; the two 1/16\" sides are exact."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes before saw kerf and joinery allowance.",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
+    "Rail,1,\"1'-11 15/16\"\"\",\"1 1/16\"\"\",\"3/16\"\"\",,",
+    "Strip,1,\"≈10 1/8\"\"\",\"≈1/16\"\"\",\"1/16\"\"\",,",
+    "Spacer,1,\"6 1/16\"\"\",\"≈1/8\"\"\",\"≈1/16\"\"\",,",
+    "Third,1,\"≈5/16\"\"\",\"1/16\"\"\",\"1/16\"\"\",,"
+  ]
+}

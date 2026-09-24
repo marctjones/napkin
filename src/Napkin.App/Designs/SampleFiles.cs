@@ -70,6 +70,30 @@ public static class SampleFiles
             "lying-beam.scene.json",
             "Lying beam",
             "One 36\" beam placed four ways — along X, along Y, upright and on its edge: same piece, same cut."),
+        new(
+            "chain-of-five.scene.json",
+            "Chain of five",
+            "Five slats each flush to the one before — resize any and the rest follow."),
+        new(
+            "fraction-stress.scene.json",
+            "Fraction stress",
+            "Parts of 1/16\", 3/32\", 5/64\" and about 1/3\" — sizes off the 1/16\" grid read as approximate."),
+        new(
+            "scale-extremes.scene.json",
+            "Scale extremes",
+            "A 40'-0\" plate and wall with a 1/32\" shim between — precision and zoom."),
+        new(
+            "framing-16-oc.scene.json",
+            "Framing at 16\" o.c.",
+            "Twenty-five studs and two plates — quantity counting."),
+        new(
+            "l-bracket.scene.json",
+            "L-bracket",
+            "An L-bracket with a distinct feature on every side — for telling the standard views apart."),
+        new(
+            "overlap.scene.json",
+            "Overlap",
+            "Two boards in the same place and a peg through both — napkin does not detect overlap."),
     ];
 
     private static readonly string[] SceneSuffixes = [".scene.json", ".json"];

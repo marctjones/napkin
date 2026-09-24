@@ -1,0 +1,287 @@
+{
+  "fixture": "l-bracket",
+  "scene": "l-bracket.scene.json",
+  "design": "l-bracket.design.md",
+  "derivedBy": "hand, from the stated dimensions in l-bracket.design.md; never regenerated from napkin's output",
+  "formatVersion": 4,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 8,
+    "pieces": 8,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 7680,
+    "depthUnits": 5120,
+    "heightUnits": 6144,
+    "widthText": "7 1/2\"",
+    "depthText": "5\"",
+    "heightText": "6\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Foot",
+      "id": "90000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 512,
+        "y": 512,
+        "z": 256
+      },
+      "maxUnits": {
+        "x": 6656,
+        "y": 4608,
+        "z": 768
+      },
+      "derivation": "The base plate, 6\" x 4\" x 1/2\", lifted 1/4\" by the skid; offset 1/2\" in X and Y so every feature has room on every side. x 1/2..6 1/2, y 1/2..4 1/2, z 1/4..3/4."
+    },
+    {
+      "name": "Upright",
+      "id": "90000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 512,
+        "y": 512,
+        "z": 768
+      },
+      "maxUnits": {
+        "x": 1024,
+        "y": 4608,
+        "z": 6144
+      },
+      "derivation": "The upright of the L on the foot's west edge: 1/2\" thick across X, 4\" wide up Y, 5 1/4\" tall (its depth) on the foot's top at 3/4\": z 3/4..6. x 1/2..1."
+    },
+    {
+      "name": "Boss, top",
+      "id": "90000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 5632,
+        "y": 512,
+        "z": 768
+      },
+      "maxUnits": {
+        "x": 6656,
+        "y": 1536,
+        "z": 1792
+      },
+      "derivation": "A 1\" cube on top of the foot at its south-east corner: x 5 1/2..6 1/2, y 1/2..1 1/2, z 3/4..1 3/4. The only feature seen from above beyond the L itself."
+    },
+    {
+      "name": "Skid, bottom",
+      "id": "90000000-0000-4000-8000-000000000004",
+      "minUnits": {
+        "x": 3072,
+        "y": 2048,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 4096,
+        "y": 3072,
+        "z": 256
+      },
+      "derivation": "A 1\" x 1\" x 1/4\" skid under the foot's middle, on the floor: x 3..4, y 2..3, z 0..1/4. Seen only from below."
+    },
+    {
+      "name": "Tab, east",
+      "id": "90000000-0000-4000-8000-000000000005",
+      "minUnits": {
+        "x": 6656,
+        "y": 2048,
+        "z": 256
+      },
+      "maxUnits": {
+        "x": 7680,
+        "y": 3072,
+        "z": 768
+      },
+      "derivation": "A 1\" x 1\" x 1/2\" tab continuing the foot beyond its east edge (foot ends at 6 1/2): x 6 1/2..7 1/2, y 2..3, z 1/4..3/4. Only the east side shows it."
+    },
+    {
+      "name": "Nub, west",
+      "id": "90000000-0000-4000-8000-000000000006",
+      "minUnits": {
+        "x": 0,
+        "y": 2048,
+        "z": 3072
+      },
+      "maxUnits": {
+        "x": 512,
+        "y": 3072,
+        "z": 3840
+      },
+      "derivation": "A nub on the upright's west face (x 1/2): 1/2\" thick across X, 1\" wide up Y, 3/4\" tall (depth): x 0..1/2, y 2..3, z 3..3 3/4."
+    },
+    {
+      "name": "Rib, north",
+      "id": "90000000-0000-4000-8000-000000000007",
+      "minUnits": {
+        "x": 512,
+        "y": 4608,
+        "z": 2048
+      },
+      "maxUnits": {
+        "x": 1024,
+        "y": 5120,
+        "z": 4096
+      },
+      "derivation": "A rib on the upright's north face (y 4 1/2): 1/2\" x 1/2\" in plan, 2\" tall: x 1/2..1, y 4 1/2..5, z 2..4."
+    },
+    {
+      "name": "Lug, south",
+      "id": "90000000-0000-4000-8000-000000000008",
+      "minUnits": {
+        "x": 512,
+        "y": 0,
+        "z": 4096
+      },
+      "maxUnits": {
+        "x": 1024,
+        "y": 512,
+        "z": 5120
+      },
+      "derivation": "A lug on the upright's south face (y 1/2): 1/2\" x 1/2\" in plan, 1\" tall, higher than the rib so front and back differ: x 1/2..1, y 0..1/2, z 4..5."
+    }
+  ],
+  "totalVolumeCubicUnits": 27246198784,
+  "cutList": [
+    {
+      "label": "Foot",
+      "quantity": 1,
+      "lengthUnits": 6144,
+      "widthUnits": 4096,
+      "thicknessUnits": 512,
+      "lengthText": "6\"",
+      "widthText": "4\"",
+      "thicknessText": "1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "90000000-0000-4000-8000-000000000001"
+      ],
+      "derivation": "6\" x 4\" x 1/2\": 6144 x 4096 x 512."
+    },
+    {
+      "label": "Upright",
+      "quantity": 1,
+      "lengthUnits": 5376,
+      "widthUnits": 4096,
+      "thicknessUnits": 512,
+      "lengthText": "5 1/4\"",
+      "widthText": "4\"",
+      "thicknessText": "1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "90000000-0000-4000-8000-000000000002"
+      ],
+      "derivation": "Stands up: length its depth 5 1/4\" = 5376, width 4\" = 4096, thickness 1/2\" = 512."
+    },
+    {
+      "label": "Rib, north",
+      "quantity": 1,
+      "lengthUnits": 2048,
+      "widthUnits": 512,
+      "thicknessUnits": 512,
+      "lengthText": "2\"",
+      "widthText": "1/2\"",
+      "thicknessText": "1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "90000000-0000-4000-8000-000000000007"
+      ],
+      "derivation": "Length its depth 2\" = 2048, width 1/2\" = 512, thickness 1/2\" = 512."
+    },
+    {
+      "label": "Boss, top",
+      "quantity": 1,
+      "lengthUnits": 1024,
+      "widthUnits": 1024,
+      "thicknessUnits": 1024,
+      "lengthText": "1\"",
+      "widthText": "1\"",
+      "thicknessText": "1\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "90000000-0000-4000-8000-000000000003"
+      ],
+      "derivation": "1\" cube = 1024 each way. Among the 1\"-long pieces: widest (1\") and thickest (1\") first."
+    },
+    {
+      "label": "Tab, east",
+      "quantity": 1,
+      "lengthUnits": 1024,
+      "widthUnits": 1024,
+      "thicknessUnits": 512,
+      "lengthText": "1\"",
+      "widthText": "1\"",
+      "thicknessText": "1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "90000000-0000-4000-8000-000000000005"
+      ],
+      "derivation": "1\" x 1\" x 1/2\" = 1024 x 1024 x 512. Same length and width as the boss, thinner, so after it."
+    },
+    {
+      "label": "Skid, bottom",
+      "quantity": 1,
+      "lengthUnits": 1024,
+      "widthUnits": 1024,
+      "thicknessUnits": 256,
+      "lengthText": "1\"",
+      "widthText": "1\"",
+      "thicknessText": "1/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "90000000-0000-4000-8000-000000000004"
+      ],
+      "derivation": "1\" x 1\" x 1/4\" = 1024 x 1024 x 256. Thinnest of the 1\" x 1\" pieces, so after the tab."
+    },
+    {
+      "label": "Lug, south",
+      "quantity": 1,
+      "lengthUnits": 1024,
+      "widthUnits": 512,
+      "thicknessUnits": 512,
+      "lengthText": "1\"",
+      "widthText": "1/2\"",
+      "thicknessText": "1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "90000000-0000-4000-8000-000000000008"
+      ],
+      "derivation": "Length its depth 1\" = 1024, width 1/2\" = 512, thickness 1/2\" = 512. Narrower than the 1\"-wide pieces, so after them."
+    },
+    {
+      "label": "Nub, west",
+      "quantity": 1,
+      "lengthUnits": 768,
+      "widthUnits": 1024,
+      "thicknessUnits": 512,
+      "lengthText": "3/4\"",
+      "widthText": "1\"",
+      "thicknessText": "1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "90000000-0000-4000-8000-000000000006"
+      ],
+      "derivation": "Length its depth 3/4\" = 768, width 1\" = 1024, thickness 1/2\" = 512. Shortest, last."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes before saw kerf and joinery allowance.",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
+    "Foot,1,\"6\"\"\",\"4\"\"\",\"1/2\"\"\",,",
+    "Upright,1,\"5 1/4\"\"\",\"4\"\"\",\"1/2\"\"\",,",
+    "\"Rib, north\",1,\"2\"\"\",\"1/2\"\"\",\"1/2\"\"\",,",
+    "\"Boss, top\",1,\"1\"\"\",\"1\"\"\",\"1\"\"\",,",
+    "\"Tab, east\",1,\"1\"\"\",\"1\"\"\",\"1/2\"\"\",,",
+    "\"Skid, bottom\",1,\"1\"\"\",\"1\"\"\",\"1/4\"\"\",,",
+    "\"Lug, south\",1,\"1\"\"\",\"1/2\"\"\",\"1/2\"\"\",,",
+    "\"Nub, west\",1,\"3/4\"\"\",\"1\"\"\",\"1/2\"\"\",,"
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "fixture": "chain-of-five",
+  "scene": "chain-of-five.scene.json",
+  "design": "chain-of-five.design.md",
+  "derivedBy": "hand, from the stated dimensions in chain-of-five.design.md; never regenerated from napkin's output",
+  "formatVersion": 4,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 5,
+    "pieces": 5,
+    "relationships": 5
+  },
+  "overall": {
+    "widthUnits": 47616,
+    "depthUnits": 3584,
+    "heightUnits": 768,
+    "widthText": "3'-10 1/2\"",
+    "depthText": "3 1/2\"",
+    "heightText": "3/4\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Slat 1",
+      "id": "50000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 10240,
+        "y": 3584,
+        "z": 768
+      },
+      "derivation": "Slat 1: 10\" long across X, 3 1/2\" up Y, 3/4\" thick (its depth). Its west face is at x = 0\", the running total of the slats before it, so it occupies x 0..10, y 0..3 1/2, z 0..3/4."
+    },
+    {
+      "name": "Slat 2",
+      "id": "50000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 10240,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 18944,
+        "y": 3584,
+        "z": 768
+      },
+      "derivation": "Slat 2: 17/2\" long across X, 3 1/2\" up Y, 3/4\" thick (its depth). Its west face is at x = 10\", the running total of the slats before it, so it occupies x 10..37/2, y 0..3 1/2, z 0..3/4."
+    },
+    {
+      "name": "Slat 3",
+      "id": "50000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 18944,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 31232,
+        "y": 3584,
+        "z": 768
+      },
+      "derivation": "Slat 3: 12\" long across X, 3 1/2\" up Y, 3/4\" thick (its depth). Its west face is at x = 37/2\", the running total of the slats before it, so it occupies x 37/2..61/2, y 0..3 1/2, z 0..3/4."
+    },
+    {
+      "name": "Slat 4",
+      "id": "50000000-0000-4000-8000-000000000004",
+      "minUnits": {
+        "x": 31232,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 38144,
+        "y": 3584,
+        "z": 768
+      },
+      "derivation": "Slat 4: 27/4\" long across X, 3 1/2\" up Y, 3/4\" thick (its depth). Its west face is at x = 61/2\", the running total of the slats before it, so it occupies x 61/2..149/4, y 0..3 1/2, z 0..3/4."
+    },
+    {
+      "name": "Slat 5",
+      "id": "50000000-0000-4000-8000-000000000005",
+      "minUnits": {
+        "x": 38144,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 47616,
+        "y": 3584,
+        "z": 768
+      },
+      "derivation": "Slat 5: 37/4\" long across X, 3 1/2\" up Y, 3/4\" thick (its depth). Its west face is at x = 149/4\", the running total of the slats before it, so it occupies x 149/4..93/2, y 0..3 1/2, z 0..3/4."
+    }
+  ],
+  "totalVolumeCubicUnits": 131063611392,
+  "cutList": [
+    {
+      "label": "Slat 3",
+      "quantity": 1,
+      "lengthUnits": 12288,
+      "widthUnits": 3584,
+      "thicknessUnits": 768,
+      "lengthText": "1'-0\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "50000000-0000-4000-8000-000000000003"
+      ],
+      "derivation": "12\" long = 12288 units; 3 1/2\" = 3584; 3/4\" = 768. Longest, so first. Text: 12 -> 1'-0\"."
+    },
+    {
+      "label": "Slat 1",
+      "quantity": 1,
+      "lengthUnits": 10240,
+      "widthUnits": 3584,
+      "thicknessUnits": 768,
+      "lengthText": "10\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "50000000-0000-4000-8000-000000000001"
+      ],
+      "derivation": "10\" = 10240 long, 3584 wide, 768 thick. Second longest."
+    },
+    {
+      "label": "Slat 5",
+      "quantity": 1,
+      "lengthUnits": 9472,
+      "widthUnits": 3584,
+      "thicknessUnits": 768,
+      "lengthText": "9 1/4\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "50000000-0000-4000-8000-000000000005"
+      ],
+      "derivation": "9 1/4\" = 9472 long (9.25 x 1024). Third."
+    },
+    {
+      "label": "Slat 2",
+      "quantity": 1,
+      "lengthUnits": 8704,
+      "widthUnits": 3584,
+      "thicknessUnits": 768,
+      "lengthText": "8 1/2\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "50000000-0000-4000-8000-000000000002"
+      ],
+      "derivation": "8 1/2\" = 8704 long (8.5 x 1024). Fourth."
+    },
+    {
+      "label": "Slat 4",
+      "quantity": 1,
+      "lengthUnits": 6912,
+      "widthUnits": 3584,
+      "thicknessUnits": 768,
+      "lengthText": "6 3/4\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "50000000-0000-4000-8000-000000000004"
+      ],
+      "derivation": "6 3/4\" = 6912 long (6.75 x 1024). Shortest, last."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes before saw kerf and joinery allowance.",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
+    "Slat 3,1,\"1'-0\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,",
+    "Slat 1,1,\"10\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,",
+    "Slat 5,1,\"9 1/4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,",
+    "Slat 2,1,\"8 1/2\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,",
+    "Slat 4,1,\"6 3/4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,"
+  ]
+}
