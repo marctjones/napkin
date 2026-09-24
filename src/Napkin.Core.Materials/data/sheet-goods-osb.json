@@ -9,7 +9,7 @@
     "designation": "PS 2-18",
     "standard": "Voluntary Product Standard PS 2-18, Performance Standard for Wood Structural Panels (effective 30 March 2019)",
     "publisher": "U.S. Department of Commerce / National Institute of Standards and Technology; published by APA - The Engineered Wood Association, Form No. S350H",
-    "where": "§5.2.1.2 and Table 1, \"Panel thickness requirements\", page 7, which give each Performance Category its minimum and maximum thickness (Appendix D Table D1 repeats them with the recommended thickness label); §5.2.1.1, which allows plus or minus 1.6 mm (1/16 in) on the manufactured length and width; and §7.3, whose performance tests are run on 1,220 mm x 2,440 mm (48 in. x 96 in.) panels.",
+    "where": "§5.2.1.2 and Table 1, \"Panel thickness requirements\", page 7, which give each Performance Category its minimum and maximum thickness (Appendix D Table D1 repeats them with the recommended thickness label); §5.2.1.1, which allows plus or minus 1.6 mm (1/16 in) on the manufactured length and width; and §5.3.1.1, page 8, whose structural tests use a minimum test panel size of 1,220 mm x 2,440 mm (48 in. x 96 in.). (Corrected 2026-09-24 for #98: this previously cited §7.3, which is the wall racking test on 8 ft x 8 ft specimens.)",
     "url": "https://tolko.com/wp-content/uploads/2019/11/APA-PS-2-18-Performance-Standard-for-Wood-Structural-Panels.pdf",
     "retrieved": "2026-09-21"
   },
@@ -17,7 +17,7 @@
   "entries": [
     { "name": "3/8 osb", "performanceCategory": "3/8",
       "thickness": "3/8", "sheetWidth": "4'", "sheetLength": "8'",
-      "derivation": "Table 1, 3/8 PERF CAT: 8.73 to 10.32 mm (0.344 to 0.406 in). Those limits are rounded conversions of millimetre values and do not land on the 1/1024 in grid, so the exact length carried is the Performance Category itself, 3/8 in. Sheet size: the 48 in x 96 in panel §7.3 tests, within the plus or minus 1/16 in size tolerance of §5.2.1.1." },
+      "derivation": "Table 1, 3/8 PERF CAT: 8.73 to 10.32 mm (0.344 to 0.406 in). Those limits are rounded conversions of millimetre values and do not land on the 1/1024 in grid, so the exact length carried is the Performance Category itself, 3/8 in. Sheet size: the 48 in x 96 in panel §5.3.1.1 tests, within the plus or minus 1/16 in size tolerance of §5.2.1.1." },
     { "name": "7/16 osb", "performanceCategory": "7/16",
       "thickness": "7/16", "sheetWidth": "4'", "sheetLength": "8'",
       "derivation": "Table 1, 7/16 PERF CAT: 10.32 to 11.91 mm (0.406 to 0.469 in). Carried length is the category, 7/16 in. Sheet size as above." },
