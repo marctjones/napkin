@@ -30,6 +30,24 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void A_fresh_store_draws_on_the_napkin_in_carpenters_pencil()
+    {
+        var store = new SettingsStore(FilePath);
+        Assert.Equal(Napkin.App.Viewing.SketchPaper.Napkin, store.Current.SketchPaper);
+        Assert.Equal(Napkin.App.Viewing.SketchLine.Carpenter, store.Current.SketchLine);
+    }
+
+    [Fact]
+    public void The_clean_screen_look_stays_selectable_and_is_remembered()
+    {
+        new SettingsStore(FilePath).Update(s => s with { SketchPaper = Napkin.App.Viewing.SketchPaper.Screen, SketchLine = Napkin.App.Viewing.SketchLine.Clean });
+
+        var again = new SettingsStore(FilePath);
+        Assert.Equal(Napkin.App.Viewing.SketchPaper.Screen, again.Current.SketchPaper);
+        Assert.Equal(Napkin.App.Viewing.SketchLine.Clean, again.Current.SketchLine);
+    }
+
+    [Fact]
     public void A_change_is_written_at_once_and_read_back_by_a_new_store()
     {
         new SettingsStore(FilePath).Update(s => s with { Projection = CameraProjection.Orthographic, ShowRulers = true });

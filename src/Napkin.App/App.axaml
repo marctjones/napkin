@@ -40,6 +40,7 @@
 
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://Napkin.App/Styles/NapkinLook.axaml" />
 
         <!-- Control text is Plex Sans at 13 (the design system's app-body). Inter stays registered
              in Program.cs as the fallback for any glyph Plex lacks. -->

@@ -51,10 +51,10 @@ public sealed record UserSettings
     public bool ShowGrid { get; init; } = true;
 
     /// <summary>The sheet the drawing is on (#142): cosmetic, in the plan and the 3D view.</summary>
-    public SketchPaper SketchPaper { get; init; } = SketchPaper.Screen;
+    public SketchPaper SketchPaper { get; init; } = SketchPaper.Napkin;
 
     /// <summary>The pencil the drawing's lines are in (#142): cosmetic.</summary>
-    public SketchLine SketchLine { get; init; } = SketchLine.Clean;
+    public SketchLine SketchLine { get; init; } = SketchLine.Carpenter;
 
     /// <summary>Whether drags and tools land on the grid. Separate from whether it is drawn.</summary>
     public bool SnapToGrid { get; init; } = true;

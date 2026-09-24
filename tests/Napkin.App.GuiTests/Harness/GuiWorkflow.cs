@@ -23,7 +23,19 @@ public static class GuiWorkflow
     /// feature id comes from that attribute, so a scenario cannot claim a feature it was not
     /// declared for.
     /// </remarks>
-    public static void Run(Action<AppDriver> scenario)
+    /// <summary>
+    /// A throw-away settings store holding the clean screen look, not the napkin-and-carpenter default,
+    /// so colour and pixel assertions written against the plain ground stay about behaviour.
+    /// </summary>
+    public static Napkin.App.Settings.SettingsStore ScreenStore(string settingsDir)
+    {
+        MainWindow.BenchTitleBar = false;
+        var store = new Napkin.App.Settings.SettingsStore(Path.Combine(settingsDir, Napkin.App.Settings.SettingsStore.FileName));
+        store.Update(s => s with { SketchPaper = Napkin.App.Viewing.SketchPaper.Screen, SketchLine = Napkin.App.Viewing.SketchLine.Clean });
+        return store;
+    }
+
+    public static void Run(Action<AppDriver> scenario, bool defaultLook = false)
     {
         var featureId = GuiWorkflowContext.FeatureId
             ?? throw new GuiWorkflowRuleException(
@@ -35,7 +47,7 @@ public static class GuiWorkflow
         {
             // Never the person's real settings: each run gets its own file, gone when it ends.
             string settingsDir = Path.Combine(Path.GetTempPath(), "napkin-gui-settings-" + Guid.NewGuid().ToString("N"));
-            var window = new MainWindow(new Napkin.App.Settings.SettingsStore(Path.Combine(settingsDir, Napkin.App.Settings.SettingsStore.FileName)))
+            var window = new MainWindow(defaultLook ? new Napkin.App.Settings.SettingsStore(Path.Combine(settingsDir, Napkin.App.Settings.SettingsStore.FileName)) : ScreenStore(settingsDir))
             {
                 Width = DefaultWindowSize.Width,
                 Height = DefaultWindowSize.Height,

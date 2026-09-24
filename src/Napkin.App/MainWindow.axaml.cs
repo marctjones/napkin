@@ -7,6 +7,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Napkin.App.Designs;
 using Design = Napkin.App.Designs.Design;
 using Napkin.App.Editing;
@@ -85,6 +86,7 @@ public partial class MainWindow : Window
     {
         Settings = settings;
         InitializeComponent();
+        ExtendTitleBarIntoBench();
 
         _filePicker = new StorageProviderScenePicker(this);
 
@@ -783,8 +785,11 @@ public partial class MainWindow : Window
         _documentPath is { } path ? System.IO.Path.GetFileName(path) : Editor.Design.Name;
 
     /// <summary>The title: the file's name, marked with an asterisk while there are unsaved changes.</summary>
-    void UpdateTitle() =>
+    void UpdateTitle()
+    {
         Title = Editor.HasUnsavedChanges ? $"napkin — {DocumentName}*" : $"napkin — {DocumentName}";
+        TitleBarText.Text = Title;
+    }
 
     // ---------------------------------------------------------------------------------------
     // The 3D view (docs/design/assembly-model.md §8)
@@ -2259,7 +2264,7 @@ public partial class MainWindow : Window
             : entries.Count == 1 ? "1 relationship" : $"{entries.Count} relationships";
         RelationshipsHeadline.FontSize = expanded ? 12 : 11;
         RelationshipsPanel.Padding = expanded ? new Thickness(10, 8) : new Thickness(8, 3);
-        RelationshipsPanel.CornerRadius = new CornerRadius(expanded ? 4 : 10);
+        RelationshipsPanel.CornerRadius = new CornerRadius(4);
         RelationshipsPanel.IsVisible = entries.Count > 0 && !IsShapingPart;
 
         // Open, its rows take clicks (#77) and a wheel turn scrolls them. Collapsed to its badge it
@@ -2553,9 +2558,29 @@ public partial class MainWindow : Window
     /// </summary>
     void ApplyEditingPalette()
     {
-        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
-        SolidColorBrush paper = new(palette.Background);
+        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant, new SketchLook(Settings.Current.SketchPaper, Settings.Current.SketchLine));
+        SketchPaper sheet = Settings.Current.SketchPaper;
+        SolidColorBrush paper = new(ChromeColours.Note(sheet, palette.Background));
         SolidColorBrush edge = new(palette.Dimension);
+        if (ChromeColours.NoteRule(sheet) is Color rule)
+        {
+            palette = palette with { GridMajor = rule };
+        }
+
+        // A sheet is light whatever the theme, so the notes on it wear the light theme's controls too.
+        ThemeVariant? noteTheme = sheet == SketchPaper.Screen ? null : ThemeVariant.Light;
+        foreach (Control note in new Control[]
+        {
+            RefusalPanel, UnsavedPanel, ToolBar, ViewSnapBar, RelationshipsPanel, PropertiesPanel,
+            StockToolboxPanel, WorkshopSheet, WorkshopCutsPanel, DimensionEditor,
+        })
+        {
+            note.SetValue(ThemeVariantScope.RequestedThemeVariantProperty, noteTheme);
+            if (!note.Classes.Contains("note"))
+            {
+                note.Classes.Add("note");
+            }
+        }
 
         RefusalPanel.Background = paper;
         RefusalPanel.BorderBrush = edge;
@@ -2964,6 +2989,37 @@ public partial class MainWindow : Window
     /// <summary>Where the person's preferences live.</summary>
     public SettingsStore Settings { get; }
 
+    /// <summary>
+    /// Whether new windows carry the bench title bar: macOS only. The GUI test harness turns it off so
+    /// layout and hit-test assertions mean the same on every platform (headless windows have no native
+    /// title bar to extend into).
+    /// </summary>
+    public static bool BenchTitleBar { get; set; } = OperatingSystem.IsMacOS();
+
+    /// <summary>
+    /// On macOS the bench colour runs up into the title bar: the system's traffic-light buttons stay,
+    /// drawn over our bar, which carries the title and drags the window. Other platforms keep their
+    /// system title bar untouched. To undo: delete this method and its call.
+    /// </summary>
+    void ExtendTitleBarIntoBench()
+    {
+        if (!BenchTitleBar)
+        {
+            return;
+        }
+
+        ExtendClientAreaToDecorationsHint = true;
+        ExtendClientAreaTitleBarHeightHint = -1;
+        TitleBar.IsVisible = true;
+        TitleBar.PointerPressed += (_, e) =>
+        {
+            if (e.GetCurrentPoint(TitleBar).Properties.IsLeftButtonPressed)
+            {
+                BeginMoveDrag(e);
+            }
+        };
+    }
+
     /// <summary>Puts the remembered preferences on the window, and says so when the file could not be used.</summary>
     void ApplySettings()
     {
@@ -3105,6 +3161,7 @@ public partial class MainWindow : Window
         LineCleanMenuItem.Icon = Tick(line == SketchLine.Clean);
         LinePencilMenuItem.Icon = Tick(line == SketchLine.Pencil);
         LineCarpenterMenuItem.Icon = Tick(line == SketchLine.Carpenter);
+        ApplyEditingPalette();
     }
 
     void UpdateZoomReadout()
