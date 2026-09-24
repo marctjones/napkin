@@ -485,4 +485,108 @@ public class JointGeometryTests
 
         Assert.Null(JointGeometry.Of(sketch.WithRelationship(glued), glued)!.PocketEnd);
     }
+
+    [Trait("Feature", "GEO-017")]
+    [Fact]
+    public void A_bare_box_is_as_long_as_its_longest_size_whichever_axis_that_is()
+    {
+        // No part record: the length is the longest of x, y, z (x before y before z on a tie), and a face is an end
+        // when it is perpendicular to it. Blocks 1 x 1 x 1 stacked so a 6 in bar has each of its ends against one.
+        Box bare(double x, double y, double z, Point3 at) => new(new EntityId(new Guid(++next, 2, 0, new byte[8])), LayerId.Default, at, In(x), In(y), In(z), BoxFace.Top, Angle.Zero);
+
+        Box tallBar = bare(1, 2, 6, At(0, 0, 0));       // z is longest: its top and bottom are ends
+        Box longBar = bare(1, 6, 2, At(3, 0, 0));       // y is longest: its north and south are ends
+        Box block = bare(1, 1, 1, At(0, 0, 6));         // on the tall bar's top
+        Box cap = bare(1, 1, 1, At(3, 6, 0));           // on the long bar's north end
+
+        Sketch sketch = Sketched(tallBar, longBar, block, cap);
+        FeatureRef barTop = new(tallBar.Id, BoxFeature.Face(BoxFace.Top));
+        FeatureRef blockBottom = new(block.Id, BoxFeature.Face(BoxFace.Bottom));
+        FeatureRef barNorth = new(longBar.Id, BoxFeature.Face(BoxFace.North));
+        FeatureRef capSouth = new(cap.Id, BoxFeature.Face(BoxFace.South));
+
+        // The tall bar's top is an end; the cube's bottom is also perpendicular to its (x-first) length? No: a cube's
+        // length is x, so its bottom is not an end. So the bar is inserted into the block.
+        JointRoles onTop = JointGeometry.ProposeRoles(sketch, JointType.Butt, barTop, blockBottom)!;
+        Assert.Equal(barTop, onTop.Inserted);
+        Assert.False(onTop.Ambiguous);
+        JointRoles onEnd = JointGeometry.ProposeRoles(sketch, JointType.Butt, barNorth, capSouth)!;
+        Assert.Equal(barNorth, onEnd.Inserted);
+        Assert.False(onEnd.Ambiguous);
+    }
+
+    [Trait("Feature", "GEO-017")]
+    [Fact]
+    public void Two_equal_parts_with_no_end_to_choose_go_to_the_lower_id_as_receiving_and_ask()
+    {
+        Box first = Piece(At(0, 0, 0), 0.75, 4, 4, ThicknessWidth);
+        Box second = Piece(At(0.75, 0, 0), 0.75, 4, 4, ThicknessWidth);
+        Sketch sketch = Sketched(first, second);
+        FeatureRef a = new(first.Id, BoxFeature.Face(BoxFace.East));
+        FeatureRef b = new(second.Id, BoxFeature.Face(BoxFace.West));
+
+        foreach ((FeatureRef x, FeatureRef y) in new[] { (a, b), (b, a) })
+        {
+            JointRoles roles = JointGeometry.ProposeRoles(sketch, JointType.Butt, x, y)!;
+
+            Assert.True(roles.Ambiguous);
+            Assert.Equal(a, roles.Receiving);      // equal in volume: the lower id (built first) receives
+            Assert.Equal(b, roles.Inserted);
+        }
+    }
+
+    [Trait("Feature", "GEO-017")]
+    [Fact]
+    public void A_slot_whose_long_side_is_the_second_flat_axis_and_a_groove_or_rabbet_with_no_depth_still_derive()
+    {
+        // A rail x 0..2, y 0..16 (length), z 0..1; a panel standing on its top face (z = 1) 1/4 thick in x and 16 long in y:
+        // x 0.75..1, y 0..16, z 1..5. Contact on the plane z = 1: x 0.75..1 (1/4) by y 0..16 (16): the long side is y.
+        Box rail = Piece(At(0, 0, 0), 2, 16, 1, WidthLength);
+        Box panel = Piece(At(0.75, 0, 1), 0.25, 16, 4, ThicknessLength);
+        Joint slot = Between(rail, BoxFace.Top, panel, BoxFace.Bottom, JointType.Groove);      // no depth typed yet
+        Sketch sketch = Sketched(rail, panel).WithRelationship(slot);
+
+        GrooveShape groove = JointGeometry.Of(sketch, slot)!.Groove!;
+
+        Assert.Equal(GrooveDirection.AlongLength, groove.Direction);
+        Assert.Equal(In(0.25), groove.Width);
+        Assert.Equal(In(0.75), groove.Offset);              // x: 0.75 from the west edge, 2 - 1 = 1 from the east
+        Assert.Equal(BoxFace.West, groove.OffsetFrom);
+        Assert.Equal(Length.Zero, groove.Depth);
+
+        // The same faces as a rabbet: the step is at the end of the rail's length (y) nearer the panel: both ends
+        // are touched (0 from the south end, 0 from the north), and a tie goes to the south end.
+        Joint step = Between(rail, BoxFace.Top, panel, BoxFace.Bottom, JointType.Rabbet);
+        RabbetShape rabbet = JointGeometry.Of(sketch.WithRelationship(step), step)!.Rabbet!;
+        Assert.Equal(BoxFace.South, rabbet.End);
+        Assert.Equal(Length.Zero, rabbet.Depth);
+        Assert.Equal(In(16), rabbet.Width);
+    }
+
+    [Trait("Feature", "GEO-017")]
+    [Fact]
+    public void A_joint_whose_faces_are_not_single_or_whose_part_is_turned_off_the_quarter_turns_has_no_shape()
+    {
+        (Sketch sketch, Box leg, Box apron) = J1();
+        Joint edgy = Between(leg, BoxFace.East, apron, BoxFace.West, JointType.Butt) with
+        {
+            Receiving = new FeatureRef(leg.Id, BoxFeature.Edge(BoxFace.East, BoxFace.North)),
+        };
+        Assert.Null(JointGeometry.Of(sketch.WithRelationship(edgy), edgy));
+        Assert.Null(JointGeometry.Contact(sketch.WithRelationship(edgy), edgy));
+
+        // Either part off the quarter turns: no faces to read.
+        Box leaning = apron with { Rotation = Angle.Degrees(30) };
+        Joint straight = Between(leg, BoxFace.East, apron, BoxFace.West, JointType.Butt);
+        Assert.Null(JointGeometry.Of(sketch.WithEntity(leaning).WithRelationship(straight), straight));
+        Joint reversed = Between(apron, BoxFace.West, leg, BoxFace.East, JointType.Butt);
+        Assert.Null(JointGeometry.Of(sketch.WithEntity(leaning).WithRelationship(reversed), reversed));
+        Assert.Empty(JointGeometry.TouchingFaces(sketch.WithEntity(leaning), leg.Id, apron.Id));
+
+        // A half-lap needs an overlap to lap: off the quarter turns there is none.
+        Box railA = Piece(At(0, 10, 0), 24, 1.5, 0.75, LengthWidth);
+        Box railB = Piece(At(11, 0, 0), 1.5, 24, 0.75, WidthLength);
+        Joint lap = Between(railA, BoxFace.Top, railB, BoxFace.Top, JointType.HalfLap);
+        Assert.False(JointGeometry.IsSatisfied(Sketched(railA, railB with { Rotation = Angle.Degrees(30) }).WithRelationship(lap), lap));
+    }
 }
