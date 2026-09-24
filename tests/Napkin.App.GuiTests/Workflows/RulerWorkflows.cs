@@ -16,7 +16,7 @@ namespace Napkin.App.GuiTests.Workflows;
 /// </summary>
 public class RulerWorkflows
 {
-    [GuiWorkflow("GUI-VIEW-01")]
+    [GuiWorkflow("GUI-VIEW-06")]
     public void Rulers_run_along_the_plan_and_a_scale_bar_along_the_orthographic_3D_view() => GuiWorkflow.Run(app =>
     {
         MainWindow window = (MainWindow)app.Target;
