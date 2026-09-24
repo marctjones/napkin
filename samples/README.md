@@ -11,6 +11,12 @@ Three hand-crafted designs, in the scene format documented in
 | A bookcase (#101) | `bookcase.design.md`, `bookcase.scene.json`, `bookcase.expected.json` |
 | A bench with one box standing for two rails (#101) | `bench.design.md`, `bench.scene.json`, `bench.expected.json` |
 | One beam placed four ways (#101) | `lying-beam.design.md`, `lying-beam.scene.json`, `lying-beam.expected.json` |
+| Five slats, each flush to the last (#101) | `chain-of-five.design.md`, `chain-of-five.scene.json`, `chain-of-five.expected.json` |
+| Awkward fractions, incl. an off-grid size (#101) | `fraction-stress.design.md`, `fraction-stress.scene.json`, `fraction-stress.expected.json` |
+| A 40-foot plate and wall with a 1/32" shim (#101) | `scale-extremes.design.md`, `scale-extremes.scene.json`, `scale-extremes.expected.json` |
+| 25 studs at 16" on centre and two plates (#101) | `framing-16-oc.design.md`, `framing-16-oc.scene.json`, `framing-16-oc.expected.json` |
+| An L-bracket, a distinct feature on every side (#101) | `l-bracket.design.md`, `l-bracket.scene.json`, `l-bracket.expected.json` |
+| Two boards in the same place and a peg through both (#101) | `overlap.design.md`, `overlap.scene.json`, `overlap.expected.json` |
 
 `tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts
 it matches its `*.expected.json` exactly, in integer units, and checks every box of all three —
@@ -25,7 +31,7 @@ The new one repeats the coffee table's frame so that the one thing that differs,
 each of the top's four corners, is legible against a familiar shape. Its expectations carry the
 top's outline as well as its cut-list row, walked by hand from §1.5's rule.
 
-The last three are the **purpose-built situations** of issue #101 (more are on its checklist). Their
+The last nine are the **purpose-built situations** of issue #101 (the picture frame waits for #97; the conflict case cannot be a file, see below). Their
 expectations add each box's world-space `minUnits`/`maxUnits`, the design's `overall` size and the
 `totalVolumeCubicUnits` of the cut list, all worked out by hand; `SampleSetTests` in
 `tests/Napkin.Modules.Furniture.Tests` holds them. Being files in this folder they also appear in
