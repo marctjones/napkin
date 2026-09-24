@@ -17,6 +17,7 @@ Three hand-crafted designs, in the scene format documented in
 | 25 studs at 16" on centre and two plates (#101) | `framing-16-oc.design.md`, `framing-16-oc.scene.json`, `framing-16-oc.expected.json` |
 | An L-bracket, a distinct feature on every side (#101) | `l-bracket.design.md`, `l-bracket.scene.json`, `l-bracket.expected.json` |
 | Two boards in the same place and a peg through both (#101) | `overlap.design.md`, `overlap.scene.json`, `overlap.expected.json` |
+| A picture frame, four 45° mitres cut to the long point (#101, #97) | `picture-frame.design.md`, `picture-frame.scene.json`, `picture-frame.expected.json` |
 
 `tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts
 it matches its `*.expected.json` exactly, in integer units, and checks every box of all three —
@@ -31,7 +32,7 @@ The new one repeats the coffee table's frame so that the one thing that differs,
 each of the top's four corners, is legible against a familiar shape. Its expectations carry the
 top's outline as well as its cut-list row, walked by hand from §1.5's rule.
 
-The last nine are the **purpose-built situations** of issue #101 (the picture frame waits for #97; the conflict case cannot be a file, see below). Their
+The last ten are the **purpose-built situations** of issue #101 (the conflict case cannot be a file, see below; the picture frame is also #97's shaped-cut fixture, and its rows carry the mitre sentences worked out by hand from `docs/design/shaped-parts-model.md` §4.4). Their
 expectations add each box's world-space `minUnits`/`maxUnits`, the design's `overall` size and the
 `totalVolumeCubicUnits` of the cut list, all worked out by hand; `SampleSetTests` in
 `tests/Napkin.Modules.Furniture.Tests` holds them. Being files in this folder they also appear in

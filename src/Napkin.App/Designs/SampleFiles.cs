@@ -94,6 +94,10 @@ public static class SampleFiles
             "overlap.scene.json",
             "Overlap",
             "Two boards in the same place and a peg through both — napkin does not detect overlap."),
+        new(
+            "picture-frame.scene.json",
+            "Picture frame",
+            "An 8\" × 10\" opening in 1½\" moulding, mitred at all four corners — cut to the long point."),
     ];
 
     private static readonly string[] SceneSuffixes = [".scene.json", ".json"];

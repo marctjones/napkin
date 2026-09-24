@@ -20,7 +20,7 @@ namespace Napkin.Modules.Furniture.Tests;
 /// </remarks>
 public sealed class SampleSetTests
 {
-    public static IEnumerable<object[]> Samples => [["bookcase"], ["bench"], ["lying-beam"], ["chain-of-five"], ["fraction-stress"], ["scale-extremes"], ["framing-16-oc"], ["l-bracket"], ["overlap"]];
+    public static IEnumerable<object[]> Samples => [["bookcase"], ["bench"], ["lying-beam"], ["chain-of-five"], ["fraction-stress"], ["scale-extremes"], ["framing-16-oc"], ["l-bracket"], ["overlap"], ["picture-frame"]];
 
     private static Sketch Read(string fixture)
     {
