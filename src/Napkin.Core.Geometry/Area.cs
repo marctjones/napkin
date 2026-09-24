@@ -14,6 +14,15 @@ public static class Area
     /// <summary>The exact product of two lengths, in square units.</summary>
     public static Int128 Of(Length a, Length b) => (Int128)a.Units * b.Units;
 
+    /// <summary>The exact product of three lengths, in cubic units: a board-foot takeoff's numerator.</summary>
+    /// <remarks>
+    /// Checked, because three lengths near 2&#x2076;&#xB3; units do not fit in <see cref="Int128"/>; every
+    /// size a yard sells is some thousands of units, so the takeoff never comes near it, and an
+    /// absurd one throws rather than wrapping to a wrong number (geometry model §1.3, which leaves
+    /// this three-factor case to #9).
+    /// </remarks>
+    public static Int128 Volume(Length a, Length b, Length c) => checked(Of(a, b) * c.Units);
+
     /// <summary>
     /// Twice the signed area of a closed polygon, exactly: the shoelace sum, which is positive
     /// when the vertices run counter-clockwise.

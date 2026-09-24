@@ -99,7 +99,10 @@ public static class CutList
                 members[0].Stock,
                 group.Key.Cuts,
                 members[0].PlanAxes,
-                [.. members.Select(member => member.Id)]));
+                [.. members.Select(member => member.Id)])
+            {
+                Species = group.Key.Species,
+            });
         }
 
         // Step 5 — order: largest piece first, which is the order a person cuts in. The label and
@@ -114,6 +117,7 @@ public static class CutList
                 .ThenByDescending(row => row.Thickness)
                 .ThenBy(row => row.Label, StringComparer.Ordinal)
                 .ThenBy(row => row.Material, StringComparer.Ordinal)
+                .ThenBy(row => row.Species, StringComparer.Ordinal)
                 .ThenBy(row => row.Cuts, CutSequence.Order),
         ];
     }
