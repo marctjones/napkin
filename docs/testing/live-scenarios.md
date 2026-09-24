@@ -65,6 +65,8 @@ A scenario is a `static void (IGuiDriver)` in a `Workflows/` class with its `[Gu
 - Popups open in the window's overlay layer (`OverlayPopups = true`, live host only), as they do
   headless, so menu items sit at the same window coordinates in both hosts and the pointer is drawn
   above an open menu. The shipped app keeps native popups.
+- Tooltips are made transparent to input in the live host: drawn in the window, one left open by an
+  item the pointer glided over would otherwise sit on the next item and eat its click.
 - Pacing never sleeps: each verb pumps the dispatcher in a nested `DispatcherFrame` while it
   animates, so the window keeps rendering and responding.
 
