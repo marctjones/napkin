@@ -319,6 +319,7 @@ public sealed class CutListTable : Grid
             },
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0, 0, 0, 1),
+            CornerRadius = new CornerRadius(0),
             Padding = new Thickness(8, 4),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = right ? HorizontalAlignment.Right : HorizontalAlignment.Left,

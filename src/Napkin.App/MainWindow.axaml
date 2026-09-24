@@ -20,23 +20,44 @@
     -->
     <DockPanel>
 
+        <!-- macOS only (MainWindow.axaml.cs, ExtendTitleBarIntoBench): the bench runs up under the
+             traffic-light buttons and this bar carries the title. Hidden elsewhere, where the
+             system title bar stays. The left inset clears the three buttons. -->
+        <Border Name="TitleBar"
+                DockPanel.Dock="Top"
+                IsVisible="False"
+                Height="30"
+                Padding="80,0,80,0"
+                Background="{DynamicResource NapkinBenchBrush}"
+                BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource NapkinBenchRuleBrush}">
+            <TextBlock Name="TitleBarText"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       FontFamily="{DynamicResource SeFontMono}"
+                       FontSize="{DynamicResource SeFontSizeAppTitle}"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource NapkinBenchHeadingBrush}"
+                       TextTrimming="CharacterEllipsis" />
+        </Border>
+
         <Menu Name="MainMenu"
               DockPanel.Dock="Top"
-              Background="{DynamicResource SeBenchBrush}"
-              Foreground="{DynamicResource SeBenchHeadingBrush}">
+              Background="{DynamicResource NapkinBenchBrush}"
+              Foreground="{DynamicResource NapkinBenchHeadingBrush}">
             <Menu.Resources>
                 <!-- Fluent's top-level items read these, not the Menu's Foreground: the bench
                      stays dark in both themes, so the item text stays bench-light too (the Styles below,
                      because the light theme's dark item text showed through the resources alone). -->
-                <SolidColorBrush x:Key="MenuBarItemBackgroundPointerOver" Color="{DynamicResource SeBenchRuleColor}" />
-                <SolidColorBrush x:Key="MenuBarItemBackgroundPressed" Color="{DynamicResource SeBenchRuleColor}" />
+                <SolidColorBrush x:Key="MenuBarItemBackgroundPointerOver" Color="{DynamicResource NapkinBenchRuleColor}" />
+                <SolidColorBrush x:Key="MenuBarItemBackgroundPressed" Color="{DynamicResource NapkinBenchRuleColor}" />
             </Menu.Resources>
             <Menu.Styles>
                 <Style Selector="Menu > MenuItem, Menu > MenuItem:selected, Menu > MenuItem:pressed, Menu > MenuItem:pointerover, Menu > MenuItem:open">
-                    <Setter Property="Foreground" Value="{DynamicResource SeBenchHeadingBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource NapkinBenchHeadingBrush}" />
                 </Style>
                 <Style Selector="Menu > MenuItem:selected /template/ ContentPresenter#PART_HeaderPresenter, Menu > MenuItem:pressed /template/ ContentPresenter#PART_HeaderPresenter, Menu > MenuItem:pointerover /template/ ContentPresenter#PART_HeaderPresenter">
-                    <Setter Property="Foreground" Value="{DynamicResource SeBenchHeadingBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource NapkinBenchHeadingBrush}" />
                 </Style>
             </Menu.Styles>
             <MenuItem Name="FileMenu" Header="_File">
@@ -229,10 +250,10 @@
 
         <Border Name="StatusBar"
                 DockPanel.Dock="Bottom"
-                Background="{DynamicResource SeBenchBrush}"
-                TextElement.Foreground="{DynamicResource SeBenchTextBrush}"
+                Background="{DynamicResource NapkinBenchBrush}"
+                TextElement.Foreground="{DynamicResource NapkinBenchTextBrush}"
                 BorderThickness="0,1,0,0"
-                BorderBrush="{DynamicResource SeBenchRuleBrush}">
+                BorderBrush="{DynamicResource NapkinBenchRuleBrush}">
             <StackPanel>
 
                 <!-- Every update result lands here and stays until the next edit: what was done,
@@ -242,7 +263,7 @@
                         IsVisible="False"
                         Padding="12,6"
                         BorderThickness="0,0,0,1"
-                        BorderBrush="{DynamicResource SeBenchRuleBrush}">
+                        BorderBrush="{DynamicResource NapkinBenchRuleBrush}">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Name="MessageText"
                                    Grid.Column="0"
@@ -252,8 +273,8 @@
                         <Button Name="MessageOfferButton"
                                 Grid.Column="1"
                                 IsVisible="False"
-                                Background="{DynamicResource SeBenchRuleBrush}"
-                                Foreground="{DynamicResource SeBenchHeadingBrush}"
+                                Background="{DynamicResource NapkinBenchRuleBrush}"
+                                Foreground="{DynamicResource NapkinBenchHeadingBrush}"
                                 Margin="12,0,0,0"
                                 Padding="8,3"
                                 FontSize="12"

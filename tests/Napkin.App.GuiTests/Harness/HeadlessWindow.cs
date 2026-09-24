@@ -38,7 +38,7 @@ public static class HeadlessWindow
                 // whatever is on this machine (a saved 3D default hides the plan a test looks for) and
                 // write to it. Each run gets its own file, gone when it ends.
                 string settingsDir = Path.Combine(Path.GetTempPath(), "napkin-headless-settings-" + Guid.NewGuid().ToString("N"));
-                MainWindow window = new(new Napkin.App.Settings.SettingsStore(Path.Combine(settingsDir, Napkin.App.Settings.SettingsStore.FileName)))
+                MainWindow window = new(GuiWorkflow.ScreenStore(settingsDir))
                 {
                     Width = GuiWorkflow.DefaultWindowSize.Width,
                     Height = GuiWorkflow.DefaultWindowSize.Height,
