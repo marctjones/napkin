@@ -103,4 +103,35 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Equal(P("/x", "napkin"), SettingsStore.ConfigDirectory(SettingsStore.Platform.Other, k => k == "XDG_CONFIG_HOME" ? "/x" : null, "/h"));
         Assert.Equal(P("/h", ".config", "napkin"), SettingsStore.ConfigDirectory(SettingsStore.Platform.Other, None, "/h"));
     }
+
+    [Theory]
+    [InlineData(OpenDesignsIn.Plan, DesignView.Model, DesignView.Plan)]
+    [InlineData(OpenDesignsIn.Plan, DesignView.Plan, DesignView.Plan)]
+    [InlineData(OpenDesignsIn.Model, DesignView.Plan, DesignView.Model)]
+    [InlineData(OpenDesignsIn.Model, DesignView.Model, DesignView.Model)]
+    [InlineData(OpenDesignsIn.LastUsed, DesignView.Plan, DesignView.Plan)]
+    [InlineData(OpenDesignsIn.LastUsed, DesignView.Model, DesignView.Model)]
+    public void A_new_design_opens_in_the_chosen_view_or_the_last_one_used(OpenDesignsIn choice, DesignView last, DesignView expected)
+    {
+        var settings = new UserSettings { OpenIn = choice, LastView = last };
+        Assert.Equal(expected, settings.ViewForNewDesign());
+    }
+
+    [Fact]
+    public void The_default_is_to_open_designs_in_the_last_used_view_on_the_plan()
+    {
+        var defaults = new UserSettings();
+        Assert.Equal(OpenDesignsIn.LastUsed, defaults.OpenIn);
+        Assert.Equal(DesignView.Plan, defaults.ViewForNewDesign());
+    }
+
+    [Fact]
+    public void The_view_choices_and_the_last_view_are_kept()
+    {
+        new SettingsStore(FilePath).Update(s => s with { OpenIn = OpenDesignsIn.Model, LastView = DesignView.Model });
+
+        var again = new SettingsStore(FilePath);
+        Assert.Equal(OpenDesignsIn.Model, again.Current.OpenIn);
+        Assert.Equal(DesignView.Model, again.Current.LastView);
+    }
 }

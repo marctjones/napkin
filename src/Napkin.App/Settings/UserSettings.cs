@@ -2,6 +2,22 @@ using Napkin.App.Viewing;
 
 namespace Napkin.App.Settings;
 
+/// <summary>The two views of a design.</summary>
+public enum DesignView
+{
+    Plan,
+    Model,
+}
+
+/// <summary>Which view a design opens in.</summary>
+public enum OpenDesignsIn
+{
+    /// <summary>Whichever view the person was last in.</summary>
+    LastUsed,
+    Plan,
+    Model,
+}
+
 /// <summary>Which theme the window wears: one of the two, or whichever the operating system is in.</summary>
 public enum ThemeChoice
 {
@@ -36,4 +52,18 @@ public sealed record UserSettings
 
     /// <summary>Whether drags and tools land on the grid. Separate from whether it is drawn.</summary>
     public bool SnapToGrid { get; init; } = true;
+
+    /// <summary>Which view a design opens in when it is opened (not the one on screen).</summary>
+    public OpenDesignsIn OpenIn { get; init; } = OpenDesignsIn.LastUsed;
+
+    /// <summary>The view the person was last in; what <see cref="OpenDesignsIn.LastUsed"/> means.</summary>
+    public DesignView LastView { get; init; } = DesignView.Plan;
+
+    /// <summary>The view a newly opened design starts in.</summary>
+    public DesignView ViewForNewDesign() => OpenIn switch
+    {
+        OpenDesignsIn.Plan => DesignView.Plan,
+        OpenDesignsIn.Model => DesignView.Model,
+        _ => LastView,
+    };
 }

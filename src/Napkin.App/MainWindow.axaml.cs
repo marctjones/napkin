@@ -422,6 +422,16 @@ public partial class MainWindow : Window
                 : null;
         }
 
+        // The new design starts in the view the person chose for new designs (or was last in).
+        if (Settings.Current.ViewForNewDesign() == DesignView.Model)
+        {
+            ShowModelView();
+        }
+        else
+        {
+            ShowPlanView();
+        }
+
         return true;
     }
 
@@ -864,6 +874,12 @@ public partial class MainWindow : Window
 
         PlanViewMenuItem.Icon = model ? null : new TextBlock { Text = "✓" };
         ModelViewMenuItem.Icon = model ? new TextBlock { Text = "✓" } : null;
+
+        DesignView shown = model ? DesignView.Model : DesignView.Plan;
+        if (Settings.Current.LastView != shown)
+        {
+            Settings.Update(s => s with { LastView = shown });
+        }
 
         UpdateRulerLayout();
         UpdateZoomReadout();
@@ -2901,6 +2917,7 @@ public partial class MainWindow : Window
         // the settings and would save it over them.
         ModelDrawing.Projection = Settings.Current.Projection;
         ApplyTheme(Settings.Current.Theme);
+        ApplyOpenIn(Settings.Current.OpenIn);
         ApplyGrid(Settings.Current.ShowGrid, Settings.Current.SnapToGrid);
         _showRulers = Settings.Current.ShowRulers;
         DrawingCanvas.ShowRulers = _showRulers;
@@ -2938,6 +2955,26 @@ public partial class MainWindow : Window
         GridMenuItem.Icon = show ? new TextBlock { Text = "✓" } : null;
         SnapToGridMenuItem.Icon = snap ? new TextBlock { Text = "✓" } : null;
         UpdateZoomReadout();
+    }
+
+    void OnOpenInPlanClicked(object? sender, RoutedEventArgs e) => ChooseOpenIn(OpenDesignsIn.Plan);
+
+    void OnOpenInModelClicked(object? sender, RoutedEventArgs e) => ChooseOpenIn(OpenDesignsIn.Model);
+
+    void OnOpenInLastClicked(object? sender, RoutedEventArgs e) => ChooseOpenIn(OpenDesignsIn.LastUsed);
+
+    /// <summary>Takes effect on the next design; the one on screen stays in the view it is in.</summary>
+    void ChooseOpenIn(OpenDesignsIn choice)
+    {
+        Settings.Update(s => s with { OpenIn = choice });
+        ApplyOpenIn(choice);
+    }
+
+    void ApplyOpenIn(OpenDesignsIn choice)
+    {
+        OpenInPlanMenuItem.Icon = choice == OpenDesignsIn.Plan ? new TextBlock { Text = "✓" } : null;
+        OpenInModelMenuItem.Icon = choice == OpenDesignsIn.Model ? new TextBlock { Text = "✓" } : null;
+        OpenInLastMenuItem.Icon = choice == OpenDesignsIn.LastUsed ? new TextBlock { Text = "✓" } : null;
     }
 
     void OnThemeLightClicked(object? sender, RoutedEventArgs e) => ChooseTheme(ThemeChoice.Light);

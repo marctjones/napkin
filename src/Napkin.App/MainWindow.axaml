@@ -171,6 +171,15 @@
                           Click="OnSnapToGridClicked"
                           ToolTip.Tip="Drags and drawing tools land on the grid's steps (the step is in the status bar). Separate from Grid: you can snap with the lines hidden, or show them and move freely." />
                 <Separator />
+                <!-- Which view the next design opens in; the one on screen is not moved. -->
+                <MenuItem Name="OpenInMenuItem" Header="Open designs _in">
+                    <MenuItem Name="OpenInPlanMenuItem" Header="_2D plan" Click="OnOpenInPlanClicked" />
+                    <MenuItem Name="OpenInModelMenuItem" Header="_3D" Click="OnOpenInModelClicked" />
+                    <MenuItem Name="OpenInLastMenuItem"
+                              Header="_Last used"
+                              Click="OnOpenInLastClicked"
+                              ToolTip.Tip="A design opens in whichever view you were last in." />
+                </MenuItem>
                 <!-- Light, dark, or whichever the operating system is in (and following it live). -->
                 <MenuItem Name="ThemeMenuItem" Header="_Theme">
                     <MenuItem Name="ThemeLightMenuItem" Header="_Light" Click="OnThemeLightClicked" />
