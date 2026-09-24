@@ -1,0 +1,302 @@
+{
+  "formatVersion": 4,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
+  ],
+  "entities": [
+    {
+      "id": "c0000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Top",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 16896
+      },
+      "width": 49152,
+      "height": 16384,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "3/4 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, south-west",
+      "anchor": {
+        "x": 1024,
+        "y": 1024,
+        "z": 0
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 16896,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "2x4",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000003",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, south-east",
+      "anchor": {
+        "x": 46592,
+        "y": 1024,
+        "z": 0
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 16896,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "2x4",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000004",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, north-west",
+      "anchor": {
+        "x": 1024,
+        "y": 11776,
+        "z": 0
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 16896,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "2x4",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000005",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, north-east",
+      "anchor": {
+        "x": 46592,
+        "y": 11776,
+        "z": 0
+      },
+      "width": 1536,
+      "height": 3584,
+      "depth": 16896,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "2x4",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000006",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Apron, south",
+      "anchor": {
+        "x": 1024,
+        "y": 256,
+        "z": 13312
+      },
+      "width": 47104,
+      "height": 768,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x4",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000007",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Apron, north",
+      "anchor": {
+        "x": 1024,
+        "y": 15360,
+        "z": 13312
+      },
+      "width": 47104,
+      "height": 768,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x4",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000008",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "End rail, west",
+      "anchor": {
+        "x": 256,
+        "y": 1024,
+        "z": 13312
+      },
+      "width": 768,
+      "height": 14336,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x4",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000009",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "End rail, east",
+      "anchor": {
+        "x": 48128,
+        "y": 1024,
+        "z": 13312
+      },
+      "width": 768,
+      "height": 14336,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x4",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000010",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stretcher, south",
+      "anchor": {
+        "x": 2560,
+        "y": 1024,
+        "z": 4096
+      },
+      "width": 44032,
+      "height": 3584,
+      "depth": 1536,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "2x4",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000011",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stretcher, north",
+      "anchor": {
+        "x": 2560,
+        "y": 11776,
+        "z": 4096
+      },
+      "width": 44032,
+      "height": 3584,
+      "depth": 1536,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "2x4",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    }
+  ],
+  "relationships": []
+}

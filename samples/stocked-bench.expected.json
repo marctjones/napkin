@@ -1,0 +1,357 @@
+{
+  "fixture": "stocked-bench",
+  "scene": "stocked-bench.scene.json",
+  "design": "stocked-bench.design.md",
+  "derivedBy": "hand, from the stated dimensions in stocked-bench.design.md; never regenerated from napkin's output",
+  "formatVersion": 4,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 11,
+    "pieces": 11,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 49152,
+    "depthUnits": 16384,
+    "heightUnits": 17664,
+    "widthText": "4'-0\"",
+    "depthText": "1'-4\"",
+    "heightText": "1'-5 1/4\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Top",
+      "id": "c0000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 16896
+      },
+      "maxUnits": {
+        "x": 49152,
+        "y": 16384,
+        "z": 17664
+      },
+      "derivation": "3/4 plywood lying flat on the frame: 48\" across X, 16\" up Y, 3/4\" thick, its underside at 16 1/2\" (the legs' and aprons' tops). Occupies x 0..48, y 0..16, z 16 1/2..17 1/4."
+    },
+    {
+      "name": "Leg, south-west",
+      "id": "c0000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 1024,
+        "y": 1024,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 2560,
+        "y": 4608,
+        "z": 16896
+      },
+      "derivation": "A 2x4 standing on end, 1\" in from the top's west and south edges: its 1 1/2\" thickness across X, its 3 1/2\" width up Y, 16 1/2\" tall (its depth, so its length). Occupies x 1..2 1/2, y 1..4 1/2, z 0..16 1/2."
+    },
+    {
+      "name": "Leg, south-east",
+      "id": "c0000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 46592,
+        "y": 1024,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 48128,
+        "y": 4608,
+        "z": 16896
+      },
+      "derivation": "Its east face 1\" in from the top's east edge, at 48 - 1 = 47\", so its west face is at 47 - 1 1/2 = 45 1/2\". Occupies x 45 1/2..47, y 1..4 1/2, z 0..16 1/2."
+    },
+    {
+      "name": "Leg, north-west",
+      "id": "c0000000-0000-4000-8000-000000000004",
+      "minUnits": {
+        "x": 1024,
+        "y": 11776,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 2560,
+        "y": 15360,
+        "z": 16896
+      },
+      "derivation": "Its north face 1\" in from the top's north edge, at 16 - 1 = 15\", so its south face is at 15 - 3 1/2 = 11 1/2\". Occupies x 1..2 1/2, y 11 1/2..15, z 0..16 1/2."
+    },
+    {
+      "name": "Leg, north-east",
+      "id": "c0000000-0000-4000-8000-000000000005",
+      "minUnits": {
+        "x": 46592,
+        "y": 11776,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 48128,
+        "y": 15360,
+        "z": 16896
+      },
+      "derivation": "The south-east leg's x with the north-west leg's y. Occupies x 45 1/2..47, y 11 1/2..15, z 0..16 1/2."
+    },
+    {
+      "name": "Apron, south",
+      "id": "c0000000-0000-4000-8000-000000000006",
+      "minUnits": {
+        "x": 1024,
+        "y": 256,
+        "z": 13312
+      },
+      "maxUnits": {
+        "x": 48128,
+        "y": 1024,
+        "z": 16896
+      },
+      "derivation": "A 1x4 on edge against the legs' south faces (y = 1): 3/4\" thick, so y 1/4..1; from the west legs' west face (x = 1) to the east legs' east face (x = 47), 46\" long; 3 1/2\" tall (its depth, so its width), its upper edge at the legs' tops, 16 1/2\", so z 13..16 1/2."
+    },
+    {
+      "name": "Apron, north",
+      "id": "c0000000-0000-4000-8000-000000000007",
+      "minUnits": {
+        "x": 1024,
+        "y": 15360,
+        "z": 13312
+      },
+      "maxUnits": {
+        "x": 48128,
+        "y": 16128,
+        "z": 16896
+      },
+      "derivation": "The same against the legs' north faces (y = 15): y 15..15 3/4. Occupies x 1..47, z 13..16 1/2."
+    },
+    {
+      "name": "End rail, west",
+      "id": "c0000000-0000-4000-8000-000000000008",
+      "minUnits": {
+        "x": 256,
+        "y": 1024,
+        "z": 13312
+      },
+      "maxUnits": {
+        "x": 1024,
+        "y": 15360,
+        "z": 16896
+      },
+      "derivation": "A 1x4 on edge against the west legs' west faces (x = 1): x 1/4..1; from the south legs' south face (y = 1) to the north legs' north face (y = 15), 14\" long up Y; 3 1/2\" tall, z 13..16 1/2."
+    },
+    {
+      "name": "End rail, east",
+      "id": "c0000000-0000-4000-8000-000000000009",
+      "minUnits": {
+        "x": 48128,
+        "y": 1024,
+        "z": 13312
+      },
+      "maxUnits": {
+        "x": 48896,
+        "y": 15360,
+        "z": 16896
+      },
+      "derivation": "The same against the east legs' east faces (x = 47): x 47..47 3/4, y 1..15, z 13..16 1/2."
+    },
+    {
+      "name": "Stretcher, south",
+      "id": "c0000000-0000-4000-8000-000000000010",
+      "minUnits": {
+        "x": 2560,
+        "y": 1024,
+        "z": 4096
+      },
+      "maxUnits": {
+        "x": 46592,
+        "y": 4608,
+        "z": 5632
+      },
+      "derivation": "A 2x4 lying flat between the south legs' inner faces, x 2 1/2..45 1/2 = 43\" long; 3 1/2\" up Y matching the legs, y 1..4 1/2; 1 1/2\" thick, its underside 4\" off the floor, z 4..5 1/2."
+    },
+    {
+      "name": "Stretcher, north",
+      "id": "c0000000-0000-4000-8000-000000000011",
+      "minUnits": {
+        "x": 2560,
+        "y": 11776,
+        "z": 4096
+      },
+      "maxUnits": {
+        "x": 46592,
+        "y": 15360,
+        "z": 5632
+      },
+      "derivation": "The same between the north legs: x 2 1/2..45 1/2, y 11 1/2..15, z 4..5 1/2."
+    }
+  ],
+  "totalVolumeCubicUnits": 1813549940736,
+  "cutList": [
+    {
+      "label": "Top",
+      "quantity": 1,
+      "lengthUnits": 49152,
+      "widthUnits": 16384,
+      "thicknessUnits": 768,
+      "lengthText": "4'-0\"",
+      "widthText": "1'-4\"",
+      "thicknessText": "3/4\"",
+      "material": "3/4 plywood",
+      "unresolved": false,
+      "members": [
+        "c0000000-0000-4000-8000-000000000001"
+      ],
+      "derivation": "Lies flat: length 48\" = 49152, width 16\" = 16384, thickness 3/4\" = 768 (the 3/4 Performance Category, which is the thickness the stock fixes). Text: 48 = 4 x 12 -> 4'-0\"; 16 = 12 + 4 -> 1'-4\"; 3/4\". Material 3/4 plywood. Longest part, so first."
+    },
+    {
+      "label": "Apron",
+      "quantity": 2,
+      "lengthUnits": 47104,
+      "widthUnits": 3584,
+      "thicknessUnits": 768,
+      "lengthText": "3'-10\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "1x4",
+      "unresolved": false,
+      "members": [
+        "c0000000-0000-4000-8000-000000000006",
+        "c0000000-0000-4000-8000-000000000007"
+      ],
+      "derivation": "On edge: length across X 46\" = 47104, thickness up Y 3/4\" = 768, width its depth 3 1/2\" = 3584 — a 1x4's dry size. Text: 46 = 3 x 12 + 10 -> 3'-10\". Two boxes, one row of 2; \"Apron, south\" and \"Apron, north\" share \"Apron, \" -> \"Apron\"."
+    },
+    {
+      "label": "Stretcher",
+      "quantity": 2,
+      "lengthUnits": 44032,
+      "widthUnits": 3584,
+      "thicknessUnits": 1536,
+      "lengthText": "3'-7\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "1 1/2\"",
+      "material": "2x4",
+      "unresolved": false,
+      "members": [
+        "c0000000-0000-4000-8000-000000000010",
+        "c0000000-0000-4000-8000-000000000011"
+      ],
+      "derivation": "Lies flat: length 43\" = 44032, width 3 1/2\" = 3584, thickness 1 1/2\" = 1536 — a 2x4's dry size. Text: 43 = 3 x 12 + 7 -> 3'-7\". Two boxes, one row of 2; label \"Stretcher\"."
+    },
+    {
+      "label": "Leg",
+      "quantity": 4,
+      "lengthUnits": 16896,
+      "widthUnits": 3584,
+      "thicknessUnits": 1536,
+      "lengthText": "1'-4 1/2\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "1 1/2\"",
+      "material": "2x4",
+      "unresolved": false,
+      "members": [
+        "c0000000-0000-4000-8000-000000000002",
+        "c0000000-0000-4000-8000-000000000003",
+        "c0000000-0000-4000-8000-000000000004",
+        "c0000000-0000-4000-8000-000000000005"
+      ],
+      "derivation": "Stands up: thickness across X 1 1/2\" = 1536, width up Y 3 1/2\" = 3584, length its depth 16 1/2\" = 16896. Text: 16 1/2 = 12 + 4 1/2 -> 1'-4 1/2\". Four boxes, one row of 4; label \"Leg\"."
+    },
+    {
+      "label": "End rail",
+      "quantity": 2,
+      "lengthUnits": 14336,
+      "widthUnits": 3584,
+      "thicknessUnits": 768,
+      "lengthText": "1'-2\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "1x4",
+      "unresolved": false,
+      "members": [
+        "c0000000-0000-4000-8000-000000000008",
+        "c0000000-0000-4000-8000-000000000009"
+      ],
+      "derivation": "On edge: thickness across X 3/4\" = 768, length up Y 14\" = 14336, width its depth 3 1/2\" = 3584. Text: 14 = 12 + 2 -> 1'-2\". Two boxes, one row of 2; \"End rail, west\" and \"End rail, east\" share \"End rail, \" -> \"End rail\". Shortest, so last."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes before saw kerf and joinery allowance.",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
+    "Top,1,\"4'-0\"\"\",\"1'-4\"\"\",\"3/4\"\"\",3/4 plywood,",
+    "Apron,2,\"3'-10\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",1x4,",
+    "Stretcher,2,\"3'-7\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",2x4,",
+    "Leg,4,\"1'-4 1/2\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",2x4,",
+    "End rail,2,\"1'-2\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",1x4,"
+  ],
+  "shoppingList": [
+    {
+      "material": "1x4",
+      "species": "",
+      "kind": "boards",
+      "for": "Apron × 2, End rail × 2",
+      "boards": [
+        {
+          "lengthUnits": 73728,
+          "count": 2
+        }
+      ],
+      "sheets": 0,
+      "count": 2,
+      "boughtCubicUnits": 618475290624,
+      "usedCubicUnits": 515396075520,
+      "buy": "2 × 6'-0\"",
+      "boardFeetBought": "4.0",
+      "boardFeetUsed": "3.3",
+      "waste": "0.7",
+      "note": "",
+      "derivation": "Pieces, longest first: 46, 46, 14, 14 (two aprons, two end rails). First-fit decreasing over 6', 8' ... 16': 46 -> no board yet; the shortest stocked length that holds 46\" is 6' = 72\", 26\" left. 46 -> board 1 has 26\", too short; a second 6', 26\" left. 14 -> board 1 (26\") holds it, 12\" left. 14 -> board 1 (12\") does not, board 2 (26\") does, 12\" left. So 2 x 6'-0\": four pieces out of two boards, and each board carries an apron AND an end rail — the cut list's two rows of 2 are two boards to buy. Board feet, nominal 1\" x 4\": bought 1 x 4 x (72 + 72) = 576 in³ / 144 = 4.0; used 1 x 4 x (46 + 46 + 14 + 14) = 1 x 4 x 120 = 480 in³ / 144 = 3.333... -> 3.3; waste 576 - 480 = 96 in³ / 144 = 0.666... -> 0.7."
+    },
+    {
+      "material": "2x4",
+      "species": "",
+      "kind": "boards",
+      "for": "Stretcher × 2, Leg × 4",
+      "boards": [
+        {
+          "lengthUnits": 73728,
+          "count": 3
+        }
+      ],
+      "sheets": 0,
+      "count": 3,
+      "boughtCubicUnits": 1855425871872,
+      "usedCubicUnits": 1305670057984,
+      "buy": "3 × 6'-0\"",
+      "boardFeetBought": "12.0",
+      "boardFeetUsed": "8.4",
+      "waste": "3.6",
+      "note": "",
+      "derivation": "Pieces, longest first: 43, 43, 16 1/2 x 4 (two stretchers, four legs). 43 -> a 6' (72\"), 29\" left. 43 -> board 1 (29\") too short; a second 6', 29\" left. 16 1/2 -> board 1, 12 1/2\" left. 16 1/2 -> board 1 (12 1/2\") no, board 2 (29\") yes, 12 1/2\" left. 16 1/2 -> neither holds it; a third 6', 55 1/2\" left. 16 1/2 -> board 1 no, board 2 no, board 3 yes, 39\" left. So 3 x 6'-0\" for six pieces. Board feet, nominal 2\" x 4\": bought 2 x 4 x (3 x 72) = 1728 in³ / 144 = 12.0; used 2 x 4 x (43 + 43 + 4 x 16 1/2) = 2 x 4 x 152 = 1216 in³ / 144 = 8.444... -> 8.4; waste 1728 - 1216 = 512 in³ / 144 = 3.555... -> 3.6. Rounded once each, at the end: the four legs alone would be 2 x 4 x 16 1/2 = 132 in³ = 0.916... each."
+    },
+    {
+      "material": "3/4 plywood",
+      "species": "",
+      "kind": "sheets",
+      "for": "Top × 1",
+      "boards": [],
+      "sheets": 1,
+      "count": 1,
+      "boughtCubicUnits": 0,
+      "usedCubicUnits": 0,
+      "buy": "1 sheet, 4'-0\" × 8'-0\"",
+      "boardFeetBought": "",
+      "boardFeetUsed": "",
+      "waste": "",
+      "note": "sheets by area — a nesting layout may need more",
+      "derivation": "The top, 48\" x 16\" = 768 in², fits a 48\" x 96\" sheet (PS 1-19 §5.4) and is its only part: ceil(768 / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
+    }
+  ],
+  "shoppingListCsv": [
+    "\"Shopping list: boards needed, before saw kerf, defect and joinery allowance.\"",
+    "Material,Species,Buy,For,Board feet bought,Board feet used,Waste,Note",
+    "1x4,,\"2 × 6'-0\"\"\",\"Apron × 2, End rail × 2\",4.0,3.3,0.7,",
+    "2x4,,\"3 × 6'-0\"\"\",\"Stretcher × 2, Leg × 4\",12.0,8.4,3.6,",
+    "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets by area — a nesting layout may need more"
+  ]
+}
