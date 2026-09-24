@@ -8,6 +8,9 @@ Three hand-crafted designs, in the scene format documented in
 | A coffee table | `coffee-table.design.md`, `coffee-table.scene.json`, `coffee-table.expected.json` |
 | A wall with a window | `wall-with-window.design.md`, `wall-with-window.scene.json`, `wall-with-window.expected.json` |
 | A table with rounded corners | `rounded-corner-table.design.md`, `rounded-corner-table.scene.json`, `rounded-corner-table.expected.json` |
+| A bookcase (#101) | `bookcase.design.md`, `bookcase.scene.json`, `bookcase.expected.json` |
+| A bench with one box standing for two rails (#101) | `bench.design.md`, `bench.scene.json`, `bench.expected.json` |
+| One beam placed four ways (#101) | `lying-beam.design.md`, `lying-beam.scene.json`, `lying-beam.expected.json` |
 
 `tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts
 it matches its `*.expected.json` exactly, in integer units, and checks every box of all three —
@@ -21,6 +24,12 @@ Marc's design and a feature does not get to edit it; a shaped part earns its own
 The new one repeats the coffee table's frame so that the one thing that differs, a 1" radius at
 each of the top's four corners, is legible against a familiar shape. Its expectations carry the
 top's outline as well as its cut-list row, walked by hand from §1.5's rule.
+
+The last three are the **purpose-built situations** of issue #101 (more are on its checklist). Their
+expectations add each box's world-space `minUnits`/`maxUnits`, the design's `overall` size and the
+`totalVolumeCubicUnits` of the cut list, all worked out by hand; `SampleSetTests` in
+`tests/Napkin.Modules.Furniture.Tests` holds them. Being files in this folder they also appear in
+the app's Samples menu, where they can be opened in the 3D view.
 
 ## The rule
 

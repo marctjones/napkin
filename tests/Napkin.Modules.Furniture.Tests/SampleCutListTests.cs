@@ -21,6 +21,9 @@ public sealed class SampleCutListTests
     [InlineData("coffee-table")]
     [InlineData("wall-with-window")]
     [InlineData("rounded-corner-table")]
+    [InlineData("bookcase")]
+    [InlineData("bench")]
+    [InlineData("lying-beam")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_cut_list_is_the_one_the_expectations_state(string fixture)
     {
@@ -61,6 +64,9 @@ public sealed class SampleCutListTests
     [InlineData("coffee-table")]
     [InlineData("wall-with-window")]
     [InlineData("rounded-corner-table")]
+    [InlineData("bookcase")]
+    [InlineData("bench")]
+    [InlineData("lying-beam")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_csv_is_the_one_the_expectations_state(string fixture)
     {
