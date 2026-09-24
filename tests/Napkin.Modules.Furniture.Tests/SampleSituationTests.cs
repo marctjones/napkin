@@ -66,7 +66,8 @@ public sealed class SampleSituationTests
         // Two dimensions that cannot both hold: slat 1 is stored 10" wide but the file also says
         // its width is 8". A scene file that says so is refused, naming the violated relationship
         // (docs/file-format.md rule 4), so this situation is a test, not a sample.
-        string text = File.ReadAllText(ExpectedFixture.ScenePath("chain-of-five"));
+        // Line endings normalised first: a Windows checkout has CRLF, and this edits the text by "\n".
+        string text = File.ReadAllText(ExpectedFixture.ScenePath("chain-of-five")).Replace("\r\n", "\n", StringComparison.Ordinal);
         Sketch sketch = Read("chain-of-five");
         string slat1 = Slat(sketch, 1).Value.ToString("D");
         string extra = "    {\n      \"id\": \"5f0000ff-0000-4000-8000-000000000002\",\n      \"kind\": \"paramValue\",\n"
