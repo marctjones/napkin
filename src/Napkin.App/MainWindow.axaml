@@ -150,6 +150,11 @@
                           Click="OnPerspectiveClicked"
                           ToolTip.Tip="Perspective projection, to judge how it looks: things shrink with distance (O switches)." />
                 <Separator />
+                <MenuItem Name="RulersMenuItem"
+                          Header="_Rulers"
+                          Click="OnRulersClicked"
+                          ToolTip.Tip="Rulers along the top and left of the plan, in feet, inches and fractions, on the same steps as the grid. The orthographic 3D view shows a scale bar instead, true across the screen: an inch along an axis looks shorter in an isometric view (by about a fifth). A perspective view has neither, because an inch is a different size at every distance in it." />
+                <Separator />
                 <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
                 <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />
                 <MenuItem Name="ZoomOutMenuItem" Header="Zoom _Out" Click="OnZoomOutClicked" />
@@ -226,14 +231,17 @@
             than docking beside it.
         -->
         <Panel>
-            <viewing:CanvasView Name="DrawingCanvas" />
+            <!-- Clipped to its own bounds: what it draws past them (a zoomed plan runs over the menu
+                 and the status bar) would otherwise show there, and win the hit test there too,
+                 so a click on the menu would land on the canvas. -->
+            <viewing:CanvasView Name="DrawingCanvas" ClipToBounds="True" />
 
             <!--
                 The 3D view (docs/design/assembly-model.md §8): a mode the window is in, as the shape
                 workshop is, over the same editor, selection and undo stack as the plan. It takes the
                 plan canvas's place while it shows, and the chrome floats over it the same way.
             -->
-            <viewing:ModelView Name="ModelDrawing" IsVisible="False" />
+            <viewing:ModelView Name="ModelDrawing" IsVisible="False" ClipToBounds="True" />
 
             <!--
                 The shape workshop (docs/design/shaped-parts-model.md §7.1): a sheet over the

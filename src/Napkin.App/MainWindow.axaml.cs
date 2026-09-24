@@ -854,6 +854,7 @@ public partial class MainWindow : Window
         PlanViewMenuItem.Icon = model ? null : new TextBlock { Text = "✓" };
         ModelViewMenuItem.Icon = model ? new TextBlock { Text = "✓" } : null;
 
+        UpdateRulerLayout();
         UpdateZoomReadout();
         if (model)
         {
@@ -2891,6 +2892,35 @@ public partial class MainWindow : Window
         OrthographicMenuItem.IsEnabled = PerspectiveMenuItem.IsEnabled = IsShowingModel;
         OrthographicMenuItem.Icon = perspective ? null : new TextBlock { Text = "✓" };
         PerspectiveMenuItem.Icon = perspective ? new TextBlock { Text = "✓" } : null;
+    }
+
+    bool _showRulers;
+
+    /// <summary>The margins the floating panels sit at with no ruler under them.</summary>
+    static readonly Thickness ToolBarMargin = new(10);
+    static readonly Thickness ToolboxMargin = new(10, 56, 10, 10);
+    static readonly Thickness SidePanelsMargin = new(10);
+
+    void OnRulersClicked(object? sender, RoutedEventArgs e)
+    {
+        _showRulers = !_showRulers;
+        DrawingCanvas.ShowRulers = _showRulers;
+        ModelDrawing.ShowScaleBar = _showRulers;
+        UpdateRulerLayout();
+    }
+
+    /// <summary>
+    /// The rulers are drawn over the plan's top and left edges, so the floating panels that sit there
+    /// move in by a ruler's thickness while they are showing, and only in the plan.
+    /// </summary>
+    void UpdateRulerLayout()
+    {
+        RulersMenuItem.Icon = _showRulers ? new TextBlock { Text = "✓" } : null;
+
+        double t = _showRulers && !IsShowingModel ? CanvasView.RulerThickness : 0;
+        ToolBar.Margin = ToolBarMargin + new Thickness(t, t, 0, 0);
+        StockToolboxPanel.Margin = ToolboxMargin + new Thickness(t, t, 0, 0);
+        SidePanels.Margin = SidePanelsMargin + new Thickness(0, t, 0, 0);
     }
 
     void OnOrthographicClicked(object? sender, RoutedEventArgs e) => ModelDrawing.Projection = CameraProjection.Orthographic;

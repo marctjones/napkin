@@ -1540,6 +1540,7 @@ public sealed class ModelView : Control
         DrawHandles(context, palette);
         DrawReadout(context, palette);
         DrawAxes(context);
+        DrawScaleBar(context, palette);
     }
 
     /// <summary>The part as it would be placed, faint, the faces the eye could see (#74).</summary>
@@ -1924,6 +1925,58 @@ public sealed class ModelView : Control
         {
             context.DrawLine(pen, _camera.Project(from), _camera.Project(to));
         }
+    }
+
+    bool _showScaleBar;
+
+    /// <summary>
+    /// Whether an orthographic view shows a scale bar: a length on the grid ladder, drawn as wide as it
+    /// is at this zoom. A perspective view never does, because an inch is a different size at every
+    /// distance in it; its rulers are the plan's (<c>docs/design/assembly-model.md</c> §11 decision 10).
+    /// </summary>
+    public bool ShowScaleBar
+    {
+        get => _showScaleBar;
+        set
+        {
+            if (_showScaleBar == value)
+            {
+                return;
+            }
+
+            _showScaleBar = value;
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>What the scale bar reads now, or <see langword="null"/> when none is drawn.</summary>
+    public string? ScaleBarLabel => _showScaleBar && !_camera.IsPerspective && _camera.HasViewport
+        ? ScaleBar.LabelFor(_camera.PixelsPerInch)
+        : null;
+
+    void DrawScaleBar(DrawingContext context, CanvasPalette palette)
+    {
+        if (ScaleBarLabel is not { } label)
+        {
+            return;
+        }
+
+        (_, double pixels, _) = ScaleBar.Choose(_camera.PixelsPerInch);
+        Point left = new(84, Bounds.Height - 30);
+        Point right = new(left.X + pixels, left.Y);
+        Pen pen = new(new SolidColorBrush(palette.Label), 1.4);
+        context.DrawLine(pen, left, right);
+        context.DrawLine(pen, new Point(left.X, left.Y - 4), new Point(left.X, left.Y + 4));
+        context.DrawLine(pen, new Point(right.X, right.Y - 4), new Point(right.X, right.Y + 4));
+
+        FormattedText text = new(
+            label,
+            CultureInfo.InvariantCulture,
+            FlowDirection.LeftToRight,
+            Typeface.Default,
+            10,
+            new SolidColorBrush(palette.Label));
+        context.DrawText(text, new Point(left.X + ((pixels - text.Width) / 2), left.Y - 8 - text.Height));
     }
 
     /// <summary>Which way X, Y and Z point, in the corner, so a turn about an axis names something visible.</summary>
