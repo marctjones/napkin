@@ -52,6 +52,117 @@ public readonly record struct Camera(
     double PixelsPerInch,
     Size Viewport)
 {
+    /// <summary>The vertical field of view a perspective camera opens at.</summary>
+    public const double DefaultFieldOfViewDegrees = 45.0;
+
+    /// <summary>The narrowest and widest field of view a perspective camera is held to.</summary>
+    public const double MinFieldOfViewDegrees = 10.0;
+
+    /// <inheritdoc cref="CameraProjection"/>
+    public CameraProjection Projection { get; init; } = CameraProjection.Orthographic;
+
+    /// <summary>
+    /// The vertical field of view of a perspective camera, in degrees. A narrow one flattens the
+    /// picture towards orthographic; a wide one exaggerates the foreshortening. Unused by an
+    /// orthographic camera.
+    /// </summary>
+    public double FieldOfViewDegrees { get; init; } = DefaultFieldOfViewDegrees;
+
+    /// <summary>Whether this camera shrinks things with distance.</summary>
+    public bool IsPerspective => Projection == CameraProjection.Perspective;
+
+    /// <summary>
+    /// How far the eye is from <see cref="Center"/>, in inches, along <see cref="TowardViewer"/>.
+    /// Derived, not stored: <see cref="PixelsPerInch"/> is the scale <em>at the centre plane</em>
+    /// in both projections, so switching projection keeps the framing there, and the eye sits
+    /// wherever makes the viewport's height span the field of view at that scale. Zooming in
+    /// therefore brings the eye closer, as a dolly does. Infinite for an orthographic camera.
+    /// </summary>
+    public double EyeDistance => IsPerspective
+        ? Math.Max(Viewport.Height, 1.0) / 2.0
+            / (PixelsPerInch * Math.Tan(Radians(ClampFieldOfView(FieldOfViewDegrees)) / 2.0))
+        : double.PositiveInfinity;
+
+    /// <summary>The eye, in inches. For an orthographic camera it is <see cref="Center"/>, the point the rays are placed round.</summary>
+    public Vector3d Eye => IsPerspective ? Center + (TowardViewer * EyeDistance) : Center;
+
+    /// <summary>
+    /// How much a point's offsets from the centre line are scaled by its depth: 1 on the centre
+    /// plane, below 1 further away, above 1 nearer, and not finite at or behind the eye. Always 1
+    /// for an orthographic camera.
+    /// </summary>
+    public double ScaleAtDepth(double depth)
+    {
+        if (!IsPerspective)
+        {
+            return 1.0;
+        }
+
+        double distance = EyeDistance;
+        return distance + depth > 1e-9 ? distance / (distance + depth) : double.PositiveInfinity;
+    }
+
+    /// <summary>Whether a perspective camera can see a point at all: it is in front of the eye. Always true when orthographic.</summary>
+    public bool IsInFront(Vector3d point) => !IsPerspective || EyeDistance + DepthOf(point) > NearClipInches;
+
+    /// <summary>The nearest a perspective camera draws, in inches in front of the eye.</summary>
+    public const double NearClipInches = 0.25;
+
+    /// <summary>
+    /// How far a point is beyond the near plane, in inches: positive when a perspective camera can
+    /// draw it, negative when it is too close to the eye or behind it. Positive everywhere when
+    /// orthographic, which has no near plane.
+    /// </summary>
+    public double BeyondNearPlane(Vector3d point) =>
+        IsPerspective ? EyeDistance + DepthOf(point) - NearClipInches : 1.0;
+
+    /// <summary>
+    /// How far a point is from where its ray starts, along that ray: the distance from the eye in
+    /// perspective, and the depth past the centre plane when orthographic (where every ray starts on
+    /// it). What a picker compares a hit's distance with.
+    /// </summary>
+    public double DistanceAlongRay(Vector3d point)
+    {
+        if (!IsPerspective)
+        {
+            return DepthOf(point);
+        }
+
+        Vector3d fromEye = point - Eye;
+        return Math.Sqrt(Vector3d.Dot(fromEye, fromEye));
+    }
+
+    /// <summary>
+    /// Cuts a segment off at the near plane, so that what is left can be projected. Returns false when
+    /// none of it is in front of the eye. Never changes an orthographic camera's segment.
+    /// </summary>
+    public bool TryClipToNearPlane(ref Vector3d from, ref Vector3d to)
+    {
+        double a = BeyondNearPlane(from);
+        double b = BeyondNearPlane(to);
+        if (a >= 0 && b >= 0)
+        {
+            return true;
+        }
+
+        if (a < 0 && b < 0)
+        {
+            return false;
+        }
+
+        Vector3d crossing = from + ((to - from) * (a / (a - b)));
+        if (a < 0)
+        {
+            from = crossing;
+        }
+        else
+        {
+            to = crossing;
+        }
+
+        return true;
+    }
+
     /// <summary>The isometric azimuth: the eye at the south-east.</summary>
     public const double IsometricAzimuthDegrees = 45.0;
 
@@ -158,9 +269,18 @@ public readonly record struct Camera(
     public Point Project(Vector3d point)
     {
         Vector3d offset = point - Center;
+        double scale = PixelsPerInch;
+        if (IsPerspective)
+        {
+            // A point at or behind the eye has no picture; callers clip first (IsInFront). The
+            // clamp only keeps a stray one finite.
+            double denominator = Math.Max(EyeDistance + Vector3d.Dot(offset, ViewDirection), 1e-6);
+            scale *= EyeDistance / denominator;
+        }
+
         return new Point(
-            (Viewport.Width / 2.0) + (Vector3d.Dot(offset, Right) * PixelsPerInch),
-            (Viewport.Height / 2.0) - (Vector3d.Dot(offset, Up) * PixelsPerInch));
+            (Viewport.Width / 2.0) + (Vector3d.Dot(offset, Right) * scale),
+            (Viewport.Height / 2.0) - (Vector3d.Dot(offset, Up) * scale));
     }
 
     /// <summary>
@@ -175,6 +295,40 @@ public readonly record struct Camera(
     /// How far a point lies along the view direction, in inches from the centre's plane: larger is
     /// further from the eye. What the painter sorts by.
     /// </summary>
+    /// <summary>
+    /// Where one inch along <paramref name="direction"/> moves a point that is at
+    /// <paramref name="at"/>, in screen pixels. In perspective that depends on where the point is;
+    /// in orthographic it is <see cref="ProjectDirection(Vector3d)"/> whatever <paramref name="at"/> is.
+    /// </summary>
+    public Vector ProjectDirection(Vector3d direction, Vector3d at) => IsPerspective
+        ? Project(at + direction) - Project(at)
+        : ProjectDirection(direction);
+
+    /// <summary>
+    /// The direction from a point towards the eye: <see cref="TowardViewer"/> when orthographic,
+    /// and the line to <see cref="Eye"/> when not, which is what decides whether a face is turned
+    /// towards the eye.
+    /// </summary>
+    public Vector3d TowardViewerAt(Vector3d point)
+    {
+        if (!IsPerspective)
+        {
+            return TowardViewer;
+        }
+
+        Vector3d toward = Eye - point;
+        double length = Math.Sqrt(Vector3d.Dot(toward, toward));
+        return length > 1e-12 ? toward / length : TowardViewer;
+    }
+
+    /// <summary>
+    /// The point on the centre plane — the plane through <see cref="Center"/> perpendicular to the
+    /// view — that a screen point shows. Both projections agree about it.
+    /// </summary>
+    public Vector3d OnCenterPlane(Point screen) => Center
+        + (Right * ((screen.X - (Viewport.Width / 2.0)) / PixelsPerInch))
+        - (Up * ((screen.Y - (Viewport.Height / 2.0)) / PixelsPerInch));
+
     public double DepthOf(Vector3d point) => Vector3d.Dot(point - Center, ViewDirection);
 
     /// <summary>
@@ -184,10 +338,16 @@ public readonly record struct Camera(
     /// </summary>
     public (Vector3d Origin, Vector3d Direction) Ray(Point screen)
     {
-        Vector3d origin = Center
-                          + (Right * ((screen.X - (Viewport.Width / 2.0)) / PixelsPerInch))
-                          - (Up * ((screen.Y - (Viewport.Height / 2.0)) / PixelsPerInch));
-        return (origin, ViewDirection);
+        Vector3d onPlane = OnCenterPlane(screen);
+        if (!IsPerspective)
+        {
+            return (onPlane, ViewDirection);
+        }
+
+        // Every ray starts at the eye and runs through the point the pixel shows on the centre plane.
+        Vector3d eye = Eye;
+        Vector3d through = onPlane - eye;
+        return (eye, through / Math.Sqrt(Vector3d.Dot(through, through)));
     }
 
     /// <summary>The same view in a viewport of another size. The model point at the centre stays there.</summary>
@@ -236,7 +396,7 @@ public readonly record struct Camera(
         }
 
         double scale = ClampScale(PixelsPerInch * factor);
-        (Vector3d under, _) = Ray(anchor);
+        Vector3d under = OnCenterPlane(anchor);
         Vector3d center = under
                           - (Right * ((anchor.X - (Viewport.Width / 2.0)) / scale))
                           + (Up * ((anchor.Y - (Viewport.Height / 2.0)) / scale));
@@ -303,7 +463,7 @@ public readonly record struct Camera(
                           + (up * ((minUp + maxUp) / 2))
                           + (toward * Vector3d.Dot(bounds.CenterInInches, toward));
 
-        return this with
+        Camera fitted = this with
         {
             CenterX = center.X,
             CenterY = center.Y,
@@ -311,6 +471,54 @@ public readonly record struct Camera(
             PixelsPerInch = scale,
             Viewport = viewport,
         };
+
+        return IsPerspective ? fitted.RefineFit(bounds, usableWidth, usableHeight, covered) : fitted;
+    }
+
+    /// <summary>
+    /// Corrects an orthographic fit for perspective: the eye moves as the scale changes, so what
+    /// fits is found by iterating — project every corner, scale to what is usable, put the middle of
+    /// what was drawn in the middle of what is uncovered — and backing off whenever a corner would
+    /// reach the eye.
+    /// </summary>
+    Camera RefineFit(Bounds3 bounds, double usableWidth, double usableHeight, double covered)
+    {
+        Camera camera = this;
+        Point target = new((Viewport.Width - covered) / 2.0, Viewport.Height / 2.0);
+        List<Vector3d> corners = [.. bounds.CornersInInches()];
+
+        for (int i = 0; i < 60; i++)
+        {
+            if (!corners.All(camera.IsInFront))
+            {
+                camera = camera with { PixelsPerInch = ClampScale(camera.PixelsPerInch * 0.8) };
+                continue;
+            }
+
+            Point[] shown = [.. corners.Select(camera.Project)];
+            double minX = shown.Min(p => p.X), maxX = shown.Max(p => p.X);
+            double minY = shown.Min(p => p.Y), maxY = shown.Max(p => p.Y);
+            Vector toTarget = new(target.X - ((minX + maxX) / 2), target.Y - ((minY + maxY) / 2));
+
+            double width = maxX - minX;
+            double height = maxY - minY;
+            double byWidth = width > 1e-9 ? usableWidth / width : double.PositiveInfinity;
+            double byHeight = height > 1e-9 ? usableHeight / height : double.PositiveInfinity;
+            double factor = Math.Min(byWidth, byHeight);
+            if (!double.IsFinite(factor))
+            {
+                factor = 1;
+            }
+
+            if (Math.Abs(factor - 1) < 1e-9 && Math.Abs(toTarget.X) < 1e-6 && Math.Abs(toTarget.Y) < 1e-6)
+            {
+                break;
+            }
+
+            camera = camera.Pan(toTarget) with { PixelsPerInch = ClampScale(camera.PixelsPerInch * factor) };
+        }
+
+        return camera;
     }
 
     static double Radians(double degrees) => degrees * Math.PI / 180.0;
@@ -325,7 +533,27 @@ public readonly record struct Camera(
         ? Math.Clamp(degrees, -90.0, 90.0)
         : IsometricElevationDegrees;
 
+    static double ClampFieldOfView(double degrees) => double.IsFinite(degrees)
+        ? Math.Clamp(degrees, MinFieldOfViewDegrees, 120.0)
+        : DefaultFieldOfViewDegrees;
+
     static double ClampScale(double pixelsPerInch) => double.IsFinite(pixelsPerInch)
         ? Math.Clamp(pixelsPerInch, ViewTransform.MinPixelsPerInch, ViewTransform.MaxPixelsPerInch)
         : ViewTransform.PixelsPerInchAt100Percent;
+}
+
+/// <summary>How a <see cref="Camera"/> turns space into a picture.</summary>
+public enum CameraProjection
+{
+    /// <summary>
+    /// Parallel projection: a length along an axis is the same number of pixels anywhere on the
+    /// screen. To measure with.
+    /// </summary>
+    Orthographic,
+
+    /// <summary>
+    /// Pinhole projection: things shrink with distance from the eye and parallel edges converge.
+    /// To judge how it looks with.
+    /// </summary>
+    Perspective,
 }

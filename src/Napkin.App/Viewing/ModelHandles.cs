@@ -83,12 +83,19 @@ public static class ModelHandles
         }
 
         ImmutableArray<ModelHandle>.Builder handles = ImmutableArray.CreateBuilder<ModelHandle>();
-        Point middle = camera.Project(Centre(box));
+        Vector3d boxCentre = Centre(box);
+        if (!camera.IsInFront(boxCentre))
+        {
+            return [];
+        }
+
+        Point middle = camera.Project(boxCentre);
+        double scale = camera.PixelsPerInch * camera.ScaleAtDepth(camera.DepthOf(boxCentre));
         foreach (Axis axis in Axes)
         {
-            Vector along = camera.ProjectDirection(Vector3d.Along(axis));
+            Vector along = camera.ProjectDirection(Vector3d.Along(axis), boxCentre);
             double pixels = along.Length;
-            if (pixels < ShortestUsableFraction * camera.PixelsPerInch)
+            if (pixels < ShortestUsableFraction * scale)
             {
                 continue;
             }
@@ -99,7 +106,9 @@ public static class ModelHandles
         foreach (BoxFace face in Faces)
         {
             (Axis axis, bool positive) = box.Orientation.Normal(face);
-            if (Vector3d.Dot(Vector3d.Along(axis, positive), camera.TowardViewer) <= 1e-6)
+            Vector3d faceCentre = CentreOf(box, face);
+            if (!camera.IsInFront(faceCentre)
+                || Vector3d.Dot(Vector3d.Along(axis, positive), camera.TowardViewerAt(faceCentre)) <= 1e-6)
             {
                 continue;
             }
@@ -107,8 +116,9 @@ public static class ModelHandles
             // Out along the face's normal as the screen shows it: a face seen edge-on stands its
             // handle the full stand-off away, one facing the eye hardly at all — it is large on
             // the screen, and its centre is clear of everything else already.
-            Point centre = camera.Project(CentreOf(box, face));
-            Vector outward = camera.ProjectDirection(Vector3d.Along(axis, positive)) / Math.Max(camera.PixelsPerInch, 1e-9);
+            Point centre = camera.Project(faceCentre);
+            double faceScale = camera.PixelsPerInch * camera.ScaleAtDepth(camera.DepthOf(faceCentre));
+            Vector outward = camera.ProjectDirection(Vector3d.Along(axis, positive), faceCentre) / Math.Max(faceScale, 1e-9);
             Point at = centre + (outward * FaceHandleStandOff);
             Vector unit = outward.Length > 1e-6 ? outward / outward.Length : new Vector(0, -1);
             for (int step = 0; step < 16 && TooNear(at, handles); step++)

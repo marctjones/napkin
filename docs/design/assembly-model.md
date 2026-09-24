@@ -1351,7 +1351,8 @@ public readonly record struct Camera(
 **Orthographic, not perspective, in the first slice.** An orthographic axonometric is what a
 woodworking drawing is; parallel edges stay parallel, a length along an axis is the same length
 anywhere on screen, and a screen ray is simply the view direction through the pixel, which makes
-picking and axis-constrained dragging (§8.3) one projection each. Perspective is §11 decision 10.
+picking and axis-constrained dragging (§8.3) one projection each. Perspective is §11 decision 10,
+resolved: it is a second projection of the same camera, chosen from the View menu.
 
 Everything in `Camera` is `double`, for the same reason `ViewTransform` is: it is the render edge,
 and no view operation ever writes back to an entity. Orbit, pan and zoom are rendering-only. The
@@ -1892,6 +1893,22 @@ says otherwise, and beta policy makes changing any of them cheap.
 10. **Orthographic camera only (recommended) — or perspective too.** §8.1. Parallel projection is
     the drawing convention, makes picking and axis-drag one projection each, and keeps lengths
     readable; perspective is a later toggle if wanted.
+    **Resolved 2026-09-23 (Marc, #103/#104): both.** Orthographic stays for measuring and the
+    six standard 2D views; the 3D view also has a perspective camera, and **opens in perspective**
+    by default (orthographic is one keystroke away). Design of the perspective camera, as built:
+    - `PixelsPerInch` stays the scale **at the centre plane** in both projections, so switching
+      projection keeps the framing there, and pan, zoom about the cursor and every "pixels per
+      inch" threshold keep their meaning. The **eye distance is derived**, not stored:
+      `d = (viewportHeight/2) / (PixelsPerInch · tan(fov/2))`, on the viewer's side of the centre,
+      so zooming in dollies the eye in. Field of view is 45° vertical by default.
+    - A point at depth `z` along the view is scaled by `d / (d + z)`; a screen ray starts at the
+      eye and runs through the point the pixel shows on the centre plane.
+    - Whether a face is turned towards the eye, and how far an inch along an axis moves a point on
+      screen, depend on where the point is (`TowardViewerAt`, `ProjectDirection(dir, at)`).
+    - The near plane is 1/4″ in front of the eye: polygons are clipped to it, and a fit backs off
+      until every corner is in front.
+    - Picking and axis-constrained drags use the eye ray; a drag along an axis finds the closest
+      approach of the ray to the axis line.
 11. **A hand-rolled renderer over Avalonia's 2D drawing (recommended) — or a third-party 3D
     engine.** §8.4. No dependency to vet, no macOS regression, testable projection math.
 12. **Turning is three quarter-turn commands (recommended) — or a rotation gizmo.** §8.3.
