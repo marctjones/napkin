@@ -72,6 +72,16 @@ public sealed record CutListRow(
     public ImmutableArray<string> CutText
         => CutDescription.Describe(Cuts, new FinishedSize(Length, Width, Thickness), PlanAxes);
 
+    /// <summary>
+    /// The species the part asks for, as typed in the properties panel, or empty when it names none.
+    /// </summary>
+    /// <remarks>
+    /// Part of the cut list's grouping key (&#xA7;3 step 4), so two rows that differ only in species
+    /// are two rows; carried here so the shopping list can group by it too (&#xA7;4.1, one row per
+    /// stock item and species) without reading the design a second time.
+    /// </remarks>
+    public string Species { get; init; } = string.Empty;
+
     /// <summary>How an unresolved stock name reads, in the table and in the export alike.</summary>
     /// <param name="name">The name the part asked for.</param>
     public static string UnresolvedText(string name) => $"{name} — not in this build's materials library";
@@ -103,6 +113,7 @@ public sealed record CutListRow(
            && Thickness == other.Thickness
            && string.Equals(Material, other.Material, StringComparison.Ordinal)
            && Unresolved == other.Unresolved
+           && string.Equals(Species, other.Species, StringComparison.Ordinal)
            && Equals(Stock, other.Stock)
            && Cuts.SequenceEqual(other.Cuts)
            && PlanAxes == other.PlanAxes
@@ -119,6 +130,7 @@ public sealed record CutListRow(
         hash.Add(Thickness);
         hash.Add(Material, StringComparer.Ordinal);
         hash.Add(Unresolved);
+        hash.Add(Species, StringComparer.Ordinal);
         hash.Add(Stock);
         hash.Add(PlanAxes);
 

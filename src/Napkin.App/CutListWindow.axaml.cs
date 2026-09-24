@@ -34,6 +34,7 @@ public partial class CutListWindow : Window
     {
         InitializeComponent();
         KerfNote.Text = CutList.BeforeKerfAndJoinery;
+        ShoppingNote.Text = ShoppingList.BeforeKerfAndJoinery;
         ShowDesign(design: null);
     }
 
@@ -54,6 +55,21 @@ public partial class CutListWindow : Window
     /// <summary>The cut list as a CSV file would carry it, in the order it is on screen.</summary>
     public string Csv => CutListCsv.ToCsv(Table.Sorted);
 
+    /// <summary>The shopping-list table, for the GUI suite to read and to click a header on.</summary>
+    public ShoppingListTable ShoppingRows => ShoppingTable;
+
+    /// <summary>The shopping list as a CSV file would carry it, in the order it is on screen.</summary>
+    public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted);
+
+    /// <summary>The tab that shows the shopping list, for the GUI suite to click.</summary>
+    public TabItem ShoppingListTabItem => ShoppingListTab;
+
+    /// <summary>Whether the shopping list, rather than the cut list, is the tab on show.</summary>
+    public bool IsShowingShoppingList => ReferenceEquals(Lists.SelectedItem, ShoppingListTab);
+
+    /// <summary>Shows the shopping list's tab.</summary>
+    public void ShowShoppingList() => Lists.SelectedItem = ShoppingListTab;
+
     /// <summary>
     /// Builds the list for a design, or empties it when there is none.
     /// </summary>
@@ -66,6 +82,10 @@ public partial class CutListWindow : Window
         ImmutableArray<CutListRow> rows = CutList.Of(sketch, MaterialsLibrary.Shipped);
 
         Table.Rows = rows;
+
+        // The shopping list is read from the cut list's rows, never from the design a second time,
+        // so the two tabs cannot disagree about what is being built (§4).
+        ShoppingTable.Rows = ShoppingList.Of(rows);
         Title = design is null ? "Cut list" : $"Cut list — {design.Name}";
         DesignHeadline.Text = design is null
             ? "No design is open."

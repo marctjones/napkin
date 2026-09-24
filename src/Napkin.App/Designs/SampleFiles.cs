@@ -98,6 +98,10 @@ public static class SampleFiles
             "picture-frame.scene.json",
             "Picture frame",
             "An 8\" × 10\" opening in 1½\" moulding, mitred at all four corners — cut to the long point."),
+        new(
+            "stocked-bench.scene.json",
+            "Stocked bench",
+            "A 4'-0\" bench of 2x4, 1x4 and 3/4 plywood — every part names its stock, for the shopping list."),
     ];
 
     private static readonly string[] SceneSuffixes = [".scene.json", ".json"];

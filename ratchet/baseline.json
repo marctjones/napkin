@@ -15,11 +15,11 @@
     },
     "Napkin.Modules.Furniture": {
       "line": 100,
-      "branch": 99.54
+      "branch": 99.66
     }
   },
   "gui": {
-    "workflowsPassed": 46,
+    "workflowsPassed": 47,
     "workflowIds": [
       "CVS-011",
       "GUI-ASSEM-01",
@@ -40,6 +40,7 @@
       "GUI-ASSEM-16",
       "GUI-CUT-02",
       "GUI-CUT-03",
+      "GUI-CUT-04",
       "GUI-CUT-05",
       "GUI-CUT-06",
       "GUI-DRAW-01",

@@ -478,6 +478,18 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Opens the cut-list window on its shopping-list tab (issue #9), or brings the open one forward
+    /// and shows that tab.
+    /// </summary>
+    /// <returns>The window.</returns>
+    public CutListWindow OpenShoppingList()
+    {
+        CutListWindow window = OpenCutList();
+        window.ShowShoppingList();
+        return window;
+    }
+
+    /// <summary>
     /// Asks for a file and opens it. Cancelling changes nothing at all.
     /// </summary>
     /// <remarks>
@@ -2672,6 +2684,11 @@ public partial class MainWindow : Window
         });
         KeyBindings.Add(new KeyBinding
         {
+            Gesture = new KeyGesture(Key.L, command | KeyModifiers.Shift),
+            Command = new RelayCommand(() => OpenShoppingList()),
+        });
+        KeyBindings.Add(new KeyBinding
+        {
             Gesture = new KeyGesture(Key.S, command),
             Command = new RelayCommand(() => _ = SaveAsync()),
         });
@@ -2844,6 +2861,8 @@ public partial class MainWindow : Window
     void OnMessageOfferClicked(object? sender, RoutedEventArgs e) => TakeOffer();
 
     void OnCutListClicked(object? sender, RoutedEventArgs e) => OpenCutList();
+
+    void OnShoppingListClicked(object? sender, RoutedEventArgs e) => OpenShoppingList();
 
     void OnZoomToFitClicked(object? sender, RoutedEventArgs e)
     {

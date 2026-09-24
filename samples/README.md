@@ -18,6 +18,7 @@ Three hand-crafted designs, in the scene format documented in
 | An L-bracket, a distinct feature on every side (#101) | `l-bracket.design.md`, `l-bracket.scene.json`, `l-bracket.expected.json` |
 | Two boards in the same place and a peg through both (#101) | `overlap.design.md`, `overlap.scene.json`, `overlap.expected.json` |
 | A picture frame, four 45° mitres cut to the long point (#101, #97) | `picture-frame.design.md`, `picture-frame.scene.json`, `picture-frame.expected.json` |
+| A bench whose every part names its stock, for the shopping list (#9) | `stocked-bench.design.md`, `stocked-bench.scene.json`, `stocked-bench.expected.json` |
 
 `tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts
 it matches its `*.expected.json` exactly, in integer units, and checks every box of all three —
@@ -32,7 +33,14 @@ The new one repeats the coffee table's frame so that the one thing that differs,
 each of the top's four corners, is legible against a familiar shape. Its expectations carry the
 top's outline as well as its cut-list row, walked by hand from §1.5's rule.
 
-The last ten are the **purpose-built situations** of issue #101 (the conflict case cannot be a file, see below; the picture frame is also #97's shaped-cut fixture, and its rows carry the mitre sentences worked out by hand from `docs/design/shaped-parts-model.md` §4.4). Their
+**The stocked bench is the shopping list's fixture** (#9). Every part names its stock — 2x4 legs
+and stretchers, 1x4 aprons and end rails, a 3/4 plywood top — so its cut list's five rows become
+three lines to buy, and each 6' 1x4 carries an apron and an end rail: several parts from one
+board. Its `shoppingList` and `shoppingListCsv` are worked by hand (first-fit decreasing over the
+library's stocked lengths, board feet summed exactly and rounded once), each row with its
+`derivation`; `SampleShoppingListTests` holds them and `GUI-CUT-04` reads them on screen.
+
+The ten before it are the **purpose-built situations** of issue #101 (the conflict case cannot be a file, see below; the picture frame is also #97's shaped-cut fixture, and its rows carry the mitre sentences worked out by hand from `docs/design/shaped-parts-model.md` §4.4). Their
 expectations add each box's world-space `minUnits`/`maxUnits`, the design's `overall` size and the
 `totalVolumeCubicUnits` of the cut list, all worked out by hand; `SampleSetTests` in
 `tests/Napkin.Modules.Furniture.Tests` holds them. Being files in this folder they also appear in
@@ -71,10 +79,10 @@ after re-doing the arithmetic by hand and writing the new derivation down.
 
 ## What is deliberately **not** here
 
-- **No materials list.** That needs the shopping list and takeoff of #9; `CUT-005` stays unclaimed
-  until there is something to compare. No part in either fixture names a stock, deliberately (see
-  the last bullet), so a shopping list computed today would report the whole table under "no stock
-  chosen".
+- **No materials list, except the stocked bench's.** No part of the coffee table or the other
+  fixtures names a stock, deliberately (see the last bullet), so their shopping lists would report
+  every part under "no stock chosen". The shopping list's worked example is `stocked-bench` (#9,
+  below) rather than an edit to the coffee table.
 
   The **cut list** is here, as of #8: `coffee-table.expected.json`'s `cutList` is four rows
   re-derived by hand from `coffee-table.design.md`, each with its own `derivation`;
@@ -86,8 +94,10 @@ after re-doing the arithmetic by hand and writing the new derivation down.
 - **No header size, stud count or bracing length** in the wall fixture. Those expectations are
   added in M4 and M5 by a person reading the relevant row of Connecticut's published adopted text
   and citing the page it came from — never from memory, and never from napkin's own output.
-- **No nominal-to-actual lumber sizes.** Every dimension in these fixtures is a finished dimension
-  the design itself states.
+- **No nominal-to-actual lumber sizes written here.** Every dimension in these fixtures is a
+  finished dimension the design itself states. The stocked bench states its parts at its stocks'
+  dry sizes, and those sizes and the stock lengths its shopping list buys in are the shipped
+  materials library's rows, cited there, not numbers written from memory.
 
 ## Opening these in the app
 
