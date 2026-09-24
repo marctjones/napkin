@@ -2,6 +2,14 @@ using Napkin.App.Viewing;
 
 namespace Napkin.App.Settings;
 
+/// <summary>Which theme the window wears: one of the two, or whichever the operating system is in.</summary>
+public enum ThemeChoice
+{
+    FollowSystem,
+    Light,
+    Dark,
+}
+
 /// <summary>
 /// The person's preferences, kept between runs. They belong to the person, not to a design, so they
 /// are never written into a project file. Every setting has a default, and a file that says nothing
@@ -19,4 +27,7 @@ public sealed record UserSettings
 
     /// <summary>Whether the rulers on the plan and the scale bar on orthographic 3D show.</summary>
     public bool ShowRulers { get; init; }
+
+    /// <summary>The theme: follow the system unless the person picked one.</summary>
+    public ThemeChoice Theme { get; init; } = ThemeChoice.FollowSystem;
 }

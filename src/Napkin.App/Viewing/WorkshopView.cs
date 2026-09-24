@@ -42,6 +42,17 @@ namespace Napkin.App.Viewing;
 /// </remarks>
 public sealed class WorkshopView : Control
 {
+
+    /// <inheritdoc/>
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == ThemeVariantScope.ActualThemeVariantProperty)
+        {
+            InvalidateVisual();
+        }
+    }
+
     /// <summary>The breathing space around the blank, in pixels — room for the compass labels.</summary>
     const double Surround = 34;
 

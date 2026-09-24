@@ -2894,6 +2894,7 @@ public partial class MainWindow : Window
     /// <summary>Puts the remembered preferences on the window, and says so when the file could not be used.</summary>
     void ApplySettings()
     {
+        ApplyTheme(Settings.Current.Theme);
         ModelDrawing.Projection = Settings.Current.Projection;
         _showRulers = Settings.Current.ShowRulers;
         DrawingCanvas.ShowRulers = _showRulers;
@@ -2905,6 +2906,39 @@ public partial class MainWindow : Window
             MessageText.Text = notice;
             MessageBar.IsVisible = true;
         }
+    }
+
+    void OnThemeLightClicked(object? sender, RoutedEventArgs e) => ChooseTheme(ThemeChoice.Light);
+
+    void OnThemeDarkClicked(object? sender, RoutedEventArgs e) => ChooseTheme(ThemeChoice.Dark);
+
+    void OnThemeSystemClicked(object? sender, RoutedEventArgs e) => ChooseTheme(ThemeChoice.FollowSystem);
+
+    void ChooseTheme(ThemeChoice theme)
+    {
+        Settings.Update(s => s with { Theme = theme });
+        ApplyTheme(theme);
+    }
+
+    /// <summary>Puts the theme on the whole application, so every window and panel changes at once.</summary>
+    void ApplyTheme(ThemeChoice theme)
+    {
+        // The window itself is asked too: a window can be shown with no application theme to inherit.
+        Avalonia.Styling.ThemeVariant variant = theme switch
+        {
+            ThemeChoice.Light => Avalonia.Styling.ThemeVariant.Light,
+            ThemeChoice.Dark => Avalonia.Styling.ThemeVariant.Dark,
+            _ => Avalonia.Styling.ThemeVariant.Default,
+        };
+        if (Application.Current is { } application)
+        {
+            application.RequestedThemeVariant = variant;
+        }
+
+        RequestedThemeVariant = variant;
+        ThemeLightMenuItem.Icon = theme == ThemeChoice.Light ? new TextBlock { Text = "✓" } : null;
+        ThemeDarkMenuItem.Icon = theme == ThemeChoice.Dark ? new TextBlock { Text = "✓" } : null;
+        ThemeSystemMenuItem.Icon = theme == ThemeChoice.FollowSystem ? new TextBlock { Text = "✓" } : null;
     }
 
     void UpdateZoomReadout()

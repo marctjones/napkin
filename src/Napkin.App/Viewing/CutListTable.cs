@@ -231,15 +231,25 @@ public sealed class CutListTable : Grid
     }
 
     /// <summary>One bench sentence, set under its row and indented to read as part of it.</summary>
-    private TextBlock Sentence(string text) => new()
+    private static TextBlock Sentence(string text)
     {
-        Text = text,
-        FontSize = 11,
-        Opacity = 0.9,
-        TextWrapping = TextWrapping.Wrap,
-        Margin = new Thickness(18, 0, 8, 5),
-        Foreground = new SolidColorBrush(CanvasPalette.For(ActualThemeVariant).Label),
-    };
+        TextBlock block = new()
+        {
+            Text = text,
+            FontSize = 11,
+            Opacity = 0.9,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(18, 0, 8, 5),
+        };
+
+        // The ink follows the theme the sentence is actually shown in, which is not known until it is
+        // on screen, and changes when the person picks another theme.
+        void Ink() => block.Foreground = new SolidColorBrush(CanvasPalette.For(block.ActualThemeVariant).Label);
+        block.AttachedToVisualTree += (_, _) => Ink();
+        block.ActualThemeVariantChanged += (_, _) => Ink();
+        Ink();
+        return block;
+    }
 
     /// <summary>
     /// A picture of what this row describes, or nothing when it describes a plain rectangle.
