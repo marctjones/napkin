@@ -1,6 +1,6 @@
 # Parts, the cut list and the shopping list
 
-Status: **DRAFT, not yet signed off by Marc.** Written as part of issue #7 (the materials
+Status: **DRAFT, not yet signed off by Marc.** §4 (the shopping list, #9) was implemented on 2026-09-24 at Marc's direction, with sign-off still pending; its worked example is a new `samples/stocked-bench` (§8.3), not the coffee table. Written as part of issue #7 (the materials
 library), which owes it to #8 (the parts model and cut list) and #9 (the materials list and
 takeoff). §1–§4 are the model, the file-format change and the two algorithms, stated exactly
 enough to implement from; §6 checks them against the committed coffee-table fixture; §7 is the

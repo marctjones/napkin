@@ -275,7 +275,7 @@
       "id": "CUT-005",
       "area": "furniture",
       "title": "The shopping list matches hand-computed expectations",
-      "acceptance": "The coffee-table fixture aggregates to the expectations file's stock counts (boards, sheets and fasteners), and a part that fits within one board still reports one board to buy while the cut list reports each part.",
+      "acceptance": "The stocked-bench fixture (the shopping list's worked example: the coffee table names no stock and is not edited) aggregates to the expectations file's stock counts (boards and sheets; nothing in the model references a fastener yet), and parts that fit within one board still report one board to buy while the cut list reports each part.",
       "milestone": "M3",
       "issue": 37,
       "kind": "golden"

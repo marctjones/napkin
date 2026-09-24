@@ -84,18 +84,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: CUT-005 — The shopping list matches hand-computed expectations")]
-    [Trait("Feature", "CUT-005")]
-    public void CUT_005()
-    {
-    }
-
-    [Fact(Skip = "planned: CUT-006 — Takeoff totals are grouped and rounded once")]
-    [Trait("Feature", "CUT-006")]
-    public void CUT_006()
-    {
-    }
-
     [Fact(Skip = "planned: CVS-010 — Display precision is per project, and inexact display is marked")]
     [Trait("Feature", "CVS-010")]
     public void CVS_010()
@@ -177,12 +165,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: GUI-CUT-01 — Build the coffee table end to end")]
     [Trait("Feature", "GUI-CUT-01")]
     public void GUI_CUT_01()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CUT-04 — Open the shopping list and export it")]
-    [Trait("Feature", "GUI-CUT-04")]
-    public void GUI_CUT_04()
     {
     }
 

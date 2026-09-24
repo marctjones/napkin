@@ -198,6 +198,10 @@
                           Header="_Cut list"
                           Click="OnCutListClicked"
                           ToolTip.Tip="Every piece this design says to cut, grouped and sorted. It follows the drawing as it is edited." />
+                <MenuItem Name="ShoppingListMenuItem"
+                          Header="_Shopping list"
+                          Click="OnShoppingListClicked"
+                          ToolTip.Tip="The stock to buy for the cut list, with its board feet — beside the cut list, in the same window." />
             </MenuItem>
         </Menu>
 
