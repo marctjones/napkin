@@ -32,16 +32,16 @@ public sealed record GuiScenarioInfo(string Id, string Title, Action<IGuiDriver>
 public static class GuiScenarios
 {
     /// <summary>
-    /// Every <see cref="GuiScenarioAttribute"/> method in an assembly, sorted by id.
+    /// Every <see cref="GuiScenarioAttribute"/> method declared on the given types, sorted by id.
     /// </summary>
     /// <exception cref="InvalidOperationException">
     /// A marked method has the wrong shape, or two share an id.
     /// </exception>
-    public static IReadOnlyList<GuiScenarioInfo> Discover(Assembly assembly)
+    public static IReadOnlyList<GuiScenarioInfo> Discover(IEnumerable<Type> types)
     {
-        ArgumentNullException.ThrowIfNull(assembly);
+        ArgumentNullException.ThrowIfNull(types);
         var found = new List<GuiScenarioInfo>();
-        foreach (Type type in assembly.GetTypes())
+        foreach (Type type in types)
         {
             foreach (MethodInfo method in type.GetMethods(
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
@@ -72,6 +72,10 @@ public static class GuiScenarios
         return [.. found.OrderBy(s => s.Id, StringComparer.Ordinal)];
     }
 
-    /// <summary>The scenarios in this assembly.</summary>
-    public static IReadOnlyList<GuiScenarioInfo> All => Discover(typeof(GuiScenarios).Assembly);
+    /// <summary>The application's scenarios: those in this suite's workflow classes.</summary>
+    public static IReadOnlyList<GuiScenarioInfo> All => Discover(
+        typeof(GuiScenarios).Assembly.GetTypes().Where(type => type.Namespace == WorkflowNamespace));
+
+    /// <summary>Where the workflows, and so the shared scenarios, live.</summary>
+    public const string WorkflowNamespace = "Napkin.App.GuiTests.Workflows";
 }
