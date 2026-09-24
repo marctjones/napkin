@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Automation.Peers;
@@ -652,6 +653,11 @@ public sealed class CanvasView : Control
     {
         base.OnPointerMoved(e);
         Point position = e.GetPosition(this);
+        if (_showRulers)
+        {
+            _pointerOnRulers = position;
+            InvalidateVisual();
+        }
 
         if (_pressedOnPart is { } held)
         {
@@ -782,6 +788,12 @@ public sealed class CanvasView : Control
     protected override void OnPointerExited(PointerEventArgs e)
     {
         base.OnPointerExited(e);
+        if (_pointerOnRulers is not null)
+        {
+            _pointerOnRulers = null;
+            InvalidateVisual();
+        }
+
         Hover(null);
         PointerWorldPositionChanged?.Invoke(this, null);
     }
@@ -1445,8 +1457,130 @@ public sealed class CanvasView : Control
     // Drawing
     // -------------------------------------------------------------------------------------
 
+    /// <summary>How thick a ruler is, in pixels.</summary>
+    public const double RulerThickness = 18;
+
+    bool _showRulers;
+    Point? _pointerOnRulers;
+
+    /// <summary>
+    /// Whether rulers run along the top and the left edge of the plan, in feet, inches and fractions. They
+    /// are drawn over the canvas, not docked beside it: the view transform is the arranged size, and a
+    /// ruler that took room would move the drawing.
+    /// </summary>
+    public bool ShowRulers
+    {
+        get => _showRulers;
+        set
+        {
+            if (_showRulers == value)
+            {
+                return;
+            }
+
+            _showRulers = value;
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>The labels the rulers show now, top ruler then left, for a test to read what is on screen.</summary>
+    public IReadOnlyList<string> RulerLabelsOnScreen =>
+        !_showRulers || !_view.HasViewport
+            ? []
+            : [.. TopRulerTicks().Concat(LeftRulerTicks()).Select(tick => tick.Label).OfType<string>()];
+
+    ImmutableArray<RulerTick> TopRulerTicks()
+    {
+        (double left, _) = _view.ToWorldInches(new Point(0, 0));
+        (double right, _) = _view.ToWorldInches(new Point(_view.Viewport.Width, 0));
+        return RulerTicks.Ticks(left, right, _view.PixelsPerInch);
+    }
+
+    ImmutableArray<RulerTick> LeftRulerTicks()
+    {
+        (_, double top) = _view.ToWorldInches(new Point(0, 0));
+        (_, double bottom) = _view.ToWorldInches(new Point(0, _view.Viewport.Height));
+        return RulerTicks.Ticks(bottom, top, _view.PixelsPerInch);
+    }
+
     /// <inheritdoc/>
     public override void Render(DrawingContext context)
+    {
+        RenderDrawing(context);
+        if (_showRulers && Bounds.Width > RulerThickness && Bounds.Height > RulerThickness)
+        {
+            DrawRulers(context, CanvasPalette.For(ActualThemeVariant));
+        }
+    }
+
+    void DrawRulers(DrawingContext context, CanvasPalette palette)
+    {
+        double thickness = RulerThickness;
+        SolidColorBrush paper = new(palette.Background, 0.95);
+        Pen edge = new(new SolidColorBrush(palette.GridMajor), 1);
+        Pen tick = new(new SolidColorBrush(palette.Label), 1);
+        SolidColorBrush ink = new(palette.Label);
+
+        context.FillRectangle(paper, new Rect(0, 0, Bounds.Width, thickness));
+        context.FillRectangle(paper, new Rect(0, 0, thickness, Bounds.Height));
+        context.DrawLine(edge, new Point(0, thickness), new Point(Bounds.Width, thickness));
+        context.DrawLine(edge, new Point(thickness, 0), new Point(thickness, Bounds.Height));
+
+        foreach (RulerTick mark in TopRulerTicks())
+        {
+            double x = _view.ToScreen(mark.Inches, 0).X;
+            if (x < thickness)
+            {
+                continue;
+            }
+
+            context.DrawLine(tick, new Point(x, thickness), new Point(x, thickness - (mark.Major ? 9 : 4)));
+            if (mark.Label is { } label)
+            {
+                context.DrawText(RulerText(label, ink), new Point(x + 2, 1));
+            }
+        }
+
+        foreach (RulerTick mark in LeftRulerTicks())
+        {
+            double y = _view.ToScreen(0, mark.Inches).Y;
+            if (y < thickness)
+            {
+                continue;
+            }
+
+            context.DrawLine(tick, new Point(thickness, y), new Point(thickness - (mark.Major ? 9 : 4), y));
+            if (mark.Label is { } label)
+            {
+                // Written up the ruler, so it does not need a wide one.
+                FormattedText text = RulerText(label, ink);
+                using (context.PushTransform(Matrix.CreateRotation(-Math.PI / 2) * Matrix.CreateTranslation(1, y - 2)))
+                {
+                    context.DrawText(text, new Point(0, 0));
+                }
+            }
+        }
+
+        // Where the pointer is, on both rulers.
+        if (_pointerOnRulers is { } at)
+        {
+            Pen marker = new(new SolidColorBrush(palette.Selection), 1);
+            if (at.X >= thickness)
+            {
+                context.DrawLine(marker, new Point(at.X, 0), new Point(at.X, thickness));
+            }
+
+            if (at.Y >= thickness)
+            {
+                context.DrawLine(marker, new Point(0, at.Y), new Point(thickness, at.Y));
+            }
+        }
+    }
+
+    static FormattedText RulerText(string text, IBrush brush) =>
+        new(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 9, brush);
+
+    void RenderDrawing(DrawingContext context)
     {
         base.Render(context);
 
