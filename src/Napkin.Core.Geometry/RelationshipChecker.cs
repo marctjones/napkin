@@ -80,6 +80,14 @@ public static class RelationshipChecker
 
         foreach (Relationship relationship in sketch.RelationshipsInOrder)
         {
+            // A joint is data, not a constraint (joinery note §4.3): parts that have drifted apart
+            // leave it unsatisfied — drawn hollow, flagged in the cut list — and never make a
+            // file unloadable or an edit refused. IsSatisfied is how that is asked.
+            if (relationship is Joint)
+            {
+                continue;
+            }
+
             Residual residual = Evaluate(sketch, relationship);
             if (Holds(residual, tolerances))
             {
@@ -103,6 +111,19 @@ public static class RelationshipChecker
         ArgumentNullException.ThrowIfNull(relationship);
 
         return Evaluate(sketch, relationship).Exact;
+    }
+
+    /// <summary>
+    /// Whether a joint's parts still touch and its numbers still make sense
+    /// (<see cref="JointGeometry.IsSatisfied"/>). <see cref="Check(Sketch)"/> never lists a joint,
+    /// so this is the one place to ask.
+    /// </summary>
+    public static bool IsSatisfied(Sketch sketch, Joint joint)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(joint);
+
+        return Holds(Evaluate(sketch, joint), Tolerances.Default);
     }
 
     private static bool Holds(Residual residual, Tolerances tolerances)
@@ -145,6 +166,11 @@ public static class RelationshipChecker
         Distance distance => DistanceResidual(sketch, distance),
         PointOnEdge pointOnEdge => PointOnEdgeResidual(sketch, pointOnEdge),
         Symmetric symmetric => SymmetricResidual(sketch, symmetric),
+
+        // Zero while the two faces touch; NotEvaluable once they do not (joinery note §4.3).
+        Joint joint => JointGeometry.IsSatisfied(sketch, joint)
+            ? Residual.FromDistance(Length.Zero, exact: true)
+            : Residual.NotEvaluable,
 
         // Tangent and Radius are about arcs, and there are no arcs in #5 (design §3.2, §10).
         Tangent or Radius => Residual.NotEvaluable,

@@ -43,6 +43,8 @@ internal sealed class SceneBinder
         ImmutableList<Layer> layers = ReadLayers(document);
         ReadEntities(document);
         ReadRelationships(document);
+        ImmutableList<FastenerChoice> fastenerChoices = ReadFastenerChoices(document);
+        ImmutableList<SupplyLine> supplies = ReadSupplies(document);
         RejectUnknownFields(document);
 
         if (problems.Count > 0)
@@ -62,7 +64,11 @@ internal sealed class SceneBinder
         Sketch sketch = new(
             entities.ToImmutableDictionary(),
             relationships.ToImmutableDictionary(),
-            layers);
+            layers)
+        {
+            FastenerChoices = fastenerChoices,
+            Supplies = supplies,
+        };
 
         ValidationResult validation = sketch.Validate();
         if (!validation.IsValid)
@@ -130,6 +136,7 @@ internal sealed class SceneBinder
         Horizontal => SceneNames.Horizontal,
         Vertical => SceneNames.Vertical,
         Flush => SceneNames.Flush,
+        Joint => SceneNames.Joint,
         AxisDistance => SceneNames.AxisDistance,
         ParamValue => SceneNames.ParamValue,
         EqualParam => SceneNames.EqualParam,
@@ -644,6 +651,7 @@ internal sealed class SceneBinder
         (bool speciesRead, string? species) = ReadTextOrNull(part, SceneNames.Species);
         long? quantity = ReadInteger(part, SceneNames.Quantity);
         PlanAxes? planAxes = ReadPlanAxes(part);
+        ImmutableList<HardwareItem>? hardware = ReadHardware(part);
         RejectUnknownFields(part);
 
         if (quantity is { } count && count < 1)
@@ -658,9 +666,123 @@ internal sealed class SceneBinder
         // A part's third dimension is its box's depth, which the box stores (format version 4,
         // assembly-model §1.2). A version-3 part's "outOfPlane" is therefore an unknown field here,
         // refused like any other, rather than a second copy of a number the box already holds.
-        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes
-            ? (true, new Part(stock, species, (int)pieces, axes))
+        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes && hardware is not null
+            ? (true, new Part(stock, species, (int)pieces, axes) { Hardware = hardware })
             : (false, null);
+    }
+
+    /// <summary>A part's counted hardware (&#xA7;7.5): each item a name and a quantity of at least 1.</summary>
+    private ImmutableList<HardwareItem>? ReadHardware(JsonFields part)
+    {
+        int before = problems.Count;
+        ImmutableList<HardwareItem>.Builder items = ImmutableList.CreateBuilder<HardwareItem>();
+        foreach ((JsonElement element, string path) in ReadArray(part, SceneNames.Hardware))
+        {
+            JsonFields? fields = ReadFields(element, path, "a hardware item");
+            if (fields is null)
+            {
+                continue;
+            }
+
+            string? name = ReadText(fields, SceneNames.Name);
+            long? quantity = ReadInteger(fields, SceneNames.Quantity);
+            RejectUnknownFields(fields);
+
+            if (name is not null && name.Length == 0)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{path}/{SceneNames.Name}", "A hardware item has a name; this one is empty.");
+            }
+            else if (quantity is < 1)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{path}/{SceneNames.Quantity}", $"A hardware item's quantity is at least 1; this one says {quantity}.");
+            }
+            else if (name is not null && quantity is { } count)
+            {
+                items.Add(new HardwareItem(name, (int)Math.Min(count, int.MaxValue)));
+            }
+        }
+
+        return problems.Count == before ? items.ToImmutable() : null;
+    }
+
+    private ImmutableList<FastenerChoice> ReadFastenerChoices(JsonFields document)
+    {
+        ImmutableList<FastenerChoice>.Builder choices = ImmutableList.CreateBuilder<FastenerChoice>();
+        HashSet<(FastenerKind, long?)> seen = [];
+        foreach ((JsonElement element, string path) in ReadArray(document, SceneNames.FastenerChoices))
+        {
+            JsonFields? fields = ReadFields(element, path, "a fastener choice");
+            if (fields is null)
+            {
+                continue;
+            }
+
+            string? kindText = ReadText(fields, SceneNames.Kind);
+            (bool thicknessRead, long? thickness) = ReadIntegerOrNull(fields, SceneNames.Thickness);
+            string? size = ReadText(fields, SceneNames.Size);
+            (bool packRead, long? pack) = ReadIntegerOrNull(fields, SceneNames.PackSize);
+            RejectUnknownFields(fields);
+
+            if (kindText is null || !thicknessRead || size is null || !packRead)
+            {
+                continue;
+            }
+
+            if (!SceneNames.TryFastenerKind(kindText, out FastenerKind kind))
+            {
+                Add(LoadProblemKind.UnknownValue, $"{path}/{SceneNames.Kind}", $"\"{kindText}\" is not a fastener kind. They are: {SceneNames.List(SceneNames.FastenerKinds)}.");
+            }
+            else if (thickness is <= 0)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{path}/{SceneNames.Thickness}", "A fastener choice's thickness is greater than zero, or null for a kind that does not depend on it.");
+            }
+            else if (pack is < 1)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{path}/{SceneNames.PackSize}", "A pack size is at least 1, or null for no pack arithmetic.");
+            }
+            else if (!seen.Add((kind, thickness)))
+            {
+                Add(LoadProblemKind.DuplicateId, path, $"Two fastener choices are for the same kind ({kindText}) and thickness.");
+            }
+            else
+            {
+                choices.Add(new FastenerChoice(
+                    kind,
+                    thickness is { } units ? new Length(units) : null,
+                    size,
+                    pack is { } packSize ? (int)Math.Min(packSize, int.MaxValue) : null));
+            }
+        }
+
+        return choices.ToImmutable();
+    }
+
+    private ImmutableList<SupplyLine> ReadSupplies(JsonFields document)
+    {
+        ImmutableList<SupplyLine>.Builder lines = ImmutableList.CreateBuilder<SupplyLine>();
+        foreach ((JsonElement element, string path) in ReadArray(document, SceneNames.Supplies))
+        {
+            JsonFields? fields = ReadFields(element, path, "a supplies line");
+            if (fields is null)
+            {
+                continue;
+            }
+
+            string? item = ReadText(fields, SceneNames.Item);
+            string? note = ReadText(fields, SceneNames.Note);
+            RejectUnknownFields(fields);
+
+            if (item is not null && item.Length == 0)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{path}/{SceneNames.Item}", "A supplies line names an item; this one is empty.");
+            }
+            else if (item is not null && note is not null)
+            {
+                lines.Add(new SupplyLine(item, note));
+            }
+        }
+
+        return lines.ToImmutable();
     }
 
     private PlanAxes? ReadPlanAxes(JsonFields part)
@@ -957,6 +1079,9 @@ internal sealed class SceneBinder
                 return arc is { } target && value is { } units ? new Radius(id, target, new Length(units)) : null;
             }
 
+            case SceneNames.Joint:
+                return ReadJoint(fields, id);
+
             default:
                 Add(
                     LoadProblemKind.UnknownValue,
@@ -965,6 +1090,162 @@ internal sealed class SceneBinder
                     + $"{SceneNames.List(SceneNames.RelationshipKinds)}.");
                 return null;
         }
+    }
+
+    /// <summary>
+    /// A joint (joinery note &#xA7;4.4): a type, a feature reference to each part, a depth or null, a
+    /// fastening and glue. The joint's own rules are <see cref="JointRules"/>, the same ones the
+    /// editor is held to, so a file is refused for exactly what a request would be.
+    /// </summary>
+    private Relationship? ReadJoint(JsonFields fields, RelationshipId id)
+    {
+        int before = problems.Count;
+        string? typeText = ReadText(fields, SceneNames.Type);
+        FeatureRef? receiving = ReadJointFace(fields, SceneNames.Receiving);
+        FeatureRef? inserted = ReadJointFace(fields, SceneNames.Inserted);
+        (bool depthRead, long? depth) = ReadIntegerOrNull(fields, SceneNames.Depth);
+        Fastening? fastening = ReadFastening(fields);
+        bool? glue = ReadBoolean(fields, SceneNames.Glue);
+
+        JointType type = default;
+        if (typeText is not null && !SceneNames.TryJointType(typeText, out type))
+        {
+            Add(
+                LoadProblemKind.UnknownValue,
+                $"{fields.Path}/{SceneNames.Type}",
+                $"\"{typeText}\" is not a joint type this build knows. The types are: {SceneNames.List(SceneNames.JointTypes)}.");
+        }
+
+        if (problems.Count > before || typeText is null || receiving is null || inserted is null
+            || !depthRead || fastening is null || glue is not { } glued)
+        {
+            return null;
+        }
+
+        Joint joint = new(id, receiving, inserted, type, depth is { } units ? new Length(units) : null, fastening, glued);
+        foreach (string problem in JointRules.Errors(joint))
+        {
+            Add(LoadProblemKind.InvalidValue, fields.Path, problem);
+        }
+
+        return problems.Count > before ? null : joint;
+    }
+
+    /// <summary>One face of one part: only a <c>feature</c> reference is a joint's face.</summary>
+    private FeatureRef? ReadJointFace(JsonFields parent, string name)
+    {
+        JsonFields? fields = ReadObject(parent, name);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        string? kind = ReadText(fields, SceneNames.Kind);
+        FeatureRef? reference = null;
+        if (kind is not null && kind != SceneNames.Feature)
+        {
+            Add(
+                LoadProblemKind.UnknownValue,
+                $"{fields.Path}/{SceneNames.Kind}",
+                $"A joint's \"{name}\" is a face of a box, a \"{SceneNames.Feature}\" reference; \"{kind}\" is not.");
+        }
+        else if (kind is not null)
+        {
+            reference = ReadFeatureRef(fields) as FeatureRef;
+        }
+
+        RejectUnknownFields(fields);
+        return reference;
+    }
+
+    private Fastening? ReadFastening(JsonFields joint)
+    {
+        JsonFields? fields = ReadObject(joint, SceneNames.Fastening);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        int before = problems.Count;
+        string? kindText = ReadText(fields, SceneNames.Kind);
+        (bool countRead, long? count) = ReadIntegerOrNull(fields, SceneNames.Count);
+        (bool faceRead, string? faceText) = ReadTextOrNull(fields, SceneNames.PocketFace);
+        RejectUnknownFields(fields);
+
+        FasteningKind kind = default;
+        if (kindText is not null && !SceneNames.TryFasteningKind(kindText, out kind))
+        {
+            Add(
+                LoadProblemKind.UnknownValue,
+                $"{fields.Path}/{SceneNames.Kind}",
+                $"\"{kindText}\" is not a fastening this build knows. They are: {SceneNames.List(SceneNames.FasteningKinds)}.");
+        }
+
+        BoxFace? pocket = null;
+        if (faceText is not null)
+        {
+            if (SceneNames.TryFace(faceText, out BoxFace face))
+            {
+                pocket = face;
+            }
+            else
+            {
+                Add(
+                    LoadProblemKind.UnknownValue,
+                    $"{fields.Path}/{SceneNames.PocketFace}",
+                    $"\"{faceText}\" is not a face. The faces are: {SceneNames.List(SceneNames.BoxFaces)}.");
+            }
+        }
+
+        if (problems.Count > before || kindText is null || !countRead || !faceRead)
+        {
+            return null;
+        }
+
+        if (count is { } typed && (typed < 1 || typed > int.MaxValue))
+        {
+            Add(
+                LoadProblemKind.InvalidValue,
+                $"{fields.Path}/{SceneNames.Count}",
+                $"\"{SceneNames.Fastening}.{SceneNames.Count}\" is a whole number of at least 1, or null for the recipe; this one says {typed.ToString(CultureInfo.InvariantCulture)}.");
+            return null;
+        }
+
+        return new Fastening(kind, count is { } value ? (int)value : null, pocket);
+    }
+
+    private bool? ReadBoolean(JsonFields fields, string name)
+    {
+        JsonElement? element = Take(fields, name);
+        if (element is not { } value)
+        {
+            return null;
+        }
+
+        if (value.ValueKind is JsonValueKind.True or JsonValueKind.False)
+        {
+            return value.GetBoolean();
+        }
+
+        Add(
+            LoadProblemKind.Malformed,
+            $"{fields.Path}/{name}",
+            $"Expected \"{name}\" to be true or false, and found {Describe(value)}.");
+        return null;
+    }
+
+    /// <summary>A whole number or <c>null</c>: whether it was read without a problem, and the number.</summary>
+    private (bool Read, long? Number) ReadIntegerOrNull(JsonFields fields, string name)
+    {
+        if (fields.IsNull(name))
+        {
+            fields.Take(name);
+            return (true, null);
+        }
+
+        int before = problems.Count;
+        long? number = ReadInteger(fields, name);
+        return (problems.Count == before && number is not null, number);
     }
 
     private void RefuseUnsupportedRelationships(Sketch sketch, IGeometryUpdater updater)
@@ -1615,6 +1896,9 @@ internal sealed class SceneBinder
             unused.Remove(name);
             return element;
         }
+
+        internal bool IsNull(string name)
+            => values.TryGetValue(name, out JsonElement element) && element.ValueKind == JsonValueKind.Null;
 
         /// <summary>The text of a field without taking it, for a shape that dispatches on one.</summary>
         internal string? Peek(string name)

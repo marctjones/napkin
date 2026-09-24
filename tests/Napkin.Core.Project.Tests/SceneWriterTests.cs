@@ -230,7 +230,7 @@ public sealed class SceneWriterTests
     {
         string text = SceneWriter.WriteToText(Sketch.Empty);
 
-        Assert.StartsWith("{\n  \"formatVersion\": 4,\n", text, StringComparison.Ordinal);
+        Assert.StartsWith("{\n  \"formatVersion\": 5,\n", text, StringComparison.Ordinal);
         Assert.Contains("\"units\": {\n    \"length\": \"inch/1024\",\n    \"angle\": \"arcsecond\"\n  }", text, StringComparison.Ordinal);
         Assert.Equal(FormatStamp.CurrentVersion, SceneWriter.FormatVersion);
     }

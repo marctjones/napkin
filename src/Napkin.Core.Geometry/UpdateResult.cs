@@ -276,4 +276,11 @@ public enum RejectionReason
     /// <see cref="Rejected.Detail"/> names both places and the axes each fixes.
     /// </summary>
     PlacesNotComparable,
+
+    /// <summary>
+    /// A <see cref="Joint"/>'s own fields break a rule of the joinery note (&#xA7;3.3, &#xA7;4.4): a
+    /// missing depth, a fastening the type does not allow, a count on no fastening. The
+    /// <see cref="Rejected.Detail"/> says which.
+    /// </summary>
+    InvalidJoint,
 }

@@ -54,8 +54,14 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
     /// refused, including the three this repository committed until they were rewritten in the same
     /// change.
     /// </para>
+    /// <para>
+    /// Version 5 added joinery (<c>docs/design/joinery-and-fasteners.md</c> &#xA7;4.4): the
+    /// <c>joint</c> relationship kind, <c>hardware</c> on a part, and <c>fastenerChoices</c> and
+    /// <c>supplies</c> at the scene root. Every version-4 file is refused, including the ones this
+    /// repository committed until they were rewritten in the same change.
+    /// </para>
     /// </remarks>
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 5;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);

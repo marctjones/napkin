@@ -1,9 +1,9 @@
 # Joinery, fasteners and hardware: sticking pieces of stock together
 
-Status: **DRAFT, awaiting Marc's sign-off.** Written for issues #136 (joinery) and #137
+Status: **DRAFT, awaiting Marc's sign-off.** Implementation began 2026-09-25 at Marc's direction ("Finish implementing joinery") with sign-off still pending. Written for issues #136 (joinery) and #137
 (fasteners, glue and hardware) together, because a fastener is what a joint is held with and
-neither can be designed alone. Nothing here is implemented. §11 lists the slices; the follow-up
-issues are filed against them.
+neither can be designed alone. §11 lists the slices, which land one at a time against their issues
+(#144 onward).
 
 Design document written by Fable per [`PLAN.md`](../../PLAN.md). It decides how a joint between
 two parts is stored, kept under resize, drawn, listed in the cut list with the right finished

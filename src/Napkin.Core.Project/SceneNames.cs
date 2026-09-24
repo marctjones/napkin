@@ -22,6 +22,8 @@ internal static class SceneNames
     internal const string Layers = "layers";
     internal const string Entities = "entities";
     internal const string Relationships = "relationships";
+    internal const string FastenerChoices = "fastenerChoices";
+    internal const string Supplies = "supplies";
 
     // Shared.
     internal const string Id = "id";
@@ -134,6 +136,21 @@ internal static class SceneNames
     internal const string Symmetric = "symmetric";
     internal const string Tangent = "tangent";
     internal const string Radius = "radius";
+    internal const string Joint = "joint";
+
+    // A joint (format version 5), and the joinery lists.
+    internal const string Receiving = "receiving";
+    internal const string Inserted = "inserted";
+    internal const string Fastening = "fastening";
+    internal const string Count = "count";
+    internal const string PocketFace = "pocketFace";
+    internal const string Glue = "glue";
+    internal const string Hardware = "hardware";
+    internal const string Thickness = "thickness";
+    internal const string Size = "size";
+    internal const string PackSize = "packSize";
+    internal const string Item = "item";
+    internal const string Note = "note";
 
     // Relationship fields.
     internal const string A = "a";
@@ -182,9 +199,105 @@ internal static class SceneNames
     internal static readonly string[] RelationshipKinds =
     [
         AngleBetween, Anchored, AxisDistance, Centered, Coincident, Distance, EqualParam, Flush,
-        Horizontal, ParamValue, Parallel, Perpendicular, PointOnEdge, Radius, Symmetric, Tangent,
+        Horizontal, Joint, ParamValue, Parallel, Perpendicular, PointOnEdge, Radius, Symmetric, Tangent,
         Vertical,
     ];
+
+    /// <summary>The joint types the format spells out, for a message that lists them.</summary>
+    internal static readonly string[] JointTypes = ["butt", "groove", "rabbet", "halfLap", "tabletop"];
+
+    /// <summary>The fastenings the format spells out, for a message that lists them.</summary>
+    internal static readonly string[] FasteningKinds =
+        ["none", "pocketScrews", "screws", "brads", "nails", "dowels", "biscuits", "clips"];
+
+    /// <summary>The fastener kinds a choice can be for, for a message that lists them.</summary>
+    internal static readonly string[] FastenerKinds =
+        ["pocketScrew", "woodScrew", "brad", "nail", "dowel", "biscuit", "tabletopClip"];
+
+    internal static bool TryJointType(string text, out JointType type)
+    {
+        (bool ok, JointType found) = text switch
+        {
+            "butt" => (true, JointType.Butt),
+            "groove" => (true, JointType.Groove),
+            "rabbet" => (true, JointType.Rabbet),
+            "halfLap" => (true, JointType.HalfLap),
+            "tabletop" => (true, JointType.Tabletop),
+            _ => (false, default),
+        };
+        type = found;
+        return ok;
+    }
+
+    internal static bool TryFasteningKind(string text, out FasteningKind kind)
+    {
+        (bool ok, FasteningKind found) = text switch
+        {
+            "none" => (true, FasteningKind.None),
+            "pocketScrews" => (true, FasteningKind.PocketScrews),
+            "screws" => (true, FasteningKind.Screws),
+            "brads" => (true, FasteningKind.Brads),
+            "nails" => (true, FasteningKind.Nails),
+            "dowels" => (true, FasteningKind.Dowels),
+            "biscuits" => (true, FasteningKind.Biscuits),
+            "clips" => (true, FasteningKind.Clips),
+            _ => (false, default),
+        };
+        kind = found;
+        return ok;
+    }
+
+    internal static bool TryFastenerKind(string text, out FastenerKind kind)
+    {
+        (bool ok, FastenerKind found) = text switch
+        {
+            "pocketScrew" => (true, FastenerKind.PocketScrew),
+            "woodScrew" => (true, FastenerKind.WoodScrew),
+            "brad" => (true, FastenerKind.Brad),
+            "nail" => (true, FastenerKind.Nail),
+            "dowel" => (true, FastenerKind.Dowel),
+            "biscuit" => (true, FastenerKind.Biscuit),
+            "tabletopClip" => (true, FastenerKind.TabletopClip),
+            _ => (false, default),
+        };
+        kind = found;
+        return ok;
+    }
+
+    internal static string Of(JointType type) => type switch
+    {
+        JointType.Butt => "butt",
+        JointType.Groove => "groove",
+        JointType.Rabbet => "rabbet",
+        JointType.HalfLap => "halfLap",
+        JointType.Tabletop => "tabletop",
+        _ => throw Unknown(nameof(type), type),
+    };
+
+    internal static string Of(FasteningKind kind) => kind switch
+    {
+        FasteningKind.None => "none",
+        FasteningKind.PocketScrews => "pocketScrews",
+        FasteningKind.Screws => "screws",
+        FasteningKind.Brads => "brads",
+        FasteningKind.Nails => "nails",
+        FasteningKind.Dowels => "dowels",
+        FasteningKind.Biscuits => "biscuits",
+        FasteningKind.Clips => "clips",
+        _ => throw Unknown(nameof(kind), kind),
+    };
+
+    internal static string Of(FastenerKind kind) => kind switch
+    {
+        FastenerKind.PocketScrew => "pocketScrew",
+        FastenerKind.WoodScrew => "woodScrew",
+        FastenerKind.Brad => "brad",
+        FastenerKind.Nail => "nail",
+        FastenerKind.Dowel => "dowel",
+        FastenerKind.Biscuit => "biscuit",
+        FastenerKind.TabletopClip => "tabletopClip",
+        _ => throw Unknown(nameof(kind), kind),
+    };
 
     internal static bool TryAxis(string text, out Axis axis)
     {

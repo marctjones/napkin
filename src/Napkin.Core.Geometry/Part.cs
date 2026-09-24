@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Napkin.Core.Geometry;
 
 /// <summary>
@@ -105,6 +107,34 @@ public sealed record Part(
             nameof(Quantity),
             Quantity,
             "A part stands for at least one piece.");
+
+    /// <summary>Counted hardware typed onto this part: slides, pulls, hinges (joinery note &#xA7;7.5). In the order typed.</summary>
+    public ImmutableList<HardwareItem> Hardware { get; init; } = [];
+
+    /// <summary>Equality by value, with the hardware compared as a sequence (an <see cref="ImmutableList{T}"/> compares by reference).</summary>
+    public bool Equals(Part? other)
+        => other is not null
+           && Stock == other.Stock
+           && Species == other.Species
+           && Quantity == other.Quantity
+           && PlanAxes == other.PlanAxes
+           && Hardware.SequenceEqual(other.Hardware);
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        HashCode hash = default;
+        hash.Add(Stock);
+        hash.Add(Species);
+        hash.Add(Quantity);
+        hash.Add(PlanAxes);
+        foreach (HardwareItem item in Hardware)
+        {
+            hash.Add(item);
+        }
+
+        return hash.ToHashCode();
+    }
 
     /// <summary>
     /// The three finished dimensions of this part on <paramref name="box"/>.

@@ -33,7 +33,7 @@ public static class BadScenes
     /// <summary>A 30&#x2033; by 4&#x2033; box with its width driven: a file that opens.</summary>
     public const string Good = """
         {
-          "formatVersion": 4,
+          "formatVersion": 5,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -42,6 +42,7 @@ public static class BadScenes
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": null, "cuts": [] }
           ],
+          "fastenerChoices": [], "supplies": [],
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "paramValue",
               "param": { "kind": "boxWidth", "box": "0192f1a0-0000-4000-8000-00000000000a" }, "value": 30720 }
@@ -67,7 +68,7 @@ public static class BadScenes
 
     /// <summary>A file stamped with a format version this build does not read.</summary>
     public static string WrongVersion => Good
-        .Replace("\"formatVersion\": 4", "\"formatVersion\": 3", StringComparison.Ordinal);
+        .Replace("\"formatVersion\": 5", "\"formatVersion\": 3", StringComparison.Ordinal);
 
     /// <summary>
     /// A relationship the format defines but this build's updater cannot hold: <c>distance</c> is
@@ -80,7 +81,7 @@ public static class BadScenes
     /// </remarks>
     public const string UnsupportedRelationshipKind = """
         {
-          "formatVersion": 4,
+          "formatVersion": 5,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -91,6 +92,7 @@ public static class BadScenes
               "name": "East shelf",
               "anchor": { "x": 40960, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "cuts": [] }
           ],
+          "fastenerChoices": [], "supplies": [],
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "distance",
               "a": { "kind": "feature", "box": "0192f1a0-0000-4000-8000-00000000000a", "faces": ["south", "east"] },

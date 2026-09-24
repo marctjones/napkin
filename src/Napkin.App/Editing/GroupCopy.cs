@@ -190,8 +190,19 @@ public static class GroupCopy
             Centered c when Place(c.Middle) is { } middle && Place(c.A) is { } a && Place(c.B) is { } b =>
                 new Centered(id, middle, a, b, c.Axis),
             EqualParam e when Param(e.A) is { } a && Param(e.B) is { } b => new EqualParam(id, a, b),
+
+            // A joint among the copied parts comes too, glue and fastening and all (joinery note
+            // §4.3); one to a part that was not copied is not. Its pocket-hole face is a face of
+            // the inserted part, so a mirror turns it like any other.
+            Joint j when Place(j.Receiving) is FeatureRef receiving && Place(j.Inserted) is FeatureRef inserted =>
+                new Joint(id, receiving, inserted, j.Type, j.Depth, j.Fastening with { PocketFace = PocketFace(j) }, j.Glue),
             _ => null,
         };
+
+        BoxFace? PocketFace(Joint joint) =>
+            joint.Fastening.PocketFace is { } face && mirror is { } axis && sketch.Find<Box>(joint.Inserted.Box) is { } box
+                ? Mirrored(box, BoxFeature.Face(face), axis).Faces[0]
+                : joint.Fastening.PocketFace;
 
         PlaceRef? Place(PlaceRef reference) => reference switch
         {

@@ -115,7 +115,45 @@ public static class SceneWriter
 
         writer.WriteEndArray();
 
+        // The builder's typed lists (format version 5): written even when empty, because the
+        // format has no optional fields.
+        writer.WriteStartArray(SceneNames.FastenerChoices);
+        foreach (FastenerChoice choice in sketch.FastenerChoices)
+        {
+            writer.WriteStartObject();
+            writer.WriteString(SceneNames.Kind, SceneNames.Of(choice.Kind));
+            WriteOptionalNumber(writer, SceneNames.Thickness, choice.Thickness?.Units);
+            writer.WriteString(SceneNames.Size, choice.Size);
+            WriteOptionalNumber(writer, SceneNames.PackSize, choice.PackSize);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+
+        writer.WriteStartArray(SceneNames.Supplies);
+        foreach (SupplyLine line in sketch.Supplies)
+        {
+            writer.WriteStartObject();
+            writer.WriteString(SceneNames.Item, line.Item);
+            writer.WriteString(SceneNames.Note, line.Note);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+
         writer.WriteEndObject();
+    }
+
+    private static void WriteOptionalNumber(Utf8JsonWriter writer, string name, long? value)
+    {
+        if (value is { } number)
+        {
+            writer.WriteNumber(name, number);
+        }
+        else
+        {
+            writer.WriteNull(name);
+        }
     }
 
     // ---------------------------------------------------------------------------------------
@@ -218,6 +256,17 @@ public static class SceneWriter
         writer.WriteString(SceneNames.X, SceneNames.Of(part.PlanAxes.X));
         writer.WriteString(SceneNames.Y, SceneNames.Of(part.PlanAxes.Y));
         writer.WriteEndObject();
+
+        writer.WriteStartArray(SceneNames.Hardware);
+        foreach (HardwareItem item in part.Hardware)
+        {
+            writer.WriteStartObject();
+            writer.WriteString(SceneNames.Name, item.Name);
+            writer.WriteNumber(SceneNames.Quantity, item.Quantity);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
 
         writer.WriteEndObject();
     }
@@ -345,6 +394,28 @@ public static class SceneWriter
                 WritePlaceRef(writer, SceneNames.A, centered.A);
                 WritePlaceRef(writer, SceneNames.B, centered.B);
                 writer.WriteString(SceneNames.Axis, SceneNames.Of(centered.Axis));
+                break;
+
+            case Joint joint:
+                writer.WriteString(SceneNames.Kind, SceneNames.Joint);
+                writer.WriteString(SceneNames.Type, SceneNames.Of(joint.Type));
+                WritePlaceRef(writer, SceneNames.Receiving, joint.Receiving);
+                WritePlaceRef(writer, SceneNames.Inserted, joint.Inserted);
+                WriteOptionalNumber(writer, SceneNames.Depth, joint.Depth?.Units);
+                writer.WriteStartObject(SceneNames.Fastening);
+                writer.WriteString(SceneNames.Kind, SceneNames.Of(joint.Fastening.Kind));
+                WriteOptionalNumber(writer, SceneNames.Count, joint.Fastening.Count);
+                if (joint.Fastening.PocketFace is { } pocket)
+                {
+                    writer.WriteString(SceneNames.PocketFace, SceneNames.Of(pocket));
+                }
+                else
+                {
+                    writer.WriteNull(SceneNames.PocketFace);
+                }
+
+                writer.WriteEndObject();
+                writer.WriteBoolean(SceneNames.Glue, joint.Glue);
                 break;
 
             case Geometry.Parallel parallel:

@@ -19,7 +19,7 @@ public sealed class CutFormatTests
     /// </summary>
     private const string EveryKindOfCut = """
         {
-          "formatVersion": 4,
+          "formatVersion": 5,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -40,6 +40,7 @@ public sealed class CutFormatTests
                 { "kind": "curvedEdge", "edge": "south", "bow": "outward", "depth": 2048 }
               ] }
           ],
+          "fastenerChoices": [], "supplies": [],
           "relationships": []
         }
         """;
@@ -59,6 +60,7 @@ public sealed class CutFormatTests
               "anchor": { "x": 0, "y": 0 }, "width": 49152, "height": 24576, "rotation": 0,
               "part": null }
           ],
+          "fastenerChoices": [], "supplies": [],
           "relationships": []
         }
         """;

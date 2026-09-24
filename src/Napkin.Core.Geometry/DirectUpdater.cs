@@ -40,6 +40,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         typeof(ParamValue),
         typeof(EqualParam),
         typeof(Centered),
+        typeof(Joint),
     ];
 
     /// <inheritdoc/>
@@ -402,6 +403,13 @@ public sealed class DirectUpdater : IGeometryUpdater
         if (PlaceRules.Refusal(sketch, relationship) is { } notComparable)
         {
             return new Rejected(RejectionReason.PlacesNotComparable, notComparable);
+        }
+
+        if (relationship is Joint joint && JointRules.Errors(joint).FirstOrDefault() is { } invalid)
+        {
+            return new Rejected(
+                RejectionReason.InvalidJoint,
+                new ValidationError(ValidationErrorKind.InvalidJoint, invalid));
         }
 
         Sketch target = sketch.WithRelationship(relationship);
@@ -973,7 +981,9 @@ public sealed class DirectUpdater : IGeometryUpdater
     /// </remarks>
     private static bool CanPropagate(Sketch sketch, Relationship relationship) => relationship switch
     {
-        Anchored or Coincident or AxisDistance or Centered => true,
+        // A joint is held by nothing and holds nothing: it neither propagates nor is a reason to
+        // refuse a request (joinery note §4.3).
+        Anchored or Coincident or AxisDistance or Centered or Joint => true,
         ParamValue paramValue => IsBoxSize(paramValue.Param),
         EqualParam equalParam => IsBoxSize(equalParam.A) && IsBoxSize(equalParam.B),
         Horizontal horizontal => horizontal.Edge is SegmentRef,
@@ -1116,6 +1126,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         Centered centered => ReferenceResolves(sketch, centered.Middle)
                              && ReferenceResolves(sketch, centered.A)
                              && ReferenceResolves(sketch, centered.B),
+        Joint joint => ReferenceResolves(sketch, joint.Receiving) && ReferenceResolves(sketch, joint.Inserted),
         _ => relationship.References.All(id => sketch.Find(id) is not null),
     };
 

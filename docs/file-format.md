@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 4
+# The napkin project file — container version 1, scene format version 5
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -25,7 +25,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 4` and nothing else. A file from an older *or* a
+   `"containerVersion": 1` and `"formatVersion": 5` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
@@ -52,6 +52,13 @@ document and stays one.
    three this repository had committed until they were rewritten in the same change. The *model*
    is again a strict superset — a box lying as drawn (`"faceUp": "top"`) on the floor (`"z": 0`)
    is the box version 3 described, in every respect — and again the format has no optional fields.
+
+   **Version 5** added joinery ([`docs/design/joinery-and-fasteners.md`](./design/joinery-and-fasteners.md)
+   §4.4): the `joint` relationship kind, a `hardware` array on every part, and `fastenerChoices` and
+   `supplies` arrays at the scene root. Every version-4 file is refused, including every sample this
+   repository had committed until their version and their three empty lists were rewritten in the
+   same change. A design with no joints, no hardware and no typed lists is the design version 4
+   described, in every respect.
 3. **Reading is strict and never repairs.** An unknown field, a field written twice, an id that is
    not a GUID, an id that names nothing, an id that names the wrong kind of entity, a non-positive
    size, an un-normalised rotation, cuts out of site order, a cut that does not fit the blank it is
@@ -62,7 +69,9 @@ document and stays one.
 4. **A file must satisfy its own relationships.** After the scene is bound, `Sketch.Validate()` and
    `RelationshipChecker.Check` both run. A file whose geometry does not hold its own stated
    relationships — written by a buggy build, or edited by hand — is refused with the violations
-   listed.
+   listed. The one kind that is never a violation is a `joint`: a joint whose two parts have
+   drifted apart opens and shows as unsatisfied (hollow, flagged in the cut list), the way a
+   person who moved a part wants to be told and not tidied.
 5. **What is written is a function of the drawing and nothing else.** The same drawing saved twice
    by the same build gives byte-identical files: no timestamps, no counters, no machine name, a
    fixed field order, and entities and relationships sorted by id. A project file therefore diffs
@@ -180,21 +189,25 @@ Two places where the bytes legitimately differ:
 
 ```json
 {
-  "formatVersion": 4,
+  "formatVersion": 5,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ … ],
   "entities": [ … ],
-  "relationships": [ … ]
+  "relationships": [ … ],
+  "fastenerChoices": [ … ],
+  "supplies": [ … ]
 }
 ```
 
 | Field | Type | Meaning |
 |---|---|---|
-| `formatVersion` | integer | Exactly `4`. Judged before anything else is read. |
+| `formatVersion` | integer | Exactly `5`. Judged before anything else is read. |
 | `units` | object | `length` is exactly `"inch/1024"`, `angle` is exactly `"arcsecond"`. The unit is named in the file so that a reader never has to assume one. |
 | `layers` | array | Every layer, in the order the UI shows them. |
 | `entities` | array | Every entity, in any order; ids may be referred to before they appear. |
 | `relationships` | array | Every relationship, in any order. |
+| `fastenerChoices` | array | The builder's typed fastener sizes, in the order typed; see [Joinery](#joinery). |
+| `supplies` | array | The builder's typed supplies checklist, in the order typed; see [Joinery](#joinery). |
 
 Every field listed in this document is required. There are no optional fields: a reference
 dimension writes `"drives": null` and a box that is a plain rectangle writes `"cuts": []`, rather
@@ -316,14 +329,15 @@ called (`docs/design/parts-and-cut-list.md` §3).
 ### Parts
 
 `part` is a required field on a box. It is `null` on a box that is not a piece anybody cuts — a
-wall, an opening — and otherwise an object with exactly these four fields:
+wall, an opening — and otherwise an object with exactly these five fields:
 
 ```json
 "part": {
   "stock": "2x4",
   "species": "Douglas fir",
   "quantity": 1,
-  "planAxes": { "x": "width", "y": "thickness" }
+  "planAxes": { "x": "width", "y": "thickness" },
+  "hardware": []
 }
 ```
 
@@ -333,6 +347,7 @@ wall, an opening — and otherwise an object with exactly these four fields:
 | `species` | string or `null` | Free text, set after placing. Never interpreted by this build | it is neither a string nor `null` |
 | `quantity` | integer | How many identical copies this one box stands for, for the four legs a person draws once. At least 1 | it is not an integer, or is less than 1 |
 | `planAxes` | object | `x` and `y`, each exactly one of `length`, `width`, `thickness` | a key is missing, a value is not one of the three, or `x` and `y` name the same one |
+| `hardware` | array | Counted items typed onto the part, each `{ "name": text, "quantity": integer }`: a slide, a pull, a hinge. `quantity` is per copy of the part | it is not an array, an item's `name` is empty, or its `quantity` is not an integer of at least 1 |
 
 A part written with the `outOfPlane` field version 3 had is refused as an unknown field.
 
@@ -457,6 +472,8 @@ standing exactly under a top is not held there unless a `flush` says so.
 | `equalParam` | `a`, `b`: sizes | Two sizes are equal — four identical legs. |
 | `centered` | `middle`, `a`, `b`: places; `axis` | `middle` is midway between `a` and `b` along the axis, `x`, `y` or `z`. |
 
+| `joint` | `type`; `receiving`, `inserted`: a `feature` of one face each; `depth`; `fastening`; `glue` | Two parts stuck together; see [Joinery](#joinery). Stored data: it is neither propagated nor a reason to refuse an edit, and it is unsatisfied, never refused, when the parts stop touching. |
+
 Two of those load but are not editable: the direct updater treats `horizontal` and `vertical` on a
 box edge, and `paramValue`/`equalParam` over a `segmentLength`, as things it can check but not
 propagate, and it refuses a *geometry request* on a sketch holding one (geometry design §10.3).
@@ -469,6 +486,37 @@ the kind rather than crashing: `parallel` and `perpendicular` (`a`, `b`: lines),
 (`point`: a place, `edge`: a line), `symmetric` (`a`, `b`: places; `mirror`: a line), `tangent`
 (`a`, `b`: lines) and `radius` (`arc`, `value`). A line is a `segment` or a `feature`.
 
+### Joinery
+
+Format version 5 (design note [`joinery-and-fasteners.md`](./design/joinery-and-fasteners.md) §4.4).
+A `joint` is a relationship between one face of each of two different parts:
+
+```json
+{ "id": "…", "kind": "joint", "type": "rabbet",
+  "receiving": { "kind": "feature", "box": "<drawer side>", "faces": ["east"] },
+  "inserted":  { "kind": "feature", "box": "<drawer front>", "faces": ["west"] },
+  "depth": 256,
+  "fastening": { "kind": "brads", "count": null, "pocketFace": null },
+  "glue": true }
+```
+
+| Field | Type | Refused when |
+|---|---|---|
+| `type` | one of `butt`, `groove`, `rabbet`, `halfLap`, `tabletop` | an unknown value |
+| `receiving`, `inserted` | a `feature` reference with exactly one face, on two different boxes | any other reference kind, two or three faces, the same box twice, or two faces that can never touch (they do not fix the same world axis) |
+| `depth` | integer greater than 0, or `null` | `null` for a `groove` or `rabbet`, non-null for any other type, or 0 or negative (a depth that is not less than the receiving part's thickness is unsatisfied, never refused: thickness is editable geometry) |
+| `fastening.kind` | one of `none`, `pocketScrews`, `screws`, `brads`, `nails`, `dowels`, `biscuits`, `clips` | an unknown value, or a pair outside the allowed table (butt: everything but `clips`; groove: `none`, `brads`; rabbet: `none`, `screws`, `brads`, `nails`; halfLap: `none`, `screws`, `dowels`; tabletop: `clips`) |
+| `fastening.count` | integer of at least 1, or `null` (use the recipe) | 0 or negative, or non-null when `kind` is `none` |
+| `fastening.pocketFace` | a face name or `null` | non-null unless `kind` is `pocketScrews`, or the inserted part's own contact face or the one opposite it |
+| `glue` | boolean | not a boolean |
+
+Whether the two faces *touch* is not judged at load: position is geometry, and a file whose joint
+has drifted apart opens and shows it unsatisfied. `fastenerChoices` holds the builder's typed
+sizes, `{ "kind": one of pocketScrew, woodScrew, brad, nail, dowel, biscuit, tabletopClip,
+"thickness": integer > 0 or null, "size": text, "packSize": integer >= 1 or null }`, one per (kind,
+thickness) — a repeat is refused. `supplies` holds `{ "item": non-empty text, "note": text }`.
+None of these texts is napkin data: they are what the builder typed.
+
 ## An annotated example
 
 A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
@@ -476,7 +524,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 ```jsonc
 {
-  "formatVersion": 4,                                  // exactly 4, judged first
+  "formatVersion": 5,                                  // exactly 5, judged first
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
   "entities": [
@@ -535,7 +583,9 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
       "a": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "west"] },
       "b": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "east"] },
       "axis": "x" }
-  ]
+  ],
+  "fastenerChoices": [],                               // the builder's typed sizes; none here
+  "supplies": []                                       // and no typed supplies
 }
 ```
 
