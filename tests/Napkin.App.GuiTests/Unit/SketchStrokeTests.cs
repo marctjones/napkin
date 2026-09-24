@@ -90,18 +90,18 @@ public sealed class SketchStrokeTests : IDisposable
     }
 
     [Fact]
-    public void The_look_is_remembered_and_the_default_is_the_clean_one()
+    public void The_look_is_remembered_and_the_default_is_the_napkin_in_carpenters_pencil()
     {
         string file = Path.Combine(_dir, SettingsStore.FileName);
-        Assert.Equal(SketchPaper.Screen, new SettingsStore(file).Current.SketchPaper);
-        Assert.Equal(SketchLine.Clean, new SettingsStore(file).Current.SketchLine);
+        Assert.Equal(SketchPaper.Napkin, new SettingsStore(file).Current.SketchPaper);
+        Assert.Equal(SketchLine.Carpenter, new SettingsStore(file).Current.SketchLine);
         Assert.True(new SketchLook().IsClean);
 
-        new SettingsStore(file).Update(s => s with { SketchPaper = SketchPaper.Napkin, SketchLine = SketchLine.Carpenter });
+        new SettingsStore(file).Update(s => s with { SketchPaper = SketchPaper.Graph, SketchLine = SketchLine.Pencil });
 
         SettingsStore again = new(file);
-        Assert.Equal(SketchPaper.Napkin, again.Current.SketchPaper);
-        Assert.Equal(SketchLine.Carpenter, again.Current.SketchLine);
+        Assert.Equal(SketchPaper.Graph, again.Current.SketchPaper);
+        Assert.Equal(SketchLine.Pencil, again.Current.SketchLine);
     }
 
     [Fact]
@@ -113,11 +113,11 @@ public sealed class SketchStrokeTests : IDisposable
         File.WriteAllText(file, "{\"Version\":1,\"ShowRulers\":true}");
         SettingsStore old = new(file);
         Assert.True(old.Current.ShowRulers);
-        Assert.Equal(new SketchLook(), new SketchLook(old.Current.SketchPaper, old.Current.SketchLine));
+        Assert.Equal(new SketchLook(SketchPaper.Napkin, SketchLine.Carpenter), new SketchLook(old.Current.SketchPaper, old.Current.SketchLine));
 
         File.WriteAllText(file, "{\"Version\":1,\"SketchPaper\":\"Parchment\"}");
         SettingsStore unknown = new(file);
-        Assert.Equal(SketchPaper.Screen, unknown.Current.SketchPaper);
+        Assert.Equal(SketchPaper.Napkin, unknown.Current.SketchPaper);
         Assert.NotNull(unknown.Notice);
     }
 

@@ -29,6 +29,7 @@ public static class GuiWorkflow
     /// </summary>
     public static Napkin.App.Settings.SettingsStore ScreenStore(string settingsDir)
     {
+        MainWindow.BenchTitleBar = false;
         var store = new Napkin.App.Settings.SettingsStore(Path.Combine(settingsDir, Napkin.App.Settings.SettingsStore.FileName));
         store.Update(s => s with { SketchPaper = Napkin.App.Viewing.SketchPaper.Screen, SketchLine = Napkin.App.Viewing.SketchLine.Clean });
         return store;

@@ -2990,13 +2990,20 @@ public partial class MainWindow : Window
     public SettingsStore Settings { get; }
 
     /// <summary>
+    /// Whether new windows carry the bench title bar: macOS only. The GUI test harness turns it off so
+    /// layout and hit-test assertions mean the same on every platform (headless windows have no native
+    /// title bar to extend into).
+    /// </summary>
+    public static bool BenchTitleBar { get; set; } = OperatingSystem.IsMacOS();
+
+    /// <summary>
     /// On macOS the bench colour runs up into the title bar: the system's traffic-light buttons stay,
     /// drawn over our bar, which carries the title and drags the window. Other platforms keep their
     /// system title bar untouched. To undo: delete this method and its call.
     /// </summary>
     void ExtendTitleBarIntoBench()
     {
-        if (!OperatingSystem.IsMacOS())
+        if (!BenchTitleBar)
         {
             return;
         }
