@@ -450,6 +450,46 @@ public sealed class ModelView : Control
         ? ModelPicker.Pick(editor.Sketch, Scene, _camera, point, FeatureGrabPixels)
         : null;
 
+    EntityId[] _surfaceSelection = [];
+    int _surfaceStep = -1;
+
+    /// <summary>
+    /// The X, Y or Z quick-snap (#132): look along that world axis and frame the design; again for the
+    /// other side. Keeps the projection; only sets the angles, so the user can orbit away.
+    /// </summary>
+    public void LookAlong(Axis axis)
+    {
+        Camera = ViewSnap.LookAlong(_camera, axis);
+        ZoomToFit();
+    }
+
+    /// <summary>
+    /// The surface quick-snap (#132): with parts selected, the next face of the first selected part
+    /// (<see cref="ViewSnap.FaceOrder"/>) square-on and framed on it; with nothing selected, the next
+    /// of the six axis directions framing the whole design. The place in the cycle restarts when the
+    /// selection changes.
+    /// </summary>
+    public void NextSurface()
+    {
+        Box[] boxes = _editor is { } editor ? SelectionCommands.SelectedBoxes(editor) : [];
+        EntityId[] ids = [.. boxes.Select(selected => selected.Id)];
+        if (!ids.SequenceEqual(_surfaceSelection))
+        {
+            _surfaceSelection = ids;
+            _surfaceStep = -1;
+        }
+
+        _surfaceStep = (_surfaceStep + 1) % 6;
+        if (boxes.Length > 0 && _camera.HasViewport)
+        {
+            Camera = ViewSnap.FaceOn(_camera, boxes[0], ViewSnap.FaceAt(_surfaceStep), FitReserveRight);
+            return;
+        }
+
+        Camera = ViewSnap.Facing(_camera, ViewSnap.AxisStep(_surfaceStep));
+        ZoomToFit();
+    }
+
     /// <summary>Frames the whole drawing from the direction the camera is looking in.</summary>
     public void ZoomToFit()
     {
