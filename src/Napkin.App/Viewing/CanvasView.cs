@@ -370,6 +370,31 @@ public sealed class CanvasView : Control
     /// <summary>The grid step in force at this zoom, in inches.</summary>
     public double GridStepInches => SnapGrid.StepInches(_view.PixelsPerInch);
 
+    bool _showGrid = true;
+
+    /// <summary>Whether the grid lines are drawn. Only the drawing of them: snapping is <see cref="SnapToGrid"/>.</summary>
+    public bool ShowGrid
+    {
+        get => _showGrid;
+        set
+        {
+            if (_showGrid != value)
+            {
+                _showGrid = value;
+                InvalidateVisual();
+            }
+        }
+    }
+
+    /// <summary>Whether a drag or a tool lands on the grid. Independent of whether the grid is drawn.</summary>
+    public bool SnapToGrid { get; set; } = true;
+
+    /// <summary>The step a drag or a tool snaps to: the grid's, or, with snapping off, the finest length there is (no rounding).</summary>
+    public double SnapStepInches => SnapToGrid ? GridStepInches : 1.0 / Length.UnitsPerInch;
+
+    /// <summary>The person pressed G: show or hide the grid.</summary>
+    public event EventHandler? ToggleGridRequested;
+
     /// <summary>Whether a part is being drawn or dragged right now.</summary>
     public bool IsEditing => _gesture != Gesture.None || _rectangle.IsDrawing || _stock.IsDrawing;
 
@@ -612,7 +637,7 @@ public sealed class CanvasView : Control
 
         if (_tool == EditTool.Rectangle)
         {
-            _rectangle.Begin(SnapGrid.Snap(_view.ToWorld(position), GridStepInches));
+            _rectangle.Begin(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             e.Pointer.Capture(this);
             InvalidateVisual();
             return;
@@ -620,7 +645,7 @@ public sealed class CanvasView : Control
 
         if (_tool == EditTool.Stock)
         {
-            _stock.Begin(SnapGrid.Snap(_view.ToWorld(position), GridStepInches));
+            _stock.Begin(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             e.Pointer.Capture(this);
             InvalidateVisual();
             return;
@@ -691,12 +716,12 @@ public sealed class CanvasView : Control
         }
         else if (_rectangle.IsDrawing)
         {
-            _rectangle.MoveTo(SnapGrid.Snap(_view.ToWorld(position), GridStepInches));
+            _rectangle.MoveTo(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             InvalidateVisual();
         }
         else if (_stock.IsDrawing)
         {
-            _stock.MoveTo(SnapGrid.Snap(_view.ToWorld(position), GridStepInches));
+            _stock.MoveTo(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             InvalidateVisual();
         }
         else if (_gesture != Gesture.None)
@@ -965,6 +990,10 @@ public sealed class CanvasView : Control
                 ModelViewRequested?.Invoke(this, EventArgs.Empty);
                 return true;
 
+            case Key.G:
+                ToggleGridRequested?.Invoke(this, EventArgs.Empty);
+                return true;
+
             case Key.Tab when editor.OnlySelectedBox is { } forWidth:
                 DimensionEditRequested?.Invoke(
                     this,
@@ -1060,7 +1089,7 @@ public sealed class CanvasView : Control
                 editor.Design.Sketch,
                 box,
                 _gestureAnchorAtPress + sincePress,
-                GridStepInches,
+                SnapStepInches,
                 ModelLength(SnapRadiusPixels),
                 _moving);
 
@@ -1302,7 +1331,7 @@ public sealed class CanvasView : Control
     {
         Length raw = BoxGeometry.OutwardDelta(atPress, edge, sincePress);
         Length size = OutwardSize(atPress, edge);
-        Length snapped = SnapGrid.Snap(size + raw, GridStepInches);
+        Length snapped = SnapGrid.Snap(size + raw, SnapStepInches);
         return snapped - size;
     }
 
@@ -1598,7 +1627,10 @@ public sealed class CanvasView : Control
         CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
         Rect viewport = new(Bounds.Size);
         context.FillRectangle(new SolidColorBrush(palette.Background), viewport);
-        DrawGrid(context, palette, viewport);
+        if (_showGrid)
+        {
+            DrawGrid(context, palette, viewport);
+        }
 
         if (Design is not { } design)
         {

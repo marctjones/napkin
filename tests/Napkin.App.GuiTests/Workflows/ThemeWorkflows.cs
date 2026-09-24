@@ -1,10 +1,7 @@
-using System.Runtime.InteropServices;
-
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using Avalonia.Styling;
 
 using Napkin.App.GuiTests.Harness;
@@ -94,31 +91,12 @@ public class ThemeWorkflows
     /// <summary>The colour most of a patch of the drawing's ground is: the paper, with a grid line or two ignored.</summary>
     static Color PaperAt(AppDriver app, MainWindow window, Control canvas)
     {
-        Bitmap frame = app.CaptureFrame() ?? throw new InvalidOperationException("Nothing was rendered.");
         Point corner = canvas.TranslatePoint(new Point(0, 0), window)!.Value;
         int x = (int)corner.X + (int)canvas.Bounds.Width - 260;
         int y = (int)corner.Y + (int)canvas.Bounds.Height - 60;
-
-        const int size = 24;
-        byte[] pixels = new byte[size * size * 4];
-        GCHandle pin = GCHandle.Alloc(pixels, GCHandleType.Pinned);
-        try
-        {
-            frame.CopyPixels(new PixelRect(x, y, size, size), pin.AddrOfPinnedObject(), pixels.Length, size * 4);
-        }
-        finally
-        {
-            pin.Free();
-        }
-
-        (byte c0, byte g, byte c2, byte a) = Enumerable.Range(0, size * size)
-            .Select(i => (pixels[(i * 4) + 0], pixels[(i * 4) + 1], pixels[(i * 4) + 2], pixels[(i * 4) + 3]))
-            .GroupBy(p => p)
+        return FrameSampling.Patch(app, x, y, 24, 24)
+            .GroupBy(color => color)
             .OrderByDescending(group => group.Count())
             .First().Key;
-
-        // The frame is four bytes a pixel, in whichever order this platform's bitmaps keep them.
-        bool bgra = frame.Format == Avalonia.Platform.PixelFormat.Bgra8888;
-        return bgra ? Color.FromArgb(a, c2, g, c0) : Color.FromArgb(a, c0, g, c2);
     }
 }

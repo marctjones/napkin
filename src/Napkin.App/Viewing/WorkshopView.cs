@@ -143,6 +143,11 @@ public sealed class WorkshopView : Control
     /// <summary>The grid step in force at the workshop's scale, in inches.</summary>
     public double GridStepInches => SnapGrid.StepInches(Scale);
 
+    /// <summary>Whether a cut lands on the grid, as on the plan.</summary>
+    public bool SnapToGrid { get; set; } = true;
+
+    double SnapStepInches => SnapToGrid ? GridStepInches : 1.0 / Length.UnitsPerInch;
+
     /// <summary>Selects a cut by its site, or nothing.</summary>
     public void SelectSite(CutSite? site)
     {
@@ -269,7 +274,7 @@ public sealed class WorkshopView : Control
             return;
         }
 
-        _cut.Begin(blank, site, GridStepInches);
+        _cut.Begin(blank, site, SnapStepInches);
         SelectSite(site);
         editor.BeginGesture(WhatFor(blank, site, Modifiers(e.KeyModifiers)));
         e.Pointer.Capture(this);
