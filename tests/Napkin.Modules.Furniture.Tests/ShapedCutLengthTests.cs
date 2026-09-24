@@ -331,5 +331,52 @@ public sealed class ShapedCutLengthTests
             Sketch.Empty.WithEntity(block).Validate().Errors.Select(e => e.Kind));
     }
 
+    // -----------------------------------------------------------------------------------------
+    // The picture-frame sample (samples/picture-frame.*): its rows are held with the other
+    // samples' by SampleCutListTests; this checks the one thing only a frame shows — that the four
+    // mitred outlines, two of them turned half a turn, close around the opening they were drawn for.
+    // -----------------------------------------------------------------------------------------
+
+    [Fact]
+    [Trait("Feature", "CUT-002")]
+    public void The_picture_frames_four_mitred_pieces_close_around_an_8_by_10_opening()
+    {
+        Sketch frame = Assert.IsType<Loaded>(SceneReader.ReadFile(ExpectedFixture.ScenePath("picture-frame"))).Sketch;
+
+        // An outline is in the box's own local frame (Outline's remarks); each segment is placed
+        // in the plan through the box's own placement, as its corners are.
+        List<(long, long, long, long)> Of(string name)
+        {
+            Box box = frame.Entities.Values.OfType<Box>().Single(box => box.Name == name);
+            Point3 Place(Point2 local) => box.World(new Vector3(local.X, local.Y, Length.Zero));
+            return
+            [
+                .. box.Outline().Segments.Select(segment => (Place(segment.From), Place(segment.To)))
+                    .Select(line => (line.Item1.X.Units, line.Item1.Y.Units, line.Item2.X.Units, line.Item2.Y.Units)),
+            ];
+        }
+
+        // The opening is x 1 1/2 .. 9 1/2 (1536 .. 9728, 8" = 8192 across) and y 1 1/2 .. 11 1/2
+        // (1536 .. 11776, 10" = 10240 up), from the design's 1 1/2" moulding around 8" x 10".
+        // Each piece's inside edge runs between its two mitre marks, 1 1/2" in from each end.
+        //   Bottom rail, as drawn: local north edge from (11 - 1 1/2, 1 1/2) back to (1 1/2, 1 1/2).
+        Assert.Contains((9728L, 1536L, 1536L, 1536L), Of("Rail, bottom"));
+        //   Left stile, as drawn: local east edge from (1 1/2, 1 1/2) up to (1 1/2, 13 - 1 1/2).
+        Assert.Contains((1536L, 1536L, 1536L, 11776L), Of("Stile, left"));
+        //   Top rail, turned 180° about its anchor (11, 13): local (x, y) lands at (11 - x, 13 - y),
+        //   so its north edge (9728, 1536) -> (1536, 1536) lands at (1536, 11776) -> (9728, 11776).
+        Assert.Contains((1536L, 11776L, 9728L, 11776L), Of("Rail, top"));
+        //   Right stile, turned likewise: its east edge (1536, 1536) -> (1536, 11776) lands at
+        //   (9728, 11776) -> (9728, 1536).
+        Assert.Contains((9728L, 11776L, 9728L, 1536L), Of("Stile, right"));
+
+        // And at the bottom-right corner the two mitres are one line: the bottom rail's
+        // north-east mitre runs from its corner (11, 0) to its mark (9 1/2, 1 1/2); the right
+        // stile's local north-east mitre runs from its mark (1 1/2, 11 1/2) to its local corner
+        // (0, 13), which land at (9 1/2, 1 1/2) and (11, 0) — the same line walked the other way.
+        Assert.Contains((11264L, 0L, 9728L, 1536L), Of("Rail, bottom"));
+        Assert.Contains((9728L, 1536L, 11264L, 0L), Of("Stile, right"));
+    }
+
     private static ImmutableArray<OutlineSegment> OutlineOf(Sketch sketch) => OnlyBox(sketch).Outline().Segments;
 }

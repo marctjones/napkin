@@ -30,6 +30,7 @@ public sealed class SampleCutListTests
     [InlineData("framing-16-oc")]
     [InlineData("l-bracket")]
     [InlineData("overlap")]
+    [InlineData("picture-frame")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_cut_list_is_the_one_the_expectations_state(string fixture)
     {
@@ -79,6 +80,7 @@ public sealed class SampleCutListTests
     [InlineData("framing-16-oc")]
     [InlineData("l-bracket")]
     [InlineData("overlap")]
+    [InlineData("picture-frame")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_csv_is_the_one_the_expectations_state(string fixture)
     {
