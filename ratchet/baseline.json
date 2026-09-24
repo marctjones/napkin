@@ -2,8 +2,8 @@
   "schema": 1,
   "coverage": {
     "Napkin.Core.Geometry": {
-      "line": 95.05,
-      "branch": 91.3
+      "line": 95.19,
+      "branch": 91.45
     },
     "Napkin.Core.Materials": {
       "line": 98.28,
