@@ -33,7 +33,9 @@ public static class GuiWorkflow
         var session = HeadlessUnitTestSession.GetOrStartForAssembly(typeof(GuiWorkflow).Assembly);
         var inputActions = session.Dispatch(() =>
         {
-            var window = new MainWindow
+            // Never the person's real settings: each run gets its own file, gone when it ends.
+            string settingsDir = Path.Combine(Path.GetTempPath(), "napkin-gui-settings-" + Guid.NewGuid().ToString("N"));
+            var window = new MainWindow(new Napkin.App.Settings.SettingsStore(Path.Combine(settingsDir, Napkin.App.Settings.SettingsStore.FileName)))
             {
                 Width = DefaultWindowSize.Width,
                 Height = DefaultWindowSize.Height,
@@ -53,6 +55,10 @@ public static class GuiWorkflow
             finally
             {
                 window.Close();
+                if (Directory.Exists(settingsDir))
+                {
+                    Directory.Delete(settingsDir, recursive: true);
+                }
             }
         }, CancellationToken.None).GetAwaiter().GetResult();
 

@@ -10,6 +10,7 @@ using Avalonia.Media;
 using Napkin.App.Designs;
 using Design = Napkin.App.Designs.Design;
 using Napkin.App.Editing;
+using Napkin.App.Settings;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
@@ -74,8 +75,15 @@ public partial class MainWindow : Window
     readonly List<CutSite> _cutsOnScreen = [];
     List<string> _cutLinesOnScreen = [];
 
-    public MainWindow()
+    /// <summary>The window on the person's real settings file.</summary>
+    public MainWindow() : this(SettingsStore.ForUser())
     {
+    }
+
+    /// <summary>The window on a given settings store; tests pass one that is not the person's.</summary>
+    public MainWindow(SettingsStore settings)
+    {
+        Settings = settings;
         InitializeComponent();
 
         _filePicker = new StorageProviderScenePicker(this);
@@ -97,6 +105,7 @@ public partial class MainWindow : Window
 
         BuildSamplesMenu();
         BuildKeyBindings();
+        ApplySettings();
 
         // The window opens on the plan; View says so the way Samples marks the open sample.
         PlanViewMenuItem.Icon = new TextBlock { Text = "✓" };
@@ -2879,8 +2888,32 @@ public partial class MainWindow : Window
 
     void OnUnsavedCancelClicked(object? sender, RoutedEventArgs e) => KeepEditing();
 
+    /// <summary>Where the person's preferences live.</summary>
+    public SettingsStore Settings { get; }
+
+    /// <summary>Puts the remembered preferences on the window, and says so when the file could not be used.</summary>
+    void ApplySettings()
+    {
+        ModelDrawing.Projection = Settings.Current.Projection;
+        _showRulers = Settings.Current.ShowRulers;
+        DrawingCanvas.ShowRulers = _showRulers;
+        ModelDrawing.ShowScaleBar = _showRulers;
+        UpdateRulerLayout();
+
+        if (Settings.Notice is { } notice)
+        {
+            MessageText.Text = notice;
+            MessageBar.IsVisible = true;
+        }
+    }
+
     void UpdateZoomReadout()
     {
+        if (Settings.Current.Projection != ModelDrawing.Projection)
+        {
+            Settings.Update(s => s with { Projection = ModelDrawing.Projection });
+        }
+
         ZoomText.Text = IsShowingModel
             ? string.Create(
                 CultureInfo.InvariantCulture,
@@ -2906,6 +2939,7 @@ public partial class MainWindow : Window
         _showRulers = !_showRulers;
         DrawingCanvas.ShowRulers = _showRulers;
         ModelDrawing.ShowScaleBar = _showRulers;
+        Settings.Update(s => s with { ShowRulers = _showRulers });
         UpdateRulerLayout();
     }
 
