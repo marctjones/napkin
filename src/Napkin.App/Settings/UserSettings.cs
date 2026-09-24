@@ -50,6 +50,12 @@ public sealed record UserSettings
     /// <summary>Whether the grid lines are drawn, in the plan and on the 3D ground. Drawing only; see <see cref="SnapToGrid"/>.</summary>
     public bool ShowGrid { get; init; } = true;
 
+    /// <summary>The sheet the drawing is on (#142): cosmetic, in the plan and the 3D view.</summary>
+    public SketchPaper SketchPaper { get; init; } = SketchPaper.Screen;
+
+    /// <summary>The pencil the drawing's lines are in (#142): cosmetic.</summary>
+    public SketchLine SketchLine { get; init; } = SketchLine.Clean;
+
     /// <summary>Whether drags and tools land on the grid. Separate from whether it is drawn.</summary>
     public bool SnapToGrid { get; init; } = true;
 

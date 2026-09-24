@@ -2971,6 +2971,7 @@ public partial class MainWindow : Window
         // the settings and would save it over them.
         ModelDrawing.Projection = Settings.Current.Projection;
         ApplyTheme(Settings.Current.Theme);
+        ApplySketch();
         ApplyOpenIn(Settings.Current.OpenIn);
         ApplyGrid(Settings.Current.ShowGrid, Settings.Current.SnapToGrid);
         _showRulers = Settings.Current.ShowRulers;
@@ -3062,6 +3063,48 @@ public partial class MainWindow : Window
         ThemeLightMenuItem.Icon = theme == ThemeChoice.Light ? new TextBlock { Text = "✓" } : null;
         ThemeDarkMenuItem.Icon = theme == ThemeChoice.Dark ? new TextBlock { Text = "✓" } : null;
         ThemeSystemMenuItem.Icon = theme == ThemeChoice.FollowSystem ? new TextBlock { Text = "✓" } : null;
+    }
+
+    void OnPaperScreenClicked(object? sender, RoutedEventArgs e) => ChoosePaper(SketchPaper.Screen);
+
+    void OnPaperGraphClicked(object? sender, RoutedEventArgs e) => ChoosePaper(SketchPaper.Graph);
+
+    void OnPaperPlainClicked(object? sender, RoutedEventArgs e) => ChoosePaper(SketchPaper.Plain);
+
+    void OnPaperNapkinClicked(object? sender, RoutedEventArgs e) => ChoosePaper(SketchPaper.Napkin);
+
+    void OnLineCleanClicked(object? sender, RoutedEventArgs e) => ChooseLine(SketchLine.Clean);
+
+    void OnLinePencilClicked(object? sender, RoutedEventArgs e) => ChooseLine(SketchLine.Pencil);
+
+    void OnLineCarpenterClicked(object? sender, RoutedEventArgs e) => ChooseLine(SketchLine.Carpenter);
+
+    void ChoosePaper(SketchPaper paper)
+    {
+        Settings.Update(s => s with { SketchPaper = paper });
+        ApplySketch();
+    }
+
+    void ChooseLine(SketchLine line)
+    {
+        Settings.Update(s => s with { SketchLine = line });
+        ApplySketch();
+    }
+
+    /// <summary>Puts the remembered paper and pencil on both drawings and ticks them in the menu (#142). Drawing only.</summary>
+    void ApplySketch()
+    {
+        SketchPaper paper = Settings.Current.SketchPaper;
+        SketchLine line = Settings.Current.SketchLine;
+        DrawingCanvas.Look = ModelDrawing.Look = new SketchLook(paper, line);
+        TextBlock? Tick(bool on) => on ? new TextBlock { Text = "✓" } : null;
+        PaperScreenMenuItem.Icon = Tick(paper == SketchPaper.Screen);
+        PaperGraphMenuItem.Icon = Tick(paper == SketchPaper.Graph);
+        PaperPlainMenuItem.Icon = Tick(paper == SketchPaper.Plain);
+        PaperNapkinMenuItem.Icon = Tick(paper == SketchPaper.Napkin);
+        LineCleanMenuItem.Icon = Tick(line == SketchLine.Clean);
+        LinePencilMenuItem.Icon = Tick(line == SketchLine.Pencil);
+        LineCarpenterMenuItem.Icon = Tick(line == SketchLine.Carpenter);
     }
 
     void UpdateZoomReadout()

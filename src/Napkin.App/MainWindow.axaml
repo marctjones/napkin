@@ -198,6 +198,19 @@
                               Click="OnThemeSystemClicked"
                               ToolTip.Tip="Wear whichever theme the operating system is in, and change with it." />
                 </MenuItem>
+                <!-- Paper and pencil: a purely cosmetic look for the drawing (#142). -->
+                <MenuItem Name="SketchMenuItem" Header="Ske_tch">
+                    <MenuItem Header="Paper" IsEnabled="False" />
+                    <MenuItem Name="PaperScreenMenuItem" Header="_Screen" Click="OnPaperScreenClicked" />
+                    <MenuItem Name="PaperGraphMenuItem" Header="_Graph paper" Click="OnPaperGraphClicked" />
+                    <MenuItem Name="PaperPlainMenuItem" Header="_Plain sheet" Click="OnPaperPlainClicked" />
+                    <MenuItem Name="PaperNapkinMenuItem" Header="_Napkin" Click="OnPaperNapkinClicked" />
+                    <Separator />
+                    <MenuItem Header="Line" IsEnabled="False" />
+                    <MenuItem Name="LineCleanMenuItem" Header="_Clean" Click="OnLineCleanClicked" />
+                    <MenuItem Name="LinePencilMenuItem" Header="Pen_cil" Click="OnLinePencilClicked" />
+                    <MenuItem Name="LineCarpenterMenuItem" Header="Carpenter's p_encil" Click="OnLineCarpenterClicked" />
+                </MenuItem>
                 <Separator />
                 <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
                 <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />

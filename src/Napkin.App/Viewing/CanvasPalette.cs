@@ -95,6 +95,58 @@ public sealed record CanvasPalette(
     public static CanvasPalette For(ThemeVariant? variant) =>
         variant == ThemeVariant.Dark ? Dark : Light;
 
+    /// <summary>The sketch look this palette carries (#142); the clean look draws exactly as before.</summary>
+    public SketchLook Look { get; init; }
+
+    /// <summary>The palette for a theme variant wearing a sketch look. A paper look is light whatever the theme.</summary>
+    public static CanvasPalette For(ThemeVariant? variant, SketchLook look)
+    {
+        CanvasPalette basis = look.Paper == SketchPaper.Screen ? For(variant) : Light;
+        return look.IsClean ? basis : basis.Sketched(look);
+    }
+
+    CanvasPalette Sketched(SketchLook look)
+    {
+        if (look.Paper == SketchPaper.Screen)
+        {
+            return this with { Look = look };
+        }
+
+        Color sheet = SketchColours.Sheet(look.Paper);
+        (Color minor, Color major) = look.Paper switch
+        {
+            SketchPaper.Graph => (SketchColours.GraphMinor, SketchColours.GraphMajor),
+            SketchPaper.Napkin => (SketchColours.NapkinGround, SketchColours.NapkinGround),
+            _ => (SketchColours.PlainGround, SketchColours.PlainGround),
+        };
+        Color ink = SketchColours.Ink(look.Line) ?? SketchColours.PencilInk;
+        EntityStyle Inked(EntityStyle style) => style with
+        {
+            Stroke = look.Line == SketchLine.Clean ? Mix(style.Stroke, Colors.Black, 0.35) : Mix(style.Stroke, ink, 0.65),
+            Fill = style.Dashed ? sheet : style.Fill,
+        };
+
+        CanvasPalette sketched = this with
+        {
+            Look = look,
+            Background = sheet,
+            GridMinor = minor,
+            GridMajor = major,
+            Dimension = ink,
+            Label = ink,
+            NodeFill = ink,
+            Neutral = Inked(Neutral),
+            Styles = Styles.ToDictionary(pair => pair.Key, pair => Inked(pair.Value), StringComparer.OrdinalIgnoreCase),
+        };
+        return sketched;
+    }
+
+    static Color Mix(Color from, Color to, double amount) => Color.FromArgb(
+        from.A,
+        (byte)Math.Round((from.R * (1 - amount)) + (to.R * amount)),
+        (byte)Math.Round((from.G * (1 - amount)) + (to.G * amount)),
+        (byte)Math.Round((from.B * (1 - amount)) + (to.B * amount)));
+
     /// <summary>The style for a layer name.</summary>
     public EntityStyle StyleFor(string layerName) =>
         Styles.TryGetValue(layerName, out EntityStyle? style) ? style : Neutral;
