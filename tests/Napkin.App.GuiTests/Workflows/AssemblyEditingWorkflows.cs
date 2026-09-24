@@ -781,13 +781,23 @@ public class AssemblyEditingWorkflows
     });
 
     [GuiWorkflow("GUI-ASSEM-16")]
-    public void The_3D_view_opens_in_perspective_switches_from_the_menu_and_still_edits() => GuiWorkflow.Run(app =>
+    public void The_3D_view_opens_in_perspective_switches_from_the_menu_and_still_edits() =>
+        GuiWorkflow.Run(PerspectiveSwitchesFromTheMenuAndStillEdits);
+
+    /// <summary>
+    /// GUI-ASSEM-16, written once against <see cref="IGuiDriver"/> so it runs headless (above) and
+    /// live, watched, in <c>tools/Napkin.Demo</c> (#151).
+    /// </summary>
+    [GuiScenario("GUI-ASSEM-16", "The 3D view opens in perspective, switches from the menu, and still edits")]
+    public static void PerspectiveSwitchesFromTheMenuAndStillEdits(IGuiDriver app)
     {
         MainWindow window = (MainWindow)app.Target;
 
+        app.Say("Open the coffee table sample from the Samples menu");
         OpenSample(app, window, "Coffee table");
 
         // A copy of a leg, free of the pinned table, to edit.
+        app.Say("Select a leg, copy it with D, and switch to the 3D view with V");
         app.Click(OnPlan(window, BoxNamed(window, "Leg, south-west").Center.XY));
         app.Press(Key.D);
         EntityId copy = window.Editor.OnlySelected!.Value;
@@ -803,6 +813,7 @@ public class AssemblyEditingWorkflows
         });
 
         Camera perspective = window.Model.Camera;
+        app.Say("View \u2192 Orthographic, from the menu");
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("OrthographicMenuItem")!));
 
@@ -818,6 +829,7 @@ public class AssemblyEditingWorkflows
         });
 
         app.SaveFrame("orthographic-coffee-table");
+        app.Say("View \u2192 Perspective, back again");
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("PerspectiveMenuItem")!));
 
@@ -835,6 +847,7 @@ public class AssemblyEditingWorkflows
         Box before = window.CurrentDesign!.Sketch.Find<Box>(copy)!;
         ModelHandle top = window.Model.Handles.Single(handle => handle.Kind == ModelHandleKind.Face && handle.Face == BoxFace.Top);
         Point grab = InModel(window, top.At);
+        app.Say("Pull the copy's top face up by its handle");
         app.Drag(grab, grab + new Vector(0, -20), grab + new Vector(0, -40));
 
         app.Expect("the copy grew taller, in perspective, and is still selected", () =>
@@ -846,6 +859,7 @@ public class AssemblyEditingWorkflows
         });
 
         app.SaveFrame("perspective-drag-taller");
+        app.Say("Undo puts it back");
         app.Chord(Key.Z);
 
         app.Expect("one undo puts it back exactly", () =>
@@ -853,6 +867,7 @@ public class AssemblyEditingWorkflows
 
         // Orbit with the keyboard; perspective orbits like orthographic does.
         double azimuth = window.Model.Camera.AzimuthDegrees;
+        app.Say("Orbit with the arrow keys");
         app.Press(Key.Left);
         app.Press(Key.Left);
 
@@ -865,6 +880,7 @@ public class AssemblyEditingWorkflows
         app.SaveFrame("perspective-orbited");
 
         // O switches, and the drawing did not change.
+        app.Say("O switches back to orthographic");
         app.Press(Key.O);
 
         app.Expect("orthographic, by the keyboard, and the drawing is as it was", () =>
@@ -873,7 +889,7 @@ public class AssemblyEditingWorkflows
             Assert.Contains("Orthographic", window.ZoomReadout.Text, StringComparison.Ordinal);
             Assert.Equal(before, window.CurrentDesign!.Sketch.Find<Box>(copy));
         });
-    });
+    }
 
     /// <summary>The help text the plan canvas's automation element for a part carries.</summary>
     static string? PartHelpText(MainWindow window, EntityId part) =>

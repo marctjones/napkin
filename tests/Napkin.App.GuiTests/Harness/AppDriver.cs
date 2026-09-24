@@ -24,7 +24,7 @@ namespace Napkin.App.GuiTests.Harness;
 /// Coordinates are in the top level's device-independent pixels, origin at its top-left corner.
 /// </para>
 /// </remarks>
-public sealed class AppDriver
+public sealed class AppDriver : IGuiDriver
 {
     readonly List<GuiAction> _actions = [];
     int _framesSaved;
@@ -309,6 +309,14 @@ public sealed class AppDriver
         Record(GuiActionKind.Expect, what);
     }
 
+    /// <summary>
+    /// A caption for a person watching the live host. Headless nobody is watching, so it does
+    /// nothing and is not recorded: it cannot help a scenario satisfy the workflow rule.
+    /// </summary>
+    public void Say(string caption)
+    {
+    }
+
     // ---- Frames --------------------------------------------------------------------------
 
     /// <summary>
@@ -332,6 +340,8 @@ public sealed class AppDriver
         Record(GuiActionKind.Window, $"save frame \"{step}\"");
         return path;
     }
+
+    void IGuiDriver.SaveFrame(string step) => SaveFrame(step);
 
     /// <summary>Ticks the render timer and returns the frame that was rendered, if any.</summary>
     public Bitmap? CaptureFrame()
