@@ -349,6 +349,9 @@ public class AssemblyEditingWorkflows
         Length underside = top.Anchor.Z;
         app.Click(OnPlan(window, leg.Center.XY));
         app.Press(Key.V);
+        // This workflow's screen arithmetic (pixels per inch, points on the floor) is a parallel
+        // view's, so it looks orthographically; perspective is GUI-ASSEM-16's.
+        window.Model.Projection = CameraProjection.Orthographic;
 
         // Shrink it first, by its top face's handle, three grid steps down.
         double perInch = -window.Model.Camera.ProjectDirection(Vector3d.UnitZ).Y;
@@ -647,6 +650,9 @@ public class AssemblyEditingWorkflows
         Box top = BoxNamed(window, "Top");
         app.Press(Key.Escape);
         app.Press(Key.V);
+        // This workflow's screen arithmetic (pixels per inch, points on the floor) is a parallel
+        // view's, so it looks orthographically; perspective is GUI-ASSEM-16's.
+        window.Model.Projection = CameraProjection.Orthographic;
 
         // Pick a 2x4 from the toolbox with the 3D view showing: it stays the 3D view.
         app.Click(CentreOf(window, window.Toolbox.CategoryButtons[Napkin.Core.Materials.StockCategory.DimensionalLumber]));
@@ -775,7 +781,7 @@ public class AssemblyEditingWorkflows
     });
 
     [GuiWorkflow("GUI-ASSEM-16")]
-    public void The_3D_view_switches_to_perspective_from_the_menu_and_still_edits() => GuiWorkflow.Run(app =>
+    public void The_3D_view_opens_in_perspective_switches_from_the_menu_and_still_edits() => GuiWorkflow.Run(app =>
     {
         MainWindow window = (MainWindow)app.Target;
 
@@ -787,38 +793,43 @@ public class AssemblyEditingWorkflows
         EntityId copy = window.Editor.OnlySelected!.Value;
         app.Press(Key.V);
 
-        app.Expect("the 3D view opens orthographic, as the status bar says, with the switch enabled and ticked", () =>
+        app.Expect("the 3D view opens in perspective, as the status bar says, with both switches enabled", () =>
         {
-            Assert.False(window.Model.Camera.IsPerspective);
-            Assert.Contains("Orthographic", window.ZoomReadout.Text, StringComparison.Ordinal);
-            Assert.True(window.FindControl<MenuItem>("PerspectiveMenuItem")!.IsEnabled);
-            Assert.NotNull(window.FindControl<MenuItem>("OrthographicMenuItem")!.Icon);
-            Assert.Null(window.FindControl<MenuItem>("PerspectiveMenuItem")!.Icon);
+            Assert.True(window.Model.Camera.IsPerspective);
+            Assert.Contains("Perspective", window.ZoomReadout.Text, StringComparison.Ordinal);
+            Assert.True(window.FindControl<MenuItem>("OrthographicMenuItem")!.IsEnabled);
+            Assert.NotNull(window.FindControl<MenuItem>("PerspectiveMenuItem")!.Icon);
+            Assert.Null(window.FindControl<MenuItem>("OrthographicMenuItem")!.Icon);
         });
 
-        Camera orthographic = window.Model.Camera;
+        Camera perspective = window.Model.Camera;
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("OrthographicMenuItem")!));
+
+        app.Expect("it is orthographic now, framed the same at the centre, and the selection did not change", () =>
+        {
+            Camera camera = window.Model.Camera;
+            Assert.False(camera.IsPerspective);
+            Assert.Equal(perspective.Center, camera.Center);
+            Assert.Equal(perspective.PixelsPerInch, camera.PixelsPerInch);
+            Assert.Contains("Orthographic", window.ZoomReadout.Text, StringComparison.Ordinal);
+            Assert.NotNull(window.FindControl<MenuItem>("OrthographicMenuItem")!.Icon);
+            Assert.Equal(copy, window.Editor.OnlySelected);
+        });
+
+        app.SaveFrame("orthographic-coffee-table");
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("PerspectiveMenuItem")!));
 
-        app.Expect("it is perspective now, framed the same at the centre, and the selection did not change", () =>
+        app.Expect("and back in perspective, from the menu", () =>
         {
-            Camera camera = window.Model.Camera;
-            Assert.True(camera.IsPerspective);
-            Assert.Equal(orthographic.Center, camera.Center);
-            Assert.Equal(orthographic.PixelsPerInch, camera.PixelsPerInch);
+            Assert.True(window.Model.Camera.IsPerspective);
+            Assert.Equal(perspective.Center, window.Model.Camera.Center);
             Assert.Contains("Perspective", window.ZoomReadout.Text, StringComparison.Ordinal);
-            Assert.NotNull(window.FindControl<MenuItem>("PerspectiveMenuItem")!.Icon);
             Assert.Equal(copy, window.Editor.OnlySelected);
         });
 
         app.SaveFrame("perspective-coffee-table");
-
-        // Orbit with the keyboard; perspective orbits like orthographic does.
-        double azimuth = window.Model.Camera.AzimuthDegrees;
-        app.Press(Key.Left);
-        app.Press(Key.Left);
-
-        app.Expect("the view turned", () => Assert.NotEqual(azimuth, window.Model.Camera.AzimuthDegrees));
 
         // Pull the copy's top face up by its handle: the drag follows the pointer along the axis.
         Box before = window.CurrentDesign!.Sketch.Find<Box>(copy)!;
@@ -840,10 +851,23 @@ public class AssemblyEditingWorkflows
         app.Expect("one undo puts it back exactly", () =>
             Assert.Equal(before, window.CurrentDesign!.Sketch.Find<Box>(copy)));
 
-        // O switches back, and the drawing did not change.
+        // Orbit with the keyboard; perspective orbits like orthographic does.
+        double azimuth = window.Model.Camera.AzimuthDegrees;
+        app.Press(Key.Left);
+        app.Press(Key.Left);
+
+        app.Expect("the view turned, and is still perspective", () =>
+        {
+            Assert.NotEqual(azimuth, window.Model.Camera.AzimuthDegrees);
+            Assert.True(window.Model.Camera.IsPerspective);
+        });
+
+        app.SaveFrame("perspective-orbited");
+
+        // O switches, and the drawing did not change.
         app.Press(Key.O);
 
-        app.Expect("orthographic again, by the keyboard, and the view still looks from the same side", () =>
+        app.Expect("orthographic, by the keyboard, and the drawing is as it was", () =>
         {
             Assert.False(window.Model.Camera.IsPerspective);
             Assert.Contains("Orthographic", window.ZoomReadout.Text, StringComparison.Ordinal);

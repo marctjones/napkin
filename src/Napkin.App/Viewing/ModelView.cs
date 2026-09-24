@@ -89,8 +89,14 @@ public sealed class ModelView : Control
     static readonly Color AxisY = Color.Parse("#3D9A4B");
     static readonly Color AxisZ = Color.Parse("#2F6FD0");
 
-    Camera _camera = Camera.Isometric();
-    CameraProjection _projection = CameraProjection.Orthographic;
+    /// <summary>
+    /// How the 3D view opens: perspective, to judge how a design looks; orthographic, to measure
+    /// with, is one keystroke away (<c>O</c>, View &gt; Orthographic).
+    /// </summary>
+    public const CameraProjection DefaultProjection = CameraProjection.Perspective;
+
+    Camera _camera = Camera.Isometric() with { Projection = DefaultProjection };
+    CameraProjection _projection = DefaultProjection;
     bool _fitPending = true;
     DesignEditor? _editor;
     ModelScene? _scene;
