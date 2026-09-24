@@ -1,5 +1,5 @@
 {
-  "formatVersion": 4,
+  "formatVersion": 5,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [
     { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" }
@@ -69,5 +69,7 @@
       "a": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "west"] },
       "b": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "east"] },
       "axis": "x" }
-  ]
+  ],
+  "fastenerChoices": [],
+  "supplies": []
 }

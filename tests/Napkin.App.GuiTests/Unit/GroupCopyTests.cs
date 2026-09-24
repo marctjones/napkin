@@ -100,6 +100,106 @@ public class GroupCopyTests
         Assert.Equal(SpaceSnapResolver.Extent(legCopy).Low.X, SpaceSnapResolver.Extent(apronCopy).High.X);
     }
 
+    // A butt joint, pocket screws from the apron's south face, glued: the apron's west end against the leg's east face.
+    static readonly Joint ApronJoint = new(
+        RelationshipId.New(),
+        new FeatureRef(Leg.Id, BoxFeature.Face(BoxFace.East)),
+        new FeatureRef(Apron.Id, BoxFeature.Face(BoxFace.West)),
+        JointType.Butt,
+        null,
+        new Fastening(FasteningKind.PocketScrews, 3, BoxFace.South),
+        true);
+
+    // The leg's top against the underside of the top, held with screws: the top is not copied below.
+    static readonly Joint TopJoint = new(
+        RelationshipId.New(),
+        new FeatureRef(Top.Id, BoxFeature.Face(BoxFace.Bottom)),
+        new FeatureRef(Leg.Id, BoxFeature.Face(BoxFace.Top)),
+        JointType.Butt,
+        null,
+        new Fastening(FasteningKind.Screws, null, null),
+        false);
+
+    static DesignEditor JoinedTable()
+    {
+        DesignEditor editor = Table();
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(new AddRelationship(ApronJoint), "join the apron to the leg"));
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(new AddRelationship(TopJoint), "join the leg to the top"));
+        return editor;
+    }
+
+    [Fact]
+    public void Duplicating_two_joined_parts_copies_the_joint_between_them_and_not_the_one_to_a_part_left_behind()
+    {
+        DesignEditor editor = JoinedTable();
+        editor.SelectAll([Leg.Id, Apron.Id]);
+
+        SelectionCommands.Duplicate(editor, gridStepInches: 1);
+
+        Sketch after = editor.Sketch;
+        Box[] copies = [.. editor.Selection.Select(after.Find<Box>).OfType<Box>()];
+        Box legCopy = Assert.Single(copies, copy => copy.Width == Leg.Width);
+        Box apronCopy = Assert.Single(copies, copy => copy.Width == Apron.Width);
+
+        // Two joints before, three after: the apron's joint is copied onto the copies (new id, same type,
+        // fastening and glue); the leg-to-top joint is not, because the top was not copied.
+        Assert.Equal(3, after.Relationships.Values.OfType<Joint>().Count());
+        Joint copied = Assert.Single(after.RelationshipsInOrder.OfType<Joint>(), joint => joint.References.Contains(apronCopy.Id));
+        Assert.NotEqual(ApronJoint.Id, copied.Id);
+        Assert.Equal(new FeatureRef(legCopy.Id, BoxFeature.Face(BoxFace.East)), copied.Receiving);
+        Assert.Equal(new FeatureRef(apronCopy.Id, BoxFeature.Face(BoxFace.West)), copied.Inserted);
+        Assert.Equal(ApronJoint.Fastening, copied.Fastening);
+        Assert.True(copied.Glue);
+        Assert.DoesNotContain(after.RelationshipsInOrder.OfType<Joint>(), joint => joint.References.Contains(legCopy.Id) && joint.References.Contains(Top.Id));
+        Assert.True(RelationshipChecker.IsSatisfied(after, copied));
+    }
+
+    [Fact]
+    public void Mirroring_joined_parts_mirrors_the_joint_including_the_pocket_hole_face()
+    {
+        DesignEditor editor = JoinedTable();
+        editor.SelectAll([Leg.Id, Apron.Id]);
+
+        SelectionCommands.Mirror(editor, Axis.Y);
+
+        Sketch after = editor.Sketch;
+        Box[] copies = [.. editor.Selection.Select(after.Find<Box>).OfType<Box>()];
+        Box apronCopy = Assert.Single(copies, box => box.Width == Apron.Width);
+        Joint mirrored = Assert.Single(after.RelationshipsInOrder.OfType<Joint>(), joint => joint.References.Contains(apronCopy.Id));
+
+        // Reflected across a north-south plane the contact faces (east and west) stay, and the
+        // pocket holes that were drilled from the south face are drilled from the north.
+        Assert.Equal(BoxFace.East, mirrored.Receiving.Feature.Faces[0]);
+        Assert.Equal(BoxFace.West, mirrored.Inserted.Feature.Faces[0]);
+        Assert.Equal(BoxFace.North, mirrored.Fastening.PocketFace);
+        Assert.True(RelationshipChecker.IsSatisfied(after, mirrored));
+    }
+
+    [Fact]
+    public void A_joint_survives_a_move_and_undo_and_redo_and_goes_with_its_part()
+    {
+        DesignEditor editor = JoinedTable();
+
+        // Nothing but the joint holds the apron to the leg: drop the flush that would hold it there.
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(new RemoveRelationship(ApronOnLeg.Id), "release the flush"));
+
+        // The apron is moved off the leg: the move is not refused, the joint is still there, unsatisfied.
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(new SetPosition(Apron.Id, Apron.Anchor + new Vector3(Length.Inches(2), Length.Zero, Length.Zero)), "move the apron"));
+        Assert.False(RelationshipChecker.IsSatisfied(editor.Sketch, (Joint)editor.Sketch.Find(ApronJoint.Id)!));
+
+        Assert.True(editor.Undo());
+        Assert.True(RelationshipChecker.IsSatisfied(editor.Sketch, (Joint)editor.Sketch.Find(ApronJoint.Id)!));
+        Assert.True(editor.Redo());
+        Assert.False(RelationshipChecker.IsSatisfied(editor.Sketch, (Joint)editor.Sketch.Find(ApronJoint.Id)!));
+
+        // Removing the apron takes its joint with it, and undo brings both back.
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(new RemoveEntity(Apron.Id), "remove the apron"));
+        Assert.Null(editor.Sketch.Find(ApronJoint.Id));
+        Assert.NotNull(editor.Sketch.Find(TopJoint.Id));
+        Assert.True(editor.Undo());
+        Assert.NotNull(editor.Sketch.Find(ApronJoint.Id));
+    }
+
     [Theory]
     [InlineData("Leg", new string[0], "Leg (2)")]
     [InlineData("Leg", new[] { "Leg (2)" }, "Leg (3)")]

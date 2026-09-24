@@ -151,6 +151,13 @@ are placeholders**: its design states no wall height, opening height or sill, so
 opening carry `z` 0 and `depth` 768, what the version-3 reader gave a box that was not a part,
 until the design states real ones (`wall-with-window.design.md`).
 
+**Format version 5 (joinery, #144) changed no sample's meaning.** Every scene here gained the version
+number and the three empty lists the format now requires (`"hardware": []` on every part,
+`"fastenerChoices": []` and `"supplies": []` at the root) and nothing else; no sample has a joint, so
+every expectation in every `*.expected.json` is the hand-derived number it was, with only its
+`formatVersion` changed. The first sample with joints is the DIY coffee table (#146), whose
+expectations are derived by hand from `docs/design/joinery-and-fasteners.md` §2 and §6.5.
+
 **Layers are named "Default".** The viewer styles a part by the name of the layer it is on — a
 part on "Parts" is drawn as furniture, one on "Wall" as a wall, one on "Opening" as a dashed hole —
 so everything in these two fixtures draws in the neutral style. Giving the coffee table's layer the

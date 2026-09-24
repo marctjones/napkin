@@ -1,5 +1,5 @@
 {
-  "formatVersion": 4,
+  "formatVersion": 5,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -33,7 +33,8 @@
         "planAxes": {
           "x": "length",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -59,7 +60,8 @@
         "planAxes": {
           "x": "length",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -85,7 +87,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -111,7 +114,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -137,7 +141,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -163,7 +168,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -189,7 +195,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -215,7 +222,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -241,7 +249,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -267,7 +276,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -293,7 +303,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -319,7 +330,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -345,7 +357,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -371,7 +384,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -397,7 +411,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -423,7 +438,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -449,7 +465,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -475,7 +492,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -501,7 +519,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -527,7 +546,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -553,7 +573,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -579,7 +600,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -605,7 +627,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -631,7 +654,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -657,7 +681,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -683,7 +708,8 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     },
@@ -709,10 +735,13 @@
         "planAxes": {
           "x": "thickness",
           "y": "width"
-        }
+        },
+        "hardware": []
       },
       "cuts": []
     }
   ],
-  "relationships": []
+  "relationships": [],
+  "fastenerChoices": [],
+  "supplies": []
 }

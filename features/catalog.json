@@ -972,6 +972,24 @@
       "milestone": "M2",
       "issue": 64,
       "kind": "unit"
+    },
+    {
+      "id": "GEO-016",
+      "area": "geometry",
+      "title": "A joint is a relationship between two faces the updater neither propagates nor refuses",
+      "acceptance": "A Joint names one face of each of two parts; moving or resizing a part with a joint is Solved and leaves the joint as it was; the checker never lists a joint; the joint is unsatisfied (not refused) once the two faces no longer share a rectangle, or when its depth is not less than the receiving thickness; removing either part removes the joint.",
+      "milestone": "M3",
+      "issue": 144,
+      "kind": "unit"
+    },
+    {
+      "id": "PRJ-008",
+      "area": "project-file",
+      "title": "Format version 5 carries joints, hardware, fastener choices and supplies",
+      "acceptance": "A joint, a part's hardware, the fastener choices and the supplies lines round-trip byte for byte through the writer and reader; every refusal row of the joinery note section 4.4 is refused naming its field; a version-4 file is refused with the unsupported-version message.",
+      "milestone": "M3",
+      "issue": 144,
+      "kind": "unit"
     }
   ]
 }
