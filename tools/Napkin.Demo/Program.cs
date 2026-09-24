@@ -141,6 +141,15 @@ static class LiveHost
             WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterScreen,
             Title = $"napkin · live scenario {scenario.Id}",
         };
+
+        // Popups are drawn in the window (OverlayPopups), so a tooltip left open by the last item the
+        // pointer glided over would sit on top of the next one and eat its click. A real tooltip is
+        // a separate window the pointer never lands on; make these the same.
+        window.Styles.Add(new Avalonia.Styling.Style(selector => Avalonia.Styling.Selectors.OfType<Avalonia.Controls.ToolTip>(selector))
+        {
+            Setters = { new Avalonia.Styling.Setter(Avalonia.Input.InputElement.IsHitTestVisibleProperty, false) },
+        });
+
         window.Closed += (_, _) =>
         {
             if (Directory.Exists(settingsDir))

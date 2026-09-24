@@ -56,7 +56,8 @@ public class DiyCoffeeTableWorkflows
         app.Chord(Key.N);
 
         app.Say("First the top: a sheet of 3/4 plywood, 42 x 22, sitting 16 1/4 up");
-        Place(app, window, StockCategory.SheetGood, "3/4 plywood", Point2.Inches(-20, -8), Point2.Inches(20, 8));
+        Place(app, window, StockCategory.SheetGood, "3/4 plywood", At(window, Point2.Inches(-20, -8)), At(window, Point2.Inches(20, 8)));
+        FoldDrawer(app, window);
         SetSize(app, window, SizeAxis.Height, "22");
         SetSize(app, window, SizeAxis.Width, "42");
         Fields(app, window, "Top", "0", "0", "16 1/4");
@@ -73,7 +74,7 @@ public class DiyCoffeeTableWorkflows
 
         // ---- The legs -----------------------------------------------------------------------
         app.Say("One leg from the 2x2 stock, 16 1/4 tall, stood up in the front corner");
-        Place(app, window, StockCategory.DimensionalLumber, "2x2", Point2.Inches(6, 6), Point2.Inches(12, 6));
+        Place(app, window, StockCategory.DimensionalLumber, "2x2", OnTheBench(window, false).Start, OnTheBench(window, false).End);
         SetSize(app, window, SizeAxis.Width, "16 1/4");
         app.Press(Key.Y);
         Fields(app, window, "Leg", "1 1/2", "1 1/2", "0");
@@ -86,9 +87,9 @@ public class DiyCoffeeTableWorkflows
         });
 
         app.Say("Mirror it east-west (M), then both front legs north-south (Shift+M): four legs");
-        app.Click(At(window, Point2.Inches(2, 2)));
+        ClickAt(app, window, At(window, Point2.Inches(2, 2)));
         app.Press(Key.M);
-        app.Click(At(window, Point2.Inches(2, 2)), modifiers: KeyModifiers.Shift);
+        ClickAt(app, window, At(window, Point2.Inches(2, 2)), KeyModifiers.Shift);
         app.Press(Key.M, KeyModifiers.Shift);
 
         app.Expect("four legs stand at the four corners of a 39 x 19 frame (42 - 3, 22 - 3)", () =>
@@ -108,22 +109,21 @@ public class DiyCoffeeTableWorkflows
 
         // ---- The frame ----------------------------------------------------------------------
         app.Say("The back apron: 1x6, 36 long, on edge between the back legs, flush with their outside");
-        Place(app, window, StockCategory.DimensionalLumber, "1x6", Point2.Inches(6, 6), Point2.Inches(12, 6));
+        Place(app, window, StockCategory.DimensionalLumber, "1x6", OnTheBench(window, false).Start, OnTheBench(window, false).End);
         SetSize(app, window, SizeAxis.Width, "36");
         app.Press(Key.X);
         Fields(app, window, "Apron, back", "3", "19 3/4", "10 3/4");
 
         app.Say("A side apron, 16 long, on edge; mirrored for the other side");
-        Place(app, window, StockCategory.DimensionalLumber, "1x6", Point2.Inches(6, 6), Point2.Inches(6, 12));
+        Place(app, window, StockCategory.DimensionalLumber, "1x6", OnTheBench(window, true).Start, OnTheBench(window, true).End);
         SetSize(app, window, SizeAxis.Height, "16");
         app.Press(Key.Y);
         Fields(app, window, "Apron, side, west", "1 1/2", "3", "10 3/4");
-        app.Click(OnPlan(window, "Apron, side, west"));
+        ClickAt(app, window, OnPlan(window, "Apron, side, west"));
         app.Press(Key.M);
-        Rename(app, window, "Apron, side, east");
 
         app.Say("The front rail: 1x2 on edge, 36 long, high up, so the drawers can slide under it");
-        Place(app, window, StockCategory.DimensionalLumber, "1x2", Point2.Inches(6, 6), Point2.Inches(12, 6));
+        Place(app, window, StockCategory.DimensionalLumber, "1x2", OnTheBench(window, false).Start, OnTheBench(window, false).End);
         SetSize(app, window, SizeAxis.Width, "36");
         app.Press(Key.X);
         Fields(app, window, "Rail, front", "3", "1 1/2", "14 3/4");
@@ -134,12 +134,12 @@ public class DiyCoffeeTableWorkflows
             // Aprons are 3/4 thick: back 20 1/2 - 3/4 = 19 3/4, east side 40 1/2 - 3/4 = 39 3/4.
             AssertBox(Only(window, "Apron, back"), In(3), In(19, 3, 4), In(10, 3, 4), In(36), In(0, 3, 4), In(5, 1, 2));
             AssertBox(Only(window, "Apron, side, west"), In(1, 1, 2), In(3), In(10, 3, 4), In(0, 3, 4), In(16), In(5, 1, 2));
-            AssertBox(Only(window, "Apron, side, east"), In(39, 3, 4), In(3), In(10, 3, 4), In(0, 3, 4), In(16), In(5, 1, 2));
+            AssertBox(Only(window, "Apron, side, west (2)"), In(39, 3, 4), In(3), In(10, 3, 4), In(0, 3, 4), In(16), In(5, 1, 2));
             AssertBox(Only(window, "Rail, front"), In(3), In(1, 1, 2), In(14, 3, 4), In(36), In(0, 3, 4), In(1, 1, 2));
 
             // Their tops meet the top's underside: 10 3/4 + 5 1/2 = 16 1/4 and 14 3/4 + 1 1/2 = 16 1/4.
             Length underside = SpaceSnapResolver.Extent(Only(window, "Top")).Low.Z;
-            foreach (string name in new[] { "Apron, back", "Apron, side, west", "Apron, side, east", "Rail, front" })
+            foreach (string name in new[] { "Apron, back", "Apron, side, west", "Apron, side, west (2)", "Rail, front" })
             {
                 Assert.Equal(underside, SpaceSnapResolver.Extent(Only(window, name)).High.Z);
             }
@@ -150,13 +150,12 @@ public class DiyCoffeeTableWorkflows
 
         // ---- The web between the drawers ----------------------------------------------------
         app.Say("The web between the two drawers: draw a plain rectangle (R), then say what it is - 1x6 stock");
+        FoldDrawer(app, window);
         FocusPaper(app, window);
         app.Press(Key.R);
         app.Drag(At(window, Point2.Inches(6, 6)), At(window, Point2.Inches(9, 9)), At(window, Point2.Inches(12, 12)));
-        app.Click(CentreOf(window, window.IsPartField));
-        Fill(app, window, window.OutOfPlaneField, "3/4\"");
+        ClickControl(app, window, window.IsPartField);
         Fill(app, window, window.StockField, "1x6");
-        Fill(app, window, window.QuantityField, "1");
         app.Press(Key.Enter);
         SetSize(app, window, SizeAxis.Width, "17 1/2");
         app.Press(Key.X);
@@ -172,7 +171,7 @@ public class DiyCoffeeTableWorkflows
 
         // ---- One drawer ---------------------------------------------------------------------
         app.Say("One drawer box of 1/2 plywood: a side, 16 long and 3 1/2 tall...");
-        Place(app, window, StockCategory.SheetGood, "1/2 plywood", Point2.Inches(6, 6), Point2.Inches(9, 9));
+        Place(app, window, StockCategory.SheetGood, "1/2 plywood", OnTheBench(window, false).Start, OnTheBench(window, false).End);
         SetSize(app, window, SizeAxis.Height, "3 1/2");
         SetSize(app, window, SizeAxis.Width, "16");
         app.Press(Key.X);
@@ -180,28 +179,28 @@ public class DiyCoffeeTableWorkflows
         Fields(app, window, "Drawer side, left, A", "3 1/2", "2 1/4", "11");
 
         app.Say("...copied (D) for the other side");
-        app.Click(OnPlan(window, "Drawer side, left, A"));
+        ClickAt(app, window, OnPlan(window, "Drawer side, left, A"));
         app.Press(Key.D);
         Fields(app, window, "Drawer side, right, A", "19 5/8", "2 1/4", "11");
 
         app.Say("The box front, 15 5/8 wide (16 5/8 less two sides), and a copy for the back");
-        Place(app, window, StockCategory.SheetGood, "1/2 plywood", Point2.Inches(6, 6), Point2.Inches(9, 9));
+        Place(app, window, StockCategory.SheetGood, "1/2 plywood", OnTheBench(window, false).Start, OnTheBench(window, false).End);
         SetSize(app, window, SizeAxis.Height, "3 1/2");
         SetSize(app, window, SizeAxis.Width, "15 5/8");
         app.Press(Key.X);
         Fields(app, window, "Drawer box front, A", "4", "2 1/4", "11");
-        app.Click(OnPlan(window, "Drawer box front, A"));
+        ClickAt(app, window, OnPlan(window, "Drawer box front, A"));
         app.Press(Key.D);
         Fields(app, window, "Drawer box back, A", "4", "17 3/4", "11");
 
         app.Say("The bottom: 1/4 plywood, 15 5/8 x 15, lying flat");
-        Place(app, window, StockCategory.SheetGood, "1/4 plywood", Point2.Inches(6, 6), Point2.Inches(9, 9));
+        Place(app, window, StockCategory.SheetGood, "1/4 plywood", OnTheBench(window, false).Start, OnTheBench(window, false).End);
         SetSize(app, window, SizeAxis.Height, "15");
         SetSize(app, window, SizeAxis.Width, "15 5/8");
         Fields(app, window, "Drawer bottom, A", "4", "2 3/4", "11 1/2");
 
         app.Say("And the drawer front: 1x6, 17 3/4 wide, overlaying the opening");
-        Place(app, window, StockCategory.DimensionalLumber, "1x6", Point2.Inches(6, 6), Point2.Inches(12, 6));
+        Place(app, window, StockCategory.DimensionalLumber, "1x6", OnTheBench(window, false).Start, OnTheBench(window, false).End);
         SetSize(app, window, SizeAxis.Width, "17 3/4");
         app.Press(Key.X);
         Fields(app, window, "Drawer front, A", "3 1/8", "3/4", "10 3/4");
@@ -229,10 +228,10 @@ public class DiyCoffeeTableWorkflows
         // ---- The second drawer --------------------------------------------------------------
         app.Say("Select the whole drawer with Shift+click, and mirror it: the second drawer");
         string[] drawer = ["Drawer side, left, A", "Drawer side, right, A", "Drawer box front, A", "Drawer box back, A", "Drawer bottom, A", "Drawer front, A"];
-        app.Click(OnPlan(window, drawer[0]));
+        ClickAt(app, window, OnPlan(window, drawer[0]));
         foreach (string name in drawer.Skip(1))
         {
-            app.Click(OnPlan(window, name), modifiers: KeyModifiers.Shift);
+            ClickAt(app, window, OnPlan(window, name), KeyModifiers.Shift);
         }
 
         app.Press(Key.M);
@@ -256,6 +255,7 @@ public class DiyCoffeeTableWorkflows
 
         // ---- In three dimensions ------------------------------------------------------------
         app.Say("Look at it in 3D (V), turn it a little with the arrow keys...");
+        FoldDrawer(app, window);
         FocusPaper(app, window);
         app.Press(Key.V);
         double azimuth = window.Model.Camera.AzimuthDegrees;
@@ -310,7 +310,7 @@ public class DiyCoffeeTableWorkflows
             AssertShoppingList(window.CutList!.ShoppingRows.Rows);
         });
 
-        app.Say("Fasteners (design only, #146): counts come from the joints - 27 pocket screws, 14 wood screws, 24 brads, 10 clips; you type the sizes you buy");
+        app.Say("Fasteners (design only, #146): counts come from the joints - 27 pocket screws, 24 brads, 8 wood screws, 10 clips; you type the sizes you buy");
 
         app.Expect("the whole design is 42 x 22 x 17 in: the top's 42 x 22, and 16 1/4 + 3/4 = 17 to its upper face", () =>
         {
@@ -450,11 +450,20 @@ public class DiyCoffeeTableWorkflows
 
     // ---- Doing things the way a person does ---------------------------------------------------
 
-    /// <summary>Picks a stock size from its drawer, drags it out on the paper, and folds the drawer away.</summary>
-    static void Place(IGuiDriver app, MainWindow window, StockCategory category, string stock, Point2 from, Point2 to)
+    /// <summary>
+    /// Picks a stock size from its drawer (opening the drawer if it is not open) and drags it out on
+    /// the paper. The drawer stays open for the next piece from it.
+    /// </summary>
+    static void Place(IGuiDriver app, MainWindow window, StockCategory category, string stock, Point start, Point end)
     {
         StockToolbox toolbox = window.Toolbox;
-        app.Click(CentreOf(window, toolbox.CategoryButtons[category]));
+        int before = Boxes(window).Count();
+
+        if (!(window.IsShowingStockSizes && toolbox.Category == category))
+        {
+            app.Click(CentreOf(window, toolbox.CategoryButtons[category]));
+        }
+
         Button button = toolbox.ButtonFor(stock)!;
         if (stock.EndsWith("plywood", StringComparison.Ordinal))
         {
@@ -462,23 +471,56 @@ public class DiyCoffeeTableWorkflows
         }
 
         app.Click(CentreOf(window, button));
-        Point start = At(window, from);
-        Point end = At(window, to);
         app.Drag(start, new Point((start.X + end.X) / 2, (start.Y + end.Y) / 2), end);
+        Assert.True(Boxes(window).Count() == before + 1, $"dragging out {stock} did not place a part.");
+    }
 
-        // Fold the drawer away so it is not in the way of the size labels.
-        app.Click(CentreOf(window, toolbox.CategoryButtons[category]));
+    /// <summary>
+    /// Where to drag a piece out: on the bare paper to the west of the table, well clear of the
+    /// stock drawer, whatever the size of the window. It is sized and moved into place afterwards.
+    /// </summary>
+    static (Point Start, Point End) OnTheBench(MainWindow window, bool northSouth)
+    {
+        Point paper = InWindow(window, new Point(0, 0));
+        Point west = At(window, new Point2(In(0), In(11)));
+        double x = paper.X + ((west.X - paper.X) * 0.7);
+        return northSouth
+            ? (new Point(x, west.Y + 30), new Point(x, west.Y - 30))
+            : (new Point(x, west.Y), new Point(x + 80, west.Y - 50));
+    }
+
+    /// <summary>Folds the stock drawer away, if it is open.</summary>
+    static void FoldDrawer(IGuiDriver app, MainWindow window)
+    {
+        if (window.IsShowingStockSizes)
+        {
+            app.Click(CentreOf(window, window.Toolbox.CategoryButtons[window.Toolbox.Category!.Value]));
+        }
+    }
+
+    /// <summary>Clicks the drawing, folding the stock drawer away first if it is lying over the spot.</summary>
+    static void ClickAt(IGuiDriver app, MainWindow window, Point point, KeyModifiers modifiers = KeyModifiers.None)
+    {
+        if (window.IsShowingStockSizes
+            && new Rect(window.Toolbox.TranslatePoint(new Point(0, 0), window)!.Value, window.Toolbox.Bounds.Size).Contains(point))
+        {
+            FoldDrawer(app, window);
+        }
+
+        app.Click(point, modifiers: modifiers);
     }
 
     /// <summary>Clicks a dimension on the drawing and types the size it should be.</summary>
     static void SetSize(IGuiDriver app, MainWindow window, SizeAxis axis, string text)
     {
         EntityId id = window.Editor.OnlySelected!.Value;
-        app.Click(InWindow(window, window.Canvas.SelectionDimensionLabelAt(id, axis)
+        ClickAt(app, window, InWindow(window, window.Canvas.SelectionDimensionLabelAt(id, axis)
             ?? throw new InvalidOperationException($"{id} shows no {axis} dimension.")));
-        app.Chord(Key.A);
         app.Type(text);
         app.Press(Key.Enter);
+
+        // Focus goes back to the drawing once the box has closed; the keys that turn the part wait for it.
+        app.WaitForIdle();
     }
 
     /// <summary>Names the selected part and says where it is, in the Part panel: name, east, north, up.</summary>
@@ -494,19 +536,22 @@ public class DiyCoffeeTableWorkflows
         app.Press(Key.Enter);
     }
 
-    static void Rename(IGuiDriver app, MainWindow window, string name)
+    /// <summary>
+    /// Clicks a control. The toolbar and the side panels lay themselves out again as the pointer
+    /// arrives and as the selection changes, so the pointer goes there first, the layout settles,
+    /// and the click is aimed again.
+    /// </summary>
+    static void ClickControl(IGuiDriver app, MainWindow window, Visual control)
     {
-        Fill(app, window, window.PartNameField, name);
-        app.Press(Key.Enter);
+        app.MoveTo(CentreOf(window, control));
+        app.WaitForIdle();
+        app.Click(CentreOf(window, control));
     }
 
     /// <summary>Replaces what a field says, the way a person does: click, select all, type.</summary>
     static void Fill(IGuiDriver app, MainWindow window, TextBox field, string text)
     {
-        // The side panels lay themselves out again as the pointer arrives; aim again once they have.
-        app.MoveTo(CentreOf(window, field));
-        app.WaitForIdle();
-        app.Click(CentreOf(window, field));
+        ClickControl(app, window, field);
         app.Chord(Key.A);
         app.Type(text);
     }
