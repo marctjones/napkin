@@ -990,6 +990,15 @@
       "milestone": "M3",
       "issue": 144,
       "kind": "unit"
+    },
+    {
+      "id": "GEO-017",
+      "area": "geometry",
+      "title": "A joint's two boxes imply its contact, groove, rabbet and half-lap, and which part receives",
+      "acceptance": "Derived from the drawn boxes and never stored: the contact rectangle of two faces (apron end on a leg: 3/4 x 5 1/2), a groove along the length (drawer bottom in a side: 1/4 wide, 1/2 from the bottom edge) or a dado across the width, a rabbet at the nearer end, a half-lap overlap and each part's lap; and the direction rule of note 4.1 (inserted part is the one whose contact face is an end, the thinner for a groove, the top for a tabletop, lower id first for a half-lap, larger part receiving when it cannot decide).",
+      "milestone": "M3",
+      "issue": 145,
+      "kind": "unit"
     }
   ]
 }
