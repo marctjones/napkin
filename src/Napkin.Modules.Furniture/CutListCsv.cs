@@ -157,7 +157,7 @@ public static class CutListCsv
     }
 
     /// <summary>A field, quoted when its text would otherwise change the shape of the line.</summary>
-    private static string Field(string text)
+    internal static string Field(string text)
         => text.AsSpan().IndexOfAny(',', '"', '\n') >= 0 || text.Contains('\r', StringComparison.Ordinal)
             ? Quoted(text)
             : text;
