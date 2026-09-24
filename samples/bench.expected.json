@@ -1,0 +1,175 @@
+{
+  "fixture": "bench",
+  "scene": "bench.scene.json",
+  "design": "bench.design.md",
+  "derivedBy": "hand, from the stated dimensions in bench.design.md; never regenerated from napkin's output",
+  "formatVersion": 4,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 6,
+    "pieces": 7,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 43008,
+    "depthUnits": 12288,
+    "heightUnits": 18944,
+    "widthText": "3'-6\"",
+    "depthText": "1'-0\"",
+    "heightText": "1'-6 1/2\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Top",
+      "id": "30000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 17408
+      },
+      "maxUnits": {
+        "x": 43008,
+        "y": 12288,
+        "z": 18944
+      },
+      "derivation": "Lies flat, 42\" across X, 12\" up Y, 1 1/2\" thick, its underside at 17\" (the legs' height). Occupies z 17..18 1/2."
+    },
+    {
+      "name": "Leg, south-west",
+      "id": "30000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 2048,
+        "y": 2048,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 5632,
+        "y": 5632,
+        "z": 17408
+      },
+      "derivation": "Inset 2\" from the top's west and south edges; 3 1/2\" square; 17\" tall (its depth). Occupies x 2..5 1/2, y 2..5 1/2."
+    },
+    {
+      "name": "Leg, south-east",
+      "id": "30000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 37376,
+        "y": 2048,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 40960,
+        "y": 5632,
+        "z": 17408
+      },
+      "derivation": "Its east face is 2\" in from the top's east edge at 42 - 2 = 40\", so its west face is 40 - 3 1/2 = 36 1/2\". Occupies x 36 1/2..40, y 2..5 1/2."
+    },
+    {
+      "name": "Leg, north-west",
+      "id": "30000000-0000-4000-8000-000000000004",
+      "minUnits": {
+        "x": 2048,
+        "y": 6656,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 5632,
+        "y": 10240,
+        "z": 17408
+      },
+      "derivation": "Its north face is 2\" in from the top's north edge at 12 - 2 = 10\", so its south face is 10 - 3 1/2 = 6 1/2\". Occupies x 2..5 1/2, y 6 1/2..10."
+    },
+    {
+      "name": "Leg, north-east",
+      "id": "30000000-0000-4000-8000-000000000005",
+      "minUnits": {
+        "x": 37376,
+        "y": 6656,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 40960,
+        "y": 10240,
+        "z": 17408
+      },
+      "derivation": "The east x of the south-east leg with the south y of the north-west leg. Occupies x 36 1/2..40, y 6 1/2..10."
+    },
+    {
+      "name": "Rail",
+      "id": "30000000-0000-4000-8000-000000000006",
+      "minUnits": {
+        "x": 5632,
+        "y": 2048,
+        "z": 14336
+      },
+      "maxUnits": {
+        "x": 37376,
+        "y": 2816,
+        "z": 17408
+      },
+      "derivation": "ONE box that stands for TWO pieces (the front and back rails are cut alike): it runs between the south legs from x 5 1/2 to 36 1/2 = 31\", 3/4\" thick up Y, 3\" tall (its depth), its upper edge flush with the top's underside at 17\", so it starts at z 14."
+    }
+  ],
+  "totalVolumeCubicUnits": 1855962742784,
+  "cutList": [
+    {
+      "label": "Top",
+      "quantity": 1,
+      "lengthUnits": 43008,
+      "widthUnits": 12288,
+      "thicknessUnits": 1536,
+      "lengthText": "3'-6\"",
+      "widthText": "1'-0\"",
+      "thicknessText": "1 1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "30000000-0000-4000-8000-000000000001"
+      ],
+      "derivation": "Lies flat: length 42\" = 43008, width 12\" = 12288, thickness 1 1/2\" = 1536. Text: 42 = 3 x 12 + 6 -> 3'-6\"; 12 -> 1'-0\"; 1 1/2\"."
+    },
+    {
+      "label": "Rail",
+      "quantity": 2,
+      "lengthUnits": 31744,
+      "widthUnits": 3072,
+      "thicknessUnits": 768,
+      "lengthText": "2'-7\"",
+      "widthText": "3\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "30000000-0000-4000-8000-000000000006"
+      ],
+      "derivation": "On edge: length across X = 31\" = 31744, thickness up Y = 3/4\" = 768, width its depth 3\" = 3072. It is ONE box with quantity 2, so the row's quantity is 2 while its members list holds the one box: quantities are summed, boxes are not counted. Text: 31 = 2 x 12 + 7 -> 2'-7\"."
+    },
+    {
+      "label": "Leg",
+      "quantity": 4,
+      "lengthUnits": 17408,
+      "widthUnits": 3584,
+      "thicknessUnits": 3584,
+      "lengthText": "1'-5\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "3 1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "30000000-0000-4000-8000-000000000002",
+        "30000000-0000-4000-8000-000000000003",
+        "30000000-0000-4000-8000-000000000004",
+        "30000000-0000-4000-8000-000000000005"
+      ],
+      "derivation": "Stands up: 3 1/2\" square (3584) in plan, length its depth, 17\" = 17408. Four boxes, one row of 4. Text: 17 = 1 x 12 + 5 -> 1'-5\". Label: the four names share \"Leg, \" -> \"Leg\". The design says the legs were drawn once, duplicated, and mirrored; the file only holds the four boxes."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes before saw kerf and joinery allowance.",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
+    "Top,1,\"3'-6\"\"\",\"1'-0\"\"\",\"1 1/2\"\"\",,",
+    "Rail,2,\"2'-7\"\"\",\"3\"\"\",\"3/4\"\"\",,",
+    "Leg,4,\"1'-5\"\"\",\"3 1/2\"\"\",\"3 1/2\"\"\",,"
+  ]
+}

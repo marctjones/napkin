@@ -58,6 +58,18 @@ public static class SampleFiles
             "wall-with-window.scene.json",
             "Wall with window",
             "12'-0\" of 5½\" wall with a 3'-0\" opening centred in it — the plan view."),
+        new(
+            "bookcase.scene.json",
+            "Bookcase",
+            "A 30\" × 36\" plywood carcass: sides, caps, two shelves and a 1/4\" back — sheet goods and pairs."),
+        new(
+            "bench.scene.json",
+            "Bench",
+            "A 3'-6\" bench on four legs, with one box standing for two rails — quantity, not box count."),
+        new(
+            "lying-beam.scene.json",
+            "Lying beam",
+            "One 36\" beam placed four ways — along X, along Y, upright and on its edge: same piece, same cut."),
     ];
 
     private static readonly string[] SceneSuffixes = [".scene.json", ".json"];

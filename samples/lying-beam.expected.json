@@ -1,0 +1,111 @@
+{
+  "fixture": "lying-beam",
+  "scene": "lying-beam.scene.json",
+  "design": "lying-beam.design.md",
+  "derivedBy": "hand, from the stated dimensions in lying-beam.design.md; never regenerated from napkin's output",
+  "formatVersion": 4,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 4,
+    "pieces": 4,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 54784,
+    "depthUnits": 36864,
+    "heightUnits": 36864,
+    "widthText": "4'-5 1/2\"",
+    "depthText": "3'-0\"",
+    "heightText": "3'-0\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Beam, along X",
+      "id": "40000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 36864,
+        "y": 3584,
+        "z": 1536
+      },
+      "derivation": "Lying flat along X: 36\" across X, 3 1/2\" up Y, 1 1/2\" thick (its depth). Occupies x 0..36, y 0..3 1/2, z 0..1 1/2."
+    },
+    {
+      "name": "Beam, along Y",
+      "id": "40000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 40960,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 44544,
+        "y": 36864,
+        "z": 1536
+      },
+      "derivation": "The same box spun 90 degrees about its anchor at x = 43 1/2: local X (36\") runs up Y and local Y (3 1/2\") runs to -X, so it occupies x 40..43 1/2, y 0..36, z 0..1 1/2."
+    },
+    {
+      "name": "Beam, upright",
+      "id": "40000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 51200,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 54784,
+        "y": 1536,
+        "z": 36864
+      },
+      "derivation": "Standing on end: 3 1/2\" across X, 1 1/2\" up Y, 36\" tall (its depth). Occupies x 50..53 1/2, y 0..1 1/2, z 0..36."
+    },
+    {
+      "name": "Beam, on its side",
+      "id": "40000000-0000-4000-8000-000000000004",
+      "minUnits": {
+        "x": 0,
+        "y": 8704,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 36864,
+        "y": 10240,
+        "z": 3584
+      },
+      "derivation": "Tipped onto an edge (face up = north): local Y (3 1/2\") points up and local Z (1 1/2\") points to -Y, so from the anchor at y = 10 it occupies x 0..36, y 8 1/2..10, z 0..3 1/2."
+    }
+  ],
+  "totalVolumeCubicUnits": 811748818944,
+  "cutList": [
+    {
+      "label": "Beam",
+      "quantity": 4,
+      "lengthUnits": 36864,
+      "widthUnits": 3584,
+      "thicknessUnits": 1536,
+      "lengthText": "3'-0\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "1 1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "40000000-0000-4000-8000-000000000001",
+        "40000000-0000-4000-8000-000000000002",
+        "40000000-0000-4000-8000-000000000003",
+        "40000000-0000-4000-8000-000000000004"
+      ],
+      "derivation": "One 36\" x 3 1/2\" x 1 1/2\" piece lying along X, lying along Y, standing up and tipped on its edge: however it is turned, it is the same piece, so four boxes are one row of 4 (36864 x 3584 x 1536 units). Label: the four names share \"Beam, \" -> \"Beam\"."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes before saw kerf and joinery allowance.",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
+    "Beam,4,\"3'-0\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",,"
+  ]
+}

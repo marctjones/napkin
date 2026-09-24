@@ -1,0 +1,198 @@
+{
+  "formatVersion": 4,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
+  ],
+  "entities": [
+    {
+      "id": "20000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Side, left",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "width": 768,
+      "height": 11520,
+      "depth": 36864,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Side, right",
+      "anchor": {
+        "x": 29952,
+        "y": 0,
+        "z": 0
+      },
+      "width": 768,
+      "height": 11520,
+      "depth": 36864,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000003",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Cap, bottom",
+      "anchor": {
+        "x": 768,
+        "y": 0,
+        "z": 0
+      },
+      "width": 29184,
+      "height": 11520,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000004",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Cap, top",
+      "anchor": {
+        "x": 768,
+        "y": 0,
+        "z": 36096
+      },
+      "width": 29184,
+      "height": 11520,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000005",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Shelf, lower",
+      "anchor": {
+        "x": 768,
+        "y": 768,
+        "z": 12288
+      },
+      "width": 29184,
+      "height": 10752,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000006",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Shelf, upper",
+      "anchor": {
+        "x": 768,
+        "y": 768,
+        "z": 24576
+      },
+      "width": 29184,
+      "height": 10752,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000007",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Back",
+      "anchor": {
+        "x": 0,
+        "y": 11520,
+        "z": 0
+      },
+      "width": 30720,
+      "height": 256,
+      "depth": 36864,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "thickness"
+        }
+      },
+      "cuts": []
+    }
+  ],
+  "relationships": []
+}
