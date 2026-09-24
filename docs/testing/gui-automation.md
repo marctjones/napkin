@@ -336,6 +336,9 @@ Their feature ids live in `features/catalog.json`, which the planner owns.
 
 ## What headless cannot cover
 
+To *watch* a workflow instead, in a real window with the same assertions, see
+[live-scenarios.md](live-scenarios.md) (#151).
+
 This suite tests the application. It does not test the operating system's relationship with the
 application, and it should not be read as if it did. Out of reach:
 
