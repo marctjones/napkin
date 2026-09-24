@@ -140,6 +140,17 @@ public sealed class ShoppingListTests
 
     [Fact]
     [Trait("Feature", "CUT-006")]
+    public void A_panel_longer_than_the_sheet_is_refused_even_when_narrow_enough()
+    {
+        // 100" x 20": the 20" fits the sheet's 48" side, but 100" is longer than its 96" side.
+        ShoppingListRow row = Assert.Single(Shop(Along("Shelf", 100, 20, 0.75, "3/4 plywood", quantity: 2)));
+
+        Assert.Equal(0, row.Sheets);
+        Assert.EndsWith("no stocked size holds 2 × 8'-4\" × 1'-8\", so none is bought", row.Note, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-006")]
     public void A_panel_that_fits_turned_is_not_refused_and_the_area_is_rounded_up()
     {
         // 40" x 90" fits a 48" x 96" sheet with its long side along the sheet's. Two of them are
