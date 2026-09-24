@@ -131,6 +131,8 @@ public partial class MainWindow : Window
         ModelDrawing.HoveredPartChanged += (_, _) => UpdateRelationships();
         ModelDrawing.PointerModelPositionChanged += (_, point) => UpdateCursorReadout(point);
         ModelDrawing.PlanRequested += (_, _) => ShowPlanView();
+        ModelDrawing.ToggleGridRequested += (_, _) => ToggleGrid();
+        DrawingCanvas.ToggleGridRequested += (_, _) => ToggleGrid();
         ModelDrawing.PlacementChanged += (_, _) => UpdateToolButtons();
         ModelDrawing.SelectionCommandRequested += (_, command) => RunSelectionCommand(command);
         StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
@@ -2629,6 +2631,7 @@ public partial class MainWindow : Window
         TurnYMenuItem.InputGesture = new KeyGesture(Key.Y);
         TurnZMenuItem.InputGesture = new KeyGesture(Key.Z);
         PlanViewMenuItem.InputGesture = new KeyGesture(Key.V);
+        GridMenuItem.InputGesture = new KeyGesture(Key.G);
         ModelViewMenuItem.InputGesture = new KeyGesture(Key.V);
         UpdateMenuEnablement();
     }
@@ -2894,8 +2897,11 @@ public partial class MainWindow : Window
     /// <summary>Puts the remembered preferences on the window, and says so when the file could not be used.</summary>
     void ApplySettings()
     {
-        ApplyTheme(Settings.Current.Theme);
+        // The projection first: the readout the others refresh notices a projection that differs from
+        // the settings and would save it over them.
         ModelDrawing.Projection = Settings.Current.Projection;
+        ApplyTheme(Settings.Current.Theme);
+        ApplyGrid(Settings.Current.ShowGrid, Settings.Current.SnapToGrid);
         _showRulers = Settings.Current.ShowRulers;
         DrawingCanvas.ShowRulers = _showRulers;
         ModelDrawing.ShowScaleBar = _showRulers;
@@ -2906,6 +2912,32 @@ public partial class MainWindow : Window
             MessageText.Text = notice;
             MessageBar.IsVisible = true;
         }
+    }
+
+    void OnGridClicked(object? sender, RoutedEventArgs e) => ToggleGrid();
+
+    void ToggleGrid()
+    {
+        bool show = !Settings.Current.ShowGrid;
+        Settings.Update(s => s with { ShowGrid = show });
+        ApplyGrid(show, Settings.Current.SnapToGrid);
+    }
+
+    void OnSnapToGridClicked(object? sender, RoutedEventArgs e)
+    {
+        bool snap = !Settings.Current.SnapToGrid;
+        Settings.Update(s => s with { SnapToGrid = snap });
+        ApplyGrid(Settings.Current.ShowGrid, snap);
+    }
+
+    /// <summary>The grid's lines and its snapping, each on every view that has them.</summary>
+    void ApplyGrid(bool show, bool snap)
+    {
+        DrawingCanvas.ShowGrid = ModelDrawing.ShowGrid = show;
+        DrawingCanvas.SnapToGrid = ModelDrawing.SnapToGrid = WorkshopDrawing.SnapToGrid = snap;
+        GridMenuItem.Icon = show ? new TextBlock { Text = "✓" } : null;
+        SnapToGridMenuItem.Icon = snap ? new TextBlock { Text = "✓" } : null;
+        UpdateZoomReadout();
     }
 
     void OnThemeLightClicked(object? sender, RoutedEventArgs e) => ChooseTheme(ThemeChoice.Light);
@@ -2953,6 +2985,13 @@ public partial class MainWindow : Window
                 CultureInfo.InvariantCulture,
                 $"{(ModelDrawing.Projection == CameraProjection.Perspective ? "Perspective" : "Orthographic")} · Zoom {ModelDrawing.Camera.ZoomPercent:0.#}%")
             : string.Create(CultureInfo.InvariantCulture, $"Zoom {DrawingCanvas.View.ZoomPercent:0.#}%");
+
+        // While snapping is on, the step a drag lands on: it changes with the zoom, as the grid does.
+        if (Settings.Current.SnapToGrid)
+        {
+            double step = IsShowingModel ? ModelDrawing.GridStepInches : DrawingCanvas.GridStepInches;
+            ZoomText.Text += " · Snap " + Show(new Length(SnapGrid.UnitsPerStep(step)));
+        }
 
         // The projection belongs to the 3D view: the plan has none to choose.
         bool perspective = ModelDrawing.Projection == CameraProjection.Perspective;

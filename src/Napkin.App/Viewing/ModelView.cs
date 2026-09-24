@@ -212,6 +212,31 @@ public sealed class ModelView : Control
     /// <summary>The grid step a move or a resize lands on at this zoom, in inches: the plan's ladder.</summary>
     public double GridStepInches => SnapGrid.StepInches(_camera.PixelsPerInch);
 
+    bool _showGrid = true;
+
+    /// <summary>Whether the grid lines are drawn. Only the drawing of them: snapping is <see cref="SnapToGrid"/>.</summary>
+    public bool ShowGrid
+    {
+        get => _showGrid;
+        set
+        {
+            if (_showGrid != value)
+            {
+                _showGrid = value;
+                InvalidateVisual();
+            }
+        }
+    }
+
+    /// <summary>Whether a drag or a tool lands on the grid. Independent of whether the grid is drawn.</summary>
+    public bool SnapToGrid { get; set; } = true;
+
+    /// <summary>The step a drag or a tool snaps to: the grid's, or, with snapping off, the finest length there is (no rounding).</summary>
+    public double SnapStepInches => SnapToGrid ? GridStepInches : 1.0 / Length.UnitsPerInch;
+
+    /// <summary>The person pressed G: show or hide the grid.</summary>
+    public event EventHandler? ToggleGridRequested;
+
     /// <summary>What the drag in progress has caught, or null when nothing is being dragged.</summary>
     public SpaceSnapPlan? ActiveSnap => _snap;
 
@@ -968,6 +993,10 @@ public sealed class ModelView : Control
                 PlanRequested?.Invoke(this, EventArgs.Empty);
                 return true;
 
+            case Key.G:
+                ToggleGridRequested?.Invoke(this, EventArgs.Empty);
+                return true;
+
             case Key.Escape when editor.Selection.Count > 0:
                 editor.ClearSelection();
                 return true;
@@ -1065,13 +1094,13 @@ public sealed class ModelView : Control
                     // what is not moving with them, and state nothing — no one part's face caught.
                     Box group = groupAtPress with { Anchor = groupAtPress.Anchor + (box.Anchor - atPress.Anchor) };
                     Point3 wantedGroup = groupAtPress.Anchor + Vector3.Along(handle.Axis, ToLength(inches));
-                    SpaceSnapPlan groupPlan = SpaceSnapResolver.Resolve(editor.Sketch, group, wantedGroup, [handle.Axis], GridStepInches, radius, _moving);
+                    SpaceSnapPlan groupPlan = SpaceSnapResolver.Resolve(editor.Sketch, group, wantedGroup, [handle.Axis], SnapStepInches, radius, _moving);
                     MoveBy(editor, groupPlan.Anchor - group.Anchor, groupPlan with { Relationships = [] });
                     break;
                 }
 
                 Point3 wanted = atPress.Anchor + Vector3.Along(handle.Axis, ToLength(inches));
-                MoveTo(editor, box, SpaceSnapResolver.Resolve(editor.Sketch, box, wanted, [handle.Axis], GridStepInches, radius, _moving));
+                MoveTo(editor, box, SpaceSnapResolver.Resolve(editor.Sketch, box, wanted, [handle.Axis], SnapStepInches, radius, _moving));
                 break;
             }
 
@@ -1085,7 +1114,7 @@ public sealed class ModelView : Control
                 Point3 wanted = atPress.Anchor
                                 + Vector3.Along(_planeAxes[0], ToLength(along.First))
                                 + Vector3.Along(_planeAxes[1], ToLength(along.Second));
-                MoveTo(editor, box, SpaceSnapResolver.Resolve(editor.Sketch, box, wanted, _planeAxes, GridStepInches, radius, _moving));
+                MoveTo(editor, box, SpaceSnapResolver.Resolve(editor.Sketch, box, wanted, _planeAxes, SnapStepInches, radius, _moving));
                 break;
             }
 
@@ -1105,7 +1134,7 @@ public sealed class ModelView : Control
                 Length outward = ToLength(inches);
                 Length wantedFace = handle.Positive ? faceAtPress + outward : faceAtPress - outward;
                 SpaceSnapPlan facePlan = SpaceSnapResolver.ResolveFace(editor.Sketch, atPress, face, wantedFace, radius);
-                Length wantedSize = SnapGrid.Snap(atPressSize + outward, GridStepInches);
+                Length wantedSize = SnapGrid.Snap(atPressSize + outward, SnapStepInches);
                 _snap = null;
                 if (facePlan.CaughtSomething)
                 {
@@ -1357,8 +1386,8 @@ public sealed class ModelView : Control
     {
         (Axis u, Axis v) = face.Plane;
         return Point3.Origin
-            .WithComponent(u, SnapGrid.Snap(ToLength(at.Component(u)), GridStepInches))
-            .WithComponent(v, SnapGrid.Snap(ToLength(at.Component(v)), GridStepInches))
+            .WithComponent(u, SnapGrid.Snap(ToLength(at.Component(u)), SnapStepInches))
+            .WithComponent(v, SnapGrid.Snap(ToLength(at.Component(v)), SnapStepInches))
             .WithComponent(face.Normal, face.Coordinate);
     }
 
@@ -1366,7 +1395,7 @@ public sealed class ModelView : Control
         _placeFace is { } face ? ShapedOn(editor, face, _placeFrom, to) : null;
 
     PlacementPreview? ShapedOn(DesignEditor editor, PlacementFace face, Point3 from, Point3 to) =>
-        _placement.Shape(editor.Sketch, face, from, to, editor.LayerForNewParts(), _previewId, string.Empty, GridStepInches, ModelLength(SnapRadiusPixels));
+        _placement.Shape(editor.Sketch, face, from, to, editor.LayerForNewParts(), _previewId, string.Empty, SnapStepInches, ModelLength(SnapRadiusPixels));
 
     /// <summary>
     /// Turns what is held a quarter turn about a world axis before it is placed (#92), and shows it
@@ -1520,7 +1549,10 @@ public sealed class ModelView : Control
         }
 
         Sketch sketch = editor.Sketch;
-        DrawFloor(context, palette, sketch);
+        if (_showGrid)
+        {
+            DrawFloor(context, palette, sketch);
+        }
 
         Dictionary<LayerId, string> layerNames = sketch.Layers.ToDictionary(layer => layer.Id, layer => layer.Name);
         foreach (ScenePolygon polygon in Scene.BackToFront(_camera))

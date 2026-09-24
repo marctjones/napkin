@@ -101,7 +101,7 @@ public class ViewerWorkflows
         {
             Assert.Same(asOpened, window.CurrentDesign!.Sketch);
             Assert.Equal(FreshlyRead("coffee-table"), window.CurrentDesign!.Sketch);
-            Assert.Matches(@"^Zoom \d+(\.\d)?%$", window.ZoomReadout.Text!);
+            Assert.Matches(@"^Zoom \d+(\.\d)?%( · Snap .+)?$", window.ZoomReadout.Text!);
         });
 
         app.SaveFrame("coffee-table");

@@ -160,6 +160,16 @@
                           Header="_Rulers"
                           Click="OnRulersClicked"
                           ToolTip.Tip="Rulers along the top and left of the plan, in feet, inches and fractions, on the same steps as the grid. The orthographic 3D view shows a scale bar instead, true across the screen: an inch along an axis looks shorter in an isometric view (by about a fifth). A perspective view has neither, because an inch is a different size at every distance in it." />
+                <!-- The grid's lines and the grid's snapping are two settings: hiding the lines does not
+                     stop things landing on them, and snapping can be off with the lines showing. -->
+                <MenuItem Name="GridMenuItem"
+                          Header="_Grid"
+                          Click="OnGridClicked"
+                          ToolTip.Tip="Show the grid lines, in the plan and on the 3D ground (G). This only draws them: whether things snap to the grid is Snap to grid, below, and hiding the lines does not change it." />
+                <MenuItem Name="SnapToGridMenuItem"
+                          Header="_Snap to grid"
+                          Click="OnSnapToGridClicked"
+                          ToolTip.Tip="Drags and drawing tools land on the grid's steps (the step is in the status bar). Separate from Grid: you can snap with the lines hidden, or show them and move freely." />
                 <Separator />
                 <!-- Light, dark, or whichever the operating system is in (and following it live). -->
                 <MenuItem Name="ThemeMenuItem" Header="_Theme">

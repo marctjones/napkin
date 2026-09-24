@@ -30,4 +30,10 @@ public sealed record UserSettings
 
     /// <summary>The theme: follow the system unless the person picked one.</summary>
     public ThemeChoice Theme { get; init; } = ThemeChoice.FollowSystem;
+
+    /// <summary>Whether the grid lines are drawn, in the plan and on the 3D ground. Drawing only; see <see cref="SnapToGrid"/>.</summary>
+    public bool ShowGrid { get; init; } = true;
+
+    /// <summary>Whether drags and tools land on the grid. Separate from whether it is drawn.</summary>
+    public bool SnapToGrid { get; init; } = true;
 }
