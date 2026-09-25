@@ -328,7 +328,7 @@ public class BracingTests
         string file = Path.Combine(Fx.BraceRoot, "golden", "us-zz-brace-a", "zz-brace.golden.json");
         GoldenFileResult a = GoldenRunner.Run(Fx.BraceRoot, file);
         Assert.True(a.Passed, a.ToString());
-        Assert.Equal(8, a.Cases.Count);
+        Assert.Equal(9, a.Cases.Count);
         Assert.True(GoldenRunner.Run(Fx.BraceRoot, Path.Combine(Fx.BraceRoot, "golden", "us-zz-brace-b", "zz-brace-b.golden.json")).Passed);
 
         // A case that expects the wrong shortfall fails and says why; dropping the only case that
@@ -338,6 +338,235 @@ public class BracingTests
         Assert.Contains("expected required 10'-0\", provided 2'-6\", short 7'-4\"", Assert.Single(wrong.Cases, c => !c.Passed).Detail, StringComparison.Ordinal);
         GoldenFileResult uncovered = GoldenRunner.Run(PackLoader.Load(Fx.BraceRoot, "us-zz-brace-a"), json.Replace("\"f.tall\"", "\"f.wind\"", StringComparison.Ordinal), "edited.golden.json");
         Assert.Contains(uncovered.Problems, p => p.Contains("factor 'f.tall' of section ZZ-BRACE.1 is applied by no hand-authored golden case", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [Trait("Feature", "RUL-005")]
+    public void A_category_column_selects_base_rows_exactly_and_a_category_it_lacks_is_out_of_scope()
+    {
+        // Pack A with a seismicDesignCategory column (SYNTHETIC categories ZZ-A and ZZ-B): ZZ-B rows
+        // are twice ZZ-A's, and a factor × 3/2 applies when the category equals ZZ-B.
+        LoadedPack pack = Fx.Loaded(PackLoader.Load(WithCategory(), "us-zz-brace-a"));
+        SiteInputs site = new(null, 90, "ZZ-B", null, null, null, null);
+        BracedWallLine line = new(Line16, Height8, ValueList.Of(new BracedSegment("all", Length.Inches(72), PanelA)));
+
+        // ZZ-B ≤ 99 mph: 96" per 120" × 192 = 153.6" × 3/2 = 230.4" → 232" (2" step).
+        BracingResult.Fails fails = Assert.IsType<BracingResult.Fails>(RulesEngine.CheckBracing(pack, new BracingRequest(line, site)));
+        Assert.Equal(Length.Inches(232), fails.Required);
+        Assert.Equal("q.b.w99", fails.Citation.RowId);
+        Assert.Equal(["seismicDesignCategory ZZ-B → = ZZ-B", "ultimateWindSpeed 90 mph → ≤ 99 mph"], fails.Citation.Trace.Select(t => t.ToString()));
+        Assert.Equal("f.sdc", Assert.Single(fails.Working.Factors).Id);
+
+        BracingResult.OutOfScope other = Assert.IsType<BracingResult.OutOfScope>(
+            RulesEngine.CheckBracing(pack, new BracingRequest(line, new SiteInputs(null, 90, "ZZ-C", null, null, null, null))));
+        Assert.Equal(OutOfScopeReason.ConditionNotCovered, other.Reason);
+        Assert.Null(other.Limit.RowId);
+
+        // Below the column's declared minimum (1 mph): out of scope, citing the lowest row.
+        BracingResult.OutOfScope below = Assert.IsType<BracingResult.OutOfScope>(RulesEngine.CheckBracing(A, Segments(0, Length.Inches(60))));
+        Assert.Equal(OutOfScopeReason.InputBelowTableBands, below.Reason);
+        Assert.Equal("q.w99", below.Limit.RowId);
+        Assert.Contains("passes", RulesEngine.CheckBracing(A, Segments(90, Length.Inches(72), Length.Inches(72))).ToString(), StringComparison.Ordinal);
+        Assert.Contains("SHORT by", RulesEngine.CheckBracing(A, Segments(90)).ToString(), StringComparison.Ordinal);
+        Assert.Contains("out of scope", below.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "RUL-005")]
+    public void Every_malformed_bracing_field_is_refused_with_its_own_message()
+    {
+        Refused(n => n["kind"] = "header-sizing", "a file under bracing/ is 'wall-bracing', not 'header-sizing'");
+        Refused(n => n["source"] = "nope", "source 'nope' is not listed");
+        Refused(n => n["inputs"]!.AsArray().Add(JsonNode.Parse("""{ "name": "ultimateWindSpeed", "type": "mph", "band": "upper-bound", "domain": { "min": 1, "max": 199 } }""")), "'ultimateWindSpeed' is declared twice");
+        Refused(n => n["inputs"]![0]!.AsObject().Remove("band"), "inputs[0].band: missing required field");
+        Refused(n => n["inputs"]![0]!["type"] = "psf", "'ultimateWindSpeed' is 'mph', not 'psf'");
+        Refused(n => n["inputs"]![0]!["band"] = "exact", "a bracing column that is not a category uses 'upper-bound' bands");
+        Refused(n => n["inputs"]![0]!["domain"]!["min"] = 300, "is above max");
+        Refused(n => n["required"]![0]!["ultimateWindSpeed"] = 250, "is outside the column's declared domain");
+        Refused(n => n["required"]![1]!["id"] = "q.w99", "row id 'q.w99' appears twice");
+        Refused(n => n["factors"]![1]!["id"] = "f.wind", "id 'f.wind' appears twice");
+        Refused(n => n["factors"]![0]!["when"]!["equals"] = "x", "a condition has exactly one of 'above'");
+        Refused(n => n["factors"]![0]!["when"] = JsonNode.Parse("""{ "input": "ultimateWindSpeed", "equals": "x" }"""), "'ultimateWindSpeed' is not a category; use 'above'");
+        Refused(n => n["methods"]![0]!["id"] = "ZZ Panel", "is not a method id");
+        Refused(n => n["methods"]![1]!["id"] = "zz-panel", "method id 'zz-panel' appears twice");
+        Refused(n => n["methods"]![0]!["cap"] = "0in", "a cap is longer than zero");
+        Refused(n => n["methods"]![0]!["minimumPanel"]!["rows"]![0]!["length"] = "0in", "a minimum panel length is longer than zero");
+        Refused(n => n["methods"]![0]!["minimumPanel"]!["rows"]![0]!["wallHeight"] = "13ft 0in", "is outside the declared domain");
+        Refused(n => n["methods"]![0]!["minimumPanel"]!["rows"]![1]!["id"] = "m.h8", "row id 'm.h8' appears twice");
+        Refused(n => n["footnotes"]![0]!["appliesTo"] = "rows", "a bracing footnote applies to the whole section");
+        Refused(n => n["footnotes"]!.AsArray().Add(JsonNode.Parse("""{ "id": "a", "text": "again", "encodedAs": "as-rows", "appliesTo": "table" }""")), "footnote 'a' is listed twice");
+        Refused(
+            n => n["footnotes"]![0] = JsonNode.Parse("""{ "id": "a", "text": "x", "encodedAs": "as-limit", "appliesTo": "table", "limit": { "input": "groundSnowLoad", "above": 5 } }"""),
+            "a bracing footnote is 'not-encoded' or 'as-rows'");
+        Refused(n => n["surprise"] = 1, "surprise: unknown field");
+
+        InMemoryPackSource category = WithCategory();
+        JsonNode node = JsonNode.Parse(category.Text(BracingPathA))!;
+        node["inputs"]![1]!["band"] = "upper-bound";
+        node["inputs"]![1]!["values"]!.AsArray().Add("ZZ-A");
+        node["factors"]![2]!["when"] = JsonNode.Parse("""{ "input": "seismicDesignCategory", "above": 1 }""");
+        node["limits"]![0]!["when"] = JsonNode.Parse("""{ "input": "seismicDesignCategory", "equals": "ZZ-Q" }""");
+        node["required"]![0]!["seismicDesignCategory"] = "ZZ-Q";
+        PackLoadResult.Invalid invalid = Fx.Invalid(PackLoader.Load(category.With(BracingPathA, node.ToJsonString()), "us-zz-brace-a"));
+        string all = invalid.ToString();
+        Assert.Contains("a category column uses 'exact' bands", all, StringComparison.Ordinal);
+        Assert.Contains("'ZZ-A' is listed twice", all, StringComparison.Ordinal);
+        Assert.Contains("'seismicDesignCategory' is a category; use 'equals'", all, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "RUL-005")]
+    public void Missing_or_mistyped_structure_is_refused_where_it_is()
+    {
+        Refused(n => n.AsObject().Remove("step"), "step: missing required field");
+        Refused(n => n["inputs"] = 5, "inputs: must be a JSON array");
+        Refused(n => n["inputs"]![0] = 5, "inputs[0]: must be a JSON object");
+        Refused(n => n["inputs"]![0]!.AsObject().Remove("domain"), "inputs[0].domain: missing required field");
+        Refused(n => n["inputs"]![0]!["domain"]!.AsObject().Remove("min"), "inputs[0].domain.min: missing required field");
+        Refused(n => n["required"]![0] = 5, "required[0]: must be a JSON object");
+        Refused(n => n["required"]![0]!.AsObject().Remove("length"), "length: missing required field");
+        Refused(n => n["required"]![0]!.AsObject().Remove("ultimateWindSpeed"), "ultimateWindSpeed: missing required field");
+        Refused(n => n["factors"] = 5, "factors: must be a JSON array");
+        Refused(n => n["factors"]![0] = 5, "factors[0]: must be a JSON object");
+        Refused(n => n["factors"]![0]!.AsObject().Remove("when"), "when: missing required field");
+        Refused(n => n["factors"]![0]!["when"] = JsonNode.Parse("""{ "above": 1 }"""), "input: missing required field");
+        Refused(n => n["factors"]![0]!["when"]!["above"] = "fast", "above");
+        Refused(n => n["factors"]![1]!["add"] = "a foot", "add");
+        Refused(n => n["factors"]![0]!["multiply"] = 2, "multiply");
+        Refused(n => n["methods"] = 5, "methods: must be a JSON array");
+        Refused(n => n["methods"]![0] = 5, "methods[0]: must be a JSON object");
+        Refused(n => n["methods"]![0]!.AsObject().Remove("minimumPanel"), "minimumPanel: missing required field");
+        Refused(n => n["methods"]![0]!["minimumPanel"]!["rows"] = 5, "rows: must be a JSON array");
+        Refused(n => n["methods"]![0]!["minimumPanel"]!["rows"]![0] = 5, "rows[0]: must be a JSON object");
+        Refused(n => n["methods"]![0]!["minimumPanel"]!["rows"]![0]!.AsObject().Remove("location"), "location: missing required field");
+        Refused(n => n["footnotes"] = 5, "footnotes: must be a JSON array");
+
+        InMemoryPackSource source = InMemoryPackSource.FromDirectory(Fx.BraceRoot);
+        Assert.Contains(
+            Fx.Invalid(PackLoader.Load(source.With(BracingPathA, "[]"), "us-zz-brace-a")).Problems,
+            p => p.Message.Contains("must be a JSON object", StringComparison.Ordinal));
+
+        // A condition on a category the base rows do not use still names an input the check then needs.
+        JsonNode node = JsonNode.Parse(InMemoryPackSource.FromDirectory(Fx.BraceRoot).Text(BracingPathA))!;
+        node["factors"]![0]!["when"] = JsonNode.Parse("""{ "input": "seismicDesignCategory", "equals": "ZZ-Q" }""");
+        LoadedPack withCondition = Fx.Loaded(PackLoader.Load(InMemoryPackSource.FromDirectory(Fx.BraceRoot).With(BracingPathA, node.ToJsonString()), "us-zz-brace-a"));
+        Assert.Equal(["seismicDesignCategory"], Assert.IsType<BracingResult.InputMissing>(RulesEngine.CheckBracing(withCondition, Segments(90, Length.Inches(30)))).Inputs);
+    }
+
+    [Fact]
+    [Trait("Feature", "RUL-004")]
+    public void Malformed_bracing_golden_cases_are_file_problems_and_no_data_is_expectable()
+    {
+        LoadedPack a = A;
+        string Golden(string cases) => $$"""{ "pack": "us-zz-brace-a", "section": "ZZ-BRACE.1", "source": "s", "transcriber": { "who": "t", "on": "2026-09-25" }, "cases": [ {{cases}} ] }""";
+        const string Line = "\"lineLength\": \"16ft 0in\", \"wallHeight\": \"8ft 0in\"";
+
+        GoldenFileResult twoKinds = GoldenRunner.Run(new PackLoadResult.Loaded(a), Golden($$"""{ "row": "q.w99", "location": "x", "inputs": { "ultimateWindSpeed": 90, {{Line}}, "segments": [] }, "expect": { "passes": {}, "fails": {} } }"""), "g.json");
+        Assert.Contains(twoKinds.Problems, p => p.Contains("exactly one of passes, fails", StringComparison.Ordinal));
+
+        GoldenFileResult noRow = GoldenRunner.Run(new PackLoadResult.Loaded(a), Golden($$"""{ "location": "x", "inputs": { "ultimateWindSpeed": 90, {{Line}}, "segments": [] }, "expect": { "passes": { "required": "6ft 6in", "provided": "0in", "factors": [] } } }"""), "g.json");
+        Assert.Contains(noRow.Problems, p => p.Contains("names the base row it expects", StringComparison.Ordinal));
+
+        GoldenFileResult badSegment = GoldenRunner.Run(new PackLoadResult.Loaded(a), Golden($$"""{ "row": "q.w99", "location": "x", "inputs": { "ultimateWindSpeed": 90, {{Line}}, "segments": [ { "length": "0in", "method": null } ] }, "expect": { "noData": { "reason": "NoPackSelected" } } }"""), "g.json");
+        Assert.Contains(badSegment.Problems, p => p.Contains("a segment is longer than zero", StringComparison.Ordinal));
+
+        GoldenFileResult tooLong = GoldenRunner.Run(new PackLoadResult.Loaded(a), Golden($$"""{ "row": "q.w99", "location": "x", "inputs": { "ultimateWindSpeed": 90, {{Line}}, "segments": [ { "length": "17ft 0in", "method": null } ] }, "expect": { "noData": { "reason": "NoPackSelected" } } }"""), "g.json");
+        Assert.Contains(tooLong.Problems, p => p.Contains("the segments fit in the line", StringComparison.Ordinal));
+
+        // Wrong expectations fail with why: a wrong reason, a wrong missing list, the wrong kind.
+        GoldenFileResult wrong = GoldenRunner.Run(new PackLoadResult.Loaded(a), Golden(
+            $$"""
+            { "location": "x", "inputs": { "ultimateWindSpeed": 200, {{Line}}, "segments": [] }, "expect": { "outOfScope": { "reason": "NotPrescriptive", "limitRow": null } } },
+            { "location": "x", "inputs": { {{Line}}, "segments": [] }, "expect": { "inputMissing": { "inputs": ["groundSnowLoad"] } } },
+            { "location": "x", "inputs": { "ultimateWindSpeed": 90, {{Line}}, "segments": [] }, "expect": { "noData": { "reason": "NoBracingProvisions" } } },
+            { "row": "q.w99", "location": "x", "inputs": { "ultimateWindSpeed": 90, {{Line}}, "segments": [] }, "expect": { "passes": { "required": "6ft 6in", "provided": "0in", "factors": [] } } },
+            { "location": "x", "inputs": { "ultimateWindSpeed": 90, {{Line}}, "segments": [] }, "expect": { "outOfScope": { "reason": "InputAboveTableBands", "limitRow": null } } },
+            { "location": "x", "inputs": { "ultimateWindSpeed": 200, {{Line}}, "segments": [] }, "expect": { "outOfScope": { "reason": "InputAboveTableBands", "limitRow": "q.w99" } } },
+            { "location": "x", "inputs": { "ultimateWindSpeed": 90, {{Line}}, "segments": [] }, "expect": { "inputMissing": { "inputs": ["ultimateWindSpeed"] } } }
+            """), "g.json");
+        Assert.Equal(7, wrong.Cases.Count(c => !c.Passed));
+        Assert.Contains("expected NotPrescriptive; got InputAboveTableBands", wrong.Cases[0].Detail, StringComparison.Ordinal);
+        Assert.Contains("expected missing [groundSnowLoad]", wrong.Cases[1].Detail, StringComparison.Ordinal);
+        Assert.Contains("expected no data; got", wrong.Cases[2].Detail, StringComparison.Ordinal);
+        Assert.Contains("expected passes; got", wrong.Cases[3].Detail, StringComparison.Ordinal);
+        Assert.Contains("expected out of scope", wrong.Cases[4].Detail, StringComparison.Ordinal);
+        Assert.Contains("right reason but cites 'q.w199', expected 'q.w99'", wrong.Cases[5].Detail, StringComparison.Ordinal);
+        Assert.Contains("expected input missing; got", wrong.Cases[6].Detail, StringComparison.Ordinal);
+
+        // A pack without bracing: the honest no-data answer is what a golden case can expect.
+        LoadedPack ct = Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "RealPacks"), "us-ct-2022"));
+        string noData = Golden($$"""{ "location": "x", "inputs": { "ultimateWindSpeed": 90, {{Line}}, "segments": [] }, "expect": { "noData": { "reason": "NoBracingProvisions" } } }""")
+            .Replace("us-zz-brace-a", "us-ct-2022", StringComparison.Ordinal);
+        GoldenFileResult none = GoldenRunner.Run(new PackLoadResult.Loaded(ct), noData, "ct.json");
+        Assert.True(none.Passed, none.ToString());
+        GoldenFileResult wrongReason = GoldenRunner.Run(new PackLoadResult.Loaded(ct), noData.Replace("NoBracingProvisions", "NoPackSelected", StringComparison.Ordinal), "ct.json");
+        Assert.Contains("expected no data (NoPackSelected); got NoBracingProvisions", Assert.Single(wrongReason.Cases).Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "RUL-005")]
+    public void A_malformed_wall_line_is_a_caller_bug_not_a_result()
+    {
+        Assert.Throws<ArgumentException>(() => new BracedSegment("s", Length.Zero, null));
+        Assert.Throws<ArgumentException>(() => new BracedWallLine(Line16, Length.Zero, ValueList<BracedSegment>.Empty));
+        Assert.Throws<ArgumentException>(() => new BracedWallLine(Length.Inches(10), Height8, ValueList.Of(new BracedSegment("s", Length.Inches(11), null))));
+        Assert.Throws<ArgumentNullException>(() => RulesEngine.CheckBracing(A, null!));
+        Assert.Throws<ArgumentNullException>(() => RulesEngine.For(A).CheckBracing(null!));
+        Assert.Throws<ArgumentNullException>(() => Recompute.Bracing(A, null!));
+        Assert.Throws<ArgumentNullException>(() => Recompute.DiffBracing(null!, ValueList<KeyValuePair<EntityId, BracingResult>>.Empty));
+        Assert.Throws<ArgumentNullException>(() => Recompute.DiffBracing(ValueList<KeyValuePair<EntityId, BracingResult>>.Empty, null!));
+    }
+
+    [Fact]
+    [Trait("Feature", "RUL-008")]
+    public void Every_pair_of_bracing_results_is_classified()
+    {
+        EntityId e = EntityId.New();
+        BracingResult pass = RulesEngine.CheckBracing(A, Segments(90, Length.Inches(72), Length.Inches(72)));
+        BracingResult passMore = RulesEngine.CheckBracing(A, Segments(90, Length.Inches(72), Length.Inches(72), Length.Inches(40)));
+        BracingResult fail = RulesEngine.CheckBracing(A, Segments(90, Length.Inches(30)));
+        BracingResult failMore = RulesEngine.CheckBracing(A, Segments(90, Length.Inches(40)));
+        BracingResult failOther = ((BracingResult.Fails)fail) with { Citation = ((BracingResult.Fails)fail).Citation with { RowLabel = "relabelled" } };
+        BracingResult passOther = ((BracingResult.Passes)pass) with { Citation = ((BracingResult.Passes)pass).Citation with { RowLabel = "relabelled" } };
+        BracingResult above = RulesEngine.CheckBracing(A, Segments(200, Length.Inches(30)));
+        BracingResult tall = RulesEngine.CheckBracing(A, Line(90, Line16, Length.Inches(145), (30, PanelA)));
+        BracingResult missing = RulesEngine.CheckBracing(A, Segments(null, Length.Inches(30)));
+        BracingResult none = RulesEngine.CheckBracing(null, Segments(90, Length.Inches(30)));
+
+        BracingChangeKind Kind(BracingResult before, BracingResult after)
+            => Assert.Single(Recompute.DiffBracing([KeyValuePair.Create(e, before)], [KeyValuePair.Create(e, after)]).Changes).Kind;
+
+        Assert.Equal(BracingChangeKind.PassChanged, Kind(pass, passMore));
+        Assert.Equal(BracingChangeKind.CitationOnly, Kind(pass, passOther));
+        Assert.Equal(BracingChangeKind.FailChanged, Kind(fail, failMore));
+        Assert.Equal(BracingChangeKind.CitationOnly, Kind(fail, failOther));
+        Assert.Equal(BracingChangeKind.PassToFail, Kind(pass, fail));
+        Assert.Equal(BracingChangeKind.ToFail, Kind(above, fail));
+        Assert.Equal(BracingChangeKind.FailToPass, Kind(fail, pass));
+        Assert.Equal(BracingChangeKind.ToPass, Kind(missing, pass));
+        Assert.Equal(BracingChangeKind.OutOfScopeChanged, Kind(above, tall));
+        Assert.Equal(BracingChangeKind.ToOutOfScope, Kind(fail, tall));
+        Assert.Equal(BracingChangeKind.NoAnswerToOutOfScope, Kind(none, tall));
+        Assert.Equal(BracingChangeKind.ToNoAnswer, Kind(tall, missing));
+        Assert.Equal(BracingChangeKind.NoAnswerChanged, Kind(missing, none));
+        Assert.Empty(Recompute.DiffBracing([KeyValuePair.Create(e, fail)], [KeyValuePair.Create(e, fail)]).Changes);
+    }
+
+    /// <summary>Pack A with a SYNTHETIC seismicDesignCategory column (ZZ-A, ZZ-B), four base rows, and a factor on ZZ-B.</summary>
+    private static InMemoryPackSource WithCategory()
+    {
+        InMemoryPackSource source = InMemoryPackSource.FromDirectory(Fx.BraceRoot);
+        JsonNode node = JsonNode.Parse(source.Text(BracingPathA))!;
+        node["inputs"]!.AsArray().Add(JsonNode.Parse("""{ "name": "seismicDesignCategory", "type": "enum", "band": "exact", "values": ["ZZ-A", "ZZ-B"] }"""));
+        node["required"] = JsonNode.Parse(
+            """
+            [ { "id": "q.a.w99", "ultimateWindSpeed": 99, "seismicDesignCategory": "ZZ-A", "length": "4ft 0in", "location": "s" },
+              { "id": "q.a.w199", "ultimateWindSpeed": 199, "seismicDesignCategory": "ZZ-A", "length": "5ft 0in", "location": "s" },
+              { "id": "q.b.w99", "ultimateWindSpeed": 99, "seismicDesignCategory": "ZZ-B", "length": "8ft 0in", "location": "s" },
+              { "id": "q.b.w199", "ultimateWindSpeed": 199, "seismicDesignCategory": "ZZ-B", "length": "10ft 0in", "location": "s" } ]
+            """);
+        node["factors"]!.AsArray().Add(JsonNode.Parse("""{ "id": "f.sdc", "section": "ZZ-BRACE.2", "location": "s", "when": { "input": "seismicDesignCategory", "equals": "ZZ-B" }, "multiply": "3/2" }"""));
+        return source.With(BracingPathA, node.ToJsonString());
     }
 
     private static void Refused(Action<JsonNode> edit, string message)

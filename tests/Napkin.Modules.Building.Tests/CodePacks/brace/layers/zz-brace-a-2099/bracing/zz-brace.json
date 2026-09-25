@@ -14,7 +14,7 @@
       "type": "mph",
       "band": "upper-bound",
       "domain": {
-        "min": 0,
+        "min": 1,
         "max": 199
       }
     }

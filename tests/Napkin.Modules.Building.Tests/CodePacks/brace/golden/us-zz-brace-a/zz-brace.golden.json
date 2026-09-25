@@ -213,6 +213,26 @@
           ]
         }
       }
+    },
+    {
+      "location": "synthetic p. 3, row 1",
+      "inputs": {
+        "ultimateWindSpeed": 0,
+        "lineLength": "16ft 0in",
+        "wallHeight": "8ft 0in",
+        "segments": [
+          {
+            "length": "60in",
+            "method": "zz-panel"
+          }
+        ]
+      },
+      "expect": {
+        "outOfScope": {
+          "reason": "InputBelowTableBands",
+          "limitRow": "q.w99"
+        }
+      }
     }
   ]
 }

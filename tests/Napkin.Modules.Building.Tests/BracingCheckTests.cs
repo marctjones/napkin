@@ -140,6 +140,10 @@ public class BracingCheckTests
         Assert.Equal((Panel, AssignmentOrigin.Merged), (first.Method, first.Origin));
         Assert.Empty(BracingCheck.Unassigned([plan.Check], [merged.Check]));
 
+        // Deleting Window 2 instead merges the last two segments towards the wall's end the same way.
+        WallSegment last = plan.Without(plan.Two).Line.Segments[^1];
+        Assert.Equal((plan.One, (EntityId?)null, Panel, AssignmentOrigin.Merged), (last.From, last.To, last.Method, last.Origin));
+
         // Undo is the old sketch: Window 1 back, both of its neighbours assigned exactly again.
         Assert.All(plan.Line.Segments, s => Assert.Equal(AssignmentOrigin.Assigned, s.Origin));
 
@@ -205,6 +209,7 @@ public class BracingCheckTests
             "The loaded pack CT 2022 has no wall-bracing provisions, so napkin cannot check this wall line's bracing. Nothing is guessed: add them to the pack directory from your copy of the code (docs/rules-engine.md). Where to add tables: docs/rules-engine.md",
             words.Headline);
         Assert.Empty(BracingCheck.Methods(shipped.Loaded.Single()));
+        Assert.Empty(BracingCheck.Methods(null));
     }
 
     [Fact]
@@ -225,5 +230,75 @@ public class BracingCheckTests
             (switched with { Sketch = switched.Sketch }).Assign(1, Board).Result());
         Assert.Contains("method 'zz-board' is not one of ZZ BRACE B's methods", board.Working.Segments[1].Why, StringComparison.Ordinal);
         Assert.Equal([Panel], BracingCheck.Methods(Packs.Resolve(B).Pack).Select(m => m.Id));
+    }
+
+    [Fact]
+    [Trait("Feature", "RUL-008")]
+    public void Every_kind_of_bracing_change_is_said_in_plain_words()
+    {
+        Plan plan = AllPanels(Design());
+
+        // Still passing with other lengths: Window 1 at 5'-0" leaves 36" between: 96" (8'-0").
+        Plan wider = plan.Opening(plan.One, 30, In(60));
+        Assert.Equal(["Wall 1's braced line now passes, braced 8'-0\" of 6'-6\" required (ZZ-BRACE.1)."], BracingCheck.Changes([plan.Check], [wider.Check]));
+
+        // A 12'-1" wall is beyond the section; from there, no code at all can no longer be checked.
+        Plan tall = plan with { Sketch = plan.Sketch.WithEntity(plan.Sketch.Find<Box>(plan.Wall)! with { Depth = In(145) }) };
+        Assert.Equal(["Wall 1's bracing is now beyond Section ZZ-BRACE.1: get it engineered."], BracingCheck.Changes([plan.Check], [tall.Check]));
+        Plan none = tall with { Sketch = tall.Sketch with { Code = null } };
+        Assert.Equal(
+            ["Wall 1's bracing can no longer be checked: no data to check it against."],
+            BracingCheck.Changes([tall.Check], [none.Check]));
+        Plan missing = none with { Sketch = none.Sketch with { Code = new CodeChoice("us-zz-gone", 1, CodeMode.Locked, new DateOnly(2026, 9, 25)) } };
+        Assert.Equal(["Wall 1's bracing still cannot be checked: no data to check it against."], BracingCheck.Changes([none.Check], [missing.Check]));
+        Plan unwinded = plan with { Sketch = plan.Sketch with { Site = SiteValues.NotEntered } };
+        Assert.Equal(
+            ["Wall 1's bracing can no longer be checked: not checked: the wind speed not entered."],
+            BracingCheck.Changes([plan.Check], [unwinded.Check]));
+
+        // The same lengths under another pack (a copy of A named ZZ BRACE C): said as unchanged, now under C.
+        LoadedPack a = Packs.Resolve(A).Pack!;
+        LoadedPack c = a with { Manifest = a.Manifest with { Id = "us-zz-brace-c", Adoption = a.Manifest.Adoption with { ShortName = "ZZ BRACE C" } } };
+        CodePacks both = new([new PackLoadResult.Loaded(a), new PackLoadResult.Loaded(c)]);
+        CodeChoice onC = new("us-zz-brace-c", 1, CodeMode.Locked, new DateOnly(2026, 9, 25));
+        WallBracingCheck underA = Assert.Single(BracingCheck.Of(plan.Sketch, both));
+        WallBracingCheck underC = Assert.Single(BracingCheck.Of(plan.Sketch with { Code = onC }, both));
+        Assert.Equal(
+            ["Wall 1's bracing is unchanged, passes, braced 10'-0\" of 6'-6\" required (ZZ-BRACE.1), now under ZZ BRACE C."],
+            BracingCheck.Changes([underA], [underC]));
+
+        Plan bare = Design();
+        Assert.Equal(
+            ["Wall 1's bracing is unchanged, SHORT by 6'-6\", braced 0\" of 6'-6\" required (ZZ-BRACE.1), now under ZZ BRACE C."],
+            BracingCheck.Changes(BracingCheck.Of(bare.Sketch, both), BracingCheck.Of(bare.Sketch with { Code = onC }, both)));
+
+        // A relabelled segment under the same code is not announced; a wall new since before is not a change.
+        Assert.Empty(BracingCheck.Changes([plan.Check], [plan.Check]));
+        Assert.Empty(BracingCheck.Unassigned([], [plan.Check]));
+        Assert.Equal("beyond Section ZZ-BRACE.1: get it engineered", BracingCheck.Short(tall.Result()));
+    }
+
+    [Fact]
+    [Trait("Feature", "BLD-005")]
+    public void A_merge_through_a_segment_that_was_never_braced_is_not_braced()
+    {
+        // Only the first segment braced; deleting Window 1 merges it with the unbraced middle one.
+        Plan plan = Design().Assign(0, Panel);
+        WallSegment merged = plan.Without(plan.One).Line.Segments[0];
+        Assert.Null(merged.Method);
+        Assert.Equal(AssignmentOrigin.None, merged.Origin);
+    }
+
+    [Fact]
+    [Trait("Feature", "BLD-005")]
+    public void The_words_name_every_missing_input_and_keep_an_explanation_without_the_engineer_sentence()
+    {
+        AdoptedCodeRef code = Packs.Resolve(A).Pack!.Code;
+        BracingResult.InputMissing two = new(ValueList.Of("ultimateWindSpeed", "seismicDesignCategory"), "ZZ-BRACE.1", code, "x");
+        Assert.StartsWith("Not checked: the wind speed, the seismic design category are not entered", BracingCheck.Words(two).Headline, StringComparison.Ordinal);
+        Assert.Equal("not checked: the wind speed, the seismic design category not entered", BracingCheck.Short(two));
+
+        BracingResult.OutOfScope plain = Assert.IsType<BracingResult.OutOfScope>(AllPanels(Design(height: In(145))).Result()) with { Explanation = "A limit." };
+        Assert.Equal("This wall line is beyond what Section ZZ-BRACE.1 covers: A limit. napkin stops here: get the bracing engineered.", BracingCheck.Words(plain).Headline);
     }
 }

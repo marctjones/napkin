@@ -270,11 +270,6 @@ internal static class BracingReader
             }
 
             o.Done();
-            if (length is { } l && l < Length.Zero)
-            {
-                problems.Add(o.Where, $"{o.Child("length")}: a required length is not negative.");
-            }
-
             if (id is not null && !ids.Add(id))
             {
                 problems.Add(o.Where, $"{path}: row id '{id}' appears twice.");
@@ -434,13 +429,8 @@ internal static class BracingReader
         if (hasAdd)
         {
             JsonElement? e = o.Get("add");
+            // A negative length is refused by the length reader itself.
             Length? add = e is null ? null : JsonObj.ReadLength(e.Value, o.Child("add"), o.Where, o.Problems);
-            if (add is { } a && a < Length.Zero)
-            {
-                o.Problems.Add(o.Where, $"{o.Child("add")}: an added length is not negative.");
-                return null;
-            }
-
             return add is null ? null : new BracingFactor(id, section, when, null, add, source);
         }
 

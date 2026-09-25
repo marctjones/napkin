@@ -82,7 +82,7 @@ public static class BracingCheck
                 Details(o.Limit, null),
                 string.Empty),
             BracingResult.InputMissing m => new CheckWords(
-                $"Not checked: {string.Join(", ", m.Inputs.Select(CodeCheck.Input))} {(m.Inputs.Count == 1 ? "is" : "are")} not entered, and napkin never assumes a value. "
+                $"Not checked: {Named(m.Inputs)} {(m.Inputs.Count == 1 ? "is" : "are")} not entered, and napkin never assumes a value. "
                 + $"Enter the site values under {CodeCheck.WhereToChoose}.",
                 $"Section {m.Section}, {m.Code}",
                 string.Empty,
@@ -97,7 +97,7 @@ public static class BracingCheck
         BracingResult.Passes p => $"passes, braced {Show(p.Provided)} of {Show(p.Required)} required ({p.Citation.Table})",
         BracingResult.Fails f => $"SHORT by {Show(f.Shortfall)}, braced {Show(f.Provided)} of {Show(f.Required)} required ({f.Citation.Table})",
         BracingResult.OutOfScope o => $"beyond Section {o.Limit.Table}: get it engineered",
-        BracingResult.InputMissing m => $"not checked: {string.Join(", ", m.Inputs.Select(CodeCheck.Input))} not entered",
+        BracingResult.InputMissing m => $"not checked: {Named(m.Inputs)} not entered",
         _ => "no data to check it against",
     };
 
@@ -161,12 +161,9 @@ public static class BracingCheck
     private static bool Announced(BracingChange change)
         => change.Kind != BracingChangeKind.CitationOnly || CodeOf(change.Before) != CodeOf(change.After);
 
-    private static AdoptedCodeRef? CodeOf(BracingResult result) => result switch
-    {
-        BracingResult.Passes p => p.Citation.Code,
-        BracingResult.Fails f => f.Citation.Code,
-        _ => null,
-    };
+    /// <summary>The code a passing or failing result was computed under (the only results a citation-only change is between).</summary>
+    private static AdoptedCodeRef CodeOf(BracingResult result)
+        => result is BracingResult.Passes p ? p.Citation.Code : ((BracingResult.Fails)result).Citation.Code;
 
     private static string Sentence(string wall, BracingChange change) => change.Kind switch
     {
@@ -177,7 +174,7 @@ public static class BracingCheck
         BracingChangeKind.ToOutOfScope or BracingChangeKind.NoAnswerToOutOfScope or BracingChangeKind.OutOfScopeChanged =>
             $"{wall}'s bracing is now {Short(change.After)}.",
         BracingChangeKind.ToNoAnswer => $"{wall}'s bracing can no longer be checked: {Short(change.After)}.",
-        BracingChangeKind.CitationOnly => $"{wall}'s bracing is unchanged, {Short(change.After)}, now under {CodeOf(change.After)!.ShortName}.",
+        BracingChangeKind.CitationOnly => $"{wall}'s bracing is unchanged, {Short(change.After)}, now under {CodeOf(change.After).ShortName}.",
         _ => $"{wall}'s bracing still cannot be checked: {Short(change.After)}.",
     };
 
@@ -201,4 +198,6 @@ public static class BracingCheck
     }
 
     private static string Show(Length length) => CellValue.Of(length).ToString();
+
+    private static string Named(IEnumerable<string> inputs) => string.Join(", ", inputs.Select(input => CodeCheck.Input(input)));
 }
