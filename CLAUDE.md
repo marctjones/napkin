@@ -29,7 +29,16 @@ is worth naming — nothing is tagged or published without that.
 
 ## Build and test locally — do this, don't skip to CI
 
-Marc wants local builds run as part of the work, not deferred to CI:
+Marc wants local builds run as part of the work, not deferred to CI. `tools/scripts/gate.sh` runs
+the build/test/ratchet sequence below in one call and exits non-zero if the build has errors, any
+test fails, or ratchet check fails (it also prints a one-line pass/fail summary); prefer it over
+retyping the commands by hand:
+
+```sh
+tools/scripts/gate.sh
+```
+
+which runs, in order:
 
 ```sh
 dotnet build napkin.sln --configuration Debug
@@ -37,8 +46,14 @@ dotnet test napkin.sln --configuration Debug --no-build \
   --settings ratchet/coverage.runsettings --collect:"XPlat Code Coverage" \
   --logger trx --results-directory artifacts/test-results
 dotnet run --project tools/Napkin.Tools -- ratchet check
-dotnet run --project tools/Napkin.Tools -- scorecard stubs   # only if you added/changed catalog features or tests with new [Trait("Feature",...)]
 ```
+
+Run `dotnet run --project tools/Napkin.Tools -- scorecard stubs` separately, only if you added or
+changed catalog features or tests with a new `[Trait("Feature",...)]`. `tools/scripts/gui-ratchet.sh`
+raises only the GUI workflow floor while restoring the committed coverage floors (for a GUI-only
+landing). `tools/scripts/mutate.sh` mutation-tests a guard: it applies a one-shot text
+substitution to a file, runs a command that should fail with the mutation applied, then always
+restores the file with `git checkout`.
 
 In a **worktree-isolated subagent**, prefix builds with `nice -n 19`; a chained/complex command
 (`nice … && …`) or `nice … dotnet test …` may be refused by the sandbox guard as "too complex to
@@ -57,10 +72,10 @@ running isolated, not a process choice, and it doesn't reintroduce PRs. The step
 
 1. Branch from `main` (or from wherever your task says), in your own worktree if you're a
    background agent.
-2. Build, test with coverage, `ratchet check` **locally** — this is now the primary gate, since
-   there is no PR checkmark to wait on. Don't skip it or weaken it because it's no longer a
-   published check.
-3. Commits end with `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`.
+2. Build, test with coverage, `ratchet check` **locally**, via `tools/scripts/gate.sh` — this is
+   now the primary gate, since there is no PR checkmark to wait on. Don't skip it or weaken it
+   because it's no longer a published check.
+3. Commits end with `Co-Authored-By: <the model that did the work> <noreply@anthropic.com>`.
 4. **Commit regularly, in sensible groups, as you go — don't let a pile of uncommitted work
    accumulate.** A commit doesn't have to be a finished, fully-verified slice; a coherent step
    (the format-layer change, the model type, the fixture update) each landing as its own commit is
@@ -74,8 +89,13 @@ running isolated, not a process choice, and it doesn't reintroduce PRs. The step
 6. Whoever integrates: `git fetch`, merge `main` into the branch if it moved, rebuild/retest,
    bump the version in `Directory.Build.props` in that same step, then merge the branch into
    `main` with a real merge commit (not squash — commit history documents the process) and
-   `git push origin main` directly. No `gh pr create`, no waiting for a PR's CI check — local
-   verification is what gates the merge. Push to `main` still triggers CI (`ci.yml`'s
+   `git push origin main` directly. `tools/scripts/land.sh <branch> "<what>"` does exactly this:
+   it refuses if the working tree is dirty or if `origin/main` moved since the branch was cut,
+   bumps exactly one minor, merges `--no-ff`, pushes, and deletes the branch. It reads the
+   co-author trailer from `$NAPKIN_COAUTHOR`
+   (e.g. `export NAPKIN_COAUTHOR='Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>'`).
+   No `gh pr create`, no waiting for a PR's CI check — local verification is what gates the merge.
+   Push to `main` still triggers CI (`ci.yml`'s
    `push: branches: [main]`), which is a secondary, after-the-fact safety net (it's caught real
    platform-specific bugs before, e.g. a Windows-only CRLF issue) — check it after pushing and fix
    forward with a small follow-up commit if it's red, rather than pretending it didn't happen.
