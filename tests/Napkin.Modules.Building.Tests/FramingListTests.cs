@@ -548,4 +548,40 @@ public class FramingListTests
         Assert.Equal(In(1, 1, 2), stud.Thickness);
         Assert.Equal([Assert.Single(Wall.All(Sample())).Id], stud.Members);
     }
+
+    /// <summary>
+    /// Review §2.2 (#171): the unsized header is a cut-list row with no stock and
+    /// <see cref="Length.Zero"/> thickness. Prove neither the shopping list nor the cut layout ever
+    /// turns it into a board, a sheet, or board feet — it is reported, on its own, as unsized.
+    /// </summary>
+    [Fact]
+    public void TheUnsizedHeaderIsNeverBoughtOrCountedForBoardFeet()
+    {
+        ImmutableArray<CutListRow> rows = FramingList.CutRows(FramingList.Of(Sample(), Library));
+        CutListRow headerRow = Assert.Single(rows, row => row.Label == "Wall header");
+
+        // The row itself says it is unsized, not a board with a zero size.
+        Assert.Null(headerRow.Stock);
+        Assert.Equal(Length.Zero, headerRow.Thickness);
+        Assert.Equal("header, not yet sized", headerRow.Material);
+
+        ImmutableArray<ShoppingListRow> shopping = ShoppingList.Of(rows);
+        ShoppingListRow headerShopping = Assert.Single(shopping, row => row.Kind == ShoppingListKind.NothingToBuy);
+
+        Assert.Equal("header, not yet sized", headerShopping.Material);
+        Assert.Null(headerShopping.Stock);
+        Assert.Equal("no stock chosen, so nothing is bought for it", headerShopping.Note);
+
+        // Never a board, a sheet, or board feet: nothing measurable is bought for it.
+        Assert.Empty(headerShopping.Boards);
+        Assert.Equal(0, headerShopping.Sheets);
+        Assert.Equal(Int128.Zero, headerShopping.BoughtCubicUnits);
+        Assert.Equal(Int128.Zero, headerShopping.UsedCubicUnits);
+        Assert.Equal(0, headerShopping.Count);
+        Assert.Equal(string.Empty, headerShopping.BuyText);
+
+        // Structural: ShoppingList.Of only ever hands CutLayout.Boards the rows whose Stock is a
+        // LumberStock, so a Stock: null row (the unsized header) can never reach it.
+        Assert.DoesNotContain(rows, row => row.Label == "Wall header" && row.Stock is LumberStock);
+    }
 }
