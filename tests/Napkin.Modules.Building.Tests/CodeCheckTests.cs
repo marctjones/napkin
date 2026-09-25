@@ -476,4 +476,24 @@ public class CodeCheckTests
         WallFraming refused = Assert.Single(FramingList.Of(sketch, Library, new FramingOptions { KingsPerSide = _ => 0 }));
         Assert.Contains("Window 1: an opening needs at least one king stud each side", refused.Problems);
     }
+
+    [Fact]
+    [Trait("Feature", "RUL-002")]
+    public void An_interpolated_header_says_so_on_its_own_line_and_shows_the_working()
+    {
+        // CodePacks/three (SYNTHETIC): (1) 2x8 is 6'-0" at 30 psf and 4'-0" at 50 psf; at 40 psf, 5'-0".
+        LoadedPack pack = Assert.Single(CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "CodePacks", "three")]).Loaded);
+        SiteInputs site = CodeCheck.Site(SiteValues.NotEntered with { GroundSnowLoadPsf = 40 });
+        HeaderResult result = RulesEngine.SizeHeader(pack, new HeaderRequest("zz-roof", WallKind.ExteriorBearing, In(60), site));
+        CheckWords words = CodeCheck.Words(result, Library);
+        Assert.Equal("Header (1) 2x8, 1 jack stud and 1 king stud each side.", words.Headline);
+        Assert.Equal("Interpolated between the 30 psf row (i.s30.a) and the 50 psf row (i.s50.a) (ZZ INTERP footnote e, p. 9)", words.Interpolation);
+        Assert.Contains("Interpolation: groundSnowLoad 40 psf is between the 30 psf and 50 psf columns", words.Details, StringComparison.Ordinal);
+
+        HeaderResult plain = RulesEngine.SizeHeader(pack, new HeaderRequest("zz-roof", WallKind.ExteriorBearing, In(60), CodeCheck.Site(SiteValues.NotEntered with { GroundSnowLoadPsf = 30 })));
+        Assert.Equal(string.Empty, CodeCheck.Words(plain, Library).Interpolation);
+
+        HeaderResult missing = RulesEngine.SizeHeader(pack, new HeaderRequest("zz-roof", WallKind.ExteriorBearing, In(60), CodeCheck.Site(SiteValues.NotEntered with { GroundSnowLoadPsf = 25 })));
+        Assert.StartsWith("Not checked: the roof live load is not entered", CodeCheck.Words(missing, Library).Headline, StringComparison.Ordinal);
+    }
 }

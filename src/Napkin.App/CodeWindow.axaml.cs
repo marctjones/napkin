@@ -88,13 +88,16 @@ public partial class CodeWindow : Window
     /// <summary>The ground snow load field.</summary>
     public TextBox SnowField => SnowBox;
 
+    /// <summary>The roof live load field (psf), asked for only when a table's footnote needs it.</summary>
+    public TextBox RoofLiveLoadField => RoofLiveBox;
+
     /// <summary>The building width field.</summary>
     public TextBox WidthField => WidthBox;
 
     /// <summary>The apply button for the site values.</summary>
     public Button ApplySiteControl => ApplySiteButton;
 
-    private IEnumerable<TextBox> SiteBoxes => [SnowBox, WindBox, SeismicBox, FrostBox, WidthBox, SourceBox];
+    private IEnumerable<TextBox> SiteBoxes => [SnowBox, WindBox, SeismicBox, FrostBox, WidthBox, RoofLiveBox, SourceBox];
 
     /// <summary>
     /// A pack as the picker lists it (#19): "&lt;shortName&gt; — &lt;baseCode&gt;, in force &lt;from&gt;[ to
