@@ -70,7 +70,7 @@ anything changes; nothing is stored. The question is:
 | Input | From |
 |---|---|
 | the code | the project's adopted code (**Project → Adopted code and site…**): a pack napkin found, locked to one revision or following the newest installed one |
-| which table | the pack's header table for exterior bearing walls, the only walls napkin draws yet |
+| which table | the wall's **Side** in the part panel: the pack's exterior-bearing header table for an exterior wall, its interior-bearing table for an interior one (a pack without that table says No data, naming it) |
 | what the wall supports | the wall's **Supports** in the part panel: one of the values the table itself declares (dashes read as spaces), never assumed |
 | header span | the opening's rough width |
 | site values | the project's ground snow load, wind speed, seismic design category, frost depth and building width, typed in the same window; an empty field is "not entered" |
@@ -174,6 +174,46 @@ that changed, newly flagged first. A locked project does not change pack by itse
 back and says so again. (The saved result snapshot and the open-time comparison with an installed
 newer revision are not built.)
 
+### Side, bearing and the header you choose
+
+Two per-wall inputs, **entered, never defaulted** ([`design/renovation-sketches.md`](design/renovation-sketches.md) §4.3),
+under **Side** and **Bearing** in the wall's panel:
+
+| Side | Bearing | What napkin does |
+|---|---|---|
+| exterior | bearing | asks the exterior-bearing table, as above |
+| interior | bearing | asks the interior-bearing table |
+| any | not bearing | **Not checked**: "Wall 1 is marked not bearing, so napkin does not size this header from the code. Header: (2) 2x6, your choice." The wall's **Header** picker (one to three plies of a library 2x) is the header over every opening in the wall — your choice, not a code result — framed with one jack and one king each side, said to be napkin's placeholder counts. No header chosen: it buys nothing and says so |
+| not said | any | **Input missing**: "Say whether Wall 1 is exterior or interior (Part panel)." |
+| any | not said | **Input missing**: "Say whether Wall 1 is bearing (Part panel)." |
+
+The bracing check runs on every wall whatever its side or bearing. A bearing wall marked demolish
+says "Removing a bearing wall needs an engineer; napkin does nothing here."
+
+## Existing, new and demolished walls
+
+Every wall and opening is **existing**, **new** or **demolish** (**Edit → Phase**, or the Phase
+picker by the panel's Apply). Every check runs on the building as it will be — existing and new —
+so a demolished opening is not in its wall's line, and a demolished wall has no line.
+
+**The framing diff** (`FramingDiff.Of`) frames each wall as it will be and as it is and compares
+the pieces by role, length and stock: what the wall will have beyond what it has is **new
+material**, bought through the Framing section; what it has beyond what it will have **comes out**,
+listed under the shopping list's **Demolition**. A new wall is all new; a demolished wall all
+out; an existing wall with no change is on neither list; a window closed up (its opening marked
+demolish) lists the studs that fill it as new and its header, kings, jacks, sill and cripples as
+coming out. The frame of an existing wall is napkin's regular layout, not a survey of the real
+wall, so every count out of one says "assuming a regular 16" layout in the existing wall". Put a
+new window in an existing wall and the message bar says the diff with the edit: "In Wall 1
+(existing): new — 2 king studs, 2 jack studs, header, sill, 4 cripples; out — 2 studs, assuming a
+regular 16" layout in the existing wall."
+
+**Corners.** Two walls join when an end of one lies on a long face of the other, or two ends
+meet, or they overlap at a corner — decided from the boxes' exact corners, with no tolerance. The
+plan draws a joined pair with no seam between them. Each wall is still framed alone: no corner
+studs, blocking or nailers are counted. An opening whose width reaches into a joined wall's
+thickness is refused: "it reaches the corner with Wall 2".
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code
@@ -188,9 +228,9 @@ newer revision are not built.)
 ## Limits
 
 Plates longer than the longest stocked length are refused by the shopping list, not spliced.
-Corners and intersecting walls are not framed as corners: each wall is framed alone. No blocking,
-no sheathing, no fastening schedule. Every wall is checked as an exterior bearing wall; interior
-bearing walls and girders are not here. Each wall is its own braced wall line: lines made of
+Corners and intersecting walls are not framed as corners: each wall is framed alone, and no corner
+studs are counted. No blocking, no sheathing, no fastening schedule. Girders are not here; removing
+a bearing wall gets no beam, post or check. Each wall is its own braced wall line: lines made of
 several walls, spacing between lines, and storeys are not modelled. A header member the
 materials library does not carry is said and not bought. Whether the plies fit the wall's
 thickness is not checked. A pack's newer revision on disk is used by a following project at once;
