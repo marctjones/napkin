@@ -22,8 +22,11 @@ public sealed record PlannedBoard(int Number, Length StockLength, ImmutableArray
     /// <summary>The pieces' lengths added up.</summary>
     public Length PiecesLength => Pieces.Aggregate(Length.Zero, (sum, piece) => sum + piece.Length);
 
-    /// <summary>The kerf spent on this board: <see cref="Cuts"/> times the kerf.</summary>
-    public Length KerfTotal => Kerf * Cuts;
+    /// <summary>
+    /// The kerf spent on this board: <see cref="Cuts"/> times the kerf, except that the last cut of a
+    /// board whose remainder is thinner than the kerf can only take what is left of the board.
+    /// </summary>
+    public Length KerfTotal => Length.Min(Kerf * Cuts, StockLength - PiecesLength);
 
     /// <summary>The board's used length: the pieces and the kerf.</summary>
     public Length Used => PiecesLength + KerfTotal;
@@ -101,9 +104,9 @@ public sealed record CutLayoutPlan(Length Kerf, ImmutableArray<StockLayout> Stoc
 /// <strong>Kerf.</strong> Each saw cut removes one kerf. A board with n pieces takes n cuts when an
 /// offcut remains (n-1 separate the pieces and one separates the last piece from the offcut), and
 /// n-1 cuts when the pieces and their kerfs exactly fill the board (the last piece ends at the
-/// board's end). A board of length L holds its pieces when pieces + kerf x cuts &lt;= L under that
-/// rule; so a sliver too thin to take the last cut (0 &lt; L - pieces - kerf x (n-1) &lt; kerf) does
-/// not fit. The piece length is the cut-list row's length (a mitred piece's long point). The kerf is
+/// board's end). A board of length L holds its pieces when pieces + kerf x (n-1) &lt;= L: the kerfs
+/// between the pieces must fit, and the last cut may take a kerf or, when less than a kerf of board
+/// is left, whatever is left (the blade runs out through the end of the board). The piece length is the cut-list row's length (a mitred piece's long point). The kerf is
 /// a practice default the person sets, not a sourced fact; the stocked lengths come only from the
 /// materials library. Sheet goods are not laid out (2-D nesting is a later issue).
 /// </para>
@@ -133,14 +136,9 @@ public static class CutLayout
     /// <returns>Whether they fit.</returns>
     public static bool TryFit(Length sum, int count, Length kerf, Length boardLength, out int cuts)
     {
-        if (sum + (kerf * (count - 1)) == boardLength)
-        {
-            cuts = count - 1;
-            return true;
-        }
-
-        cuts = count;
-        return sum + (kerf * count) <= boardLength;
+        Length tight = sum + (kerf * (count - 1));
+        cuts = tight == boardLength ? count - 1 : count;
+        return tight <= boardLength;
     }
 
     /// <summary>Lays out the lumber in a cut list's rows.</summary>
@@ -345,7 +343,8 @@ public static class CutLayout
         if (plan.AllBoards.Any())
         {
             long tenths = plan.WasteTenthsOfPercent;
-            lines.Add($"Total: {plan.AllBoards.Count()} boards, {Feet(plan.BoughtLength)} bought, {Feet(plan.PiecesLength)} of pieces, "
+            int total = plan.AllBoards.Count();
+            lines.Add($"Total: {total} {(total == 1 ? "board" : "boards")}, {Feet(plan.BoughtLength)} bought, {Feet(plan.PiecesLength)} of pieces, "
                       + $"waste {Feet(plan.WasteLength)} ({tenths / 10}.{tenths % 10}%) counting offcuts and kerf");
         }
 
