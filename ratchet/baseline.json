@@ -22,8 +22,8 @@
       "branch": 99.82
     },
     "Napkin.Modules.Editing": {
-      "line": 98.12,
-      "branch": 93.66
+      "line": 98.14,
+      "branch": 93.7
     },
     "Napkin.Modules.Furniture": {
       "line": 100,
@@ -31,7 +31,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 91,
+    "workflowsPassed": 92,
     "workflowIds": [
       "CVS-011",
       "CVS-012",
@@ -122,6 +122,7 @@
       "GUI-VIEW-13",
       "GUI-VIEW-14",
       "GUI-VIEW-15",
+      "GUI-VIEW-16",
       "GUI-WALL-01",
       "GUI-WALL-02"
     ]
