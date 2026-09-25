@@ -424,6 +424,73 @@ public class DrawWorkflows
         app.SaveFrame("conflict-resolved");
     });
 
+    [GuiWorkflow("CVS-012")]
+    public void Snap_two_parts_flush_and_hover_the_glyph_on_their_shared_edge_for_its_sentence() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        NewSheet(app, window);
+
+        // GUI-DRAW-04's two parts: the left one typed 10 1/2" wide so its east edge is off the grid,
+        // then the right one dragged until its west edge snaps onto that edge.
+        EntityId left = DrawAPart(app, window, Point2.Inches(-20, -6), Point2.Inches(-10, 6));
+        DrawAPart(app, window, Point2.Inches(-4, -2), Point2.Inches(6, 10));
+        app.Click(At(window, Point2.Inches(-15, 0)));
+        app.Click(LabelAt(window, left, SizeAxis.Width));
+        app.Press(Key.A, AppDriver.CommandModifier);
+        app.Type("10 1/2\"");
+        app.Press(Key.Enter);
+        app.Expect("with nothing related yet, the plan marks nothing", () => Assert.Empty(window.Canvas.RelationshipGlyphLayer.Placed));
+
+        Point from = At(window, Point2.Inches(1, 4));
+        app.Click(from);
+        app.PressAt(from);
+        app.DragTo(new Point(from.X - 40, from.Y));
+        app.DragTo(new Point(from.X - 85, from.Y));
+        app.ReleaseAt(new Point(from.X - 85, from.Y));
+
+        RelationshipId flush = default;
+        app.Expect("the snap made a flush, and the plan marks it halfway along the stretch the parts share", () =>
+        {
+            flush = Assert.Single(window.CurrentDesign!.Sketch.Relationships.Values.OfType<Flush>()).Id;
+            PlacedRelationshipGlyph glyph = Assert.Single(window.Canvas.RelationshipGlyphLayer.Placed);
+            Assert.Equal(flush, glyph.Glyph.Id);
+            Assert.Equal(GlyphKind.Flush, glyph.Glyph.Kind);
+
+            // Hand-derived: the left part is y -6 to 6 and the moved right one y -2 to 10, so they
+            // share x -9 1/2 from y -2 to 6, whose middle is y 2.
+            Point expected = window.Canvas.View.ToScreen(-9.5, 2);
+            Assert.Equal(expected.X, glyph.At.X, 6);
+            Assert.Equal(expected.Y, glyph.At.Y, 6);
+        });
+
+        Point onGlyph = InWindow(window, window.Canvas.RelationshipGlyphLayer.Placed[0].At);
+        app.MoveTo(onGlyph);
+        app.MoveTo(onGlyph + new Point(1, 1));
+        app.SaveFrame("flush-glyph");
+        app.Expect("hovering the glyph shows the very sentence its row in the relationship list says", () =>
+        {
+            string row = window.Editor.RelationshipEntries().Single(entry => entry.Id == flush).Text;
+            Assert.Equal(row, Avalonia.Controls.ToolTip.GetTip(window.Canvas));
+            Assert.Contains(row, window.RelationshipsOnScreen);
+            Assert.Contains("flush with", row, StringComparison.Ordinal);
+        });
+
+        // Empty paper well left of and below both parts, on the canvas whatever the window's size.
+        app.MoveTo(At(window, Point2.Inches(-25, -14)));
+        app.Expect("off the glyph, on empty paper, the drawing has no tooltip", () =>
+        {
+            Assert.Null(window.Canvas.HoveredPart);
+            Assert.Null(Avalonia.Controls.ToolTip.GetTip(window.Canvas));
+        });
+
+        app.Press(Key.Z, AppDriver.CommandModifier);
+        app.Expect("undo takes the snap back, and its glyph with it", () =>
+        {
+            Assert.Empty(window.CurrentDesign!.Sketch.Relationships.Values.OfType<Flush>());
+            Assert.Empty(window.Canvas.RelationshipGlyphLayer.Placed);
+        });
+    });
+
     static Point CentreOf(Visual root, Visual control) =>
         control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), root)
         ?? throw new InvalidOperationException("The control is not in the window's visual tree.");

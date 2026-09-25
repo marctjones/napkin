@@ -978,8 +978,8 @@
       "area": "ui",
       "title": "Relationship glyphs show their sentence on hover",
       "acceptance": "Hovering a relationship glyph on the canvas (e.g. a flush indicator) shows the same plain-language sentence as its row in the relationship list.",
-      "milestone": "M2",
-      "issue": 62,
+      "milestone": "M6",
+      "issue": 156,
       "kind": "workflow"
     },
     {
