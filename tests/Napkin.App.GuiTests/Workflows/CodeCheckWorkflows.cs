@@ -43,7 +43,7 @@ public class CodeCheckWorkflows
             Assert.Contains(code.PackRows, row => row.StartsWith("ZZ FRAME — IRC 2099, in force Jan 1, 2099 (pack us-zz-frame rev 1)", StringComparison.Ordinal));
             Assert.Contains(code.PackRows, row => row.StartsWith("ZZ OTHER — IRC 2099", StringComparison.Ordinal));
             Assert.All(code.PackRows.Skip(1), row => Assert.EndsWith("(UNREVIEWED)", row, StringComparison.Ordinal));
-            Assert.Equal("No code selected: choose one under Project → Adopted code and site.", code.StatusText);
+            Assert.Equal(CodeCheck.NoCodeSelectedText, code.StatusText);
         });
 
         PickPack(site, code, "ZZ FRAME");
@@ -157,6 +157,8 @@ public class CodeCheckWorkflows
         app.Expect("with the snow load cleared nothing is assumed: the window says which input is missing and where", () =>
         {
             Assert.Null(window.CurrentDesign!.Sketch.Site.GroundSnowLoadPsf);
+            // The exact wording is the thing under test here (CodeCheck.cs composes it from the
+            // missing input's own name), not just duplicated from a constant.
             Assert.Equal(
                 "Not checked: the ground snow load is not entered, and napkin never assumes a value. Enter the site values under Project → Adopted code and site.",
                 window.CodeCheckText);
@@ -245,7 +247,7 @@ public class CodeCheckWorkflows
         app.Expect("the window's check is the engine's honest no-data text and where to add tables, never a size", () =>
         {
             Assert.StartsWith("The loaded pack CT 2022 has no header table for exterior-bearing walls, so napkin cannot size this header.", window.CodeCheckText, StringComparison.Ordinal);
-            Assert.EndsWith("Where to add tables: docs/rules-engine.md", window.CodeCheckText, StringComparison.Ordinal);
+            Assert.EndsWith(CodeCheck.WhereToAddTables, window.CodeCheckText, StringComparison.Ordinal);
             Assert.DoesNotContain("2x", window.CodeCheckText, StringComparison.Ordinal);
             Assert.Contains("1 header (not yet sized)", window.FramingText, StringComparison.Ordinal);
         });

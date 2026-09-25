@@ -48,7 +48,7 @@ public sealed class CodePacks
     {
         if (choice is null)
         {
-            return new CodeResolution(null, $"No code selected: choose one under {CodeCheck.WhereToChoose}.");
+            return new CodeResolution(null, CodeCheck.NoCodeSelectedText);
         }
 
         List<LoadedPack> same = [.. Loaded.Where(pack => pack.Manifest.Id == choice.PackId).OrderByDescending(pack => pack.Manifest.Revision)];
@@ -130,6 +130,9 @@ public static class CodeCheck
 
     /// <summary>Where a person reads how to add tables.</summary>
     public const string WhereToAddTables = "Where to add tables: docs/rules-engine.md";
+
+    /// <summary>The status line's text when no code is adopted at all.</summary>
+    public const string NoCodeSelectedText = "No code selected: choose one under " + WhereToChoose + ".";
 
     /// <summary>The rules engine's site inputs for the project's typed values; null stays null.</summary>
     public static SiteInputs Site(SiteValues site)
