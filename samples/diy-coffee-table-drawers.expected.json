@@ -786,6 +786,53 @@
     "2x2,,\"1 × 6'-0\"\"\",Leg × 4,2.0,1.8,0.2,",
     "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets by area — a nesting layout may need more"
   ],
+  "fasteners": [
+    {
+      "kind": "PocketScrew",
+      "thicknessUnits": 768,
+      "size": "1-1/4 in coarse",
+      "packSize": 100,
+      "count": 27,
+      "packs": 1,
+      "derivation": "Pocket holes per joint, one per 2 in of joint length, at least 2 (recipe): J1 5 1/2 in -> ceil(2.75)=3, x2 = 6; J2 5 1/2 in -> 3, x4 = 12; J3 1 1/2 in -> ceil(.75)=1, least 2, x2 = 4; J4 5 1/2 in -> 3; J5 1 1/2 in -> 2. 6 + 12 + 4 + 3 + 2 = 27. Packs: ceil(27/100) = 1."
+    },
+    {
+      "kind": "WoodScrew",
+      "thicknessUnits": 768,
+      "size": "#8 x 1-1/4",
+      "packSize": 100,
+      "count": 6,
+      "packs": 1,
+      "derivation": "J6 slide cleats, 16 in long, one per 6 in: ceil(2.67)=3, x2 joints = 6; thickness 3/4 in (the cleat). Packs: ceil(6/100) = 1."
+    },
+    {
+      "kind": "WoodScrew",
+      "thicknessUnits": 512,
+      "size": "#8 x 1",
+      "packSize": 100,
+      "count": 8,
+      "packs": 1,
+      "derivation": "J10 drawer fronts, recipe ceil(15 5/8 / 6) = 3, typed over as 4 on each of 2 joints = 8; through the 1/2 in drawer box front. Packs: ceil(8/100) = 1."
+    },
+    {
+      "kind": "Brad",
+      "thicknessUnits": 512,
+      "size": "18 ga x 1",
+      "packSize": 1000,
+      "count": 24,
+      "packs": 1,
+      "derivation": "J7 (4) and J8 (4): each joint 3 1/2 in, one per 1 1/2 in: ceil(2.33)=3; 8 joints x 3 = 24, 1/2 in plywood parts. Packs: ceil(24/1000) = 1."
+    },
+    {
+      "kind": "TabletopClip",
+      "thicknessUnits": null,
+      "size": "figure-8, with screws",
+      "packSize": 8,
+      "count": 10,
+      "packs": 2,
+      "derivation": "J11: aprons 36, 16, 16, 36 in, one per 12 in, least 2, one joint each: 3 + 2 + 2 + 3 = 10. Packs: ceil(10/8) = 2."
+    }
+  ],
   "notes": [
     "totalVolumeCubicUnits is the sum of quantity x length x width x thickness of the FINISHED rows, so it is larger than the boxes' volume by the joinery allowances (a drawer box front is 512 units longer than drawn, a drawer bottom 512 in each direction).",
     "The slide length, side clearance and every fastener size and pack size in the scene are the builder's typed choices, not napkin data (design.md).",
