@@ -206,33 +206,30 @@ public partial class MainWindow
             return;
         }
 
-        // A digit typed into any field is text, never a view (standard-views §4.2).
-        if (StandardViews.ForKey(e.Key, e.KeyModifiers) is not null && FocusManager?.GetFocusedElement() is TextBox)
+        // One rule for typing: while a field has the keyboard, a key is text, never a view command —
+        // a digit is part of a length (standard-views §4.2), and "-" and "+" in 1'-4 1/4" must not
+        // zoom. Whether Avalonia's own TextBox already stops every one of those keys is not
+        // something to rely on, and the headless platform routes them differently from a real
+        // backend. The shape workshop is its own surface with its own keys.
+        if (IsShapingPart || KeyboardIsOnAField()
+            || KeyInput.From(e.Key, e.KeyModifiers) is not { } key
+            || KeyMaps.View.Find(key) is not { } command)
         {
             return;
         }
 
-        // A key typed into a field is text, not a view command: the properties panel gets the same
-        // guard the dimension editor has had from the start, so that "-" and "+" in 1'-4 1/4"
-        // cannot reach HandleViewKey and zoom the drawing. Whether Avalonia's own TextBox already
-        // stops every one of those keys is not something to rely on, and the headless platform
-        // cannot be used to find out — it routes them differently from a real backend.
-        if (IsShowingModel)
-        {
-            if (!ModelDrawing.IsFocused && !IsShapingPart && !PropertiesPanel.IsKeyboardFocusWithin
-                && ModelDrawing.HandleViewKey(e.Key, e.KeyModifiers))
-            {
-                e.Handled = true;
-            }
-
-            return;
-        }
-
-        if (!DrawingCanvas.IsFocused && !IsEditingDimension && !IsShapingPart
-            && !PropertiesPanel.IsKeyboardFocusWithin
-            && DrawingCanvas.HandleViewKey(e.Key, e.KeyModifiers))
+        if (IsShowingModel
+                ? !ModelDrawing.IsFocused && ModelDrawing.Apply(command)
+                : !DrawingCanvas.IsFocused && DrawingCanvas.Apply(command))
         {
             e.Handled = true;
         }
     }
+
+    /// <summary>
+    /// Whether the keyboard is on something a person types or picks in — a text field anywhere, or
+    /// any control of the properties panel — rather than on the drawing or on nothing in particular.
+    /// </summary>
+    bool KeyboardIsOnAField() =>
+        FocusManager?.GetFocusedElement() is TextBox || PropertiesPanel.IsKeyboardFocusWithin;
 }

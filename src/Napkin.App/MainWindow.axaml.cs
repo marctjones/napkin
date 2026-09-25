@@ -124,9 +124,9 @@ public partial class MainWindow : Window
         DrawingCanvas.HoveredPartChanged += (_, _) => UpdateRelationships();
         DrawingCanvas.DimensionEditRequested += (_, request) =>
             OpenDimensionEditor(request.Box, request.Axis);
-        DrawingCanvas.ShapeRequested += (_, box) => OpenWorkshop(box);
         WireJoinery();
-        DrawingCanvas.ModelViewRequested += (_, _) => ShowView(DesignView.Model);
+        DrawingCanvas.CommandRequested += (_, request) => request.Handled = Run(request.Command);
+        ModelDrawing.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         DrawingCanvas.ViewRequested += (_, view) => ShowView(view);
 
         // The 3D view: the same editor, so the same drawing, selection and undo (assembly-model
@@ -136,12 +136,8 @@ public partial class MainWindow : Window
         ModelDrawing.ViewChanged += (_, _) => UpdateZoomReadout();
         ModelDrawing.HoveredPartChanged += (_, _) => UpdateRelationships();
         ModelDrawing.PointerModelPositionChanged += (_, point) => UpdateCursorReadout(point);
-        ModelDrawing.OtherViewRequested += (_, _) => ShowView(CurrentView == DesignView.Model ? _last2DView : DesignView.Model);
         ModelDrawing.ViewRequested += (_, view) => ShowView(view);
-        ModelDrawing.ToggleGridRequested += (_, _) => ToggleGrid();
-        DrawingCanvas.ToggleGridRequested += (_, _) => ToggleGrid();
         ModelDrawing.PlacementChanged += (_, _) => UpdateToolButtons();
-        ModelDrawing.SelectionCommandRequested += (_, command) => RunSelectionCommand(command);
         StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
         StockToolboxPanel.CategoryChanged += (_, _) => OnStockCategoryChanged();
 

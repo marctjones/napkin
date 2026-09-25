@@ -3,34 +3,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Napkin.App.Editing;
 using Napkin.App.Settings;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
 using Napkin.Modules.Editing;
 
 namespace Napkin.App.Viewing;
-
-/// <summary>What the 3D view asks the window to do with the selection.</summary>
-public enum SelectionCommand
-{
-    /// <summary>Remove it, relationships and all.</summary>
-    Delete,
-
-    /// <summary>Pin it where it is.</summary>
-    Pin,
-
-    /// <summary>Copy it, beside it.</summary>
-    Duplicate,
-
-    /// <summary>Open it in the shape workshop.</summary>
-    Shape,
-
-    /// <summary>Copy it across the drawing's middle, east to west (#87).</summary>
-    MirrorEastWest,
-
-    /// <summary>Copy it across the drawing's middle, north to south (#87).</summary>
-    MirrorNorthSouth,
-}
 
 /// <summary>
 /// Draws a design in three dimensions, and lets a person turn, move and resize its parts there
@@ -142,20 +121,14 @@ public sealed class ModelView : Control
     /// <summary>Raised when what the view holds to place changes: picked up, put down (#74).</summary>
     public event EventHandler? PlacementChanged;
 
-    /// <summary>
-    /// Raised by <c>V</c>: from the 3D view, back to the 2D view last shown; from a standard view, to 3D.
-    /// The window owns the views and decides.
-    /// </summary>
-    public event EventHandler? OtherViewRequested;
-
     /// <summary>Raised by an unmodified number key 1–7 (docs/design/standard-views.md §4.2): show that view.</summary>
     public event EventHandler<DesignView>? ViewRequested;
 
     /// <summary>
-    /// Raised for a keystroke that acts on the selection the same way in both views — the window
-    /// runs the plan canvas's own command for it, so there is one of each.
+    /// Raised by an editing key the view does not settle itself (<see cref="KeyMaps.Edit"/>): the
+    /// window runs it, once, the same way it runs the plan canvas's and its own menu's.
     /// </summary>
-    public event EventHandler<SelectionCommand>? SelectionCommandRequested;
+    public event EventHandler<EditCommandRequest>? CommandRequested;
 
     /// <summary>The drawing being edited: the same editor the plan canvas holds.</summary>
     public DesignEditor? Editor
@@ -307,9 +280,6 @@ public sealed class ModelView : Control
 
     /// <summary>The step a drag or a tool snaps to: the grid's, or, with snapping off, the finest length there is (no rounding).</summary>
     public double SnapStepInches => SnapToGrid ? GridStepInches : 1.0 / Length.UnitsPerInch;
-
-    /// <summary>The person pressed G: show or hide the grid.</summary>
-    public event EventHandler? ToggleGridRequested;
 
     /// <summary>What the drag in progress has caught, or null when nothing is being dragged.</summary>
     public SpaceSnapPlan? ActiveSnap => _snap;
@@ -658,16 +628,15 @@ public sealed class ModelView : Control
         Camera = _camera.Pan(new Vector(-fractionX * _camera.Viewport.Width, fractionY * _camera.Viewport.Height));
 
     /// <summary>
-    /// Applies a view keystroke, wherever it was received.
+    /// Does what a view key asks (<see cref="KeyMaps.View"/>), wherever it was pressed: the arrows
+    /// orbit (or pan, in a standard view), a number shows that view, Home goes back to the first
+    /// angle, O switches the projection.
     /// </summary>
-    /// <returns><see langword="true"/> when the key was a view command.</returns>
-    public bool HandleViewKey(Key key, KeyModifiers modifiers)
+    /// <returns><see langword="true"/> when the 3D view has a meaning for it.</returns>
+    public bool Apply(ViewCommand command)
     {
-        bool command = modifiers.HasFlag(KeyModifiers.Control) || modifiers.HasFlag(KeyModifiers.Meta);
-        double step = OrbitDegreesPerKeyPress * (modifiers.HasFlag(KeyModifiers.Shift) ? 3 : 1);
-
         // A number key picks a view (§4.2) — unless a length is being typed, which it is part of.
-        if (StandardViews.ForKey(key, modifiers) is { } asked)
+        if (KeyInput.ViewFor(command) is { } asked)
         {
             if (_typeable is not null || _typed.Length > 0)
             {
@@ -678,26 +647,32 @@ public sealed class ModelView : Control
             return true;
         }
 
-        if (_locked is not null && !command && key is Key.Left or Key.Right or Key.Up or Key.Down)
+        bool far = command is >= ViewCommand.FarLeft and <= ViewCommand.FarDown;
+        switch (command)
         {
-            double fraction = modifiers.HasFlag(KeyModifiers.Shift) ? CanvasView.FastPanFractionPerKeyPress : CanvasView.PanFractionPerKeyPress;
-            PanByFraction(
-                key switch { Key.Left => -fraction, Key.Right => fraction, _ => 0 },
-                key switch { Key.Up => fraction, Key.Down => -fraction, _ => 0 });
-            return true;
-        }
+            case >= ViewCommand.Left and <= ViewCommand.FarDown when _locked is not null:
+                double fraction = far ? CanvasView.FastPanFractionPerKeyPress : CanvasView.PanFractionPerKeyPress;
+                PanByFraction(
+                    command switch { ViewCommand.Left or ViewCommand.FarLeft => -fraction, ViewCommand.Right or ViewCommand.FarRight => fraction, _ => 0 },
+                    command switch { ViewCommand.Up or ViewCommand.FarUp => fraction, ViewCommand.Down or ViewCommand.FarDown => -fraction, _ => 0 });
+                return true;
 
-        switch (key)
-        {
-            case Key.D0 or Key.NumPad0 when command:
+            case >= ViewCommand.Left and <= ViewCommand.FarDown:
+                double step = OrbitDegreesPerKeyPress * (far ? 3 : 1);
+                OrbitBy(
+                    command switch { ViewCommand.Left or ViewCommand.FarLeft => step, ViewCommand.Right or ViewCommand.FarRight => -step, _ => 0 },
+                    command switch { ViewCommand.Up or ViewCommand.FarUp => step, ViewCommand.Down or ViewCommand.FarDown => -step, _ => 0 });
+                return true;
+
+            case ViewCommand.ZoomToFit:
                 ZoomToFit();
                 return true;
 
-            case Key.Home when !command:
+            case ViewCommand.ResetView:
                 ResetView();
                 return true;
 
-            case Key.O when !command:
+            case ViewCommand.Projection:
                 // Inert in a standard view, which is orthographic by definition (§2.1).
                 if (_locked is null)
                 {
@@ -706,32 +681,13 @@ public sealed class ModelView : Control
 
                 return true;
 
-            case Key.Left:
-                OrbitBy(step, 0);
-                return true;
-
-            case Key.Right:
-                OrbitBy(-step, 0);
-                return true;
-
-            case Key.Up:
-                OrbitBy(0, step);
-                return true;
-
-            case Key.Down:
-                OrbitBy(0, -step);
-                return true;
-
-            case Key.Add or Key.OemPlus:
+            case ViewCommand.ZoomIn:
                 ZoomIn();
                 return true;
 
-            case Key.Subtract or Key.OemMinus:
+            default:
                 ZoomOut();
                 return true;
-
-            default:
-                return false;
         }
     }
 
@@ -763,12 +719,6 @@ public sealed class ModelView : Control
 
     /// <summary>Raised when a joint's marker is double-pressed: open it for editing.</summary>
     public event EventHandler<RelationshipId>? JointActivated;
-
-    /// <summary>Raised by J (false) and Shift+J (true): join the selected parts.</summary>
-    public event EventHandler<bool>? JoinRequested;
-
-    /// <summary>Raised by Enter and Delete while a joint is selected.</summary>
-    public event EventHandler<JointCommand>? JointCommandRequested;
 
     /// <inheritdoc/>
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -1026,7 +976,15 @@ public sealed class ModelView : Control
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Handled || HandleTypingKey(e.Key) || HandleEditKey(e.Key, e.KeyModifiers) || HandleViewKey(e.Key, e.KeyModifiers))
+        if (e.Handled)
+        {
+            return;
+        }
+
+        if (HandleTypingKey(e.Key)
+            || (KeyInput.From(e.Key, e.KeyModifiers) is { } key
+                && ((KeyMaps.Edit.Find(key) is { } edit && Edit(edit))
+                    || (KeyMaps.View.Find(key) is { } view && Apply(view)))))
         {
             e.Handled = true;
         }
@@ -1173,85 +1131,34 @@ public sealed class ModelView : Control
     }
 
     /// <summary>
-    /// The editing keystrokes, handled here with the view focused, so that typing an <c>x</c> into a
-    /// field types an <c>x</c> — the plan canvas's rule.
+    /// An editing key, with the view focused so that typing an <c>x</c> into a field types an
+    /// <c>x</c> — the plan canvas's rule. Turning what is held to place is the view's own; an arrow
+    /// orbits rather than nudges; everything else goes to the window.
     /// </summary>
-    bool HandleEditKey(Key key, KeyModifiers modifiers)
+    bool Edit(EditCommand command)
     {
-        if (modifiers.HasFlag(KeyModifiers.Control) || modifiers.HasFlag(KeyModifiers.Meta) || _editor is not { } editor)
+        if (_editor is null)
         {
             return false;
         }
 
-        int turns = modifiers.HasFlag(KeyModifiers.Shift) ? -1 : 1;
-        if (_placement.IsArmed && key is Key.X or Key.Y or Key.Z)
+        if (_placement.IsArmed && command is >= EditCommand.TurnX and <= EditCommand.TurnZBack)
         {
             // Holding something to place: the keys turn the preview, not the selection (#92).
-            TurnPreview(key switch { Key.X => Axis.X, Key.Y => Axis.Y, _ => Axis.Z }, turns);
+            TurnPreview(
+                command switch { EditCommand.TurnX or EditCommand.TurnXBack => Axis.X, EditCommand.TurnY or EditCommand.TurnYBack => Axis.Y, _ => Axis.Z },
+                command is EditCommand.TurnXBack or EditCommand.TurnYBack or EditCommand.TurnZBack ? -1 : 1);
             return true;
         }
 
-        switch (key)
+        if (command is >= EditCommand.NudgeLeft and <= EditCommand.NudgeFarDown)
         {
-            case Key.X:
-                SelectionTurn.Turn(editor, Axis.X, turns);
-                return true;
-
-            case Key.Y:
-                SelectionTurn.Turn(editor, Axis.Y, turns);
-                return true;
-
-            case Key.Z:
-                SelectionTurn.Turn(editor, Axis.Z, turns);
-                return true;
-
-            case Key.V:
-                OtherViewRequested?.Invoke(this, EventArgs.Empty);
-                return true;
-
-            case Key.G:
-                ToggleGridRequested?.Invoke(this, EventArgs.Empty);
-                return true;
-
-            case Key.Escape when editor.Selection.Count > 0 || editor.SelectedJoint is not null:
-                editor.ClearSelection();
-                return true;
-
-            case Key.Delete or Key.Back when editor.SelectedJoint is not null:
-                JointCommandRequested?.Invoke(this, JointCommand.Delete);
-                return true;
-
-            case Key.Enter when editor.SelectedJoint is not null:
-                JointCommandRequested?.Invoke(this, JointCommand.Edit);
-                return true;
-
-            case Key.J:
-                JoinRequested?.Invoke(this, modifiers.HasFlag(KeyModifiers.Shift));
-                return true;
-
-            case Key.Delete or Key.Back when editor.Selection.Count > 0:
-                SelectionCommandRequested?.Invoke(this, SelectionCommand.Delete);
-                return true;
-
-            case Key.P when editor.Selection.Count > 0:
-                SelectionCommandRequested?.Invoke(this, SelectionCommand.Pin);
-                return true;
-
-            case Key.D when editor.Selection.Count > 0:
-                SelectionCommandRequested?.Invoke(this, SelectionCommand.Duplicate);
-                return true;
-
-            case Key.M when editor.Selection.Count > 0:
-                SelectionCommandRequested?.Invoke(this, modifiers.HasFlag(KeyModifiers.Shift) ? SelectionCommand.MirrorNorthSouth : SelectionCommand.MirrorEastWest);
-                return true;
-
-            case Key.C when _locked is null:
-                SelectionCommandRequested?.Invoke(this, SelectionCommand.Shape);
-                return true;
-
-            default:
-                return false;
+            return false;
         }
+
+        EditCommandRequest request = new(command);
+        CommandRequested?.Invoke(this, request);
+        return request.Handled;
     }
 
     bool OnSelection(Point position) =>

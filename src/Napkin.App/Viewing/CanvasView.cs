@@ -168,21 +168,10 @@ public sealed class CanvasView : Control
     public event EventHandler<DimensionEditRequested>? DimensionEditRequested;
 
     /// <summary>
-    /// Raised when a person asks to shape the selected part — the way into the shape workshop
-    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;7.1).
+    /// Raised by an editing key the canvas does not settle itself (<see cref="KeyMaps.Edit"/>): the
+    /// window runs it, once, the same way it runs the 3D view's and its own menu's.
     /// </summary>
-    /// <remarks>
-    /// The canvas does not own the workshop, because the workshop is a mode the <em>window</em> is
-    /// in and needs room the canvas does not have. So the keystroke is handled here, beside the
-    /// other editing keys, and the window decides what to open.
-    /// </remarks>
-    public event EventHandler<EntityId>? ShapeRequested;
-
-    /// <summary>
-    /// Raised when a person asks for the 3D view — <c>V</c>, the key the 3D view answers with to go
-    /// back. The window owns both views and decides which one is showing (assembly-model &#xA7;8.1).
-    /// </summary>
-    public event EventHandler? ModelViewRequested;
+    public event EventHandler<EditCommandRequest>? CommandRequested;
 
     /// <summary>Raised by an unmodified number key 1–7 (docs/design/standard-views.md §4.2): show that view.</summary>
     public event EventHandler<Napkin.App.Settings.DesignView>? ViewRequested;
@@ -399,9 +388,6 @@ public sealed class CanvasView : Control
     /// <summary>The step a drag or a tool snaps to: the grid's, or, with snapping off, the finest length there is (no rounding).</summary>
     public double SnapStepInches => SnapToGrid ? GridStepInches : 1.0 / Length.UnitsPerInch;
 
-    /// <summary>The person pressed G: show or hide the grid.</summary>
-    public event EventHandler? ToggleGridRequested;
-
     /// <summary>Whether a part is being drawn or dragged right now.</summary>
     public bool IsEditing => _gesture != Gesture.None || _rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing;
 
@@ -547,66 +533,52 @@ public sealed class CanvasView : Control
         View = _view.PanByViewportFraction(fractionX, fractionY);
 
     /// <summary>
-    /// Applies a view keystroke, wherever it was received.
+    /// Does what a view key asks (<see cref="KeyMaps.View"/>), wherever it was pressed: the arrows
+    /// pan, a number shows that view, Home and the command key's 0 fit.
     /// </summary>
-    /// <returns>
-    /// <see langword="true"/> when the key was a view command, so the caller can leave it alone if
-    /// it was not.
-    /// </returns>
-    public bool HandleViewKey(Key key, KeyModifiers modifiers)
+    /// <returns><see langword="true"/> when the plan has a meaning for it.</returns>
+    public bool Apply(ViewCommand command)
     {
-        // Control on Windows, Command on macOS — and Control under the headless platform, which
-        // reports no macOS windowing backend. Accepting either means one code path for both.
-        bool command = modifiers.HasFlag(KeyModifiers.Control) || modifiers.HasFlag(KeyModifiers.Meta);
-        double step = modifiers.HasFlag(KeyModifiers.Shift)
-            ? FastPanFractionPerKeyPress
-            : PanFractionPerKeyPress;
-
-        if (StandardViews.ForKey(key, modifiers) is { } asked)
+        if (KeyInput.ViewFor(command) is { } asked)
         {
             ViewRequested?.Invoke(this, asked);
             return true;
         }
 
-        switch (key)
+        switch (command)
         {
-            case Key.D0 or Key.NumPad0 when command:
-                ZoomToFit();
-                return true;
-
             // Home fits in every view (standard-views §4.2), as it does in the 3D view.
-            case Key.Home when !command:
+            case ViewCommand.ZoomToFit or ViewCommand.ResetView:
                 ZoomToFit();
                 return true;
 
-            case Key.Left:
-                PanByFraction(-step, 0);
-                return true;
-
-            case Key.Right:
-                PanByFraction(step, 0);
-                return true;
-
-            case Key.Up:
-                PanByFraction(0, step);
-                return true;
-
-            case Key.Down:
-                PanByFraction(0, -step);
-                return true;
-
-            case Key.Add or Key.OemPlus:
+            case ViewCommand.ZoomIn:
                 ZoomIn();
                 return true;
 
-            case Key.Subtract or Key.OemMinus:
+            case ViewCommand.ZoomOut:
                 ZoomOut();
+                return true;
+
+            case >= ViewCommand.Left and <= ViewCommand.FarDown:
+                double step = command >= ViewCommand.FarLeft ? FastPanFractionPerKeyPress : PanFractionPerKeyPress;
+                (double x, double y) = Direction(command);
+                PanByFraction(x * step, y * step);
                 return true;
 
             default:
                 return false;
         }
     }
+
+    /// <summary>Which way an arrow command points: +x right, +y up.</summary>
+    static (double X, double Y) Direction(ViewCommand command) => command switch
+    {
+        ViewCommand.Left or ViewCommand.FarLeft => (-1, 0),
+        ViewCommand.Right or ViewCommand.FarRight => (1, 0),
+        ViewCommand.Up or ViewCommand.FarUp => (0, 1),
+        _ => (0, -1),
+    };
 
     /// <inheritdoc/>
     protected override Size ArrangeOverride(Size finalSize)
@@ -796,12 +768,6 @@ public sealed class CanvasView : Control
     /// <summary>Raised when a joint's marker is double-pressed: open it for editing.</summary>
     public event EventHandler<RelationshipId>? JointActivated;
 
-    /// <summary>Raised by J (false) and Shift+J (true): join the selected parts.</summary>
-    public event EventHandler<bool>? JoinRequested;
-
-    /// <summary>Raised by Enter and Delete while a joint is selected.</summary>
-    public event EventHandler<JointCommand>? JointCommandRequested;
-
     void Hover(EntityId? part)
     {
         if (_hovered == part)
@@ -928,194 +894,81 @@ public sealed class CanvasView : Control
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// The keys are read here, with the canvas focused, rather than as window shortcuts, so that
+    /// typing an <c>r</c> into a dimension field types an <c>r</c>. An editing key comes first; an
+    /// arrow that has no selection to nudge goes on to pan.
+    /// </remarks>
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Handled || HandleEditKey(e.Key, e.KeyModifiers))
+        if (e.Handled || KeyInput.From(e.Key, e.KeyModifiers) is not { } key)
         {
-            e.Handled = true;
             return;
         }
 
-        if (HandleViewKey(e.Key, e.KeyModifiers))
+        if ((KeyMaps.Edit.Find(key) is { } edit && Edit(edit))
+            || (KeyMaps.View.Find(key) is { } view && Apply(view)))
         {
             e.Handled = true;
         }
     }
 
     /// <summary>
-    /// The editing keystrokes, handled here — with the canvas focused — rather than as window
-    /// shortcuts, so that typing an <c>r</c> into a dimension field types an <c>r</c>.
+    /// An editing key: what only the canvas knows how to do — end a drawing, put a tool down, nudge
+    /// — is done here; everything else goes to the window.
     /// </summary>
-    bool HandleEditKey(Key key, KeyModifiers modifiers)
+    bool Edit(EditCommand command)
     {
-        if (modifiers.HasFlag(KeyModifiers.Control) || modifiers.HasFlag(KeyModifiers.Meta))
-        {
-            return false;
-        }
-
         if (_editor is not { } editor)
         {
             return false;
         }
 
-        switch (key)
+        switch (command)
         {
-            case Key.R:
-                Tool = EditTool.Rectangle;
-                editor.Say(EditSeverity.Hint, "Rectangle tool: drag on the paper to draw a part.");
+            case EditCommand.Cancel when editor.SelectedJoint is null && (_rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing):
+                _rectangle.Cancel();
+                _stock.Cancel();
+                _wall.Cancel();
+                InvalidateVisual();
                 return true;
 
-            case Key.S:
+            case EditCommand.Cancel when editor.SelectedJoint is null && DrawsOnPress:
                 Tool = EditTool.Select;
                 return true;
 
-            case Key.W:
-                ArmWall(null);
-                return true;
-
-            case Key.Escape when editor.SelectedJoint is not null:
-                editor.ClearSelection();
-                return true;
-
-            case Key.Escape:
-                if (_rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing)
-                {
-                    _rectangle.Cancel();
-                    _stock.Cancel();
-                    _wall.Cancel();
-                    InvalidateVisual();
-                    return true;
-                }
-
-                if (DrawsOnPress)
-                {
-                    Tool = EditTool.Select;
-                    return true;
-                }
-
-                if (editor.Selection.Count > 0)
-                {
-                    editor.ClearSelection();
-                    return true;
-                }
-
-                return false;
-
-            case Key.Delete or Key.Back when editor.SelectedJoint is not null:
-                JointCommandRequested?.Invoke(this, JointCommand.Delete);
-                return true;
-
-            case Key.Enter when editor.SelectedJoint is not null:
-                JointCommandRequested?.Invoke(this, JointCommand.Edit);
-                return true;
-
-            case Key.J:
-                JoinRequested?.Invoke(this, modifiers.HasFlag(KeyModifiers.Shift));
-                return true;
-
-            case Key.Delete or Key.Back:
+            case >= EditCommand.NudgeLeft and <= EditCommand.NudgeFarDown:
                 if (editor.Selection.Count == 0)
                 {
                     return false;
                 }
 
-                SelectionCommands.Delete(editor);
-                return true;
-
-            case Key.P:
-                if (editor.Selection.Count == 0)
-                {
-                    return false;
-                }
-
-                SelectionCommands.Pin(editor);
-                return true;
-
-            case Key.D:
-                if (editor.Selection.Count == 0)
-                {
-                    return false;
-                }
-
-                if (SelectionCommands.Duplicate(editor, GridStepInches) is { } copy)
-                {
-                    BringIntoView(copy);
-                }
-
-                InvalidateVisual();
-                return true;
-
-            case Key.M:
-                if (editor.Selection.Count == 0)
-                {
-                    return false;
-                }
-
-                if (SelectionCommands.Mirror(editor, modifiers.HasFlag(KeyModifiers.Shift) ? Axis.Y : Axis.X) is { } mirrored)
-                {
-                    BringIntoView(mirrored);
-                }
-
-                InvalidateVisual();
-                return true;
-
-            case Key.C:
-                if (SelectionCommands.PartToShape(editor) is { } part)
-                {
-                    ShapeRequested?.Invoke(this, part);
-                }
-
-                return true;
-
-            // A quarter turn of the selected part about a world axis, Shift the other way: the same
-            // command the 3D view has (docs/design/assembly-model.md §8.3). About Z it is the plan's
-            // own turn in place; about X or Y it stands the part on a side, and the footprint shows it.
-            case Key.X or Key.Y or Key.Z:
-                SelectionTurn.Turn(
-                    editor,
-                    key switch { Key.X => Axis.X, Key.Y => Axis.Y, _ => Axis.Z },
-                    modifiers.HasFlag(KeyModifiers.Shift) ? -1 : 1);
-                return true;
-
-            case Key.V:
-                ModelViewRequested?.Invoke(this, EventArgs.Empty);
-                return true;
-
-            case Key.G:
-                ToggleGridRequested?.Invoke(this, EventArgs.Empty);
-                return true;
-
-            case Key.Tab when editor.OnlySelectedBox is { } forWidth:
-                DimensionEditRequested?.Invoke(
-                    this,
-                    new DimensionEditRequested(forWidth.Id, SizeAxis.Width));
-                return true;
-
-            case Key.Left or Key.Right or Key.Up or Key.Down when editor.Selection.Count > 0:
-                Nudge(key, modifiers);
+                Nudge(command);
                 return true;
 
             default:
-                return false;
+                EditCommandRequest request = new(command);
+                CommandRequested?.Invoke(this, request);
+                return request.Handled;
         }
     }
 
     /// <summary>Moves the selection by one grid step — the keyboard's version of a drag.</summary>
-    void Nudge(Key key, KeyModifiers modifiers)
+    void Nudge(EditCommand command)
     {
         if (_editor is not { } editor)
         {
             return;
         }
 
-        double step = GridStepInches * (modifiers.HasFlag(KeyModifiers.Shift) ? 4 : 1);
+        double step = GridStepInches * (command >= EditCommand.NudgeFarLeft ? 4 : 1);
         Length distance = new(SnapGrid.UnitsPerStep(step));
-        Vector2 delta = key switch
+        Vector2 delta = command switch
         {
-            Key.Left => new Vector2(-distance, Length.Zero),
-            Key.Right => new Vector2(distance, Length.Zero),
-            Key.Up => new Vector2(Length.Zero, distance),
+            EditCommand.NudgeLeft or EditCommand.NudgeFarLeft => new Vector2(-distance, Length.Zero),
+            EditCommand.NudgeRight or EditCommand.NudgeFarRight => new Vector2(distance, Length.Zero),
+            EditCommand.NudgeUp or EditCommand.NudgeFarUp => new Vector2(Length.Zero, distance),
             _ => new Vector2(Length.Zero, -distance),
         };
 
