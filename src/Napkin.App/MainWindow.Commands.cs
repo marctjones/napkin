@@ -278,6 +278,10 @@ public partial class MainWindow
                 ToggleGrid();
                 return true;
 
+            case EditCommand.ToggleHiddenEdges:
+                ToggleHiddenEdges();
+                return true;
+
             case EditCommand.Cancel when Editor.Selection.Count > 0 || Editor.SelectedJoint is not null:
                 Editor.ClearSelection();
                 return true;

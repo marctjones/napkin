@@ -71,6 +71,12 @@ public sealed record UserSettings
     /// </summary>
     public Napkin.Core.Geometry.Length SawKerf { get; init; } = Napkin.Modules.Furniture.CutLayout.DefaultKerf;
 
+    /// <summary>
+    /// Whether the standard views (Bottom–Right) draw the edges a nearer part hides, as light dashes
+    /// (docs/design/standard-views.md §2.3). On unless the person turns it off.
+    /// </summary>
+    public bool ShowHiddenEdges { get; init; } = true;
+
     /// <summary>Whether drags and tools land on the grid. Separate from whether it is drawn.</summary>
     public bool SnapToGrid { get; init; } = true;
 

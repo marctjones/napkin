@@ -52,6 +52,7 @@ text: no shortcut below except the window's fires while a field has the keyboard
 | `Shift+Z` | Turn about Z the other way |
 | `V` | 3D from a flat view; back to the last flat view from 3D |
 | `G` | Show or hide the grid |
+| `H` | Show or hide hidden edges, as light dashes (Bottom, Front, Back, Left, Right) |
 | `Escape` | Stop what is under way, put down the tool, or let go of the selection |
 | `Enter` | Edit the selected joint |
 | `Tab` | Type the selected part's width (plan) |

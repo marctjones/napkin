@@ -58,6 +58,7 @@ public class KeyMapTests
         { KeyName.Z, Shift, EditCommand.TurnZBack },
         { KeyName.V, None, EditCommand.OtherView },
         { KeyName.G, None, EditCommand.ToggleGrid },
+        { KeyName.H, None, EditCommand.ToggleHiddenEdges },
         { KeyName.Escape, None, EditCommand.Cancel },
         { KeyName.Enter, None, EditCommand.Confirm },
         { KeyName.Tab, None, EditCommand.EditWidth },

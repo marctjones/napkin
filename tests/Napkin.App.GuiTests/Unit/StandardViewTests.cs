@@ -291,6 +291,75 @@ public class StandardViewTests
         }
     }
 
+    /// <summary>How much of a box's outline a view draws solid, and how much dashed, in inches.</summary>
+    static (double Visible, double Hidden) Outline(StandardViewEdges edges, EntityId box)
+    {
+        double Sum(IEnumerable<FlatSegment> segments) =>
+            segments.Where(segment => edges.Polygons[segment.Face].Box == box).Sum(segment => segment.Length);
+        return (Sum(edges.Edges.Visible), Sum(edges.Edges.Hidden));
+    }
+
+    static StandardViewEdges EdgesOf(Sketch sketch, StandardView view) => StandardViewEdges.Of(ModelScene.Of(sketch), Unit(view), view);
+
+    // §7.1, hand-derived from §1.3: in each view one feature faces the eye and one is behind a part.
+    [Theory]
+    [Trait("Feature", "VIEW-009")]
+    [InlineData(StandardView.Front, "Lug, south", "Rib, north")]
+    [InlineData(StandardView.Back, "Rib, north", "Lug, south")]
+    [InlineData(StandardView.Right, "Tab, east", "Nub, west")]
+    [InlineData(StandardView.Left, "Nub, west", "Tab, east")]
+    [InlineData(StandardView.Bottom, "Skid, bottom", "Boss, top")]
+    public void Each_view_of_the_l_bracket_sees_one_feature_whole_and_dashes_another(StandardView view, string seen, string behind)
+    {
+        StandardViewEdges edges = EdgesOf(Bracket(), view);
+        (double seenVisible, double seenHidden) = Outline(edges, Bracket(seen));
+        (double behindVisible, _) = Outline(edges, Bracket(behind));
+
+        Assert.Equal(0, seenHidden, Tolerance);
+        Assert.True(seenVisible >= 2, $"{seen} shows only {seenVisible} inches of outline in {view}");
+        Assert.Equal(0, behindVisible, Tolerance);
+    }
+
+    [Fact]
+    [Trait("Feature", "VIEW-009")]
+    public void In_Front_the_rib_behind_the_upright_is_one_dashed_line_at_z_2()
+    {
+        // The rib (x ½–1, z 2–4) is exactly as wide as the upright in front of it, so its sides lie under
+        // the upright's solid sides and its top under the lug's solid bottom (z 4): only its bottom edge,
+        // ½" long at z 2, is left to dash.
+        StandardViewEdges edges = EdgesOf(Bracket(), StandardView.Front);
+        FlatSegment dash = Assert.Single(edges.Edges.Hidden, segment => edges.Polygons[segment.Face].Box == Bracket("Rib, north"));
+        Assert.Equal(0.5, dash.Length, Tolerance);
+        Assert.Equal((2.0, 2.0), (dash.From.V, dash.To.V));
+    }
+
+    [Fact]
+    [Trait("Feature", "VIEW-009")]
+    public void In_Front_the_coffee_table_dashes_a_short_aprons_end_inside_each_near_leg_and_nothing_else()
+    {
+        Sketch sketch = Table();
+        StandardViewEdges edges = EdgesOf(sketch, StandardView.Front);
+        EntityId[] shortAprons = [Table("Apron, short, east"), Table("Apron, short, west")];
+
+        // The far legs and the far long apron stand exactly behind the near ones: no dash for them.
+        Assert.All(edges.Edges.Hidden, segment => Assert.Contains(edges.Polygons[segment.Face].Box, shortAprons));
+        foreach (EntityId apron in shortAprons)
+        {
+            FlatSegment[] dashes = [.. edges.Edges.Hidden.Where(segment => edges.Polygons[segment.Face].Box == apron)];
+            double low = dashes.Min(d => Math.Min(d.From.V, d.To.V)), high = dashes.Max(d => Math.Max(d.From.V, d.To.V));
+            double left = dashes.Min(d => Math.Min(d.From.U, d.To.U)), right = dashes.Max(d => Math.Max(d.From.U, d.To.U));
+            Assert.Equal((12.75, 16.25), (low, high));
+            Assert.Equal(0.75, right - left, Tolerance);
+
+            // Inside a near leg's 2½ (the legs are inset 1½: x 1½–4 and 44–46½).
+            Assert.True((left >= 1.5 && right <= 4) || (left >= 44 && right <= 46.5), $"the dash u {left}–{right} is not inside a leg");
+
+            // Its inner side and its bottom: the apron is flush with the leg's outer face, so its outer
+            // side lies under the leg's solid edge, and its top under the table top's at z 16¼.
+            Assert.Equal(3.5 + 0.75, dashes.Sum(d => d.Length), Tolerance);
+        }
+    }
+
     [Theory]
     [Trait("Feature", "VIEW-003")]
     [InlineData(Key.D1, KeyModifiers.None, DesignView.Top)]

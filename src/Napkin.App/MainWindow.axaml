@@ -246,6 +246,13 @@
                           Header="Pers_pective"
                           Click="OnPerspectiveClicked"
                           ToolTip.Tip="Perspective projection, to judge how it looks: things shrink with distance (O switches)." />
+                <!-- Edges behind a nearer part, as light dashes: only in Bottom, Front, Back, Left and Right. -->
+                <MenuItem Name="HiddenEdgesMenuItem"
+                          Header="_Hidden edges"
+                          IsEnabled="False"
+                          Click="OnHiddenEdgesClicked"
+                          ToolTip.ShowOnDisabled="True"
+                          ToolTip.Tip="In Bottom, Front, Back, Left and Right: the edges a nearer part hides, as light dashes (H)." />
                 <Separator />
                 <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
                 <MenuItem Name="ResetViewMenuItem"
