@@ -152,6 +152,29 @@
                           Header="_Firm up…"
                           Click="OnFirmUpClicked"
                           ToolTip.Tip="Firm up a rough sketch: the relationships touching parts imply, the stock their sizes are nearest, and the drawn sizes stated. The selection, or every part." />
+                <Separator />
+                <!-- Renovation (renovation-sketches §6.1): what is already there, going in, or
+                     coming out. Radio-checked for the selection; one undo step. -->
+                <MenuItem Name="PhaseMenu" Header="P_hase">
+                    <MenuItem Name="PhaseExistingMenuItem"
+                              Header="_Existing"
+                              ToggleType="Radio"
+                              GroupName="Phase"
+                              Click="OnPhaseExistingClicked"
+                              ToolTip.Tip="Already there: drawn faint, never bought or cut." />
+                    <MenuItem Name="PhaseNewMenuItem"
+                              Header="_New"
+                              ToggleType="Radio"
+                              GroupName="Phase"
+                              Click="OnPhaseNewClicked"
+                              ToolTip.Tip="Going in: drawn solid, and what the lists buy. Everything starts new." />
+                    <MenuItem Name="PhaseDemolishMenuItem"
+                              Header="_Demolish"
+                              ToggleType="Radio"
+                              GroupName="Phase"
+                              Click="OnPhaseDemolishClicked"
+                              ToolTip.Tip="Coming out: drawn dashed with a cross, counted under Demolition, in no check." />
+                </MenuItem>
             </MenuItem>
 
             <!-- The Draw menu is the tools, in the toolbar's order: what the next press on the paper
@@ -395,7 +418,7 @@
                     <!-- The entry mode, always named first on the row (sketch-mode §1.1): a mode that is
                          not visible is a mode error waiting to happen. In Rough, the live size follows it
                          (§2.4): the labels are quiet on the paper, so the numbers are here. -->
-                    <Grid Name="StatusLeft" Grid.Column="0" ColumnDefinitions="Auto,Auto,*">
+                    <Grid Name="StatusLeft" Grid.Column="0" ColumnDefinitions="Auto,Auto,Auto,*">
                         <TextBlock Name="EntryModeText"
                                    Grid.Column="0"
                                    Text="PRECISE"
@@ -413,8 +436,17 @@
                                    VerticalAlignment="Center"
                                    Margin="0,0,12,0"
                                    AutomationProperties.Name="Size" />
-                        <TextBlock Name="DesignText"
+                        <!-- One selected thing that is not new, with its phase: "Wall 1, existing". -->
+                        <TextBlock Name="PhaseReadoutText"
                                    Grid.Column="2"
+                                   IsVisible="False"
+                                   FontSize="11"
+                                   FontFamily="{DynamicResource SeFontMono}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"
+                                   AutomationProperties.Name="Phase of the selection" />
+                        <TextBlock Name="DesignText"
+                                   Grid.Column="3"
                                    FontSize="12"
                                    FontFamily="{DynamicResource SeFontMono}"
                                    VerticalAlignment="Center"
@@ -876,6 +908,15 @@
                                    TextWrapping="Wrap" />
 
                         <TextBox Name="PartNameBox" FontSize="12" PlaceholderText="Name" />
+
+                        <!-- Already there, going in, or coming out (renovation-sketches §6.1). -->
+                        <Grid Name="PhaseRow" ColumnDefinitions="Auto,*">
+                            <TextBlock Text="Phase" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <ComboBox Name="PhaseBox" Grid.Column="1" FontSize="12" HorizontalAlignment="Stretch"
+                                      AutomationProperties.Name="Phase"
+                                      SelectionChanged="OnPhaseChanged"
+                                      ToolTip.Tip="New is bought; existing is already there and drawn faint; demolish comes out, drawn crossed." />
+                        </Grid>
 
                         <!-- Every box has a depth, part or not (assembly-model §1.2, §11 decision 7). -->
                         <Grid ColumnDefinitions="Auto,*">

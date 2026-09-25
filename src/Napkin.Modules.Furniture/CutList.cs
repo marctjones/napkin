@@ -58,7 +58,7 @@ public static class CutList
     /// <summary>
     /// The cut list for a design.
     /// </summary>
-    /// <param name="sketch">The design. Boxes whose <see cref="Box.Part"/> is null are not pieces anybody cuts.</param>
+    /// <param name="sketch">The design. Boxes whose <see cref="Box.Part"/> is null are not pieces anybody cuts, nor are parts that are not <see cref="Phase.New"/>.</param>
     /// <param name="library">
     /// The materials library a part's stock name is resolved through. A name it does not carry
     /// still produces a row, marked <see cref="CutListRow.Unresolved"/>.
@@ -73,7 +73,9 @@ public static class CutList
         List<Piece> pieces = [];
         foreach (Box box in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
         {
-            if (box.Part is not { } part)
+            // Only what is New is cut (renovation-sketches §6.2): an existing part is already there,
+            // a demolished one is counted under Demolition.
+            if (box.Part is not { } part || box.Phase != Phase.New)
             {
                 continue;
             }

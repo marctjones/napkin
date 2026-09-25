@@ -40,6 +40,10 @@ public static class SketchExtents
                     bounds = bounds.Including(node.Position);
                     break;
 
+                case Note note:
+                    bounds = bounds.Including(note.Position);
+                    break;
+
                 case Segment segment
                     when sketch.Find<Node>(segment.Start) is { } start
                          && sketch.Find<Node>(segment.End) is { } end:

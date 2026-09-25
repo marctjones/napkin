@@ -1817,10 +1817,17 @@ public sealed class CanvasView : Control
         foreach (Entity entity in sketch.Entities.Values.OrderBy(item => item.Id))
         {
             string layerName = DesignLayers.StyleName(sketch, entity, layerNames);
+
+            // What is already there is ghosted: the same strokes and fills, faint (renovation §6.4).
+            using DrawingContext.PushedState? ghost = entity.Phase == Phase.Existing ? context.PushOpacity(ExistingOpacity) : null;
             switch (entity)
             {
                 case Box box:
                     DrawBox(context, palette, design, box, layerName);
+                    break;
+
+                case Note note:
+                    DrawNote(context, palette, note);
                     break;
 
                 case Segment segment
@@ -1840,6 +1847,7 @@ public sealed class CanvasView : Control
         // Dimensions last, so a dimension line is never hidden under a part.
         foreach (DimensionMeasurement measurement in DimensionLayout.Measure(sketch))
         {
+            using DrawingContext.PushedState? ghost = measurement.Dimension.Phase == Phase.Existing ? context.PushOpacity(ExistingOpacity) : null;
             DrawDimension(context, palette, measurement, palette.Dimension);
         }
 
@@ -2354,10 +2362,11 @@ public sealed class CanvasView : Control
         string layerName)
     {
         EntityStyle style = palette.StyleFor(layerName);
+        bool demolish = box.Phase == Phase.Demolish;
         Pen pen = new(new SolidColorBrush(style.Stroke), style.StrokeThickness)
         {
             LineJoin = PenLineJoin.Miter,
-            DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
+            DashStyle = demolish ? new DashStyle([12, 6], 0) : style.Dashed ? new DashStyle([4, 3], 0) : null,
         };
         bool rough = box.Part is { Rough: true };
         if ((rough || palette.Look.Line != SketchLine.Clean) && (box.Cuts.IsEmpty || !PlanShape.ShowsCap(box)))
@@ -2382,7 +2391,7 @@ public sealed class CanvasView : Control
                 }
                 else
                 {
-                    SketchInk.Stroke(context, palette.Look.Line, style.Stroke, style.Dashed, _view.ToScreen(from), _view.ToScreen(to), SeedOf(from, to));
+                    SketchInk.Stroke(context, palette.Look.Line, style.Stroke, style.Dashed, _view.ToScreen(from), _view.ToScreen(to), SeedOf(from, to), demolish);
                 }
             }
         }
@@ -2393,6 +2402,24 @@ public sealed class CanvasView : Control
         else
         {
             context.DrawGeometry(new SolidColorBrush(style.Fill), pen, Outline(box));
+        }
+
+        if (demolish)
+        {
+            // Crossed out corner to corner, in the pencil, as on paper (renovation §6.4).
+            Footprint crossed = box.Footprint();
+            foreach ((BoxCorner from, BoxCorner to) in new[] { (BoxCorner.SouthWest, BoxCorner.NorthEast), (BoxCorner.SouthEast, BoxCorner.NorthWest) })
+            {
+                Point2 a = crossed.Corner(from), b = crossed.Corner(to);
+                if (palette.Look.Line == SketchLine.Clean)
+                {
+                    context.DrawLine(new Pen(new SolidColorBrush(style.Stroke), style.StrokeThickness), _view.ToScreen(a), _view.ToScreen(b));
+                }
+                else
+                {
+                    SketchInk.Stroke(context, palette.Look.Line, style.Stroke, false, _view.ToScreen(a), _view.ToScreen(b), SeedOf(a, b));
+                }
+            }
         }
 
         Rect drawn = new Rect(
@@ -2467,6 +2494,21 @@ public sealed class CanvasView : Control
             new Pen(new SolidColorBrush(style.Stroke), style.StrokeThickness),
             _view.ToScreen(start),
             _view.ToScreen(end));
+    }
+
+    /// <summary>How opaque an existing entity is drawn: ghosted, 40 % (renovation-sketches §6.4).</summary>
+    internal const double ExistingOpacity = 0.4;
+
+    /// <summary>A note: a small pencil circle at its point, its words beside it at the plan's label size.</summary>
+    void DrawNote(DrawingContext context, CanvasPalette palette, Note note)
+    {
+        Point centre = _view.ToScreen(note.Position);
+        context.DrawEllipse(null, new Pen(new SolidColorBrush(palette.Dimension), 1.2), centre, 4, 4);
+        if (note.Text.Length > 0)
+        {
+            FormattedText text = Text(note.Text, palette.Dimension);
+            context.DrawText(text, new Point(centre.X + 7, centre.Y - (text.Height / 2)));
+        }
     }
 
     void DrawNode(DrawingContext context, CanvasPalette palette, Point2 position)

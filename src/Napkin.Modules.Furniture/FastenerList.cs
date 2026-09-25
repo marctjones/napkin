@@ -95,6 +95,17 @@ public static class FastenerList
         return sketch.FastenerChoices.FirstOrDefault(choice => choice.Kind == kind && choice.Thickness == thickness);
     }
 
+    /// <summary>
+    /// Whether a joint's fasteners are bought: when at least one of its parts is New
+    /// (renovation-sketches §6.2). A joint between two existing parts is already fastened.
+    /// </summary>
+    public static bool Buys(Box inserted, Box receiving)
+    {
+        ArgumentNullException.ThrowIfNull(inserted);
+        ArgumentNullException.ThrowIfNull(receiving);
+        return inserted.Phase == Phase.New || receiving.Phase == Phase.New;
+    }
+
     /// <summary>The list, by kind then thickness descending.</summary>
     /// <param name="sketch">The design.</param>
     public static ImmutableArray<FastenerRow> Of(Sketch sketch)
@@ -106,7 +117,8 @@ public static class FastenerList
         {
             if (Recipes.FastenerOf(joint.Fastening.Kind) is not { } kind
                 || sketch.Find<Box>(joint.Inserted.Box) is not { Part: { } part } inserted
-                || sketch.Find<Box>(joint.Receiving.Box) is not { } receiving)
+                || sketch.Find<Box>(joint.Receiving.Box) is not { } receiving
+                || !FastenerList.Buys(inserted, receiving))
             {
                 continue;
             }

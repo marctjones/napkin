@@ -88,7 +88,13 @@ public static class SuppliesList
             rows.Add(new ExtraRow(ExtraSection.Supplies, line.Item, string.Empty, null, null, null, line.Note));
         }
 
-        Joint[] joints = [.. sketch.RelationshipsInOrder.OfType<Joint>()];
+        Joint[] joints =
+        [
+            .. sketch.RelationshipsInOrder.OfType<Joint>().Where(joint =>
+                sketch.Find<Box>(joint.Inserted.Box) is not { } inserted
+                || sketch.Find<Box>(joint.Receiving.Box) is not { } receiving
+                || FastenerList.Buys(inserted, receiving)),
+        ];
         if (joints.Length > 0)
         {
             rows.Add(new ExtraRow(ExtraSection.Supplies, GlueLine(joints), string.Empty, null, null, null, string.Empty));

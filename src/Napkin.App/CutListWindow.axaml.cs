@@ -386,6 +386,18 @@ public partial class CutListWindow : Window
     /// <summary>The shopping list as a CSV file would carry it, in the order it is on screen.</summary>
     public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted, _kerf);
 
+    /// <summary>The Demolition section's lines, in the order on screen.</summary>
+    public ImmutableArray<DemolitionLine> DemolitionLines { get; private set; } = [];
+
+    /// <summary>Whether the Demolition section is showing (it is when anything comes out).</summary>
+    public bool IsShowingDemolition => DemolitionSection.IsVisible;
+
+    /// <summary>The Demolition section as a CSV file carries it, under its own header.</summary>
+    public string DemolitionCsv => Demolition.ToCsv(DemolitionLines);
+
+    /// <summary>The line that says only New is listed; empty for a design with nothing existing or demolished.</summary>
+    public string RenovationNoteText => RenovationNote.IsVisible ? RenovationNote.Text ?? string.Empty : string.Empty;
+
     /// <summary>The code packs the main window found, for the code check on the walls' openings (#18).</summary>
     public CodePacks Packs { get; set; } = CodePacks.None;
 
@@ -435,10 +447,22 @@ public partial class CutListWindow : Window
         LayoutSummary.Text = string.Join("\n", CutLayout.Summary(layout));
         ExtrasGrid.Rows = SuppliesList.Of(sketch);
 
+        // What comes out, and the line that says only New is bought (renovation-sketches §6.2).
+        ImmutableArray<DemolitionLine> demolition = Demolition.Boxes(sketch);
+        DemolitionLines = demolition;
+        DemolitionList.ItemsSource = demolition.Select(line => line.Text).ToArray();
+        DemolitionSection.IsVisible = !demolition.IsEmpty;
+        ShowNote(RenovationNote, Demolition.Header(sketch, demolition));
+
         // The walls' frame is bought through the very aggregation the parts are, from rows
         // FramingList derives; kept in a section of its own so a wall's studs read as a wall's.
+        // The checks run on the building as it will be; only a New wall's frame is bought.
         ImmutableArray<OpeningCheck> checks = CodeCheck.Of(sketch, Packs);
-        ImmutableArray<WallFraming> walls = FramingList.Of(sketch, MaterialsLibrary.Shipped, CodeCheck.Framing(checks, MaterialsLibrary.Shipped));
+        ImmutableArray<WallFraming> walls =
+        [
+            .. FramingList.Of(sketch.After(), MaterialsLibrary.Shipped, CodeCheck.Framing(checks, MaterialsLibrary.Shipped))
+                .Where(wall => wall.Wall.Box.Phase == Phase.New),
+        ];
         ImmutableArray<CutListRow> framingRows = FramingList.CutRows(walls);
         FramingTable.Rows = ShoppingList.Of(framingRows, _kerf);
         CutLayoutPlan framingLayout = CutLayout.Of(framingRows, _kerf);

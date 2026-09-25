@@ -76,6 +76,15 @@
                                FontSize="11"
                                Opacity="0.75"
                                TextWrapping="Wrap" />
+                    <!-- Renovation (renovation-sketches §6.2): only what is New is bought; said only when
+                         the design has something existing or coming out. -->
+                    <TextBlock Name="RenovationNote"
+                               DockPanel.Dock="Top"
+                               IsVisible="False"
+                               Margin="0,0,0,8"
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               AutomationProperties.Name="Only what is New" />
 
                     <!-- No horizontal scrolling, so the note column takes what width is left and wraps
                          a refusal onto a second line instead of running off the edge. -->
@@ -101,6 +110,11 @@
                                        Opacity="0.75"
                                        TextWrapping="Wrap" />
                             <viewing:ExtrasTable Name="ExtrasGrid" />
+                            <!-- What comes out (renovation-sketches §6.2): a count, never a dumpster size. -->
+                            <StackPanel Name="DemolitionSection" Spacing="2" IsVisible="False">
+                                <TextBlock Text="Demolition" Margin="0,14,0,0" FontSize="12" FontWeight="SemiBold" />
+                                <ItemsControl Name="DemolitionList" FontSize="12" AutomationProperties.Name="Demolition" />
+                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
                 </DockPanel>

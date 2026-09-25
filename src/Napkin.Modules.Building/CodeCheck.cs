@@ -164,11 +164,15 @@ public static class CodeCheck
     public static ImmutableArray<string> SupportsChoices(LoadedPack? pack)
         => Table(pack)?.Inputs.FirstOrDefault(column => column.Name == "supports") is { } column ? [.. column.Values] : [];
 
-    /// <summary>Every opening in every wall, with its header result.</summary>
+    /// <summary>
+    /// Every opening in every wall of the building as it will be (<see cref="Sketch.After"/>,
+    /// renovation-sketches §6.1), with its header result: a demolished wall or opening is in no check.
+    /// </summary>
     public static ImmutableArray<OpeningCheck> Of(Sketch sketch, CodePacks packs)
     {
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(packs);
+        sketch = sketch.After();
         CodeResolution code = packs.Resolve(sketch.Code);
         return
         [
