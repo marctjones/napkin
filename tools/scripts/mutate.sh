@@ -37,13 +37,13 @@ if [ $apply_status -ne 0 ]; then
 fi
 
 "${cmd[@]}" > artifacts/mutate-output.log 2>&1
-status=$?
+cmd_status=$?
 git checkout -q -- "$f"
 
-if [ $status -eq 0 ]; then
+if [ $cmd_status -eq 0 ]; then
   echo "MUTATION SURVIVED (bad): '${cmd[*]}' exited 0 with the mutation applied to $f — nothing caught it. See artifacts/mutate-output.log."
   exit 1
 fi
 
-echo "MUTATION CAUGHT (good): '${cmd[*]}' exited $status with the mutation applied to $f."
+echo "MUTATION CAUGHT (good): '${cmd[*]}' exited $cmd_status with the mutation applied to $f."
 exit 0
