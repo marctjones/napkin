@@ -17,7 +17,7 @@ public sealed class SceneReaderRejectionTests
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": 5,
           "entities": 5,
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": 5
         }
         """;
@@ -27,8 +27,8 @@ public sealed class SceneReaderRejectionTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
-    [InlineData(4)]
-    [InlineData(6)]
+    [InlineData(5)]
+    [InlineData(7)]
     [Trait("Feature", "PRJ-004")]
     public void A_file_from_another_format_version_fails_before_the_scene_is_parsed(int version)
     {
@@ -58,7 +58,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_file_with_no_version_stamp_is_refused()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 5,", string.Empty),
+            Scenes.OneBox.With("\"formatVersion\": 6,", string.Empty),
             LoadProblemKind.MissingField,
             "formatVersion");
 
@@ -66,7 +66,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_text_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 5", "\"formatVersion\": \"4\""),
+            Scenes.OneBox.With("\"formatVersion\": 6", "\"formatVersion\": \"4\""),
             LoadProblemKind.Malformed,
             "formatVersion");
 
@@ -74,7 +74,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_a_decimal_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 5", "\"formatVersion\": 5.0"),
+            Scenes.OneBox.With("\"formatVersion\": 6", "\"formatVersion\": 6.0"),
             LoadProblemKind.NotAnInteger,
             "formatVersion");
 
@@ -105,7 +105,7 @@ public sealed class SceneReaderRejectionTests
             "colour");
 
         Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 5,", "\"formatVersion\": 5, \"author\": \"someone\","),
+            Scenes.OneBox.With("\"formatVersion\": 6,", "\"formatVersion\": 6, \"author\": \"someone\","),
             LoadProblemKind.UnknownField,
             "author");
 

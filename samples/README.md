@@ -158,6 +158,11 @@ every expectation in every `*.expected.json` is the hand-derived number it was, 
 `formatVersion` changed. The first sample with joints is the DIY coffee table (#146), whose
 expectations are derived by hand from `docs/design/joinery-and-fasteners.md` §2 and §6.5.
 
+**Format version 6 (the code check's inputs, #18/#19) changed no sample's meaning.** Every scene
+gained the version number, `"wall": null` on every box, and `"code": null` with an all-`null`
+`"site"` at the root (nothing entered), and nothing else; every `*.expected.json` changed only its
+`formatVersion`.
+
 **Layers are named "Default".** The viewer styles a part by the name of the layer it is on — a
 part on "Parts" is drawn as furniture, one on "Wall" as a wall, one on "Opening" as a dashed hole —
 so everything in these two fixtures draws in the neutral style. Giving the coffee table's layer the

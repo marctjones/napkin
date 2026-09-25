@@ -23,26 +23,26 @@ public sealed class AssemblyFormatTests
     /// </summary>
     private const string TwoBoxesInSpace = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Left",
               "anchor": { "x": 0, "y": 0, "z": 2048 }, "width": 10240, "height": 4096, "depth": 3072, "faceUp": "top", "rotation": 0,
-              "part": null, "cuts": [] },
+              "part": null, "wall": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Right",
               "anchor": { "x": 10240, "y": 0, "z": 5120 }, "width": 10240, "height": 4096, "depth": 1024, "faceUp": "top", "rotation": 0,
               "part": { "stock": null, "species": null, "quantity": 1, "planAxes": { "x": "length", "y": "width" }, "hardware": [] },
-              "cuts": [] },
+              "wall": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000d", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Left width",
               "measures": { "kind": "boxWidth", "box": "0192f1a0-0000-4000-8000-00000000000a" },
               "drives": null,
               "placement": { "offset": 2048, "side": "south" } }
           ],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "flush",
               "a": { "kind": "feature", "box": "0192f1a0-0000-4000-8000-00000000000a", "faces": ["east"] },
@@ -220,10 +220,10 @@ public sealed class AssemblyFormatTests
     public void A_version_4_file_is_now_too_old_to_open()
     {
         LoadProblem problem = Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 5", "\"formatVersion\": 4"),
+            Scenes.OneBox.With("\"formatVersion\": 6", "\"formatVersion\": 4"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 4",
-            "format version 5");
+            "format version 6");
 
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }

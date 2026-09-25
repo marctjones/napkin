@@ -19,7 +19,7 @@ public class JointFormatTests
     // face and the apron's west face are the plane x = 2, and they share a 2 in by 4 in rectangle.
     private const string Joined = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -27,13 +27,13 @@ public class JointFormatTests
               "name": "Leg",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 2048, "height": 2048, "depth": 16384, "faceUp": "top", "rotation": 0,
               "part": { "stock": "2x2", "species": null, "quantity": 1,
-                        "planAxes": { "x": "width", "y": "thickness" }, "hardware": [] }, "cuts": [] },
+                        "planAxes": { "x": "width", "y": "thickness" }, "hardware": [] }, "wall": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Apron",
               "anchor": { "x": 2048, "y": 0, "z": 10240 }, "width": 10240, "height": 2048, "depth": 4096, "faceUp": "top", "rotation": 0,
               "part": { "stock": "1x6", "species": null, "quantity": 1,
                         "planAxes": { "x": "length", "y": "thickness" },
-                        "hardware": [ { "name": "16 in side-mount drawer slide, pair", "quantity": 1 } ] }, "cuts": [] }
+                        "hardware": [ { "name": "16 in side-mount drawer slide, pair", "quantity": 1 } ] }, "wall": null, "cuts": [] }
           ],
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "joint", "type": "butt",
@@ -47,7 +47,9 @@ public class JointFormatTests
             { "kind": "pocketScrew", "thickness": 768, "size": "1-1/4 in coarse", "packSize": 100 },
             { "kind": "tabletopClip", "thickness": null, "size": "figure-8, with screws", "packSize": null }
           ],
-          "supplies": [ { "item": "Wood glue", "note": "" } ]
+          "supplies": [ { "item": "Wood glue", "note": "" } ],
+          "code": null,
+          "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null }
         }
         """;
 
@@ -168,7 +170,7 @@ public class JointFormatTests
     [InlineData("\"planAxes\": { \"x\": \"width\", \"y\": \"thickness\" }, \"hardware\": [] }", "\"planAxes\": { \"x\": \"width\", \"y\": \"thickness\" } }", LoadProblemKind.MissingField, "hardware")]
     [InlineData("\"supplies\": [ { \"item\": \"Wood glue\", \"note\": \"\" } ]", "\"supplyList\": []", LoadProblemKind.MissingField, "supplies")]
     [InlineData("\"fastenerChoices\": [", "\"fastenerChoice\": [", LoadProblemKind.MissingField, "fastenerChoices")]
-    [InlineData("\"quantity\": 1 } ] }, \"cuts\"", "\"quantity\": 0 } ] }, \"cuts\"", LoadProblemKind.InvalidValue, "quantity")]
+    [InlineData("\"quantity\": 1 } ] }, \"wall\"", "\"quantity\": 0 } ] }, \"wall\"", LoadProblemKind.InvalidValue, "quantity")]
     [InlineData("\"name\": \"16 in side-mount drawer slide, pair\"", "\"name\": \"\"", LoadProblemKind.InvalidValue, "name")]
     [InlineData("\"item\": \"Wood glue\"", "\"item\": \"\"", LoadProblemKind.InvalidValue, "item")]
     [InlineData("\"kind\": \"pocketScrew\", \"thickness\": 768", "\"kind\": \"screwdriver\", \"thickness\": 768", LoadProblemKind.UnknownValue, "screwdriver")]
@@ -233,10 +235,10 @@ public class JointFormatTests
     public void A_version_4_file_is_refused_with_the_unsupported_version_message_and_no_converter()
     {
         LoadProblem problem = Scenes.RefuseWith(
-            Variant(("\"formatVersion\": 5", "\"formatVersion\": 4")),
+            Variant(("\"formatVersion\": 6", "\"formatVersion\": 4")),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 4",
-            "format version 5");
+            "format version 6");
 
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }

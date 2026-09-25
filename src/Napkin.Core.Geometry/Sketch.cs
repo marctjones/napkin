@@ -130,6 +130,12 @@ public sealed record Sketch(
     /// <summary>The builder's typed supplies checklist (&#xA7;8), in the order typed.</summary>
     public ImmutableList<SupplyLine> Supplies { get; init; } = [];
 
+    /// <summary>The adopted code the person chose for the project, or null before one is chosen (format version 6).</summary>
+    public CodeChoice? Code { get; init; }
+
+    /// <summary>The site and hazard values the person typed; every field null until entered (format version 6).</summary>
+    public SiteValues Site { get; init; } = SiteValues.NotEntered;
+
     /// <summary>
     /// Relationships in id order — never in dictionary order — so that anything iterating them is
     /// reproducible (design &#xA7;4.4 step 3).
@@ -529,7 +535,9 @@ public sealed record Sketch(
 
         return Layers.SequenceEqual(other.Layers)
                && FastenerChoices.SequenceEqual(other.FastenerChoices)
-               && Supplies.SequenceEqual(other.Supplies);
+               && Supplies.SequenceEqual(other.Supplies)
+               && Equals(Code, other.Code)
+               && Site.Equals(other.Site);
     }
 
     /// <inheritdoc/>

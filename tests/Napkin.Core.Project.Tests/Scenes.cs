@@ -23,7 +23,7 @@ internal static class Scenes
     /// <summary>A 30 inch by 4 inch box at the origin, with its width driven.</summary>
     internal const string OneBox = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -31,9 +31,9 @@ internal static class Scenes
               "name": "Shelf",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": { "stock": "1x6", "species": null, "quantity": 1,
-                        "planAxes": { "x": "length", "y": "width" }, "hardware": [] }, "cuts": [] }
+                        "planAxes": { "x": "length", "y": "width" }, "hardware": [] }, "wall": null, "cuts": [] }
           ],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "paramValue",
               "param": { "kind": "boxWidth", "box": "0192f1a0-0000-4000-8000-00000000000a" }, "value": 30720 }
@@ -48,7 +48,7 @@ internal static class Scenes
     /// </summary>
     internal const string TurnedBoxAndNode = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -56,11 +56,11 @@ internal static class Scenes
               "name": "Shelf",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 324000,
               "part": { "stock": "1x6", "species": null, "quantity": 1,
-                        "planAxes": { "x": "length", "y": "width" }, "hardware": [] }, "cuts": [] },
+                        "planAxes": { "x": "length", "y": "width" }, "hardware": [] }, "wall": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "", "position": { "x": 0, "y": 30720 } }
           ],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "coincident",
               "a": { "kind": "feature", "box": "0192f1a0-0000-4000-8000-00000000000a", "faces": ["south", "east"] },
@@ -75,7 +75,7 @@ internal static class Scenes
     /// </summary>
     internal const string SegmentAndDimension = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -95,7 +95,7 @@ internal static class Scenes
               "drives": null,
               "placement": { "offset": 2048, "side": "south" } }
           ],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "paramValue",
               "param": { "kind": "segmentLength", "segment": "0192f1a0-0000-4000-8000-00000000000c" }, "value": 30720 },
@@ -108,16 +108,16 @@ internal static class Scenes
     /// <summary>The box, with a relationship kind that is reserved for the solver.</summary>
     internal const string TangentBetweenBoxEdges = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Shelf",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0,
-              "part": null, "cuts": [] }
+              "part": null, "wall": null, "cuts": [] }
           ],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "tangent",
               "a": { "kind": "feature", "box": "0192f1a0-0000-4000-8000-00000000000a", "faces": ["north"] },
@@ -129,18 +129,18 @@ internal static class Scenes
     /// <summary>The same box written twice, under one id.</summary>
     internal const string TwoEntitiesUnderOneId = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Shelf",
-              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "cuts": [] },
+              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Shelf",
-              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "cuts": [] }
+              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] }
           ],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": []
         }
         """;
@@ -148,14 +148,14 @@ internal static class Scenes
     /// <summary>Two layers under one id.</summary>
     internal const string TwoLayersUnderOneId = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [
             { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" },
             { "id": "00000000-0000-0000-0000-000000000001", "name": "Also default" }
           ],
           "entities": [],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": []
         }
         """;
@@ -163,15 +163,15 @@ internal static class Scenes
     /// <summary>Two relationships, two ids, one statement — invariant 4 of the geometry design.</summary>
     internal const string TwoRelationshipsSayingTheSameThing = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Shelf",
-              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "cuts": [] }
+              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] }
           ],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "paramValue",
               "param": { "kind": "boxWidth", "box": "0192f1a0-0000-4000-8000-00000000000a" }, "value": 30720 },
@@ -184,11 +184,11 @@ internal static class Scenes
     /// <summary>An empty design: no entities, no relationships, one layer.</summary>
     internal const string Empty = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": []
         }
         """;

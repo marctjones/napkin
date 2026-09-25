@@ -99,6 +99,19 @@ public sealed record SetFastenerChoices(System.Collections.Immutable.ImmutableLi
 /// <param name="Supplies">All the lines, as the person now has them.</param>
 public sealed record SetSupplies(System.Collections.Immutable.ImmutableList<SupplyLine> Supplies) : Request;
 
+/// <summary>Chooses the project's adopted code, or clears the choice. Exact, moves nothing.</summary>
+/// <param name="Code">The choice, or <see langword="null"/> for none.</param>
+public sealed record SetCode(CodeChoice? Code) : Request;
+
+/// <summary>Replaces the project's site values. Exact, moves nothing.</summary>
+/// <param name="Site">The values, as the person now has them.</param>
+public sealed record SetSite(SiteValues Site) : Request;
+
+/// <summary>Sets what the person entered for a wall — what it supports, its stud spacing. Exact, moves nothing.</summary>
+/// <param name="Box">The wall's box.</param>
+/// <param name="Inputs">The inputs; <see langword="null"/>, or both fields null, for none.</param>
+public sealed record SetWallInputs(EntityId Box, WallInputs? Inputs) : Request;
+
 /// <summary>
 /// Sets the number a driving relationship owns — what editing a driving dimension is. Exact.
 /// </summary>

@@ -3,7 +3,7 @@
   "scene": "picture-frame.scene.json",
   "design": "picture-frame.design.md",
   "derivedBy": "hand, from the stated dimensions in picture-frame.design.md; never regenerated from napkin's output",
-  "formatVersion": 5,
+  "formatVersion": 6,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 4,

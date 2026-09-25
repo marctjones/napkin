@@ -45,6 +45,8 @@ internal sealed class SceneBinder
         ReadRelationships(document);
         ImmutableList<FastenerChoice> fastenerChoices = ReadFastenerChoices(document);
         ImmutableList<SupplyLine> supplies = ReadSupplies(document);
+        (bool codeRead, CodeChoice? code) = ReadCode(document);
+        SiteValues? site = ReadSite(document);
         RejectUnknownFields(document);
 
         if (problems.Count > 0)
@@ -68,6 +70,8 @@ internal sealed class SceneBinder
         {
             FastenerChoices = fastenerChoices,
             Supplies = supplies,
+            Code = codeRead ? code : null,
+            Site = site ?? SiteValues.NotEntered,
         };
 
         ValidationResult validation = sketch.Validate();
@@ -348,6 +352,7 @@ internal sealed class SceneBinder
         BoxFace? faceUp = ReadFaceUp(fields);
         long? rotation = ReadInteger(fields, SceneNames.Rotation);
         (bool partRead, Part? part) = ReadPart(fields);
+        (bool wallRead, WallInputs? wall) = ReadWallInputs(fields);
         (bool cutsRead, ImmutableList<Cut> cuts) = ReadCuts(fields);
 
         width = RefuseNonPositive(fields, SceneNames.Width, width);
@@ -366,10 +371,11 @@ internal sealed class SceneBinder
         }
 
         return anchor is { } corner && width is { } wide && height is { } tall && depth is { } deep
-            && faceUp is { } up && rotation is { } turn && partRead && cutsRead
+            && faceUp is { } up && rotation is { } turn && partRead && wallRead && cutsRead
             ? new Box(id, layer, corner, new Length(wide), new Length(tall), new Length(deep), up, new Angle(turn))
             {
                 Part = part,
+                WallInputs = wall,
                 Cuts = cuts,
             }
             : null;
@@ -755,6 +761,230 @@ internal sealed class SceneBinder
         }
 
         return choices.ToImmutable();
+    }
+
+    /// <summary>
+    /// The adopted code (format version 6): <c>null</c> before one is chosen, or the pack's id and
+    /// revision, <c>locked</c> with its date or <c>following</c> with none.
+    /// </summary>
+    private (bool Read, CodeChoice? Code) ReadCode(JsonFields document)
+    {
+        JsonElement? element = Take(document, SceneNames.Code);
+        if (element is not { } value)
+        {
+            return (false, null);
+        }
+
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return (true, null);
+        }
+
+        JsonFields? fields = ReadFields(value, $"/{SceneNames.Code}", $"\"{SceneNames.Code}\"");
+        if (fields is null)
+        {
+            return (false, null);
+        }
+
+        int before = problems.Count;
+        string? pack = ReadText(fields, SceneNames.CodePack);
+        long? revision = ReadInteger(fields, SceneNames.CodeRevision);
+        string? mode = ReadText(fields, SceneNames.CodeMode);
+        (bool dateRead, DateOnly? lockedOn) = ReadDateOrNull(fields, SceneNames.CodeLockedOn);
+        RejectUnknownFields(fields);
+        if (problems.Count > before || pack is null || revision is null || mode is null || !dateRead)
+        {
+            return (false, null);
+        }
+
+        // The same spelling the rules engine's packs use for their ids (PackLoader): lower case,
+        // country-state-designation.
+        if (pack.Length == 0 || !pack.All(c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '.' or '-') || pack[0] is '.' or '-')
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.CodePack}", $"\"{pack}\" is not a code pack id (lower case, like us-ct-2022).");
+            return (false, null);
+        }
+
+        if (revision < 1 || revision > int.MaxValue)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.CodeRevision}", "A code pack's revision is a whole number of at least 1.");
+            return (false, null);
+        }
+
+        CodeMode? parsed = mode switch
+        {
+            SceneNames.CodeLocked => CodeMode.Locked,
+            SceneNames.CodeFollowing => CodeMode.Following,
+            _ => null,
+        };
+        if (parsed is not { } how)
+        {
+            Add(LoadProblemKind.UnknownValue, $"{fields.Path}/{SceneNames.CodeMode}", $"\"{mode}\" is not a code mode. They are: {SceneNames.CodeLocked}, {SceneNames.CodeFollowing}.");
+            return (false, null);
+        }
+
+        if ((how == CodeMode.Locked) != lockedOn.HasValue)
+        {
+            Add(
+                LoadProblemKind.InvalidValue,
+                $"{fields.Path}/{SceneNames.CodeLockedOn}",
+                "A locked code records the date it was locked, and a following one has none (null).");
+            return (false, null);
+        }
+
+        return (true, new CodeChoice(pack, (int)revision, how, lockedOn));
+    }
+
+    /// <summary>The site values (format version 6): every field present, each a value or null for "not entered".</summary>
+    private SiteValues? ReadSite(JsonFields document)
+    {
+        JsonFields? fields = ReadObject(document, SceneNames.Site);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        int before = problems.Count;
+        (bool snowRead, long? snow) = ReadIntegerOrNull(fields, SceneNames.SiteGroundSnowLoad);
+        (bool windRead, long? wind) = ReadIntegerOrNull(fields, SceneNames.SiteUltimateWindSpeed);
+        (bool sdcRead, string? sdc) = ReadTextOrNull(fields, SceneNames.SiteSeismicDesignCategory);
+        (bool frostRead, long? frost) = ReadIntegerOrNull(fields, SceneNames.SiteFrostDepth);
+        (bool widthRead, long? width) = ReadIntegerOrNull(fields, SceneNames.SiteBuildingWidth);
+        (bool sourceRead, SiteSource? source) = ReadSiteSource(fields);
+        RejectUnknownFields(fields);
+        if (problems.Count > before || !snowRead || !windRead || !sdcRead || !frostRead || !widthRead || !sourceRead)
+        {
+            return null;
+        }
+
+        void Refuse(string name, string why) => Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", why);
+        if (snow is < 0 or > int.MaxValue)
+        {
+            Refuse(SceneNames.SiteGroundSnowLoad, "A ground snow load is a whole number of psf, not negative, or null when not entered.");
+        }
+
+        if (wind is < 0 or > int.MaxValue)
+        {
+            Refuse(SceneNames.SiteUltimateWindSpeed, "A wind speed is a whole number of mph, not negative, or null when not entered.");
+        }
+
+        if (sdc is { Length: 0 })
+        {
+            Refuse(SceneNames.SiteSeismicDesignCategory, "A seismic design category is text, or null when not entered; this one is empty.");
+        }
+
+        if (frost is < 0)
+        {
+            Refuse(SceneNames.SiteFrostDepth, "A frost depth is not negative, or null when not entered.");
+        }
+
+        if (width is <= 0)
+        {
+            Refuse(SceneNames.SiteBuildingWidth, "A building width is greater than zero, or null when not entered.");
+        }
+
+        return problems.Count > before
+            ? null
+            : new SiteValues(
+                (int?)snow,
+                (int?)wind,
+                sdc,
+                frost is { } f ? new Length(f) : null,
+                width is { } w ? new Length(w) : null,
+                source);
+    }
+
+    private (bool Read, SiteSource? Source) ReadSiteSource(JsonFields site)
+    {
+        JsonElement? element = Take(site, SceneNames.SiteSource);
+        if (element is not { } value)
+        {
+            return (false, null);
+        }
+
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return (true, null);
+        }
+
+        JsonFields? fields = ReadFields(value, $"{site.Path}/{SceneNames.SiteSource}", $"\"{SceneNames.SiteSource}\"");
+        if (fields is null)
+        {
+            return (false, null);
+        }
+
+        string? text = ReadText(fields, SceneNames.SiteSourceText);
+        (bool onRead, DateOnly? on) = ReadDateOrNull(fields, SceneNames.SiteSourceOn);
+        RejectUnknownFields(fields);
+        return text is not null && onRead ? (true, new SiteSource(text, on)) : (false, null);
+    }
+
+    /// <summary>A box's wall inputs (format version 6): <c>null</c>, or what it supports and its stud spacing, not both null.</summary>
+    private (bool Read, WallInputs? Inputs) ReadWallInputs(JsonFields box)
+    {
+        JsonElement? element = Take(box, SceneNames.Wall);
+        if (element is not { } value)
+        {
+            return (false, null);
+        }
+
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return (true, null);
+        }
+
+        JsonFields? fields = ReadFields(value, $"{box.Path}/{SceneNames.Wall}", $"\"{SceneNames.Wall}\"");
+        if (fields is null)
+        {
+            return (false, null);
+        }
+
+        int before = problems.Count;
+        (bool supportsRead, string? supports) = ReadTextOrNull(fields, SceneNames.WallSupports);
+        (bool spacingRead, long? spacing) = ReadIntegerOrNull(fields, SceneNames.WallStudSpacing);
+        RejectUnknownFields(fields);
+        if (problems.Count > before || !supportsRead || !spacingRead)
+        {
+            return (false, null);
+        }
+
+        if (supports is { Length: 0 })
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.WallSupports}", "What a wall supports is a value from the code's table, or null when not chosen; this one is empty.");
+            return (false, null);
+        }
+
+        if (spacing is <= 0)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.WallStudSpacing}", "A stud spacing is greater than zero, or null for the default.");
+            return (false, null);
+        }
+
+        if (supports is null && spacing is null)
+        {
+            Add(LoadProblemKind.InvalidValue, fields.Path, "A wall with nothing entered is written \"wall\": null, not an object of nulls.");
+            return (false, null);
+        }
+
+        return (true, new WallInputs(supports, spacing is { } s ? new Length(s) : null));
+    }
+
+    /// <summary>A date written <c>yyyy-MM-dd</c>, or null.</summary>
+    private (bool Read, DateOnly? Date) ReadDateOrNull(JsonFields fields, string name)
+    {
+        (bool read, string? text) = ReadTextOrNull(fields, name);
+        if (!read || text is null)
+        {
+            return (read, null);
+        }
+
+        if (!DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly date))
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", $"\"{text}\" is not a date written yyyy-MM-dd.");
+            return (false, null);
+        }
+
+        return (true, date);
     }
 
     private ImmutableList<SupplyLine> ReadSupplies(JsonFields document)
