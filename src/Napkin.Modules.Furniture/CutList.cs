@@ -29,7 +29,7 @@ public static class CutList
     /// numbers believing they include anything they do not: the finished sizes, joinery allowances
     /// in, saw kerf not (#138).
     /// </summary>
-    public const string BeforeKerfAndJoinery = "Cut list: finished sizes: joinery allowances included; saw kerf is not added to these sizes (it is planned on the shopping list and the cut layout, #138).";
+    public const string BeforeKerfAndJoinery = "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).";
 
     /// <summary>
     /// The cut list for a design.

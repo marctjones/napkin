@@ -27,7 +27,7 @@ public sealed class ShoppingListCsvTests
 
         ImmutableArray<ImmutableArray<string>> lines = CutListCsv.Parse(ShoppingListCsv.ToCsv(rows));
 
-        Assert.Equal([ShoppingList.BeforeKerfAndJoinery], lines[0]);
+        Assert.Equal([ShoppingList.Statement(CutLayout.DefaultKerf)], lines[0]);
         Assert.Equal(ShoppingListCsv.Header.Split(','), lines[1]);
         Assert.Equal(rows.Length + 2, lines.Length);
 
@@ -39,7 +39,9 @@ public sealed class ShoppingListCsvTests
         // The fields that carry a comma, a quote or a dash survive: "1 × 6'-0"" has a quote, and the
         // sheet row's buy text has a comma.
         Assert.Equal("2x4", lines[2][0]);
-        Assert.Equal("1 × 6'-0\"", lines[2][2]);
+        // Two 36" rails: 72 in of pieces + 2 cuts x 1/8 = 72 1/4 in, which a 6' (72 in) does not hold,
+        // so the 8'. (Before the kerf was planned this was a 6'.)
+        Assert.Equal("1 × 8'-0\"", lines[2][2]);
         Assert.Equal("1 sheet, 4'-0\" × 8'-0\"", lines[3][2]);
         Assert.Equal(ShoppingList.SheetsByArea, lines[3][7]);
         Assert.Equal("no stock chosen, so nothing is bought for it", lines[4][7]);
@@ -52,9 +54,9 @@ public sealed class ShoppingListCsvTests
         string csv = ShoppingListCsv.ToCsv([]);
 
         // The statement has commas in it, so it is one quoted field on a line of its own.
-        Assert.Equal($"\"{ShoppingList.BeforeKerfAndJoinery}\"\n{ShoppingListCsv.Header}\n", csv);
-        Assert.Contains("kerf", ShoppingList.BeforeKerfAndJoinery, StringComparison.Ordinal);
-        Assert.Contains("joinery", ShoppingList.BeforeKerfAndJoinery, StringComparison.Ordinal);
+        Assert.Equal($"\"{ShoppingList.Statement(CutLayout.DefaultKerf)}\"\n{ShoppingListCsv.Header}\n", csv);
+        Assert.Contains("kerf", ShoppingList.Statement(CutLayout.DefaultKerf), StringComparison.Ordinal);
+        Assert.Contains("joinery", ShoppingList.Statement(CutLayout.DefaultKerf), StringComparison.Ordinal);
         Assert.DoesNotContain('\r', ShoppingListCsv.ToCsv(Rows()));
     }
 }

@@ -78,7 +78,7 @@ public class ShoppingListWorkflows
             string[] onScreen = [.. list.ShoppingRows.LinesOnScreen];
             var exported = CutListCsv.Parse(list.ShoppingCsv);
 
-            Assert.Equal([ShoppingList.BeforeKerfAndJoinery], exported[0]);
+            Assert.Equal([ShoppingList.Statement(CutLayout.DefaultKerf)], exported[0]);
             Assert.Equal(onScreen.Length, exported.Length - 1);
             Assert.Equal(onScreen.Skip(1), exported.Skip(2).Select(fields => string.Join("\t", fields)));
         });

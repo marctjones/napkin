@@ -523,18 +523,21 @@ public class FramingListTests
     [Fact]
     public void TheFrameBuysBoardsThroughTheShoppingList()
     {
-        // The sample's 2x6 pieces, longest first, first fit over 6'…16' (ShoppingList §4 step 2):
-        // three 144s take three 12' boards; ten 91 1/2s (8 studs, 2 kings) each take an 8' board,
-        // leaving 4 1/2; two 76 1/2 jacks fit no leftover, so two more 8' (19 1/2 left each); the
-        // 36 sill fits neither leftover, so a 6' (36 left); the first 33 cripple fits that (3 left),
-        // the second needs another 6'. 2 × 6', 12 × 8', 3 × 12'. The header has no stock: nothing
-        // bought for it, said so.
+        // The sample's 2x6 pieces, longest first, kerf 1/8 in, boards opened at the longest length (16' =
+        // 192 in) and shrunk at the end (CutLayout, #138): three 144s take a board each (a second 144
+        // does not fit: 288 > 192); ten 91 1/2s go two to a board (183 + 2/8 <= 192, a third does
+        // not), so five boards; the two 76 1/2 fit no leftover (144 + 76 1/2 > 192, 183 + 76 1/2 > 192)
+        // and share a new board (153 + 2/8 = 153 1/4, which shrinks to a 14' = 168 in, 144 does not
+        // hold it); the 36 sill goes on the first 144 board (180 + 2/8 = 180 1/4 <= 192), and the two 33
+        // cripples on the second and third 144 boards (177 + 2/8 <= 192; the first is full at 180).
+        // Every one of those eight boards needs a 16' (nothing shorter holds 177 1/4 or more).
+        // So 1 x 14' and 8 x 16'. The header has no stock: nothing bought for it, said so.
         ImmutableArray<CutListRow> rows = FramingList.CutRows(FramingList.Of(Sample(), Library));
         ImmutableArray<ShoppingListRow> shopping = ShoppingList.Of(rows);
 
         Assert.Equal(2, shopping.Length);
         Assert.Equal("2x6", shopping[0].Material);
-        Assert.Equal("2 × 6'-0\", 12 × 8'-0\", 3 × 12'-0\"", shopping[0].BuyText);
+        Assert.Equal("1 × 14'-0\", 8 × 16'-0\"", shopping[0].BuyText);
         Assert.StartsWith("Wall bottom plate × 1, Wall top plate × 2, Wall stud × 8, Wall king stud × 2", shopping[0].For, StringComparison.Ordinal);
         Assert.Equal(ShoppingListKind.NothingToBuy, shopping[1].Kind);
         Assert.Equal("header, not yet sized", shopping[1].Material);

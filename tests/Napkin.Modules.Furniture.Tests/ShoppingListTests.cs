@@ -57,28 +57,29 @@ public sealed class ShoppingListTests
 
     [Fact]
     [Trait("Feature", "CUT-006")]
-    public void First_fit_decreasing_fills_bought_boards_before_buying_the_shortest_that_holds_the_next_piece()
+    public void First_fit_decreasing_fills_open_boards_of_the_longest_length_and_each_then_shrinks()
     {
-        // Longest first: 90" -> no board yet, shortest stocked length holding 90" is 8' (96"), 6" left.
-        // 50" -> the 8' has 6" left, so a new 6' (72"), 22" left. 50" again -> neither holds it, another
-        // 6', 22" left. 20" -> the first board with room is the first 6' (22" left), 2" left.
-        // So 2 x 6' and 1 x 8', shortest first.
+        // Kerf 1/8 in per cut. Longest first: 90, 50, 50, 20. Boards open at the longest stocked
+        // length, 16' (192 in): 90 -> board 1; 50 -> board 1 (140 + 2/8 <= 192); 50 -> board 1
+        // (190 + 3/8 = 190 3/8 <= 192); 20 -> board 1 would be 210, so board 2.
+        // Shrink: board 1 (190 in, 3 pieces, 3 cuts, 190 3/8 in) needs the 16'; board 2 (20 + 1/8)
+        // fits the 6'. So 1 x 6' and 1 x 16'.
         ShoppingListRow row = Assert.Single(Shop(
             TwoByFour("Beam", 90),
             TwoByFour("Rail", 50, quantity: 2),
             TwoByFour("Block", 20)));
 
         Assert.Equal(
-            [new BoardsOfLength(new Length(72 * 1024), 2), new BoardsOfLength(new Length(96 * 1024), 1)],
+            [new BoardsOfLength(new Length(72 * 1024), 1), new BoardsOfLength(new Length(192 * 1024), 1)],
             row.Boards);
-        Assert.Equal("2 × 6'-0\", 1 × 8'-0\"", row.BuyText);
-        Assert.Equal(3, row.Count);
+        Assert.Equal("1 × 6'-0\", 1 × 16'-0\"", row.BuyText);
+        Assert.Equal(2, row.Count);
 
-        // Bought 2 x 4 x (72 + 72 + 96) = 1920 in³ = 13.333… -> 13.3. Used 2 x 4 x 210 = 1680 in³
-        // = 11.666… -> 11.7. Waste 240 in³ = 1.666… -> 1.7.
-        Assert.Equal("13.3", row.BoughtText);
+        // Bought 2 x 4 x (72 + 192) = 2112 in³ = 14.666… -> 14.7. Used 2 x 4 x 210 = 1680 in³
+        // = 11.666… -> 11.7. Waste 432 in³ = 3.0.
+        Assert.Equal("14.7", row.BoughtText);
         Assert.Equal("11.7", row.UsedText);
-        Assert.Equal("1.7", row.WasteText);
+        Assert.Equal("3.0", row.WasteText);
     }
 
     [Fact]
