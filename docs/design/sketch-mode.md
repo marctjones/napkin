@@ -103,9 +103,13 @@ public static class SnapGrid
 
 One rung coarser than what the grid draws, floored at a whole inch, from the same ladder. So the
 rough steps are whole inches close up, then 3″, 6″, 12″, 24″ … — round numbers a person would say
-out loud, and always a multiple of the drawn grid, so a rough drag still lands on a line that is
-on the screen (the `SnapGrid` rule: never snap to a step you did not draw). Hand-derived table,
-from `MinimumSpacingPixels = 14`:
+out loud, and — at every zoom a piece of furniture or a wall is drawn at — a whole multiple of
+the drawn grid, so a rough drag still lands on a line that is on the screen (the `SnapGrid`
+rule: never snap to a step you did not draw). That holds for every precise step up to 48″; the
+ladder's site-plan rungs are not doublings (96 → 144, 288 → 600, 2400 → 6000), so at those three
+zooms the rough step is coarser but not on the drawn lines. Stated rather than fixed: no rung of
+the existing ladder is a multiple there, and a rough site plan is not what this note is for.
+Hand-derived table, from `MinimumSpacingPixels = 14`:
 
 | pixels per inch | precise step | rough step |
 |---|---|---|
@@ -412,7 +416,8 @@ ones, and the cut list says which.
 ### 7.1 Pure snapping (`Napkin.App.GuiTests/Unit/SnapGridTests.cs`, `CanvasSnapModeTests.cs`)
 
 - `RoughStepInches` reproduces §2.1's table exactly, and for every ladder entry: the rough step is
-  ≥ 1″, is on the ladder, is ≥ the precise step, and is an integer multiple of it.
+  ≥ 1″, is on the ladder and ≥ the precise step; for every precise step up to 48″ it is also an
+  integer multiple of it (the three site-plan rungs above are named in §2.1 and are exempt).
 - At 60 ppi a drag from 0.3″ to 10.6″ lands a plank 11″ wide in Rough (0 → 11) and 10 1/4″ wide
   in Precise (1/4 → 10 1/2); the same `SnapGrid.Snap` with the two steps.
 - A rough drop beside a part: `SnapPlan.CaughtSomething` is true, the landed anchor equals the
