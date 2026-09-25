@@ -1657,10 +1657,25 @@ public sealed class ModelView : Control
         }
 
         Dictionary<LayerId, string> layerNames = sketch.Layers.ToDictionary(layer => layer.Id, layer => layer.Name);
+        // An opening shares its faces with its wall, so it is painted in a second pass, over the wall,
+        // where it reads as a hole. A visual stand-in only (#18): it is also painted over anything
+        // standing in front of the wall.
+        List<ScenePolygon> openings = [];
         foreach (ScenePolygon polygon in Scene.BackToFront(_camera))
         {
             string layer = sketch.Find(polygon.Box) is { } entity ? Napkin.App.Designs.DesignLayers.StyleName(sketch, entity, layerNames) : string.Empty;
+            if (layer == Napkin.App.Designs.DesignLayers.Opening)
+            {
+                openings.Add(polygon);
+                continue;
+            }
+
             DrawPolygon(context, palette, palette.StyleFor(layer), polygon);
+        }
+
+        foreach (ScenePolygon polygon in openings)
+        {
+            DrawPolygon(context, palette, palette.StyleFor(Napkin.App.Designs.DesignLayers.Opening), polygon);
         }
 
         DrawAttention(context, palette);
