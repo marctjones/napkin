@@ -28,8 +28,27 @@ read from Connecticut's own document (2022 CSBC w/ Errata #1, ED October 1, 2022
 
 **Where the app looks for packs roots** (`PackLocations.All()`): `packs/` beside the executable, then
 the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application Support/napkin`, or
-`$XDG_CONFIG_HOME/napkin`) for your own. Each is a packs root as described below. The picker UI is
-issue #19.
+`$XDG_CONFIG_HOME/napkin`) for your own. Each is a packs root as described below.
+
+## In the app
+
+**Edit → Adopted code and site…** lists every pack found in those folders as "<shortName> —
+<baseCode>, in force <from>" with its id, revision, status and review state, for example "CT 2022
+— IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 1): base tables not loaded (UNREVIEWED)".
+A pack that fails to load is shown with its problems, not hidden. napkin never picks one: the
+choice is stored with the design (format 6), locked to a revision (with the date) or following
+the newest installed revision. The same window takes the site values; empty means not entered.
+Each wall says what it supports in its panel, from the values the pack's table declares.
+
+Every opening's header is then checked ([building.md](building.md)): **Sized** with the citation,
+**Out of scope** citing the limit, **Input missing** naming the input and where to type it, or
+**No data**. With only the shipped Connecticut pack every check is No data: "The loaded pack CT
+2022 has no header table for exterior-bearing walls, so napkin cannot size this header. Nothing
+is guessed: add the table to the pack directory from your copy of the code (docs/rules-engine.md).
+Where to add tables: docs/rules-engine.md". To get sized headers, author the IRC tables (below) in
+your per-user packs folder, as a `layers/irc-2021/tables/<table>.json` and the pack that uses it
+(copy `packs/us-ct-2022` and give it your own id or a higher revision), run your golden tests,
+then restart napkin and choose it.
 
 ## Author a pack from your own copy of the code
 
