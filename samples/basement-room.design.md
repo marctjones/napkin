@@ -31,6 +31,10 @@ covers **40 sq ft**; paint on walls and ceiling, **2** coats, a gallon covers **
 flooring, **10 %** waste (napkin's own design default, said so), a box covers **20 sq ft**;
 baseboard, stick **8'-0"**. No code is chosen: the walls are not bearing, so no header is checked.
 
+Rough-in notes, counted and never modelled: **outlet × 4** (one near each corner), **switch × 1**
+(by the door) and **light × 1** (the middle of the room), on the Notes layer. The shopping list's
+Notes line reads "outlet × 4, switch × 1, light × 1".
+
 ## The frame, by hand
 
 `t` = 1 1/2", `s` = 16", studs 96 − 3t = 91 1/2". Each opening: one jack and one king each side

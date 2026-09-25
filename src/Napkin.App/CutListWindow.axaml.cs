@@ -386,6 +386,15 @@ public partial class CutListWindow : Window
     /// <summary>The shopping list as a CSV file would carry it, in the order it is on screen.</summary>
     public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted, _kerf);
 
+    /// <summary>The New notes counted by symbol.</summary>
+    public ImmutableArray<NoteCount> NoteCounts { get; private set; } = [];
+
+    /// <summary>The Notes line: "outlet × 4, switch × 1, light × 1"; empty when there is no New note.</summary>
+    public string NotesText => NotesSection.IsVisible ? NotesLine.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The Notes as a CSV file carries them, under their own header.</summary>
+    public string NotesCsv => NotesList.ToCsv(NoteCounts);
+
     /// <summary>The Area takeoff section's lines, in the order on screen.</summary>
     public ImmutableArray<TakeoffLine> TakeoffLines { get; private set; } = [];
 
@@ -465,6 +474,11 @@ public partial class CutListWindow : Window
         TakeoffLines = takeoff;
         AreaTakeoffList.ItemsSource = takeoff.Select(line => (takeoff.Select(each => each.Room).Distinct().Count() > 1 ? $"{line.Room} — " : string.Empty) + line.Text).ToArray();
         AreaTakeoffSection.IsVisible = !takeoff.IsEmpty;
+
+        // The New notes counted by symbol (renovation-sketches §6.2).
+        NoteCounts = NotesList.Of(sketch);
+        NotesLine.Text = NotesList.Line(NoteCounts) ?? string.Empty;
+        NotesSection.IsVisible = !NoteCounts.IsEmpty;
 
         // What comes out, and the line that says only New is bought (renovation-sketches §6.2).
         ImmutableArray<DemolitionLine> demolition = [.. Demolition.Boxes(sketch), .. FramingDiff.Demolition(diffs)];

@@ -25,6 +25,9 @@ public enum EditTool
 
     /// <summary>Drag out a room, or click inside walls for their inside faces (renovation-sketches §8).</summary>
     Room,
+
+    /// <summary>Click to put a note (renovation-sketches §8).</summary>
+    Note,
 }
 
 /// <summary>
