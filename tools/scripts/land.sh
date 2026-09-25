@@ -47,6 +47,9 @@ git merge -q --no-ff "$branch" -m "Merge ${branch}: ${what} (0.${next}.0-beta)
 
 ${coauthor}"
 git push -q origin main
-git branch -q -d "$branch"
+# -D not -d: git branch -d compares against the branch's upstream-tracking ref (still set from
+# the earlier `git push -u`), which we have not re-fetched, so it reports "not merged" even
+# though the --no-ff merge above just incorporated it into main. We just did that merge ourselves.
+git branch -q -D "$branch"
 git push -q origin --delete "$branch" 2>/dev/null || true
 git log --oneline -4
