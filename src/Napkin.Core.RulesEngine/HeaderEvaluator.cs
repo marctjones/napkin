@@ -408,6 +408,9 @@ public interface IRulesEngine
 
     /// <summary>Sizes a header. Never throws for a request no row covers: that is a result.</summary>
     HeaderResult SizeHeader(HeaderRequest request);
+
+    /// <summary>Checks a wall line's bracing: a separate evaluator over the whole line (design §3.3).</summary>
+    BracingResult CheckBracing(BracingRequest request);
 }
 
 /// <summary>Builds engines, and answers for a project that may have no pack at all.</summary>
@@ -439,8 +442,29 @@ public static class RulesEngine
             : HeaderEvaluator.Size(pack, request);
     }
 
+    /// <summary>
+    /// Checks a wall line's bracing for a project whose pack may be missing: with no pack the
+    /// answer is <see cref="BracingResult.NoData"/>, never a guess.
+    /// </summary>
+    public static BracingResult CheckBracing(LoadedPack? pack, BracingRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return pack is null
+            ? new BracingResult.NoData(
+                BracingNoDataReason.NoPackSelected,
+                null,
+                "No adopted code is selected for this project (or its pack is unavailable), so napkin cannot check this wall line's bracing. Choose a code pack.")
+            : BracingEvaluator.Check(pack, request);
+    }
+
     private sealed class Engine(LoadedPack pack) : IRulesEngine
     {
+        public BracingResult CheckBracing(BracingRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            return BracingEvaluator.Check(pack, request);
+        }
+
         public AdoptedCodeRef Code => pack.Code;
 
         public HeaderResult SizeHeader(HeaderRequest request)

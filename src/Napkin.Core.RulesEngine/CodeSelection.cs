@@ -118,7 +118,7 @@ public sealed record RecomputeReport(ValueList<ResultChange> Changes, int Unchan
 /// Recompute is total (design §7.3): every element, against the given pack, no incremental
 /// shortcut, no stored result reused. Pure functions; wiring them to project events is #19.
 /// </summary>
-public static class Recompute
+public static partial class Recompute
 {
     /// <summary>Evaluates every element's header request against the pack (or no pack), in order.</summary>
     public static ValueList<KeyValuePair<EntityId, HeaderResult>> Headers(
@@ -172,5 +172,119 @@ public static class Recompute
         (_, HeaderResult.Sized) => ChangeKind.NoAnswerToSized,
         (_, HeaderResult.OutOfScope) => ChangeKind.NoAnswerToOutOfScope,
         _ => ChangeKind.NoAnswerChanged,
+    };
+}
+
+/// <summary>How one wall line's bracing result changed between two computations (design §7.3).</summary>
+public enum BracingChangeKind
+{
+    /// <summary>Passed; now falls short. Newly flagged, shown first.</summary>
+    PassToFail,
+
+    /// <summary>Was out of scope or had no answer; now falls short. Newly flagged.</summary>
+    ToFail,
+
+    /// <summary>Passed or fell short; now out of scope. Flagged: the method no longer covers the line.</summary>
+    ToOutOfScope,
+
+    /// <summary>Had a result (pass, short, or out of scope); now there is no answer: it can no longer be computed.</summary>
+    ToNoAnswer,
+
+    /// <summary>Still short, by a different amount or under a different section.</summary>
+    FailChanged,
+
+    /// <summary>Still passes, with different lengths.</summary>
+    PassChanged,
+
+    /// <summary>Still out of scope, for a different reason or limit.</summary>
+    OutOfScopeChanged,
+
+    /// <summary>Fell short; now passes.</summary>
+    FailToPass,
+
+    /// <summary>Was out of scope or had no answer; now passes.</summary>
+    ToPass,
+
+    /// <summary>Had no answer; now out of scope.</summary>
+    NoAnswerToOutOfScope,
+
+    /// <summary>Still no answer, for a different reason.</summary>
+    NoAnswerChanged,
+
+    /// <summary>Same verdict and lengths; only the citation or working differs (another pack, a revision).</summary>
+    CitationOnly,
+}
+
+/// <summary>One wall line whose bracing result differs.</summary>
+public sealed record BracingChange(EntityId Element, BracingResult Before, BracingResult After, BracingChangeKind Kind);
+
+/// <summary>What a total bracing recompute changed: every line is either in <see cref="Changes"/> or counted in <see cref="Unchanged"/>.</summary>
+public sealed record BracingRecomputeReport(ValueList<BracingChange> Changes, int Unchanged)
+{
+    /// <summary>The lines that became flagged: newly short, or newly out of scope.</summary>
+    public IEnumerable<BracingChange> NewlyFlagged
+        => Changes.Where(c => c.Kind is BracingChangeKind.PassToFail or BracingChangeKind.ToFail
+                              || (c.Kind == BracingChangeKind.ToOutOfScope && c.Before is not BracingResult.Fails));
+
+    /// <summary>The lines that had a result and can no longer be computed.</summary>
+    public IEnumerable<BracingChange> NoLongerComputable => Changes.Where(c => c.Kind == BracingChangeKind.ToNoAnswer);
+}
+
+/// <summary>Total recompute and diff for wall bracing, the counterpart of the header functions above.</summary>
+public static partial class Recompute
+{
+    /// <summary>Checks every wall line against the pack (or no pack), in order.</summary>
+    public static ValueList<KeyValuePair<EntityId, BracingResult>> Bracing(
+        LoadedPack? pack, IEnumerable<KeyValuePair<EntityId, BracingRequest>> lines)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        return lines
+            .Select(e => new KeyValuePair<EntityId, BracingResult>(e.Key, RulesEngine.CheckBracing(pack, e.Value)))
+            .ToValueList();
+    }
+
+    /// <summary>Compares two computations over the same wall lines.</summary>
+    /// <exception cref="ArgumentException">The two sets of lines differ: a recompute that dropped or invented one.</exception>
+    public static BracingRecomputeReport DiffBracing(
+        IReadOnlyList<KeyValuePair<EntityId, BracingResult>> before, IReadOnlyList<KeyValuePair<EntityId, BracingResult>> after)
+    {
+        ArgumentNullException.ThrowIfNull(before);
+        ArgumentNullException.ThrowIfNull(after);
+        Dictionary<EntityId, BracingResult> old = before.ToDictionary(p => p.Key, p => p.Value);
+        if (old.Count != after.Count || after.Any(p => !old.ContainsKey(p.Key)))
+        {
+            throw new ArgumentException("Before and after must cover exactly the same wall lines; a recompute is total.", nameof(after));
+        }
+
+        List<BracingChange> changes = [];
+        int unchanged = 0;
+        foreach ((EntityId element, BracingResult now) in after)
+        {
+            BracingResult was = old[element];
+            if (was.Equals(now))
+            {
+                unchanged++;
+                continue;
+            }
+
+            changes.Add(new BracingChange(element, was, now, Classify(was, now)));
+        }
+
+        return new BracingRecomputeReport(changes.OrderBy(c => c.Kind).ToValueList(), unchanged);
+    }
+
+    private static BracingChangeKind Classify(BracingResult was, BracingResult now) => (was, now) switch
+    {
+        (BracingResult.Passes a, BracingResult.Passes b) => a.Required == b.Required && a.Provided == b.Provided ? BracingChangeKind.CitationOnly : BracingChangeKind.PassChanged,
+        (BracingResult.Fails a, BracingResult.Fails b) => a.Required == b.Required && a.Provided == b.Provided ? BracingChangeKind.CitationOnly : BracingChangeKind.FailChanged,
+        (BracingResult.Passes, BracingResult.Fails) => BracingChangeKind.PassToFail,
+        (_, BracingResult.Fails) => BracingChangeKind.ToFail,
+        (BracingResult.Fails, BracingResult.Passes) => BracingChangeKind.FailToPass,
+        (_, BracingResult.Passes) => BracingChangeKind.ToPass,
+        (BracingResult.OutOfScope, BracingResult.OutOfScope) => BracingChangeKind.OutOfScopeChanged,
+        (BracingResult.Passes or BracingResult.Fails, BracingResult.OutOfScope) => BracingChangeKind.ToOutOfScope,
+        (_, BracingResult.OutOfScope) => BracingChangeKind.NoAnswerToOutOfScope,
+        (BracingResult.Passes or BracingResult.Fails or BracingResult.OutOfScope, _) => BracingChangeKind.ToNoAnswer,
+        _ => BracingChangeKind.NoAnswerChanged,
     };
 }
