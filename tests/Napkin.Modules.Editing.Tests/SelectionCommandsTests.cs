@@ -119,3 +119,138 @@ public class SelectionCommandsTests
         return editor;
     }
 }
+
+/// <summary>
+/// The selection commands' quiet cases — nothing selected — and what a drop that went nowhere
+/// says, with the way out when a pin is the reason.
+/// </summary>
+public class SelectionCommandEdgeTests
+{
+    static readonly EntityId First = EditingBuilder.Id(0);
+    static readonly EntityId Second = EditingBuilder.Id(1);
+
+    static DesignEditor TwoParts()
+    {
+        DesignEditor editor = new();
+        editor.Open(EditingBuilder.Design(EditingBuilder.At(0, 0, 10, 4), EditingBuilder.At(20, 0, 10, 4)));
+        return editor;
+    }
+
+    [Fact]
+    public void Delete_and_pin_with_nothing_selected_do_nothing_at_all()
+    {
+        DesignEditor editor = TwoParts();
+        Sketch before = editor.Sketch;
+
+        SelectionCommands.Delete(editor);
+        SelectionCommands.Pin(editor);
+
+        Assert.Same(before, editor.Sketch);
+        Assert.False(editor.History.CanUndo);
+        Assert.Null(editor.LastMessage);
+    }
+
+    [Fact]
+    public void Pinning_two_parts_is_one_undo_step_that_pins_both()
+    {
+        DesignEditor editor = TwoParts();
+        editor.SelectAll([First, Second]);
+
+        SelectionCommands.Pin(editor);
+
+        Assert.Equal([First, Second], editor.Sketch.RelationshipsInOrder.OfType<Anchored>().Select(pin => pin.Entity).Order());
+        Assert.True(editor.Undo());
+        Assert.Empty(editor.Sketch.RelationshipsInOrder);
+        Assert.False(editor.History.CanUndo);
+    }
+
+    [Fact]
+    public void Pinning_a_pair_where_one_is_already_pinned_pins_only_the_other()
+    {
+        DesignEditor editor = TwoParts();
+        editor.Select(First);
+        SelectionCommands.Pin(editor);
+        editor.SelectAll([First, Second]);
+
+        SelectionCommands.Pin(editor);
+
+        Assert.Equal(2, editor.Sketch.RelationshipsInOrder.OfType<Anchored>().Count());
+        Assert.Single(editor.Sketch.RelationshipsInOrder.OfType<Anchored>(), pin => pin.Entity == First);
+    }
+
+    [Fact]
+    public void Mirror_and_duplicate_with_nothing_selected_hint_and_make_nothing()
+    {
+        DesignEditor editor = TwoParts();
+
+        Assert.Null(SelectionCommands.Mirror(editor, Axis.X));
+        Assert.Equal(EditSeverity.Hint, editor.LastMessage!.Severity);
+        Assert.Null(SelectionCommands.Duplicate(editor, 1));
+        Assert.Equal(EditSeverity.Hint, editor.LastMessage!.Severity);
+        Assert.Equal(2, editor.Sketch.Entities.Count);
+    }
+
+    [Fact]
+    public void A_skewed_part_is_not_mirrored_and_the_problem_names_it()
+    {
+        DesignEditor editor = new();
+        Box skewed = Box.AsDrawn(First, LayerId.Default, Point2.Inches(0, 0), Length.Inches(10), Length.Inches(4), Length.Inches(1), Angle.Degrees(30));
+        editor.Open(new Design("Skew", Sketch.Empty.WithEntity(skewed), ImmutableDictionary<EntityId, string>.Empty.Add(First, "Brace")));
+        editor.Select(First);
+
+        Assert.Null(SelectionCommands.Mirror(editor, Axis.Y));
+
+        Assert.Equal(EditSeverity.Problem, editor.LastMessage!.Severity);
+        Assert.Contains("Brace", editor.LastMessage.Text, StringComparison.Ordinal);
+        Assert.Single(editor.Sketch.Entities);
+    }
+
+    [Fact]
+    public void A_pinned_part_that_stayed_put_is_offered_an_unpin_as_one_undo_step()
+    {
+        DesignEditor editor = TwoParts();
+        editor.Select(First);
+        SelectionCommands.Pin(editor);
+        Anchored pin = editor.Sketch.RelationshipsInOrder.OfType<Anchored>().Single();
+
+        SelectionCommands.SayStayedPut(editor, First, "Moved Part 1");
+
+        EditMessage message = editor.LastMessage!;
+        Assert.Equal(EditSeverity.Problem, message.Severity);
+        Assert.StartsWith("Moved Part 1", message.Text, StringComparison.Ordinal);
+        Assert.Equal([pin.Id], message.Highlight);
+        EditOffer offer = Assert.IsType<EditOffer>(message.Offer);
+        Assert.Equal(new RemoveRelationship(pin.Id), offer.Request);
+
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(offer.Request, offer.What));
+        Assert.Empty(editor.Sketch.RelationshipsInOrder);
+    }
+
+    [Fact]
+    public void An_unpinned_part_that_stayed_put_gets_a_hint_naming_it_and_no_offer()
+    {
+        DesignEditor editor = TwoParts();
+        editor.Select(Second);
+        SelectionCommands.Pin(editor);
+
+        // The other part is pinned; this one is not, so its pin is not the reason.
+        SelectionCommands.SayStayedPut(editor, First, "Moved Part 1");
+
+        EditMessage message = editor.LastMessage!;
+        Assert.Equal(EditSeverity.Hint, message.Severity);
+        Assert.Contains(editor.NameOf(First), message.Text, StringComparison.Ordinal);
+        Assert.Null(message.Offer);
+    }
+
+    [Fact]
+    public void The_commands_need_an_editor()
+    {
+        Assert.Throws<ArgumentNullException>(() => SelectionCommands.Delete(null!));
+        Assert.Throws<ArgumentNullException>(() => SelectionCommands.Pin(null!));
+        Assert.Throws<ArgumentNullException>(() => SelectionCommands.Duplicate(null!, 1));
+        Assert.Throws<ArgumentNullException>(() => SelectionCommands.Mirror(null!, Axis.X));
+        Assert.Throws<ArgumentNullException>(() => SelectionCommands.SelectedBoxes(null!));
+        Assert.Throws<ArgumentNullException>(() => SelectionCommands.SayStayedPut(null!, First, "x"));
+        Assert.Throws<ArgumentNullException>(() => SelectionCommands.PartToShape(null!));
+    }
+}
