@@ -258,7 +258,7 @@ public partial class MainWindow
         // The workshop's scope is one box (§7.1). Selecting something else — or nothing, because
         // the part was deleted or another design was opened — takes it off the screen rather than
         // leaving a sheet open over a part that is not there any more.
-        if (_shaping is { } shaped && Editor.OnlySelected != shaped)
+        if (WorkshopSheet.Shaping is { } shaped && Editor.OnlySelected != shaped)
         {
             CloseWorkshop();
         }

@@ -151,29 +151,4 @@ public partial class MainWindow
 
         StockMenu.ItemsSource = categories;
     }
-
-    void ShowRefusal(string what, IReadOnlyList<string> problems)
-    {
-        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
-        RefusalProblems = [.. problems];
-        RefusalHeadline.Text = problems.Count == 1
-            ? $"Could not open {what}:"
-            : $"Could not open {what} ({problems.Count} problems):";
-
-        // One line per problem, all of them. Showing the first and hiding the rest would make a
-        // file look like it had one thing wrong with it when it had four.
-        RefusalProblemList.Children.Clear();
-        foreach (string problem in RefusalProblems)
-        {
-            RefusalProblemList.Children.Add(new TextBlock
-            {
-                Text = problem,
-                FontSize = 12,
-                TextWrapping = TextWrapping.Wrap,
-                Foreground = new SolidColorBrush(palette.Label),
-            });
-        }
-
-        RefusalPanel.IsVisible = true;
-    }
 }

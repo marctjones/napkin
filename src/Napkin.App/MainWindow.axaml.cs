@@ -68,12 +68,8 @@ public partial class MainWindow : Window
     bool _showingProperties;
     RelationshipEntry? _rowUnderPointer;
     Box? _propertiesShown;
-    bool _showingCut;
     EntityId? _editingBox;
-    EntityId? _shaping;
     SizeAxis _editingAxis = SizeAxis.Width;
-    readonly List<CutSite> _cutsOnScreen = [];
-    List<string> _cutLinesOnScreen = [];
 
     /// <summary>The window on the person's real settings file.</summary>
     public MainWindow() : this(SettingsStore.ForUser())
@@ -159,11 +155,7 @@ public partial class MainWindow : Window
         ToolBar.AddHandler(Button.ClickEvent, (_, _) => FocusDrawing());
         StockToolboxPanel.AddHandler(Button.ClickEvent, (_, _) => FocusDrawing());
 
-        WorkshopDrawing.Editor = Editor;
-        WorkshopDrawing.SelectedCutChanged += (_, _) => ShowCut();
-        WorkshopDrawing.HintChanged += (_, _) => UpdateWorkshopHint();
-        WorkshopCutsList.SelectionChanged += (_, _) => OnWorkshopCutPicked();
-        WorkshopStockBox.TextChanged += (_, _) => UpdateWorkshopStockReadout();
+        WireWorkshop();
 
         RefusalPanel.PointerPressed += (_, e) =>
         {

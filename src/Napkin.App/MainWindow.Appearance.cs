@@ -36,11 +36,11 @@ public partial class MainWindow
 
         // A sheet is light whatever the theme, so the notes on it wear the light theme's controls too.
         ThemeVariant? noteTheme = sheet == SketchPaper.Screen ? null : ThemeVariant.Light;
-        foreach (Control note in new Control[]
-        {
+        foreach (Control note in (Control[])
+        [
             RefusalPanel, UnsavedPanel, ToolBar, ViewSnapBar, RelationshipsPanel, PropertiesPanel,
-            StockToolboxPanel, WorkshopSheet, WorkshopCutsPanel, DimensionEditor,
-        })
+            StockToolboxPanel, DimensionEditor, .. WorkshopSheet.Notes,
+        ])
         {
             note.SetValue(ThemeVariantScope.RequestedThemeVariantProperty, noteTheme);
             if (!note.Classes.Contains("note"))
@@ -91,18 +91,7 @@ public partial class MainWindow
         PropertiesError.Foreground = new SolidColorBrush(palette.Snap);
         StockReadout.Foreground = new SolidColorBrush(palette.Label);
 
-        WorkshopSheet.Background = paper;
-        WorkshopHeadline.Foreground = edge;
-        WorkshopHint.Foreground = new SolidColorBrush(palette.Label);
-        WorkshopStockReadout.Foreground = new SolidColorBrush(palette.Label);
-        WorkshopCutsPanel.Background = paper;
-        WorkshopCutsPanel.BorderBrush = new SolidColorBrush(palette.GridMajor);
-        WorkshopCutsHeadline.Foreground = edge;
-        WorkshopCutsEmpty.Foreground = new SolidColorBrush(palette.Label);
-        CutHeadline.Foreground = edge;
-        CutReadout.Foreground = new SolidColorBrush(palette.Label);
-        CutError.Foreground = new SolidColorBrush(palette.Snap);
-        CutFieldsRule.BorderBrush = new SolidColorBrush(palette.GridMajor);
+        WorkshopSheet.ApplyPalette(palette, paper, edge);
 
         DimensionEditor.Background = paper;
         DimensionEditor.BorderBrush = new SolidColorBrush(palette.Selection);
@@ -198,7 +187,7 @@ public partial class MainWindow
     void ApplyGrid(bool show, bool snap)
     {
         DrawingCanvas.ShowGrid = ModelDrawing.ShowGrid = show;
-        DrawingCanvas.SnapToGrid = ModelDrawing.SnapToGrid = WorkshopDrawing.SnapToGrid = snap;
+        DrawingCanvas.SnapToGrid = ModelDrawing.SnapToGrid = WorkshopSheet.Drawing.SnapToGrid = snap;
         GridMenuItem.Icon = show ? new TextBlock { Text = "✓" } : null;
         SnapToGridMenuItem.Icon = snap ? new TextBlock { Text = "✓" } : null;
         UpdateZoomReadout();

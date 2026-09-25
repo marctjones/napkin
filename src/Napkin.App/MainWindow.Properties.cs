@@ -89,7 +89,7 @@ public partial class MainWindow
         {
             PropertiesPanel.IsVisible = false;
             _propertiesShown = null;
-            ShowCut();
+            WorkshopSheet.ShowCut();
             return;
         }
 
@@ -114,7 +114,7 @@ public partial class MainWindow
         }
 
         _propertiesShown = box;
-        ShowCut();
+        WorkshopSheet.ShowCut();
     }
 
     /// <summary>
@@ -198,44 +198,6 @@ public partial class MainWindow
         HardwareBox.Text = string.Join("\n", part.Hardware.Select(item => $"{item.Name} \u00d7 {item.Quantity}"));
     }
 
-    /// <summary>The hardware field's lines: "name" or "name &#xD7; 3" (or "x"), the count defaulting to one.</summary>
-    static bool TryHardware(string? typed, out ImmutableList<HardwareItem> items, out string problem)
-    {
-        List<HardwareItem> list = [];
-        problem = string.Empty;
-        foreach (string raw in (typed ?? string.Empty).Split('\n'))
-        {
-            string line = raw.Trim();
-            if (line.Length == 0)
-            {
-                continue;
-            }
-
-            System.Text.RegularExpressions.Match m = HardwareLine.Match(line);
-            string name = m.Success ? m.Groups[1].Value : line;
-            int quantity = 1;
-            if (m.Success && !int.TryParse(m.Groups[2].Value, NumberStyles.None, CultureInfo.InvariantCulture, out quantity))
-            {
-                quantity = 0;
-            }
-
-            if (quantity < 1)
-            {
-                problem = $"Hardware \"{name}\" needs a count of at least 1.";
-                items = [];
-                return false;
-            }
-
-            list.Add(new HardwareItem(name, quantity));
-        }
-
-        items = [.. list];
-        return true;
-    }
-
-    static readonly System.Text.RegularExpressions.Regex HardwareLine =
-        new(@"^(.*\S)\s+[x\u00d7]\s*(\d+)$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
-
     /// <summary>The hardware field, for the GUI suite to type into.</summary>
     public TextBox HardwareField => HardwareBox;
 
@@ -286,26 +248,7 @@ public partial class MainWindow
     /// What the library says about the stock that was typed — the same hover line the picker
     /// shows — or that it does not carry that name, which is not an error.
     /// </summary>
-    void UpdateStockReadout() => StockReadout.Text = StockReadoutFor(StockBox.Text);
-
-    /// <summary>
-    /// What the library says about a stock name somebody typed &#x2014; the same line the
-    /// properties panel and the shape workshop both show, because what a person read is what gets
-    /// assigned.
-    /// </summary>
-    static string StockReadoutFor(string? typed)
-    {
-        string name = (typed ?? string.Empty).Trim();
-        if (name.Length == 0)
-        {
-            return "No stock chosen. The cut list shows the size you typed.";
-        }
-
-        return MaterialsLibrary.Shipped.TryFind(name, out StockItem item)
-            ? item.HoverText
-            : $"\"{name}\" is not in this build's materials library. "
-              + "The cut list will say so rather than guess.";
-    }
+    void UpdateStockReadout() => StockReadout.Text = StockAssignment.Readout(StockBox.Text, MaterialsLibrary.Shipped);
 
     PlanAxes? ChosenAxes()
     {
@@ -379,7 +322,7 @@ public partial class MainWindow
                 return Complain("A part stands for at least one piece.");
             }
 
-            if (!TryHardware(HardwareBox.Text, out ImmutableList<HardwareItem> hardware, out string problem))
+            if (!HardwareEntry.TryRead(HardwareBox.Text, out ImmutableList<HardwareItem> hardware, out string problem))
             {
                 return Complain(problem);
             }
@@ -492,5 +435,12 @@ public partial class MainWindow
         }
 
         return StockAssignment.SizeRequest(Editor.Sketch, new BoxDepthRef(box.Id), depth);
+    }
+
+    bool Complain(string why)
+    {
+        PropertiesError.Text = why;
+        PropertiesError.IsVisible = true;
+        return false;
     }
 }
