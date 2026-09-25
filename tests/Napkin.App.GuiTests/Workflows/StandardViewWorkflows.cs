@@ -235,7 +235,7 @@ public class StandardViewWorkflows
                 }
             }
         });
-    });
+    }, defaultLook: true);
 
     [GuiWorkflow("GUI-VIEW-09")]
     public void Front_is_read_only_pan_zoom_and_select_and_the_selection_commands_still_work() => GuiWorkflow.Run(app =>
