@@ -98,11 +98,87 @@ Undo takes it back and says so again. A result that can no longer be computed be
 missing, no data or out of scope; nothing is kept from before. The shopping list's **Framing**
 section names the code and each opening's result.
 
+## Wall bracing
+
+Issue #39. Cutting or widening an opening shortens the solid wall beside it, and that can leave the
+wall short of the braced length the adopted code requires — the check most DIY openings miss, and
+one the header check cannot reveal. `BracingCheck.Of(sketch, packs)` runs it for every wall, every
+time anything changes; nothing is stored but the methods the person chose.
+
+**A wall line is one wall's solid segments**, start to end, between its openings and its two ends.
+Each segment's length comes from the drawing, exactly. A segment is named by what bounds it: the
+opening it starts after (or the wall's start) and the opening it ends before (or the wall's end):
+"wall start to Window 1", "Window 1 to Window 2", "Window 2 to wall end". An opening flush with a
+wall end leaves no segment there; overlapping or touching openings leave none between them.
+
+**The person says what bracing is already on each segment.** Select a wall (or an opening in it):
+the part panel's **Bracing** block lists every segment with its length and a picker of the adopted
+code's bracing methods, by the names the pack gives them. Nothing is defaulted or inferred: a new
+segment is "not braced" until someone chooses, and "not braced" counts for nothing. With no code, or
+a code whose pack has no bracing provisions (the shipped Connecticut pack), the pickers are disabled
+and say why. A method the current code does not have (chosen under another pack) is shown as it is,
+"zz-board (not in this code)", and counts for nothing — it is re-flagged, never carried over. Each
+choice is one undo step and is saved with the wall (format 8, `wall.bracing`, [file-format.md](file-format.md)).
+
+**What happens to a choice when the drawing changes:**
+
+- Widening, narrowing or moving an opening keeps every choice: its neighbours are still bounded by
+  the same opening. Their lengths change, and so does the check.
+- Deleting an opening (or moving it to another wall) merges the segments either side. The merged
+  segment keeps their method if they all had the same one. If they had different methods it is
+  **not braced**, and the message bar says so: "Wall 1: the segment wall start to Window 2 merged
+  braced segments with different methods, so it is not braced now; choose its method again."
+- Moving an opening past another, or adding one that splits a segment, makes segments with new
+  boundaries: they are **not braced**, and the message bar says each one that replaced a braced
+  segment. A new wall-bracing panel is never assumed from an old one.
+- Undo puts the opening back and its neighbours' choices with it: the choices for segments that no
+  longer exist stay saved until a method is next chosen on that wall, when the list is rewritten for
+  the current segments.
+- Duplicating a wall with its openings carries the choices onto the copies; a mirror copy across the
+  wall's length turns them end for end. A wall copied without its openings is one segment, which
+  keeps a method only if every segment had the same one.
+
+**Reading the result** (under the pickers, and in red when the line falls short or is out of scope):
+
+- **Passes**: "Braced length 10'-0" of 6'-6" required: passes (ZZ-BRACE.1)." with the citation line
+  (edition, section, the base row and the source). **How it was worked out** opens every step: the
+  base row, each factor with its condition and source, the exact required length and its rounding,
+  and every segment's contribution with why ("shorter than the 2'-0" minimum panel … so it counts for
+  nothing", "not braced: no method assigned", "capped at 6'-0"").
+- **Short**: "Braced length 5'-0" of 6'-6" required: SHORT by 1'-6" (ZZ-BRACE.1)." The shortfall is
+  what to add; the section is the one applied.
+- **Out of scope**: "This wall line is beyond what Section … covers: *the limit*. napkin stops here:
+  get the bracing engineered." Never a length.
+- **Input missing**: which site value is not entered and where to enter it (Edit → Adopted code and
+  site).
+- **No data**: with no code chosen, or a pack without bracing provisions. With the shipped
+  Connecticut pack: "The loaded pack CT 2022 has no wall-bracing provisions, so napkin cannot check
+  this wall line's bracing. Nothing is guessed: add them to the pack directory from your copy of the
+  code (docs/rules-engine.md). Where to add tables: docs/rules-engine.md". No real bracing values
+  ship ([rules-engine.md](rules-engine.md#wall-bracing)).
+
+The request is the wall's length, its height (bottom plate to top plates), its segments in order
+with their methods, and the project's site values. The arithmetic is entirely the pack's
+([rules-engine.md](rules-engine.md#wall-bracing)).
+
+**Every edit recomputes**, and the message bar says what changed with the edit that caused it:
+"Set Window 1's width to 6'-1". Wall 1's braced line is now SHORT by 1'-6", braced 5'-0" of 6'-6"
+required (ZZ-BRACE.1)." On the plan, a braced segment is a thin tinted strip down the wall with the
+method's id beside it, and short ticks mark every segment's ends; unbraced walls are not marked.
+
+**Switching the code** (Edit → Adopted code and site…, or a following project taking a newer
+revision) recomputes every header and every wall line under the new pack, and the message bar
+leads with a summary: "Now checking against ZZ BRACE B (IRC 2099, pack us-zz-brace-b rev 1): every
+result recomputed; 1 changed, 1 newly flagged, none can no longer be computed." — then each result
+that changed, newly flagged first. A locked project does not change pack by itself; undo switches
+back and says so again. (The saved result snapshot and the open-time comparison with an installed
+newer revision are not built.)
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code
   check, the wall's frame in one line ("8 studs, 2 king studs, …"), its openings, what the wall
-  supports, and anything refused.
+  supports, its bracing (segments, methods and the check), and anything refused.
 - The shopping list's **Framing** section: the pieces as boards to buy, through the same
   first-fit aggregation as the parts (`ShoppingList.Of` over `FramingList.CutRows`). A wall is
   never a row of the cut list.
@@ -114,7 +190,8 @@ section names the code and each opening's result.
 Plates longer than the longest stocked length are refused by the shopping list, not spliced.
 Corners and intersecting walls are not framed as corners: each wall is framed alone. No blocking,
 no sheathing, no fastening schedule. Every wall is checked as an exterior bearing wall; interior
-bearing walls, girder and bracing checks are not here (bracing is #39). A header member the
+bearing walls and girders are not here. Each wall is its own braced wall line: lines made of
+several walls, spacing between lines, and storeys are not modelled. A header member the
 materials library does not carry is said and not bought. Whether the plies fit the wall's
 thickness is not checked. A pack's newer revision on disk is used by a following project at once;
 the saved revision is not rewritten until the person locks again (the open-time diff against a
