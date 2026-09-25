@@ -69,10 +69,7 @@ public static class StockSuggestion
         ];
     }
 
-    private static Length ValueOf(FinishedSize size, PartDimension dimension) => dimension switch
-    {
-        PartDimension.Length => size.Length,
-        PartDimension.Width => size.Width,
-        _ => size.Thickness,
-    };
+    // No stock fixes a length (StockAssignment.Fixes): what a yard fixes is a width or a thickness.
+    private static Length ValueOf(FinishedSize size, PartDimension dimension)
+        => dimension == PartDimension.Width ? size.Width : size.Thickness;
 }

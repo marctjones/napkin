@@ -212,4 +212,8 @@ public sealed class RoughCutListTests
             MaterialsLibrary.Shipped);
         Assert.Contains(twoByFour, edge);
     }
+
+    [Fact]
+    public void A_quoted_field_that_ends_the_text_parses_without_a_trailing_newline()
+        => Assert.Equal("a,b", Assert.Single(Assert.Single(CutListCsv.Parse("\"a,b\""))));
 }

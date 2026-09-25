@@ -131,6 +131,9 @@ public sealed class CutListTable : Grid
     {
         TextBlock text => text.Text ?? string.Empty,
         ContentControl { Content: TextBlock caption } => caption.Text ?? string.Empty,
+
+        // A rough row's label and its tag: "Leg rough".
+        StackPanel words => string.Join(" ", words.Children.OfType<TextBlock>().Select(word => word.Text)),
         _ => string.Empty,
     };
 

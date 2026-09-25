@@ -458,7 +458,7 @@ public class DiyCoffeeTableWorkflows
             for (int row = 0; row < csv.Length; row++)
             {
                 Assert.Equal([.. csv[row].Take(5), csv[row][5]], shown[row].Fields);
-                Assert.Equal(csv[row][7], string.Join("; ", shown[row].Sentences));
+                Assert.Equal(csv[row][8], string.Join("; ", shown[row].Sentences));
             }
         });
 
@@ -651,19 +651,19 @@ public class DiyCoffeeTableWorkflows
     static readonly string[] ExpectedCutListCsv =
     [
         "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
-        "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery",
-        "Top,1,\"3'-6\"\"\",\"1'-10\"\"\",\"3/4\"\"\",3/4 plywood,,",
-        "\"Apron, back\",1,\"3'-0\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,\"Drill 3 pocket holes in the west end and 3 in the east end, from the top face.; Fit 3 tabletop clips along the top edge on the top face (slot or recess per the clip's instructions).\"",
-        "\"Rail, front\",1,\"3'-0\"\"\",\"1 1/2\"\"\",\"3/4\"\"\",1x2,,\"Drill 2 pocket holes in the west end and 2 in the east end, from the bottom face.; Fit 3 tabletop clips along the top edge on the bottom face (slot or recess per the clip's instructions).\"",
-        "Drawer front,2,\"1'-5 3/4\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,",
-        "Web,1,\"1'-5 1/2\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,\"Drill 3 pocket holes in the east end and 2 in the west end, from the bottom face.\"",
-        "Leg,4,\"1'-4 1/4\"\"\",\"1 1/2\"\"\",\"1 1/2\"\"\",2x2,,",
-        "Drawer bottom,2,\"1'-4 1/8\"\"\",\"1'-3 1/2\"\"\",\"1/4\"\"\",1/4 plywood,,\"Length includes 1/4\"\" into a groove at each end; width includes 1/4\"\" into a groove at each edge.\"",
-        "Drawer box front,2,\"1'-4 1/8\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,\"Length includes 1/4\"\" into a rabbet at each end.; Groove the bottom face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the south edge, full length.\"",
-        "\"Apron, side\",2,\"1'-4\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,\"Drill 3 pocket holes in the south end and 3 in the north end, from the top face.; Fit 2 tabletop clips along the top edge on the top face (slot or recess per the clip's instructions).\"",
-        "Drawer side,2,\"1'-4\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,\"Rabbet the west end on the bottom face: 1/2\"\" wide, 1/4\"\" deep.; Groove the bottom face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the south edge, full length.\"",
-        "Drawer side,2,\"1'-4\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,\"Rabbet the west end on the top face: 1/2\"\" wide, 1/4\"\" deep.; Groove the top face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the south edge, full length.\"",
-        "Drawer box back,2,\"1'-3 5/8\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,\"Groove the top face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the south edge, full length.\"",
+        "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+        "Top,1,\"3'-6\"\"\",\"1'-10\"\"\",\"3/4\"\"\",3/4 plywood,,,",
+        "\"Apron, back\",1,\"3'-0\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,,\"Drill 3 pocket holes in the west end and 3 in the east end, from the top face.; Fit 3 tabletop clips along the top edge on the top face (slot or recess per the clip's instructions).\"",
+        "\"Rail, front\",1,\"3'-0\"\"\",\"1 1/2\"\"\",\"3/4\"\"\",1x2,,,\"Drill 2 pocket holes in the west end and 2 in the east end, from the bottom face.; Fit 3 tabletop clips along the top edge on the bottom face (slot or recess per the clip's instructions).\"",
+        "Drawer front,2,\"1'-5 3/4\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,,",
+        "Web,1,\"1'-5 1/2\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,,\"Drill 3 pocket holes in the east end and 2 in the west end, from the bottom face.\"",
+        "Leg,4,\"1'-4 1/4\"\"\",\"1 1/2\"\"\",\"1 1/2\"\"\",2x2,,,",
+        "Drawer bottom,2,\"1'-4 1/8\"\"\",\"1'-3 1/2\"\"\",\"1/4\"\"\",1/4 plywood,,,\"Length includes 1/4\"\" into a groove at each end; width includes 1/4\"\" into a groove at each edge.\"",
+        "Drawer box front,2,\"1'-4 1/8\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,,\"Length includes 1/4\"\" into a rabbet at each end.; Groove the bottom face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the south edge, full length.\"",
+        "\"Apron, side\",2,\"1'-4\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,,\"Drill 3 pocket holes in the south end and 3 in the north end, from the top face.; Fit 2 tabletop clips along the top edge on the top face (slot or recess per the clip's instructions).\"",
+        "Drawer side,2,\"1'-4\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,,\"Rabbet the west end on the bottom face: 1/2\"\" wide, 1/4\"\" deep.; Groove the bottom face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the south edge, full length.\"",
+        "Drawer side,2,\"1'-4\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,,\"Rabbet the west end on the top face: 1/2\"\" wide, 1/4\"\" deep.; Groove the top face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the south edge, full length.\"",
+        "Drawer box back,2,\"1'-3 5/8\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,,\"Groove the top face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the south edge, full length.\"",
     ];
 
     /// <summary>
