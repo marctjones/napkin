@@ -48,7 +48,7 @@ public class SaveWorkflows
         app.Expect("the new sheet has unsaved changes, and the title says so", () =>
         {
             Assert.True(window.HasUnsavedChanges);
-            Assert.Equal("napkin — Untitled*", window.Title);
+            Assert.Equal(Design.WindowTitle("Untitled", hasUnsavedChanges: true), window.Title);
             Assert.Null(window.DocumentPath);
             Assert.Equal(2, window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Count());
             Assert.NotEmpty(window.CurrentDesign!.Sketch.RelationshipsInOrder);
@@ -67,7 +67,7 @@ public class SaveWorkflows
             Assert.True(File.Exists(path));
             Assert.Equal(Path.GetFullPath(path), window.DocumentPath);
             Assert.False(window.HasUnsavedChanges);
-            Assert.Equal($"napkin — {fileName}", window.Title);
+            Assert.Equal(Design.WindowTitle(fileName, hasUnsavedChanges: false), window.Title);
             Assert.StartsWith($"Saved {fileName}", window.MessageOnScreen, StringComparison.Ordinal);
         });
 
@@ -115,7 +115,7 @@ public class SaveWorkflows
         {
             Assert.Equal(fileName, files.SuggestedNames[^1]);
             Assert.Equal(Path.GetFullPath(copy), window.DocumentPath);
-            Assert.Equal($"napkin — {Path.GetFileName(copy)}", window.Title);
+            Assert.Equal(Design.WindowTitle(Path.GetFileName(copy), hasUnsavedChanges: false), window.Title);
             Assert.Equal(window.CurrentDesign!.Sketch, Assert.IsType<Loaded>(SceneReader.ReadFile(copy)).Sketch);
         });
 
@@ -148,7 +148,7 @@ public class SaveWorkflows
         app.Expect("New asks first, and the drawing is still there under the question", () =>
         {
             Assert.True(window.IsAskingToSave);
-            Assert.Equal("Save the changes to Untitled before starting a new sheet?", window.SaveQuestionText);
+            Assert.Equal(Design.SaveBeforeQuestion("Untitled", "starting a new sheet"), window.SaveQuestionText);
             Assert.Same(edited, window.CurrentDesign);
         });
 
@@ -168,7 +168,7 @@ public class SaveWorkflows
             Assert.False(window.IsAskingToSave);
             Assert.Same(edited, window.CurrentDesign);
             Assert.True(window.HasUnsavedChanges);
-            Assert.Equal("Nothing was saved and nothing was thrown away.", window.MessageOnScreen);
+            Assert.Equal(Design.SaveQuestionCancelled, window.MessageOnScreen);
         });
 
         // A sample, from the menu with the pointer: asked again, and this time Don't save.

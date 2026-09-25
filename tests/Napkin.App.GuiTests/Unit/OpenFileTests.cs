@@ -77,7 +77,7 @@ public class OpenFileTests
 
             Assert.False(window.IsRefusalShowing);
             Assert.Equal("picked.scene.json", window.CurrentDesign?.Name);
-            Assert.Equal("napkin — picked.scene.json", window.Title);
+            Assert.Equal(Design.WindowTitle("picked.scene.json", hasUnsavedChanges: false), window.Title);
             Assert.Contains(
                 "picked.scene.json",
                 window.DesignReadout.Text!,

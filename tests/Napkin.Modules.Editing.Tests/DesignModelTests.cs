@@ -220,4 +220,22 @@ public class DesignModelTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => SceneWords.Of((PartDimension)99));
     }
+
+    [Fact]
+    public void The_window_title_marks_unsaved_changes_with_a_trailing_asterisk()
+    {
+        Assert.Equal("napkin — Coffee table", Design.WindowTitle("Coffee table", hasUnsavedChanges: false));
+        Assert.Equal("napkin — Coffee table*", Design.WindowTitle("Coffee table", hasUnsavedChanges: true));
+    }
+
+    [Fact]
+    public void The_save_question_names_the_document_and_what_it_would_lose_it_to()
+    {
+        Assert.Equal(
+            "Save the changes to Untitled before starting a new sheet?",
+            Design.SaveBeforeQuestion("Untitled", "starting a new sheet"));
+        Assert.Equal(
+            "Save the changes to coffee-table.scene.json before opening another drawing?",
+            Design.SaveBeforeQuestion("coffee-table.scene.json", "opening another drawing"));
+    }
 }

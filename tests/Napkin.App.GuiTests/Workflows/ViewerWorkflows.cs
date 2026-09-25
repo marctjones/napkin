@@ -52,7 +52,7 @@ public class ViewerWorkflows
         app.Expect("the wall sample is on screen", () =>
         {
             Assert.Equal("Wall with window", window.CurrentDesign?.Name);
-            Assert.Equal("napkin — Wall with window", window.Title);
+            Assert.Equal(Design.WindowTitle("Wall with window", hasUnsavedChanges: false), window.Title);
         });
 
         // Now the coffee table, the way a person opens a file they were sent: the shortcut, the
@@ -63,7 +63,7 @@ public class ViewerWorkflows
         {
             Design design = window.CurrentDesign!;
             Assert.Equal("coffee-table.scene.json", design.Name);
-            Assert.Equal("napkin — coffee-table.scene.json", window.Title);
+            Assert.Equal(Design.WindowTitle("coffee-table.scene.json", hasUnsavedChanges: false), window.Title);
             Assert.Contains(
                 "coffee-table.scene.json",
                 window.DesignReadout.Text!,
@@ -382,7 +382,7 @@ public class ViewerWorkflows
             {
                 Assert.False(window.IsRefusalShowing);
                 Assert.Equal("wall-with-window.scene.json", window.CurrentDesign?.Name);
-                Assert.Equal("napkin — wall-with-window.scene.json", window.Title);
+                Assert.Equal(Design.WindowTitle("wall-with-window.scene.json", hasUnsavedChanges: false), window.Title);
                 Assert.NotSame(asOpened, window.CurrentDesign!.Sketch);
                 Assert.Equal(FreshlyRead("wall-with-window"), window.CurrentDesign!.Sketch);
                 Assert.True(IsWhollyVisible(canvas), "the new drawing was not framed.");

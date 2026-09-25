@@ -48,11 +48,9 @@ public partial class MainWindow
         // an access key.
         UndoHistory history = Editor.History;
         UndoMenuItem.IsEnabled = history.CanUndo;
-        UndoMenuItem.Header = history.UndoWhat is { } undo ? $"_Undo {Escaped(undo)}" : "_Undo";
+        UndoMenuItem.Header = UndoHistory.UndoMenuHeader(history.UndoWhat);
         RedoMenuItem.IsEnabled = history.CanRedo;
-        RedoMenuItem.Header = history.RedoWhat is { } redo ? $"_Redo {Escaped(redo)}" : "_Redo";
-
-        static string Escaped(string text) => text.Replace("_", "__", StringComparison.Ordinal);
+        RedoMenuItem.Header = UndoHistory.RedoMenuHeader(history.RedoWhat);
     }
 
     void UpdateMessageBar()

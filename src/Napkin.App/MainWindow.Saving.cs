@@ -15,6 +15,7 @@ using Napkin.Core.Materials;
 using Napkin.Core.Project;
 using Napkin.Modules.Furniture;
 using Napkin.Modules.Editing;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App;
 
@@ -195,7 +196,7 @@ public partial class MainWindow
         // about the drawing, so the drawing is all that is left showing.
         CloseDimensionEditor(focusCanvas: false);
 
-        UnsavedHeadline.Text = $"Save the changes to {DocumentName} before {doing}?";
+        UnsavedHeadline.Text = Design.SaveBeforeQuestion(DocumentName, doing);
         _afterAnswer = then;
         UnsavedBackdrop.IsVisible = true;
         UnsavedSaveButton.Focus();
@@ -225,7 +226,7 @@ public partial class MainWindow
     void KeepEditing()
     {
         TakeAnswer();
-        Editor.Say(EditSeverity.Hint, "Nothing was saved and nothing was thrown away.");
+        Editor.Say(EditSeverity.Hint, Design.SaveQuestionCancelled);
     }
 
     /// <summary>Takes the question off the screen and hands back what it was holding.</summary>
@@ -280,7 +281,7 @@ public partial class MainWindow
     /// <summary>The title: the file's name, marked with an asterisk while there are unsaved changes.</summary>
     void UpdateTitle()
     {
-        Title = Editor.HasUnsavedChanges ? $"napkin — {DocumentName}*" : $"napkin — {DocumentName}";
+        Title = Design.WindowTitle(DocumentName, Editor.HasUnsavedChanges);
         TitleBarText.Text = Title;
     }
 }
