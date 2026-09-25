@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "table": "TEST-HEADER-TABLE",
+  "source": "zz-synthetic-interp-state",
+  "location": "synthetic amendments p. 9",
+  "operations": [
+    {
+      "op": "amend-footnote",
+      "source": "zz-synthetic-interp-state",
+      "location": "p. 9",
+      "footnote": {
+        "id": "e",
+        "text": "SYNTHETIC footnote e (amended): use 30 psf snow below 30 psf when roof live load is 20 psf or less; between 30 and 50 psf, linear interpolation is permitted. NOT CODE TEXT.",
+        "encodedAs": "as-operations",
+        "appliesTo": "table",
+        "operations": [
+          {
+            "op": "substitute-input",
+            "input": "groundSnowLoad",
+            "below": 30,
+            "use": 30,
+            "when": {
+              "input": "roofLiveLoad",
+              "atMost": 20
+            }
+          },
+          {
+            "op": "interpolate",
+            "input": "groundSnowLoad",
+            "between": [
+              30,
+              50
+            ],
+            "quantity": "headerSpan"
+          }
+        ]
+      }
+    }
+  ]
+}
