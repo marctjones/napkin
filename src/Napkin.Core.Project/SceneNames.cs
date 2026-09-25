@@ -25,6 +25,29 @@ internal static class SceneNames
     internal const string FastenerChoices = "fastenerChoices";
     internal const string Supplies = "supplies";
 
+    // The project's building inputs (format version 6).
+    internal const string Code = "code";
+    internal const string CodePack = "pack";
+    internal const string CodeRevision = "revision";
+    internal const string CodeMode = "mode";
+    internal const string CodeLockedOn = "lockedOn";
+    internal const string CodeLocked = "locked";
+    internal const string CodeFollowing = "following";
+    internal const string Site = "site";
+    internal const string SiteGroundSnowLoad = "groundSnowLoad";
+    internal const string SiteUltimateWindSpeed = "ultimateWindSpeed";
+    internal const string SiteSeismicDesignCategory = "seismicDesignCategory";
+    internal const string SiteFrostDepth = "frostDepth";
+    internal const string SiteBuildingWidth = "buildingWidth";
+    internal const string SiteSource = "source";
+    internal const string SiteSourceText = "text";
+    internal const string SiteSourceOn = "on";
+
+    // A wall's inputs, on a box (format version 6).
+    internal const string Wall = "wall";
+    internal const string WallSupports = "supports";
+    internal const string WallStudSpacing = "studSpacing";
+
     // Shared.
     internal const string Id = "id";
     internal const string Name = "name";

@@ -141,8 +141,82 @@ public static class SceneWriter
 
         writer.WriteEndArray();
 
+        WriteCode(writer, sketch.Code);
+        WriteSite(writer, sketch.Site);
+
         writer.WriteEndObject();
     }
+
+    /// <summary>The adopted code (format version 6), or <c>"code": null</c> before one is chosen.</summary>
+    private static void WriteCode(Utf8JsonWriter writer, CodeChoice? code)
+    {
+        if (code is null)
+        {
+            writer.WriteNull(SceneNames.Code);
+            return;
+        }
+
+        writer.WriteStartObject(SceneNames.Code);
+        writer.WriteString(SceneNames.CodePack, code.PackId);
+        writer.WriteNumber(SceneNames.CodeRevision, code.Revision);
+        writer.WriteString(SceneNames.CodeMode, code.Mode == CodeMode.Locked ? SceneNames.CodeLocked : SceneNames.CodeFollowing);
+        WriteOptionalDate(writer, SceneNames.CodeLockedOn, code.LockedOn);
+        writer.WriteEndObject();
+    }
+
+    /// <summary>The site values (format version 6): every field written, null when not entered.</summary>
+    private static void WriteSite(Utf8JsonWriter writer, SiteValues site)
+    {
+        writer.WriteStartObject(SceneNames.Site);
+        WriteOptionalNumber(writer, SceneNames.SiteGroundSnowLoad, site.GroundSnowLoadPsf);
+        WriteOptionalNumber(writer, SceneNames.SiteUltimateWindSpeed, site.UltimateWindSpeedMph);
+        WriteOptionalText(writer, SceneNames.SiteSeismicDesignCategory, site.SeismicDesignCategory);
+        WriteOptionalNumber(writer, SceneNames.SiteFrostDepth, site.FrostDepth?.Units);
+        WriteOptionalNumber(writer, SceneNames.SiteBuildingWidth, site.BuildingWidth?.Units);
+        if (site.Source is { } source)
+        {
+            writer.WriteStartObject(SceneNames.SiteSource);
+            writer.WriteString(SceneNames.SiteSourceText, source.Text);
+            WriteOptionalDate(writer, SceneNames.SiteSourceOn, source.On);
+            writer.WriteEndObject();
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.SiteSource);
+        }
+
+        writer.WriteEndObject();
+    }
+
+    /// <summary>A wall's inputs (format version 6), or <c>"wall": null</c> for a box with none.</summary>
+    private static void WriteWallInputs(Utf8JsonWriter writer, WallInputs? inputs)
+    {
+        if (inputs is null)
+        {
+            writer.WriteNull(SceneNames.Wall);
+            return;
+        }
+
+        writer.WriteStartObject(SceneNames.Wall);
+        WriteOptionalText(writer, SceneNames.WallSupports, inputs.Supports);
+        WriteOptionalNumber(writer, SceneNames.WallStudSpacing, inputs.StudSpacing?.Units);
+        writer.WriteEndObject();
+    }
+
+    private static void WriteOptionalText(Utf8JsonWriter writer, string name, string? text)
+    {
+        if (text is null)
+        {
+            writer.WriteNull(name);
+        }
+        else
+        {
+            writer.WriteString(name, text);
+        }
+    }
+
+    private static void WriteOptionalDate(Utf8JsonWriter writer, string name, DateOnly? date)
+        => WriteOptionalText(writer, name, date?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
 
     private static void WriteOptionalNumber(Utf8JsonWriter writer, string name, long? value)
     {
@@ -187,6 +261,7 @@ public static class SceneWriter
                 writer.WriteString(SceneNames.FaceUp, SceneNames.Of(box.FaceUp));
                 writer.WriteNumber(SceneNames.Rotation, box.Rotation.Arcseconds);
                 WritePart(writer, box.Part);
+                WriteWallInputs(writer, box.WallInputs);
                 WriteCuts(writer, box.Cuts);
                 break;
 

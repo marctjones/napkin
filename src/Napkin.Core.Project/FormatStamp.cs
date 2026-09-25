@@ -60,8 +60,12 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
     /// <c>supplies</c> at the scene root. Every version-4 file is refused, including the ones this
     /// repository committed until they were rewritten in the same change.
     /// </para>
+    /// <para>
+    /// Version 6 added the building inputs (issues #18, #19): the project's adopted <c>code</c> and
+    /// <c>site</c> values, and a <c>wall</c> on every box — what a wall supports and its stud spacing.
+    /// </para>
     /// </remarks>
-    public const int CurrentVersion = 5;
+    public const int CurrentVersion = 6;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);

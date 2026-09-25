@@ -50,7 +50,7 @@ public sealed record FramingPiece(FramingRole Role, int Quantity, Length Length,
 
 /// <summary>How one opening is framed.</summary>
 /// <param name="Opening">The opening.</param>
-/// <param name="JacksPerSide">Jack studs each side (part 1's placeholder is one).</param>
+/// <param name="JacksPerSide">Jack studs each side (one, a placeholder, until the code check sizes the header).</param>
 /// <param name="HeaderLength">The header's length: the opening's width plus the jacks it bears on.</param>
 /// <param name="HeaderRoom">The height between the top of the opening and the underside of the top plates.</param>
 /// <param name="HeaderDepth">The header's depth, when the code check has sized it; otherwise null.</param>
@@ -112,10 +112,12 @@ public sealed record WallFraming(
             }
 
             parts.Add($"{Count(FramingRole.BottomPlate) + Count(FramingRole.TopPlate)} plates");
-            int headers = Count(FramingRole.Header);
-            if (headers > 0)
+            foreach (IGrouping<string?, FramingPiece> header in Pieces.Where(piece => piece.Role == FramingRole.Header).GroupBy(piece => piece.Stock?.Name))
             {
-                parts.Add($"{headers} {(headers == 1 ? "header" : "headers")} (not yet sized)");
+                int count = header.Sum(piece => piece.Quantity);
+                parts.Add(header.Key is { } stock
+                    ? $"{count} header {(count == 1 ? "piece" : "pieces")} ({stock})"
+                    : $"{count} {(count == 1 ? "header" : "headers")} (not yet sized)");
             }
 
             return string.Join(", ", parts);
@@ -123,9 +125,15 @@ public sealed record WallFraming(
     }
 }
 
+/// <summary>A sized header: how many plies of which library lumber (the code check's answer, <see cref="CodeCheck"/>).</summary>
+/// <param name="Plies">How many pieces side by side.</param>
+/// <param name="Stock">The lumber each ply is.</param>
+public sealed record HeaderMember(int Plies, LumberStock Stock);
+
 /// <summary>
-/// Settings for <see cref="FramingList.Of(Sketch, MaterialsLibrary, FramingOptions?)"/>. The two
-/// functions are where the code check (M4 part 2) plugs in its jack count and header depth.
+/// Settings for <see cref="FramingList.Of(Sketch, MaterialsLibrary, FramingOptions?)"/>. The
+/// functions are where the code check plugs in its jack and king counts and the header
+/// (<see cref="CodeCheck.Framing"/>); a null answer means "not sized".
 /// </summary>
 public sealed record FramingOptions
 {
@@ -135,17 +143,23 @@ public sealed record FramingOptions
     /// <summary>What <see cref="DefaultSpacing"/> is, said wherever it shows.</summary>
     public const string DefaultSpacingNote = "design default, not a code requirement";
 
-    /// <summary>What part 1's jack count is, said wherever it shows.</summary>
-    public const string PlaceholderJacks = "1 jack each side: a placeholder until the code check (M4 part 2)";
+    /// <summary>What the jack count is while no code has sized the header, said wherever it shows.</summary>
+    public const string PlaceholderJacks = "1 jack and 1 king stud each side: a placeholder until the code check sizes the header";
 
-    /// <summary>The stud spacing on centre.</summary>
+    /// <summary>The stud spacing on centre, for a wall that has none of its own (<see cref="WallInputs.StudSpacing"/>).</summary>
     public Length Spacing { get; init; } = DefaultSpacing;
 
-    /// <summary>Jack studs each side of an opening. Null means part 1's placeholder, one.</summary>
-    public Func<Opening, int>? JacksPerSide { get; init; }
+    /// <summary>Jack studs each side of an opening. Null, or a null answer, means the placeholder, one.</summary>
+    public Func<Opening, int?>? JacksPerSide { get; init; }
 
-    /// <summary>The header's depth for an opening, once sized. Null, or a null answer, means not yet sized.</summary>
+    /// <summary>King studs each side of an opening. Null, or a null answer, means one.</summary>
+    public Func<Opening, int?>? KingsPerSide { get; init; }
+
+    /// <summary>The header's depth for an opening. Null, or a null answer, means the header member's width, if any.</summary>
     public Func<Opening, Length?>? HeaderDepth { get; init; }
+
+    /// <summary>The sized header member for an opening. Null, or a null answer, means not yet sized: it buys nothing.</summary>
+    public Func<Opening, HeaderMember?>? Header { get; init; }
 }
 
 /// <summary>
@@ -161,12 +175,14 @@ public sealed record FramingOptions
 /// <item>Layout studs have their start face at <c>k·s</c> for k = 0, 1, … while <c>k·s + t ≤ L</c>;
 /// then an end stud at <c>L − t</c> unless the last layout stud is already there. Each is
 /// <c>H − 3t</c> long. For a 144 in wall at 16 in: 0…128 is 9 studs, plus the end stud, 10.</item>
-/// <item>Each opening of width <c>w</c> at <c>a</c> has <c>j</c> jacks each side (placeholder 1),
-/// just outside it, <c>sill + height − t</c> long, and a king outside those, <c>H − 3t</c> long.
-/// A layout or end stud whose body touches <c>[a − (j+1)t, a + w + (j+1)t)</c> is left out.</item>
-/// <item>A header slot <c>w + 2jt</c> long fills the room from the opening's top to the top plates
-/// (<c>H − 2t − top</c>); its size is not chosen here. With a header depth <c>d</c> from the code
-/// check, cripples above, <c>room − d</c> long, stand at the layout positions over the header.</item>
+/// <item>Each opening of width <c>w</c> at <c>a</c> has <c>j</c> jacks each side just outside it,
+/// <c>sill + height − t</c> long, and <c>k</c> kings outside those, <c>H − 3t</c> long; both are 1
+/// (a placeholder) until the code check sizes the header. A layout or end stud whose body touches
+/// <c>[a − (j+k)t, a + w + (j+k)t)</c> is left out.</item>
+/// <item>A header <c>w + 2jt</c> long fills the room from the opening's top to the top plates
+/// (<c>H − 2t − top</c>). Its member is the code check's (<see cref="HeaderMember"/>): plies of a
+/// library lumber, whose dressed width is the header's depth <c>d</c>; cripples above,
+/// <c>room − d</c> long, stand at the layout positions over it. Unsized, it buys nothing.</item>
 /// <item>A window gets a rough sill <c>w</c> long and cripples below, <c>sill − 2t</c> long, at the
 /// layout positions wholly inside the opening. A door (sill 0) gets neither; its bottom plate is
 /// bought whole and cut out across the opening when the wall stands.</item>
@@ -191,7 +207,7 @@ public static class FramingList
         ArgumentNullException.ThrowIfNull(library);
         options ??= new FramingOptions();
 
-        Length spacing = options.Spacing;
+        Length spacing = wall.Box.WallInputs?.StudSpacing ?? options.Spacing;
         LumberStock? stock = StudStock(library, wall.Thickness);
         ImmutableArray<Opening> openings = Opening.In(sketch, wall);
 
@@ -226,17 +242,21 @@ public static class FramingList
             new(FramingRole.TopPlate, 2, wall.Length, stock),
         ];
 
+        bool placeholder = false;
         foreach (Opening opening in openings)
         {
-            int jacks = options.JacksPerSide?.Invoke(opening) ?? 1;
-            Length side = (jacks + 1) * t;
+            int? sizedJacks = options.JacksPerSide?.Invoke(opening);
+            int jacks = sizedJacks ?? 1;
+            int kings = options.KingsPerSide?.Invoke(opening) ?? 1;
+            HeaderMember? member = options.Header?.Invoke(opening);
+            Length side = (jacks + kings) * t;
             Length from = opening.Offset - side;
             Length to = opening.Offset + opening.Width + side;
             Length headerLength = opening.Width + (2 * jacks * t);
             Length room = plateTop - opening.Top;
-            Length? depth = options.HeaderDepth?.Invoke(opening);
+            Length? depth = options.HeaderDepth?.Invoke(opening) ?? member?.Stock.Width;
 
-            string? why = OpeningRefusal(wall, opening, t, jacks, from, to, room, depth, zones);
+            string? why = OpeningRefusal(wall, opening, t, jacks, kings, from, to, room, depth, zones);
             framed.Add(new OpeningFraming(opening, jacks, headerLength, room, depth, why));
             if (why is not null)
             {
@@ -244,10 +264,13 @@ public static class FramingList
                 continue;
             }
 
+            placeholder |= sizedJacks is null;
             zones.Add((from, to, opening.Name));
-            pieces.Add(new FramingPiece(FramingRole.KingStud, 2, studLength, stock));
+            pieces.Add(new FramingPiece(FramingRole.KingStud, 2 * kings, studLength, stock));
             pieces.Add(new FramingPiece(FramingRole.JackStud, 2 * jacks, opening.Top - t, stock));
-            pieces.Add(new FramingPiece(FramingRole.Header, 1, headerLength, null));
+            pieces.Add(member is { } sized
+                ? new FramingPiece(FramingRole.Header, sized.Plies, headerLength, sized.Stock)
+                : new FramingPiece(FramingRole.Header, 1, headerLength, null));
 
             if (depth is { } d && room - d > Length.Zero)
             {
@@ -273,12 +296,12 @@ public static class FramingList
         pieces.Add(new FramingPiece(FramingRole.Stud, common, studLength, stock));
 
         List<string> notes = [];
-        if (spacing == FramingOptions.DefaultSpacing)
+        if (spacing == FramingOptions.DefaultSpacing && wall.Box.WallInputs?.StudSpacing is null)
         {
             notes.Add($"studs {spacing.Format(new InchesOnlyFormat(16)).Text} on centre: {FramingOptions.DefaultSpacingNote}");
         }
 
-        if (options.JacksPerSide is null && framed.Any(opening => opening.Refusal is null))
+        if (placeholder)
         {
             notes.Add(FramingOptions.PlaceholderJacks);
         }
@@ -400,6 +423,7 @@ public static class FramingList
         Opening opening,
         Length t,
         int jacks,
+        int kings,
         Length from,
         Length to,
         Length room,
@@ -411,6 +435,11 @@ public static class FramingList
             return "an opening needs at least one jack stud each side";
         }
 
+        if (kings < 1)
+        {
+            return "an opening needs at least one king stud each side";
+        }
+
         if (opening.Width >= wall.Length)
         {
             return $"it is {Text(opening.Width)} wide, as wide as the wall or wider";
@@ -418,7 +447,7 @@ public static class FramingList
 
         if (from < Length.Zero || to > wall.Length)
         {
-            return $"it is too near the wall's end for its king and jack studs, which need {Text((jacks + 1) * t)} each side";
+            return $"it is too near the wall's end for its king and jack studs, which need {Text((jacks + kings) * t)} each side";
         }
 
         if (room < Length.Zero)

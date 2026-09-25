@@ -19,7 +19,7 @@ public sealed class CutFormatTests
     /// </summary>
     private const string EveryKindOfCut = """
         {
-          "formatVersion": 5,
+          "formatVersion": 6,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -27,7 +27,7 @@ public sealed class CutFormatTests
               "name": "Top",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 49152, "height": 24576, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": null,
-              "cuts": [
+              "wall": null, "cuts": [
                 { "kind": "roundedCorner", "corner": "southWest", "radius": 1024 },
                 { "kind": "cornerCut", "corner": "southEast", "alongX": 3072, "alongY": 5120 },
                 { "kind": "curvedEdge", "edge": "north", "bow": "inward", "depth": 2048 }
@@ -36,11 +36,11 @@ public sealed class CutFormatTests
               "name": "Shelf front",
               "anchor": { "x": 0, "y": 40960, "z": 0 }, "width": 49152, "height": 24576, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": null,
-              "cuts": [
+              "wall": null, "cuts": [
                 { "kind": "curvedEdge", "edge": "south", "bow": "outward", "depth": 2048 }
               ] }
           ],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": []
         }
         """;
@@ -60,7 +60,7 @@ public sealed class CutFormatTests
               "anchor": { "x": 0, "y": 0 }, "width": 49152, "height": 24576, "rotation": 0,
               "part": null }
           ],
-          "fastenerChoices": [], "supplies": [],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
           "relationships": []
         }
         """;

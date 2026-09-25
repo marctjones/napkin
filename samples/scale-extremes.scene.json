@@ -1,5 +1,5 @@
 {
-  "formatVersion": 5,
+  "formatVersion": 6,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -36,7 +36,7 @@
         },
         "hardware": []
       },
-      "cuts": []
+      "wall": null, "cuts": []
     },
     {
       "id": "70000000-0000-4000-8000-000000000002",
@@ -63,7 +63,7 @@
         },
         "hardware": []
       },
-      "cuts": []
+      "wall": null, "cuts": []
     },
     {
       "id": "70000000-0000-4000-8000-000000000003",
@@ -81,10 +81,12 @@
       "faceUp": "top",
       "rotation": 0,
       "part": null,
-      "cuts": []
+      "wall": null, "cuts": []
     }
   ],
   "relationships": [],
   "fastenerChoices": [],
-  "supplies": []
+  "supplies": [],
+  "code": null,
+  "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null }
 }

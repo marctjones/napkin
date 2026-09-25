@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 5
+# The napkin project file — container version 1, scene format version 6
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -25,7 +25,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 5` and nothing else. A file from an older *or* a
+   `"containerVersion": 1` and `"formatVersion": 6` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
@@ -189,25 +189,29 @@ Two places where the bytes legitimately differ:
 
 ```json
 {
-  "formatVersion": 5,
+  "formatVersion": 6,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ … ],
   "entities": [ … ],
   "relationships": [ … ],
   "fastenerChoices": [ … ],
-  "supplies": [ … ]
+  "supplies": [ … ],
+  "code": null,
+  "site": { … }
 }
 ```
 
 | Field | Type | Meaning |
 |---|---|---|
-| `formatVersion` | integer | Exactly `5`. Judged before anything else is read. |
+| `formatVersion` | integer | Exactly `6`. Judged before anything else is read. |
 | `units` | object | `length` is exactly `"inch/1024"`, `angle` is exactly `"arcsecond"`. The unit is named in the file so that a reader never has to assume one. |
 | `layers` | array | Every layer, in the order the UI shows them. |
 | `entities` | array | Every entity, in any order; ids may be referred to before they appear. |
 | `relationships` | array | Every relationship, in any order. |
 | `fastenerChoices` | array | The builder's typed fastener sizes, in the order typed; see [Joinery](#joinery). |
 | `supplies` | array | The builder's typed supplies checklist, in the order typed; see [Joinery](#joinery). |
+| `code` | object or `null` | The project's adopted code, `null` until one is chosen; see [Building inputs](#building-inputs). |
+| `site` | object | The site and hazard values the person typed, each `null` until entered; see [Building inputs](#building-inputs). |
 
 Every field listed in this document is required. There are no optional fields: a reference
 dimension writes `"drives": null` and a box that is a plain rectangle writes `"cuts": []`, rather
@@ -239,6 +243,7 @@ Every entity has `id`, `type`, `layer` and `name`. `type` is one of `box`, `dime
   "faceUp": "top", "rotation": 0,
   "part": { "stock": null, "species": null, "quantity": 1,
             "planAxes": { "x": "width", "y": "thickness" } },
+  "wall": null,
   "cuts": [] }
 ```
 
@@ -246,7 +251,7 @@ Every entity has `id`, `type`, `layer` and `name`. `type` is one of `box`, `dime
 |---|---|
 | `node` | `position`: `{ "x": <integer>, "y": <integer> }` — a node is plan construction geometry, at the plan datum, and has no `z` |
 | `segment` | `start`, `end`: ids of two `node` entities |
-| `box` | `anchor`: `{ "x", "y", "z" }`, three integers — the box's south-west-bottom corner in its own frame; `width`, `height` and `depth`: integers greater than zero, along the box's local X, Y and Z; `faceUp`: which of its six faces points up, one of `top`, `bottom`, `north`, `south`, `east`, `west`; `rotation`: arcseconds, `0 ≤ rotation < 1296000`; `part`: below, or `null`; `cuts`: below, `[]` for a plain rectangle |
+| `box` | `anchor`: `{ "x", "y", "z" }`, three integers — the box's south-west-bottom corner in its own frame; `width`, `height` and `depth`: integers greater than zero, along the box's local X, Y and Z; `faceUp`: which of its six faces points up, one of `top`, `bottom`, `north`, `south`, `east`, `west`; `rotation`: arcseconds, `0 ≤ rotation < 1296000`; `part`: below, or `null`; `wall`: a wall's inputs, or `null` (see [Building inputs](#building-inputs)); `cuts`: below, `[]` for a plain rectangle |
 | `dimension` | `measures`, `drives`, `placement` — below |
 
 A box is parametric: it stores the three sizes that were typed and derives its corners, so a
@@ -517,6 +522,41 @@ sizes, `{ "kind": one of pocketScrew, woodScrew, brad, nail, dowel, biscuit, tab
 thickness) — a repeat is refused. `supplies` holds `{ "item": non-empty text, "note": text }`.
 None of these texts is napkin data: they are what the builder typed.
 
+### Building inputs
+
+Format version 6 (issues #18 and #19; [`building.md`](./building.md), [`rules-engine.md`](./rules-engine.md)).
+What a person enters for the code check. None of it is napkin data and none of it is ever
+defaulted: `null` means "not entered", and the check says which input it is missing.
+
+```json
+"code": { "pack": "us-ct-2022", "revision": 1, "mode": "locked", "lockedOn": "2026-09-25" },
+"site": { "groundSnowLoad": 30, "ultimateWindSpeed": 115, "seismicDesignCategory": "B",
+          "frostDepth": 43008, "buildingWidth": 294912,
+          "source": { "text": "Town building department, by phone", "on": "2026-09-24" } }
+```
+
+and on a box that is a wall: `"wall": { "supports": "roof-ceiling", "studSpacing": 16384 }` (the
+values are illustrations of the shape, not code data).
+
+| Field | Type | Refused when |
+|---|---|---|
+| `code` | `null`, or an object | not an object or `null` |
+| `code.pack` | a pack id: lower case letters, digits, `.` and `-`, starting with a letter or digit | anything else. Whether the pack is installed is not judged at load: a project whose pack is missing opens and says so |
+| `code.revision` | integer of at least 1: the pack revision the project last used | 0 or less |
+| `code.mode` | `locked` or `following` | any other value |
+| `code.lockedOn` | a date `yyyy-MM-dd` when `locked`; `null` when `following` | the wrong one of the two, or another date spelling |
+| `site.groundSnowLoad` | whole psf, or `null` | negative, or not an integer |
+| `site.ultimateWindSpeed` | whole mph, or `null` | negative, or not an integer |
+| `site.seismicDesignCategory` | text as the pack's tables name it, or `null` | empty text |
+| `site.frostDepth` | a length, or `null` | negative |
+| `site.buildingWidth` | a length, or `null` | 0 or negative |
+| `site.source` | `{ "text": text, "on": yyyy-MM-dd or null }` — where the values came from — or `null` | a missing field |
+| `wall` (on a box) | `null`, or `{ "supports": text or null, "studSpacing": length or null }` | both fields `null` (write `"wall": null`), empty `supports`, a spacing of 0 or less |
+
+`supports` is one of the values the adopted code's header table declares; it is not checked
+against any pack at load, for the same reason a part's stock name is not checked against the
+library. Every field is written, every time.
+
 ## An annotated example
 
 A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
@@ -524,7 +564,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 ```jsonc
 {
-  "formatVersion": 5,                                  // exactly 5, judged first
+  "formatVersion": 6,                                  // exactly 6, judged first
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
   "entities": [
@@ -537,7 +577,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
       "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall",
       "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 147456, "height": 5632, "depth": 768,
       "faceUp": "top", "rotation": 0,
-      "part": null, "cuts": [] },
+      "part": null, "wall": null, "cuts": [] },
 
     // The opening: 36" = 36864 units wide, the full thickness of the wall, starting 54" along.
     // Its anchor z would be its sill and its depth its height — placeholders here, like the wall's.
@@ -545,7 +585,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
       "layer": "00000000-0000-0000-0000-000000000001", "name": "Opening",
       "anchor": { "x": 55296, "y": 0, "z": 0 }, "width": 36864, "height": 5632, "depth": 768,
       "faceUp": "top", "rotation": 0,
-      "part": null, "cuts": [] },
+      "part": null, "wall": null, "cuts": [] },
 
     // A driving dimension: the relationship named in "drives" owns the number 147456; this
     // annotation draws it, as 12'-0".
@@ -585,7 +625,10 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
       "axis": "x" }
   ],
   "fastenerChoices": [],                               // the builder's typed sizes; none here
-  "supplies": []                                       // and no typed supplies
+  "supplies": [],                                      // and no typed supplies
+  "code": null,                                        // no adopted code chosen yet
+  "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null,
+            "frostDepth": null, "buildingWidth": null, "source": null }   // nothing entered
 }
 ```
 

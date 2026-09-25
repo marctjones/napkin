@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "id": "us-zz-frame",
+  "revision": 2,
+  "jurisdiction": {
+    "country": "US",
+    "state": "ZZ",
+    "municipality": null
+  },
+  "adoption": {
+    "name": "SYNTHETIC TEST ADOPTION ZZ FRAME - NOT A CODE",
+    "shortName": "ZZ FRAME",
+    "adoptedBy": "nobody (synthetic)",
+    "inForce": {
+      "from": "2099-01-01",
+      "to": null
+    },
+    "appliesTo": "permit-application-date",
+    "transitionNotes": null
+  },
+  "baseCode": {
+    "publisher": "ICC",
+    "code": "IRC",
+    "year": 2099
+  },
+  "layers": [
+    "zz-frame-2099",
+    "amendments"
+  ],
+  "sources": [
+    {
+      "id": "zz-synth-state",
+      "title": "SYNTHETIC TEST SOURCE (state) - NOT A CODE",
+      "publisher": "nobody (synthetic)",
+      "url": "https://example.invalid/synthetic",
+      "printing": "synthetic printing, no errata",
+      "retrievedOn": "2026-09-25",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "review": {
+    "status": "unreviewed",
+    "checklist": null
+  }
+}

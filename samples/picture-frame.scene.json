@@ -1,5 +1,5 @@
 {
-  "formatVersion": 5,
+  "formatVersion": 6,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -36,7 +36,7 @@
         },
         "hardware": []
       },
-      "cuts": [
+      "wall": null, "cuts": [
         {
           "kind": "cornerCut",
           "corner": "southEast",
@@ -76,7 +76,7 @@
         },
         "hardware": []
       },
-      "cuts": [
+      "wall": null, "cuts": [
         {
           "kind": "cornerCut",
           "corner": "southEast",
@@ -116,7 +116,7 @@
         },
         "hardware": []
       },
-      "cuts": [
+      "wall": null, "cuts": [
         {
           "kind": "cornerCut",
           "corner": "northEast",
@@ -156,7 +156,7 @@
         },
         "hardware": []
       },
-      "cuts": [
+      "wall": null, "cuts": [
         {
           "kind": "cornerCut",
           "corner": "northEast",
@@ -174,5 +174,7 @@
   ],
   "relationships": [],
   "fastenerChoices": [],
-  "supplies": []
+  "supplies": [],
+  "code": null,
+  "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null }
 }

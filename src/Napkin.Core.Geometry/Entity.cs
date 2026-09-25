@@ -128,6 +128,13 @@ public sealed record Box(
     public Part? Part { get; init; }
 
     /// <summary>
+    /// What the person entered for this box as a wall — what it supports and its stud spacing —
+    /// or <see langword="null"/> when nothing has been (format version 6). Fields on the box, like
+    /// <see cref="Part"/>, so undo, copy and delete carry it; nothing in the kernel reads it.
+    /// </summary>
+    public WallInputs? WallInputs { get; init; }
+
+    /// <summary>
     /// What has been cut off the blank, in site order. Empty for a plain rectangle
     /// (<c>docs/design/shaped-parts-model.md</c> §1.1).
     /// </summary>
@@ -284,6 +291,7 @@ public sealed record Box(
            && FaceUp == other.FaceUp
            && Rotation == other.Rotation
            && Part == other.Part
+           && WallInputs == other.WallInputs
            && _cuts.SequenceEqual(other._cuts);
 
     /// <inheritdoc/>
@@ -298,6 +306,7 @@ public sealed record Box(
         hash.Add(FaceUp);
         hash.Add(Rotation);
         hash.Add(Part);
+        hash.Add(WallInputs);
         foreach (Cut cut in _cuts)
         {
             hash.Add(cut);

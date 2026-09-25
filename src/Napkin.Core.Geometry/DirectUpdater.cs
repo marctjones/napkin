@@ -65,6 +65,9 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetPart setPart => ApplySetPart(sketch, setPart),
             SetFastenerChoices choices => new Solved(sketch with { FastenerChoices = choices.Choices }, ChangeSet.Empty),
             SetSupplies supplies => new Solved(sketch with { Supplies = supplies.Supplies }, ChangeSet.Empty),
+            SetCode code => new Solved(sketch with { Code = code.Code }, ChangeSet.Empty),
+            SetSite site => new Solved(sketch with { Site = site.Site }, ChangeSet.Empty),
+            SetWallInputs wall => ApplySetWallInputs(sketch, wall),
 
             // A cut is in the blank's local frame and moves with it, so setting or removing one
             // moves no geometry and disturbs no relationship: structural, like a rename
@@ -270,6 +273,27 @@ public sealed class DirectUpdater : IGeometryUpdater
         return new Solved(
             sketch.WithEntity(entity with { Name = request.Name }),
             ChangeSet.Empty with { Modified = [request.Id] });
+    }
+
+    private static UpdateResult ApplySetWallInputs(Sketch sketch, SetWallInputs request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        if (request.Inputs?.StudSpacing is { } spacing && spacing <= Length.Zero)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        Box changed = box with { WallInputs = request.Inputs?.OrNull() };
+        return new Solved(sketch.WithEntity(changed), ChangeSet.Empty with { Modified = [box.Id] });
     }
 
     private static UpdateResult ApplySetPart(Sketch sketch, SetPart request)

@@ -302,7 +302,7 @@ public sealed class ShapedCutLengthTests
         // refuses a file containing such a box (§5), so the cut list never sees it.
         const string scene = """
             {
-              "formatVersion": 5,
+              "formatVersion": 6,
               "units": { "length": "inch/1024", "angle": "arcsecond" },
               "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
               "entities": [
@@ -310,12 +310,12 @@ public sealed class ShapedCutLengthTests
                   "name": "Block",
                   "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 3584, "height": 3584, "depth": 768, "faceUp": "top", "rotation": 0,
                   "part": { "stock": null, "species": null, "quantity": 1, "planAxes": { "x": "length", "y": "width" }, "hardware": [] },
-                  "cuts": [
+                  "wall": null, "cuts": [
                     { "kind": "cornerCut", "corner": "southWest", "alongX": 3584, "alongY": 3584 },
                     { "kind": "cornerCut", "corner": "northEast", "alongX": 3584, "alongY": 3584 }
                   ] }
               ],
-              "fastenerChoices": [], "supplies": [],
+              "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "source": null },
               "relationships": []
             }
             """;

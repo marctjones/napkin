@@ -35,7 +35,13 @@ public static class GuiWorkflow
         return store;
     }
 
-    public static void Run(Action<AppDriver> scenario, bool defaultLook = false)
+    /// <param name="scenario">The workflow.</param>
+    /// <param name="defaultLook">Whether to keep napkin's default look rather than the clean screen.</param>
+    /// <param name="packRoots">
+    /// Where the app looks for code packs. None by default, so no workflow depends on packs a
+    /// person has installed on the machine running it; a code-check workflow names its own.
+    /// </param>
+    public static void Run(Action<AppDriver> scenario, bool defaultLook = false, IReadOnlyList<string>? packRoots = null)
     {
         var featureId = GuiWorkflowContext.FeatureId
             ?? throw new GuiWorkflowRuleException(
@@ -51,6 +57,7 @@ public static class GuiWorkflow
             {
                 Width = DefaultWindowSize.Width,
                 Height = DefaultWindowSize.Height,
+                PackRoots = packRoots ?? [],
             };
 
             var driver = AppDriver.Attach(window, featureId);

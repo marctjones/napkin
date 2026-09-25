@@ -189,8 +189,8 @@ public sealed class ProjectFileTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
-    [InlineData(4)]
-    [InlineData(6)]
+    [InlineData(5)]
+    [InlineData(7)]
     [Trait("Feature", "PRJ-004")]
     public void A_scene_from_another_format_version_is_refused_naming_both_versions(int version)
     {
@@ -313,8 +313,10 @@ public sealed class ProjectFileTests
         byte[] enormous = Containers.Utf8(new string(' ', (int)ContainerLimits.MaxManifestBytes + 1));
         byte[] container = Containers.Zip(
             ("manifest.json", enormous),
-            ("scene.json", Containers.GoodScene));
+            ("scene.json", Containers.Utf8("{}")));
 
+        // The scene is a stand-in: the manifest is judged, and refused, first. A real scene would
+        // be most of the container's bytes and hide how little the bomb itself takes.
         Assert.True(
             container.Length < enormous.Length / 100,
             "the test's own bomb did not compress, so it is not testing what it means to.");

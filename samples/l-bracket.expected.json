@@ -3,7 +3,7 @@
   "scene": "l-bracket.scene.json",
   "design": "l-bracket.design.md",
   "derivedBy": "hand, from the stated dimensions in l-bracket.design.md; never regenerated from napkin's output",
-  "formatVersion": 5,
+  "formatVersion": 6,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 8,
