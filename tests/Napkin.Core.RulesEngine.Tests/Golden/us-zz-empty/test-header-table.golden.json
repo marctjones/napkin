@@ -1,0 +1,15 @@
+{
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES. A pack whose base tables are not filled in: the honest answer is no data.",
+  "pack": "us-zz-empty",
+  "table": "TEST-HEADER-TABLE",
+  "source": "zz-synthetic-state",
+  "transcriber": { "who": "Opus (rules/13-engine, synthetic)", "on": "2026-09-25" },
+  "cases": [
+    {
+      "inputs": { "supports": "test-roof", "groundSnowLoad": 50, "buildingWidth": "30ft 0in", "ultimateWindSpeed": 150, "headerSpan": "6ft 0in" },
+      "wallKind": "exterior-bearing",
+      "expect": { "noData": { "reason": "NoTableForWallKind" } },
+      "location": "synthetic: no table in the pack"
+    }
+  ]
+}

@@ -216,39 +216,9 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: RUL-001 — Adopted-code packs load from data")]
-    [Trait("Feature", "RUL-001")]
-    public void RUL_001()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-002 — Every result carries a full citation")]
-    [Trait("Feature", "RUL-002")]
-    public void RUL_002()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-003 — Out of scope is a first-class result")]
-    [Trait("Feature", "RUL-003")]
-    public void RUL_003()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-004 — The header evaluator returns the matching row")]
-    [Trait("Feature", "RUL-004")]
-    public void RUL_004()
-    {
-    }
-
     [Fact(Skip = "planned: RUL-005 — The bracing evaluator runs over a whole wall line")]
     [Trait("Feature", "RUL-005")]
     public void RUL_005()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-006 — Overlays compose, and the citation names the layer")]
-    [Trait("Feature", "RUL-006")]
-    public void RUL_006()
     {
     }
 
