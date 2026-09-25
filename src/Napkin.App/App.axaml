@@ -13,17 +13,17 @@
                      by name so napkin's own styles can bind to them: overriding Fluent's
                      SystemAccentColor does not retint Fluent-templated chrome (measured, see that
                      repo's docs/avalonia-usage.md), so nothing here relies on it. -->
-                <ResourceInclude Source="avares://Napkin.App/Theme/SkepticalTheme.axaml" />
-                <ResourceInclude Source="avares://Napkin.App/Theme/WorkbenchIcons.axaml" />
+                <ResourceInclude Source="avares://napkin/Theme/SkepticalTheme.axaml" />
+                <ResourceInclude Source="avares://napkin/Theme/WorkbenchIcons.axaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!-- IBM Plex, bundled under Assets/Fonts (SIL OFL 1.1: its notices ship beside the
                  executable and are listed in docs/third-party-notices.md). Defined here, not in
                  the vendored theme, whose keys fall back to system fonts until an app supplies
                  the files; a resource in Application.Resources wins over a merged one. -->
-            <FontFamily x:Key="SeFontMono">avares://Napkin.App/Assets/Fonts#IBM Plex Mono</FontFamily>
-            <FontFamily x:Key="SeFontSerif">avares://Napkin.App/Assets/Fonts#IBM Plex Serif</FontFamily>
-            <FontFamily x:Key="SeFontSans">avares://Napkin.App/Assets/Fonts#IBM Plex Sans</FontFamily>
+            <FontFamily x:Key="SeFontMono">avares://napkin/Assets/Fonts#IBM Plex Mono</FontFamily>
+            <FontFamily x:Key="SeFontSerif">avares://napkin/Assets/Fonts#IBM Plex Serif</FontFamily>
+            <FontFamily x:Key="SeFontSans">avares://napkin/Assets/Fonts#IBM Plex Sans</FontFamily>
 
             <!-- Fluent's focus ring and text selection are accent-blue and ignore SystemAccentColor
                  (design-repo docs/avalonia-usage.md), so they are pointed at moss here. -->
@@ -40,7 +40,7 @@
 
     <Application.Styles>
         <FluentTheme />
-        <StyleInclude Source="avares://Napkin.App/Styles/NapkinLook.axaml" />
+        <StyleInclude Source="avares://napkin/Styles/NapkinLook.axaml" />
 
         <!-- Control text is Plex Sans at 13 (the design system's app-body). Inter stays registered
              in Program.cs as the fallback for any glyph Plex lacks. -->
