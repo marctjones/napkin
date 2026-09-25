@@ -169,6 +169,32 @@ gained the version number, `"wall": null` on every box, and `"code": null` with 
 every `*.expected.json` changed only its `formatVersion`. Format version 7 (`site.roofLiveLoad`)
 likewise added only the null field and the version.
 
+**A purely additive bump — a null field or an empty list, no sample's meaning changed, as every
+bump from version 5 on has been — no longer needs 15 scenes and 15 expectations rewritten by hand
+(#181).** Run
+
+```
+dotnet run --project tools/Napkin.Tools -- samples restamp
+```
+
+after bumping `FormatStamp.CurrentVersion` and teaching the writer the new field. It brings every
+`samples/*.scene.json` and `*.expected.json` still behind up to the current version — adding
+exactly the fields that version introduced, as null or empty, the same way this file has described
+each bump by hand above — and verifies the result with the real strict reader before writing it, so
+a sample it touches is provably still readable. It changes nothing in a sample already at the
+current version, so running it after there is nothing left to bump is a no-op with no diff. It
+refuses (rather than guessing) a sample older than format version 4, since versions 2-4 changed what
+existing fields *mean*, not just added new ones; a bump like that is still a by-hand rewrite, the
+way the samples were rewritten for those versions. See `SamplesCommand` in
+`tools/Napkin.Tools/Commands/` for the exact per-version field list.
+
+**Per-view camera state is a user setting, not scene data.** A bump has come, more than once, from
+the temptation to put "what the viewer was looking at" into the scene file so it is restored on
+reopen. It belongs in `UserSettings.cs` instead: it is what a person set for themselves while
+looking at a design, not a fact about the design, and it should not force every collaborator's
+saved file to carry it or every format bump to touch 15 samples to add a field nothing else needs.
+See `docs/file-format.md` for where this is recorded for the format itself.
+
 **Layers are named "Default".** The viewer styles a part by the name of the layer it is on — a
 part on "Parts" is drawn as furniture, one on "Wall" as a wall, one on "Opening" as a dashed hole —
 so everything in these two fixtures draws in the neutral style. Giving the coffee table's layer the
