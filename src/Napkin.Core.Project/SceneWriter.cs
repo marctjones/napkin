@@ -189,7 +189,7 @@ public static class SceneWriter
         writer.WriteEndObject();
     }
 
-    /// <summary>A wall's inputs (format version 6), or <c>"wall": null</c> for a box with none.</summary>
+    /// <summary>A wall's inputs (format version 6; bracing, version 8), or <c>"wall": null</c> for a box with none.</summary>
     private static void WriteWallInputs(Utf8JsonWriter writer, WallInputs? inputs)
     {
         if (inputs is null)
@@ -201,6 +201,26 @@ public static class SceneWriter
         writer.WriteStartObject(SceneNames.Wall);
         WriteOptionalText(writer, SceneNames.WallSupports, inputs.Supports);
         WriteOptionalNumber(writer, SceneNames.WallStudSpacing, inputs.StudSpacing?.Units);
+        if (inputs.Bracing.IsEmpty)
+        {
+            writer.WriteNull(SceneNames.WallBracing);
+        }
+        else
+        {
+            // In the order held: the building module writes them start to end.
+            writer.WriteStartArray(SceneNames.WallBracing);
+            foreach (BracingAssignment assignment in inputs.Bracing)
+            {
+                writer.WriteStartObject();
+                WriteOptionalId(writer, SceneNames.BracingFrom, assignment.From);
+                WriteOptionalId(writer, SceneNames.BracingTo, assignment.To);
+                writer.WriteString(SceneNames.BracingMethod, assignment.Method);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+        }
+
         writer.WriteEndObject();
     }
 
@@ -687,6 +707,18 @@ public static class SceneWriter
     /// <summary>An id, in the canonical 8-4-4-4-12 form the reader parses with <c>Guid.TryParseExact</c>.</summary>
     private static void WriteId(Utf8JsonWriter writer, string name, Guid id)
         => writer.WriteString(name, id.ToString("D", CultureInfo.InvariantCulture));
+
+    private static void WriteOptionalId(Utf8JsonWriter writer, string name, EntityId? id)
+    {
+        if (id is { } value)
+        {
+            WriteId(writer, name, value.Value);
+        }
+        else
+        {
+            writer.WriteNull(name);
+        }
+    }
 
     /// <summary>
     /// A kind of entity, relationship, reference or measurand the model holds and the format has

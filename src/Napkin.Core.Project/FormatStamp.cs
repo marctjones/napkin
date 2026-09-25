@@ -68,8 +68,12 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
     /// Version 7 added <c>roofLiveLoad</c> to the site values (psf, null when not entered), which a
     /// header table's footnote may ask for (docs/rules-engine.md). Every version-6 file is refused.
     /// </para>
+    /// <para>
+    /// Version 8 added <c>bracing</c> to a wall's inputs (issue #39): the bracing method assigned to
+    /// each of its segments, or null when none is. Every version-7 file is refused.
+    /// </para>
     /// </remarks>
-    public const int CurrentVersion = 7;
+    public const int CurrentVersion = 8;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);

@@ -63,7 +63,13 @@ public static class GroupCopy
         HashSet<string> taken = Names(sketch, nameOf);
         foreach (Box box in boxes.OrderBy(box => box.Id))
         {
-            requests.Add(new AddEntity(box with { Id = copies[box.Id], Anchor = box.Anchor + offset, Name = CopyName(NameOf(box, nameOf), taken) }));
+            requests.Add(new AddEntity(box with
+            {
+                Id = copies[box.Id],
+                Anchor = box.Anchor + offset,
+                Name = CopyName(NameOf(box, nameOf), taken),
+                WallInputs = CopiedWallInputs(box, copies, mirror: null),
+            }));
         }
 
         foreach (Relationship relationship in Among(sketch, copies.Keys))
@@ -110,7 +116,13 @@ public static class GroupCopy
             (Point3 low, Point3 high) = SpaceSnapResolver.Extent(box);
             Length reflectedLow = plane + plane - high.Component(axis);
             Vector3 shift = Vector3.Along(axis, reflectedLow - low.Component(axis));
-            requests.Add(new AddEntity(box with { Id = copies[box.Id], Anchor = box.Anchor + shift, Name = CopyName(NameOf(box, nameOf), taken) }));
+            requests.Add(new AddEntity(box with
+            {
+                Id = copies[box.Id],
+                Anchor = box.Anchor + shift,
+                Name = CopyName(NameOf(box, nameOf), taken),
+                WallInputs = CopiedWallInputs(box, copies, axis),
+            }));
         }
 
         foreach (Relationship relationship in Among(sketch, copies.Keys))
@@ -122,6 +134,35 @@ public static class GroupCopy
         }
 
         return (requests.ToImmutable(), copies);
+    }
+
+    /// <summary>
+    /// A copied wall's inputs (#39): its bracing assignments name the copies of the openings copied
+    /// with it (an opening left behind keeps its id, which the copy's wall line treats as gone:
+    /// segments either side merge, keeping a method they shared). A mirror across the wall's own
+    /// length turns it end for end, so each segment's start and end boundaries swap.
+    /// </summary>
+    public static WallInputs? CopiedWallInputs(Box box, IReadOnlyDictionary<EntityId, EntityId> copies, Axis? mirror)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+        ArgumentNullException.ThrowIfNull(copies);
+        if (box.WallInputs is not { } inputs || inputs.Bracing.IsEmpty)
+        {
+            return box.WallInputs;
+        }
+
+        bool reversed = mirror is { } axis
+            && box.Orientation.Apply(Vector3.Along(Axis.X, Length.Inches(1))).Component(axis) != Length.Zero;
+        EntityId? Map(EntityId? id) => id is { } value && copies.TryGetValue(value, out EntityId copy) ? copy : id;
+        return inputs with
+        {
+            Bracing =
+            [
+                .. inputs.Bracing.Select(a => reversed
+                    ? new BracingAssignment(Map(a.To), Map(a.From), a.Method)
+                    : new BracingAssignment(Map(a.From), Map(a.To), a.Method)),
+            ],
+        };
     }
 
     /// <summary>

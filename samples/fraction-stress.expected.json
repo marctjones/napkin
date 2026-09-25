@@ -3,7 +3,7 @@
   "scene": "fraction-stress.scene.json",
   "design": "fraction-stress.design.md",
   "derivedBy": "hand, from the stated dimensions in fraction-stress.design.md; never regenerated from napkin's output",
-  "formatVersion": 7,
+  "formatVersion": 8,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 4,

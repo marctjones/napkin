@@ -23,7 +23,7 @@ internal static class Scenes
     /// <summary>A 30 inch by 4 inch box at the origin, with its width driven.</summary>
     internal const string OneBox = """
         {
-          "formatVersion": 7,
+          "formatVersion": 8,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -48,7 +48,7 @@ internal static class Scenes
     /// </summary>
     internal const string TurnedBoxAndNode = """
         {
-          "formatVersion": 7,
+          "formatVersion": 8,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -75,7 +75,7 @@ internal static class Scenes
     /// </summary>
     internal const string SegmentAndDimension = """
         {
-          "formatVersion": 7,
+          "formatVersion": 8,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -108,7 +108,7 @@ internal static class Scenes
     /// <summary>The box, with a relationship kind that is reserved for the solver.</summary>
     internal const string TangentBetweenBoxEdges = """
         {
-          "formatVersion": 7,
+          "formatVersion": 8,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -129,7 +129,7 @@ internal static class Scenes
     /// <summary>The same box written twice, under one id.</summary>
     internal const string TwoEntitiesUnderOneId = """
         {
-          "formatVersion": 7,
+          "formatVersion": 8,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -148,7 +148,7 @@ internal static class Scenes
     /// <summary>Two layers under one id.</summary>
     internal const string TwoLayersUnderOneId = """
         {
-          "formatVersion": 7,
+          "formatVersion": 8,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [
             { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" },
@@ -163,7 +163,7 @@ internal static class Scenes
     /// <summary>Two relationships, two ids, one statement — invariant 4 of the geometry design.</summary>
     internal const string TwoRelationshipsSayingTheSameThing = """
         {
-          "formatVersion": 7,
+          "formatVersion": 8,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -184,7 +184,7 @@ internal static class Scenes
     /// <summary>An empty design: no entities, no relationships, one layer.</summary>
     internal const string Empty = """
         {
-          "formatVersion": 7,
+          "formatVersion": 8,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [],

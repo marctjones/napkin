@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 7
+# The napkin project file — container version 1, scene format version 8
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -25,7 +25,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 7` and nothing else. A file from an older *or* a
+   `"containerVersion": 1` and `"formatVersion": 8` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
@@ -189,7 +189,7 @@ Two places where the bytes legitimately differ:
 
 ```json
 {
-  "formatVersion": 7,
+  "formatVersion": 8,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ … ],
   "entities": [ … ],
@@ -526,7 +526,9 @@ None of these texts is napkin data: they are what the builder typed.
 
 Format version 6 (issues #18 and #19; [`building.md`](./building.md), [`rules-engine.md`](./rules-engine.md));
 version 7 added `site.roofLiveLoad` (a header table's footnote may ask for it: Connecticut's 30 psf
-rule, [`rules-engine.md`](./rules-engine.md)). A version-6 file is refused, with no converter.
+rule, [`rules-engine.md`](./rules-engine.md)); version 8 added `wall.bracing`, the bracing
+method assigned to each segment of a wall line (#39, [`building.md`](./building.md)). A version-7
+file is refused, with no converter.
 What a person enters for the code check. None of it is napkin data and none of it is ever
 defaulted: `null` means "not entered", and the check says which input it is missing.
 
@@ -537,8 +539,9 @@ defaulted: `null` means "not entered", and the check says which input it is miss
           "source": { "text": "Town building department, by phone", "on": "2026-09-24" } }
 ```
 
-and on a box that is a wall: `"wall": { "supports": "roof-ceiling", "studSpacing": 16384 }` (the
-values are illustrations of the shape, not code data).
+and on a box that is a wall: `"wall": { "supports": "roof-ceiling", "studSpacing": 16384,
+"bracing": [ { "from": null, "to": "<an opening's id>", "method": "some-method" } ] }` (the values
+are illustrations of the shape, not code data).
 
 | Field | Type | Refused when |
 |---|---|---|
@@ -554,11 +557,17 @@ values are illustrations of the shape, not code data).
 | `site.buildingWidth` | a length, or `null` | 0 or negative |
 | `site.roofLiveLoad` | whole psf, or `null`; asked for only when a table's footnote needs it | negative, or not an integer |
 | `site.source` | `{ "text": text, "on": yyyy-MM-dd or null }` — where the values came from — or `null` | a missing field |
-| `wall` (on a box) | `null`, or `{ "supports": text or null, "studSpacing": length or null }` | both fields `null` (write `"wall": null`), empty `supports`, a spacing of 0 or less |
+| `wall` (on a box) | `null`, or `{ "supports": text or null, "studSpacing": length or null, "bracing": array or null }` | all three `null` (write `"wall": null`), empty `supports`, a spacing of 0 or less |
+| `wall.bracing` | `null`, or a non-empty array of `{ "from": id or null, "to": id or null, "method": text }`: the method assigned to the segment that starts after opening `from` (null: the wall's start) and ends before opening `to` (null: the wall's end) | `[]` (write `null`), an empty `method`, `from` equal to a non-null `to`, the same segment twice, an id that is not a GUID |
 
 `supports` is one of the values the adopted code's header table declares; it is not checked
 against any pack at load, for the same reason a part's stock name is not checked against the
-library. Every field is written, every time.
+library. Nor is a bracing `method`. The `from`/`to` ids of a bracing assignment are **not
+references**: an id that names no opening in the wall (one that was deleted, or moved to another
+wall) is kept, not refused, because it is what lets two segments that merged when an opening was
+deleted keep a method they shared, and undo put the opening back
+([`building.md`](./building.md#wall-bracing)). Assignments are rewritten for the current segments
+whenever a method is chosen on the wall. Every field is written, every time.
 
 ## An annotated example
 
@@ -567,7 +576,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 ```jsonc
 {
-  "formatVersion": 7,                                  // exactly 7, judged first
+  "formatVersion": 8,                                  // exactly 8, judged first
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
   "entities": [

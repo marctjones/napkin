@@ -3,7 +3,7 @@
   "scene": "framing-16-oc.scene.json",
   "design": "framing-16-oc.design.md",
   "derivedBy": "hand, from the stated dimensions in framing-16-oc.design.md; never regenerated from napkin's output",
-  "formatVersion": 7,
+  "formatVersion": 8,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 27,

@@ -3,7 +3,7 @@
   "scene": "scale-extremes.scene.json",
   "design": "scale-extremes.design.md",
   "derivedBy": "hand, from the stated dimensions in scale-extremes.design.md; never regenerated from napkin's output",
-  "formatVersion": 7,
+  "formatVersion": 8,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 3,

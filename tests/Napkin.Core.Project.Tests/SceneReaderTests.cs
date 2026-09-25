@@ -130,7 +130,7 @@ public sealed class SceneReaderTests
     /// </summary>
     private const string AllReferenceShapes = """
         {
-          "formatVersion": 7,
+          "formatVersion": 8,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
