@@ -1,7 +1,9 @@
 # Rules engine: adopted-code packs, amendment overlays and code locking
 
 Status: DRAFT — awaiting Marc's sign-off. Implementation of #13-#19 is not authorized until signed
-off.
+off. **Implementation of #13 began 2026-09-25 at Marc's direction ("Implement M4"); sign-off of
+this document is still pending.** What was built, and where it departs from the text below, is in
+"Scope of the first implementation" just after the milestones paragraph.
 
 Design document for issue #12, written by Fable per [`PLAN.md`](../../PLAN.md). It decides what
 #13 (evaluator, out-of-scope results, citations), #14-#17 (the four adopted-code packs), #19 (the
@@ -25,6 +27,51 @@ sizing (IRC 2024 base, R602.7), citations and out-of-scope results, one pack, pe
 **M5 "Brace and compare"** = the wall-bracing check (R602.10) plus a second pack (CT 2022) proving
 code locking and recompute. MA, PA and PA municipal overlays come later. Each section below says
 what M4 needs, what M5 adds, and what waits.
+
+## Scope of the first implementation (#13, 2026-09-25)
+
+**Edition.** M4 is built on the **Connecticut 2022 State Building Code (2021 IRC as amended)**,
+pack id `us-ct-2022`. The CT 2026 code is not in force (delayed; only a public-comment draft
+exists), so everything below that says "CT 2026 / IRC 2024" for M4 now reads "CT 2022 / IRC 2021";
+the 2026 code becomes a second pack once adopted (PLAN.md M4/M5 rows).
+
+**No real table rows ship.** The copyright stance on transcribing code tables (Decision 7) is
+Marc's and is not decided, so no IRC or CT values are in the repo. The engine is built and tested
+on SYNTHETIC fixtures under `tests/Napkin.Core.RulesEngine.Tests/Fixtures` and `Golden/` (ids like
+`TEST-HEADER-TABLE`, "IRC 2099", a banner in every file). Packs load from a **packs root on disk**
+(`layers/`, `packs/`) through `DirectoryPackSource` — the directory a person fills from their own
+copy of the code (`docs/rules-engine.md`); embedded packs (§1.2) and Decision 6 wait for real data.
+
+**Deviations from the text, and why.**
+- *Result kinds (§3.1).* `HeaderResult` has four members: `Sized`, `OutOfScope`, `InputMissing`,
+  `NoData`. `NoData` exists because a pack a person fills may legitimately lack a table (an
+  incomplete pack, not a broken one), and a project may have no pack; the honest answer is "no
+  data", never a guess. `InputMissing` exists because a hazard is required only by the tables
+  that use it: `SiteInputs` fields are nullable meaning "not entered", there are no default
+  values anywhere (a reflection test checks), and an unset input a table needs is named in the
+  result, never defaulted.
+- *Table schema (§1.4).* A header table declares `wallKind` (so the engine picks a table without
+  knowing table numbers); column names come from a closed set of request fields (`supports`,
+  `groundSnowLoad`, `ultimateWindSpeed`, `seismicDesignCategory`, `buildingWidth`, `frostDepth`,
+  `headerSpan`); footnotes declare `appliesTo` (`table` or `rows`) and an `as-limit` footnote a
+  `limit` (`above` a value or `equals` a category); rows may list their footnotes; every file may
+  carry a `notes` string. The loader is the schema; `Packs/schema/*.json` is not committed.
+- *Overlays (§1.3).* Row operations `add`/`amend`/`delete` and table operations
+  `add-table`/`amend-table` (metadata, rows kept)/`delete-table`. Base-layer tables cite the
+  layer's own `sources`; an overlay cites the sources of the pack that owns it. Every table below
+  needs an overlay file in each overlay layer, even with no operations.
+- *Interpolation and rounding (§4.4).* Not implemented. The task asked for "the mechanism"; §3.5
+  and Decision 3 say none in the betas, and Decision 3 is Marc's. The data-driven mechanism that
+  exists is the footnote classification (`not-encoded`, `as-rows`, `as-limit`); an `interpolate`
+  encoding is refused at load.
+- *Band validation (§4.3).* Rows are compared by value, not file order (so P4's order
+  independence holds): a duplicate bound in a cell is an overlap; every combination of
+  upper-bound bands must have rows (no holes); each upper-bound column's top band must equal its
+  declared `domain.max`.
+- *Not built yet:* the loosening lint (§6.3), checklist-hash tests (§8.3 steps 3–4), the
+  municipal revision check (§6.1), `BracingResult`, `results.json`. `CodeSelection` (pack id,
+  revision, locked or following, lock date), `Recompute.Headers` and `Recompute.Diff` exist for
+  #19; `ChangeKind` is adapted to header results.
 
 ## 0. Two facts from the primary sources that shape everything below
 
