@@ -1280,6 +1280,15 @@
       "kind": "unit"
     },
     {
+      "id": "VIEW-011",
+      "area": "ui",
+      "title": "Rulers and grid of a standard view in world values",
+      "acceptance": "ViewGrid: a mirrored axis shows the same world span counted the other way; grid lines on the plan's ladder, heavy on the next step; an elevation's floor (z = 0) heavy even with no heavier step; no lines for a bad or huge span. StandardViewRulers on the l-bracket: Back's and Left's horizontal rulers count down, Bottom's vertical counts down upward, Front's and Right's rise both ways; the tick at x 6 1/2 sits where the camera projects it in Front and Back; the floor line in Front is heavy and in place.",
+      "milestone": "M2",
+      "issue": 131,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-VIEW-08",
       "area": "ui",
       "title": "Switch between Top, Front and 3D by key, chip and menu",
@@ -1340,6 +1349,15 @@
       "acceptance": "Open the coffee table; 3 draws the four X dimensions, the top's width below the top; 5 the two Y ones; the Bottom chip all six; in Top, Tab 50 Enter widens the top; 4 shows 4'-2\" at once; 7 draws none.",
       "milestone": "M2",
       "issue": 130,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-15",
+      "area": "ui",
+      "title": "Rulers and grid in Back count down, follow a pan, and step with the zoom",
+      "acceptance": "Open the l-bracket; 4 then View > Rulers: labels on both rulers, the top one descending, the toolbar stepped in, no scale bar, the floor a heavy grid line; the right arrow pans and the numbers move, still descending; a 40 px drag moves every tick 40 px; a wheel zoom out steps the ladder up; 7 shows no rulers.",
+      "milestone": "M2",
+      "issue": 131,
       "kind": "workflow"
     },
     {

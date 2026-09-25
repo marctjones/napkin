@@ -1725,10 +1725,16 @@ public sealed class ModelView : Control
         }
 
         Sketch sketch = editor.Sketch;
-        // The ground grid is edge-on in an elevation; a standard view's own grid is the rulers' slice.
+        // The ground grid is edge-on in an elevation; a standard view has its own, in the view plane (§5.2).
+        StandardViewRulers? rulers = _locked is { } seen && _camera.HasViewport ? StandardViewRulers.Of(_camera, seen) : null;
+        Rulers = rulers;
         if (_showGrid && _locked is null)
         {
             DrawFloor(context, palette, sketch);
+        }
+        else if (_showGrid && rulers is not null)
+        {
+            DrawViewGrid(context, palette, rulers);
         }
 
         Dictionary<LayerId, string> layerNames = sketch.Layers.ToDictionary(layer => layer.Id, layer => layer.Name);
@@ -1782,7 +1788,63 @@ public sealed class ModelView : Control
         DrawReadout(context, palette);
         DrawAxes(context);
         DrawScaleBar(context, palette);
+        if (_showRulers && rulers is not null && Bounds.Width > CanvasView.RulerThickness && Bounds.Height > CanvasView.RulerThickness)
+        {
+            CanvasView.DrawRulersAt(
+                context,
+                palette,
+                Bounds.Size,
+                [.. rulers.Top.Select(placed => (placed.Screen, placed.Mark))],
+                [.. rulers.Left.Select(placed => (placed.Screen, placed.Mark))],
+                null);
+        }
     }
+
+    /// <summary>
+    /// A standard view's grid (§5.2): lines at world values along screen right and screen up, on the
+    /// plan's ladder, the floor (z = 0) heavy in an elevation.
+    /// </summary>
+    void DrawViewGrid(DrawingContext context, CanvasPalette palette, StandardViewRulers rulers)
+    {
+        Pen minor = new(new SolidColorBrush(palette.GridMinor), 1);
+        Pen major = new(new SolidColorBrush(palette.GridMajor), 1);
+        foreach (PlacedGridLine line in rulers.Across)
+        {
+            context.DrawLine(line.Line.Major ? major : minor, new Point(line.Screen, 0), new Point(line.Screen, Bounds.Height));
+        }
+
+        foreach (PlacedGridLine line in rulers.Down)
+        {
+            context.DrawLine(line.Line.Major ? major : minor, new Point(0, line.Screen), new Point(Bounds.Width, line.Screen));
+        }
+    }
+
+    bool _showRulers;
+
+    /// <summary>
+    /// Whether a standard view shows rulers along its top and left edges, in world values on its two
+    /// visible axes (§5.2) — the plan's rulers, the same setting. The free 3D view has its scale bar.
+    /// </summary>
+    public bool ShowRulers
+    {
+        get => _showRulers;
+        set
+        {
+            if (_showRulers != value)
+            {
+                _showRulers = value;
+                InvalidateVisual();
+            }
+        }
+    }
+
+    /// <summary>The rulers and grid the last standard view drew; null outside one.</summary>
+    public StandardViewRulers? Rulers { get; private set; }
+
+    /// <summary>The labels on the rulers now, top ruler left to right then left ruler top to bottom; empty when none show.</summary>
+    public IReadOnlyList<string> RulerLabelsOnScreen => _showRulers && Rulers is { } rulers
+        ? [.. rulers.Top.Concat(rulers.Left).Select(placed => placed.Mark.Label).OfType<string>()]
+        : [];
 
     /// <summary>The part as it would be placed, faint, the faces the eye could see (#74).</summary>
     void DrawPreview(DrawingContext context, CanvasPalette palette)
@@ -2315,7 +2377,7 @@ public sealed class ModelView : Control
     }
 
     /// <summary>What the scale bar reads now, or <see langword="null"/> when none is drawn.</summary>
-    public string? ScaleBarLabel => _showScaleBar && !_camera.IsPerspective && _camera.HasViewport
+    public string? ScaleBarLabel => _showScaleBar && _locked is null && !_camera.IsPerspective && _camera.HasViewport
         ? ScaleBar.LabelFor(_camera.PixelsPerInch)
         : null;
 
@@ -2347,7 +2409,9 @@ public sealed class ModelView : Control
     /// <summary>Which way X, Y and Z point, in the corner, so a turn about an axis names something visible.</summary>
     void DrawAxes(DrawingContext context)
     {
-        Point origin = new(34, Bounds.Height - 34);
+        // Clear of the left ruler when a standard view shows one.
+        double ruler = _showRulers && _locked is not null ? CanvasView.RulerThickness : 0;
+        Point origin = new(34 + ruler, Bounds.Height - 34);
         foreach (Axis axis in (Axis[])[Axis.X, Axis.Y, Axis.Z])
         {
             Vector along = _camera.ProjectDirection(Vector3d.Along(axis));

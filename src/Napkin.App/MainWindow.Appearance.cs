@@ -158,7 +158,7 @@ public partial class MainWindow
         ApplyHiddenEdges(Settings.Current.ShowHiddenEdges);
         _showRulers = Settings.Current.ShowRulers;
         DrawingCanvas.ShowRulers = _showRulers;
-        ModelDrawing.ShowScaleBar = _showRulers;
+        ModelDrawing.ShowScaleBar = ModelDrawing.ShowRulers = _showRulers;
         UpdateRulerLayout();
 
         if (Settings.Notice is { } notice)
@@ -365,7 +365,7 @@ public partial class MainWindow
     {
         _showRulers = !_showRulers;
         DrawingCanvas.ShowRulers = _showRulers;
-        ModelDrawing.ShowScaleBar = _showRulers;
+        ModelDrawing.ShowScaleBar = ModelDrawing.ShowRulers = _showRulers;
         Settings.Update(s => s with { ShowRulers = _showRulers });
         UpdateRulerLayout();
     }
@@ -378,7 +378,7 @@ public partial class MainWindow
     {
         RulersMenuItem.Icon = _showRulers ? new TextBlock { Text = "✓" } : null;
 
-        double t = _showRulers && !IsShowingModel ? CanvasView.RulerThickness : 0;
+        double t = _showRulers && (!IsShowingModel || IsShowingStandardView) ? CanvasView.RulerThickness : 0;
         ToolBar.Margin = ToolBarMargin + new Thickness(t, t, 0, 0);
         StockToolboxPanel.Margin = ToolboxMargin + new Thickness(t, t, 0, 0);
         SidePanels.Margin = SidePanelsMargin + new Thickness(0, t, 0, 0);

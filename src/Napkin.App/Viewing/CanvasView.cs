@@ -1619,7 +1619,26 @@ public sealed class CanvasView : Control
         }
     }
 
-    void DrawRulers(DrawingContext context, CanvasPalette palette)
+    void DrawRulers(DrawingContext context, CanvasPalette palette) => DrawRulersAt(
+        context,
+        palette,
+        Bounds.Size,
+        [.. TopRulerTicks().Select(mark => (_view.ToScreen(mark.Inches, 0).X, mark))],
+        [.. LeftRulerTicks().Select(mark => (_view.ToScreen(0, mark.Inches).Y, mark))],
+        _pointerOnRulers);
+
+    /// <summary>
+    /// Rulers along the top and the left edge, over the drawing: each mark where the caller says it is
+    /// on the screen, so the plan and a standard view — whose rulers may count down (standard-views
+    /// §5.2) — draw them one way.
+    /// </summary>
+    internal static void DrawRulersAt(
+        DrawingContext context,
+        CanvasPalette palette,
+        Size bounds,
+        IReadOnlyList<(double X, RulerTick Mark)> top,
+        IReadOnlyList<(double Y, RulerTick Mark)> left,
+        Point? pointer)
     {
         double thickness = RulerThickness;
         SolidColorBrush paper = new(palette.Background, 0.95);
@@ -1627,14 +1646,13 @@ public sealed class CanvasView : Control
         Pen tick = new(new SolidColorBrush(palette.Label), 1);
         SolidColorBrush ink = new(palette.Label);
 
-        context.FillRectangle(paper, new Rect(0, 0, Bounds.Width, thickness));
-        context.FillRectangle(paper, new Rect(0, 0, thickness, Bounds.Height));
-        context.DrawLine(edge, new Point(0, thickness), new Point(Bounds.Width, thickness));
-        context.DrawLine(edge, new Point(thickness, 0), new Point(thickness, Bounds.Height));
+        context.FillRectangle(paper, new Rect(0, 0, bounds.Width, thickness));
+        context.FillRectangle(paper, new Rect(0, 0, thickness, bounds.Height));
+        context.DrawLine(edge, new Point(0, thickness), new Point(bounds.Width, thickness));
+        context.DrawLine(edge, new Point(thickness, 0), new Point(thickness, bounds.Height));
 
-        foreach (RulerTick mark in TopRulerTicks())
+        foreach ((double x, RulerTick mark) in top)
         {
-            double x = _view.ToScreen(mark.Inches, 0).X;
             if (x < thickness)
             {
                 continue;
@@ -1647,9 +1665,8 @@ public sealed class CanvasView : Control
             }
         }
 
-        foreach (RulerTick mark in LeftRulerTicks())
+        foreach ((double y, RulerTick mark) in left)
         {
-            double y = _view.ToScreen(0, mark.Inches).Y;
             if (y < thickness)
             {
                 continue;
@@ -1668,7 +1685,7 @@ public sealed class CanvasView : Control
         }
 
         // Where the pointer is, on both rulers.
-        if (_pointerOnRulers is { } at)
+        if (pointer is { } at)
         {
             Pen marker = new(new SolidColorBrush(palette.Selection), 1);
             if (at.X >= thickness)

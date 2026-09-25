@@ -360,6 +360,65 @@ public class StandardViewTests
         }
     }
 
+    /// <summary>A view of the l-bracket at 30 px/in, where the fine step is ½" and ticks fall on its features.</summary>
+    static StandardViewRulers RulersOf(StandardView view) =>
+        StandardViewRulers.Of(StandardViews.CameraFor(view, new Camera(0, 0, 3.75, 2.5, 3, 30, Viewport)), view);
+
+    // §7.2, hand-derived from §1.1's table: which way each ruler's numbers run on the screen.
+    [Theory]
+    [Trait("Feature", "VIEW-011")]
+    [InlineData(StandardView.Front, true, false)]
+    [InlineData(StandardView.Back, false, false)]
+    [InlineData(StandardView.Left, false, false)]
+    [InlineData(StandardView.Right, true, false)]
+    [InlineData(StandardView.Top, true, false)]
+    [InlineData(StandardView.Bottom, true, true)]
+    public void A_rulers_world_values_count_the_way_the_view_looks(StandardView view, bool acrossRises, bool downwardRises)
+    {
+        StandardViewRulers rulers = RulersOf(view);
+        double[] across = [.. rulers.Top.Select(placed => placed.Mark.Inches)];
+        double[] downward = [.. rulers.Left.Select(placed => placed.Mark.Inches)];
+        Assert.True(across.Length > 5 && downward.Length > 5);
+        Assert.Equal(acrossRises ? across.Order() : across.OrderDescending(), across);
+        Assert.Equal(downwardRises ? downward.Order() : downward.OrderDescending(), downward);
+        Assert.Equal(across.Length, across.Distinct().Count());
+
+        // The marks cover the screen edge to edge, half an inch (15 px) apart, and none is off it.
+        Assert.All(rulers.Top, placed => Assert.InRange(placed.Screen, 0, Viewport.Width));
+        Assert.All(rulers.Left, placed => Assert.InRange(placed.Screen, 0, Viewport.Height));
+        Assert.True(rulers.Top[0].Screen < 15 && rulers.Top[^1].Screen > Viewport.Width - 15);
+        Assert.True(rulers.Left[0].Screen < 15 && rulers.Left[^1].Screen > Viewport.Height - 15);
+    }
+
+    [Fact]
+    [Trait("Feature", "VIEW-011")]
+    public void The_boss_edge_at_x_6_and_a_half_reads_6_and_a_half_on_the_horizontal_ruler_in_Front_and_Back()
+    {
+        foreach (StandardView view in (StandardView[])[StandardView.Front, StandardView.Back])
+        {
+            Camera camera = StandardViews.CameraFor(view, new Camera(0, 0, 3.75, 2.5, 3, 30, Viewport));
+            PlacedTick tick = Assert.Single(StandardViewRulers.Of(camera, view).Top, placed => placed.Mark.Inches == 6.5);
+            Assert.Equal(camera.Project(new Vector3d(6.5, 1, 1.75)).X, tick.Screen, 6);
+        }
+
+        // And in Right the vertical ruler reads z: the boss's top, z 1¾, sits where the camera puts it.
+        Camera right = StandardViews.CameraFor(StandardView.Right, new Camera(0, 0, 3.75, 2.5, 3, 30, Viewport));
+        PlacedTick top = Assert.Single(StandardViewRulers.Of(right, StandardView.Right).Left, placed => placed.Mark.Inches == 1.5);
+        Assert.Equal(right.Project(new Vector3d(6, 1, 1.5)).Y, top.Screen, 6);
+    }
+
+    [Fact]
+    [Trait("Feature", "VIEW-011")]
+    public void The_grid_in_an_elevation_has_the_floor_heavy_and_lines_where_the_camera_puts_them()
+    {
+        Camera camera = StandardViews.CameraFor(StandardView.Front, new Camera(0, 0, 3.75, 2.5, 3, 30, Viewport));
+        StandardViewRulers rulers = StandardViewRulers.Of(camera, StandardView.Front);
+        PlacedGridLine floor = Assert.Single(rulers.Down, placed => placed.Line.World == 0);
+        Assert.True(floor.Line.Major);
+        Assert.Equal(camera.Project(new Vector3d(0, 0, 0)).Y, floor.Screen, 6);
+        Assert.Contains(rulers.Across, placed => placed.Line.World == 7.5 && Math.Abs(placed.Screen - camera.Project(new Vector3d(7.5, 0, 0)).X) < 1e-6);
+    }
+
     [Theory]
     [Trait("Feature", "VIEW-003")]
     [InlineData(Key.D1, KeyModifiers.None, DesignView.Top)]
