@@ -146,7 +146,7 @@ public sealed class RenovationListTests
         Box part = unnamed with { Id = EntityId.New(), Part = new Part(null, null, 3, LengthWidth) };
         Assert.Contains(Demolition.Boxes(sketch.WithEntity(part)), line => line.Text == "Part × 3");
         Assert.Equal(rails[2].Id, Assert.Single(CutList.Of(sketch, MaterialsLibrary.Shipped)).Members.Single());
-        Assert.Equal(shelf.Name, "Shelf");
+        Assert.Equal("Shelf", shelf.Name);
     }
 
     [Fact]
