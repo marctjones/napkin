@@ -167,7 +167,7 @@ public class WallWorkflows
         app.Expect("at 24 in the wall has 6 studs and one cripple, and the default note is gone", () =>
         {
             // Layout 0…120 is 6, plus the end stud, 7; the window's zone takes 72: 6. Cripple at 72.
-            Assert.Equal(Length.Inches(24), window.Framing.Spacing);
+            Assert.Equal(Length.Inches(24), Assert.Single(Wall.All(window.CurrentDesign!.Sketch)).Box.WallInputs?.StudSpacing);
             Assert.StartsWith("Framing of Wall: 6 studs, 2 king studs, 2 jack studs, 1 cripple below,", window.FramingText, StringComparison.Ordinal);
             Assert.DoesNotContain("design default", window.FramingNotesText, StringComparison.Ordinal);
         });

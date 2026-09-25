@@ -96,6 +96,11 @@
                           Header="Join all _touching…"
                           Click="OnJoinAllClicked"
                           ToolTip.Tip="Join every touching pair among the selected parts in one go; with two selected, repeat the last joint." />
+                <Separator />
+                <MenuItem Name="CodeMenuItem"
+                          Header="Adopted code and _site…"
+                          Click="OnCodeClicked"
+                          ToolTip.Tip="Choose the building code this project is checked against, lock it or let it follow new revisions, and enter the site's snow load and other values. Nothing is assumed." />
             </MenuItem>
 
             <!-- The Draw menu is the toolbar, in the toolbar's order: the tools, the actions on the
@@ -878,11 +883,31 @@
                         <StackPanel Name="FramingFields" Spacing="4" IsVisible="False">
                             <TextBlock Name="FramingHeadline" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"
                                        AutomationProperties.Name="Wall or opening" />
+                            <!-- The code check on an opening (#18): derived, never stored. -->
+                            <StackPanel Name="CodeCheckFields" Spacing="3" IsVisible="False">
+                                <TextBlock Text="Code check" FontSize="11" FontWeight="SemiBold" />
+                                <TextBlock Name="CodeCheckHeadline" FontSize="11" TextWrapping="Wrap"
+                                           AutomationProperties.Name="Code check" />
+                                <TextBlock Name="CodeCheckCitation" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
+                                           AutomationProperties.Name="Code check citation" />
+                                <Expander Name="CodeCheckWorking" Header="How it was found" FontSize="10" Padding="4,2"
+                                          HorizontalAlignment="Stretch">
+                                    <TextBlock Name="CodeCheckDetails" FontSize="10" TextWrapping="Wrap"
+                                               AutomationProperties.Name="Code check working" />
+                                </Expander>
+                            </StackPanel>
                             <TextBlock Name="FramingReadout" FontSize="11" TextWrapping="Wrap"
                                        AutomationProperties.Name="Framing" />
                             <TextBlock Name="FramingProblems" FontSize="11" TextWrapping="Wrap" IsVisible="False"
                                        Foreground="{DynamicResource SystemErrorTextColor}"
                                        AutomationProperties.Name="Framing problems" />
+                            <!-- What the wall carries (#18): one of the adopted code's table values, never assumed. -->
+                            <Grid Name="SupportsRow" ColumnDefinitions="Auto,*" IsVisible="False">
+                                <TextBlock Text="Supports" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox Name="SupportsBox" Grid.Column="1" FontSize="12" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="What the wall supports"
+                                          SelectionChanged="OnSupportsChanged" />
+                            </Grid>
                             <Grid ColumnDefinitions="Auto,*">
                                 <TextBlock Text="Studs at" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
                                 <ComboBox Name="StudSpacingBox" Grid.Column="1" FontSize="12" HorizontalAlignment="Stretch"

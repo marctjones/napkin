@@ -280,8 +280,8 @@ public partial class CutListWindow : Window
     /// <summary>The shopping list as a CSV file would carry it, in the order it is on screen.</summary>
     public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted);
 
-    /// <summary>How walls are framed: the main window's session choice (#18).</summary>
-    public FramingOptions Framing { get; set; } = new();
+    /// <summary>The code packs the main window found, for the code check on the walls' openings (#18).</summary>
+    public CodePacks Packs { get; set; } = CodePacks.None;
 
     /// <summary>The framing section's table: the walls' studs, plates and the rest, as boards to buy.</summary>
     public ShoppingListTable FramingRows => FramingTable;
@@ -324,14 +324,16 @@ public partial class CutListWindow : Window
 
         // The walls' frame is bought through the very aggregation the parts are, from rows
         // FramingList derives; kept in a section of its own so a wall's studs read as a wall's.
-        ImmutableArray<WallFraming> walls = FramingList.Of(sketch, MaterialsLibrary.Shipped, Framing);
+        ImmutableArray<OpeningCheck> checks = CodeCheck.Of(sketch, Packs);
+        ImmutableArray<WallFraming> walls = FramingList.Of(sketch, MaterialsLibrary.Shipped, CodeCheck.Framing(checks, MaterialsLibrary.Shipped));
         FramingTable.Rows = ShoppingList.Of(FramingList.CutRows(walls));
         FramingSection.IsVisible = !walls.IsEmpty;
         FramingNote.Text = walls.IsEmpty
             ? string.Empty
             : $"From {string.Join(", ", walls.Select(wall => $"{wall.Wall.Name} ({wall.Summary})"))}. "
               + string.Join(" ", walls.SelectMany(wall => wall.Notes).Distinct().Select(note => char.ToUpperInvariant(note[0]) + note[1..] + "."))
-              + (walls.Any(wall => !wall.Problems.IsEmpty && !wall.Pieces.IsEmpty) ? " Some openings could not be framed; the drawing's panel says why." : string.Empty);
+              + (walls.Any(wall => !wall.Problems.IsEmpty && !wall.Pieces.IsEmpty) ? " Some openings could not be framed; the drawing's panel says why." : string.Empty)
+              + CodeCheckNote(sketch, checks);
         BuildSizes(sketch);
         string supplies = SuppliesText(sketch);
         if (supplies != _suppliesBuiltFrom)
@@ -355,6 +357,22 @@ public partial class CutListWindow : Window
               + "and an opening are boxes nobody cuts, and they stay off this list; a wall's framing is on the "
               + "shopping list's tab."
             : "This design has nothing in it to cut.";
+    }
+
+    /// <summary>The code check in one line per opening, with the code it is checked against (#18).</summary>
+    private string CodeCheckNote(Sketch sketch, ImmutableArray<OpeningCheck> checks)
+    {
+        if (checks.IsEmpty)
+        {
+            return string.Empty;
+        }
+
+        CodeResolution code = Packs.Resolve(sketch.Code);
+        string under = code.Pack is { } pack ? $"Code check under {pack.Code.ShortName} ({pack.Code.BaseCode}, pack {pack.Code.PackId} rev {pack.Code.Revision})" : "Code check";
+        string results = code.Pack is null
+            ? code.Problem ?? string.Empty
+            : string.Join("; ", checks.Select(check => $"{check.Opening.Name}: {CodeCheck.Short(check.Result)}")) + ".";
+        return $"\n{under}: {results}";
     }
 
     private static string Describe(ImmutableArray<CutListRow> rows)

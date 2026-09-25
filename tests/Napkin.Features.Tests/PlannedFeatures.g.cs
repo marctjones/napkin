@@ -12,24 +12,6 @@ namespace Napkin.Features.Tests;
 
 public class PlannedFeatures
 {
-    [Fact(Skip = "planned: BLD-001 — Wall attributes are entered, never defaulted")]
-    [Trait("Feature", "BLD-001")]
-    public void BLD_001()
-    {
-    }
-
-    [Fact(Skip = "planned: BLD-003 — The header result is live")]
-    [Trait("Feature", "BLD-003")]
-    public void BLD_003()
-    {
-    }
-
-    [Fact(Skip = "planned: BLD-004 — Out of scope routes to an engineer, never to a number")]
-    [Trait("Feature", "BLD-004")]
-    public void BLD_004()
-    {
-    }
-
     [Fact(Skip = "planned: BLD-005 — Enlarging an opening rechecks the wall line's bracing")]
     [Trait("Feature", "BLD-005")]
     public void BLD_005()
@@ -126,33 +108,9 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: GUI-BRACE-02 — Change the project's adopted code and see results recomputed")]
-    [Trait("Feature", "GUI-BRACE-02")]
-    public void GUI_BRACE_02()
-    {
-    }
-
     [Fact(Skip = "planned: GUI-BRACE-03 — A result that no longer holds is re-flagged, not carried over")]
     [Trait("Feature", "GUI-BRACE-03")]
     public void GUI_BRACE_03()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CHECK-01 — Place a window on a wall and get a cited header")]
-    [Trait("Feature", "GUI-CHECK-01")]
-    public void GUI_CHECK_01()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CHECK-02 — Resize the window and watch the header result update")]
-    [Trait("Feature", "GUI-CHECK-02")]
-    public void GUI_CHECK_02()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CHECK-03 — Hit an out-of-scope case")]
-    [Trait("Feature", "GUI-CHECK-03")]
-    public void GUI_CHECK_03()
     {
     }
 
@@ -213,18 +171,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: RUL-005 — The bracing evaluator runs over a whole wall line")]
     [Trait("Feature", "RUL-005")]
     public void RUL_005()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-007 — The code picker is built from the installed packs")]
-    [Trait("Feature", "RUL-007")]
-    public void RUL_007()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-008 — Changing the project's code recomputes every result")]
-    [Trait("Feature", "RUL-008")]
-    public void RUL_008()
     {
     }
 

@@ -1,0 +1,79 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="560" d:DesignHeight="620"
+        x:Class="Napkin.App.CodeWindow"
+        Title="Adopted code and site"
+        Icon="/Assets/napkin-256.png"
+        Width="560" Height="640"
+        MinWidth="380" MinHeight="360">
+
+    <!--
+        The project's adopted code and its site values (issues #18, #19). Both are the person's to
+        choose and type; napkin lists the packs it found and never picks one, and an empty field is
+        "not entered", never a default.
+    -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="14" Spacing="8">
+            <TextBlock Name="DesignHeadline" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock FontSize="11" Opacity="0.8" TextWrapping="Wrap"
+                       Text="napkin applies the code you choose; the code that governs your permit is set by your building department." />
+
+            <TextBlock Text="Code" FontSize="12" FontWeight="SemiBold" Margin="0,4,0,0" />
+            <ListBox Name="PackList" SelectionMode="Single" MaxHeight="200"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     AutomationProperties.Name="Code packs"
+                     SelectionChanged="OnPackChosen">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock Name="PackProblems" FontSize="11" TextWrapping="Wrap" IsVisible="False"
+                       Foreground="{DynamicResource SystemErrorTextColor}"
+                       AutomationProperties.Name="Packs that did not load" />
+            <CheckBox Name="LockBox" FontSize="12" Content="Lock to this revision"
+                      IsCheckedChanged="OnLockChanged"
+                      ToolTip.Tip="Locked: results stay computed under this revision of the pack. Following: a newer revision of the same pack is used, and napkin says what changed." />
+            <TextBlock Name="LockNote" FontSize="11" TextWrapping="Wrap" AutomationProperties.Name="Lock" />
+            <TextBlock Name="CodeStatus" FontSize="11" TextWrapping="Wrap" AutomationProperties.Name="Code status" />
+
+            <TextBlock Text="Site" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <TextBlock FontSize="11" Opacity="0.8" TextWrapping="Wrap"
+                       Text="Type the values for this site from your building department or the adopted code's own maps. Leave a field empty until you know it: napkin never fills one in." />
+            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" >
+                <TextBlock Grid.Row="0" Text="Ground snow load" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
+                <TextBox Grid.Row="0" Grid.Column="1" Name="SnowBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Ground snow load" />
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="psf" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,4" />
+
+                <TextBlock Grid.Row="1" Text="Ultimate wind speed" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
+                <TextBox Grid.Row="1" Grid.Column="1" Name="WindBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Wind speed" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="mph" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,4" />
+
+                <TextBlock Grid.Row="2" Text="Seismic design category" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
+                <TextBox Grid.Row="2" Grid.Column="1" Name="SeismicBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Seismic design category" />
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="as the code names it" FontSize="11" Opacity="0.75" VerticalAlignment="Center" Margin="6,0,0,4" />
+
+                <TextBlock Grid.Row="3" Text="Frost depth" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
+                <TextBox Grid.Row="3" Grid.Column="1" Name="FrostBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Frost depth" />
+                <TextBlock Grid.Row="3" Grid.Column="2" Text="ft-in" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,4" />
+
+                <TextBlock Grid.Row="4" Text="Building width" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
+                <TextBox Grid.Row="4" Grid.Column="1" Name="WidthBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Building width" />
+                <TextBlock Grid.Row="4" Grid.Column="2" Text="ft-in" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,4" />
+
+                <TextBlock Grid.Row="5" Text="Where they came from" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
+                <TextBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Name="SourceBox" FontSize="12" Margin="0,0,0,4"
+                         PlaceholderText="Town building department, by phone"
+                         AutomationProperties.Name="Where the site values came from" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Name="ApplySiteButton" Content="Apply site values" FontSize="12" Click="OnApplySiteClicked" />
+                <TextBlock Name="SiteError" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" IsVisible="False"
+                           Foreground="{DynamicResource SystemErrorTextColor}" AutomationProperties.Name="Site error" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

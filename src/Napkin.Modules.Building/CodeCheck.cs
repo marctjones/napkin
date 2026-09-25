@@ -263,20 +263,35 @@ public static class CodeCheck
         return
         [
             .. report.Changes
+                .Where(change => !SameRow(change))
                 .OrderBy(change => Rank(change.Kind))
                 .Select(change => Sentence(names[change.Element], change)),
         ];
     }
 
-    private static string Sentence(string name, ResultChange change) => change.Kind switch
+    /// <summary>
+    /// The same member from the same row of the same code, only the inputs traced differently (a
+    /// resize inside one band): not a change of the result, so not announced.
+    /// </summary>
+    private static bool SameRow(ResultChange change)
+        => change is { Kind: ChangeKind.CitationOnly, Before: HeaderResult.Sized a, After: HeaderResult.Sized b }
+           && a.Citation with { Trace = ValueList<BandMatch>.Empty } == b.Citation with { Trace = ValueList<BandMatch>.Empty };
+
+    private static string Sentence(string name, ResultChange change) => (change.Kind, change.Before, change.After) switch
     {
-        ChangeKind.SizedToSized or ChangeKind.CitationOnly when change.Before is HeaderResult.Sized a && change.After is HeaderResult.Sized b =>
+        (ChangeKind.CitationOnly, _, HeaderResult.Sized b) =>
+            $"Header for {name} is unchanged, {b.Header}, now cited from {b.Citation.Code.ShortName} rev {b.Citation.Code.Revision} Table {b.Citation.Table} row {b.Citation.RowId}.",
+        (ChangeKind.SizedToSized, HeaderResult.Sized a, HeaderResult.Sized b) =>
             $"Header for {name} changed: {a.Header} → {b.Header}, {b.JackStuds} jack and {b.KingStuds} king each side (Table {b.Citation.Table} row {b.Citation.RowId}).",
-        ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope or ChangeKind.OutOfScopeChanged =>
-            $"Header for {name} is now beyond Table {((HeaderResult.OutOfScope)change.After).Limit.Table}: get it engineered.",
-        ChangeKind.OutOfScopeToSized or ChangeKind.NoAnswerToSized =>
+        (_, _, HeaderResult.OutOfScope o) =>
+            $"Header for {name} is now beyond Table {o.Limit.Table}: get it engineered.",
+        (_, _, HeaderResult.Sized) =>
             $"Header for {name} is now sized: {Short(change.After)}.",
-        _ => $"Header for {name} is no longer sized: {Short(change.After)}.",
+        (_, HeaderResult.Sized, _) =>
+            $"Header for {name} is no longer sized: {Short(change.After)}.",
+        (_, HeaderResult.OutOfScope, _) =>
+            $"Header for {name} can no longer be checked: {Short(change.After)}.",
+        _ => $"Header for {name} still cannot be checked: {Short(change.After)}.",
     };
 
     private static int Rank(ChangeKind kind) => kind switch

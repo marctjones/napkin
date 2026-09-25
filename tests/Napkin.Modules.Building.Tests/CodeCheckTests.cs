@@ -270,6 +270,23 @@ public class CodeCheckTests
             ["Header for Window 1 is now sized: (1) 2x8, 1 jack and 1 king each side (Table ZZ-HEADER row r.s30.a)."],
             CodeCheck.Changes(CodeCheck.Of(cleared, One), before));
 
+        // Out of scope, then the snow cleared: it can no longer be checked; then no code at all: still not.
+        Assert.Equal(
+            ["Header for Window 1 can no longer be checked: not checked: the ground snow load not entered."],
+            CodeCheck.Changes(CodeCheck.Of(beyond, One), CodeCheck.Of(beyond with { Site = SiteValues.NotEntered }, One)));
+        Assert.Equal(
+            ["Header for Window 1 still cannot be checked: no data to check it against."],
+            CodeCheck.Changes(CodeCheck.Of(cleared, One), CodeCheck.Of(cleared with { Code = null }, One)));
+
+        // Following revision 2: r.s30.a is the same (1) 2x8 there, now cited from revision 2.
+        Assert.Equal(
+            ["Header for Window 1 is unchanged, (1) 2x8, now cited from ZZ FRAME rev 2 Table ZZ-HEADER row r.s30.a."],
+            CodeCheck.Changes(CodeCheck.Of(small, Both), CodeCheck.Of(small with { Code = Frame with { Mode = CodeMode.Following, LockedOn = null } }, Both)));
+
+        // A resize inside one band (36 → 40, both ≤ 49) changes only the trace: not announced.
+        Sketch inside = small.WithEntity(small.Find<Box>(window)! with { Width = In(40) });
+        Assert.Empty(CodeCheck.Changes(before, CodeCheck.Of(inside, One)));
+
         // Nothing changed, and an opening that only exists on one side, are not changes.
         Assert.Empty(CodeCheck.Changes(before, before));
         Assert.Empty(CodeCheck.Changes([], before));

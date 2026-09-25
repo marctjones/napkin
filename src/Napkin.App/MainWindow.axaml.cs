@@ -99,9 +99,16 @@ public partial class MainWindow : Window
         ModelDrawing.FitReserveRight = SidePanelsReserve;
         Editor.MessageChanged += (_, _) =>
         {
+            // A change of a header result is said with the edit that caused it (#18, design §7.3).
+            if (SayRecompute())
+            {
+                return;
+            }
+
             UpdateMessageBar();
             UpdateAttention();
         };
+        Editor.DesignOpened += (_, _) => ResetRecompute();
         Editor.DesignChanged += (_, _) => OnDesignChanged();
         Editor.SelectionChanged += (_, _) => OnSelectionChanged();
         Editor.History.Changed += (_, _) => UpdateMenuEnablement();
@@ -477,7 +484,7 @@ public partial class MainWindow : Window
     {
         if (_cutList is null)
         {
-            _cutList = new CutListWindow { ApplyRequest = (request, what) => Editor.Apply(request, what), Framing = _framing };
+            _cutList = new CutListWindow { ApplyRequest = (request, what) => Editor.Apply(request, what), Packs = Packs };
             _cutList.Closed += (_, _) => _cutList = null;
         }
 
@@ -1223,6 +1230,7 @@ public partial class MainWindow : Window
         // The cut list follows the drawing: widen a part with the list open and the row changes,
         // because both are readings of one design rather than a drawing and a snapshot of it.
         _cutList?.ShowDesign(CurrentDesign);
+        _codeWindow?.ShowDesign(CurrentDesign);
         if (PropertiesPanel.IsVisible && Editor.OnlySelectedBox is { } selected)
         {
             ShowFraming(selected);
@@ -2934,121 +2942,6 @@ public partial class MainWindow : Window
         ModelDrawing.Disarm();
         UpdateToolButtons();
         FocusDrawing();
-    }
-
-    // ---------------------------------------------------------------------------------------
-    // Walls and openings (#18): drawn in the plan, framed by FramingList
-    // ---------------------------------------------------------------------------------------
-
-    FramingOptions _framing = new();
-    bool _fillingSpacing;
-
-    /// <summary>
-    /// How walls are framed in this session: the stud spacing picked in the panel. Not saved with the
-    /// design (part 1 of #18 changes no file format).
-    /// </summary>
-    public FramingOptions Framing => _framing;
-
-    /// <summary>The panel's line naming the selected wall or opening, empty when neither is selected.</summary>
-    public string FramingHeadlineText => FramingFields.IsVisible ? FramingHeadline.Text ?? string.Empty : string.Empty;
-
-    /// <summary>The panel's framing summary for the selected wall, or the wall the selected opening is in.</summary>
-    public string FramingText => FramingFields.IsVisible ? FramingReadout.Text ?? string.Empty : string.Empty;
-
-    /// <summary>What the panel says could not be framed, empty when nothing.</summary>
-    public string FramingProblemsText => FramingProblems.IsVisible ? FramingProblems.Text ?? string.Empty : string.Empty;
-
-    /// <summary>The panel's notes on the framing: the spacing and the placeholder jacks.</summary>
-    public string FramingNotesText => FramingFields.IsVisible ? FramingNotes.Text ?? string.Empty : string.Empty;
-
-    /// <summary>The stud spacing picker.</summary>
-    public ComboBox StudSpacingControl => StudSpacingBox;
-
-    static readonly Length[] SpacingChoices =
-    [
-        .. MaterialsLibrary.Shipped.SpacingsFor("Wall").Select(spacing => spacing.Spacing)
-            .Append(FramingOptions.DefaultSpacing)
-            .Distinct()
-            .Order(),
-    ];
-
-    static readonly string SpacingTip =
-        "Spacings the library carries for walls: "
-        + string.Join(", ", MaterialsLibrary.Shipped.SpacingsFor("Wall").Select(spacing => $"{spacing.Name} ({spacing.Source.ShortForm})"))
-        + ". Your choice for this session, not saved with the design; 16\" is napkin's design default, not a code requirement.";
-
-    static string SpacingText(Length spacing) => $"{spacing.Format(new InchesOnlyFormat(16)).Text} on centre";
-
-    /// <summary>Fills the panel's framing part for a wall or an opening, or hides it for anything else.</summary>
-    void ShowFraming(Box box)
-    {
-        WallFraming? framing = FramingList.For(Editor.Sketch, box.Id, MaterialsLibrary.Shipped, _framing);
-        FramingFields.IsVisible = framing is not null;
-        if (framing is null)
-        {
-            return;
-        }
-
-        string Text(Length length) => length.Format(Editor.LabelFormat).Text;
-        Wall wall = framing.Wall;
-        OpeningFraming? opening = framing.Openings.FirstOrDefault(candidate => candidate.Opening.Id == box.Id);
-
-        FramingHeadline.Text = opening is { } o
-            ? $"{o.Opening.Name}: a {(o.Opening.Kind == OpeningKind.Door ? "door" : "window")} in {wall.Name}, "
-              + $"{Text(o.Opening.Width)} × {Text(o.Opening.Height)} rough opening, sill {Text(o.Opening.Sill)}, "
-              + $"{Text(o.Opening.Offset)} along. Header {Text(o.HeaderLength)} long in {Text(o.HeaderRoom)} of room: not yet sized."
-            : $"{wall.Name}: a wall of {framing.Stock?.Name ?? "no library"} studs, {Text(wall.Length)} long, "
-              + $"{Text(wall.Thickness)} thick, {Text(wall.Height)} tall.";
-
-        List<string> lines = [$"Framing of {wall.Name}: {framing.Summary}."];
-        foreach (OpeningFraming each in framing.Openings)
-        {
-            lines.Add($"{each.Opening.Name}: {(each.Opening.Kind == OpeningKind.Door ? "door" : "window")}, "
-                      + $"{Text(each.Opening.Width)} × {Text(each.Opening.Height)}, sill {Text(each.Opening.Sill)}, {Text(each.Opening.Offset)} along");
-        }
-
-        FramingReadout.Text = string.Join("\n", lines);
-        FramingProblems.IsVisible = !framing.Problems.IsEmpty && !framing.Pieces.IsEmpty;
-        FramingProblems.Text = string.Join("\n", framing.Problems);
-        FramingNotes.Text = string.Join("\n", framing.Notes);
-
-        _fillingSpacing = true;
-        try
-        {
-            StudSpacingBox.ItemsSource = SpacingChoices.Select(SpacingText).ToArray();
-            StudSpacingBox.SelectedIndex = Array.IndexOf(SpacingChoices, _framing.Spacing);
-            ToolTip.SetTip(StudSpacingBox, SpacingTip);
-        }
-        finally
-        {
-            _fillingSpacing = false;
-        }
-    }
-
-    void OnStudSpacingChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (_fillingSpacing || StudSpacingBox.SelectedIndex < 0 || StudSpacingBox.SelectedIndex >= SpacingChoices.Length)
-        {
-            return;
-        }
-
-        SetStudSpacing(SpacingChoices[StudSpacingBox.SelectedIndex]);
-    }
-
-    /// <summary>Frames every wall at this spacing from now on in this session.</summary>
-    public void SetStudSpacing(Length spacing)
-    {
-        _framing = _framing with { Spacing = spacing };
-        if (_cutList is not null)
-        {
-            _cutList.Framing = _framing;
-            _cutList.ShowDesign(CurrentDesign);
-        }
-
-        if (Editor.OnlySelectedBox is { } box)
-        {
-            ShowFraming(box);
-        }
     }
 
     void OnWallToolClicked(object? sender, RoutedEventArgs e) => ArmWall(null);
