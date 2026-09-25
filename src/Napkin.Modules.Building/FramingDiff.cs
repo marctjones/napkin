@@ -55,13 +55,9 @@ public sealed record WallDiff(Wall Wall, ImmutableArray<FramingPiece> New, Immut
     static string Word(FramingRole role) => role switch
     {
         FramingRole.BottomPlate or FramingRole.TopPlate => "plate",
-        FramingRole.Stud => "stud",
-        FramingRole.KingStud => "king stud",
-        FramingRole.JackStud => "jack stud",
-        FramingRole.Header => "header",
         FramingRole.RoughSill => "sill",
         FramingRole.CrippleAbove or FramingRole.CrippleBelow => "cripple",
-        _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Not a framing role."),
+        _ => FramingList.Label(role, 1),
     };
 }
 
@@ -146,13 +142,14 @@ public static class FramingDiff
         List<DemolitionLine> lines = [];
         foreach (WallDiff diff in diffs)
         {
+            // Only a wall that is already there has anything to take out, so every line says what it assumes (§4.4).
             foreach (FramingPiece piece in diff.Out)
             {
                 string what = $"{diff.Wall.Name}: {piece.Quantity.ToString(CultureInfo.InvariantCulture)} {FramingList.Label(piece.Role, piece.Quantity)} {CutListCsv.Text(piece.Length)}"
                               + (piece.Stock is { } stock ? $" ({stock.Name})" : string.Empty);
-                lines.Add(new DemolitionLine($"{diff.Wall.Name}: {FramingList.Label(piece.Role, 1)} {CutListCsv.Text(piece.Length)}", piece.Quantity, diff.FromExisting ? diff.Assumption : string.Empty)
+                lines.Add(new DemolitionLine($"{diff.Wall.Name}: {FramingList.Label(piece.Role, 1)} {CutListCsv.Text(piece.Length)}", piece.Quantity, diff.Assumption)
                 {
-                    Words = $"{what} come out" + (diff.FromExisting ? $" ({diff.Assumption})" : string.Empty),
+                    Words = $"{what} come out ({diff.Assumption})",
                 });
             }
         }

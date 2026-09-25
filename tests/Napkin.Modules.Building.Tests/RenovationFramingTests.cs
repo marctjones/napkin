@@ -76,6 +76,7 @@ public class RenovationFramingTests
         Assert.Equal(new MemberSpec(2, "2x6"), sized.Header);
         Assert.Equal("ZZ-RENO-HEADER", sized.Citation.Table);
         Assert.Equal("Header (2) 2x6, 1 jack stud and 1 king stud each side.", CodeCheck.Words(Only(sketch, Reno), Library).Headline);
+        Assert.Equal("(2) 2x6, 1 jack and 1 king each side (Table ZZ-RENO-HEADER row reno.a)", CodeCheck.Short(Only(sketch, Reno)));
     }
 
     [Fact]
@@ -105,6 +106,7 @@ public class RenovationFramingTests
         Assert.Equal("Wall 1 is marked not bearing, so napkin does not size this header from the code. Header: (2) 2x6, your choice.", check.NotChecked);
         Assert.Equal("Not checked: " + check.NotChecked, CodeCheck.Words(check, Library).Headline);
         Assert.Equal("not checked: not bearing, (2) 2x6 your choice", CodeCheck.Short(check));
+        Assert.StartsWith("Wall 1 is marked not bearing, so napkin does not size this header from the code. No header chosen", CodeCheck.NotBearingText(new Wall(wall with { WallInputs = null })), StringComparison.Ordinal);
 
         // The frame uses the typed header with one jack and one king each side, said so.
         WallFraming framing = FramingList.Frame(sketch, new Wall(wall), Library, CodeCheck.Framing(CodeCheck.Of(sketch, Reno), Library));
@@ -142,6 +144,9 @@ public class RenovationFramingTests
         Assert.Equal(inputs.Split(','), missing.Inputs);
         Assert.Equal(sentence, missing.Explanation);
         Assert.Equal("ZZ RENO", missing.Code.ShortName);
+
+        Assert.StartsWith("not checked: ", CodeCheck.Short(Only(sketch, Reno)), StringComparison.Ordinal);
+        Assert.Contains(side is null ? "which side the wall is on" : "whether the wall is bearing", CodeCheck.Short(Only(sketch, Reno)), StringComparison.Ordinal);
 
         // With no wall inputs at all, the same.
         (Sketch nothing, _, _) = Example2(Phase.New, Phase.New, null);
@@ -222,6 +227,7 @@ public class RenovationFramingTests
             ],
             Rows(out_.Out).OrderBy(row => row.Item1 == FramingRole.Stud ? 1 : 0).ToArray());
         Assert.StartsWith("new — nothing; out — 3 plates, ", out_.Sentence, StringComparison.Ordinal);
+        Assert.True(out_.Changes);
     }
 
     [Fact]
@@ -242,6 +248,10 @@ public class RenovationFramingTests
             [FramingRole.KingStud, FramingRole.JackStud, FramingRole.Header, FramingRole.RoughSill, FramingRole.CrippleBelow, FramingRole.CrippleAbove],
             filled.Out.Select(piece => piece.Role));
         Assert.Equal("new — 2 studs; out — 2 king studs, 2 jack studs, header, sill, 4 cripples", filled.Sentence);
+
+        // With no code the old header was never sized: it comes out with no lumber named.
+        WallDiff unsized = Diff(closed with { Code = null }, CodePacks.None);
+        Assert.Contains("Wall 1: 1 header 3'-3\" come out (assuming a regular 16\" layout in the existing wall)", FramingDiff.Demolition([unsized]).Select(line => line.Text));
     }
 
     [Fact]

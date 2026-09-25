@@ -103,6 +103,15 @@ public class WallJoinTests
         Box beside = WallBox("Beside", In(0), In(3, 1, 2), In(96));
         Assert.Null(WallJoins.Between(new Wall(a), new Wall(beside)));
 
+        // The same L at the far ends: A's east end and a wall running up from it.
+        Box d = WallBox("D", In(96), Length.Zero - In(92, 1, 2), In(96), quarterTurns: 1);
+        Assert.Equal(WallJoinKind.Overlap, WallJoins.Between(new Wall(a), new Wall(d))!.Kind);
+        Assert.Equal(WallJoinKind.Overlap, WallJoins.Between(new Wall(d), new Wall(a))!.Kind);
+
+        // A wall turned by other than a right angle is not read.
+        Box slanted = a with { Rotation = Angle.FromDegrees(30, Rounding.HalfToEven) };
+        Assert.Null(WallJoins.Between(new Wall(slanted), new Wall(b)));
+
         // A wall standing on its end is not read.
         Box tipped = a with { FaceUp = BoxFace.North };
         Assert.Null(WallJoins.Between(new Wall(tipped), new Wall(b)));
