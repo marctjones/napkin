@@ -526,6 +526,12 @@ edited (`CUT-019`, `GEO-020`, `GUI-STRUT-01` onward); the shapes are not invente
 | **E. Joinery on a strut's end** | `StrutEndFaceRef`; `Joint` accepting it; `JointGeometry` contact and once-rounded joint length; butt-only validation; pocket face from `StrutFace`; sentences; the join tool's popover on a strut; the footstool sample gains pocket-screw joints and a fastener list | `Napkin.Core.Geometry`, `Napkin.Modules.Furniture`, `Napkin.App` | Sonnet |
 | **F. Angle entry, the raked back and the angled shelf** | the entry mode: typed tilt (and azimuth) plus a run or rise places the far end, rounded once and flagged; `PlanAxes.X = width` in the tool; a `raked-chair-frame` sample (one-way lean, side rails `Flush` to the legs, rail ends as typed mitres) and an `angled-shelf` sample; `GUI-STRUT-02` | `Napkin.Modules.Editing`, `Napkin.App`, `samples/` | Sonnet |
 
+Issues: A [#189](https://github.com/marctjones/napkin/issues/189), B
+[#190](https://github.com/marctjones/napkin/issues/190), C
+[#191](https://github.com/marctjones/napkin/issues/191), D
+[#192](https://github.com/marctjones/napkin/issues/192), E
+[#193](https://github.com/marctjones/napkin/issues/193), F
+[#194](https://github.com/marctjones/napkin/issues/194).
 Order: A → B → C → D, then E and F in either order. Each lands directly on `main` per CLAUDE.md,
 with its own build, test and ratchet run; the version bumps once per slice.
 
