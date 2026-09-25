@@ -889,14 +889,21 @@
                     <StackPanel Spacing="6">
                         <!-- Apply sits by the headline, where it stays in sight when the panel has to
                              scroll in a small window; Enter in any field applies too (#78). -->
-                        <Grid ColumnDefinitions="*,Auto">
+                        <!-- The phase sits in the headline row (renovation-sketches §6.1, §8): already there,
+                             going in, or coming out, on every entity, without pushing the panel down. -->
+                        <Grid ColumnDefinitions="*,Auto,Auto">
                             <TextBlock Name="PropertiesHeadline"
                                        Text="Part"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center" />
+                            <ComboBox Name="PhaseBox" Grid.Column="1" FontSize="11" MinWidth="0" Width="104"
+                                      MinHeight="0" Height="24" Padding="6,0" Margin="0,0,6,0" VerticalAlignment="Center"
+                                      AutomationProperties.Name="Phase"
+                                      SelectionChanged="OnPhaseChanged"
+                                      ToolTip.Tip="Phase. New is bought; existing is already there and drawn faint; demolish comes out, drawn crossed." />
                             <Button Name="ApplyPartButton"
-                                    Grid.Column="1"
+                                    Grid.Column="2"
                                     Content="Apply"
                                     FontSize="12"
                                     Padding="10,3"
@@ -909,15 +916,6 @@
                                    TextWrapping="Wrap" />
 
                         <TextBox Name="PartNameBox" FontSize="12" PlaceholderText="Name" />
-
-                        <!-- Already there, going in, or coming out (renovation-sketches §6.1). -->
-                        <Grid Name="PhaseRow" ColumnDefinitions="Auto,*">
-                            <TextBlock Text="Phase" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <ComboBox Name="PhaseBox" Grid.Column="1" FontSize="12" HorizontalAlignment="Stretch"
-                                      AutomationProperties.Name="Phase"
-                                      SelectionChanged="OnPhaseChanged"
-                                      ToolTip.Tip="New is bought; existing is already there and drawn faint; demolish comes out, drawn crossed." />
-                        </Grid>
 
                         <!-- Every box has a depth, part or not (assembly-model §1.2, §11 decision 7). -->
                         <Grid ColumnDefinitions="Auto,*">

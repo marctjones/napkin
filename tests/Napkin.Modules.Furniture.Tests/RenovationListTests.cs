@@ -141,6 +141,10 @@ public sealed class RenovationListTests
         Assert.Equal(["Rail × 2", "Shelf × 2"], lines.Where(line => line.Count > 1).Select(line => line.Text).Order());
         Assert.Equal("Only what is New is listed; 6 items to remove are under Demolition.", Demolition.Header(sketch, lines));
         Assert.Equal("Wall 1 (assumes)", new DemolitionLine("Wall 1", 1, "assumes").Text);
+
+        // An unnamed demolished part is a "Part".
+        Box part = unnamed with { Id = EntityId.New(), Part = new Part(null, null, 3, LengthWidth) };
+        Assert.Contains(Demolition.Boxes(sketch.WithEntity(part)), line => line.Text == "Part × 3");
         Assert.Equal(rails[2].Id, Assert.Single(CutList.Of(sketch, MaterialsLibrary.Shipped)).Members.Single());
         Assert.Equal(shelf.Name, "Shelf");
     }
