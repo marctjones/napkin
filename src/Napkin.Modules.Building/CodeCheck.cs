@@ -122,6 +122,7 @@ public static class CodeCheck
             site.SeismicDesignCategory,
             site.FrostDepth,
             site.BuildingWidth,
+            site.RoofLiveLoadPsf,
             site.Source is { } source ? new InputProvenance(source.Text, source.On) : null);
     }
 
@@ -350,6 +351,7 @@ public static class CodeCheck
         "seismicDesignCategory" => "the seismic design category",
         "frostDepth" => "the frost depth",
         "buildingWidth" => "the building width",
+        "roofLiveLoad" => "the roof live load",
         _ => name,
     };
 

@@ -349,11 +349,12 @@ public class CodeCheckTests
     [Fact]
     public void Site_values_become_the_engines_inputs_unchanged()
     {
-        SiteValues typed = new(30, 115, "B", In(42), In(288), new SiteSource("Town office", new DateOnly(2026, 9, 24)));
+        SiteValues typed = new(30, 115, "B", In(42), In(288), 20, new SiteSource("Town office", new DateOnly(2026, 9, 24)));
         SiteInputs site = CodeCheck.Site(typed);
         Assert.Equal((30, 115, "B"), (site.GroundSnowLoadPsf!.Value, site.UltimateWindSpeedMph!.Value, site.SeismicDesignCategory));
         Assert.Equal(In(42), site.FrostDepth);
         Assert.Equal(In(288), site.BuildingWidth);
+        Assert.Equal(20, site.RoofLiveLoadPsf);
         Assert.Equal(new InputProvenance("Town office", new DateOnly(2026, 9, 24)), site.Provenance);
 
         SiteInputs none = CodeCheck.Site(SiteValues.NotEntered);

@@ -183,6 +183,7 @@ public partial class CodeWindow : Window
         SeismicBox.Text = site.SeismicDesignCategory ?? string.Empty;
         FrostBox.Text = site.FrostDepth is { } frost ? frost.Format(new FeetInchesFormat(16)).Text : string.Empty;
         WidthBox.Text = site.BuildingWidth is { } width ? width.Format(new FeetInchesFormat(16)).Text : string.Empty;
+        RoofLiveBox.Text = site.RoofLiveLoadPsf?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
         SourceBox.Text = site.Source?.Text ?? string.Empty;
         SiteError.IsVisible = false;
     }
@@ -256,6 +257,7 @@ public partial class CodeWindow : Window
         int? wind = Whole(WindBox.Text, "The wind speed", "mph", wrong);
         Length? frost = Distance(FrostBox.Text, "The frost depth", allowZero: true, wrong);
         Length? width = Distance(WidthBox.Text, "The building width", allowZero: false, wrong);
+        int? roofLive = Whole(RoofLiveBox.Text, "The roof live load", "psf", wrong);
         string? seismic = string.IsNullOrWhiteSpace(SeismicBox.Text) ? null : SeismicBox.Text.Trim();
         string? source = string.IsNullOrWhiteSpace(SourceBox.Text) ? null : SourceBox.Text.Trim();
 
@@ -267,7 +269,7 @@ public partial class CodeWindow : Window
         }
 
         SiteSource? from = source is null ? null : new SiteSource(source, Design.Sketch.Site.Source?.Text == source ? Design.Sketch.Site.Source.On : Today());
-        SiteValues site = new(snow, wind, seismic, frost, width, from);
+        SiteValues site = new(snow, wind, seismic, frost, width, roofLive, from);
         if (site != Design.Sketch.Site)
         {
             ApplyRequest?.Invoke(new SetSite(site), "Set the site values");

@@ -20,6 +20,7 @@ public sealed record SiteInputs
         string? seismicDesignCategory,
         Length? frostDepth,
         Length? buildingWidth,
+        int? roofLiveLoadPsf,
         InputProvenance? provenance)
     {
         if (groundSnowLoadPsf < 0)
@@ -37,6 +38,11 @@ public sealed record SiteInputs
             throw new ArgumentOutOfRangeException(nameof(frostDepth), frostDepth, "A frost depth is not negative.");
         }
 
+        if (roofLiveLoadPsf < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(roofLiveLoadPsf), roofLiveLoadPsf, "A roof live load is not negative.");
+        }
+
         if (buildingWidth <= Length.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(buildingWidth), buildingWidth, "A building width is positive.");
@@ -47,6 +53,7 @@ public sealed record SiteInputs
         SeismicDesignCategory = seismicDesignCategory;
         FrostDepth = frostDepth;
         BuildingWidth = buildingWidth;
+        RoofLiveLoadPsf = roofLiveLoadPsf;
         Provenance = provenance;
     }
 
@@ -64,6 +71,12 @@ public sealed record SiteInputs
 
     /// <summary>Building width as the code text defines it, or null when not entered.</summary>
     public Length? BuildingWidth { get; }
+
+    /// <summary>
+    /// Roof live load, whole psf, or null when not entered. Never a table column: only a footnote's
+    /// condition asks for it (a substitute-input operation, design §4.4), and only when reached.
+    /// </summary>
+    public int? RoofLiveLoadPsf { get; }
 
     /// <summary>Where the values came from.</summary>
     public InputProvenance? Provenance { get; }

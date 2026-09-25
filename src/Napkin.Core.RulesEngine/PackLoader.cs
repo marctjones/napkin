@@ -48,9 +48,10 @@ public static partial class PackLoader
         Dictionary<string, RawTable> tables = new(StringComparer.Ordinal);
         LoadBaseLayer(source, manifest, manifestFile, tables, problems);
 
+        List<PendingAmendment> pending = [];
         foreach (string entry in manifest.Layers.Skip(1))
         {
-            ApplyOverlayLayer(source, manifest, manifestFile, entry, tables, problems);
+            ApplyOverlayLayer(source, manifest, manifestFile, entry, tables, pending, problems);
         }
 
         List<HeaderSizingTable> typed = [];
@@ -72,7 +73,7 @@ public static partial class PackLoader
 
         return problems.Count > 0
             ? Invalid(packId, problems)
-            : new PackLoadResult.Loaded(new LoadedPack(manifest, typed.ToValueList()));
+            : new PackLoadResult.Loaded(new LoadedPack(manifest, typed.ToValueList(), pending.ToValueList()));
     }
 
     private static PackLoadResult.Invalid Invalid(string packId, ProblemList problems)
@@ -130,7 +131,8 @@ public static partial class PackLoader
     }
 
     private static void ApplyOverlayLayer(
-        IPackSource source, PackManifest manifest, string manifestFile, string entry, Dictionary<string, RawTable> tables, ProblemList problems)
+        IPackSource source, PackManifest manifest, string manifestFile, string entry, Dictionary<string, RawTable> tables,
+        List<PendingAmendment> pending, ProblemList problems)
     {
         if (!OverlayEntryPattern().IsMatch(entry))
         {
@@ -187,7 +189,7 @@ public static partial class PackLoader
 
         foreach (RawOverlay overlay in overlays.Values.OrderBy(o => o.Table, StringComparer.Ordinal))
         {
-            Composer.Apply(overlay, tables, problems);
+            Composer.Apply(overlay, tables, pending, problems);
         }
     }
 
@@ -250,11 +252,12 @@ internal sealed record RawRow(string Id, JsonElement Element, string File, strin
 /// <summary>One overlay file: the operations on one table.</summary>
 internal sealed record RawOverlay(string File, string Table, IReadOnlyList<RawOperation> Operations);
 
-/// <summary>An overlay operation (design §1.3): add / amend / delete, on a row or on a table.</summary>
+/// <summary>An overlay operation (design §1.3): add / amend / delete, on a row or on a table; or amend one footnote.</summary>
 internal sealed record RawOperation(
     OpKind Op,
     int Index,
     string? RowId,
     RawRow? Row,
     TableMeta? TableMeta,
-    List<RawRow>? TableRows);
+    List<RawRow>? TableRows,
+    Footnote? Footnote);

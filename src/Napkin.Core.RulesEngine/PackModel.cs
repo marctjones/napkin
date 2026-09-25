@@ -92,6 +92,13 @@ public enum FootnoteEncoding
 
     /// <summary>It narrows the table's scope; an excluded request is out of scope, citing it.</summary>
     AsLimit,
+
+    /// <summary>
+    /// It declares operations the engine applies exactly as written (<see cref="FootnoteOperation"/>):
+    /// substituting an input, or interpolating between two declared columns. The engine applies
+    /// them only where a footnote declares them (design §4.4, decided 2026-09-25).
+    /// </summary>
+    AsOperations,
 }
 
 /// <summary>Whether a footnote applies to the whole table or only to the rows that list it.</summary>
@@ -194,12 +201,47 @@ public sealed record InputColumn(
 public sealed record FootnoteLimit(string Input, CellValue? Above, string? EqualTo);
 
 /// <summary>A footnote, transcribed verbatim, with its classification (design §1.4).</summary>
+/// <param name="Id">The footnote's letter or number as printed.</param>
+/// <param name="Text">The footnote, verbatim.</param>
+/// <param name="EncodedAs">How it is encoded.</param>
+/// <param name="AppliesTo">The whole table, or only the rows that list it.</param>
+/// <param name="Limit">What an <see cref="FootnoteEncoding.AsLimit"/> footnote excludes; otherwise null.</param>
+/// <param name="Operations">What an <see cref="FootnoteEncoding.AsOperations"/> footnote does; otherwise empty.</param>
+/// <param name="Source">Where an overlay's amended footnote was read; null for the table's own source.</param>
 public sealed record Footnote(
     string Id,
     string Text,
     FootnoteEncoding EncodedAs,
     FootnoteScope AppliesTo,
-    FootnoteLimit? Limit);
+    FootnoteLimit? Limit,
+    ValueList<FootnoteOperation> Operations,
+    SourceRef? Source);
+
+/// <summary>
+/// An operation a footnote declares (<see cref="FootnoteEncoding.AsOperations"/>). A closed set: the
+/// engine does exactly these and nothing a footnote does not declare.
+/// </summary>
+public abstract record FootnoteOperation
+{
+    private FootnoteOperation()
+    {
+    }
+
+    /// <summary>
+    /// "Use <paramref name="Use"/> for <paramref name="Input"/> less than <paramref name="Below"/>
+    /// when <paramref name="WhenInput"/> is at most <paramref name="AtMost"/>". When the condition
+    /// fails the request is out of scope citing the footnote; when the condition's input is not
+    /// entered, it is missing. Never applied to an input at or above <paramref name="Below"/>.
+    /// </summary>
+    public sealed record SubstituteInput(string Input, CellValue Below, CellValue Use, string WhenInput, CellValue AtMost) : FootnoteOperation;
+
+    /// <summary>
+    /// "Linear interpolation is permitted" for <paramref name="Input"/> strictly between the two
+    /// declared columns <paramref name="Lower"/> and <paramref name="Upper"/>, of the capacity
+    /// column <paramref name="Quantity"/> only. Count columns are never interpolated.
+    /// </summary>
+    public sealed record Interpolate(string Input, CellValue Lower, CellValue Upper, string Quantity) : FootnoteOperation;
+}
 
 /// <summary>A header member: plies and nominal size, e.g. (2) 2x10.</summary>
 public sealed record MemberSpec(int Plies, string Nominal)
@@ -247,8 +289,21 @@ public sealed record HeaderSizingTable(
             .Distinct(StringComparer.Ordinal);
 }
 
+/// <summary>
+/// An overlay's footnote amendment to a table the layer below does not have yet (its base table is
+/// not filled in). Kept, listed, and applied the moment the table is added; never silently dropped.
+/// </summary>
+/// <param name="Table">The table designation the amendment names.</param>
+/// <param name="FootnoteId">The footnote it amends.</param>
+/// <param name="File">The overlay file.</param>
+/// <param name="Source">Where the amendment was read.</param>
+public sealed record PendingAmendment(string Table, string FootnoteId, string File, SourceRef Source);
+
 /// <summary>A pack that loaded, validated and composed. The only way pack data enters memory (design §9.1).</summary>
-public sealed record LoadedPack(PackManifest Manifest, ValueList<HeaderSizingTable> Tables)
+/// <param name="Manifest">The pack's manifest.</param>
+/// <param name="Tables">The composed header tables.</param>
+/// <param name="Pending">Footnote amendments waiting for a base table that is not loaded.</param>
+public sealed record LoadedPack(PackManifest Manifest, ValueList<HeaderSizingTable> Tables, ValueList<PendingAmendment> Pending)
 {
     /// <summary>The status label shown in the pack picker when no header table is loaded (the base layer is unfilled).</summary>
     public const string BaseTablesNotLoaded = "base tables not loaded";
