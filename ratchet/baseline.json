@@ -2,8 +2,8 @@
   "schema": 1,
   "coverage": {
     "Napkin.Core.Geometry": {
-      "line": 95.54,
-      "branch": 91.97
+      "line": 95.71,
+      "branch": 92.1
     },
     "Napkin.Core.Materials": {
       "line": 98.28,
@@ -15,11 +15,11 @@
     },
     "Napkin.Modules.Furniture": {
       "line": 100,
-      "branch": 99.82
+      "branch": 99.84
     }
   },
   "gui": {
-    "workflowsPassed": 54,
+    "workflowsPassed": 59,
     "workflowIds": [
       "CVS-011",
       "GUI-ASSEM-01",
@@ -55,8 +55,13 @@
       "GUI-DRAW-08",
       "GUI-DRAW-09",
       "GUI-DRAW-10",
+      "GUI-JOIN-01",
+      "GUI-JOIN-02",
+      "GUI-JOIN-03",
+      "GUI-JOIN-04",
       "GUI-JOIN-05",
       "GUI-JOIN-06",
+      "GUI-JOIN-07",
       "GUI-SET-01",
       "GUI-SET-02",
       "GUI-SET-03",

@@ -13,7 +13,7 @@ public sealed record JointProposal(TouchingFaces Faces, JointRoles Roles, JointT
     public bool PocketFaceTied => PocketFaces.Length > 1;
 
     /// <summary>The proposed pocket face: the nearest to the middle, or the first of a tie.</summary>
-    public BoxFace? PocketFace => PocketFaces.IsDefaultOrEmpty ? null : PocketFaces[0];
+    public BoxFace PocketFace => PocketFaces[0];
 }
 
 /// <summary>
@@ -73,7 +73,7 @@ public static class JointProposals
         }
 
         // A tabletop: one part's bottom face on the other's top, the contact long and thin like an apron's edge.
-        if ((pair.OfFirst == BoxFace.Bottom) != (pair.OfSecond == BoxFace.Bottom)
+        if ((pair.OfFirst == BoxFace.Bottom || pair.OfSecond == BoxFace.Bottom)
             && pair.Contact.JointLength.Units >= 4 * pair.Contact.JointWidth.Units)
         {
             return JointType.Tabletop;

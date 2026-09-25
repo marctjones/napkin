@@ -55,7 +55,12 @@ public static class JointTooltip
         if (joint.Depth is { } depth)
         {
             text.Append(' ').Append(CutListCsv.Text(depth)).Append(" deep");
-            Length? width = shape?.Groove?.Width ?? shape?.Rabbet?.Width;
+            Length? width = shape switch
+            {
+                { Groove: { } groove } => groove.Width,
+                { Rabbet: { } rabbet } => rabbet.Width,
+                _ => null,
+            };
             text.Append(width is { } w ? $", {CutListCsv.Text(w)} wide." : ".");
         }
 

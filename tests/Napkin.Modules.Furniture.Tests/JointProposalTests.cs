@@ -101,4 +101,63 @@ public sealed class JointProposalTests
 
         Assert.Equal(JointType.HalfLap, JointProposals.For(crossed, a.Id, b.Id)!.Type);
     }
+
+    private static Box Plain(int id, double x, double y, double z, double width, double height, double depth) => new(
+        new EntityId(new Guid(id, 0, 0, new byte[8])),
+        LayerId.Default,
+        new Point3(new Length((long)(x * 1024)), new Length((long)(y * 1024)), new Length((long)(z * 1024))),
+        new Length((long)(width * 1024)),
+        new Length((long)(height * 1024)),
+        new Length((long)(depth * 1024)),
+        BoxFace.Top,
+        Angle.Zero);
+
+    [Fact]
+    [Trait("Feature", "GEO-018")]
+    public void Boxes_that_are_not_parts_are_read_by_their_smallest_size()
+    {
+        // A beam 12 x 4 x 3 with a 4 x 2 x 1/4 panel standing on its north face by its edge: the panel is thin
+        // along z, its contact face (the south) is across y, so it is an edge, thinner than the beam, and
+        // has margin on both sides of it on the beam's face: a groove. Its pocket faces, thin along z, are bottom and top.
+        Sketch groove = Sketch.Empty.WithEntity(Plain(1, 0, 0, 0, 12, 4, 3)).WithEntity(Plain(2, 4, 4, 1, 4, 2, 0.25));
+        JointProposal? proposal = JointProposals.For(groove, new EntityId(new Guid(1, 0, 0, new byte[8])), new EntityId(new Guid(2, 0, 0, new byte[8])));
+
+        Assert.Equal(JointType.Groove, proposal!.Type);
+        Assert.Equal(new EntityId(new Guid(2, 0, 0, new byte[8])), proposal.Roles.Inserted.Box);
+        Assert.All(proposal.PocketFaces, face => Assert.True(face is BoxFace.Bottom or BoxFace.Top));
+
+        // The same panel as thick as the beam is only a butt; and a panel lying across the beam's face by its broad face is one too.
+        Sketch equal = Sketch.Empty.WithEntity(Plain(1, 0, 0, 0, 12, 4, 3)).WithEntity(Plain(2, 4, 4, 1, 4, 2, 3));
+        Assert.Equal(JointType.Butt, JointProposals.For(equal, new EntityId(new Guid(1, 0, 0, new byte[8])), new EntityId(new Guid(2, 0, 0, new byte[8])))!.Type);
+        Sketch flat = Sketch.Empty.WithEntity(Plain(1, 0, 0, 0, 12, 4, 3)).WithEntity(Plain(2, 4, 4, 1, 4, 0.25, 2));
+        Assert.Equal(JointType.Butt, JointProposals.For(flat, new EntityId(new Guid(1, 0, 0, new byte[8])), new EntityId(new Guid(2, 0, 0, new byte[8])))!.Type);
+    }
+
+    [Fact]
+    [Trait("Feature", "GEO-018")]
+    public void A_top_on_a_square_leg_is_a_butt_not_a_tabletop()
+    {
+        Sketch sketch = Table();
+        EntityId top = sketch.Entities.Values.OfType<Box>().Single(box => box.Name == "Top").Id;
+        EntityId leg = sketch.Entities.Values.OfType<Box>().First(box => box.Name == "Leg, south-west").Id;
+
+        // The leg's top (1 1/2 x 1 1/2) meets the top's underside: a bottom face, but not long and thin like an apron's edge.
+        Assert.Equal(JointType.Butt, JointProposals.For(sketch, top, leg)!.Type);
+    }
+
+    [Theory]
+    [InlineData(PartDimension.Thickness, PartDimension.Length, BoxFace.South, Axis.X)]
+    [InlineData(PartDimension.Length, PartDimension.Thickness, BoxFace.West, Axis.Y)]
+    [InlineData(PartDimension.Length, PartDimension.Width, BoxFace.West, Axis.Z)]
+    [Trait("Feature", "GEO-018")]
+    public void Pocket_holes_are_offered_from_the_faces_across_the_parts_thickness(PartDimension x, PartDimension y, BoxFace contact, Axis thin)
+    {
+        // A part whose thickness lies along x, y or z (by its plan axes), joined at a face on another axis:
+        // the faces offered are its two broad ones, the pair across its thickness.
+        Box box = Plain(1, 0, 0, 0, 6, 4, 2) with { Part = new Part(null, null, 1, new PlanAxes(x, y)) };
+        ImmutableArray<BoxFace> faces = JointProposals.PocketFacesFor(Sketch.Empty.WithEntity(box), box, contact);
+
+        Assert.NotEmpty(faces);
+        Assert.All(faces, face => Assert.Equal(thin, JointGeometry.LocalAxisOf(face)));
+    }
 }

@@ -64,4 +64,33 @@ public sealed class JointTooltipTests
             string.Concat(new[] { JointType.Butt, JointType.Groove, JointType.Rabbet, JointType.HalfLap, JointType.Tabletop }.Select(JointTooltip.Letter)));
         Assert.Equal("Half-lap", JointTooltip.TypeName(JointType.HalfLap));
     }
+
+    [Fact]
+    [Trait("Feature", "CUT-014")]
+    public void A_rabbet_that_moved_apart_keeps_its_depth_and_a_single_fastener_is_singular()
+    {
+        Sketch sketch = Table();
+        Box front = sketch.Entities.Values.OfType<Box>().Single(box => box.Name == "Drawer box front, A");
+        Sketch apart = sketch.WithEntity(front with { Anchor = front.Anchor with { X = front.Anchor.X + new Length(4096) } });
+
+        // No contact, so no width and no recipe count; the depth is the joint's own.
+        Assert.Equal(
+            "Rabbet (parts no longer touch) \u2014 Drawer side, left, A \u2190 Drawer box front, A. 1/4\" deep. Brads (18 ga x 1), glue.",
+            Of(apart, "Drawer box front, A", "Drawer side, left, A").Replace("brads (", "Brads (", StringComparison.Ordinal));
+
+        Joint one = apart.RelationshipsInOrder.OfType<Joint>().First() with { Fastening = new Fastening(FasteningKind.PocketScrews, 1, BoxFace.South) };
+        Assert.Contains("1 pocket screw (1-1/4 in coarse)", JointTooltip.Of(sketch, one), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-014")]
+    public void A_part_without_a_name_is_called_a_part_unless_the_caller_names_it()
+    {
+        Sketch sketch = Table();
+        Joint joint = sketch.RelationshipsInOrder.OfType<Joint>().First();
+        Sketch unnamed = sketch.WithEntity(sketch.Find<Box>(joint.Receiving.Box)! with { Name = string.Empty });
+
+        Assert.StartsWith("Butt \u2014 a part \u2190 Apron, back.", JointTooltip.Of(unnamed, joint), StringComparison.Ordinal);
+        Assert.StartsWith("Butt \u2014 X \u2190 X.", JointTooltip.Of(unnamed, joint, _ => "X"), StringComparison.Ordinal);
+    }
 }

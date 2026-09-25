@@ -1080,6 +1080,69 @@
       "milestone": "M3",
       "issue": 149,
       "kind": "unit"
+    },
+    {
+      "id": "GUI-JOIN-01",
+      "area": "ui",
+      "title": "Join two parts with J, read the marker and its tooltip, edit and delete it",
+      "acceptance": "Draw two parts, refusal messages for one part and for two that do not touch, J, Enter makes a butt with a solid marker in plan and 3D; the tooltip reads as one sentence; double-click or Enter reopens it; Delete removes it and undo brings it back.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-02",
+      "area": "ui",
+      "title": "Join the leg frame in one gesture with Shift+J",
+      "acceptance": "Nine selected parts give ten touching pairs, pairs of another suggested type are unticked, pocket screws chosen with the keys, the web's tied pocket face picked, one Enter makes ten joints and one undo removes them.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-03",
+      "area": "ui",
+      "title": "Join a drawer: rabbet with a typed depth, groove pre-selected, typed count over the recipe",
+      "acceptance": "A rabbet needs a depth and says so; the bottom's groove is pre-selected; the count box shows recipe: 3 and 4 typed over it is kept; Shift+J on two parts repeats the last joint.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-04",
+      "area": "ui",
+      "title": "Move a joined part: markers go hollow, the cut-list row is flagged, undo restores",
+      "acceptance": "Nothing is refused and nothing follows the move; two markers are hollow, the tooltip says the parts no longer touch, the rows say joint not satisfied, one undo puts it all back.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-05",
+      "area": "ui",
+      "title": "Type a fastener size and watch the shopping list change",
+      "acceptance": "Blank sizes first; a typed size and pack update the fastener line and packs; a bad pack size is refused in words; a size nobody needs survives saving; undo restores.",
+      "milestone": "M3",
+      "issue": 148,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-06",
+      "area": "ui",
+      "title": "Type hardware on a part and supplies on the list, and export them",
+      "acceptance": "The Part panel's hardware box, Ctrl+Enter, the hardware section summed, supplies typed with notes, the glue line, the CSV equal to the screen, undo.",
+      "milestone": "M3",
+      "issue": 148,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-07",
+      "area": "ui",
+      "title": "Join the whole table and read the cut list and the fasteners",
+      "acceptance": "The storyboard on the DIY table: frame, cleats, both drawers, tabletop, all 34 joints as the sample records them, 13 cut-list rows, sizes and supplies typed, 27 / 6 / 8 / 24 / 10 fasteners.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "workflow"
     }
   ]
 }

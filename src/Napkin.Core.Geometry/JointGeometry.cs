@@ -292,11 +292,6 @@ public static class JointGeometry
     // The overlap of the two boxes' world extents, or null unless it has volume: what a half-lap is.
     private static (Point3 Low, Point3 High)? Overlap(Box first, Box second)
     {
-        if (!first.Orientation.IsExact || !second.Orientation.IsExact)
-        {
-            return null;
-        }
-
         (Point3 lowA, Point3 highA) = Extent(first);
         (Point3 lowB, Point3 highB) = Extent(second);
         Point3 low = new(Length.Max(lowA.X, lowB.X), Length.Max(lowA.Y, lowB.Y), Length.Max(lowA.Z, lowB.Z));
