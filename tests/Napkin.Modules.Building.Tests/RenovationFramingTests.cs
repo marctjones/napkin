@@ -107,6 +107,11 @@ public class RenovationFramingTests
         Assert.Equal("Not checked: " + check.NotChecked, CodeCheck.Words(check, Library).Headline);
         Assert.Equal("not checked: not bearing, (2) 2x6 your choice", CodeCheck.Short(check));
         Assert.StartsWith("Wall 1 is marked not bearing, so napkin does not size this header from the code. No header chosen", CodeCheck.NotBearingText(new Wall(wall with { WallInputs = null })), StringComparison.Ordinal);
+        Opening loose = new(check.Opening.Box, new Wall(wall with { WallInputs = null }), check.Opening.Offset, check.Opening.Sill);
+        Assert.Equal("not checked: not bearing, no header chosen", CodeCheck.Short(new OpeningCheck(loose, null) { NotChecked = "x" }));
+
+        // A box on a layer the sketch does not have reads as neither a wall nor an opening.
+        Assert.False(Wall.Is(sketch, wall with { Layer = LayerId.New(), Name = "North" }));
 
         // The frame uses the typed header with one jack and one king each side, said so.
         WallFraming framing = FramingList.Frame(sketch, new Wall(wall), Library, CodeCheck.Framing(CodeCheck.Of(sketch, Reno), Library));
@@ -205,6 +210,7 @@ public class RenovationFramingTests
         WallFraming frame = FramingList.Frame(fresh, new Wall(wall), Library, CodeCheck.Framing(CodeCheck.Of(fresh, Reno), Library));
         Assert.Equal(Rows(frame.Pieces).OrderBy(row => row.Item1).ThenByDescending(row => row.Item3), Rows(all.New));
         Assert.Empty(all.Out);
+        Assert.True(all.Changes);
         Assert.False(all.FromExisting);
         Assert.Equal("nothing", all.Sentence[(all.Sentence.LastIndexOf('—') + 2)..]);
 
