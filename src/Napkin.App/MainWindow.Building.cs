@@ -254,7 +254,7 @@ public partial class MainWindow
         }
 
         // A wall already there or coming out: what is new material and what comes out (§6.3).
-        if (wall.Box.Phase != Phase.New && FramingDiff.Of(Editor.Sketch, MaterialsLibrary.Shipped, Packs).FirstOrDefault(diff => diff.Wall.Id == wall.Id) is { } diff)
+        if (wall.Box.Phase != Phase.New && FramingDiff.Of(Editor.Sketch, MaterialsLibrary.Shipped, Packs).FirstOrDefault(diff => diff.Wall.Id == wall.Id) is { Changes: true } diff)
         {
             lines.Add($"{wall.Name} ({PhaseCommand.Word(wall.Box.Phase)}): {diff.Sentence}{(diff.FromExisting && !diff.Out.IsEmpty ? $", {diff.Assumption}" : string.Empty)}.");
         }

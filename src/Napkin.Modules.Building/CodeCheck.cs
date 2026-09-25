@@ -354,6 +354,11 @@ public static class CodeCheck
                 $"Limit: {o.Limit}",
                 Details(o.Limit),
                 o.Limit.Interpolation?.Summary(o.Limit.Code) ?? string.Empty),
+            HeaderResult.InputMissing m when m.Inputs.Any(input => input is "side" or "bearing") => new CheckWords(
+                $"Not checked: {m.Explanation}",
+                m.Table.Length > 0 ? $"Table {m.Table}, {m.Code}" : string.Empty,
+                string.Empty,
+                string.Empty),
             HeaderResult.InputMissing m => new CheckWords(
                 $"Not checked: {Named(m.Inputs)} {(m.Inputs.Count == 1 ? "is" : "are")} not entered, and napkin never assumes a value. "
                 + Where(m.Inputs),
@@ -497,6 +502,8 @@ public static class CodeCheck
         "frostDepth" => "the frost depth",
         "buildingWidth" => "the building width",
         "roofLiveLoad" => "the roof live load",
+        "side" => "which side the wall is on",
+        "bearing" => "whether the wall is bearing",
         _ => name,
     };
 

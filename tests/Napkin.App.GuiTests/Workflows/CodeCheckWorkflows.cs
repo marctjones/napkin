@@ -335,6 +335,53 @@ public class CodeCheckWorkflows
             Assert.Equal(Length.Inches(192), wall.Width);
             Assert.Equal(wall.Id, window.Editor.OnlySelected);
         });
+
+        // napkin never assumes what a wall is (renovation-sketches §4.3): say it is exterior and
+        // bearing, in the panel, with the pointer and the keyboard.
+        Pick(app, window, window.SideControl, downs: 1);
+        Pick(app, window, window.BearingControl, downs: 1);
+        app.Expect("the wall is said to be exterior and bearing", () =>
+        {
+            WallInputs inputs = Assert.Single(Wall.All(window.CurrentDesign!.Sketch)).Box.WallInputs!;
+            Assert.Equal(WallSide.Exterior, inputs.Side);
+            Assert.True(inputs.Bearing);
+        });
+    }
+
+    /// <summary>A picker in the Part panel, scrolled into sight: a click, then Down so many times, then Enter.</summary>
+    static void Pick(AppDriver app, MainWindow window, Control picker, int downs)
+    {
+        Reveal(app, window, picker);
+        app.Click(CentreOf(window, picker));
+        for (int i = 0; i < downs; i++)
+        {
+            app.Press(Key.Down);
+        }
+
+        app.Press(Key.Enter);
+    }
+
+    /// <summary>Scrolls the Part panel with the mouse wheel, either way, until <paramref name="control"/> is inside it.</summary>
+    static void Reveal(AppDriver app, MainWindow window, Control control)
+    {
+        ScrollViewer scroller = window.FindControl<ScrollViewer>("PropertiesScroller")!;
+        for (int i = 0; i < 30; i++)
+        {
+            if (Edge(window, control, bottom: true) > Edge(window, scroller, bottom: true))
+            {
+                app.Wheel(CentreOf(window, scroller), new Vector(0, -1));
+            }
+            else if (Edge(window, control, bottom: false) < Edge(window, scroller, bottom: false))
+            {
+                app.Wheel(CentreOf(window, scroller), new Vector(0, 1));
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        static double Edge(MainWindow window, Control c, bool bottom) => c.TranslatePoint(new Point(0, bottom ? c.Bounds.Height : 0), window)!.Value.Y;
     }
 
     /// <summary>Project → Adopted code and site…, with the pointer.</summary>
@@ -372,12 +419,7 @@ public class CodeCheckWorkflows
     }
 
     /// <summary>The supports picker, with the pointer and the keyboard: the table's first value.</summary>
-    static void ChooseSupports(AppDriver app, MainWindow window)
-    {
-        app.Click(CentreOf(window, window.SupportsControl));
-        app.Press(Key.Down);
-        app.Press(Key.Enter);
-    }
+    static void ChooseSupports(AppDriver app, MainWindow window) => Pick(app, window, window.SupportsControl, downs: 1);
 
     /// <summary>Draw → Window, then a click on the middle of the wall: a 3 ft window centred there.</summary>
     static EntityId PlaceWindow(AppDriver app, MainWindow window)
