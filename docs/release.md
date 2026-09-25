@@ -68,7 +68,7 @@ and inside each zip, a single folder named like the zip:
 
 ```
 napkin-0.N.0-beta-<rid>/
-  Napkin.App[.exe]                 the self-contained single-file program
+  napkin[.exe]                   the self-contained single-file program
   LICENSE                          AGPL-3.0
   SOURCE.txt                       written offer of source, naming the commit
   FIRST-RUN.md                     a copy of docs/first-run.md

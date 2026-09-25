@@ -58,7 +58,7 @@ Unzip the file **before** you run anything from it. You get a folder called `nap
 
 ## 4. Open it on Windows
 
-Open the folder and double-click `Napkin.App.exe`.
+Open the folder and double-click `napkin.exe`.
 
 Windows may show a blue window headed **"Windows protected your PC"** saying that Microsoft Defender SmartScreen prevented an unrecognised app from starting. Microsoft's own documentation confirms that SmartScreen warns about a downloaded file that is not on its list of well-known, frequently downloaded files, which a new open-source beta is not ([Microsoft Defender SmartScreen overview](https://learn.microsoft.com/en-us/windows/security/operating-system-security/virus-and-threat-protection/microsoft-defender-smartscreen/)). To go ahead:
 
@@ -73,11 +73,11 @@ If no warning appears, there is nothing more to do.
 
 These steps are for **macOS 15 (Sequoia) and later**. On those versions the older shortcut of Control-clicking a program and choosing Open is no longer a way past this warning, so it is not described here. The way through is in System Settings. *(The Control-click point is the project's own understanding, recorded in its design document; Apple's page, read for this one, does not mention it either way. Unverified — verify on a real machine.)*
 
-In this beta, napkin is a single program file called `Napkin.App` rather than an icon-and-window application, so:
+In this beta, napkin is a single program file called `napkin` rather than an icon-and-window application, so:
 
-1. Open the unzipped folder and double-click `Napkin.App`. A Terminal window may open along with it; that is expected for a program file, and you can leave it alone. *(unverified — verify on a real machine)*
+1. Open the unzipped folder and double-click `napkin`. A Terminal window may open along with it; that is expected for a program file, and you can leave it alone. *(unverified — verify on a real machine)*
 2. macOS will refuse and say it cannot verify the program. Close that message (the button may be labelled **Done**). *(unverified — verify on a real machine)*
-3. Open **System Settings** → **Privacy & Security**, and scroll down to the security section. You will find a note that `Napkin.App` was blocked, with an **Open Anyway** button. Click **Open Anyway**.
+3. Open **System Settings** → **Privacy & Security**, and scroll down to the security section. You will find a note that `napkin` was blocked, with an **Open Anyway** button. Click **Open Anyway**.
 4. The warning appears again. This time click **Open**. macOS may ask for your Mac's password or Touch ID to confirm. *(the password prompt is unverified — verify on a real machine)*
 
 Steps 3 and 4 are Apple's own instructions for a program macOS has blocked: open System Settings, click Privacy & Security, scroll down and click **Open Anyway**, then click **Open** on the warning that comes back ([Apple: Safely open apps on your Mac](https://support.apple.com/en-us/102445)). Apple's page also says that the program is then saved as an exception, and that you can open it in future by double-clicking it like any other. Everything around those two steps (the exact wording of the first message, the Terminal window, the position of the note in the settings list) is not from Apple's page.
