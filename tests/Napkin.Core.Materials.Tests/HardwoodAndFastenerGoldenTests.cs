@@ -117,30 +117,30 @@ public sealed class HardwoodAndFastenerGoldenTests
     }
 
     /// <summary>FF-N-105B §3.6.11.2, row by row.</summary>
-    public static TheoryData<string, Length, double> NailRows => new()
+    public static TheoryData<string, Length, decimal> NailRows => new()
     {
-        { "2d", Length.Inches(1), 0.072 },
-        { "3d", Length.Inches(1, 1, 4), 0.080 },
-        { "4d", Length.Inches(1, 1, 2), 0.099 },
-        { "5d", Length.Inches(1, 3, 4), 0.099 },
-        { "6d", Length.Inches(2), 0.113 },
-        { "7d", Length.Inches(2, 1, 4), 0.113 },
-        { "8d", Length.Inches(2, 1, 2), 0.131 },
-        { "9d", Length.Inches(2, 3, 4), 0.131 },
-        { "10d", Length.Inches(3), 0.148 },
-        { "12d", Length.Inches(3, 1, 4), 0.148 },
-        { "16d", Length.Inches(3, 1, 2), 0.162 },
-        { "20d", Length.Inches(4), 0.192 },
-        { "30d", Length.Inches(4, 1, 2), 0.207 },
-        { "40d", Length.Inches(5), 0.226 },
-        { "50d", Length.Inches(5, 1, 2), 0.244 },
-        { "60d", Length.Inches(6), 0.262 },
+        { "2d", Length.Inches(1), 0.072m },
+        { "3d", Length.Inches(1, 1, 4), 0.080m },
+        { "4d", Length.Inches(1, 1, 2), 0.099m },
+        { "5d", Length.Inches(1, 3, 4), 0.099m },
+        { "6d", Length.Inches(2), 0.113m },
+        { "7d", Length.Inches(2, 1, 4), 0.113m },
+        { "8d", Length.Inches(2, 1, 2), 0.131m },
+        { "9d", Length.Inches(2, 3, 4), 0.131m },
+        { "10d", Length.Inches(3), 0.148m },
+        { "12d", Length.Inches(3, 1, 4), 0.148m },
+        { "16d", Length.Inches(3, 1, 2), 0.162m },
+        { "20d", Length.Inches(4), 0.192m },
+        { "30d", Length.Inches(4, 1, 2), 0.207m },
+        { "40d", Length.Inches(5), 0.226m },
+        { "50d", Length.Inches(5, 1, 2), 0.244m },
+        { "60d", Length.Inches(6), 0.262m },
     };
 
     [Theory]
     [MemberData(nameof(NailRows))]
     [Trait("Feature", "MAT-003")]
-    public void EachNailRowMatchesTheFederalSpecification(string name, Length length, double diameter)
+    public void EachNailRowMatchesTheFederalSpecification(string name, Length length, decimal diameter)
     {
         Assert.True(Library.TryFind(name, out StockItem item), $"{name} is not in the shipped library.");
         FastenerStock nail = Assert.IsType<FastenerStock>(item);
@@ -184,26 +184,26 @@ public sealed class HardwoodAndFastenerGoldenTests
     /// FF-N-105B §3.6.15, Type II style 14 finish nails, page 13, read as text from the PDF on 2026-09-24:
     /// the twelve rows of the table (S, L, D), listed here from the printed table.
     /// </summary>
-    public static TheoryData<string, Length, double> FinishNailRows => new()
+    public static TheoryData<string, Length, decimal> FinishNailRows => new()
     {
-        { "2d finish nail", Length.Inches(1), 0.058 },
-        { "3d finish nail", Length.Inches(1, 1, 4), 0.067 },
-        { "4d finish nail", Length.Inches(1, 1, 2), 0.072 },
-        { "5d finish nail", Length.Inches(1, 3, 4), 0.072 },
-        { "6d finish nail", Length.Inches(2), 0.092 },
-        { "7d finish nail", Length.Inches(2, 1, 4), 0.092 },
-        { "8d finish nail", Length.Inches(2, 1, 2), 0.099 },
-        { "9d finish nail", Length.Inches(2, 3, 4), 0.099 },
-        { "10d finish nail", Length.Inches(3), 0.113 },
-        { "12d finish nail", Length.Inches(3, 1, 4), 0.113 },
-        { "16d finish nail", Length.Inches(3, 1, 2), 0.120 },
-        { "20d finish nail", Length.Inches(4), 0.135 },
+        { "2d finish nail", Length.Inches(1), 0.058m },
+        { "3d finish nail", Length.Inches(1, 1, 4), 0.067m },
+        { "4d finish nail", Length.Inches(1, 1, 2), 0.072m },
+        { "5d finish nail", Length.Inches(1, 3, 4), 0.072m },
+        { "6d finish nail", Length.Inches(2), 0.092m },
+        { "7d finish nail", Length.Inches(2, 1, 4), 0.092m },
+        { "8d finish nail", Length.Inches(2, 1, 2), 0.099m },
+        { "9d finish nail", Length.Inches(2, 3, 4), 0.099m },
+        { "10d finish nail", Length.Inches(3), 0.113m },
+        { "12d finish nail", Length.Inches(3, 1, 4), 0.113m },
+        { "16d finish nail", Length.Inches(3, 1, 2), 0.120m },
+        { "20d finish nail", Length.Inches(4), 0.135m },
     };
 
     [Theory]
     [MemberData(nameof(FinishNailRows))]
     [Trait("Feature", "MAT-003")]
-    public void EachFinishNailRowMatchesTheFederalSpecification(string name, Length length, double diameter)
+    public void EachFinishNailRowMatchesTheFederalSpecification(string name, Length length, decimal diameter)
     {
         Assert.True(Library.TryFind(name, out StockItem item), $"{name} is not in the shipped library.");
         FastenerStock nail = Assert.IsType<FastenerStock>(item);
@@ -216,53 +216,53 @@ public sealed class HardwoodAndFastenerGoldenTests
     /// FF-N-105B §3.6.1, brads, page 8, read as text from the PDF on 2026-09-24: every row of the table
     /// (L, D, and S where one is printed beside it: 3d is 1-1/4 in x .080, 4d 1-1/2 x .099, ...).
     /// </summary>
-    public static TheoryData<string, string, Length, double> BradRows => new()
+    public static TheoryData<string, string, Length, decimal> BradRows => new()
     {
-        { "Brad 3/8 in x .035", "", Length.Inches(0, 3, 8), 0.035 },
-        { "Brad 1/2 in x .035", "", Length.Inches(0, 1, 2), 0.035 },
-        { "Brad 1/2 in x .048", "", Length.Inches(0, 1, 2), 0.048 },
-        { "Brad 5/8 in x .035", "", Length.Inches(0, 5, 8), 0.035 },
-        { "Brad 5/8 in x .048", "", Length.Inches(0, 5, 8), 0.048 },
-        { "Brad 3/4 in x .035", "", Length.Inches(0, 3, 4), 0.035 },
-        { "Brad 3/4 in x .048", "", Length.Inches(0, 3, 4), 0.048 },
-        { "Brad 3/4 in x .062", "", Length.Inches(0, 3, 4), 0.062 },
-        { "Brad 7/8 in x .035", "", Length.Inches(0, 7, 8), 0.035 },
-        { "Brad 7/8 in x .048", "", Length.Inches(0, 7, 8), 0.048 },
-        { "Brad 7/8 in x .062", "", Length.Inches(0, 7, 8), 0.062 },
-        { "Brad 1 in x .054", "", Length.Inches(1), 0.054 },
-        { "Brad 1 in x .062", "", Length.Inches(1), 0.062 },
-        { "Brad 1 in x .072", "", Length.Inches(1), 0.072 },
-        { "Brad 1-1/4 in x .054", "", Length.Inches(1, 1, 4), 0.054 },
-        { "Brad 1-1/4 in x .062", "", Length.Inches(1, 1, 4), 0.062 },
-        { "Brad 1-1/4 in x .080", "3d", Length.Inches(1, 1, 4), 0.080 },
-        { "Brad 1-1/2 in x .054", "", Length.Inches(1, 1, 2), 0.054 },
-        { "Brad 1-1/2 in x .080", "", Length.Inches(1, 1, 2), 0.080 },
-        { "Brad 1-1/2 in x .099", "4d", Length.Inches(1, 1, 2), 0.099 },
-        { "Brad 1-3/4 in x .062", "", Length.Inches(1, 3, 4), 0.062 },
-        { "Brad 1-3/4 in x .080", "", Length.Inches(1, 3, 4), 0.080 },
-        { "Brad 1-3/4 in x .099", "5d", Length.Inches(1, 3, 4), 0.099 },
-        { "Brad 2 in x .062", "", Length.Inches(2), 0.062 },
-        { "Brad 2 in x .080", "", Length.Inches(2), 0.080 },
-        { "Brad 2 in x .113", "6d", Length.Inches(2), 0.113 },
-        { "Brad 2-1/4 in x .080", "", Length.Inches(2, 1, 4), 0.080 },
-        { "Brad 2-1/4 in x .113", "7d", Length.Inches(2, 1, 4), 0.113 },
-        { "Brad 2-1/2 in x .080", "", Length.Inches(2, 1, 2), 0.080 },
-        { "Brad 2-1/2 in x .131", "8d", Length.Inches(2, 1, 2), 0.131 },
-        { "Brad 2-3/4 in x .131", "9d", Length.Inches(2, 3, 4), 0.131 },
-        { "Brad 3 in x .148", "10d", Length.Inches(3), 0.148 },
-        { "Brad 3-1/4 in x .148", "12d", Length.Inches(3, 1, 4), 0.148 },
-        { "Brad 3-1/2 in x .162", "16d", Length.Inches(3, 1, 2), 0.162 },
-        { "Brad 4 in x .192", "20d", Length.Inches(4), 0.192 },
-        { "Brad 4-1/2 in x .207", "30d", Length.Inches(4, 1, 2), 0.207 },
-        { "Brad 5 in x .225", "40d", Length.Inches(5), 0.225 },
-        { "Brad 5-1/2 in x .244", "50d", Length.Inches(5, 1, 2), 0.244 },
-        { "Brad 6 in x .262", "60d", Length.Inches(6), 0.262 },
+        { "Brad 3/8 in x .035", "", Length.Inches(0, 3, 8), 0.035m },
+        { "Brad 1/2 in x .035", "", Length.Inches(0, 1, 2), 0.035m },
+        { "Brad 1/2 in x .048", "", Length.Inches(0, 1, 2), 0.048m },
+        { "Brad 5/8 in x .035", "", Length.Inches(0, 5, 8), 0.035m },
+        { "Brad 5/8 in x .048", "", Length.Inches(0, 5, 8), 0.048m },
+        { "Brad 3/4 in x .035", "", Length.Inches(0, 3, 4), 0.035m },
+        { "Brad 3/4 in x .048", "", Length.Inches(0, 3, 4), 0.048m },
+        { "Brad 3/4 in x .062", "", Length.Inches(0, 3, 4), 0.062m },
+        { "Brad 7/8 in x .035", "", Length.Inches(0, 7, 8), 0.035m },
+        { "Brad 7/8 in x .048", "", Length.Inches(0, 7, 8), 0.048m },
+        { "Brad 7/8 in x .062", "", Length.Inches(0, 7, 8), 0.062m },
+        { "Brad 1 in x .054", "", Length.Inches(1), 0.054m },
+        { "Brad 1 in x .062", "", Length.Inches(1), 0.062m },
+        { "Brad 1 in x .072", "", Length.Inches(1), 0.072m },
+        { "Brad 1-1/4 in x .054", "", Length.Inches(1, 1, 4), 0.054m },
+        { "Brad 1-1/4 in x .062", "", Length.Inches(1, 1, 4), 0.062m },
+        { "Brad 1-1/4 in x .080", "3d", Length.Inches(1, 1, 4), 0.080m },
+        { "Brad 1-1/2 in x .054", "", Length.Inches(1, 1, 2), 0.054m },
+        { "Brad 1-1/2 in x .080", "", Length.Inches(1, 1, 2), 0.080m },
+        { "Brad 1-1/2 in x .099", "4d", Length.Inches(1, 1, 2), 0.099m },
+        { "Brad 1-3/4 in x .062", "", Length.Inches(1, 3, 4), 0.062m },
+        { "Brad 1-3/4 in x .080", "", Length.Inches(1, 3, 4), 0.080m },
+        { "Brad 1-3/4 in x .099", "5d", Length.Inches(1, 3, 4), 0.099m },
+        { "Brad 2 in x .062", "", Length.Inches(2), 0.062m },
+        { "Brad 2 in x .080", "", Length.Inches(2), 0.080m },
+        { "Brad 2 in x .113", "6d", Length.Inches(2), 0.113m },
+        { "Brad 2-1/4 in x .080", "", Length.Inches(2, 1, 4), 0.080m },
+        { "Brad 2-1/4 in x .113", "7d", Length.Inches(2, 1, 4), 0.113m },
+        { "Brad 2-1/2 in x .080", "", Length.Inches(2, 1, 2), 0.080m },
+        { "Brad 2-1/2 in x .131", "8d", Length.Inches(2, 1, 2), 0.131m },
+        { "Brad 2-3/4 in x .131", "9d", Length.Inches(2, 3, 4), 0.131m },
+        { "Brad 3 in x .148", "10d", Length.Inches(3), 0.148m },
+        { "Brad 3-1/4 in x .148", "12d", Length.Inches(3, 1, 4), 0.148m },
+        { "Brad 3-1/2 in x .162", "16d", Length.Inches(3, 1, 2), 0.162m },
+        { "Brad 4 in x .192", "20d", Length.Inches(4), 0.192m },
+        { "Brad 4-1/2 in x .207", "30d", Length.Inches(4, 1, 2), 0.207m },
+        { "Brad 5 in x .225", "40d", Length.Inches(5), 0.225m },
+        { "Brad 5-1/2 in x .244", "50d", Length.Inches(5, 1, 2), 0.244m },
+        { "Brad 6 in x .262", "60d", Length.Inches(6), 0.262m },
     };
 
     [Theory]
     [MemberData(nameof(BradRows))]
     [Trait("Feature", "MAT-003")]
-    public void SampledBradRowsMatchTheFederalSpecification(string name, string designation, Length length, double diameter)
+    public void SampledBradRowsMatchTheFederalSpecification(string name, string designation, Length length, decimal diameter)
     {
         Assert.True(Library.TryFind(name, out StockItem item), $"{name} is not in the shipped library.");
         FastenerStock brad = Assert.IsType<FastenerStock>(item);
