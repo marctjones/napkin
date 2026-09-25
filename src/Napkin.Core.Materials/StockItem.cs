@@ -216,6 +216,9 @@ public sealed record FastenerStock : StockItem
     /// <summary>The penny size as it is written — "16d".</summary>
     public required string PennySize { get; init; }
 
+    /// <summary>Which kind of driven fastener the row is: "nail" (named by penny size) or "brad" (named by length and wire).</summary>
+    public required string Family { get; init; }
+
     /// <summary>The overall length.</summary>
     public required Length FastenerLength { get; init; }
 

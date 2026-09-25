@@ -77,6 +77,39 @@ public partial class CutListWindow : Window
     /// <summary>The button that keeps the typed supplies.</summary>
     public Button SaveSuppliesControl => SaveSuppliesButton;
 
+    /// <summary>
+    /// A button beside a brad's or nail's size that lists the sizes the shipped, cited tables carry (FF-N-105B). Picking
+    /// one only fills the size box: nothing is saved, and napkin never chooses a size for the builder.
+    /// </summary>
+    private static Button? SuggestionButton(FastenerKind kind, TextBox size, string what)
+    {
+        string? family = kind switch
+        {
+            FastenerKind.Brad => "brad",
+            FastenerKind.Nail => "nail",
+            _ => null,
+        };
+        FastenerStock[] listed = family is null ? [] : [.. MaterialsLibrary.Shipped.Items.OfType<FastenerStock>().Where(stock => stock.Family == family)];
+        if (listed.Length == 0)
+        {
+            return null;
+        }
+
+        ListBox choices = new() { MaxHeight = 240, ItemsSource = listed.Select(stock => stock.Name).ToArray() };
+        Flyout flyout = new() { Content = new StackPanel { Spacing = 4, Children = { new TextBlock { Text = $"Sizes in {listed[0].Source.Designation} (pick one to fill the box; then save)", FontSize = 11 }, choices } } };
+        choices.SelectionChanged += (_, _) =>
+        {
+            if (choices.SelectedItem is string name)
+            {
+                size.Text = name;
+                flyout.Hide();
+            }
+        };
+        Button button = new() { Content = "Cited sizes\u2026", FontSize = 11, Flyout = flyout };
+        AutomationProperties.SetName(button, $"Cited sizes for {what}");
+        return button;
+    }
+
     /// <summary>The size box of the n-th editor row, blank ones first.</summary>
     /// <param name="index">The row, from zero.</param>
     public TextBox SizeBox(int index) => _sizeEditors[index].Size;
@@ -147,6 +180,11 @@ public partial class CutListWindow : Window
             });
             line.Children.Add(size);
             line.Children.Add(pack);
+            if (SuggestionButton(row.Kind, size, what) is { } suggest)
+            {
+                line.Children.Add(suggest);
+            }
+
             SizeRows.Children.Add(line);
         }
     }

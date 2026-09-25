@@ -179,4 +179,123 @@ public sealed class HardwoodAndFastenerGoldenTests
         Assert.Contains("cancelled", nail.Source.Where, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("F1667", nail.Source.Where, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// FF-N-105B §3.6.15, Type II style 14 finish nails, page 13, read as text from the PDF on 2026-09-24:
+    /// the twelve rows of the table (S, L, D), listed here from the printed table.
+    /// </summary>
+    public static TheoryData<string, Length, double> FinishNailRows => new()
+    {
+        { "2d finish nail", Length.Inches(1), 0.058 },
+        { "3d finish nail", Length.Inches(1, 1, 4), 0.067 },
+        { "4d finish nail", Length.Inches(1, 1, 2), 0.072 },
+        { "5d finish nail", Length.Inches(1, 3, 4), 0.072 },
+        { "6d finish nail", Length.Inches(2), 0.092 },
+        { "7d finish nail", Length.Inches(2, 1, 4), 0.092 },
+        { "8d finish nail", Length.Inches(2, 1, 2), 0.099 },
+        { "9d finish nail", Length.Inches(2, 3, 4), 0.099 },
+        { "10d finish nail", Length.Inches(3), 0.113 },
+        { "12d finish nail", Length.Inches(3, 1, 4), 0.113 },
+        { "16d finish nail", Length.Inches(3, 1, 2), 0.120 },
+        { "20d finish nail", Length.Inches(4), 0.135 },
+    };
+
+    [Theory]
+    [MemberData(nameof(FinishNailRows))]
+    [Trait("Feature", "MAT-003")]
+    public void EachFinishNailRowMatchesTheFederalSpecification(string name, Length length, double diameter)
+    {
+        Assert.True(Library.TryFind(name, out StockItem item), $"{name} is not in the shipped library.");
+        FastenerStock nail = Assert.IsType<FastenerStock>(item);
+
+        Assert.Equal(("nail", length, diameter), (nail.Family, nail.FastenerLength, nail.ShankDiameterInches));
+        Assert.Contains("§3.6.15", nail.Source.Where, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// FF-N-105B §3.6.1, brads, page 8, read as text from the PDF on 2026-09-24: every row of the table
+    /// (L, D, and S where one is printed beside it: 3d is 1-1/4 in x .080, 4d 1-1/2 x .099, ...).
+    /// </summary>
+    public static TheoryData<string, string, Length, double> BradRows => new()
+    {
+        { "Brad 3/8 in x .035", "", Length.Inches(0, 3, 8), 0.035 },
+        { "Brad 1/2 in x .035", "", Length.Inches(0, 1, 2), 0.035 },
+        { "Brad 1/2 in x .048", "", Length.Inches(0, 1, 2), 0.048 },
+        { "Brad 5/8 in x .035", "", Length.Inches(0, 5, 8), 0.035 },
+        { "Brad 5/8 in x .048", "", Length.Inches(0, 5, 8), 0.048 },
+        { "Brad 3/4 in x .035", "", Length.Inches(0, 3, 4), 0.035 },
+        { "Brad 3/4 in x .048", "", Length.Inches(0, 3, 4), 0.048 },
+        { "Brad 3/4 in x .062", "", Length.Inches(0, 3, 4), 0.062 },
+        { "Brad 7/8 in x .035", "", Length.Inches(0, 7, 8), 0.035 },
+        { "Brad 7/8 in x .048", "", Length.Inches(0, 7, 8), 0.048 },
+        { "Brad 7/8 in x .062", "", Length.Inches(0, 7, 8), 0.062 },
+        { "Brad 1 in x .054", "", Length.Inches(1), 0.054 },
+        { "Brad 1 in x .062", "", Length.Inches(1), 0.062 },
+        { "Brad 1 in x .072", "", Length.Inches(1), 0.072 },
+        { "Brad 1-1/4 in x .054", "", Length.Inches(1, 1, 4), 0.054 },
+        { "Brad 1-1/4 in x .062", "", Length.Inches(1, 1, 4), 0.062 },
+        { "Brad 1-1/4 in x .080", "3d", Length.Inches(1, 1, 4), 0.080 },
+        { "Brad 1-1/2 in x .054", "", Length.Inches(1, 1, 2), 0.054 },
+        { "Brad 1-1/2 in x .080", "", Length.Inches(1, 1, 2), 0.080 },
+        { "Brad 1-1/2 in x .099", "4d", Length.Inches(1, 1, 2), 0.099 },
+        { "Brad 1-3/4 in x .062", "", Length.Inches(1, 3, 4), 0.062 },
+        { "Brad 1-3/4 in x .080", "", Length.Inches(1, 3, 4), 0.080 },
+        { "Brad 1-3/4 in x .099", "5d", Length.Inches(1, 3, 4), 0.099 },
+        { "Brad 2 in x .062", "", Length.Inches(2), 0.062 },
+        { "Brad 2 in x .080", "", Length.Inches(2), 0.080 },
+        { "Brad 2 in x .113", "6d", Length.Inches(2), 0.113 },
+        { "Brad 2-1/4 in x .080", "", Length.Inches(2, 1, 4), 0.080 },
+        { "Brad 2-1/4 in x .113", "7d", Length.Inches(2, 1, 4), 0.113 },
+        { "Brad 2-1/2 in x .080", "", Length.Inches(2, 1, 2), 0.080 },
+        { "Brad 2-1/2 in x .131", "8d", Length.Inches(2, 1, 2), 0.131 },
+        { "Brad 2-3/4 in x .131", "9d", Length.Inches(2, 3, 4), 0.131 },
+        { "Brad 3 in x .148", "10d", Length.Inches(3), 0.148 },
+        { "Brad 3-1/4 in x .148", "12d", Length.Inches(3, 1, 4), 0.148 },
+        { "Brad 3-1/2 in x .162", "16d", Length.Inches(3, 1, 2), 0.162 },
+        { "Brad 4 in x .192", "20d", Length.Inches(4), 0.192 },
+        { "Brad 4-1/2 in x .207", "30d", Length.Inches(4, 1, 2), 0.207 },
+        { "Brad 5 in x .225", "40d", Length.Inches(5), 0.225 },
+        { "Brad 5-1/2 in x .244", "50d", Length.Inches(5, 1, 2), 0.244 },
+        { "Brad 6 in x .262", "60d", Length.Inches(6), 0.262 },
+    };
+
+    [Theory]
+    [MemberData(nameof(BradRows))]
+    [Trait("Feature", "MAT-003")]
+    public void SampledBradRowsMatchTheFederalSpecification(string name, string designation, Length length, double diameter)
+    {
+        Assert.True(Library.TryFind(name, out StockItem item), $"{name} is not in the shipped library.");
+        FastenerStock brad = Assert.IsType<FastenerStock>(item);
+
+        Assert.Equal(("brad", designation, length, diameter), (brad.Family, brad.PennySize, brad.FastenerLength, brad.ShankDiameterInches));
+    }
+
+    /// <summary>The brad table has 39 rows (14 + 13 + 12 in its three column blocks), and each row is cited to its section.</summary>
+    [Fact]
+    [Trait("Feature", "MAT-004")]
+    public void TheBradTableIsEveryRowOfTheSourceAndCitesIt()
+    {
+        FastenerStock[] brads = [.. Library.Items.OfType<FastenerStock>().Where(item => item.Family == "brad")];
+
+        Assert.Equal(39, brads.Length);
+        Assert.All(brads, brad => Assert.StartsWith("§3.6.1 table", brad.Derivation, StringComparison.Ordinal));
+        Assert.Equal(12, Library.Items.OfType<FastenerStock>().Count(item => item.Name.EndsWith("finish nail", StringComparison.Ordinal)));
+    }
+
+    /// <summary>A table with no citation, or an empty one, is never loaded: every fastener row names what it was read from.</summary>
+    [Fact]
+    [Trait("Feature", "MAT-004")]
+    public void EveryFastenerRowHasACompleteCitationAndADerivation()
+    {
+        FastenerStock[] all = [.. Library.Items.OfType<FastenerStock>()];
+
+        Assert.Equal(16 + 12 + 39, all.Length);
+        Assert.All(all, item =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(item.Derivation), item.Name);
+            Assert.False(string.IsNullOrWhiteSpace(item.Source.Designation), item.Name);
+            Assert.False(string.IsNullOrWhiteSpace(item.Source.Where), item.Name);
+            Assert.NotEqual(default, item.Source.Retrieved);
+        });
+    }
 }

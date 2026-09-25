@@ -220,7 +220,7 @@ public sealed class MaterialsReaderShapeTests
     public void AFastenerWithNoDiameterAtAllIsRefused()
         => Refuses(
             Table("Fastener", """
-                { "name": "1d", "pennySize": "1d", "length": "1", "derivation": "x" }
+                { "name": "1d", "family": "nail", "pennySize": "1d", "length": "1", "derivation": "x" }
                 """),
             MaterialsProblemKind.MissingField,
             "shankDiameterInches");
