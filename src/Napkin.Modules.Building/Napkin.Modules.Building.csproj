@@ -1,9 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Napkin.Core.Geometry\Napkin.Core.Geometry.csproj" />
+    <ProjectReference Include="..\Napkin.Core.Materials\Napkin.Core.Materials.csproj" />
     <ProjectReference Include="..\Napkin.Core.Project\Napkin.Core.Project.csproj" />
     <ProjectReference Include="..\Napkin.Core.RulesEngine\Napkin.Core.RulesEngine.csproj" />
+    <ProjectReference Include="..\Napkin.Modules.Furniture\Napkin.Modules.Furniture.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
