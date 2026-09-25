@@ -175,7 +175,7 @@ public class BracingWorkflows
             Assert.All(window.BracingPickers, picker => Assert.False(picker.IsEnabled));
             Assert.Contains("CT 2022 has no wall-bracing provisions loaded", ToolTip.GetTip(window.BracingPickers[0]) as string ?? string.Empty, StringComparison.Ordinal);
             Assert.StartsWith("The loaded pack CT 2022 has no wall-bracing provisions, so napkin cannot check this wall line's bracing.", window.BracingText, StringComparison.Ordinal);
-            Assert.EndsWith("Where to add tables: docs/rules-engine.md", window.BracingText, StringComparison.Ordinal);
+            Assert.EndsWith(CodeCheck.WhereToAddTables, window.BracingText, StringComparison.Ordinal);
             Assert.DoesNotContain("SHORT", window.BracingText, StringComparison.Ordinal);
             Assert.DoesNotContain("passes", window.BracingText, StringComparison.Ordinal);
         });

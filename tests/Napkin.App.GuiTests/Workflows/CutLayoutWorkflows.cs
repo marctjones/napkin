@@ -50,7 +50,7 @@ public class CutLayoutWorkflows
                 ],
                 list.LayoutRows.LinesOnScreen);
             Assert.Equal(2, list.LayoutRows.Bars.Length);
-            Assert.Contains("sheet goods: counted by sheets, not nested", list.LayoutSummaryText, StringComparison.Ordinal);
+            Assert.Contains(CutLayout.SheetGoodsNote, list.LayoutSummaryText, StringComparison.Ordinal);
         });
 
         AppDriver lists = AppDriver.Attach(window.CutList!, "cut-layout");

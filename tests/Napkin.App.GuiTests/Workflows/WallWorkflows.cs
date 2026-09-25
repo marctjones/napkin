@@ -63,7 +63,7 @@ public class WallWorkflows
 
             // 0…128 is 9 layout studs, and the end stud at 142 1/2: 10.
             Assert.Equal("Framing of Wall 1: 10 studs, 3 plates.", window.FramingText);
-            Assert.Contains("design default, not a code requirement", window.FramingNotesText, StringComparison.Ordinal);
+            Assert.Contains(FramingOptions.DefaultSpacingNote, window.FramingNotesText, StringComparison.Ordinal);
         });
 
         app.SaveFrame("wall-drawn");
