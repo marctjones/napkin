@@ -1,6 +1,8 @@
 # Angled parts: splayed legs, raked backs, angled shelves and compound mitres
 
 Status: **DRAFT — awaiting Marc's sign-off.** Written by Fable for
+
+> **Signed off by Marc 2026-09-25 with the recommended decisions (#139 comment).**
 [issue #139](https://github.com/marctjones/napkin/issues/139), milestone M9 Shape. Nothing here is
 authorized for implementation until Marc signs off; §11 lists the decisions that are his, each in
 plain words with a recommended default. §8 lists the slices, each filed as its own issue.
