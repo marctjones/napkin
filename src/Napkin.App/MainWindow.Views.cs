@@ -42,9 +42,6 @@ public partial class MainWindow
     /// <summary>Whether a read-only standard view is showing: Bottom, Front, Back, Left or Right.</summary>
     public bool IsShowingStandardView => ModelDrawing.Locked is not null && IsShowingModel;
 
-    /// <summary>The views this build offers (slice A of standard-views §8): Top, Front and 3D.</summary>
-    public static bool IsViewOffered(DesignView view) => view is DesignView.Top or DesignView.Front or DesignView.Model;
-
     /// <summary>The <em>View</em> menu's item for a view.</summary>
     public MenuItem ViewMenuEntry(DesignView view) => view switch
     {
@@ -88,17 +85,10 @@ public partial class MainWindow
     /// Top is the plan canvas; 3D and the other five are the 3D view's control, free or locked to a
     /// direction. Nothing about the drawing changes, and each view is where it was left. Between the
     /// plan and 3D what the tools hold comes along (#74, assembly-model §6 as amended); a read-only
-    /// view puts it down, goes back to Select and closes the dimension editor (§5.4). A view this
-    /// build does not offer yet is refused with a word, not shown.
+    /// view puts it down, goes back to Select and closes the dimension editor (§5.4).
     /// </remarks>
     public void ShowView(DesignView view)
     {
-        if (!IsViewOffered(view))
-        {
-            Editor.Say(EditSeverity.Hint, $"The {StandardViews.Name(view)} view is not built yet: 1 for the plan, 3 for Front, 7 for 3D.");
-            return;
-        }
-
         DesignView from = _view;
         bool showing = view == DesignView.Top ? !IsShowingModel : IsShowingModel && ModelDrawing.Locked == StandardViews.Of(view);
         if (view == from && showing)

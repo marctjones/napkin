@@ -199,32 +199,24 @@
                               ToolTip.Tip="The drawing from above, where parts are drawn, placed from stock and shaped (1)." />
                     <MenuItem Name="BottomViewMenuItem"
                               Header="_Bottom"
-                              IsEnabled="False"
                               Click="OnViewMenuClicked"
-                              ToolTip.ShowOnDisabled="True"
-                              ToolTip.Tip="The drawing from below, south up (2). Not built yet." />
+                              ToolTip.Tip="The drawing from below, south up, flat and to scale: read-only for now (2)." />
                     <MenuItem Name="FrontViewMenuItem"
                               Header="_Front"
                               Click="OnViewMenuClicked"
                               ToolTip.Tip="The drawing from the south, flat and to scale: read-only for now (3)." />
                     <MenuItem Name="BackViewMenuItem"
                               Header="B_ack"
-                              IsEnabled="False"
                               Click="OnViewMenuClicked"
-                              ToolTip.ShowOnDisabled="True"
-                              ToolTip.Tip="The drawing from the north (4). Not built yet." />
+                              ToolTip.Tip="The drawing from the north, flat and to scale: read-only for now (4)." />
                     <MenuItem Name="LeftViewMenuItem"
                               Header="_Left"
-                              IsEnabled="False"
                               Click="OnViewMenuClicked"
-                              ToolTip.ShowOnDisabled="True"
-                              ToolTip.Tip="The drawing from the west (5). Not built yet." />
+                              ToolTip.Tip="The drawing from the west, flat and to scale: read-only for now (5)." />
                     <MenuItem Name="RightViewMenuItem"
                               Header="R_ight"
-                              IsEnabled="False"
                               Click="OnViewMenuClicked"
-                              ToolTip.ShowOnDisabled="True"
-                              ToolTip.Tip="The drawing from the east (6). Not built yet." />
+                              ToolTip.Tip="The drawing from the east, flat and to scale: read-only for now (6)." />
                     <MenuItem Name="ModelViewMenuItem"
                               Header="_3D"
                               Click="OnViewMenuClicked"
@@ -417,16 +409,16 @@
                         <StackPanel Orientation="Horizontal" Spacing="1">
                             <ToggleButton Name="TopViewChip" Content="Top" Click="OnViewChipClicked"
                                           AutomationProperties.Name="View: Top" ToolTip.Tip="Top: the plan, where parts are drawn (1)" />
-                            <ToggleButton Name="BottomViewChip" Content="Bottom" Click="OnViewChipClicked" IsEnabled="False"
-                                          AutomationProperties.Name="View: Bottom" ToolTip.Tip="Bottom: from below, south up (2). Not built yet." />
+                            <ToggleButton Name="BottomViewChip" Content="Bottom" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Bottom" ToolTip.Tip="Bottom: from below, south up, read-only for now (2)" />
                             <ToggleButton Name="FrontViewChip" Content="Front" Click="OnViewChipClicked"
                                           AutomationProperties.Name="View: Front" ToolTip.Tip="Front: from the south, read-only for now (3)" />
-                            <ToggleButton Name="BackViewChip" Content="Back" Click="OnViewChipClicked" IsEnabled="False"
-                                          AutomationProperties.Name="View: Back" ToolTip.Tip="Back: from the north (4). Not built yet." />
-                            <ToggleButton Name="LeftViewChip" Content="Left" Click="OnViewChipClicked" IsEnabled="False"
-                                          AutomationProperties.Name="View: Left" ToolTip.Tip="Left: from the west (5). Not built yet." />
-                            <ToggleButton Name="RightViewChip" Content="Right" Click="OnViewChipClicked" IsEnabled="False"
-                                          AutomationProperties.Name="View: Right" ToolTip.Tip="Right: from the east (6). Not built yet." />
+                            <ToggleButton Name="BackViewChip" Content="Back" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Back" ToolTip.Tip="Back: from the north, read-only for now (4)" />
+                            <ToggleButton Name="LeftViewChip" Content="Left" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Left" ToolTip.Tip="Left: from the west, read-only for now (5)" />
+                            <ToggleButton Name="RightViewChip" Content="Right" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Right" ToolTip.Tip="Right: from the east, read-only for now (6)" />
                             <ToggleButton Name="ModelViewChip" Content="3D" Click="OnViewChipClicked"
                                           AutomationProperties.Name="View: 3D" ToolTip.Tip="3D: turn, move and resize parts along any axis (7)" />
                         </StackPanel>

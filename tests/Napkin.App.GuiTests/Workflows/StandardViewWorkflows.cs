@@ -100,23 +100,150 @@ public class StandardViewWorkflows
         app.Expect("View > Standard views > Front shows Front", () => AssertShowing(window, DesignView.Front, "Front"));
 
         app.Press(Key.D4);
-        app.Expect("Back is not offered yet: 4 leaves Front showing and says so", () =>
+        app.Expect("4 shows Back, and says it is read-only", () =>
         {
-            AssertShowing(window, DesignView.Front, "Front");
-            Assert.False(window.ViewChip(DesignView.Back).IsEnabled);
-            Assert.StartsWith("The Back view is not built yet", window.MessageOnScreen, StringComparison.Ordinal);
+            AssertShowing(window, DesignView.Back, "Back");
+            Assert.StartsWith("Back view: read-only for now", window.MessageOnScreen, StringComparison.Ordinal);
         });
 
         app.Press(Key.O);
-        app.Expect("O is inert in Front: still orthographic, still Front", () =>
+        app.Expect("O is inert in Back: still orthographic, still Back", () =>
         {
             Assert.Equal(CameraProjection.Orthographic, window.Model.Camera.Projection);
-            AssertShowing(window, DesignView.Front, "Front");
+            AssertShowing(window, DesignView.Back, "Back");
         });
 
         app.Press(Key.D7);
         app.Expect("and 3D kept its own perspective through all that", () => AssertShowing(window, DesignView.Model, "3D, perspective"));
     });
+
+    /// <summary>The drawing's pixels in a view: the 3D control's left part, clear of the side panels and the status bar.</summary>
+    static List<Avalonia.Media.Color> DrawingPixels(AppDriver app, MainWindow window)
+    {
+        Point origin = window.Model.TranslatePoint(new Point(0, 0), window)!.Value;
+        return FrameSampling.Patch(app, (int)origin.X + 8, (int)origin.Y + 8, (int)(window.Model.Bounds.Width * 0.5), (int)(window.Model.Bounds.Height * 0.8));
+    }
+
+    [GuiWorkflow("GUI-VIEW-12")]
+    public void All_six_views_by_key_chip_and_menu_each_keeps_its_own_camera_and_reads_two_coordinates() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "L-bracket");
+
+        // Hand-derived from the sample (standard-views §1.3): the lug is y 0–½, the rib y 4½–5, the nub
+        // x 0–½, the tab x 6½–7½, the boss y ½–1½ against the upright's y ½–4½.
+        Vector3d lug = new(0.75, 0.25, 4.5), rib = new(0.75, 4.75, 3), nub = new(0.25, 2.5, 3.375), tab = new(7, 2.5, 0.5);
+        Vector3d boss = new(6, 1, 1.25), upright = new(0.75, 2.5, 3.375);
+
+        app.Press(Key.D2);
+        app.Expect("2 shows Bottom: X right, south up, so the lug is above the rib", () =>
+        {
+            AssertShowing(window, DesignView.Bottom, "Bottom");
+            Camera camera = window.Model.Camera;
+            Assert.Equal(new Vector3d(0, -1, 0), camera.Up);
+            Assert.True(camera.Project(lug).Y < camera.Project(rib).Y);
+            Assert.True(camera.Project(nub).X < camera.Project(tab).X);
+            Assert.Equal("x —   y —", window.CursorReadout.Text);
+        });
+        app.SaveFrame("bottom-l-bracket");
+
+        app.Click(CentreOf(window, window.ViewChip(DesignView.Back)));
+        app.Expect("the Back chip shows Back: west to the right, the nub right of the tab", () =>
+        {
+            AssertShowing(window, DesignView.Back, "Back");
+            Camera camera = window.Model.Camera;
+            Assert.Equal(new Vector3d(-1, 0, 0), camera.Right);
+            Assert.True(camera.Project(nub).X > camera.Project(tab).X);
+            Assert.True(camera.Project(lug).X > camera.Project(boss).X);
+            Assert.Equal("x —   z —", window.CursorReadout.Text);
+        });
+        app.SaveFrame("back-l-bracket");
+
+        app.Press(Key.D5);
+        app.Expect("5 shows Left: north to the left, the rib left of the lug", () =>
+        {
+            AssertShowing(window, DesignView.Left, "Left");
+            Camera camera = window.Model.Camera;
+            Assert.Equal(new Vector3d(0, -1, 0), camera.Right);
+            Assert.True(camera.Project(rib).X < camera.Project(lug).X);
+        });
+        app.SaveFrame("left-l-bracket");
+
+        // The pointer on the nub's face, which in Left faces the viewer: y 2½ and z 3⅜, and no x.
+        app.MoveTo(InModel(window, window.Model.Camera.Project(nub)));
+        app.Expect("over the nub the readout in Left is its y and z, and never an x", () =>
+        {
+            Assert.Equal("y 2 1/2\"   z 3 3/8\"", window.CursorReadout.Text);
+            Assert.Equal(BoxNamed(window, "Nub, west").Id, window.Model.HoveredPart);
+        });
+
+        // Over empty paper too: the point on the plane through the view's centre, y 5½, north of everything, and z 1 up.
+        app.MoveTo(InModel(window, window.Model.Camera.Project(new Vector3d(0, 5.5, 1))));
+        app.Expect("over empty paper in Left the readout still reads y and z", () =>
+        {
+            Assert.Equal("y 5 1/2\"   z 1\"", window.CursorReadout.Text);
+            Assert.Null(window.Model.HoveredPart);
+        });
+
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("StandardViewsMenu")!));
+        app.Click(CentreOf(window, window.ViewMenuEntry(DesignView.Right)));
+        app.Expect("View > Standard views > Right shows Right: south to the left, the boss left of the upright", () =>
+        {
+            AssertShowing(window, DesignView.Right, "Right");
+            Camera camera = window.Model.Camera;
+            Assert.Equal(new Vector3d(0, 1, 0), camera.Right);
+            Assert.True(camera.Project(boss).X < camera.Project(upright).X);
+        });
+        app.SaveFrame("right-l-bracket");
+
+        // Each view keeps its own centre and scale for the session (§5.1): pan Right, go away, come back.
+        app.Press(Key.Right);
+        app.Press(Key.Right);
+        Camera rightLeftAt = window.Model.Camera;
+        app.Press(Key.D3);
+        app.Expect("Front is its own camera, not Right's pan", () =>
+        {
+            AssertShowing(window, DesignView.Front, "Front");
+            Assert.NotEqual(rightLeftAt.Center, window.Model.Camera.Center);
+        });
+        app.SaveFrame("front-l-bracket");
+
+        app.Press(Key.D6);
+        app.Expect("6 comes back to Right exactly where it was panned to", () =>
+        {
+            AssertShowing(window, DesignView.Right, "Right");
+            Assert.Equal(rightLeftAt.Center, window.Model.Camera.Center);
+            Assert.Equal(rightLeftAt.PixelsPerInch, window.Model.Camera.PixelsPerInch);
+        });
+
+        app.Press(Key.D7);
+        app.Expect("7 shows 3D, and its readout has all three coordinates again", () =>
+        {
+            AssertShowing(window, DesignView.Model, "3D, perspective");
+            Assert.Equal("x —   y —   z —", window.CursorReadout.Text);
+        });
+
+        // Six views, six different pictures of the bracket (§7.3): the drawing itself, not the status bar.
+        List<List<Avalonia.Media.Color>> pictures = [];
+        foreach (Key key in (Key[])[Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6])
+        {
+            app.Press(key);
+            pictures.Add(DrawingPixels(app, window));
+        }
+
+        app.Expect("the six views of the l-bracket are six pairwise different pictures", () =>
+        {
+            Assert.Equal(DesignView.Right, window.CurrentView);
+            for (int i = 0; i < pictures.Count; i++)
+            {
+                for (int j = i + 1; j < pictures.Count; j++)
+                {
+                    Assert.False(pictures[i].SequenceEqual(pictures[j]), $"views {i + 1} and {j + 1} drew the same picture");
+                }
+            }
+        });
+    }, defaultLook: true);
 
     [GuiWorkflow("GUI-VIEW-09")]
     public void Front_is_read_only_pan_zoom_and_select_and_the_selection_commands_still_work() => GuiWorkflow.Run(app =>

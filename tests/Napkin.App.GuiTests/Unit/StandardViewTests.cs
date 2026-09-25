@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Napkin.App.Settings;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
+using Napkin.Modules.Editing;
 using Xunit;
 
 namespace Napkin.App.GuiTests.Unit;
@@ -149,6 +150,144 @@ public class StandardViewTests
         foreach (string leg in (string[])["Leg, south-west", "Leg, south-east", "Leg, north-west", "Leg, north-east"])
         {
             Assert.Equal(162.5, ScreenRect(front, sketch, Table(leg)).Height, Tolerance);
+        }
+    }
+
+    // §1.3: the l-bracket spans x 0–7½, y 0–5, z 0–6; each view shows two of those.
+    [Theory]
+    [Trait("Feature", "VIEW-006")]
+    [InlineData(StandardView.Top, 7.5, 5)]
+    [InlineData(StandardView.Bottom, 7.5, 5)]
+    [InlineData(StandardView.Front, 7.5, 6)]
+    [InlineData(StandardView.Back, 7.5, 6)]
+    [InlineData(StandardView.Left, 5, 6)]
+    [InlineData(StandardView.Right, 5, 6)]
+    public void Each_view_of_the_l_bracket_has_its_extent(StandardView view, double width, double height)
+    {
+        Rect extent = Extent(Unit(view), Bracket());
+        Assert.Equal(width, extent.Width, Tolerance);
+        Assert.Equal(height, extent.Height, Tolerance);
+    }
+
+    [Fact]
+    [Trait("Feature", "VIEW-006")]
+    public void In_Back_everything_is_the_mirror_of_Front_the_nub_rightmost_and_the_tab_leftmost()
+    {
+        Sketch sketch = Bracket();
+        Camera back = Unit(StandardView.Back);
+        Rect lug = ScreenRect(back, sketch, Bracket("Lug, south"));
+        Rect boss = ScreenRect(back, sketch, Bracket("Boss, top"));
+        Rect upright = ScreenRect(back, sketch, Bracket("Upright"));
+        Rect all = Extent(back, sketch);
+
+        Assert.True(lug.Center.X > boss.Center.X);
+        Assert.Equal(all.Right, ScreenRect(back, sketch, Bracket("Nub, west")).Right, Tolerance);
+        Assert.Equal(all.Left, ScreenRect(back, sketch, Bracket("Tab, east")).Left, Tolerance);
+
+        // Hand-derived: screen right is west, so the boss (x 5½–6½) is 4½" left of the lug (x ½–1)
+        // and the upright (x ½–1) is at the right, next to the nub.
+        Assert.Equal(4.5, lug.Left - boss.Right, Tolerance);
+        Assert.Equal(0.5, all.Right - upright.Right, Tolerance);
+        Assert.Equal(3.25, boss.Top - lug.Top, Tolerance);
+    }
+
+    [Fact]
+    [Trait("Feature", "VIEW-006")]
+    public void In_Right_the_boss_is_left_of_the_upright_the_lug_leftmost_and_the_rib_rightmost()
+    {
+        Sketch sketch = Bracket();
+        Camera right = Unit(StandardView.Right);
+        Rect boss = ScreenRect(right, sketch, Bracket("Boss, top"));
+        Rect upright = ScreenRect(right, sketch, Bracket("Upright"));
+        Rect all = Extent(right, sketch);
+
+        Assert.True(boss.Center.X < upright.Center.X);
+        Assert.Equal(all.Left, ScreenRect(right, sketch, Bracket("Lug, south")).Left, Tolerance);
+        Assert.Equal(all.Right, ScreenRect(right, sketch, Bracket("Rib, north")).Right, Tolerance);
+
+        // South is at the left: the boss (y ½–1½) centres 1½" left of the upright (y ½–4½).
+        Assert.Equal(1.5, upright.Center.X - boss.Center.X, Tolerance);
+        Assert.Equal(4, upright.Width, Tolerance);
+    }
+
+    [Fact]
+    [Trait("Feature", "VIEW-006")]
+    public void In_Left_the_rib_is_leftmost_and_the_lug_rightmost()
+    {
+        Sketch sketch = Bracket();
+        Camera left = Unit(StandardView.Left);
+        Rect rib = ScreenRect(left, sketch, Bracket("Rib, north"));
+        Rect lug = ScreenRect(left, sketch, Bracket("Lug, south"));
+        Rect all = Extent(left, sketch);
+
+        Assert.Equal(all.Left, rib.Left, Tolerance);
+        Assert.Equal(all.Right, lug.Right, Tolerance);
+
+        // North is at the left: the rib (y 4½–5) and the lug (y 0–½) are 4" apart edge to edge.
+        Assert.Equal(4, lug.Left - rib.Right, Tolerance);
+    }
+
+    [Fact]
+    [Trait("Feature", "VIEW-006")]
+    public void In_Bottom_south_is_up_the_lug_above_the_rib_and_left_to_right_as_Top()
+    {
+        Sketch sketch = Bracket();
+        Camera bottom = Unit(StandardView.Bottom);
+        Rect lug = ScreenRect(bottom, sketch, Bracket("Lug, south"));
+        Rect rib = ScreenRect(bottom, sketch, Bracket("Rib, north"));
+        Rect all = Extent(bottom, sketch);
+
+        Assert.True(lug.Center.Y < rib.Center.Y);
+        Assert.Equal(all.Top, lug.Top, Tolerance);
+        Assert.Equal(all.Bottom, rib.Bottom, Tolerance);
+        Assert.Equal(all.Left, ScreenRect(bottom, sketch, Bracket("Nub, west")).Left, Tolerance);
+        Assert.Equal(all.Right, ScreenRect(bottom, sketch, Bracket("Tab, east")).Right, Tolerance);
+
+        // And Top is the other way up: the lug below the rib, by the same 4½" centre to centre.
+        Camera top = Unit(StandardView.Top);
+        Assert.Equal(4.5, ScreenRect(top, sketch, Bracket("Lug, south")).Center.Y - ScreenRect(top, sketch, Bracket("Rib, north")).Center.Y, Tolerance);
+        Assert.Equal(4.5, rib.Center.Y - lug.Center.Y, Tolerance);
+    }
+
+    /// <summary>Every box's rectangle measured from the view's own left edge, or mirrored from its right.</summary>
+    static List<(double, double, double, double)> Rects(Camera camera, Sketch sketch, bool mirrored)
+    {
+        Rect all = Extent(camera, sketch);
+        return [.. sketch.Entities.Values.OfType<Box>()
+            .Select(box => ScreenRect(camera, sketch, box.Id))
+            .Select(r => mirrored
+                ? (Math.Round(all.Right - r.Right, 9), Math.Round(all.Right - r.Left, 9), Math.Round(r.Top - all.Top, 9), Math.Round(r.Bottom - all.Top, 9))
+                : (Math.Round(r.Left - all.Left, 9), Math.Round(r.Right - all.Left, 9), Math.Round(r.Top - all.Top, 9), Math.Round(r.Bottom - all.Top, 9)))
+            .Order()];
+    }
+
+    [Fact]
+    [Trait("Feature", "VIEW-006")]
+    public void The_coffee_table_is_the_same_from_front_and_back_and_from_either_end_but_not_both()
+    {
+        Sketch sketch = Table();
+        Assert.Equal(Rects(Unit(StandardView.Front), sketch, mirrored: false), Rects(Unit(StandardView.Back), sketch, mirrored: true));
+        Assert.Equal(Rects(Unit(StandardView.Left), sketch, mirrored: false), Rects(Unit(StandardView.Right), sketch, mirrored: true));
+        Assert.Equal(48, Extent(Unit(StandardView.Front), sketch).Width, Tolerance);
+        Assert.Equal(24, Extent(Unit(StandardView.Right), sketch).Width, Tolerance);
+        Assert.Equal(17, Extent(Unit(StandardView.Right), sketch).Height, Tolerance);
+    }
+
+    [Theory]
+    [Trait("Feature", "VIEW-006")]
+    [InlineData(StandardView.Front)]
+    [InlineData(StandardView.Back)]
+    [InlineData(StandardView.Left)]
+    [InlineData(StandardView.Right)]
+    public void In_every_elevation_each_leg_is_16_and_a_quarter_tall(StandardView view)
+    {
+        Sketch sketch = Table();
+        Camera camera = StandardViews.CameraFor(view, new Camera(0, 0, 24, 12, 8, 10, Viewport));
+        foreach (string leg in (string[])["Leg, south-west", "Leg, south-east", "Leg, north-west", "Leg, north-east"])
+        {
+            Rect rect = ScreenRect(camera, sketch, Table(leg));
+            Assert.Equal(162.5, rect.Height, Tolerance);
+            Assert.Equal(25, rect.Width, Tolerance);
         }
     }
 

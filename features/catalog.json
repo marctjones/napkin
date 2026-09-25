@@ -1226,10 +1226,28 @@
       "kind": "unit"
     },
     {
+      "id": "VIEW-005",
+      "area": "ui",
+      "title": "The standard views' frame: axes, names, readable coordinates",
+      "acceptance": "StandardViewFrame gives every view its section 1.1 axes as signed world axes, right-handed, its name, whether it is an elevation, and the two coordinates its readout shows (x y in Top/Bottom, x z in Front/Back, y z in Left/Right).",
+      "milestone": "M2",
+      "issue": 128,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-006",
+      "area": "ui",
+      "title": "All six views of the l-bracket and the coffee table, hand-derived",
+      "acceptance": "Extents 7.5x5, 7.5x6, 5x6; Back mirrors Front (nub rightmost, tab leftmost); Right has the boss left of the upright, the lug leftmost and the rib rightmost; Left the rib leftmost; Bottom the lug above the rib; the coffee table's Front equals Back mirrored and Left equals Right; every leg is 16 1/4 tall in all four elevations.",
+      "milestone": "M2",
+      "issue": 128,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-VIEW-08",
       "area": "ui",
       "title": "Switch between Top, Front and 3D by key, chip and menu",
-      "acceptance": "Open the l-bracket; 3 shows Front (orthographic, lug up-left of the boss), 7 shows 3D, V returns to Front and V twice lands back; the Top, 3D and Front chips and View > Standard views > Front do the same; after each the status text, the pressed chip and the menu tick agree; 4 (not built yet) and O leave Front as it is.",
+      "acceptance": "Open the l-bracket; 3 shows Front (orthographic, lug up-left of the boss), 7 shows 3D, V returns to Front and V twice lands back; the Top, 3D and Front chips and View > Standard views > Front do the same; after each the status text, the pressed chip and the menu tick agree; 4 shows Back and says it is read-only, and O leaves it orthographic.",
       "milestone": "M2",
       "issue": 107,
       "kind": "workflow"
@@ -1259,6 +1277,15 @@
       "acceptance": "Open the coffee table, select the south apron and press 7: R holds a plain board to place, S puts it down and is the select tool, still in 3D; 3 then C says the workshop is not in Front yet and opens nothing; W brings the plan forward with the wall tool.",
       "milestone": "M2",
       "issue": 168,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-12",
+      "area": "ui",
+      "title": "All six views by key, chip and menu, each with its own camera and a two-coordinate readout",
+      "acceptance": "Open the l-bracket; 2 shows Bottom (lug above rib), the Back chip shows Back (nub right of tab), 5 shows Left (rib left of lug) and the pointer on the nub reads y 2 1/2 z 3 3/8 with no x; View > Standard views > Right shows Right (boss left of upright); a pan in Right survives a trip to Front; 7 reads three coordinates again; the six views draw six different pictures.",
+      "milestone": "M2",
+      "issue": 128,
       "kind": "workflow"
     },
     {

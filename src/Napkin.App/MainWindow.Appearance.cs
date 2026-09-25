@@ -358,10 +358,35 @@ public partial class MainWindow
 
     void OnPerspectiveClicked(object? sender, RoutedEventArgs e) => ModelDrawing.Projection = CameraProjection.Perspective;
 
-    /// <summary>Where on a part the pointer is in the 3D view, in feet, inches and fractions.</summary>
-    void UpdateCursorReadout(Vector3d? point) => CursorText.Text = point is { } at
-        ? $"x {Show(Near(at.X))}   y {Show(Near(at.Y))}   z {Show(Near(at.Z))}"
-        : "x —   y —   z —";
+    /// <summary>
+    /// Where the pointer is, in feet, inches and fractions: on a part in the 3D view, all three
+    /// coordinates; in a standard view, only the two it can show (standard-views §5.3) — never the
+    /// third, which a flat view cannot know.
+    /// </summary>
+    void UpdateCursorReadout(Vector3d? point)
+    {
+        if (StandardViews.Of(_view) is { } view && IsShowingStandardView)
+        {
+            (Axis across, Axis upward) = StandardViewFrame.Readable(view);
+            CursorText.Text = point is { } on
+                ? $"{Label(across)} {Show(Near(Component(on, across)))}   {Label(upward)} {Show(Near(Component(on, upward)))}"
+                : $"{Label(across)} —   {Label(upward)} —";
+            return;
+        }
+
+        CursorText.Text = point is { } at
+            ? $"x {Show(Near(at.X))}   y {Show(Near(at.Y))}   z {Show(Near(at.Z))}"
+            : "x —   y —   z —";
+    }
+
+    static string Label(Axis axis) => axis.ToString().ToLowerInvariant();
+
+    static double Component(Vector3d point, Axis axis) => axis switch
+    {
+        Axis.X => point.X,
+        Axis.Y => point.Y,
+        _ => point.Z,
+    };
 
     /// <summary>A display value: the pointer's position rounded onto the grid, as the plan's readout is.</summary>
     static Length Near(double inches) => Length.FromInches(inches, Rounding.HalfAwayFromZero);

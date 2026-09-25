@@ -6,6 +6,9 @@ keeps the selection's menu commands live. Slice A (#107) deviates in two small p
 room: the seven views sit in a View ▸ Standard views submenu (the View menu no longer fits a small
 window otherwise), and the chips sit in the status bar beside the view's name rather than in the
 drawing's top-right corner (the side panels own that corner, and chips over the paper take its clicks).
+Slice B (#128) enabled the other four; the views' pure frame (axes, names, readable coordinates) is
+`StandardViewFrame` in `Napkin.Modules.Editing`, and per-view camera memory stays session state in
+`ModelView` (never scene data, docs/file-format.md rule 6; not persisted across runs).
 
 Written for issue #106 (the design) and owed to
 #107 (the read-only implementation) and #108 (the view switcher), both in milestone Views, both
