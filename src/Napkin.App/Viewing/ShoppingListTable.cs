@@ -152,6 +152,13 @@ public sealed class ShoppingListTable : Grid
             for (int column = 0; column < fields.Length; column++)
             {
                 TextBlock cell = Cell(fields[column], right: column is >= 4 and <= 6);
+                if (column == 3)
+                {
+                    // The parts a line is for can be a long list; it wraps so the board-foot columns stay on screen.
+                    cell.TextWrapping = TextWrapping.Wrap;
+                    cell.MaxWidth = 240;
+                }
+
                 if (column == 7)
                 {
                     // The note is where a refusal is said; it wraps rather than widening the table.
