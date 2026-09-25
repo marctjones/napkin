@@ -106,6 +106,10 @@ public static class SampleFiles
             "diy-coffee-table-drawers.scene.json",
             "DIY coffee table with drawers",
             "A 42\" × 22\" table with two drawers — 34 joints: pocket screws, rabbets, grooves and tabletop clips."),
+        new(
+            "window-in-existing-wall.scene.json",
+            "Window in an existing wall",
+            "A new 3'-0\" window in an existing 12'-0\" exterior wall — what is new material and which studs come out."),
     ];
 
     private static readonly string[] SceneSuffixes = [".scene.json", ".json"];

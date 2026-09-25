@@ -18,3 +18,7 @@ header can be bought; the spans, loads and stud counts beside them are not from 
   12'-0", cap 6'-0") and zz-board (minimum 4'-0", no cap)) and `us-zz-brace-b` ("ZZ BRACE B", ZZ-BRACE-B.7:
   1" step, 3'-0" per 8'-0", out of scope over 10'-0"; only zz-panel, minimum 3'-0", no cap). No header
   tables. Golden files under `brace/golden/`.
+- `reno/`: `us-zz-reno` ("ZZ RENO", #161) with two one-row tables for the renovation note's code-check routing
+  (docs/design/renovation-sketches.md §4.3, §10.1): ZZ-RENO-HEADER, exterior-bearing, answers (2) 2x6 with 1 jack
+  and 1 king each side for zz-roof at snow ≤ 30 and a span ≤ 4'-1" (example 2's 3'-0" window); ZZ-RENO-INTERIOR,
+  interior-bearing, answers (2) 2x8 for the same request, so the route taken shows in the answer.

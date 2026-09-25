@@ -160,6 +160,12 @@ public sealed record FramingOptions
 
     /// <summary>The sized header member for an opening. Null, or a null answer, means not yet sized: it buys nothing.</summary>
     public Func<Opening, HeaderMember?>? Header { get; init; }
+
+    /// <summary>
+    /// Whether an opening's header is the one the person chose for a not-bearing wall
+    /// (<see cref="CodeCheck.ChosenHeaderJacks"/> is then said), rather than a code result.
+    /// </summary>
+    public Func<Opening, bool>? Chosen { get; init; }
 }
 
 /// <summary>
@@ -246,6 +252,8 @@ public static class FramingList
         ];
 
         bool placeholder = false;
+        bool chosenHeader = false;
+        ImmutableArray<WallJoin> joins = WallJoins.Of(sketch, wall);
         foreach (Opening opening in openings)
         {
             int? sizedJacks = options.JacksPerSide?.Invoke(opening);
@@ -259,7 +267,8 @@ public static class FramingList
             Length room = plateTop - opening.Top;
             Length? depth = options.HeaderDepth?.Invoke(opening) ?? member?.Stock.Width;
 
-            string? why = OpeningRefusal(wall, opening, t, jacks, kings, from, to, room, depth, zones);
+            string? why = OpeningRefusal(wall, opening, t, jacks, kings, from, to, room, depth, zones)
+                          ?? CornerRefusal(opening, joins);
             framed.Add(new OpeningFraming(opening, jacks, headerLength, room, depth, why));
             if (why is not null)
             {
@@ -267,6 +276,8 @@ public static class FramingList
                 continue;
             }
 
+            bool chose = options.Chosen?.Invoke(opening) ?? false;
+            chosenHeader |= chose;
             placeholder |= sizedJacks is null;
             zones.Add((from, to, opening.Name));
             pieces.Add(new FramingPiece(FramingRole.KingStud, 2 * kings, studLength, stock));
@@ -309,6 +320,11 @@ public static class FramingList
             notes.Add(FramingOptions.PlaceholderJacks);
         }
 
+        if (chosenHeader)
+        {
+            notes.Add(CodeCheck.ChosenHeaderJacks);
+        }
+
         return new WallFraming(wall, stock, spacing, [.. framed], Merge(pieces), [.. problems]) { Notes = [.. notes] };
     }
 
@@ -331,23 +347,30 @@ public static class FramingList
     public static ImmutableArray<CutListRow> CutRows(IEnumerable<WallFraming> framings)
     {
         ArgumentNullException.ThrowIfNull(framings);
+        return CutRows(framings.Select(framing => (framing.Wall, framing.Pieces)));
+    }
+
+    /// <summary>Pieces of walls — a whole frame's, or a framing diff's new material — as cut-list rows.</summary>
+    public static ImmutableArray<CutListRow> CutRows(IEnumerable<(Wall Wall, ImmutableArray<FramingPiece> Pieces)> walls)
+    {
+        ArgumentNullException.ThrowIfNull(walls);
         List<CutListRow> rows = [];
-        foreach (WallFraming framing in framings)
+        foreach ((Wall wall, ImmutableArray<FramingPiece> pieces) in walls)
         {
-            foreach (FramingPiece piece in framing.Pieces)
+            foreach (FramingPiece piece in pieces)
             {
                 rows.Add(new CutListRow(
-                    $"{framing.Wall.Name} {piece.Label}",
+                    $"{wall.Name} {piece.Label}",
                     piece.Quantity,
                     piece.Length,
-                    piece.Stock?.Width ?? framing.Wall.Thickness,
+                    piece.Stock?.Width ?? wall.Thickness,
                     piece.Stock?.Thickness ?? Length.Zero,
                     piece.Stock?.Name ?? "header, not yet sized",
                     Unresolved: false,
                     piece.Stock,
                     [],
                     new PlanAxes(PartDimension.Length, PartDimension.Width),
-                    [framing.Wall.Id]));
+                    [wall.Id]));
             }
         }
 
@@ -483,6 +506,12 @@ public static class FramingList
 
         return null;
     }
+
+    /// <summary>An opening whose extent reaches into a joined wall's thickness (renovation-sketches §4.1).</summary>
+    private static string? CornerRefusal(Opening opening, ImmutableArray<WallJoin> joins)
+        => joins.FirstOrDefault(join => opening.Offset < join.To && opening.Offset + opening.Width > join.From) is { } corner
+            ? $"it reaches the corner with {corner.Other.Name}"
+            : null;
 
     private static ImmutableArray<FramingPiece> Merge(IEnumerable<FramingPiece> pieces)
         => [

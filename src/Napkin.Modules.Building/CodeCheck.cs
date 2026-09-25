@@ -89,8 +89,15 @@ public sealed record CodeResolution(LoadedPack? Pack, string? Problem);
 
 /// <summary>One opening and its header result.</summary>
 /// <param name="Opening">The opening.</param>
-/// <param name="Result">What the adopted code says about its header.</param>
-public sealed record OpeningCheck(Opening Opening, HeaderResult Result);
+/// <param name="Result">
+/// What the adopted code says about its header, or null when napkin does not check it: an opening
+/// in a wall marked not bearing (renovation-sketches §4.3), whose <see cref="NotChecked"/> says why.
+/// </param>
+public sealed record OpeningCheck(Opening Opening, HeaderResult? Result)
+{
+    /// <summary>Why the header is not checked — "Wall 1 is marked not bearing, …" — or null when it is.</summary>
+    public string? NotChecked { get; init; }
+}
 
 /// <summary>
 /// The code check on walls' openings (issue #18): every opening's header, sized by the rules
@@ -156,13 +163,39 @@ public static class CodeCheck
             choice.Mode == CodeMode.Locked ? CodeLockMode.Locked : CodeLockMode.Following,
             choice.LockedOn);
 
-    /// <summary>The header table a pack uses for the walls napkin draws, or null.</summary>
-    public static HeaderSizingTable? Table(LoadedPack? pack)
-        => pack?.Tables.FirstOrDefault(table => table.WallKind == WallKind.ExteriorBearing);
+    /// <summary>The header table a pack uses for a kind of wall (exterior-bearing unless said), or null.</summary>
+    public static HeaderSizingTable? Table(LoadedPack? pack, WallKind kind = WallKind.ExteriorBearing)
+        => pack?.Tables.FirstOrDefault(table => table.WallKind == kind);
 
     /// <summary>The values a pack's header table declares for what a wall supports, in the table's order; empty with no table.</summary>
-    public static ImmutableArray<string> SupportsChoices(LoadedPack? pack)
-        => Table(pack)?.Inputs.FirstOrDefault(column => column.Name == "supports") is { } column ? [.. column.Values] : [];
+    public static ImmutableArray<string> SupportsChoices(LoadedPack? pack, WallKind kind = WallKind.ExteriorBearing)
+        => Table(pack, kind)?.Inputs.FirstOrDefault(column => column.Name == "supports") is { } column ? [.. column.Values] : [];
+
+    /// <summary>The header table a wall's side asks for (renovation-sketches §4.3): interior-bearing for an interior wall, exterior otherwise.</summary>
+    public static WallKind KindOf(Wall wall)
+    {
+        ArgumentNullException.ThrowIfNull(wall);
+        return wall.Box.WallInputs?.Side == WallSide.Interior ? WallKind.InteriorBearing : WallKind.ExteriorBearing;
+    }
+
+    /// <summary>
+    /// Why a not-bearing wall's opening is not checked, and the header the person chose for it:
+    /// "Wall 1 is marked not bearing, so napkin does not size this header from the code. Header: (2) 2x6, your choice."
+    /// </summary>
+    public static string NotBearingText(Wall wall)
+    {
+        ArgumentNullException.ThrowIfNull(wall);
+        return $"{wall.Name} is marked not bearing, so napkin does not size this header from the code. "
+               + (wall.Box.WallInputs?.Header is { } header
+                   ? $"Header: {header}, your choice."
+                   : "No header chosen: choose one under Header in the wall's panel; until then the header buys nothing.");
+    }
+
+    /// <summary>What the panel says after "Not checked" for a demolished bearing wall (renovation-sketches §1.4).</summary>
+    public const string BearingDemolishedText = "Removing a bearing wall needs an engineer; napkin does nothing here.";
+
+    /// <summary>What the typed header's jacks and kings are, said wherever the frame is shown.</summary>
+    public const string ChosenHeaderJacks = "1 jack and 1 king stud each side of a header you chose: napkin's placeholder counts, not a code result";
 
     /// <summary>
     /// Every opening in every wall of the building as it will be (<see cref="Sketch.After"/>,
@@ -172,14 +205,33 @@ public static class CodeCheck
     {
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(packs);
-        sketch = sketch.After();
-        CodeResolution code = packs.Resolve(sketch.Code);
+        return OfView(sketch.After(), packs);
+    }
+
+    /// <summary>Every opening in every wall of a view exactly as given — the before view, for the framing diff.</summary>
+    public static ImmutableArray<OpeningCheck> OfView(Sketch view, CodePacks packs)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        ArgumentNullException.ThrowIfNull(packs);
+        CodeResolution code = packs.Resolve(view.Code);
         return
         [
-            .. Wall.All(sketch)
-                .SelectMany(wall => Opening.In(sketch, wall))
-                .Select(opening => new OpeningCheck(opening, For(sketch, opening, code))),
+            .. Wall.All(view)
+                .SelectMany(wall => Opening.In(view, wall))
+                .Select(opening => Check(view, opening, code)),
         ];
+    }
+
+    /// <summary>
+    /// One opening's check, routed by its wall's side and bearing (renovation-sketches §4.3): a wall
+    /// marked not bearing is not checked; otherwise <see cref="For"/>.
+    /// </summary>
+    public static OpeningCheck Check(Sketch sketch, Opening opening, CodeResolution code)
+    {
+        ArgumentNullException.ThrowIfNull(opening);
+        return opening.Wall.Box.WallInputs?.Bearing == false
+            ? new OpeningCheck(opening, null) { NotChecked = NotBearingText(opening.Wall) }
+            : new OpeningCheck(opening, For(sketch, opening, code));
     }
 
     /// <summary>One opening's header result under a resolved code.</summary>
@@ -189,13 +241,35 @@ public static class CodeCheck
         ArgumentNullException.ThrowIfNull(opening);
         ArgumentNullException.ThrowIfNull(code);
 
+        WallKind kind = KindOf(opening.Wall);
         if (code.Pack is not { } pack)
         {
-            return new HeaderResult.NoData(NoDataReason.NoPackSelected, null, WallKind.ExteriorBearing, code.Problem!);
+            return new HeaderResult.NoData(NoDataReason.NoPackSelected, null, kind, code.Problem!);
         }
 
-        string? supports = opening.Wall.Box.WallInputs?.Supports;
-        if (supports is null && Table(pack) is { } table)
+        // Which table, and whether any: napkin never assumes a wall's side or whether it bears.
+        WallInputs? inputs = opening.Wall.Box.WallInputs;
+        List<string> unsaid = [];
+        List<string> say = [];
+        if (inputs?.Side is null)
+        {
+            unsaid.Add("side");
+            say.Add($"Say whether {opening.Wall.Name} is exterior or interior (Part panel).");
+        }
+
+        if (inputs?.Bearing is null)
+        {
+            unsaid.Add("bearing");
+            say.Add($"Say whether {opening.Wall.Name} is bearing (Part panel).");
+        }
+
+        if (unsaid.Count > 0)
+        {
+            return new HeaderResult.InputMissing(new ValueList<string>([.. unsaid]), Table(pack, kind)?.Designation ?? string.Empty, pack.Code, string.Join(" ", say));
+        }
+
+        string? supports = inputs!.Supports;
+        if (supports is null && Table(pack, kind) is { } table)
         {
             return new HeaderResult.InputMissing(
                 new ValueList<string>(["supports"]),
@@ -205,7 +279,7 @@ public static class CodeCheck
                 + "Choose it under Supports in the wall's panel; napkin never assumes it.");
         }
 
-        HeaderRequest request = new(supports ?? string.Empty, WallKind.ExteriorBearing, opening.Width, Site(sketch.Site));
+        HeaderRequest request = new(supports ?? string.Empty, kind, opening.Width, Site(sketch.Site));
         return RulesEngine.For(pack).SizeHeader(request);
     }
 
@@ -218,18 +292,48 @@ public static class CodeCheck
     {
         ArgumentNullException.ThrowIfNull(checks);
         ArgumentNullException.ThrowIfNull(library);
-        Dictionary<EntityId, HeaderResult.Sized> sized = checks
+        List<OpeningCheck> all = [.. checks];
+        Dictionary<EntityId, HeaderResult.Sized> sized = all
             .Where(check => check.Result is HeaderResult.Sized)
-            .ToDictionary(check => check.Opening.Id, check => (HeaderResult.Sized)check.Result);
+            .ToDictionary(check => check.Opening.Id, check => (HeaderResult.Sized)check.Result!);
+
+        // A not-bearing wall's openings take the header the person typed, with napkin's placeholder
+        // jack and king (one each side), said so (renovation-sketches §4.3).
+        Dictionary<EntityId, TypedHeader?> chosen = all
+            .Where(check => check.NotChecked is not null)
+            .ToDictionary(check => check.Opening.Id, check => check.Opening.Wall.Box.WallInputs?.Header);
 
         return (options ?? new FramingOptions()) with
         {
-            JacksPerSide = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s) ? s.JackStuds : null,
+            JacksPerSide = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s) ? s.JackStuds : chosen.ContainsKey(opening.Id) ? 1 : null,
             KingsPerSide = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s) ? s.KingStuds : null,
-            Header = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s) && library.TryFindLumber(s.Header.Nominal, out LumberStock lumber)
-                ? new HeaderMember(s.Header.Plies, lumber)
-                : null,
+            Header = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s)
+                ? library.TryFindLumber(s.Header.Nominal, out LumberStock lumber) ? new HeaderMember(s.Header.Plies, lumber) : null
+                : chosen.TryGetValue(opening.Id, out TypedHeader? typed) && typed is { } t && library.TryFindLumber(t.Lumber, out LumberStock picked)
+                    ? new HeaderMember(t.Plies, picked)
+                    : null,
+            Chosen = opening => chosen.ContainsKey(opening.Id),
         };
+    }
+
+    /// <summary>A check in plain words: <see cref="Words(HeaderResult, MaterialsLibrary)"/>, or "Not checked: …" for a not-bearing wall's opening.</summary>
+    public static CheckWords Words(OpeningCheck check, MaterialsLibrary library)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        return check.Result is { } result
+            ? Words(result, library)
+            : new CheckWords($"Not checked: {check.NotChecked}", string.Empty, string.Empty, string.Empty);
+    }
+
+    /// <summary>A check's short form for a list: <see cref="Short(HeaderResult)"/>, or "not checked: not bearing, (2) 2x6 your choice".</summary>
+    public static string Short(OpeningCheck check)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        return check.Result is { } result
+            ? Short(result)
+            : check.Opening.Wall.Box.WallInputs?.Header is { } header
+                ? $"not checked: not bearing, {header} your choice"
+                : "not checked: not bearing, no header chosen";
     }
 
     /// <summary>The result in plain words for the part panel: a headline, the citation line, and the details behind it.</summary>
@@ -250,6 +354,11 @@ public static class CodeCheck
                 $"Limit: {o.Limit}",
                 Details(o.Limit),
                 o.Limit.Interpolation?.Summary(o.Limit.Code) ?? string.Empty),
+            HeaderResult.InputMissing m when m.Inputs.Any(input => input is "side" or "bearing") => new CheckWords(
+                $"Not checked: {m.Explanation}",
+                m.Table.Length > 0 ? $"Table {m.Table}, {m.Code}" : string.Empty,
+                string.Empty,
+                string.Empty),
             HeaderResult.InputMissing m => new CheckWords(
                 $"Not checked: {Named(m.Inputs)} {(m.Inputs.Count == 1 ? "is" : "are")} not entered, and napkin never assumes a value. "
                 + Where(m.Inputs),
@@ -297,10 +406,15 @@ public static class CodeCheck
     {
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
-        HashSet<EntityId> both = [.. before.Select(check => check.Opening.Id).Intersect(after.Select(check => check.Opening.Id))];
+        // An opening napkin does not check (a not-bearing wall's) has no result to compare.
+        HashSet<EntityId> both =
+        [
+            .. before.Where(check => check.Result is not null).Select(check => check.Opening.Id)
+                .Intersect(after.Where(check => check.Result is not null).Select(check => check.Opening.Id)),
+        ];
         return Recompute.Diff(
-            [.. before.Where(check => both.Contains(check.Opening.Id)).Select(check => KeyValuePair.Create(check.Opening.Id, check.Result))],
-            [.. after.Where(check => both.Contains(check.Opening.Id)).Select(check => KeyValuePair.Create(check.Opening.Id, check.Result))]);
+            [.. before.Where(check => both.Contains(check.Opening.Id)).Select(check => KeyValuePair.Create(check.Opening.Id, check.Result!))],
+            [.. after.Where(check => both.Contains(check.Opening.Id)).Select(check => KeyValuePair.Create(check.Opening.Id, check.Result!))]);
     }
 
     /// <summary>
@@ -388,6 +502,8 @@ public static class CodeCheck
         "frostDepth" => "the frost depth",
         "buildingWidth" => "the building width",
         "roofLiveLoad" => "the roof live load",
+        "side" => "which side the wall is on",
+        "bearing" => "whether the wall is bearing",
         _ => name,
     };
 

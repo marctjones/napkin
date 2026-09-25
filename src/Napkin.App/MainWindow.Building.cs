@@ -223,8 +223,10 @@ public partial class MainWindow
     /// <summary>Fills the panel's framing part for a wall or an opening, or hides it for anything else.</summary>
     void ShowFraming(Box box)
     {
-        ImmutableArray<OpeningCheck> checks = Checks;
-        WallFraming? framing = FramingList.For(Editor.Sketch, box.Id, MaterialsLibrary.Shipped, CodeCheck.Framing(checks, MaterialsLibrary.Shipped));
+        // The wall as it will be; a demolished wall or opening, as it is (renovation-sketches §6.1).
+        Sketch view = box.Phase == Phase.Demolish ? Editor.Sketch.Before() : Editor.Sketch.After();
+        ImmutableArray<OpeningCheck> checks = CodeCheck.OfView(view, Packs);
+        WallFraming? framing = FramingList.For(view, box.Id, MaterialsLibrary.Shipped, CodeCheck.Framing(checks, MaterialsLibrary.Shipped));
         FramingFields.IsVisible = framing is not null;
         if (framing is null)
         {
@@ -240,7 +242,7 @@ public partial class MainWindow
             ? $"{o.Opening.Name}: a {(o.Opening.Kind == OpeningKind.Door ? "door" : "window")} in {wall.Name}, "
               + $"{Text(o.Opening.Width)} × {Text(o.Opening.Height)} rough opening, sill {Text(o.Opening.Sill)}, "
               + $"{Text(o.Opening.Offset)} along. Header {Text(o.HeaderLength)} long in {Text(o.HeaderRoom)} of room"
-              + (check?.Result is HeaderResult.Sized ? "." : ": not yet sized.")
+              + (check?.Result is HeaderResult.Sized ? "." : check?.NotChecked is not null ? ": your choice." : ": not yet sized.")
             : $"{wall.Name}: a wall of {framing.Stock?.Name ?? "no library"} studs, {Text(wall.Length)} long, "
               + $"{Text(wall.Thickness)} thick, {Text(wall.Height)} tall.";
 
@@ -251,6 +253,12 @@ public partial class MainWindow
                       + $"{Text(each.Opening.Width)} × {Text(each.Opening.Height)}, sill {Text(each.Opening.Sill)}, {Text(each.Opening.Offset)} along");
         }
 
+        // A wall already there or coming out: what is new material and what comes out (§6.3).
+        if (wall.Box.Phase != Phase.New && FramingDiff.Of(Editor.Sketch, MaterialsLibrary.Shipped, Packs).FirstOrDefault(diff => diff.Wall.Id == wall.Id) is { Changes: true } diff)
+        {
+            lines.Add($"{wall.Name} ({PhaseCommand.Word(wall.Box.Phase)}): {diff.Sentence}{(diff.FromExisting && !diff.Out.IsEmpty ? $", {diff.Assumption}" : string.Empty)}.");
+        }
+
         FramingReadout.Text = string.Join("\n", lines);
         FramingProblems.IsVisible = !framing.Problems.IsEmpty && !framing.Pieces.IsEmpty;
         FramingProblems.Text = string.Join("\n", framing.Problems);
@@ -258,6 +266,7 @@ public partial class MainWindow
 
         ShowCodeCheck(check);
         ShowSupports(opening is null ? wall : null);
+        ShowWallType(opening is null ? wall : null);
         ShowBracing(wall);
 
         _fillingSpacing = true;
@@ -281,7 +290,7 @@ public partial class MainWindow
             return;
         }
 
-        CheckWords words = CodeCheck.Words(check.Result, MaterialsLibrary.Shipped);
+        CheckWords words = CodeCheck.Words(check, MaterialsLibrary.Shipped);
         CodeCheckHeadline.Text = words.Headline;
         CodeCheckCitation.Text = words.Citation;
         CodeCheckCitation.IsVisible = words.Citation.Length > 0;
@@ -440,7 +449,7 @@ public partial class MainWindow
         }
 
         CodeResolution code = Packs.Resolve(Editor.Sketch.Code);
-        ImmutableArray<string> values = CodeCheck.SupportsChoices(code.Pack);
+        ImmutableArray<string> values = CodeCheck.SupportsChoices(code.Pack, CodeCheck.KindOf(wall));
         string? chosen = wall.Box.WallInputs?.Supports;
         List<string> items = ["not chosen", .. values.Select(SupportsText)];
         if (chosen is not null && !values.Contains(chosen))
@@ -476,7 +485,9 @@ public partial class MainWindow
             return;
         }
 
-        ImmutableArray<string> values = CodeCheck.SupportsChoices(Packs.Resolve(Editor.Sketch.Code).Pack);
+        ImmutableArray<string> values = SelectedWall() is { } selected
+            ? CodeCheck.SupportsChoices(Packs.Resolve(Editor.Sketch.Code).Pack, CodeCheck.KindOf(selected))
+            : [];
         int index = SupportsBox.SelectedIndex;
         if (index == 0)
         {

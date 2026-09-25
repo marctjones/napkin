@@ -111,6 +111,7 @@ public sealed class SceneWriterTests
     [InlineData("coffee-table")]
     [InlineData("wall-with-window")]
     [InlineData("rounded-corner-table")]
+    [InlineData("window-in-existing-wall")]
     [Trait("Feature", "PRJ-007")]
     public void A_hand_written_sample_reads_back_equal_after_being_rewritten(string fixture)
     {

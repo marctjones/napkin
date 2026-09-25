@@ -16,8 +16,11 @@ namespace Napkin.Modules.Furniture;
 /// <param name="Note">What the count assumes, or empty.</param>
 public sealed record DemolitionLine(string Item, int Count, string Note)
 {
-    /// <summary>"Shelf × 2", or "Wall 1" for one, with the note in brackets after it.</summary>
-    public string Text => (Count == 1 ? Item : $"{Item} × {Count.ToString(CultureInfo.InvariantCulture)}") + (Note.Length > 0 ? $" ({Note})" : string.Empty);
+    /// <summary>The line in its own words, when a count reads better inside them ("Wall 1: 2 studs 7'-7 1/2\" come out"); null otherwise.</summary>
+    public string? Words { get; init; }
+
+    /// <summary>"Shelf × 2", or "Wall 1" for one, with the note in brackets after it; or <see cref="Words"/>.</summary>
+    public string Text => Words ?? (Count == 1 ? Item : $"{Item} × {Count.ToString(CultureInfo.InvariantCulture)}") + (Note.Length > 0 ? $" ({Note})" : string.Empty);
 }
 
 /// <summary>The shopping list's Demolition section: what comes out, derived, never stored.</summary>
