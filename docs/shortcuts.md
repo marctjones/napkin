@@ -45,6 +45,7 @@ text: no shortcut below except the window's fires while a field has the keyboard
 | `J` | Join the two selected parts |
 | `Shift+J` | Join every pair of touching parts |
 | `Q` | Rough sketching on or off: big round steps, nothing stated, rectangles drawn as planks |
+| `F` | Firm up the selection, or every part: the relationships touching parts imply, the nearest stock, the drawn sizes stated |
 | `X` | Turn the selection about X (while placing stock in 3D: turn what is held) |
 | `Shift+X` | Turn about X the other way |
 | `Y` | Turn the selection about Y (while placing: turn what is held) |
