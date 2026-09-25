@@ -130,11 +130,11 @@
 
   "cutListCsv": [
     "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
-    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery",
-    "Top,1,\"4'-0\"\"\",\"2'-0\"\"\",\"3/4\"\"\",,\"Round all four corners to a 1\"\" radius.\",",
-    "\"Apron, long\",2,\"3'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,",
-    "Leg,4,\"1'-4 1/4\"\"\",\"2 1/2\"\"\",\"2 1/2\"\"\",,,",
-    "\"Apron, short\",2,\"1'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,"
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+    "Top,1,\"4'-0\"\"\",\"2'-0\"\"\",\"3/4\"\"\",,,\"Round all four corners to a 1\"\" radius.\",",
+    "\"Apron, long\",2,\"3'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,,",
+    "Leg,4,\"1'-4 1/4\"\"\",\"2 1/2\"\"\",\"2 1/2\"\"\",,,,",
+    "\"Apron, short\",2,\"1'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,,"
   ],
 
   "statedNotInScene": [

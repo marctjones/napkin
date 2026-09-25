@@ -150,10 +150,10 @@
   ],
   "cutListCsv": [
     "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
-    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery",
-    "Rail,1,\"1'-11 15/16\"\"\",\"1 1/16\"\"\",\"3/16\"\"\",,,",
-    "Strip,1,\"≈10 1/8\"\"\",\"≈1/16\"\"\",\"1/16\"\"\",,,",
-    "Spacer,1,\"6 1/16\"\"\",\"≈1/8\"\"\",\"≈1/16\"\"\",,,",
-    "Third,1,\"≈5/16\"\"\",\"1/16\"\"\",\"1/16\"\"\",,,"
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+    "Rail,1,\"1'-11 15/16\"\"\",\"1 1/16\"\"\",\"3/16\"\"\",,,,",
+    "Strip,1,\"≈10 1/8\"\"\",\"≈1/16\"\"\",\"1/16\"\"\",,,,",
+    "Spacer,1,\"6 1/16\"\"\",\"≈1/8\"\"\",\"≈1/16\"\"\",,,,",
+    "Third,1,\"≈5/16\"\"\",\"1/16\"\"\",\"1/16\"\"\",,,,"
   ]
 }

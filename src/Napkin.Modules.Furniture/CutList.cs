@@ -32,6 +32,23 @@ public static class CutList
     public const string BeforeKerfAndJoinery = "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).";
 
     /// <summary>
+    /// The line under the table when any row is rough (<c>docs/design/sketch-mode.md</c> &#xA7;5):
+    /// "3 rows are rough — sizes as drawn, stock not chosen", or null when none is.
+    /// </summary>
+    /// <param name="rows">The cut list's rows.</param>
+    public static string? RoughFooter(IEnumerable<CutListRow> rows)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        int rough = rows.Count(row => row.Rough);
+        return rough switch
+        {
+            0 => null,
+            1 => "1 row is rough — sizes as drawn, stock not chosen",
+            _ => $"{rough.ToString(System.Globalization.CultureInfo.InvariantCulture)} rows are rough — sizes as drawn, stock not chosen",
+        };
+    }
+
+    /// <summary>
     /// What the cut list window says in place of the table when a design has nothing to cut at all
     /// (#179) — distinct from the window's "nothing is a part yet" note, which is for a design
     /// that has boxes but none of them are parts.
@@ -97,7 +114,8 @@ public static class CutList
                 PlanAxes: part.PlanAxes,
                 Drawn: drawn,
                 Joinery: joinery,
-                Unsatisfied: JointDescription.Unsatisfied(sketch, box)));
+                Unsatisfied: JointDescription.Unsatisfied(sketch, box),
+                Rough: part.Rough));
         }
 
         // Step 4 — group. Exact integer equality on all three dimensions, with no tolerance: two
@@ -125,6 +143,10 @@ public static class CutList
                 Drawn = members[0].Drawn,
                 Joinery = members[0].Joinery,
                 JointsUnsatisfied = members.Any(member => member.Unsatisfied),
+
+                // Not in the key (docs/design/sketch-mode.md §5): a rough leg and a firm one of the
+                // same sizes are one row of two, and the row is rough because one of them is.
+                Rough = members.Any(member => member.Rough),
             });
         }
 
@@ -219,7 +241,8 @@ public static class CutList
         PlanAxes PlanAxes,
         FinishedSize Drawn,
         ImmutableArray<JointFact> Joinery,
-        bool Unsatisfied);
+        bool Unsatisfied,
+        bool Rough);
 
     /// <summary>
     /// What makes two parts one row: the same three finished dimensions out of the same stock in

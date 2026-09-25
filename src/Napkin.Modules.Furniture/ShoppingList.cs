@@ -56,6 +56,24 @@ public static class ShoppingList
     public static ImmutableArray<ShoppingListRow> Of(IEnumerable<CutListRow> rows) => Of(rows, CutLayout.DefaultKerf);
 
     /// <summary>
+    /// The line under the shopping list when rough parts have no stock (<c>docs/design/sketch-mode.md</c>
+    /// &#xA7;5), counting pieces: "4 parts are rough and have no stock; they are not on this list", so
+    /// the total never quietly omits half a bench. Null when there are none.
+    /// </summary>
+    /// <param name="rows">The cut list's rows.</param>
+    public static string? RoughFooter(IEnumerable<CutListRow> rows)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        int pieces = rows.Where(row => row.Rough && row.Stock is null).Sum(row => row.Quantity);
+        return pieces switch
+        {
+            0 => null,
+            1 => "1 part is rough and has no stock; it is not on this list.",
+            _ => $"{pieces.ToString(System.Globalization.CultureInfo.InvariantCulture)} parts are rough and have no stock; they are not on this list.",
+        };
+    }
+
+    /// <summary>
     /// The shopping list for a cut list, its boards planned with a saw kerf.
     /// </summary>
     /// <param name="rows">The cut list's rows, in its own order.</param>

@@ -500,17 +500,17 @@ public class JointCutListTests
         ImmutableArray<ImmutableArray<string>> lines = CutListCsv.Parse(CutListCsv.ToCsv(rows));
 
         Assert.Equal("Cut list: finished sizes: joinery allowances included; before saw kerf (#138).", Assert.Single(lines[0]));
-        Assert.Equal(["Label", "Quantity", "Length", "Width", "Thickness", "Material", "Cuts", "Joinery"], lines[1]);
+        Assert.Equal(["Label", "Quantity", "Length", "Width", "Thickness", "Material", "Rough", "Cuts", "Joinery"], lines[1]);
         for (int i = 0; i < rows.Length; i++)
         {
-            Assert.Equal(8, lines[i + 2].Length);
-            Assert.Equal(string.Join("; ", rows[i].JointText), lines[i + 2][7]);
+            Assert.Equal(9, lines[i + 2].Length);
+            Assert.Equal(string.Join("; ", rows[i].JointText), lines[i + 2][8]);
         }
 
         // The back apron's two sentences share one quoted field.
         Assert.Equal(
             "Drill 3 pocket holes in the west end and 3 in the east end, from the south face.; Fit 3 tabletop clips along the top edge on the south face (slot or recess per the clip's instructions).",
-            lines[3][7]);
+            lines[3][8]);
     }
 
     [Trait("Feature", "CUT-010")]
@@ -523,7 +523,7 @@ public class JointCutListTests
 
         ImmutableArray<ImmutableArray<string>> lines = CutListCsv.Parse(CutListCsv.ToCsv(scene.Rows()));
 
-        Assert.Contains(lines.Skip(2), line => line[0] == "Drawer box front" && line[7].EndsWith("joint not satisfied", StringComparison.Ordinal));
+        Assert.Contains(lines.Skip(2), line => line[0] == "Drawer box front" && line[8].EndsWith("joint not satisfied", StringComparison.Ordinal));
     }
 
     // ------------------------------------------------------------------------------------------------

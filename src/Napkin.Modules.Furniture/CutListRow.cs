@@ -110,6 +110,13 @@ public sealed record CutListRow(
     public static string UnresolvedText(string name) => $"{name} — not in this build's materials library";
 
     /// <summary>
+    /// Whether any member is rough: entered in Rough mode, its sizes as drawn and its stock not yet
+    /// chosen (<c>docs/design/sketch-mode.md</c> &#xA7;5). Not in the grouping key, so firming one leg of
+    /// four does not split the row.
+    /// </summary>
+    public bool Rough { get; init; }
+
+    /// <summary>
     /// What the material column says: the stock's name, the unresolved name with its explanation,
     /// or nothing at all.
     /// </summary>
@@ -141,6 +148,7 @@ public sealed record CutListRow(
            && Cuts.SequenceEqual(other.Cuts)
            && Joinery.SequenceEqual(other.Joinery)
            && JointsUnsatisfied == other.JointsUnsatisfied
+           && Rough == other.Rough
            && Drawn == other.Drawn
            && PlanAxes == other.PlanAxes
            && Members.SequenceEqual(other.Members);
@@ -171,6 +179,7 @@ public sealed record CutListRow(
         }
 
         hash.Add(JointsUnsatisfied);
+        hash.Add(Rough);
         hash.Add(Drawn);
 
         foreach (EntityId member in Members)

@@ -51,6 +51,15 @@
                                    TextWrapping="Wrap" />
                     </Border>
 
+                    <!-- Rough rows, said under the table (sketch-mode §5). -->
+                    <TextBlock Name="RoughNote"
+                               DockPanel.Dock="Bottom"
+                               IsVisible="False"
+                               Margin="0,8,0,0"
+                               FontSize="11"
+                               FontStyle="Italic"
+                               TextWrapping="Wrap" />
+
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                         <viewing:CutListTable Name="Table" />
                     </ScrollViewer>
@@ -73,6 +82,12 @@
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="4">
                             <viewing:ShoppingListTable Name="ShoppingTable" />
+                            <TextBlock Name="ShoppingRoughNote"
+                                       IsVisible="False"
+                                       Margin="0,4,0,0"
+                                       FontSize="11"
+                                       FontStyle="Italic"
+                                       TextWrapping="Wrap" />
                             <!-- The walls' framing (#18): derived from the walls and openings, bought through
                                  the same aggregation as the parts, and shown apart from them. -->
                             <StackPanel Name="FramingSection" Spacing="4" IsVisible="False">
