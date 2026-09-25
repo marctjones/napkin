@@ -46,6 +46,21 @@ public partial class MainWindow
 
     void OnRoomToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.RoomTool);
 
+    void OnNoteToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.NoteTool);
+
+    /// <summary>Picks up the note tool (renovation-sketches §8); notes are put in the plan, so the plan comes forward.</summary>
+    public void ArmNote()
+    {
+        if (IsShowingModel)
+        {
+            ShowView(DesignView.Top);
+        }
+
+        DrawingCanvas.ArmNote();
+        UpdateToolButtons();
+        FocusDrawing();
+    }
+
     /// <summary>Picks up the room tool (renovation-sketches §8); rooms are drawn in the plan, so the plan comes forward.</summary>
     public void ArmRoom()
     {
@@ -251,6 +266,10 @@ public partial class MainWindow
 
             case EditCommand.RoomTool:
                 ArmRoom();
+                return true;
+
+            case EditCommand.NoteTool:
+                ArmNote();
                 return true;
 
             case EditCommand.Shape when IsShowingStandardView:

@@ -220,6 +220,10 @@
                           Header="Roo_m"
                           Click="OnRoomToolClicked"
                           ToolTip.Tip="Drag out a room, or click inside four walls to take their inside faces; tick its finishes in the panel for the Area takeoff." />
+                <MenuItem Name="NoteToolMenuItem"
+                          Header="Not_e"
+                          Click="OnNoteToolClicked"
+                          ToolTip.Tip="Click to put a note — outlet, switch, light, supply, drain, or any words. Counted on the shopping list, never modelled." />
                 <Separator />
                 <!-- The toolbar's stock icons, by menu: one submenu per category, one item per
                      size, built in the code-behind from the same library the toolbox lists. -->
@@ -883,6 +887,29 @@
                               VerticalAlignment="Bottom"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
+                <StackPanel VerticalAlignment="Bottom" Spacing="6">
+                <!-- A note (renovation-sketches §8): its words and its symbol, six small pencil glyphs,
+                     the chosen one moss-washed. Counted on the shopping list, never modelled. -->
+                <Border Name="NotePanel"
+                        IsVisible="False"
+                        HorizontalAlignment="Right"
+                        Padding="10,8"
+                        Width="248"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Name="NoteHeadline" Text="Note" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <ComboBox Name="NotePhaseBox" Grid.Column="1" FontSize="11" MinWidth="0" Width="104" MinHeight="0" Height="24" Padding="6,0"
+                                      AutomationProperties.Name="Note phase" SelectionChanged="OnNotePhaseChanged" />
+                        </Grid>
+                        <TextBox Name="NoteTextBox" FontSize="12" PlaceholderText="outlet, switch, light, supply, drain, or any words"
+                                 AutomationProperties.Name="Note words"
+                                 ToolTip.Tip="What the note says. The rough-in words napkin knows get their symbol; Enter applies." />
+                        <StackPanel Name="NoteSymbolRow" Orientation="Horizontal" Spacing="4" />
+                        <TextBlock Name="NoteSymbolWord" FontSize="10" Opacity="0.8" />
+                    </StackPanel>
+                </Border>
                 <Border Name="PropertiesPanel"
                         IsVisible="False"
                         HorizontalAlignment="Right"
@@ -1141,6 +1168,7 @@
 
                     </StackPanel>
                 </Border>
+                </StackPanel>
                 </ScrollViewer>
             </Grid>
 

@@ -6,8 +6,8 @@
   "formatVersion": 10,
   "unitsPerInch": 1024,
   "counts": {
-    "layers": 4,
-    "entities": 7,
+    "layers": 5,
+    "entities": 13,
     "boxes": 7,
     "dimensions": 0,
     "relationships": 0
@@ -284,6 +284,17 @@
     }
   ],
   "notes": [
-    "Renovation worked example 1 (docs/design/renovation-sketches.md §2, §10.2). The rough-in notes (outlet × 4, switch, light) arrive with the note entity (#163)."
-  ]
+    "The rough-in notes (§2's table): four outlets, a switch by the door and a light in the middle, on the Notes layer; positions are the sketch's own, not measured."
+  ],
+  "notesLine": {
+    "line": "outlet × 4, switch × 1, light × 1",
+    "csv": [
+      "Notes",
+      "Note,Count",
+      "outlet,4",
+      "switch,1",
+      "light,1"
+    ],
+    "derivation": "Six New notes: four say outlet, one switch, one light; none without a symbol."
+  }
 }

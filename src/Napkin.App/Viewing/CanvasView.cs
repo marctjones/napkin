@@ -359,7 +359,7 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>Whether a press on the paper starts drawing rather than picking or panning.</summary>
-    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room;
+    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Note;
 
     /// <summary>
     /// The precision dimension labels are shown at. Fixed at 1/16&#x2033;; the per-project picker
@@ -722,6 +722,12 @@ public sealed class CanvasView : Control
         if (_tool == EditTool.Opening)
         {
             PlaceOpening(_view.ToWorld(position));
+            return;
+        }
+
+        if (_tool == EditTool.Note)
+        {
+            PlaceNote(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             return;
         }
 
@@ -1377,6 +1383,41 @@ public sealed class CanvasView : Control
 
     Point2 _roomPressedAt;
 
+    /// <summary>A note was just put down: the window gives its words box the keyboard.</summary>
+    public event EventHandler<EntityId>? NotePlaced;
+
+    /// <summary>Picks up the note tool (renovation-sketches §8): the next click puts a note there.</summary>
+    public void ArmNote()
+    {
+        Tool = EditTool.Note;
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+        _editor?.Say(EditSeverity.Hint, "Note tool: click where the note goes, then type what it says — outlet, switch, light, supply and drain get their symbol.");
+    }
+
+    void PlaceNote(Point2 at)
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        EntityId id = EntityId.New();
+        LayerId layer = editor.LayerNamed(DesignLayers.Notes, out Request? addLayer);
+        string name = editor.NextName("Note");
+        const string what = "Put a note";
+        editor.BeginGesture(what);
+        if (editor.Apply(NoteTool.Request(layer, addLayer, id, name, at), what) is Succeeded)
+        {
+            editor.Select(id);
+            editor.Say(EditSeverity.Done, $"Put {name} here: type what it says in the panel, or pick its symbol.");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+        NotePlaced?.Invoke(this, id);
+    }
+
     void CompleteRoom()
     {
         if (_editor is not { } editor)
@@ -1594,7 +1635,8 @@ public sealed class CanvasView : Control
         else
         {
             editor.Select(id);
-            editor.Say(EditSeverity.Done, $"{editor.NameOf(id)} selected, {Size(id)}.");
+            string size = Size(id);
+            editor.Say(EditSeverity.Done, size.Length > 0 ? $"{editor.NameOf(id)} selected, {size}." : $"{editor.NameOf(id)} selected.");
         }
     }
 
@@ -1628,6 +1670,17 @@ public sealed class CanvasView : Control
         if (Design is not { } design)
         {
             return null;
+        }
+
+        // A note is a point: the nearest within a few pixels wins over any box under it.
+        Length reach = ModelLength(NotePickPixels);
+        if (design.Sketch.Entities.Values.OfType<Note>()
+                .Where(note => Length.Abs(note.Position.X - world.X) <= reach && Length.Abs(note.Position.Y - world.Y) <= reach)
+                .OrderBy(note => Length.Abs(note.Position.X - world.X) + Length.Abs(note.Position.Y - world.Y))
+                .ThenBy(note => note.Id)
+                .FirstOrDefault() is { } near)
+        {
+            return near.Id;
         }
 
         Length tolerance = ModelLength(3);
@@ -2075,6 +2128,12 @@ public sealed class CanvasView : Control
 
         foreach (EntityId id in editor.Selection.OrderBy(entity => entity))
         {
+            if (sketch.Find<Note>(id) is { } note)
+            {
+                context.DrawEllipse(null, pen, _view.ToScreen(note.Position), NotePickPixels, NotePickPixels);
+                continue;
+            }
+
             if (sketch.Find<Box>(id) is not { } box)
             {
                 continue;
@@ -2635,17 +2694,28 @@ public sealed class CanvasView : Control
     /// <summary>How opaque an existing entity is drawn: ghosted, 40 % (renovation-sketches §6.4).</summary>
     internal const double ExistingOpacity = 0.4;
 
-    /// <summary>A note: a small pencil circle at its point, its words beside it at the plan's label size.</summary>
+    /// <summary>
+    /// A note: its glyph (or a small pencil circle) at its point, its words beside it at the plan's
+    /// label size (renovation-sketches §8). A demolished note is struck through.
+    /// </summary>
     void DrawNote(DrawingContext context, CanvasPalette palette, Note note)
     {
         Point centre = _view.ToScreen(note.Position);
-        context.DrawEllipse(null, new Pen(new SolidColorBrush(palette.Dimension), 1.2), centre, 4, 4);
+        NoteGlyphs.Draw(context, centre, note.Symbol, palette.Dimension);
         if (note.Text.Length > 0)
         {
             FormattedText text = Text(note.Text, palette.Dimension);
-            context.DrawText(text, new Point(centre.X + 7, centre.Y - (text.Height / 2)));
+            Point at = new(centre.X + 9, centre.Y - (text.Height / 2));
+            context.DrawText(text, at);
+            if (note.Phase == Phase.Demolish)
+            {
+                context.DrawLine(new Pen(new SolidColorBrush(palette.Dimension), 1), new Point(at.X, centre.Y), new Point(at.X + text.Width, centre.Y));
+            }
         }
     }
+
+    /// <summary>How near, in pixels, a click must be to a note to pick it.</summary>
+    const double NotePickPixels = 9;
 
     void DrawNode(DrawingContext context, CanvasPalette palette, Point2 position)
     {
