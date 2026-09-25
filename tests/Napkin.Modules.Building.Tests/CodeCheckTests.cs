@@ -493,6 +493,12 @@ public class CodeCheckTests
         HeaderResult plain = RulesEngine.SizeHeader(pack, new HeaderRequest("zz-roof", WallKind.ExteriorBearing, In(60), CodeCheck.Site(SiteValues.NotEntered with { GroundSnowLoadPsf = 30 })));
         Assert.Equal(string.Empty, CodeCheck.Words(plain, Library).Interpolation);
 
+        // (2) 2x12: 12'-0" and 10'-0" → 11'-0" at 40 psf; 11'-1" is beyond it, and the limit says it was interpolated.
+        HeaderResult beyond = RulesEngine.SizeHeader(pack, new HeaderRequest("zz-roof", WallKind.ExteriorBearing, In(133), site));
+        CheckWords limit = CodeCheck.Words(beyond, Library);
+        Assert.StartsWith("This opening is beyond what Table ZZ-INTERP-HEADER covers", limit.Headline, StringComparison.Ordinal);
+        Assert.Equal("Interpolated between the 30 psf row (i.s30.c) and the 50 psf row (i.s50.c) (ZZ INTERP footnote e, p. 9)", limit.Interpolation);
+
         HeaderResult missing = RulesEngine.SizeHeader(pack, new HeaderRequest("zz-roof", WallKind.ExteriorBearing, In(60), CodeCheck.Site(SiteValues.NotEntered with { GroundSnowLoadPsf = 25 })));
         Assert.StartsWith("Not checked: the roof live load is not entered", CodeCheck.Words(missing, Library).Headline, StringComparison.Ordinal);
     }
