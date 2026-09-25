@@ -188,12 +188,13 @@ existing fields *mean*, not just added new ones; a bump like that is still a by-
 way the samples were rewritten for those versions. See `SamplesCommand` in
 `tools/Napkin.Tools/Commands/` for the exact per-version field list.
 
-**Per-view camera state is a user setting, not scene data.** A bump has come, more than once, from
-the temptation to put "what the viewer was looking at" into the scene file so it is restored on
-reopen. It belongs in `UserSettings.cs` instead: it is what a person set for themselves while
+**Per-view camera state is a user setting, not scene data, decided ahead of the milestone that will
+tempt it (#181).** M6's per-view camera memory and Parts view (#127, #128) are exactly the kind of
+feature that invites "while we're adding a view, just save what it was looking at" into
+`scene.json`. It belongs in `UserSettings.cs` instead: it is what a person set for themselves while
 looking at a design, not a fact about the design, and it should not force every collaborator's
-saved file to carry it or every format bump to touch 15 samples to add a field nothing else needs.
-See `docs/file-format.md` for where this is recorded for the format itself.
+saved file to carry it or every format bump to touch 15 samples for a field nothing else needs. See
+`docs/file-format.md` for where this is recorded for the format itself.
 
 **Layers are named "Default".** The viewer styles a part by the name of the layer it is on — a
 part on "Parts" is drawn as furniture, one on "Wall" as a wall, one on "Opening" as a dashed hole —

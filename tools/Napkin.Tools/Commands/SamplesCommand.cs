@@ -145,15 +145,22 @@ public static class SamplesCommand
         }
 
         root["formatVersion"] = FormatStamp.CurrentVersion;
-        string restamped = root.ToJsonString(WriteOptions) + "\n";
+        string bumped = root.ToJsonString(WriteOptions) + "\n";
 
-        LoadResult loaded = SceneReader.Read(new MemoryStream(Encoding.UTF8.GetBytes(restamped)));
-        if (loaded is Refused refused)
+        // Bumped-and-field-filled is only good enough to feed the strict reader, not to write:
+        // JsonNode's default encoder escapes every non-ASCII character and `'`/`&`/`<`/`>`, and it
+        // does not reproduce the writer's own field order. Reading it back and writing *that* with
+        // the real SceneWriter is the hybrid the design calls for — it gives byte-identity with a
+        // fresh save for free, the same guarantee samples/*.scene.json is already held to
+        // (SaveReopenTests).
+        LoadResult loaded = SceneReader.Read(new MemoryStream(Encoding.UTF8.GetBytes(bumped)));
+        if (loaded is not Loaded { Sketch: var sketch })
         {
+            Refused refused = (Refused)loaded;
             return new RestampResult(Changed: false, Problem: $"{path}: restamped file was refused by the strict reader: {refused.Summary}");
         }
 
-        File.WriteAllText(path, restamped);
+        File.WriteAllText(path, SceneWriter.WriteToText(sketch));
         return new RestampResult(Changed: true, Problem: null);
     }
 
@@ -171,8 +178,16 @@ public static class SamplesCommand
             return false;
         }
 
-        root["formatVersion"] = FormatStamp.CurrentVersion;
-        File.WriteAllText(path, root.ToJsonString(WriteOptions) + "\n");
+        // A textual replace of just the stamp, not a JsonNode round trip: nothing else in this
+        // file depends on the version (samples/README.md), so nothing else should be able to move
+        // — no re-encoded punctuation, no re-ordered fields.
+        string stamp = $"\"formatVersion\": {version}";
+        if (!text.Contains(stamp, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"{path}: expected to find {stamp} verbatim to replace it.");
+        }
+
+        File.WriteAllText(path, text.Replace(stamp, $"\"formatVersion\": {FormatStamp.CurrentVersion}", StringComparison.Ordinal));
         return true;
     }
 
