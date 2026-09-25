@@ -3053,6 +3053,8 @@ public partial class MainWindow : Window
 
     void OnWallToolClicked(object? sender, RoutedEventArgs e) => ArmWall(null);
 
+    void OnWall2x4Clicked(object? sender, RoutedEventArgs e) => ArmWall("2x4");
+
     void OnWall2x6Clicked(object? sender, RoutedEventArgs e) => ArmWall("2x6");
 
     void OnWindowToolClicked(object? sender, RoutedEventArgs e) => ArmOpening(OpeningKind.Window);

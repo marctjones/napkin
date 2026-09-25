@@ -160,14 +160,15 @@ public class StockToolboxWorkflows
         });
 
         // The sheet-goods drawer hangs under its own icon, further along the toolbar than the
-        // lumber one, so the sheet is dragged out on open paper to the right of it.
+        // lumber one (and, since the wall tool, over the paper right of the origin), so the sheet
+        // is dragged out on open paper to the left of it.
         app.Click(CentreOf(window, plywoodButton));
-        Point sheetFrom = At(window, Point2.Inches(4, -2));
+        Point sheetFrom = At(window, Point2.Inches(-26, -2));
         Assert.False(OnDrawer(window, sheetFrom), "the drag would start on the drawer, not the paper.");
         app.Drag(
             sheetFrom,
-            At(window, Point2.Inches(10, 2)),
-            At(window, Point2.Inches(16, 6)));
+            At(window, Point2.Inches(-20, 2)),
+            At(window, Point2.Inches(-14, 6)));
 
         app.Expect("the second part is a sheet of 3/4 plywood the size it was dragged", () =>
         {
@@ -178,7 +179,7 @@ public class StockToolboxWorkflows
             Assert.Equal(plywood.Thickness.Units, sheet.Depth.Units);
             Assert.Equal(Length.Inches(12).Units, sheet.Width.Units);
             Assert.Equal(Length.Inches(8).Units, sheet.Height.Units);
-            Assert.Equal(Point2.Inches(4, -2), sheet.Anchor.XY);
+            Assert.Equal(Point2.Inches(-26, -2), sheet.Anchor.XY);
             Assert.Equal(sheet.Id, window.Editor.OnlySelected);
 
             // The board placed first is untouched.

@@ -18,12 +18,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: BLD-002 — An opening is geometrically bound to its wall")]
-    [Trait("Feature", "BLD-002")]
-    public void BLD_002()
-    {
-    }
-
     [Fact(Skip = "planned: BLD-003 — The header result is live")]
     [Trait("Feature", "BLD-003")]
     public void BLD_003()

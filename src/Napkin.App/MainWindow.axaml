@@ -110,8 +110,12 @@
                           Click="OnRectangleToolClicked"
                           ToolTip.Tip="Drag out a new part." />
                 <MenuItem Name="WallToolMenuItem"
-                          Header="_Wall, 2x4 studs"
+                          Header="_Wall"
                           Click="OnWallToolClicked"
+                          ToolTip.Tip="Drag out a wall, framed with the studs last picked: 2x4 (3 1/2&quot; thick) to start." />
+                <MenuItem Name="Wall2x4MenuItem"
+                          Header="Wall, 2x4 studs"
+                          Click="OnWall2x4Clicked"
                           ToolTip.Tip="Drag out a wall 3 1/2&quot; thick, framed with 2x4 studs." />
                 <MenuItem Name="Wall2x6MenuItem"
                           Header="Wall, 2x6 studs"
