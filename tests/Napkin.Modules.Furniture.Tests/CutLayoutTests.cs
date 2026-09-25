@@ -33,7 +33,7 @@ public sealed class CutLayoutTests
     private static PlannedBoard Only(CutLayoutPlan plan) => Assert.Single(Assert.Single(plan.Stocks).Boards);
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void Three_pieces_on_a_board_take_three_cuts_and_leave_the_offcut()
     {
         // 36 + 24 + 20 = 80 in of pieces, 3 pieces. One board opens at 16'. Shrink: 72 in is too short
@@ -50,7 +50,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void Pieces_that_exactly_fill_a_board_take_one_cut_fewer()
     {
         // 30 + 30 + 20 + 15 5/8 = 95 5/8 in, 4 pieces, 3 kerfs between them = 3/8: 95 5/8 + 3/8 = 96
@@ -65,7 +65,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void A_sliver_thinner_than_the_kerf_still_fits_and_the_last_cut_takes_what_is_left()
     {
         // 30 + 30 + 20 + 15 3/4 = 95 3/4 in, 4 pieces. The 3 kerfs between them (3/8) give 96 1/8 > 96,
@@ -89,7 +89,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void First_fit_decreasing_saves_a_board_over_packing_in_order()
     {
         // Kerf 0, pieces in the order 70, 70, 122, 122 (in). Packing in order on 16' boards (192 in):
@@ -127,7 +127,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void A_piece_exactly_as_long_as_a_stocked_length_needs_no_cut_and_no_bigger_board()
     {
         // 96 in on a 96 in board: n = 1, 96 + 0 x kerf == 96, so 0 cuts, no offcut, the 8'.
@@ -149,7 +149,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void A_piece_longer_than_any_stocked_length_is_refused_by_name_and_no_board_is_made()
     {
         // 200 in > 192 in, the longest 2x4 the library lists.
@@ -168,7 +168,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void The_kerf_flips_the_board_at_the_boundary()
     {
         // 4 x 24 = 96 in. Kerf 0: 96 + 0 == 96, exact fill, the 8'. Kerf 1/8: 96 + 3/8 = 96 3/8 is not
@@ -190,7 +190,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void Each_board_shrinks_to_the_smallest_stocked_length_that_holds_its_pieces()
     {
         // 50 + 30 = 80 in of pieces with 2 cuts (80 1/4 in): the 6' (72) is too short, the 8' (96) holds it.
@@ -201,7 +201,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void The_same_input_always_gives_the_same_layout_and_equal_pieces_keep_cut_list_order()
     {
         (string, long, long, Piece)[] parts = [Bar("First", 40), Bar("Second", 40), Bar("Third", 40), Bar("Long", 60)];
@@ -216,7 +216,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void A_negative_kerf_is_refused()
         => Assert.Throws<ArgumentOutOfRangeException>(() => CutLayout.Of(Rows(Bar("A", 10)), new Length(-1)));
 
@@ -224,7 +224,7 @@ public sealed class CutLayoutTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void Random_pieces_are_each_placed_once_and_no_board_is_over_length(int seed)
     {
         Random random = new(seed);
@@ -271,7 +271,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-016")]
     public void The_shopping_list_buys_exactly_the_boards_the_layout_plans()
     {
         Length[] kerfs = [Length.Zero, Kerf, Length.Inches(0, 3, 16)];
@@ -290,7 +290,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-016")]
     public void The_shopping_list_changes_with_the_kerf_it_is_given()
     {
         ImmutableArray<CutListRow> rows = Rows(Bar("Rail", 24, 8));
@@ -301,7 +301,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void The_board_reads_as_a_line_with_its_cuts_kerf_and_offcut()
     {
         CutLayoutPlan plan = Plan(Kerf, Bar("Rail", 36), Bar("Stile", 24), Bar("Block", 20));
@@ -321,7 +321,7 @@ public sealed class CutLayoutTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void Sheet_goods_are_reported_as_not_nested_and_are_not_laid_out()
     {
         ImmutableArray<CutListRow> rows = CutList.Of(

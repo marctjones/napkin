@@ -279,6 +279,10 @@
                           Header="_Shopping list"
                           Click="OnShoppingListClicked"
                           ToolTip.Tip="The stock to buy for the cut list, with its board feet — beside the cut list, in the same window." />
+                <MenuItem Name="CutLayoutMenuItem"
+                          Header="Cut lay_out"
+                          Click="OnCutLayoutClicked"
+                          ToolTip.Tip="Which piece is cut from which board, with the saw kerf and the offcuts — a tab of the same window." />
             </MenuItem>
         </Menu>
 

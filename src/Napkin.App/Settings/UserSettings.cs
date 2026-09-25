@@ -56,6 +56,12 @@ public sealed record UserSettings
     /// <summary>The pencil the drawing's lines are in (#142): cosmetic.</summary>
     public SketchLine SketchLine { get; init; } = SketchLine.Carpenter;
 
+    /// <summary>
+    /// The blade's saw kerf, in the cut layout and the shopping list (#138). Stored exactly, as a
+    /// length; zero is allowed. The default is a practice default, not a fact about the person's blade.
+    /// </summary>
+    public Napkin.Core.Geometry.Length SawKerf { get; init; } = Napkin.Modules.Furniture.CutLayout.DefaultKerf;
+
     /// <summary>Whether drags and tools land on the grid. Separate from whether it is drawn.</summary>
     public bool SnapToGrid { get; init; } = true;
 

@@ -26,7 +26,7 @@ public sealed class CutLayoutSampleTests
     private static PlannedBoard Board(CutLayoutPlan plan, string stock) => Assert.Single(plan.Stocks.Single(layout => layout.Stock.Name == stock).Boards);
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void The_stocked_bench_is_one_12_foot_1x4_and_one_14_foot_2x4()
     {
         CutLayoutPlan plan = PlanOf("stocked-bench");
@@ -51,7 +51,7 @@ public sealed class CutLayoutSampleTests
     }
 
     [Fact]
-    [Trait("Feature", "CUT-007")]
+    [Trait("Feature", "CUT-015")]
     public void The_diy_coffee_table_is_a_6_foot_1x2_a_12_foot_1x6_and_a_6_foot_2x2()
     {
         CutLayoutPlan plan = PlanOf("diy-coffee-table-drawers");

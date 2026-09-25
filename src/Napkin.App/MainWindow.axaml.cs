@@ -484,7 +484,13 @@ public partial class MainWindow : Window
     {
         if (_cutList is null)
         {
-            _cutList = new CutListWindow { ApplyRequest = (request, what) => Editor.Apply(request, what), Packs = Packs };
+            _cutList = new CutListWindow
+            {
+                ApplyRequest = (request, what) => Editor.Apply(request, what),
+                Packs = Packs,
+                KerfChanged = kerf => Settings.Update(settings => settings with { SawKerf = kerf }),
+            };
+            _cutList.SawKerf = Settings.Current.SawKerf;
             _cutList.Closed += (_, _) => _cutList = null;
         }
 
@@ -503,6 +509,15 @@ public partial class MainWindow : Window
     {
         CutListWindow window = OpenCutList();
         window.ShowShoppingList();
+        return window;
+    }
+
+    /// <summary>Opens the cut-list window on its cut-layout tab (issue #138), or shows that tab on the open one.</summary>
+    /// <returns>The window.</returns>
+    public CutListWindow OpenCutLayout()
+    {
+        CutListWindow window = OpenCutList();
+        window.ShowCutLayout();
         return window;
     }
 
@@ -3022,6 +3037,8 @@ public partial class MainWindow : Window
     void OnCutListClicked(object? sender, RoutedEventArgs e) => OpenCutList();
 
     void OnShoppingListClicked(object? sender, RoutedEventArgs e) => OpenShoppingList();
+
+    void OnCutLayoutClicked(object? sender, RoutedEventArgs e) => OpenCutLayout();
 
     void OnZoomToFitClicked(object? sender, RoutedEventArgs e)
     {
