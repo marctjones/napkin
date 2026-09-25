@@ -134,4 +134,26 @@ public class ViewDimensionTests
         Assert.Equal(new Vector3d(0, 4, 10.75), right.InWorld(new ViewPoint(4, 10.75)));
         Assert.Equal(new Vector3d(0, 4, 10.75), left.InWorld(new ViewPoint(-4, 10.75)));
     }
+    [Fact]
+    [Trait("Feature", "VIEW-010")]
+    public void A_distance_between_two_centres_is_placed_from_the_centres_heights()
+    {
+        // Measure the inset between the top's centre (z 16⅝) and the south-west leg's (z 8⅛) instead,
+        // South by 1": below the lower centre, 7⅛ — not below the leg's foot, since a centre fixes its z.
+        Sketch sketch = Table();
+        EntityId inset = SampleExpectations.For("coffee-table").Label("Leg inset from the top's west edge").EntityId;
+        EntityId top = SampleExpectations.For("coffee-table").Box("Top").EntityId;
+        EntityId leg = SampleExpectations.For("coffee-table").Box("Leg, south-west").EntityId;
+        Dimension was = sketch.Find<Dimension>(inset)!;
+        sketch = sketch.WithEntity(was with
+        {
+            Measures = new AxisMeasurand(new CenterRef(top), new CenterRef(leg), Axis.X),
+            Placement = was.Placement with { Side = DimensionSide.South },
+        });
+
+        ViewDimension centres = Named(sketch, StandardView.Front, "Leg inset from the top's west edge");
+        Assert.Equal(7.125, centres.LineFrom.Across, Tolerance);
+        Assert.Equal(8.125, centres.From.Across, Tolerance);
+        Assert.Equal(24 - 2.75, Math.Abs(centres.LineTo.Along - centres.LineFrom.Along), Tolerance);
+    }
 }
