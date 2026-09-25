@@ -1,0 +1,63 @@
+{
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES. Each expectation is worked by hand from the synthetic section, not exported from the pack.",
+  "pack": "us-zz-brace-b",
+  "section": "ZZ-BRACE-B.7",
+  "source": "zz-synth-base",
+  "transcriber": {
+    "who": "synthetic",
+    "on": "2026-09-25"
+  },
+  "cases": [
+    {
+      "row": "q.b199",
+      "location": "synthetic p. 70, row 1; p. 71",
+      "inputs": {
+        "ultimateWindSpeed": 90,
+        "lineLength": "16ft 0in",
+        "wallHeight": "8ft 0in",
+        "segments": [
+          {
+            "length": "30in",
+            "method": "zz-panel"
+          },
+          {
+            "length": "60in",
+            "method": "zz-panel"
+          },
+          {
+            "length": "30in",
+            "method": "zz-panel"
+          }
+        ]
+      },
+      "expect": {
+        "fails": {
+          "required": "6ft 0in",
+          "provided": "5ft 0in",
+          "shortfall": "1ft 0in",
+          "factors": []
+        }
+      }
+    },
+    {
+      "location": "synthetic p. 70, note",
+      "inputs": {
+        "ultimateWindSpeed": 90,
+        "lineLength": "16ft 0in",
+        "wallHeight": "10ft 1in",
+        "segments": [
+          {
+            "length": "60in",
+            "method": "zz-panel"
+          }
+        ]
+      },
+      "expect": {
+        "outOfScope": {
+          "reason": "NotPrescriptive",
+          "limitRow": "l.b-tall"
+        }
+      }
+    }
+  ]
+}

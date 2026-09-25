@@ -1,0 +1,111 @@
+{
+  "fixture": "overlap",
+  "scene": "overlap.scene.json",
+  "design": "overlap.design.md",
+  "derivedBy": "hand, from the stated dimensions in overlap.design.md; never regenerated from napkin's output",
+  "formatVersion": 10,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 3,
+    "pieces": 3,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 24576,
+    "depthUnits": 4096,
+    "heightUnits": 3072,
+    "widthText": "2'-0\"",
+    "depthText": "4\"",
+    "heightText": "3\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Board, first",
+      "id": "a0000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 24576,
+        "y": 4096,
+        "z": 1024
+      },
+      "derivation": "A 24\" x 4\" x 1\" board at the origin: x 0..24, y 0..4, z 0..1."
+    },
+    {
+      "name": "Board, second",
+      "id": "a0000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 24576,
+        "y": 4096,
+        "z": 1024
+      },
+      "derivation": "The same size at the same place: it occupies exactly the space of the first. Nothing says it may not (assembly-model 6: overlap is not detected by design)."
+    },
+    {
+      "name": "Peg",
+      "id": "a0000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 10240,
+        "y": 1536,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 11264,
+        "y": 2560,
+        "z": 3072
+      },
+      "derivation": "A 1\" x 1\" peg, 3\" tall (depth), passing up through the middle of both boards: x 10..11, y 1 1/2..2 1/2, z 0..3. It shares volume with each board."
+    }
+  ],
+  "totalVolumeCubicUnits": 209379655680,
+  "cutList": [
+    {
+      "label": "Board",
+      "quantity": 2,
+      "lengthUnits": 24576,
+      "widthUnits": 4096,
+      "thicknessUnits": 1024,
+      "lengthText": "2'-0\"",
+      "widthText": "4\"",
+      "thicknessText": "1\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "a0000000-0000-4000-8000-000000000001",
+        "a0000000-0000-4000-8000-000000000002"
+      ],
+      "derivation": "24\" = 24576, 4\" = 4096, 1\" = 1024. The two boards are the same size so one row of 2, whether or not they overlap: the cut list counts pieces to cut, not volume of space. Names share \"Board, \" -> \"Board\"."
+    },
+    {
+      "label": "Peg",
+      "quantity": 1,
+      "lengthUnits": 3072,
+      "widthUnits": 1024,
+      "thicknessUnits": 1024,
+      "lengthText": "3\"",
+      "widthText": "1\"",
+      "thicknessText": "1\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "a0000000-0000-4000-8000-000000000003"
+      ],
+      "derivation": "Length its depth 3\" = 3072, width 1\" = 1024, thickness 1\" = 1024."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+    "Board,2,\"2'-0\"\"\",\"4\"\"\",\"1\"\"\",,,,",
+    "Peg,1,\"3\"\"\",\"1\"\"\",\"1\"\"\",,,,"
+  ]
+}

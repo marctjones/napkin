@@ -4,7 +4,49 @@
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- The Skeptical Engineering design system, vendored from
+                     marctjones/skepticalengineering-design (Theme/*.axaml say at which commit):
+                     its colour, size and shape tokens as Se* resources, and its 297 icons. Defined
+                     by name so napkin's own styles can bind to them: overriding Fluent's
+                     SystemAccentColor does not retint Fluent-templated chrome (measured, see that
+                     repo's docs/avalonia-usage.md), so nothing here relies on it. -->
+                <ResourceInclude Source="avares://Napkin.App/Theme/SkepticalTheme.axaml" />
+                <ResourceInclude Source="avares://Napkin.App/Theme/WorkbenchIcons.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- IBM Plex, bundled under Assets/Fonts (SIL OFL 1.1: its notices ship beside the
+                 executable and are listed in docs/third-party-notices.md). Defined here, not in
+                 the vendored theme, whose keys fall back to system fonts until an app supplies
+                 the files; a resource in Application.Resources wins over a merged one. -->
+            <FontFamily x:Key="SeFontMono">avares://Napkin.App/Assets/Fonts#IBM Plex Mono</FontFamily>
+            <FontFamily x:Key="SeFontSerif">avares://Napkin.App/Assets/Fonts#IBM Plex Serif</FontFamily>
+            <FontFamily x:Key="SeFontSans">avares://Napkin.App/Assets/Fonts#IBM Plex Sans</FontFamily>
+
+            <!-- Fluent's focus ring and text selection are accent-blue and ignore SystemAccentColor
+                 (design-repo docs/avalonia-usage.md), so they are pointed at moss here. -->
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#4A7C4A" />
+            <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#4A7C4A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#4A7C4A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#3A5C3A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#3A5C3A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#4A7C4A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#3A5C3A" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#3A5C3A" />
+        </ResourceDictionary>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://Napkin.App/Styles/NapkinLook.axaml" />
+
+        <!-- Control text is Plex Sans at 13 (the design system's app-body). Inter stays registered
+             in Program.cs as the fallback for any glyph Plex lacks. -->
+        <Style Selector="Window">
+            <Setter Property="FontFamily" Value="{DynamicResource SeFontSans}" />
+            <Setter Property="FontSize" Value="{DynamicResource SeFontSizeAppBody}" />
+        </Style>
     </Application.Styles>
 </Application>

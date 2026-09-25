@@ -2,7 +2,7 @@ using Napkin.App.Designs;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Xunit;
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App.GuiTests.Unit;
 
@@ -77,7 +77,7 @@ public class OpenFileTests
 
             Assert.False(window.IsRefusalShowing);
             Assert.Equal("picked.scene.json", window.CurrentDesign?.Name);
-            Assert.Equal("napkin — picked.scene.json", window.Title);
+            Assert.Equal(Design.WindowTitle("picked.scene.json", hasUnsavedChanges: false), window.Title);
             Assert.Contains(
                 "picked.scene.json",
                 window.DesignReadout.Text!,
@@ -98,10 +98,18 @@ public class OpenFileTests
     sealed class StubPicker(string? path) : ISceneFilePicker
     {
         public Task<string?> PickSceneFileAsync() => Task.FromResult(path);
+
+        public Task<string?> PickSaveDestinationAsync(string suggestedName) => Task.FromResult<string?>(null);
     }
 
     sealed class FailingPicker(string message) : ISceneFilePicker
     {
-        public Task<string?> PickSceneFileAsync() => throw new InvalidOperationException(message);
+        // IOException, not InvalidOperationException (#175): MainWindow now narrows its picker
+        // catch to ProjectFile.IsFileException, so a fixture standing in for "the platform dialog
+        // itself failed" has to throw a kind of exception that filter actually catches.
+        public Task<string?> PickSceneFileAsync() => throw new IOException(message);
+
+        public Task<string?> PickSaveDestinationAsync(string suggestedName) =>
+            throw new IOException(message);
     }
 }

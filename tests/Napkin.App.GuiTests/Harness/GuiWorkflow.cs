@@ -23,7 +23,25 @@ public static class GuiWorkflow
     /// feature id comes from that attribute, so a scenario cannot claim a feature it was not
     /// declared for.
     /// </remarks>
-    public static void Run(Action<AppDriver> scenario)
+    /// <summary>
+    /// A throw-away settings store holding the clean screen look, not the napkin-and-carpenter default,
+    /// so colour and pixel assertions written against the plain ground stay about behaviour.
+    /// </summary>
+    public static Napkin.App.Settings.SettingsStore ScreenStore(string settingsDir)
+    {
+        MainWindow.BenchTitleBar = false;
+        var store = new Napkin.App.Settings.SettingsStore(Path.Combine(settingsDir, Napkin.App.Settings.SettingsStore.FileName));
+        store.Update(s => s with { SketchPaper = Napkin.App.Viewing.SketchPaper.Screen, SketchLine = Napkin.App.Viewing.SketchLine.Clean });
+        return store;
+    }
+
+    /// <param name="scenario">The workflow.</param>
+    /// <param name="defaultLook">Whether to keep napkin's default look rather than the clean screen.</param>
+    /// <param name="packRoots">
+    /// Where the app looks for code packs. None by default, so no workflow depends on packs a
+    /// person has installed on the machine running it; a code-check workflow names its own.
+    /// </param>
+    public static void Run(Action<AppDriver> scenario, bool defaultLook = false, IReadOnlyList<string>? packRoots = null)
     {
         var featureId = GuiWorkflowContext.FeatureId
             ?? throw new GuiWorkflowRuleException(
@@ -33,10 +51,13 @@ public static class GuiWorkflow
         var session = HeadlessUnitTestSession.GetOrStartForAssembly(typeof(GuiWorkflow).Assembly);
         var inputActions = session.Dispatch(() =>
         {
-            var window = new MainWindow
+            // Never the person's real settings: each run gets its own file, gone when it ends.
+            string settingsDir = Path.Combine(Path.GetTempPath(), "napkin-gui-settings-" + Guid.NewGuid().ToString("N"));
+            var window = new MainWindow(defaultLook ? new Napkin.App.Settings.SettingsStore(Path.Combine(settingsDir, Napkin.App.Settings.SettingsStore.FileName)) : ScreenStore(settingsDir))
             {
                 Width = DefaultWindowSize.Width,
                 Height = DefaultWindowSize.Height,
+                PackRoots = packRoots ?? [],
             };
 
             var driver = AppDriver.Attach(window, featureId);
@@ -53,6 +74,10 @@ public static class GuiWorkflow
             finally
             {
                 window.Close();
+                if (Directory.Exists(settingsDir))
+                {
+                    Directory.Delete(settingsDir, recursive: true);
+                }
             }
         }, CancellationToken.None).GetAwaiter().GetResult();
 

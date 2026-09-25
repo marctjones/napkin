@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "kind": "wall-bracing",
+  "section": "ZZ-BRACE.1",
+  "title": "SYNTHETIC TEST BRACING - NOT CODE VALUES",
+  "source": "zz-synth-base",
+  "location": "synthetic p. 3",
+  "step": "2in",
+  "unitLength": "10ft 0in",
+  "inputs": [
+    {
+      "name": "ultimateWindSpeed",
+      "type": "mph",
+      "band": "upper-bound",
+      "domain": {
+        "min": 1,
+        "max": 199
+      }
+    }
+  ],
+  "required": [
+    {
+      "id": "q.w99",
+      "ultimateWindSpeed": 99,
+      "length": "4ft 0in",
+      "location": "synthetic p. 3, row 1"
+    },
+    {
+      "id": "q.w199",
+      "ultimateWindSpeed": 199,
+      "length": "5ft 0in",
+      "location": "synthetic p. 3, row 2"
+    }
+  ],
+  "factors": [
+    {
+      "id": "f.wind",
+      "section": "ZZ-BRACE.2",
+      "location": "synthetic p. 4, item 1",
+      "when": {
+        "input": "ultimateWindSpeed",
+        "above": 150
+      },
+      "multiply": "5/4"
+    },
+    {
+      "id": "f.tall",
+      "section": "ZZ-BRACE.2",
+      "location": "synthetic p. 4, item 2",
+      "when": {
+        "input": "wallHeight",
+        "above": "9ft 0in"
+      },
+      "add": "1ft 0in"
+    }
+  ],
+  "limits": [
+    {
+      "id": "l.tall",
+      "section": "ZZ-BRACE.1",
+      "location": "synthetic p. 3, note",
+      "when": {
+        "input": "wallHeight",
+        "above": "12ft 0in"
+      },
+      "text": "SYNTHETIC limit: walls taller than the synthetic 12 ft are not covered."
+    }
+  ],
+  "methods": [
+    {
+      "id": "zz-panel",
+      "name": "ZZ panel (synthetic)",
+      "section": "ZZ-BRACE.3",
+      "location": "synthetic p. 5",
+      "cap": "6ft 0in",
+      "minimumPanel": {
+        "wallHeightDomain": {
+          "min": "0in",
+          "max": "12ft 0in"
+        },
+        "rows": [
+          {
+            "id": "m.h8",
+            "wallHeight": "8ft 0in",
+            "length": "2ft 0in",
+            "location": "synthetic p. 5, row 1"
+          },
+          {
+            "id": "m.h12",
+            "wallHeight": "12ft 0in",
+            "length": "2ft 6in",
+            "location": "synthetic p. 5, row 2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "zz-board",
+      "name": "ZZ board (synthetic)",
+      "section": "ZZ-BRACE.4",
+      "location": "synthetic p. 6",
+      "cap": null,
+      "minimumPanel": {
+        "wallHeightDomain": {
+          "min": "0in",
+          "max": "12ft 0in"
+        },
+        "rows": [
+          {
+            "id": "b.h12",
+            "wallHeight": "12ft 0in",
+            "length": "4ft 0in",
+            "location": "synthetic p. 6, row 1"
+          }
+        ]
+      }
+    }
+  ],
+  "footnotes": [
+    {
+      "id": "a",
+      "text": "SYNTHETIC footnote a: shown with results, not encoded.",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ]
+}

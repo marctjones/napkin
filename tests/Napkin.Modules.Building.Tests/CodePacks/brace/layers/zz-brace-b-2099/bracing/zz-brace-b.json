@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "kind": "wall-bracing",
+  "section": "ZZ-BRACE-B.7",
+  "title": "SYNTHETIC TEST BRACING B - NOT CODE VALUES",
+  "source": "zz-synth-base",
+  "location": "synthetic p. 70",
+  "step": "1in",
+  "unitLength": "8ft 0in",
+  "inputs": [
+    {
+      "name": "ultimateWindSpeed",
+      "type": "mph",
+      "band": "upper-bound",
+      "domain": {
+        "min": 0,
+        "max": 199
+      }
+    }
+  ],
+  "required": [
+    {
+      "id": "q.b199",
+      "ultimateWindSpeed": 199,
+      "length": "3ft 0in",
+      "location": "synthetic p. 70, row 1"
+    }
+  ],
+  "factors": [],
+  "limits": [
+    {
+      "id": "l.b-tall",
+      "section": "ZZ-BRACE-B.7",
+      "location": "synthetic p. 70, note",
+      "when": {
+        "input": "wallHeight",
+        "above": "10ft 0in"
+      },
+      "text": "SYNTHETIC limit: walls taller than the synthetic 10 ft are not covered."
+    }
+  ],
+  "methods": [
+    {
+      "id": "zz-panel",
+      "name": "ZZ panel B (synthetic)",
+      "section": "ZZ-BRACE-B.8",
+      "location": "synthetic p. 71",
+      "cap": null,
+      "minimumPanel": {
+        "wallHeightDomain": {
+          "min": "0in",
+          "max": "10ft 0in"
+        },
+        "rows": [
+          {
+            "id": "m.b10",
+            "wallHeight": "10ft 0in",
+            "length": "3ft 0in",
+            "location": "synthetic p. 71, row 1"
+          }
+        ]
+      }
+    }
+  ],
+  "footnotes": []
+}

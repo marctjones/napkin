@@ -41,9 +41,11 @@ the finished wall.
   beyond what a table already prescribes.
 - Not a permit-submission platform. No jurisdiction integration, no e-filing.
 - Not a multi-user / collaboration tool in the first betas. Single user, local files.
-- **Not 3D in the first betas.** 2D plan/elevation with live dimensions ships first, deep and
-  solid; 3D visualization is an explicit later phase (see §8), not a requirement of the first
-  working beta.
+- **3D is real, not a visualization phase.** 2D plan/elevation with live dimensions shipped first;
+  Marc decided (2026-09-22) that napkin needs real 3D editing — parts placed and turned in space,
+  not just a preview — designed in
+  [`docs/design/assembly-model.md`](docs/design/assembly-model.md), signed off and authorized for
+  implementation.
 
 ### 2.1 License and dependency policy (decided)
 
@@ -147,8 +149,12 @@ constants, and not copied verbatim from any single publisher's compiled table:
 
 - **Lumber**: nominal-to-actual dimension mapping (a "2x4" is 1.5"×3.5", a "4x4" is 3.5"×3.5",
   standard lengths), standard stud spacing (16"/24" OC).
-- **Sheet goods**: standard plywood/OSB sheet sizes (4×8) and actual thickness by nominal
-  thickness (¾" nominal plywood is often actually 23/32"), drywall sheet sizes.
+- **Sheet goods**: standard plywood/OSB sheet sizes (4×8), and actual thickness by Performance
+  Category — panels are designated by a labeled category (e.g. "23/32" or "3/4"), not a nominal-
+  to-actual conversion factor; 23/32 and 3/4 are separate, distinct categories in the product
+  standards (PS 1-19, PS 2-18), not the same panel under two names. Corrected 2026-09-22: an
+  earlier draft of this line (a stated "conversion") did not match what either standard says;
+  see `docs/design/parts-and-cut-list.md` and `Napkin.Core.Materials`.
 - **Decking**: actual dimensions for standard decking board nominal sizes (5/4×6, etc.).
 - **Fasteners**: screw gauge/length, nail penny-size-to-length (16d, 10d, ...), bolt
   diameter/length/thread standards.
@@ -371,19 +377,20 @@ with one concrete acceptance sentence, the milestone it belongs to and the issue
 Tests claim a feature with a trait; the scorecard reads the test results and reports what is
 passing, planned, partial or not started, by area and by milestone.
 
-**The scorecard measures progress and never gates anything** — not a build, not a pull request,
-not a tag. Its job is to make "how far along is napkin?" answerable from the test suite instead of
-from a status report, and to show what to build next. A metric that can block a merge stops being
-an honest measurement. Tracked in #34; see
+**The scorecard measures progress and never gates anything** — not a build, not a landing on
+`main`, not a tag. Its job is to make "how far along is napkin?" answerable from the test suite
+instead of from a status report, and to show what to build next. A metric that can block a landing
+stops being an honest measurement. Tracked in #34; see
 [`docs/testing/scorecard.md`](./docs/testing/scorecard.md).
 
 **4. The coverage ratchet — a gate, and it only goes up.**
 
-A committed baseline records each assembly's line and branch coverage. CI fails a pull request
-whose coverage falls below its floor, and the baseline is raised as coverage improves — never
-silently lowered. It gates pull requests and nothing else: it does not gate a tag or a release,
-because the beta policy says nothing is scheduled and a release is a snapshot of whatever is
-there. Tracked in #32; see [`docs/testing/ratchet.md`](./docs/testing/ratchet.md).
+A committed baseline records each assembly's line and branch coverage. The local gate
+(`tools/scripts/gate.sh`) refuses to land a change whose coverage falls below its floor, and the
+baseline is raised as coverage improves — never silently lowered. It gates a landing on `main` and
+nothing else: it does not gate a tag or a release, because the beta policy says nothing is
+scheduled and a release is a snapshot of whatever is there. Tracked in #32; see
+[`docs/testing/ratchet.md`](./docs/testing/ratchet.md).
 
 **5. The GUI workflow suite — a gate, and it only goes up.**
 
@@ -441,11 +448,10 @@ architecture it fills. A milestone earns a tagged pre-release when it is done, a
 number is assigned at that moment rather than planned in advance — which is why they have names.
 Nothing is scheduled toward a date (see "Versioning and releases" below).
 
-1. **M1 Look.** A read-only viewer: download an unsigned build, open a hand-crafted sample design
-   from a file, pan, zoom, zoom to fit, and read dimension labels in feet, inches and fractions.
-   Nothing editable, nothing saved. It proves the foundation — exact lengths (§5.1), the geometry
-   model, a strict scene reader (§6.4), hand-computed fixtures, and a pipeline that turns a tag
-   into something downloadable.
+1. **M1 Look (done).** A read-only viewer: open a hand-crafted sample design from a file, pan,
+   zoom, zoom to fit, and read dimension labels in feet, inches and fractions. Nothing editable,
+   nothing saved. It proves the foundation — exact lengths (§5.1), the geometry model, a strict
+   scene reader (§6.4) and hand-computed fixtures. Downloadable builds are parked (see below).
 2. **M2 Draw.** The viewer becomes a drawing tool: draw by dragging, move and resize, resize by
    *typing* a dimension, snap parts together and see the relationship the snap created, undo and
    redo, save a design and reopen it. Invalid input is explained; two dimensions that cannot both
@@ -456,16 +462,24 @@ Nothing is scheduled toward a date (see "Versioning and releases" below).
 4. **M4 Check.** The differentiator, one answer at a time: a wall, an opening, a header size and
    stud count with the code edition, table and row behind it (§5.3, §5.4), and a hard out-of-scope
    result the moment the inputs leave what the table covers. One adopted code pack — **Connecticut
-   2026** — plus the per-project picker (§5.4).
+   2022** (IRC 2021 as amended; the 2026 code is not yet in force) — plus the per-project picker
+   (§5.4).
 5. **M5 Brace and compare.** The wall-bracing check (§5.3 — the check most DIY openings miss),
-   and a **second** pack, Connecticut 2022. The second pack is the point: locking a project to the
-   code in force at permit application, and recomputing every result when that changes, is only
-   demonstrable once there are two codes to move between.
+   and a **second** pack once one exists (Connecticut 2026 once adopted, or another jurisdiction).
+   The second pack is the point: locking a project to the code in force at permit application, and
+   recomputing every result when that changes, is only demonstrable once there are two codes to
+   move between.
+
+**Core first.** Marc's rule (2026-09-21): build the product before anything around it — design
+(M2), cut list (M3), code-cited sizing (M4, M5). Packaging, releases, installers, export formats and
+optimizers are parked; PLAN.md lists what was closed or deferred and when to reopen it.
 
 **Backlog**, wanted but not scheduled: the deck module in its pieces (ledger, joists and beams,
 footings, guards and stairs) reusing M3's cut-list machinery; the site plan; DXF and PDF export;
-the Massachusetts and Pennsylvania packs and municipal amendment overlays; sheet-goods nesting;
-SketchUp import; installers.
+the Massachusetts and Pennsylvania packs and municipal amendment overlays; the constraint solver.
+**Dropped until there is a real need:** SketchUp import, sheet-goods nesting, installers and the
+release pipeline (§6.6 and §12 keep the decisions about signing and versioning for when
+packaging resumes).
 
 Alongside all five, off the critical path: the **constraint solver workstream** (§11, #28), which
 starts once Core.Geometry (#5) has landed and **gates no milestone**. If it proves hard, it waits;
@@ -479,7 +493,8 @@ The issue-by-issue breakdown, and which model leads each step, is in
 ## 9. Decided
 
 - **License**: AGPL-3.0 for the project; dependencies permissive or weak-copyleft only (§2.1).
-- **Beta scope is 2D only**, deep and solid, with 3D as an explicit later phase (§2, §8).
+- **Real 3D editing is in scope**, designed in
+  [`docs/design/assembly-model.md`](docs/design/assembly-model.md) and signed off 2026-09-22 (§2).
 - **First-beta constraint handling is direct/explicit geometry**, no general nonlinear solver
   dependency (§5.1) — sidesteps the SolveSpace(GPL)/PlaneGCS(LGPL, C++) licensing and interop
   trade-off entirely for now. The solver is a separate workstream (§11).
@@ -609,17 +624,17 @@ Set by Marc on 2026-09-21.
 - **This does not shrink product scope.** Four adopted codes (§11) and locking a project to its
   permit-date code edition (§5.4) are features, not legacy. "Beta scope" in this document means
   what the betas are meant to do, not what is provisional.
-- **Version numbers:** the minor number increments with each merged pull request; a release is tagged
-  when features improve significantly.
+- **Version numbers:** the minor number increments with each change landed on `main`; a release is
+  tagged when features improve significantly.
 
-**Mechanism — decided by Marc on 2026-09-21: the minor number is bumped per merged pull request**
-(tracked as #30):
+**Mechanism — decided by Marc on 2026-09-21, workflow updated 2026-09-22 (no pull requests, direct
+to `main`): the minor number is bumped by whoever lands each change** (tracked as #30):
 
 - A single `<VersionPrefix>0.N.0</VersionPrefix>` in a `Directory.Build.props` at the repository
   root, with `<VersionSuffix>beta</VersionSuffix>`, so every assembly and the app report the same
-  `0.N.0-beta`. The file exists; the first pull request of the beta line set it to `0.1.0-beta`.
-- The minor number `N` is bumped in the pull request that lands the work, by its author, as part
-  of that PR. Patch stays 0.
+  `0.N.0-beta`. The file exists; the first landing of the beta line set it to `0.1.0-beta`.
+- The minor number `N` is bumped by exactly one by whoever lands the work on `main`
+  (`tools/scripts/land.sh`), as part of that landing. Patch stays 0.
 - CI passes the commit SHA into the informational version, so a running beta can say exactly
   which commit it is.
 - When a milestone is worth naming, a `v0.N.0-beta` tag and a GitHub pre-release with the

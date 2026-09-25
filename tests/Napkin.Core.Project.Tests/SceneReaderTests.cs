@@ -13,13 +13,22 @@ public sealed class SceneReaderTests
     public void A_scene_loads_to_the_sketch_it_describes_by_value()
     {
         Sketch expected = Sketch.Empty
-            .WithEntity(new Box(
+            .WithEntity(Box.AsDrawn(
                 new EntityId(Guid.Parse(Scenes.BoxId)),
                 LayerId.Default,
                 new Point2(Length.Zero, Length.Zero),
                 new Length(30720),
                 new Length(4096),
-                Angle.Zero))
+                new Length(768),
+                Angle.Zero) with
+            {
+                Name = "Shelf",
+                Part = new Part(
+                    "1x6",
+                    Species: null,
+                    Quantity: 1,
+                    new PlanAxes(PartDimension.Length, PartDimension.Width)),
+            })
             .WithRelationship(new ParamValue(
                 new RelationshipId(Guid.Parse(Scenes.RelationshipId)),
                 new BoxWidthRef(new EntityId(Guid.Parse(Scenes.BoxId))),
@@ -121,35 +130,42 @@ public sealed class SceneReaderTests
     /// </summary>
     private const string AllReferenceShapes = """
         {
-          "formatVersion": 1,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 0, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0 },
+              "name": "West square", "phase": "new",
+              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0,
+              "part": { "stock": null, "species": "white oak", "quantity": 2,
+                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false }, "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "anchor": { "x": 8192, "y": 0 }, "width": 8192, "height": 8192, "rotation": 0 },
+              "name": "East square", "phase": "new",
+              "anchor": { "x": 8192, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0,
+              "part": null, "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000c", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "position": { "x": 8192, "y": 0 } },
+              "name": "Meeting point", "phase": "new", "position": { "x": 8192, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000d", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "position": { "x": 8192, "y": 16384 } },
+              "name": "", "phase": "new", "position": { "x": 8192, "y": 16384 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000e", "type": "segment", "layer": "00000000-0000-0000-0000-000000000001",
+              "name": "Joint line", "phase": "new",
               "start": "0192f1a0-0000-4000-8000-00000000000c", "end": "0192f1a0-0000-4000-8000-00000000000d" }
           ],
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-000000000001", "kind": "anchored",
               "entity": "0192f1a0-0000-4000-8000-00000000000a" },
             { "id": "0192f1a0-0000-4000-8000-000000000002", "kind": "coincident",
-              "a": { "kind": "corner", "box": "0192f1a0-0000-4000-8000-00000000000a", "corner": "southEast" },
+              "a": { "kind": "feature", "box": "0192f1a0-0000-4000-8000-00000000000a", "faces": ["south", "east"] },
               "b": { "kind": "node", "node": "0192f1a0-0000-4000-8000-00000000000c" } },
             { "id": "0192f1a0-0000-4000-8000-000000000003", "kind": "vertical",
               "edge": { "kind": "segment", "segment": "0192f1a0-0000-4000-8000-00000000000e" } },
             { "id": "0192f1a0-0000-4000-8000-000000000004", "kind": "flush",
-              "a": { "kind": "boxEdge", "box": "0192f1a0-0000-4000-8000-00000000000a", "edge": "south" },
-              "b": { "kind": "boxEdge", "box": "0192f1a0-0000-4000-8000-00000000000b", "edge": "south" } },
+              "a": { "kind": "feature", "box": "0192f1a0-0000-4000-8000-00000000000a", "faces": ["south"] },
+              "b": { "kind": "feature", "box": "0192f1a0-0000-4000-8000-00000000000b", "faces": ["south"] } },
             { "id": "0192f1a0-0000-4000-8000-000000000005", "kind": "axisDistance",
-              "from": { "kind": "corner", "box": "0192f1a0-0000-4000-8000-00000000000a", "corner": "southWest" },
-              "to": { "kind": "corner", "box": "0192f1a0-0000-4000-8000-00000000000b", "corner": "southWest" },
+              "from": { "kind": "feature", "box": "0192f1a0-0000-4000-8000-00000000000a", "faces": ["south", "west"] },
+              "to": { "kind": "feature", "box": "0192f1a0-0000-4000-8000-00000000000b", "faces": ["south", "west"] },
               "axis": "x", "distance": 8192 },
             { "id": "0192f1a0-0000-4000-8000-000000000006", "kind": "centered",
               "middle": { "kind": "node", "node": "0192f1a0-0000-4000-8000-00000000000c" },

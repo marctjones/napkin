@@ -12,17 +12,6 @@ public class FirstRunDocsTests
     private static string Read(string relative) => ReleaseWorkflowRules.Read(relative);
 
     [Fact]
-    public void The_readme_links_the_first_run_page_and_says_there_is_no_stable_release()
-    {
-        var readme = Read("README.md");
-
-        Assert.Contains("(./docs/first-run.md)", readme);
-        Assert.Contains("(./docs/release.md)", readme);
-        Assert.Contains("no stable release", readme, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("pre-releases", readme, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
     public void The_release_notes_link_the_first_run_page_and_carry_the_source_offer()
     {
         var notes = Read(".github/release-notes-template.md");

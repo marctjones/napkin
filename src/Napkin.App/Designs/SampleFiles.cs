@@ -49,11 +49,71 @@ public static class SampleFiles
         new(
             "coffee-table.scene.json",
             "Coffee table",
-            "A 4'-0\" × 2'-0\" top on four 2½\" legs, with aprons — the plan view."),
+            "A 4'-0\" × 2'-0\" top on four 2½\" legs, with aprons."),
+        new(
+            "rounded-corner-table.scene.json",
+            "Rounded-corner table",
+            "The same table with its top's four corners rounded to a 1\" radius."),
         new(
             "wall-with-window.scene.json",
             "Wall with window",
-            "12'-0\" of 5½\" wall with a 3'-0\" opening centred in it — the plan view."),
+            "12'-0\" of 5½\" wall with a 3'-0\" opening centred in it."),
+        new(
+            "bookcase.scene.json",
+            "Bookcase",
+            "A 30\" × 36\" plywood carcass: sides, caps, two shelves and a 1/4\" back — sheet goods and pairs."),
+        new(
+            "bench.scene.json",
+            "Bench",
+            "A 3'-6\" bench on four legs, with one box standing for two rails — quantity, not box count."),
+        new(
+            "lying-beam.scene.json",
+            "Lying beam",
+            "One 36\" beam placed four ways — along X, along Y, upright and on its edge: same piece, same cut."),
+        new(
+            "chain-of-five.scene.json",
+            "Chain of five",
+            "Five slats each flush to the one before — resize any and the rest follow."),
+        new(
+            "fraction-stress.scene.json",
+            "Fraction stress",
+            "Parts of 1/16\", 3/32\", 5/64\" and about 1/3\" — sizes off the 1/16\" grid read as approximate."),
+        new(
+            "scale-extremes.scene.json",
+            "Scale extremes",
+            "A 40'-0\" plate and wall with a 1/32\" shim between — precision and zoom."),
+        new(
+            "framing-16-oc.scene.json",
+            "Framing at 16\" o.c.",
+            "Twenty-five studs and two plates — quantity counting."),
+        new(
+            "l-bracket.scene.json",
+            "L-bracket",
+            "An L-bracket with a distinct feature on every side — for telling the standard views apart."),
+        new(
+            "overlap.scene.json",
+            "Overlap",
+            "Two boards in the same place and a peg through both — napkin does not detect overlap."),
+        new(
+            "picture-frame.scene.json",
+            "Picture frame",
+            "An 8\" × 10\" opening in 1½\" moulding, mitred at all four corners — cut to the long point."),
+        new(
+            "stocked-bench.scene.json",
+            "Stocked bench",
+            "A 4'-0\" bench of 2x4, 1x4 and 3/4 plywood — every part names its stock, for the shopping list."),
+        new(
+            "diy-coffee-table-drawers.scene.json",
+            "DIY coffee table with drawers",
+            "A 42\" × 22\" table with two drawers — 34 joints: pocket screws, rabbets, grooves and tabletop clips."),
+        new(
+            "window-in-existing-wall.scene.json",
+            "Window in an existing wall",
+            "A new 3'-0\" window in an existing 12'-0\" exterior wall — what is new material and which studs come out."),
+        new(
+            "basement-room.scene.json",
+            "Basement room",
+            "A 14'-0\" × 12'-0\" room inside four new walls, a door and a window — drywall, insulation, paint, flooring and baseboard by area."),
     ];
 
     private static readonly string[] SceneSuffixes = [".scene.json", ".json"];

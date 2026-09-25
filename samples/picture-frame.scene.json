@@ -1,0 +1,204 @@
+{
+  "formatVersion": 10,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
+  ],
+  "entities": [
+    {
+      "id": "b0000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stile, left",
+      "phase": "new",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "width": 1536,
+      "height": 13312,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "length"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": [
+        {
+          "kind": "cornerCut",
+          "corner": "southEast",
+          "alongX": 1536,
+          "alongY": 1536
+        },
+        {
+          "kind": "cornerCut",
+          "corner": "northEast",
+          "alongX": 1536,
+          "alongY": 1536
+        }
+      ]
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Stile, right",
+      "phase": "new",
+      "anchor": {
+        "x": 11264,
+        "y": 13312,
+        "z": 0
+      },
+      "width": 1536,
+      "height": 13312,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 648000,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "length"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": [
+        {
+          "kind": "cornerCut",
+          "corner": "southEast",
+          "alongX": 1536,
+          "alongY": 1536
+        },
+        {
+          "kind": "cornerCut",
+          "corner": "northEast",
+          "alongX": 1536,
+          "alongY": 1536
+        }
+      ]
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000003",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Rail, bottom",
+      "phase": "new",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "width": 11264,
+      "height": 1536,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": [
+        {
+          "kind": "cornerCut",
+          "corner": "northEast",
+          "alongX": 1536,
+          "alongY": 1536
+        },
+        {
+          "kind": "cornerCut",
+          "corner": "northWest",
+          "alongX": 1536,
+          "alongY": 1536
+        }
+      ]
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000004",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Rail, top",
+      "phase": "new",
+      "anchor": {
+        "x": 11264,
+        "y": 13312,
+        "z": 0
+      },
+      "width": 11264,
+      "height": 1536,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 648000,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": [
+        {
+          "kind": "cornerCut",
+          "corner": "northEast",
+          "alongX": 1536,
+          "alongY": 1536
+        },
+        {
+          "kind": "cornerCut",
+          "corner": "northWest",
+          "alongX": 1536,
+          "alongY": 1536
+        }
+      ]
+    }
+  ],
+  "relationships": [],
+  "fastenerChoices": [],
+  "supplies": [],
+  "code": null,
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
+}

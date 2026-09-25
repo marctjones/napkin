@@ -1,0 +1,61 @@
+{
+  "tableVersion": 1,
+  "kind": "spacings",
+  "id": "support-spacings-ps2",
+  "title": "Centre-to-centre framing spacings, by end use",
+
+  "citation": {
+    "designation": "PS 2-18",
+    "standard": "Voluntary Product Standard PS 2-18, Performance Standard for Wood Structural Panels (effective 30 March 2019)",
+    "publisher": "U.S. Department of Commerce / National Institute of Standards and Technology; published by APA - The Engineered Wood Association, Form No. S350H",
+    "where": "§4.1.3, \"Span rating\", page 10, which defines a span rating as \"an index number, based on customary inch units, that identifies the recommended maximum center-to-center support spacing for the specified end use under normal use conditions\" and gives Wall 24 and Floor 24 o.c. as examples; together with the span ratings the standard's own performance tables are written against — Table 2 pp. 12-13 (Roof and Subfloor), Table 3 p. 15 (Single Floor) and Table 5 p. 20 (Wall). NOT read from the IRC: napkin does not transcribe adopted code tables, which is a decision for the project owner and blocks the code packs.",
+    "url": "https://tolko.com/wp-content/uploads/2019/11/APA-PS-2-18-Performance-Standard-for-Wood-Structural-Panels.pdf",
+    "retrieved": "2026-09-21"
+  },
+
+  "spacings": [
+    { "name": "Wall - 16", "endUse": "Wall", "spacing": "16",
+      "derivation": "Table 5, racking load performance criteria, lists the span rating \"Wall - 16\". By §4.1.3 a span rating is the recommended maximum centre-to-centre support spacing for that end use, so the studs are at 16 in on centre. This is the 16 in o.c. stud spacing, read from a standard rather than from the IRC." },
+    { "name": "Wall - 24", "endUse": "Wall", "spacing": "24",
+      "derivation": "Table 5 lists the span rating \"Wall - 24\"; §4.1.3 gives Wall 24 as its own worked example of a span rating. Studs at 24 in on centre." },
+
+    { "name": "Roof - 16", "endUse": "Roof", "spacing": "16",
+      "derivation": "Table 2, End Use - Span Rating column, lists Roof - 16. Rafters or trusses at 16 in on centre (§4.1.3)." },
+    { "name": "Roof - 20", "endUse": "Roof", "spacing": "20",
+      "derivation": "Table 2 lists Roof - 20." },
+    { "name": "Roof - 24", "endUse": "Roof", "spacing": "24",
+      "derivation": "Table 2 lists Roof - 24." },
+    { "name": "Roof - 32", "endUse": "Roof", "spacing": "32",
+      "derivation": "Table 2 lists Roof - 32. §4.1.3's own example, a span rating of 32/16, designates a roof span of 32 in and a subfloor span of 16 in." },
+    { "name": "Roof - 40", "endUse": "Roof", "spacing": "40",
+      "derivation": "Table 2 lists Roof - 40." },
+    { "name": "Roof - 48", "endUse": "Roof", "spacing": "48",
+      "derivation": "Table 2 lists Roof - 48." },
+    { "name": "Roof - 54", "endUse": "Roof", "spacing": "54",
+      "derivation": "Table 2 lists Roof - 54." },
+    { "name": "Roof - 60", "endUse": "Roof", "spacing": "60",
+      "derivation": "Table 2 lists Roof - 60." },
+
+    { "name": "Subfloor - 16", "endUse": "Subfloor", "spacing": "16",
+      "derivation": "Table 2 lists Subfloor - 16. Joists at 16 in on centre (§4.1.3)." },
+    { "name": "Subfloor - 20", "endUse": "Subfloor", "spacing": "20",
+      "derivation": "Table 2 lists Subfloor - 20." },
+    { "name": "Subfloor - 24", "endUse": "Subfloor", "spacing": "24",
+      "derivation": "Table 2 lists Subfloor - 24." },
+    { "name": "Subfloor - 32", "endUse": "Subfloor", "spacing": "32",
+      "derivation": "Table 2 lists Subfloor - 32." },
+    { "name": "Subfloor - 48", "endUse": "Subfloor", "spacing": "48",
+      "derivation": "Table 2 lists Subfloor - 48." },
+
+    { "name": "Single Floor - 16", "endUse": "Single Floor", "spacing": "16",
+      "derivation": "Table 3, uniform load performance criteria, lists Single Floor - 16." },
+    { "name": "Single Floor - 20", "endUse": "Single Floor", "spacing": "20",
+      "derivation": "Table 3 lists Single Floor - 20." },
+    { "name": "Single Floor - 24", "endUse": "Single Floor", "spacing": "24",
+      "derivation": "Table 3 lists Single Floor - 24; §4.1.3 gives Floor 24 o.c. as a worked example." },
+    { "name": "Single Floor - 32", "endUse": "Single Floor", "spacing": "32",
+      "derivation": "Table 3 lists Single Floor - 32." },
+    { "name": "Single Floor - 48", "endUse": "Single Floor", "spacing": "48",
+      "derivation": "Table 3 lists Single Floor - 48." }
+  ]
+}

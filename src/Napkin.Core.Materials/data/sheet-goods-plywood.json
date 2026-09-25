@@ -1,0 +1,49 @@
+{
+  "tableVersion": 1,
+  "kind": "stock",
+  "id": "structural-plywood-ps1",
+  "title": "Structural plywood: Performance Category and sheet size",
+  "category": "SheetGood",
+
+  "citation": {
+    "designation": "PS 1-19",
+    "standard": "Voluntary Product Standard PS 1-19, Structural Plywood (December 2019)",
+    "publisher": "U.S. Department of Commerce / National Institute of Standards and Technology",
+    "where": "§5.10.2 and Table 10, \"Plywood thickness requirements\", page 39, which state a Performance Category and the minimum and maximum thickness a panel of that category may measure; and §5.4, which states that the standard's requirements apply to 1220 mm by 2440 mm (48 x 96 in) panels. §5.10.1 makes the panel's size the manufacturer's stated length and width, with a tolerance of plus zero, minus 1.6 mm (1/16 in).",
+    "url": "https://www.wbdg.org/FFC/NIST/nist_ps1_2019.pdf",
+    "retrieved": "2026-09-21"
+  },
+
+  "entries": [
+    { "name": "1/4 plywood", "performanceCategory": "1/4",
+      "thickness": "1/4", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 10, 1/4 PERF CAT. The category is a label, not a measurement: a sanded panel of this category measures 5.95 to 6.75 mm (0.234 to 0.266 in), an unsanded one 5.56 to 7.14 mm (0.219 to 0.281 in). Those limits are rounded conversions of millimetre values and do not land on the 1/1024 in grid, so the exact length carried is the Performance Category itself, 1/4 in. Sheet size from §5.4: 48 in x 96 in." },
+    { "name": "3/8 plywood", "performanceCategory": "3/8",
+      "thickness": "3/8", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 10, 3/8 PERF CAT: sanded 9.13 to 9.92 mm (0.359 to 0.391 in), unsanded 8.73 to 10.32 mm (0.344 to 0.406 in). Carried length is the category, 3/8 in. Sheet size from §5.4: 48 in x 96 in." },
+    { "name": "7/16 plywood", "performanceCategory": "7/16",
+      "thickness": "7/16", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 10, 7/16 PERF CAT: sanded 10.72 to 11.51 mm (0.422 to 0.453 in), unsanded 10.32 to 11.91 mm (0.406 to 0.469 in). Carried length is the category, 7/16 in. Sheet size from §5.4: 48 in x 96 in." },
+    { "name": "15/32 plywood", "performanceCategory": "15/32",
+      "thickness": "15/32", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 10, 15/32 PERF CAT: sanded 11.51 to 12.30 mm (0.453 to 0.484 in), unsanded 11.11 to 12.70 mm (0.438 to 0.500 in). Carried length is the category, 15/32 in. This is a different Performance Category from 1/2, not \"the actual size of\" a 1/2 in panel. Sheet size from §5.4: 48 in x 96 in." },
+    { "name": "1/2 plywood", "performanceCategory": "1/2",
+      "thickness": "1/2", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 10, 1/2 PERF CAT: sanded 12.30 to 13.10 mm (0.484 to 0.516 in), unsanded 11.91 to 13.49 mm (0.469 to 0.531 in). Carried length is the category, 1/2 in. Sheet size from §5.4: 48 in x 96 in." },
+    { "name": "19/32 plywood", "performanceCategory": "19/32",
+      "thickness": "19/32", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 10, 19/32 PERF CAT: sanded 14.68 to 15.48 mm (0.578 to 0.609 in), unsanded 14.29 to 15.88 mm (0.563 to 0.625 in). Carried length is the category, 19/32 in. Sheet size from §5.4: 48 in x 96 in." },
+    { "name": "5/8 plywood", "performanceCategory": "5/8",
+      "thickness": "5/8", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 10, 5/8 PERF CAT: sanded 15.48 to 16.27 mm (0.609 to 0.641 in), unsanded 15.08 to 16.67 mm (0.594 to 0.656 in). Carried length is the category, 5/8 in. Sheet size from §5.4: 48 in x 96 in." },
+    { "name": "23/32 plywood", "performanceCategory": "23/32",
+      "thickness": "23/32", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 10, 23/32 PERF CAT: sanded 17.86 to 18.65 mm (0.703 to 0.734 in), unsanded 17.46 to 19.05 mm (0.688 to 0.750 in). Carried length is the category, 23/32 in. PS 1-19 lists 23/32 and 3/4 as two separate Performance Categories with two separate ranges; neither is stated by the standard to be the actual thickness of the other. Sheet size from §5.4: 48 in x 96 in." },
+    { "name": "3/4 plywood", "performanceCategory": "3/4",
+      "thickness": "3/4", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 10, 3/4 PERF CAT: sanded 18.65 to 19.45 mm (0.734 to 0.766 in), unsanded 18.26 to 19.84 mm (0.719 to 0.781 in). Carried length is the category, 3/4 in. Sheet size from §5.4: 48 in x 96 in." },
+    { "name": "1-1/8 plywood", "performanceCategory": "1-1/8",
+      "thickness": "1-1/8", "sheetWidth": "4'", "sheetLength": "8'",
+      "derivation": "Table 10, 1-1/8 PERF CAT: sanded 27.72 to 29.43 mm (1.091 to 1.159 in), unsanded 27.15 to 30.00 mm (1.069 to 1.181 in). Carried length is the category, 1-1/8 in. Sheet size from §5.4: 48 in x 96 in." }
+  ]
+}

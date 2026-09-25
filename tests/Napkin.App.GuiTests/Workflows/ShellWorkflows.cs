@@ -7,7 +7,7 @@ using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Xunit;
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App.GuiTests.Workflows;
 
@@ -132,7 +132,7 @@ public class ShellWorkflows
 
         app.Tab(3);
         app.ShiftTab();
-        app.Chord(Key.Z);
+        app.Chord(Key.J);
         app.Type("24");
 
         app.Expect("focus is on a control of the shell, not nowhere and not outside it", () =>
@@ -155,7 +155,7 @@ public class ShellWorkflows
                  (Key.Tab, KeyModifiers.None),
                  (Key.Tab, KeyModifiers.None),
                  (Key.Tab, KeyModifiers.Shift),
-                 (Key.Z, AppDriver.CommandModifier)],
+                 (Key.J, AppDriver.CommandModifier)],
                 keys);
         });
 

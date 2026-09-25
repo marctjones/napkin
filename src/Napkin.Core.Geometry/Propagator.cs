@@ -11,11 +11,25 @@ internal enum ScalarKind
     /// <summary>A box's anchor Y, or a node's Y.</summary>
     Y,
 
+    /// <summary>
+    /// A box's anchor Z (docs/design/assembly-model.md &#xA7;3.1). A node has none: it is plan-plane
+    /// construction geometry at Z = 0 (&#xA7;1.4), and no place a node owns fixes Z, so nothing ever
+    /// asks for one.
+    /// </summary>
+    Z,
+
     /// <summary>A box's width, along its local X.</summary>
     Width,
 
     /// <summary>A box's height, along its local Y.</summary>
     Height,
+
+    /// <summary>
+    /// A box's depth, along its local Z (docs/design/assembly-model.md §1.2). Like the other two
+    /// sizes, only <see cref="ParamValue"/> and <see cref="EqualParam"/> assign it; a feature's
+    /// offset reads it on whichever world axis the box's orientation stands it along.
+    /// </summary>
+    Depth,
 }
 
 /// <summary>One number the propagator can assign.</summary>
@@ -59,6 +73,26 @@ internal sealed record Conflicted(ConflictReport Report) : PropagationResult;
 /// positional pass then computes every corner offset from final sizes. Without this a corner
 /// offset could be computed from a size that a later relationship changes, and the stale
 /// derivation would look like a contradiction.
+/// </para>
+/// <para>
+/// <strong>Pins travel; nothing else drives.</strong> A scalar is <em>pinned</em> once it has
+/// been assigned. A relationship that already holds passes its pin on — the side held by
+/// something assigned assigns the other side to where it already is — so pinning reaches all the
+/// way along a chain of parts rather than one relationship deep (issue #49). A relationship whose
+/// two sides are both still undecided moves nothing at all: it waits. When the queue empties with
+/// such a chain still unsatisfied, <see cref="RunPhase"/> gives that chain its one reference
+/// scalar and runs the queue again. This is what makes the answer independent of relationship ids
+/// and of which way round each relationship was written.
+/// </para>
+/// <para>
+/// <strong>Three axes, one algorithm</strong> (docs/design/assembly-model.md &#xA7;3.1). A box has
+/// six scalars — its anchor's X, Y and Z and its three sizes — and every coordinate a relationship
+/// reads is one anchor component plus or minus one size, chosen by the feature's faces and turned
+/// by the box's orientation (<see cref="FeatureOffset"/>). So a <see cref="Side"/> is still
+/// "one base scalar plus an offset from sizes", whichever axis it is on and whichever size stands
+/// along it, and nothing above is told how many axes there are. The two phases are unchanged:
+/// sizes settle first, all three of them, and then every position along every axis is worked out
+/// from final sizes.
 /// </para>
 /// </remarks>
 internal sealed class Propagator
@@ -117,10 +151,18 @@ internal sealed class Propagator
         {
             ScalarKind.X => box.Anchor.X,
             ScalarKind.Y => box.Anchor.Y,
+            ScalarKind.Z => box.Anchor.Z,
             ScalarKind.Width => box.Width,
-            _ => box.Height,
+            ScalarKind.Height => box.Height,
+            ScalarKind.Depth => box.Depth,
+            _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "Not a scalar kind."),
         },
-        Node node => key.Kind == ScalarKind.X ? node.Position.X : node.Position.Y,
+        Node node => key.Kind switch
+        {
+            ScalarKind.X => node.Position.X,
+            ScalarKind.Y => node.Position.Y,
+            _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "A node has only an X and a Y."),
+        },
         _ => Length.Zero,
     };
 
@@ -129,14 +171,29 @@ internal sealed class Propagator
     {
         ScalarKind.Width => new ParamTarget(new BoxWidthRef(key.Entity)),
         ScalarKind.Height => new ParamTarget(new BoxHeightRef(key.Entity)),
-        _ => new PointAxisTarget(
+        ScalarKind.Depth => new ParamTarget(new BoxDepthRef(key.Entity)),
+        ScalarKind.X or ScalarKind.Y => new PointAxisTarget(
             sketch.Find(key.Entity) is Box
-                ? new CornerRef(key.Entity, BoxCorner.SouthWest)
+                ? new FeatureRef(key.Entity, BoxFeature.LocalUpright(BoxCorner.SouthWest))
                 : new NodeRef(key.Entity),
             key.Kind == ScalarKind.X ? Axis.X : Axis.Y),
+
+        // The anchor is the blank's south-west-bottom vertex; its local upright, which names the
+        // anchor's X and Y above, fixes Z only when the box is tipped, so Z names the vertex.
+        ScalarKind.Z => new PointAxisTarget(
+            new FeatureRef(key.Entity, BoxFeature.Vertex(BoxCorner.SouthWest, BoxLevel.Bottom)),
+            Axis.Z),
+        _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "Not a scalar kind."),
     };
 
-    private static ScalarKind KindOf(Axis axis) => axis == Axis.X ? ScalarKind.X : ScalarKind.Y;
+    /// <summary>The position scalar along a world axis.</summary>
+    internal static ScalarKind KindOf(Axis axis) => axis switch
+    {
+        Axis.X => ScalarKind.X,
+        Axis.Y => ScalarKind.Y,
+        Axis.Z => ScalarKind.Z,
+        _ => throw new ArgumentOutOfRangeException(nameof(axis), axis, "Not an axis."),
+    };
 
     private PropagationResult Propagate(
         IReadOnlyDictionary<ScalarKey, Length> seeds,
@@ -154,11 +211,12 @@ internal sealed class Propagator
                 continue;
             }
 
-            bool hasSizes = _sketch.Find(anchored.Entity) is Box;
-            foreach (ScalarKind kind in new[] { ScalarKind.X, ScalarKind.Y, ScalarKind.Width, ScalarKind.Height })
+            // A box has six scalars to hold (assembly-model §2.3); a node has its X and Y.
+            bool isBox = _sketch.Find(anchored.Entity) is Box;
+            foreach (ScalarKind kind in new[] { ScalarKind.X, ScalarKind.Y, ScalarKind.Z, ScalarKind.Width, ScalarKind.Height, ScalarKind.Depth })
             {
                 ScalarKey key = new(anchored.Entity, kind);
-                if (requestOwns.Contains(key) || (!hasSizes && kind is ScalarKind.Width or ScalarKind.Height))
+                if (requestOwns.Contains(key) || (!isBox && kind is not (ScalarKind.X or ScalarKind.Y)))
                 {
                     continue;
                 }
@@ -213,6 +271,53 @@ internal sealed class Propagator
             Enqueue(relationship.Id);
         }
 
+        Drain();
+
+        // Whatever is still unsatisfied is a chain no pin reached: every relationship in it saw
+        // two undecided sides and waited. Such a chain has one degree of freedom left along the
+        // axis — a translation — and §4.4's anchor rule says who gives it up: the part closest to
+        // what the request changed keeps its anchor, and the rest of the chain follows. Assigning
+        // that one scalar is enough; the queue carries it outward. Repeat until nothing is left,
+        // because deciding one chain can leave another one to decide.
+        while (_conflict is null)
+        {
+            List<Relationship> unsatisfied = [.. _phase.Where(IsUnsatisfied)];
+            if (unsatisfied.Count == 0)
+            {
+                return;
+            }
+
+            int assignedBefore = _assigned.Count;
+
+            if (ReferenceScalarOf(unsatisfied) is { } reference)
+            {
+                Assign(reference, CurrentOf(reference), ImmutableList<RelationshipId>.Empty);
+            }
+            else
+            {
+                // Only Centered relationships are left. They carry their own rule for which of
+                // the three points moves (§3.2's half-unit midpoint), so they need no reference.
+                foreach (Relationship relationship in unsatisfied)
+                {
+                    Enqueue(relationship.Id);
+                }
+            }
+
+            Drain();
+
+            if (_assigned.Count == assignedBefore)
+            {
+                // No progress is possible. This cannot happen for a sketch that held together
+                // before the request — every unsatisfied rigid relationship has an unassigned
+                // base to use as a reference — and stopping beats spinning. DirectUpdater's
+                // post-write check reports it as the bug it would be.
+                return;
+            }
+        }
+    }
+
+    private void Drain()
+    {
         while (_queue.Count > 0 && _conflict is null)
         {
             RelationshipId id = _queue.Dequeue();
@@ -224,6 +329,120 @@ internal sealed class Propagator
                 Process(relationship);
             }
         }
+    }
+
+    /// <summary>Whether this relationship does not hold for the values worked out so far.</summary>
+    private bool IsUnsatisfied(Relationship relationship) => relationship switch
+    {
+        // A ParamValue is an assignment rather than a coupling: the queue has already made it
+        // true or reported why it cannot be.
+        ParamValue paramValue => ParamSide(paramValue.Param) is { } side && side.Value != paramValue.Value,
+
+        Centered centered => !RelationshipChecker.IsCentred(
+            PointSide(centered.Middle, centered.Axis).Value,
+            PointSide(centered.A, centered.Axis).Value,
+            PointSide(centered.B, centered.Axis).Value),
+
+        // A joint says nothing about where anything is (joinery note §4.3).
+        Joint => false,
+
+        _ => PairsOf(relationship).Any(pair => pair.First.Value != pair.Second.Value),
+    };
+
+    /// <summary>
+    /// The one scalar of an undecided chain that stays where it is, so that everything else in the
+    /// chain can be worked out from it.
+    /// </summary>
+    /// <remarks>
+    /// The choice is design &#xA7;4.4's anchor rule, generalised from one box to a chain: the part
+    /// whose size the request changed <em>most directly</em> keeps its anchor, and the parts that
+    /// were resized only because an <see cref="EqualParam"/> passed the change on give way to it;
+    /// a part whose size did not change at all gives way to both. "Most directly" is the number of
+    /// relationships the size change came through, which does not depend on ids or on argument
+    /// order. Only when that is a tie does the order of the sketch decide, and then it decides
+    /// between candidates the request cannot tell apart: the first side of the lowest-numbered
+    /// unsatisfied relationship stays, which is what makes
+    /// <c>AddRelationship(Coincident(p, q))</c> move <c>q</c> onto <c>p</c> and an
+    /// <see cref="AxisDistance"/>'s <em>to</em> point follow its <em>from</em> point.
+    /// </remarks>
+    private ScalarKey? ReferenceScalarOf(List<Relationship> unsatisfied)
+    {
+        ScalarKey? best = null;
+        int bestRank = int.MaxValue;
+
+        foreach (Relationship relationship in unsatisfied)
+        {
+            if (relationship is ParamValue or Centered)
+            {
+                continue;
+            }
+
+            foreach ((Side first, Side second) in PairsOf(relationship))
+            {
+                if (first.Value == second.Value)
+                {
+                    continue;
+                }
+
+                foreach (Side side in new[] { first, second })
+                {
+                    foreach (ScalarKey key in side.Bases)
+                    {
+                        if (_assigned.ContainsKey(key))
+                        {
+                            continue;
+                        }
+
+                        int distance = DistanceFromTheRequest(key);
+                        if (best is null || distance < bestRank)
+                        {
+                            bestRank = distance;
+                            best = key;
+                        }
+                    }
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// How many relationships a change in this entity's size came through: nothing for a size the
+    /// request set itself, one more for each <see cref="EqualParam"/> that passed it on, and
+    /// <see cref="int.MaxValue"/> when neither of its sizes changed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// All three sizes count, not the one along the axis in hand: a box turned by a quarter turn
+    /// has its width along Y, and a box tipped on its east face has its depth along X
+    /// (docs/design/assembly-model.md &#xA7;3.1 — the rule is per scalar and does not care which
+    /// local size sits on which world axis).
+    /// </para>
+    /// <para>
+    /// The depth counts since &#xA7;10 step 4, which is what gives the anchor rule its meaning along
+    /// Z: four legs flush under a top with nothing anchored, one leg's depth typed and the others
+    /// following through <see cref="EqualParam"/>, is a chain along Z whose sides are all free, and
+    /// the typed leg keeping its anchor is what makes the top rise rather than the legs sink
+    /// (&#xA7;9.1 case 10). A depth that changed on a box lying as drawn moves only Z coordinates,
+    /// so it never unsettles a chain along X or Y, and the plan's tie-breaks are the ones they were.
+    /// </para>
+    /// </remarks>
+    private int DistanceFromTheRequest(ScalarKey key)
+    {
+        int best = int.MaxValue;
+
+        foreach (ScalarKind kind in new[] { ScalarKind.Width, ScalarKind.Height, ScalarKind.Depth })
+        {
+            if (_assigned.TryGetValue(new ScalarKey(key.Entity, kind), out Assignment? assignment)
+                && assignment.Changed
+                && assignment.Via.Count < best)
+            {
+                best = assignment.Via.Count;
+            }
+        }
+
+        return best;
     }
 
     private void Enqueue(RelationshipId id)
@@ -238,37 +457,8 @@ internal sealed class Propagator
     {
         switch (relationship)
         {
-            case Coincident coincident:
-                Resolve(PointSide(coincident.A, Axis.X), PointSide(coincident.B, Axis.X), relationship);
-                Resolve(PointSide(coincident.A, Axis.Y), PointSide(coincident.B, Axis.Y), relationship);
-                break;
-
-            case Horizontal { Edge: SegmentRef horizontal }:
-                ResolveSegmentAlignment(horizontal, Axis.Y, relationship);
-                break;
-
-            case Vertical { Edge: SegmentRef vertical }:
-                ResolveSegmentAlignment(vertical, Axis.X, relationship);
-                break;
-
-            case Flush flush:
-                ResolveFlush(flush);
-                break;
-
-            case AxisDistance axisDistance:
-                Resolve(
-                    PointSide(axisDistance.From, axisDistance.Axis, axisDistance.Distance),
-                    PointSide(axisDistance.To, axisDistance.Axis),
-                    relationship);
-                break;
-
             case ParamValue paramValue when ParamSide(paramValue.Param) is { } side:
                 Assign(side.Bases[0], paramValue.Value, [paramValue.Id]);
-                break;
-
-            case EqualParam equalParam
-                when ParamSide(equalParam.A) is { } first && ParamSide(equalParam.B) is { } second:
-                Resolve(first, second, relationship);
                 break;
 
             case Centered centered:
@@ -276,60 +466,121 @@ internal sealed class Propagator
                 break;
 
             default:
-                // Anchored is pre-assignment only; anything else is not propagated here, and
-                // DirectUpdater refuses a sketch that contains it.
+                // Anchored is pre-assignment only, and anything PairsOf does not know is not
+                // propagated here: DirectUpdater refuses a sketch that contains one.
+                foreach ((Side first, Side second) in PairsOf(relationship))
+                {
+                    Resolve(first, second, relationship);
+                }
+
                 break;
         }
     }
 
-    private void ResolveSegmentAlignment(SegmentRef segmentRef, Axis mustMatch, Relationship relationship)
+    /// <summary>
+    /// The pairs of values a relationship holds equal, one per axis it speaks about. Every kind
+    /// but <see cref="ParamValue"/> (an assignment rather than a coupling) and
+    /// <see cref="Centered"/> (a midpoint, which is not a pair) reduces to these, so the queue,
+    /// the "does this hold?" question and the search for a reference all read the same model.
+    /// </summary>
+    private IEnumerable<(Side First, Side Second)> PairsOf(Relationship relationship)
     {
-        if (_sketch.Find<Segment>(segmentRef.Segment) is not { } segment)
+        switch (relationship)
         {
-            return;
-        }
+            case Coincident coincident:
+                // Equal on every axis both places fix (docs/design/assembly-model.md §2.1): for
+                // two plan uprights, or a node and an upright, that is X and Y, as it always was.
+                foreach (Axis axis in AxesOf(coincident.A).Intersect(AxesOf(coincident.B)).Order())
+                {
+                    yield return (PointSide(coincident.A, axis), PointSide(coincident.B, axis));
+                }
 
-        Resolve(
-            PointSide(new NodeRef(segment.Start), mustMatch),
-            PointSide(new NodeRef(segment.End), mustMatch),
-            relationship);
+                break;
+
+            case Horizontal { Edge: SegmentRef horizontal }:
+                if (SegmentAlignment(horizontal, Axis.Y) is { } alongY)
+                {
+                    yield return alongY;
+                }
+
+                break;
+
+            case Vertical { Edge: SegmentRef vertical }:
+                if (SegmentAlignment(vertical, Axis.X) is { } alongX)
+                {
+                    yield return alongX;
+                }
+
+                break;
+
+            case Flush flush:
+                if (CommonNormalAxis(flush) is { } normal
+                    && EdgeSide(flush.A, normal) is { } firstEdge
+                    && EdgeSide(flush.B, normal) is { } secondEdge)
+                {
+                    yield return (firstEdge, secondEdge);
+                }
+
+                break;
+
+            case AxisDistance axisDistance:
+                yield return (
+                    PointSide(axisDistance.From, axisDistance.Axis, axisDistance.Distance),
+                    PointSide(axisDistance.To, axisDistance.Axis));
+                break;
+
+            case EqualParam equalParam
+                when ParamSide(equalParam.A) is { } first && ParamSide(equalParam.B) is { } second:
+                yield return (first, second);
+                break;
+
+            default:
+                break;
+        }
     }
 
-    private void ResolveFlush(Flush flush)
-    {
-        Axis? normal = CommonNormalAxis(flush);
-        if (normal is not { } axis)
-        {
-            return;
-        }
+    private (Side First, Side Second)? SegmentAlignment(SegmentRef segmentRef, Axis mustMatch)
+        => _sketch.Find<Segment>(segmentRef.Segment) is { } segment
+            ? (PointSide(new NodeRef(segment.Start), mustMatch), PointSide(new NodeRef(segment.End), mustMatch))
+            : null;
 
-        Side? first = EdgeSide(flush.A, axis);
-        Side? second = EdgeSide(flush.B, axis);
-        if (first is not null && second is not null)
-        {
-            Resolve(first, second, flush);
-        }
-    }
-
-    /// <summary>The axis both edges of a flush hold constant, or null when they do not share one.</summary>
+    /// <summary>The one axis both places of a flush fix, or null when they do not share exactly one.</summary>
     internal Axis? CommonNormalAxis(Flush flush)
-    {
-        Axis? first = NormalAxisOf(flush.A);
-        return first is { } axis && NormalAxisOf(flush.B) == axis ? axis : null;
-    }
+        => AxesOf(flush.A) is [var first] && AxesOf(flush.B) is [var second] && first == second ? first : null;
 
-    private Axis? NormalAxisOf(EdgeRef edge)
+    /// <summary>
+    /// The world axes a place fixes, for the values worked out so far. Which axes a box's feature
+    /// fixes depends only on its orientation, never on a size or a position; a segment's depends on
+    /// where its nodes are now.
+    /// </summary>
+    private ImmutableArray<Axis> AxesOf(PlaceRef place)
     {
-        (Point2 from, Point2 to) = CurrentEdge(edge);
-        bool sameX = from.X == to.X;
-        bool sameY = from.Y == to.Y;
-
-        if (sameX == sameY)
+        switch (place)
         {
-            return null;
-        }
+            case NodeRef:
+                return [Axis.X, Axis.Y];
 
-        return sameX ? Axis.X : Axis.Y;
+            // Read from the stored sketch: only the axes are wanted, and they do not move with the
+            // values being worked out. This is also the one reading off the quarter turns, which the
+            // solver's repair pass will reach.
+            case CenterRef or FeatureRef when _sketch.Find<Box>(place.Owner) is not null:
+                return _sketch.PlaceOf(place).Axes;
+
+            case SegmentRef segmentRef when _sketch.Find<Segment>(segmentRef.Segment) is { } segment:
+            {
+                Point2 from = CurrentPosition(segment.Start);
+                Point2 to = CurrentPosition(segment.End);
+                return (from.X == to.X, from.Y == to.Y) switch
+                {
+                    (true, false) => [Axis.X],
+                    (false, true) => [Axis.Y],
+                    _ => [],
+                };
+            }
+
+            default:
+                return [];
+        }
     }
 
     private void ResolveCentered(Centered centered)
@@ -341,20 +592,23 @@ internal sealed class Propagator
         // Already centred to within the half unit design §3.2 allows on an odd span: leave it
         // alone. Insisting on the half-to-even midpoint here would "correct" a middle that is
         // perfectly good, and would undo an odd-unit translation on the next unrelated request.
+        // Nothing moves, but the pin travels as it does in Resolve: two of the three points
+        // decided decide the third, and it stays exactly where it is.
         if (RelationshipChecker.IsCentred(middle.Value, first.Value, second.Value))
         {
+            PassThePinOn(centered, middle, first, second);
             return;
         }
 
         Length target = RelationshipChecker.Midpoint(first.Value, second.Value);
-        bool middleFree = Adjustable(middle);
+        bool middleFree = !Pinned(middle);
         if (middleFree && (Driving(first) || Driving(second) || !Driving(middle)))
         {
             Adjust(middle, target, [.. Via(first), .. Via(second)], centered.Id);
             return;
         }
 
-        if (Adjustable(first) && Adjustable(second))
+        if (!Pinned(first) && !Pinned(second))
         {
             // The midpoint is what moved: both ends move by the same delta, which keeps their own
             // midpoint exactly where the middle now is.
@@ -374,68 +628,106 @@ internal sealed class Propagator
         // Neither the middle nor both ends can move. Name the end that is actually blocked, so the
         // report carries whatever is holding it — an Anchored on that end, say — rather than the
         // free end, which is not why this failed (Fable review of #35, finding 7).
-        ReportConflict(middle, Adjustable(first) ? second : first, centered);
+        ReportConflict(middle, !Pinned(first) ? second : first, centered);
     }
 
     /// <summary>
     /// Makes the two sides of a constraint agree, by moving whichever side is free to move.
     /// </summary>
     /// <remarks>
-    /// A side is <em>adjustable</em> when none of the position scalars it is built on has been
-    /// assigned yet, and <em>driving</em> when any scalar it reads — position or size — has. That
-    /// pair is the anchor rule of design &#xA7;4.4: a resized box keeps its anchor and moves its
-    /// far side, unless a relationship pins the far side, in which case the anchor moves instead;
-    /// and if both are pinned, the resize is a contradiction naming both pins. When neither side
-    /// is driving, the second side follows the first — which makes
-    /// <c>AddRelationship(Coincident(p, q))</c> move <c>q</c> onto <c>p</c>, and
-    /// <c>SetParameter</c> on an <see cref="AxisDistance"/> move its <em>to</em> point.
+    /// <para>
+    /// A side is <em>pinned</em> when a position scalar it is built on has been assigned, and
+    /// <em>free</em> when none has. A pinned side does not move; a free side follows it. If both
+    /// are pinned and they disagree, the request is a contradiction and the report names both
+    /// pins. This is the anchor rule of design &#xA7;4.4: a resized box keeps its anchor and moves
+    /// its far side, unless something pins the far side, in which case the anchor moves instead.
+    /// </para>
+    /// <para>
+    /// Two things make that rule reach along a chain rather than one relationship deep (#49). A
+    /// relationship that <em>already holds</em> still passes its pin on, so being held by an
+    /// anchor two parts away counts. And a relationship with two free sides moves nothing: with no
+    /// pin on either side there is no reason to prefer one, and guessing is what made the answer
+    /// depend on ids and on argument order. Such a chain is decided by
+    /// <see cref="ReferenceScalarOf"/> once the queue has run.
+    /// </para>
     /// </remarks>
     private void Resolve(Side first, Side second, Relationship through)
     {
+        bool firstPinned = Pinned(first);
+        bool secondPinned = Pinned(second);
+
         if (first.Value == second.Value)
         {
+            PassThePinOn(first, second, firstPinned, secondPinned, through);
             return;
         }
 
-        bool firstFree = Adjustable(first);
-        bool secondFree = Adjustable(second);
-
-        if (firstFree && secondFree)
+        if (firstPinned && secondPinned)
         {
-            if (Driving(second) && !Driving(first))
-            {
-                Adjust(first, second.Value, Via(second), through.Id);
-            }
-            else
-            {
-                Adjust(second, first.Value, Via(first), through.Id);
-            }
-
+            ReportConflict(first, second, through);
             return;
         }
 
-        if (firstFree)
-        {
-            Adjust(first, second.Value, Via(second), through.Id);
-            return;
-        }
-
-        if (secondFree)
+        if (firstPinned)
         {
             Adjust(second, first.Value, Via(first), through.Id);
             return;
         }
 
-        ReportConflict(first, second, through);
+        if (secondPinned)
+        {
+            Adjust(first, second.Value, Via(second), through.Id);
+        }
+
+        // Neither side is decided, so neither is a reason for the other to move: this
+        // relationship waits for a pin to reach it, or for its chain to be given a reference.
     }
 
     /// <summary>
-    /// Whether this side is free to move: none of the position scalars it is built on has been
-    /// assigned. Pinning is about being assigned at all, not about having changed — an
+    /// A relationship that holds moves nothing, but it still carries the pin: the side held by
+    /// something already assigned holds the other side exactly where it is. Without this, pinning
+    /// stops at the first relationship and a chain of three parts cannot be solved (#49).
+    /// </summary>
+    private void PassThePinOn(Side first, Side second, bool firstPinned, bool secondPinned, Relationship through)
+    {
+        if (firstPinned && !secondPinned)
+        {
+            Adjust(second, second.Value, Via(first), through.Id);
+        }
+        else if (secondPinned && !firstPinned)
+        {
+            Adjust(first, first.Value, Via(second), through.Id);
+        }
+    }
+
+    /// <summary>The same, for the three points of a <see cref="Centered"/> that already holds.</summary>
+    private void PassThePinOn(Centered centered, Side middle, Side first, Side second)
+    {
+        Side[] sides = [middle, first, second];
+        Side[] free = [.. sides.Where(side => !Pinned(side))];
+
+        // Two of the three decided decide the third; one decided leaves a degree of freedom, and
+        // the point stays free.
+        if (free.Length != 1)
+        {
+            return;
+        }
+
+        List<RelationshipId> via = [];
+        foreach (Side side in sides.Where(Pinned))
+        {
+            via.AddRange(Via(side));
+        }
+
+        Adjust(free[0], free[0].Value, via, centered.Id);
+    }
+
+    /// <summary>
+    /// Whether this side is held: one of the position scalars it is built on has been assigned.
+    /// Pinning is about being assigned at all, not about having changed — an
     /// <see cref="Anchored"/> entity is held where it already is.
     /// </summary>
-    private bool Adjustable(Side side)
-        => side.Bases.Length > 0 && !side.Bases.Any(_assigned.ContainsKey);
+    private bool Pinned(Side side) => side.Bases.Any(_assigned.ContainsKey);
 
     /// <summary>
     /// Whether this side is a <em>reason</em> for the other one to move: something it reads has
@@ -595,10 +887,11 @@ internal sealed class Propagator
         {
             BoxWidthRef width => $"The width of {width.Box}",
             BoxHeightRef height => $"The height of {height.Box}",
+            BoxDepthRef depth => $"The depth of {depth.Box}",
             SegmentLengthRef length => $"The length of {length.Segment}",
             _ => "A size",
         },
-        PointAxisTarget point => $"{(point.Axis == Axis.X ? "The X" : "The Y")} of {point.Point.Owner}",
+        PointAxisTarget point => $"The {point.Axis} of {point.Point.Owner}",
         _ => "A value",
     };
 
@@ -607,19 +900,19 @@ internal sealed class Propagator
     // is the position scalar a constraint can move.
     // -----------------------------------------------------------------------------------------
 
-    private Side PointSide(PointRef point, Axis axis) => PointSide(point, axis, Length.Zero);
+    private Side PointSide(PlaceRef point, Axis axis) => PointSide(point, axis, Length.Zero);
 
-    private Side PointSide(PointRef point, Axis axis, Length extraOffset)
+    private Side PointSide(PlaceRef point, Axis axis, Length extraOffset)
     {
         ScalarKey baseKey = new(point.Owner, KindOf(axis));
         AssignmentTarget target = new PointAxisTarget(point, axis);
 
         switch (point)
         {
-            case CornerRef corner:
+            case FeatureRef feature:
             {
-                Length offset = CornerOffset(corner.Box, corner.Corner).Component(axis) + extraOffset;
-                return new Side([baseKey], offset, SizesOf(corner.Box), CurrentOf(baseKey) + offset, target);
+                Length offset = FeatureOffset(feature.Box, feature.Feature).Component(axis) + extraOffset;
+                return new Side([baseKey], offset, SizesOf(feature.Box), CurrentOf(baseKey) + offset, target);
             }
 
             case CenterRef centre:
@@ -646,6 +939,10 @@ internal sealed class Propagator
                 key = new ScalarKey(height.Box, ScalarKind.Height);
                 break;
 
+            case BoxDepthRef depth:
+                key = new ScalarKey(depth.Box, ScalarKind.Depth);
+                break;
+
             default:
                 // A segment's length is not one number the propagator can assign; DirectUpdater
                 // refuses a sketch that makes one a ParamValue or EqualParam (see §10).
@@ -655,15 +952,12 @@ internal sealed class Propagator
         return new Side([key], Length.Zero, [], CurrentOf(key), new ParamTarget(param));
     }
 
-    private Side? EdgeSide(EdgeRef edge, Axis normalAxis)
+    private Side? EdgeSide(PlaceRef edge, Axis normalAxis)
     {
         switch (edge)
         {
-            case BoxEdgeRef boxEdge:
-            {
-                (BoxCorner from, _) = Box.Ends(boxEdge.Edge);
-                return PointSide(new CornerRef(boxEdge.Box, from), normalAxis);
-            }
+            case FeatureRef feature:
+                return PointSide(feature, normalAxis);
 
             case SegmentRef segmentRef when _sketch.Find<Segment>(segmentRef.Segment) is { } segment:
             {
@@ -682,65 +976,55 @@ internal sealed class Propagator
         }
     }
 
-    private ImmutableArray<ScalarKey> SizesOf(EntityId box)
-        => [new ScalarKey(box, ScalarKind.Width), new ScalarKey(box, ScalarKind.Height)];
+    // Every size a feature's offset can read: under a tip, any of the three lands on any world axis.
+    private static ImmutableArray<ScalarKey> SizesOf(EntityId box)
+        => [new ScalarKey(box, ScalarKind.Width), new ScalarKey(box, ScalarKind.Height), new ScalarKey(box, ScalarKind.Depth)];
 
-    private Vector2 CornerOffset(EntityId boxId, BoxCorner corner)
+    /// <summary>
+    /// Where a feature is from the box's anchor, in the world, for the sizes worked out so far: one
+    /// local point on every face of the feature — the far end of a local axis for East, North and
+    /// Top — turned by the box's orientation (docs/design/assembly-model.md &#xA7;2.1). A side reads
+    /// only the component along the axis it is about, which the feature fixes; the others are the
+    /// feature's own business.
+    /// </summary>
+    private Vector3 FeatureOffset(EntityId boxId, BoxFeature feature)
     {
         if (_sketch.Find<Box>(boxId) is not { } box)
         {
-            return Vector2.Zero;
+            return Vector3.Zero;
         }
 
-        Length width = CurrentOf(new ScalarKey(boxId, ScalarKind.Width));
-        Length height = CurrentOf(new ScalarKey(boxId, ScalarKind.Height));
-
-        Vector2 local = corner switch
+        Vector3 local = Vector3.Zero;
+        foreach (BoxFace face in feature.Faces)
         {
-            BoxCorner.SouthWest => Vector2.Zero,
-            BoxCorner.SouthEast => new Vector2(width, Length.Zero),
-            BoxCorner.NorthEast => new Vector2(width, height),
-            _ => new Vector2(Length.Zero, height),
-        };
-
-        return local.Rotate(box.Rotation);
-    }
-
-    private Vector2 CenterOffset(EntityId boxId)
-    {
-        if (_sketch.Find<Box>(boxId) is not { } box)
-        {
-            return Vector2.Zero;
-        }
-
-        Length width = CurrentOf(new ScalarKey(boxId, ScalarKind.Width));
-        Length height = CurrentOf(new ScalarKey(boxId, ScalarKind.Height));
-
-        return new Vector2(
-            width.Divide(2, Rounding.HalfToEven),
-            height.Divide(2, Rounding.HalfToEven)).Rotate(box.Rotation);
-    }
-
-    private (Point2 From, Point2 To) CurrentEdge(EdgeRef edge)
-    {
-        switch (edge)
-        {
-            case BoxEdgeRef boxEdge:
+            local = face switch
             {
-                (BoxCorner from, BoxCorner to) = Box.Ends(boxEdge.Edge);
-                return (CurrentCorner(boxEdge.Box, from), CurrentCorner(boxEdge.Box, to));
-            }
-
-            case SegmentRef segmentRef when _sketch.Find<Segment>(segmentRef.Segment) is { } segment:
-                return (CurrentPosition(segment.Start), CurrentPosition(segment.End));
-
-            default:
-                return (Point2.Origin, Point2.Origin);
+                BoxFace.East => local.WithComponent(Axis.X, CurrentOf(new ScalarKey(boxId, ScalarKind.Width))),
+                BoxFace.North => local.WithComponent(Axis.Y, CurrentOf(new ScalarKey(boxId, ScalarKind.Height))),
+                BoxFace.Top => local.WithComponent(Axis.Z, CurrentOf(new ScalarKey(boxId, ScalarKind.Depth))),
+                _ => local,
+            };
         }
+
+        return box.Orientation.Apply(local);
     }
 
-    private Point2 CurrentCorner(EntityId boxId, BoxCorner corner)
-        => CurrentPosition(boxId) + CornerOffset(boxId, corner);
+    private Vector3 CenterOffset(EntityId boxId)
+    {
+        if (_sketch.Find<Box>(boxId) is not { } box)
+        {
+            return Vector3.Zero;
+        }
+
+        Length width = CurrentOf(new ScalarKey(boxId, ScalarKind.Width));
+        Length height = CurrentOf(new ScalarKey(boxId, ScalarKind.Height));
+        Length depth = CurrentOf(new ScalarKey(boxId, ScalarKind.Depth));
+
+        return box.Orientation.Apply(new Vector3(
+            width.Divide(2, Rounding.HalfToEven),
+            height.Divide(2, Rounding.HalfToEven),
+            depth.Divide(2, Rounding.HalfToEven)));
+    }
 
     private Point2 CurrentPosition(EntityId entity)
         => new(CurrentOf(new ScalarKey(entity, ScalarKind.X)), CurrentOf(new ScalarKey(entity, ScalarKind.Y)));

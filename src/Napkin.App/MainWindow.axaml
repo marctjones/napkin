@@ -3,77 +3,1260 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewing="clr-namespace:Napkin.App.Viewing"
+        xmlns:theme="clr-namespace:Napkin.App.Theme"
+        xmlns:shaping="clr-namespace:Napkin.App.Shaping"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="740"
         x:Class="Napkin.App.MainWindow"
         Title="napkin"
+        Icon="/Assets/napkin-256.png"
         Width="1100" Height="740"
         MinWidth="560" MinHeight="380">
 
     <!--
-        The shell is three things and no more: a menu, the drawing, and a line saying where you
-        are. M1 is a viewer, so there is nothing else a person could do here, and a toolbar of
-        disabled buttons would be a promise rather than a tool.
+        The shell is a menu, the drawing, and a line saying where you are. The editing chrome — the
+        tool control, the relationship list, the dimension a person is typing into — floats over
+        the drawing rather than docking beside it, so the canvas still fills everything the menu
+        and the status line leave. That is not decoration: docking a panel would change the
+        canvas's arranged size, and the view transform is arranged size.
     -->
     <DockPanel>
 
-        <Menu Name="MainMenu" DockPanel.Dock="Top">
+        <!-- macOS only (MainWindow.axaml.cs, ExtendTitleBarIntoBench): the bench runs up under the
+             traffic-light buttons and this bar carries the title. Hidden elsewhere, where the
+             system title bar stays. The left inset clears the three buttons. -->
+        <Border Name="TitleBar"
+                DockPanel.Dock="Top"
+                IsVisible="False"
+                Height="30"
+                Padding="80,0,80,0"
+                Background="{DynamicResource NapkinBenchBrush}"
+                BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource NapkinBenchRuleBrush}">
+            <TextBlock Name="TitleBarText"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       FontFamily="{DynamicResource SeFontMono}"
+                       FontSize="{DynamicResource SeFontSizeAppTitle}"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource NapkinBenchHeadingBrush}"
+                       TextTrimming="CharacterEllipsis" />
+        </Border>
+
+        <Menu Name="MainMenu"
+              DockPanel.Dock="Top"
+              Background="{DynamicResource NapkinBenchBrush}"
+              Foreground="{DynamicResource NapkinBenchHeadingBrush}">
+            <Menu.Resources>
+                <!-- Fluent's top-level items read these, not the Menu's Foreground: the bench
+                     stays dark in both themes, so the item text stays bench-light too (the Styles below,
+                     because the light theme's dark item text showed through the resources alone). -->
+                <SolidColorBrush x:Key="MenuBarItemBackgroundPointerOver" Color="{DynamicResource NapkinBenchRuleColor}" />
+                <SolidColorBrush x:Key="MenuBarItemBackgroundPressed" Color="{DynamicResource NapkinBenchRuleColor}" />
+            </Menu.Resources>
+            <Menu.Styles>
+                <Style Selector="Menu > MenuItem, Menu > MenuItem:selected, Menu > MenuItem:pressed, Menu > MenuItem:pointerover, Menu > MenuItem:open">
+                    <Setter Property="Foreground" Value="{DynamicResource NapkinBenchHeadingBrush}" />
+                </Style>
+                <Style Selector="Menu > MenuItem:selected /template/ ContentPresenter#PART_HeaderPresenter, Menu > MenuItem:pressed /template/ ContentPresenter#PART_HeaderPresenter, Menu > MenuItem:pointerover /template/ ContentPresenter#PART_HeaderPresenter">
+                    <Setter Property="Foreground" Value="{DynamicResource NapkinBenchHeadingBrush}" />
+                </Style>
+            </Menu.Styles>
+            <!-- The menus (#169): File is the document, Edit acts on the selection, Draw holds the
+                 tools and nothing else, View is how the drawing is looked at, Project is what the
+                 design is checked and cut against, Lists is what comes out of it. Every item keeps
+                 its Name, which the GUI suite finds it by. -->
             <MenuItem Name="FileMenu" Header="_File">
+                <MenuItem Name="NewMenuItem"
+                          Header="_New"
+                          Click="OnNewClicked"
+                          ToolTip.Tip="Start a blank sheet. Press R and drag to draw a part." />
                 <MenuItem Name="OpenMenuItem"
                           Header="_Open…"
                           Click="OnOpenClicked"
                           ToolTip.Tip="Open a napkin scene file. A file this build cannot read is refused, and whatever is on screen stays." />
+                <!-- Samples are built from SampleFiles.All in the code-behind: one item per scene file
+                     that shipped beside the executable, opened through the same reader as any other
+                     file. -->
+                <MenuItem Name="SamplesMenu" Header="Sa_mples" />
+                <Separator />
+                <MenuItem Name="SaveMenuItem"
+                          Header="_Save"
+                          Click="OnSaveClicked"
+                          ToolTip.Tip="Write the drawing back to its scene file. A drawing that has never been saved asks where to put it." />
+                <MenuItem Name="SaveAsMenuItem"
+                          Header="Save _As…"
+                          Click="OnSaveAsClicked"
+                          ToolTip.Tip="Write the drawing to a new scene file, and keep saving there." />
                 <Separator />
                 <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
             </MenuItem>
 
-            <!-- Samples are built from SampleFiles.All in the code-behind: one item per scene file
-                 that shipped beside the executable, opened through the same reader as any other
-                 file. -->
-            <MenuItem Name="SamplesMenu" Header="_Samples" />
+            <!-- Undo and redo say what they would take back or put back, and grey out when there
+                 is nothing to. Their headers are filled in the code-behind from the history. Below
+                 them, everything that acts on the selection: each item runs the same command as its
+                 key and its toolbar button (MainWindow.Run). -->
+            <MenuItem Name="EditMenu" Header="_Edit">
+                <MenuItem Name="UndoMenuItem" Header="_Undo" Click="OnUndoClicked" />
+                <MenuItem Name="RedoMenuItem" Header="_Redo" Click="OnRedoClicked" />
+                <Separator />
+                <MenuItem Name="DuplicateMenuItem"
+                          Header="_Duplicate"
+                          Click="OnDuplicateClicked"
+                          ToolTip.Tip="Copy the selected parts, with the relationships among them, and put the copies beside them." />
+                <MenuItem Name="MirrorEastWestMenuItem"
+                          Header="_Mirror copy east–west"
+                          Click="OnMirrorEastWestClicked"
+                          ToolTip.Tip="Copy the selected parts to the other side of the drawing's middle, east to west: a left leg's right-hand twin." />
+                <MenuItem Name="MirrorNorthSouthMenuItem"
+                          Header="Mirror copy _north–south"
+                          Click="OnMirrorNorthSouthClicked"
+                          ToolTip.Tip="Copy the selected parts to the other side of the drawing's middle, north to south." />
+                <MenuItem Name="PinMenuItem"
+                          Header="_Pin in place"
+                          Click="OnPinClicked"
+                          ToolTip.Tip="Hold the selection where it is." />
+                <MenuItem Name="DeleteMenuItem"
+                          Header="De_lete"
+                          Click="OnDeleteClicked"
+                          ToolTip.Tip="Remove the selection, with its relationships." />
+                <Separator />
+                <!-- A quarter turn about a world axis (assembly-model §8.3): a command, not a drag.
+                     Shift with the key turns the other way. -->
+                <MenuItem Name="TurnXMenuItem"
+                          Header="Turn about _X"
+                          Click="OnTurnXClicked"
+                          ToolTip.Tip="Turn the selected part a quarter turn about the east-west axis. Shift+X turns it back." />
+                <MenuItem Name="TurnYMenuItem"
+                          Header="Turn about _Y"
+                          Click="OnTurnYClicked"
+                          ToolTip.Tip="Turn the selected part a quarter turn about the north-south axis. Shift+Y turns it back." />
+                <MenuItem Name="TurnZMenuItem"
+                          Header="Turn about _Z"
+                          Click="OnTurnZClicked"
+                          ToolTip.Tip="Turn the selected part a quarter turn about the vertical axis. Shift+Z turns it back." />
+                <Separator />
+                <MenuItem Name="ShapeMenuItem"
+                          Header="_Cut to shape…"
+                          Click="OnShapeClicked"
+                          ToolTip.Tip="Open the selected part in the shape workshop: pick its stock and cut its corners and edges." />
+                <Separator />
+                <MenuItem Name="JoinMenuItem"
+                          Header="_Join…"
+                          Click="OnJoinClicked"
+                          ToolTip.Tip="Join the two selected parts: say what kind of joint, what holds it, and whether it is glued." />
+                <MenuItem Name="JoinAllMenuItem"
+                          Header="Join all _touching…"
+                          Click="OnJoinAllClicked"
+                          ToolTip.Tip="Join every touching pair among the selected parts in one go; with two selected, repeat the last joint." />
+                <MenuItem Name="FirmUpMenuItem"
+                          Header="_Firm up…"
+                          Click="OnFirmUpClicked"
+                          ToolTip.Tip="Firm up a rough sketch: the relationships touching parts imply, the stock their sizes are nearest, and the drawn sizes stated. The selection, or every part." />
+                <Separator />
+                <!-- Renovation (renovation-sketches §6.1): what is already there, going in, or
+                     coming out. Radio-checked for the selection; one undo step. -->
+                <MenuItem Name="PhaseMenu" Header="P_hase">
+                    <MenuItem Name="PhaseExistingMenuItem"
+                              Header="_Existing"
+                              ToggleType="Radio"
+                              GroupName="Phase"
+                              Click="OnPhaseExistingClicked"
+                              ToolTip.Tip="Already there: drawn faint, never bought or cut." />
+                    <MenuItem Name="PhaseNewMenuItem"
+                              Header="_New"
+                              ToggleType="Radio"
+                              GroupName="Phase"
+                              Click="OnPhaseNewClicked"
+                              ToolTip.Tip="Going in: drawn solid, and what the lists buy. Everything starts new." />
+                    <MenuItem Name="PhaseDemolishMenuItem"
+                              Header="_Demolish"
+                              ToggleType="Radio"
+                              GroupName="Phase"
+                              Click="OnPhaseDemolishClicked"
+                              ToolTip.Tip="Coming out: drawn dashed with a cross, counted under Demolition, in no check." />
+                </MenuItem>
+            </MenuItem>
+
+            <!-- The Draw menu is the tools, in the toolbar's order: what the next press on the paper
+                 does. Each item runs the same handler as its toolbar button. -->
+            <MenuItem Name="DrawMenu" Header="_Draw">
+                <MenuItem Name="SelectToolMenuItem"
+                          Header="_Select"
+                          Click="OnSelectToolClicked"
+                          ToolTip.Tip="Pick, move and resize parts." />
+                <MenuItem Name="RectangleToolMenuItem"
+                          Header="_Rectangle"
+                          Click="OnRectangleToolClicked"
+                          ToolTip.Tip="Drag out a new part." />
+                <MenuItem Name="RoughMenuItem"
+                          Header="Rough s_ketching"
+                          ToggleType="CheckBox"
+                          Click="OnRoughMenuClicked"
+                          ToolTip.Tip="Draw roughly: big round steps, parts that just touch with nothing stated, rectangles drawn as planks. Firm it up later." />
+                <MenuItem Name="WallsMenu" Header="_Walls">
+                    <MenuItem Name="WallToolMenuItem"
+                              Header="_Wall"
+                              Click="OnWallToolClicked"
+                              ToolTip.Tip="Drag out a wall, framed with the studs last picked: 2x4 (3 1/2&quot; thick) to start." />
+                    <MenuItem Name="Wall2x4MenuItem"
+                              Header="Wall, _2x4 studs"
+                              Click="OnWall2x4Clicked"
+                              ToolTip.Tip="Drag out a wall 3 1/2&quot; thick, framed with 2x4 studs." />
+                    <MenuItem Name="Wall2x6MenuItem"
+                              Header="Wall, 2x_6 studs"
+                              Click="OnWall2x6Clicked"
+                              ToolTip.Tip="Drag out a wall 5 1/2&quot; thick, framed with 2x6 studs." />
+                </MenuItem>
+                <MenuItem Name="WindowToolMenuItem"
+                          Header="Wi_ndow"
+                          Click="OnWindowToolClicked"
+                          ToolTip.Tip="Click on a wall to put a window in it." />
+                <MenuItem Name="DoorToolMenuItem"
+                          Header="D_oor"
+                          Click="OnDoorToolClicked"
+                          ToolTip.Tip="Click on a wall to put a door in it." />
+                <!-- Renovation (renovation-sketches §8): a room carries the finishes; a note the rough-in. -->
+                <MenuItem Name="RoomToolMenuItem"
+                          Header="Roo_m"
+                          Click="OnRoomToolClicked"
+                          ToolTip.Tip="Drag out a room, or click inside four walls to take their inside faces; tick its finishes in the panel for the Area takeoff." />
+                <MenuItem Name="NoteToolMenuItem"
+                          Header="Not_e"
+                          Click="OnNoteToolClicked"
+                          ToolTip.Tip="Click to put a note — outlet, switch, light, supply, drain, or any words. Counted on the shopping list, never modelled." />
+                <Separator />
+                <!-- The toolbar's stock icons, by menu: one submenu per category, one item per
+                     size, built in the code-behind from the same library the toolbox lists. -->
+                <MenuItem Name="StockMenu"
+                          Header="S_tock"
+                          ToolTip.Tip="Real stock by category: pick a size, then drag it onto the paper." />
+            </MenuItem>
 
             <MenuItem Name="ViewMenu" Header="_View">
+                <MenuItem Name="StandardViewsMenu" Header="Standard _views">
+                    <MenuItem Name="TopViewMenuItem"
+                              Header="_Top (plan)"
+                              Click="OnViewMenuClicked"
+                              ToolTip.Tip="The drawing from above, where parts are drawn, placed from stock and shaped (1)." />
+                    <MenuItem Name="BottomViewMenuItem"
+                              Header="_Bottom"
+                              Click="OnViewMenuClicked"
+                              ToolTip.Tip="The drawing from below, south up, flat and to scale: read-only for now (2)." />
+                    <MenuItem Name="FrontViewMenuItem"
+                              Header="_Front"
+                              Click="OnViewMenuClicked"
+                              ToolTip.Tip="The drawing from the south, flat and to scale: read-only for now (3)." />
+                    <MenuItem Name="BackViewMenuItem"
+                              Header="B_ack"
+                              Click="OnViewMenuClicked"
+                              ToolTip.Tip="The drawing from the north, flat and to scale: read-only for now (4)." />
+                    <MenuItem Name="LeftViewMenuItem"
+                              Header="_Left"
+                              Click="OnViewMenuClicked"
+                              ToolTip.Tip="The drawing from the west, flat and to scale: read-only for now (5)." />
+                    <MenuItem Name="RightViewMenuItem"
+                              Header="R_ight"
+                              Click="OnViewMenuClicked"
+                              ToolTip.Tip="The drawing from the east, flat and to scale: read-only for now (6)." />
+                    <MenuItem Name="ModelViewMenuItem"
+                              Header="_3D"
+                              Click="OnViewMenuClicked"
+                              ToolTip.Tip="The drawing in three dimensions: turn parts, and move and resize them along any axis (7)." />
+                </MenuItem>
+                <!-- Look along an axis, or at the next surface of the selected part: the 3D view's
+                     square-on views, which also sit on the toolbar. -->
+                <MenuItem Name="LookAlongMenu" Header="_Look along">
+                    <MenuItem Name="LookXMenuItem" Header="Look along _X" Click="OnLookXClicked"
+                              ToolTip.Tip="3D view: from the east; again for the west." />
+                    <MenuItem Name="LookYMenuItem" Header="Look along _Y" Click="OnLookYClicked"
+                              ToolTip.Tip="3D view: from the south; again for the north." />
+                    <MenuItem Name="LookZMenuItem" Header="Look along _Z" Click="OnLookZClicked"
+                              ToolTip.Tip="3D view: from above; again for below." />
+                    <MenuItem Name="NextSurfaceMenuItem" Header="Next _surface" Click="OnNextSurfaceClicked"
+                              ToolTip.Tip="3D view: look square-on at each face of the selected part in turn, or along each axis with nothing selected." />
+                </MenuItem>
+                <Separator />
+                <!-- How the 3D view looks: orthographic to measure with (a length along an axis is the
+                     same size anywhere), perspective to judge how it looks (things shrink with
+                     distance). O switches, and shows on the one it would switch to. -->
+                <MenuItem Name="OrthographicMenuItem"
+                          Header="_Orthographic"
+                          Click="OnOrthographicClicked"
+                          ToolTip.Tip="Parallel projection, to measure with: equal lengths look equal wherever they are (O switches)." />
+                <MenuItem Name="PerspectiveMenuItem"
+                          Header="Pers_pective"
+                          Click="OnPerspectiveClicked"
+                          ToolTip.Tip="Perspective projection, to judge how it looks: things shrink with distance (O switches)." />
+                <!-- Edges behind a nearer part, as light dashes: only in Bottom, Front, Back, Left and Right. -->
+                <MenuItem Name="HiddenEdgesMenuItem"
+                          Header="_Hidden edges"
+                          IsEnabled="False"
+                          Click="OnHiddenEdgesClicked"
+                          ToolTip.ShowOnDisabled="True"
+                          ToolTip.Tip="In Bottom, Front, Back, Left and Right: the edges a nearer part hides, as light dashes (H)." />
+                <Separator />
                 <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
+                <MenuItem Name="ResetViewMenuItem"
+                          Header="R_eset view"
+                          Click="OnResetViewClicked"
+                          ToolTip.Tip="The plan fits the drawing; the 3D view goes back to its first angle." />
                 <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />
-                <MenuItem Name="ZoomOutMenuItem" Header="Zoom _Out" Click="OnZoomOutClicked" />
+                <MenuItem Name="ZoomOutMenuItem" Header="Zoom Ou_t" Click="OnZoomOutClicked" />
+                <Separator />
+                <MenuItem Name="RulersMenuItem"
+                          Header="_Rulers"
+                          Click="OnRulersClicked"
+                          ToolTip.Tip="Rulers along the top and left of the plan, in feet, inches and fractions, on the same steps as the grid. The orthographic 3D view shows a scale bar instead, true across the screen: an inch along an axis looks shorter in an isometric view (by about a fifth). A perspective view has neither, because an inch is a different size at every distance in it." />
+                <!-- The grid's lines and the grid's snapping are two settings: hiding the lines does not
+                     stop things landing on them, and snapping can be off with the lines showing. -->
+                <MenuItem Name="GridMenuItem"
+                          Header="_Grid"
+                          Click="OnGridClicked"
+                          ToolTip.Tip="Show the grid lines, in the plan and on the 3D ground (G). This only draws them: whether things snap to the grid is Snap to grid, below, and hiding the lines does not change it." />
+                <MenuItem Name="SnapToGridMenuItem"
+                          Header="_Snap to grid"
+                          Click="OnSnapToGridClicked"
+                          ToolTip.Tip="Drags and drawing tools land on the grid's steps (the step is in the status bar). Separate from Grid: you can snap with the lines hidden, or show them and move freely." />
+                <Separator />
+                <!-- How napkin looks, not what the design is: the theme, and the paper and pencil
+                     (#142). -->
+                <MenuItem Name="AppearanceMenu" Header="_Appearance">
+                    <!-- Light, dark, or whichever the operating system is in (and following it live). -->
+                    <MenuItem Name="ThemeMenuItem" Header="_Theme">
+                        <MenuItem Name="ThemeLightMenuItem" Header="_Light" Click="OnThemeLightClicked" />
+                        <MenuItem Name="ThemeDarkMenuItem" Header="_Dark" Click="OnThemeDarkClicked" />
+                        <MenuItem Name="ThemeSystemMenuItem"
+                                  Header="_Follow system"
+                                  Click="OnThemeSystemClicked"
+                                  ToolTip.Tip="Wear whichever theme the operating system is in, and change with it." />
+                    </MenuItem>
+                    <MenuItem Name="SketchMenuItem" Header="_Paper and line">
+                        <MenuItem Header="Paper" IsEnabled="False" />
+                        <MenuItem Name="PaperScreenMenuItem" Header="_Screen" Click="OnPaperScreenClicked" />
+                        <MenuItem Name="PaperGraphMenuItem" Header="_Graph paper" Click="OnPaperGraphClicked" />
+                        <MenuItem Name="PaperPlainMenuItem" Header="_Plain sheet" Click="OnPaperPlainClicked" />
+                        <MenuItem Name="PaperNapkinMenuItem" Header="_Napkin" Click="OnPaperNapkinClicked" />
+                        <Separator />
+                        <MenuItem Header="Line" IsEnabled="False" />
+                        <MenuItem Name="LineCleanMenuItem" Header="_Clean" Click="OnLineCleanClicked" />
+                        <MenuItem Name="LinePencilMenuItem" Header="Pen_cil" Click="OnLinePencilClicked" />
+                        <MenuItem Name="LineCarpenterMenuItem" Header="Carpenter's p_encil" Click="OnLineCarpenterClicked" />
+                    </MenuItem>
+                </MenuItem>
+            </MenuItem>
+
+            <!-- What this design is checked and cut against, and how designs open: settings of the
+                 project, not of the view. -->
+            <MenuItem Name="ProjectMenu" Header="_Project">
+                <MenuItem Name="CodeMenuItem"
+                          Header="_Adopted code and site…"
+                          Click="OnCodeClicked"
+                          ToolTip.Tip="Choose the building code this project is checked against, lock it or let it follow new revisions, and enter the site's snow load and other values. Nothing is assumed." />
+                <MenuItem Name="SawKerfMenuItem"
+                          Header="Saw _kerf…"
+                          Click="OnSawKerfClicked"
+                          ToolTip.Tip="How much the blade takes: set on the cut layout, which packs the pieces with it between them." />
+                <Separator />
+                <!-- Which view the next design opens in; the one on screen is not moved. -->
+                <MenuItem Name="OpenInMenuItem" Header="Open designs _in">
+                    <MenuItem Name="OpenInPlanMenuItem" Header="_2D plan" Click="OnOpenInPlanClicked" />
+                    <MenuItem Name="OpenInModelMenuItem" Header="_3D" Click="OnOpenInModelClicked" />
+                    <MenuItem Name="OpenInLastMenuItem"
+                              Header="_Last used"
+                              Click="OnOpenInLastClicked"
+                              ToolTip.Tip="A design opens in whichever view you were last in." />
+                </MenuItem>
+            </MenuItem>
+
+            <!-- What comes out of the design: one window, a tab each. -->
+            <MenuItem Name="ListsMenu" Header="_Lists">
+                <MenuItem Name="CutListMenuItem"
+                          Header="_Cut list"
+                          Click="OnCutListClicked"
+                          ToolTip.Tip="Every piece this design says to cut, grouped and sorted. It follows the drawing as it is edited." />
+                <MenuItem Name="ShoppingListMenuItem"
+                          Header="_Shopping list"
+                          Click="OnShoppingListClicked"
+                          ToolTip.Tip="The stock to buy for the cut list, with its board feet — beside the cut list, in the same window." />
+                <MenuItem Name="CutLayoutMenuItem"
+                          Header="Cut la_yout"
+                          Click="OnCutLayoutClicked"
+                          ToolTip.Tip="Which piece is cut from which board, with the saw kerf and the offcuts — a tab of the same window." />
+                <MenuItem Name="FastenerSizesMenuItem"
+                          Header="_Fastener sizes and supplies"
+                          Click="OnFastenerSizesClicked"
+                          ToolTip.Tip="The fasteners the joints call for, with the sizes to buy, and the supplies list — a tab of the same window." />
             </MenuItem>
         </Menu>
 
         <Border Name="StatusBar"
                 DockPanel.Dock="Bottom"
+                Background="{DynamicResource NapkinBenchBrush}"
+                TextElement.Foreground="{DynamicResource NapkinBenchTextBrush}"
                 BorderThickness="0,1,0,0"
-                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                Padding="12,5">
-            <Grid ColumnDefinitions="*,Auto,Auto">
-                <TextBlock Name="DesignText"
-                           Grid.Column="0"
-                           FontSize="12"
-                           Opacity="0.75"
-                           VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis" />
-                <TextBlock Name="CursorText"
-                           Grid.Column="1"
-                           FontSize="12"
-                           Margin="16,0"
-                           MinWidth="190"
-                           TextAlignment="Right"
-                           VerticalAlignment="Center" />
-                <TextBlock Name="ZoomText"
-                           Grid.Column="2"
-                           FontSize="12"
-                           MinWidth="86"
-                           TextAlignment="Right"
-                           VerticalAlignment="Center" />
-            </Grid>
+                BorderBrush="{DynamicResource NapkinBenchRuleBrush}">
+            <StackPanel>
+
+                <!-- Every update result lands here and stays until the next edit: what was done,
+                     what could not be done and why, and — when a conflict has a way out — the
+                     offer to take it (CVS-008). -->
+                <Border Name="MessageBar"
+                        IsVisible="False"
+                        Padding="12,6"
+                        BorderThickness="0,0,0,1"
+                        BorderBrush="{DynamicResource NapkinBenchRuleBrush}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Name="MessageText"
+                                   Grid.Column="0"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                        <Button Name="MessageOfferButton"
+                                Grid.Column="1"
+                                IsVisible="False"
+                                Background="{DynamicResource NapkinBenchRuleBrush}"
+                                Foreground="{DynamicResource NapkinBenchHeadingBrush}"
+                                Margin="12,0,0,0"
+                                Padding="8,3"
+                                FontSize="12"
+                                Click="OnMessageOfferClicked" />
+                    </Grid>
+                </Border>
+
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="12,5">
+                    <!-- The entry mode, always named first on the row (sketch-mode §1.1): a mode that is
+                         not visible is a mode error waiting to happen. In Rough, the live size follows it
+                         (§2.4): the labels are quiet on the paper, so the numbers are here. -->
+                    <Grid Name="StatusLeft" Grid.Column="0" ColumnDefinitions="Auto,Auto,Auto,*">
+                        <TextBlock Name="EntryModeText"
+                                   Grid.Column="0"
+                                   Text="PRECISE"
+                                   FontSize="12"
+                                   FontFamily="{DynamicResource SeFontMono}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"
+                                   AutomationProperties.Name="Entry mode" />
+                        <TextBlock Name="SizeReadoutText"
+                                   Grid.Column="1"
+                                   IsVisible="False"
+                                   TextTrimming="CharacterEllipsis"
+                                   FontSize="11"
+                                   FontFamily="{DynamicResource SeFontMono}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"
+                                   AutomationProperties.Name="Size" />
+                        <!-- One selected thing that is not new, with its phase: "Wall 1, existing". -->
+                        <TextBlock Name="PhaseReadoutText"
+                                   Grid.Column="2"
+                                   IsVisible="False"
+                                   FontSize="11"
+                                   FontFamily="{DynamicResource SeFontMono}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"
+                                   TextTrimming="CharacterEllipsis"
+                                   AutomationProperties.Name="Phase of the selection" />
+                        <TextBlock Name="DesignText"
+                                   Grid.Column="3"
+                                   FontSize="12"
+                                   FontFamily="{DynamicResource SeFontMono}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                    <!-- The view switcher (standard-views §4.2): seven chips, one pressed, each with its
+                         key. In the status bar, beside the view's name, rather than floating over the
+                         drawing: the corners of the drawing are the toolbar's, the side panels' and the
+                         3D view's snap bar and axes, and a chip over the paper takes clicks meant for
+                         it. Not focusable: a click leaves the keyboard with the drawing. -->
+                    <Border Name="ViewChips"
+                            Grid.Column="1"
+                            Margin="16,0,0,0"
+                            Padding="1"
+                            CornerRadius="3"
+                            BorderThickness="1"
+                            VerticalAlignment="Center">
+                        <Border.Styles>
+                            <Style Selector="ToggleButton">
+                                <Setter Property="Focusable" Value="False" />
+                                <Setter Property="Padding" Value="5,0" />
+                                <Setter Property="FontSize" Value="10" />
+                                <Setter Property="MinWidth" Value="0" />
+                                <Setter Property="MinHeight" Value="0" />
+                                <Setter Property="Height" Value="16" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="ToolTip.ShowOnDisabled" Value="True" />
+                            </Style>
+                        </Border.Styles>
+                        <StackPanel Orientation="Horizontal" Spacing="1">
+                            <ToggleButton Name="TopViewChip" Content="Top" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Top" ToolTip.Tip="Top: the plan, where parts are drawn (1)" />
+                            <ToggleButton Name="BottomViewChip" Content="Bottom" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Bottom" ToolTip.Tip="Bottom: from below, south up, read-only for now (2)" />
+                            <ToggleButton Name="FrontViewChip" Content="Front" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Front" ToolTip.Tip="Front: from the south, read-only for now (3)" />
+                            <ToggleButton Name="BackViewChip" Content="Back" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Back" ToolTip.Tip="Back: from the north, read-only for now (4)" />
+                            <ToggleButton Name="LeftViewChip" Content="Left" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Left" ToolTip.Tip="Left: from the west, read-only for now (5)" />
+                            <ToggleButton Name="RightViewChip" Content="Right" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Right" ToolTip.Tip="Right: from the east, read-only for now (6)" />
+                            <ToggleButton Name="ModelViewChip" Content="3D" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: 3D" ToolTip.Tip="3D: turn, move and resize parts along any axis (7)" />
+                        </StackPanel>
+                    </Border>
+                    <!-- Which view is showing (standard-views §4.2): Top, Front, 3D, "3D, perspective". -->
+                    <TextBlock Name="ViewText"
+                               Grid.Column="2"
+                               FontSize="12"
+                               FontFamily="{DynamicResource SeFontMono}"
+                               Margin="16,0,0,0"
+                               VerticalAlignment="Center"
+                               AutomationProperties.Name="View" />
+                    <TextBlock Name="CursorText"
+                               Grid.Column="3"
+                               FontSize="12"
+                               FontFamily="{DynamicResource SeFontMono}"
+                               Margin="16,0"
+                               MinWidth="190"
+                               TextAlignment="Right"
+                               VerticalAlignment="Center" />
+                    <TextBlock Name="ZoomText"
+                               Grid.Column="4"
+                               FontSize="12"
+                               FontFamily="{DynamicResource SeFontMono}"
+                               MinWidth="86"
+                               TextAlignment="Right"
+                               VerticalAlignment="Center" />
+                </Grid>
+            </StackPanel>
         </Border>
 
         <!--
-            The canvas fills what is left, and the refusal panel floats over the top of it rather
-            than docking beside it. That is deliberate: a docked panel would change the canvas's
-            arranged size, which would move the view transform, and "the drawing you had is exactly
-            as you left it" is the whole promise of a refusal.
+            The canvas fills what is left, and everything else floats over the top of it rather
+            than docking beside it.
         -->
         <Panel>
-            <viewing:CanvasView Name="DrawingCanvas" />
+            <!-- Clipped to its own bounds: what it draws past them (a zoomed plan runs over the menu
+                 and the status bar) would otherwise show there, and win the hit test there too,
+                 so a click on the menu would land on the canvas. -->
+            <viewing:CanvasView Name="DrawingCanvas" ClipToBounds="True" />
+
+            <!--
+                The 3D view (docs/design/assembly-model.md §8): a mode the window is in, as the shape
+                workshop is, over the same editor, selection and undo stack as the plan. It takes the
+                plan canvas's place while it shows, and the chrome floats over it the same way.
+            -->
+            <viewing:ModelView Name="ModelDrawing" IsVisible="False" ClipToBounds="True" />
+
+            <!--
+                The shape workshop (docs/design/shaped-parts-model.md §7.1): a sheet over the
+                drawing, not a second window and not a second document. It is a mode the window is
+                in, the way the rectangle tool is a mode, and it covers the canvas because its
+                whole job is to give one blank the room a canvas tool does not have — the part
+                drawn large and unrotated, its corners named, and its cuts listed beside it.
+
+                §7.2 says a selected cut's numbers show "in the properties panel". While the
+                workshop is open, the panel beside the blank *is* that panel: it lists the cuts
+                and holds the typed fields for the selected one, which is also §7.1's "the list
+                of cuts with their typed values beside it". The canvas's own properties panel is
+                hidden for the duration, along with the tool control and the relationship list —
+                two panels stacked on the same corner of the window would have one of them taking
+                the other's clicks, and the workshop already says what the part is and what it is
+                cut from.
+            -->
+            <shaping:ShapeWorkshop Name="WorkshopSheet" IsVisible="False" />
+
+            <!-- The dimension a person is typing into sits on the drawing, over the label it is
+                 editing. The host Canvas has no background, so it is not hit-testable and the
+                 drawing underneath still takes every click that is not on the field itself. -->
+            <Canvas Name="EditorOverlay">
+                <Border Name="DimensionEditor"
+                        IsVisible="False"
+                        Padding="6,5"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <StackPanel Spacing="4" MinWidth="150">
+                        <TextBlock Name="DimensionEditorCaption" FontSize="11" FontWeight="SemiBold" />
+                        <TextBox Name="DimensionEntryBox"
+                                 FontSize="13"
+                                 Width="150"
+                                 PlaceholderText="3' 4 1/2&quot;" />
+                        <TextBlock Name="DimensionEditorError"
+                                   IsVisible="False"
+                                   FontSize="11"
+                                   MaxWidth="230"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Name="DimensionEditorHint"
+                                   Text="Enter applies it. Escape leaves it alone."
+                                   FontSize="10"
+                                   Opacity="0.7" />
+                    </StackPanel>
+                </Border>
+            </Canvas>
+
+            <Border Name="ToolBar"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Margin="10"
+                    Padding="4"
+                    CornerRadius="4"
+                    BorderThickness="1">
+                <!--
+                    One row of icons, in StockToolbox's drawing style: an 18-unit line glyph per
+                    button, stroked and filled from the canvas palette in the code-behind, the
+                    function and its key in the tooltip, and the function's name for automation
+                    (an icon has no text for Avalonia to name the button from). Every button here
+                    runs the same handler as its Draw menu item, and the Draw menu reaches every
+                    button here, the stock sizes included.
+
+                    The tools (modes) come first, then the actions on the selection, then the stock
+                    category icons, which are appended in the code-behind: they are StockToolbox's,
+                    and always on the toolbar, so real stock is one click away.
+                -->
+                <Border.Resources>
+                    <!-- The active tool: a moss outline on a moss wash. Fluent's checked state is
+                         accent-blue and does not follow SystemAccentColor (design-repo
+                         docs/avalonia-usage.md), so the states are set here. -->
+                    <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="#334A7C4A" />
+                    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="#444A7C4A" />
+                    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="#554A7C4A" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{DynamicResource SeMossColor}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{DynamicResource SeMossColor}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="{DynamicResource SeMossColor}" />
+                </Border.Resources>
+                <Border.Styles>
+                    <!-- The icons have no words, so a tooltip is each one's label: it shows as soon
+                         as the pointer is on it, as the stock drawer's size tooltips do — for every
+                         icon in the row, the stock categories' included. -->
+                    <Style Selector=":is(Button)">
+                        <Setter Property="ToolTip.ShowDelay" Value="0" />
+                    </Style>
+                    <Style Selector="Path.toolGlyph">
+                        <Setter Property="Width" Value="18" />
+                        <Setter Property="Height" Value="18" />
+                        <Setter Property="Stretch" Value="Uniform" />
+                        <Setter Property="StrokeThickness" Value="1.2" />
+                    </Style>
+                    <!-- An action with nothing selected to act on is greyed out, as its menu item is;
+                         the glyph's brushes are explicit, so it is dimmed here rather than by the
+                         theme's disabled foreground. -->
+                    <Style Selector="Button:disabled Path.toolGlyph">
+                        <Setter Property="Opacity" Value="0.35" />
+                    </Style>
+                </Border.Styles>
+                <StackPanel Name="ToolRow" Orientation="Horizontal" Spacing="4">
+                    <!-- Rough | Precise (sketch-mode §1.1): how the next gesture enters the design, at the
+                         left end because it changes what every tool after it does. The active one is in
+                         the moss wash the armed tool uses. Q switches; so does Draw > Rough sketching. -->
+                    <ToggleButton Name="RoughModeButton"
+                                  Padding="5,3"
+                                  FontSize="11"
+                                  Content="Rough"
+                                  Click="OnRoughModeClicked"
+                                  AutomationProperties.Name="Rough"
+                                  ToolTip.Tip="Rough: big round steps, parts that just touch with nothing stated, rectangles drawn as planks (Q)" />
+                    <ToggleButton Name="PreciseModeButton"
+                                  Padding="5,3"
+                                  FontSize="11"
+                                  Content="Precise"
+                                  IsChecked="True"
+                                  Click="OnPreciseModeClicked"
+                                  AutomationProperties.Name="Precise"
+                                  ToolTip.Tip="Precise: the grid's own step, and what a drag lines up is stated (Q)" />
+                    <Border Name="ToolRowModeDivider" Width="1" Margin="4,3" />
+                    <ToggleButton Name="SelectToolButton"
+                                  Padding="5"
+                                  Click="OnSelectToolClicked"
+                                  AutomationProperties.Name="Select"
+                                  ToolTip.Tip="Select: pick, move and resize parts (S)">
+                        <!-- A pointer arrow. -->
+                        <Path Classes="toolGlyph"
+                              Data="M4,1 L4,14.5 L7.2,11.4 L9.6,16.8 L11.8,15.8 L9.4,10.4 L13.8,10.4 Z" />
+                    </ToggleButton>
+                    <ToggleButton Name="RectangleToolButton"
+                                  Padding="5"
+                                  ToolTip.ShowOnDisabled="True"
+                                  Click="OnRectangleToolClicked"
+                                  AutomationProperties.Name="Rectangle"
+                                  ToolTip.Tip="Rectangle: drag out a new part (R)">
+                        <!-- A plain part outline, with a grip at the corner the drag pulls. -->
+                        <Path Classes="toolGlyph"
+                              Data="M1,4 L14,4 L14,15 L1,15 Z M13,14 L17,14 L17,18 L13,18 Z" />
+                    </ToggleButton>
+                    <ToggleButton Name="WallToolButton"
+                                  Padding="5"
+                                  Click="OnWallToolClicked"
+                                  AutomationProperties.Name="Wall"
+                                  ToolTip.Tip="Wall: drag out a wall; the studs, plates and opening framing follow from it (W)">
+                        <!-- A wall in plan: two long faces, with studs across it. -->
+                        <Path Classes="toolGlyph"
+                              Data="M1,6 L17,6 L17,12 L1,12 Z M5,6 L5,12 M9,6 L9,12 M13,6 L13,12" />
+                    </ToggleButton>
+
+                    <Border Name="ToolRowActionsDivider" Width="1" Margin="4,3" />
+
+                    <Button Name="ShapeToolButton"
+                            Padding="5"
+                            Click="OnShapeClicked"
+                            AutomationProperties.Name="Cut to shape"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Cut to shape: open the selected part in the shape workshop to pick its stock and cut its corners and edges (C)">
+                        <!-- A blank with one corner cut off, and the offcut beside it. -->
+                        <Path Classes="toolGlyph"
+                              Data="M1,5 L10,5 L15,10 L15,17 L1,17 Z M12,2 L17,2 L17,7 Z" />
+                    </Button>
+                    <Button Name="DuplicateToolButton"
+                            Padding="5"
+                            Click="OnDuplicateClicked"
+                            AutomationProperties.Name="Duplicate"
+                            ToolTip.Tip="Duplicate: copy the selected part and put the copy beside it (D)">
+                        <theme:WorkbenchIcon Data="{StaticResource Icon.copy}" Width="18" Height="18" />
+                    </Button>
+                    <Button Name="PinToolButton"
+                            Padding="5"
+                            Click="OnPinClicked"
+                            AutomationProperties.Name="Pin in place"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Pin in place: hold the selection where it is (P)">
+                        <theme:WorkbenchIcon Data="{StaticResource Icon.pin}" Width="18" Height="18" />
+                    </Button>
+                    <Button Name="DeleteToolButton"
+                            Padding="5"
+                            Click="OnDeleteClicked"
+                            AutomationProperties.Name="Delete"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Delete: remove the selection, with its relationships (Delete)">
+                        <theme:WorkbenchIcon Data="{StaticResource Icon.trash}" Width="18" Height="18" />
+                    </Button>
+
+                    <!-- The 3D view's three turn commands (assembly-model §8.3). Shown only there:
+                         the plan's toolbar is the plan's, and X, Y and Z do the same from either. -->
+                    <Button Name="TurnXToolButton"
+                            IsVisible="False"
+                            Padding="5"
+                            Click="OnTurnXClicked"
+                            AutomationProperties.Name="Turn about X"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Turn about X: a quarter turn of the selected part about the east-west axis, Shift the other way (X)">
+                        <!-- A block with a curled arrow round a horizontal axis. -->
+                        <Path Classes="toolGlyph"
+                              Data="M4,7 L14,7 L14,13 L4,13 Z M1,10 L17,10 M9,2 C13,2 15,4 15,5 M15,5 L13,5 M15,5 L15,3" />
+                    </Button>
+                    <Button Name="TurnYToolButton"
+                            IsVisible="False"
+                            Padding="5"
+                            Click="OnTurnYClicked"
+                            AutomationProperties.Name="Turn about Y"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Turn about Y: a quarter turn of the selected part about the north-south axis, Shift the other way (Y)">
+                        <!-- A block with a curled arrow round a receding axis. -->
+                        <Path Classes="toolGlyph"
+                              Data="M5,5 L13,5 L13,13 L5,13 Z M3,15 L15,3 M2,9 C2,5 4,3 6,2 M6,2 L6,4 M6,2 L4,2" />
+                    </Button>
+                    <Button Name="TurnZToolButton"
+                            IsVisible="False"
+                            Padding="5"
+                            Click="OnTurnZClicked"
+                            AutomationProperties.Name="Turn about Z"
+                            ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="Turn about Z: a quarter turn of the selected part about the vertical axis, Shift the other way (Z)">
+                        <!-- A block with a curled arrow round a vertical axis. -->
+                        <Path Classes="toolGlyph"
+                              Data="M5,6 L13,6 L13,15 L5,15 Z M9,1 L9,17 M3,4 C5,2 13,2 15,4 M15,4 L13,4 M15,4 L15,2" />
+                    </Button>
+
+                    <Border Name="ToolRowDivider" Width="1" Margin="4,3" />
+                </StackPanel>
+            </Border>
+
+            <!-- The 3D view's quick view snaps (#132): look along an axis, again for the other side;
+                 the fourth steps through the surfaces. A small strip above the axes gizmo, shown only in 3D. -->
+            <Border Name="ViewSnapBar"
+                    IsVisible="False"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Bottom"
+                    Margin="10,0,10,84"
+                    Padding="3"
+                    CornerRadius="4"
+                    BorderThickness="1">
+                <Border.Styles>
+                    <Style Selector=":is(Button)">
+                        <Setter Property="ToolTip.ShowDelay" Value="0" />
+                    </Style>
+                    <Style Selector="Path.toolGlyph">
+                        <Setter Property="Width" Value="18" />
+                        <Setter Property="Height" Value="18" />
+                        <Setter Property="Stretch" Value="Uniform" />
+                        <Setter Property="StrokeThickness" Value="1.2" />
+                    </Style>
+                </Border.Styles>
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Name="LookXToolButton"
+                            Padding="5" MinWidth="28"
+                            Click="OnLookXClicked"
+                            AutomationProperties.Name="Look along X"
+                            ToolTip.Tip="Look along X: from the east; again for the west">
+                        <TextBlock Text="X" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    </Button>
+                    <Button Name="LookYToolButton"
+                            Padding="5" MinWidth="28"
+                            Click="OnLookYClicked"
+                            AutomationProperties.Name="Look along Y"
+                            ToolTip.Tip="Look along Y: from the south; again for the north">
+                        <TextBlock Text="Y" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    </Button>
+                    <Button Name="LookZToolButton"
+                            Padding="5" MinWidth="28"
+                            Click="OnLookZClicked"
+                            AutomationProperties.Name="Look along Z"
+                            ToolTip.Tip="Look along Z: from above; again for below">
+                        <TextBlock Text="Z" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    </Button>
+                    <Button Name="NextSurfaceToolButton"
+                            Padding="5"
+                            Click="OnNextSurfaceClicked"
+                            AutomationProperties.Name="Next surface"
+                            ToolTip.Tip="Next surface: look square-on at each face of the selected part in turn, or along each axis with nothing selected">
+                        <!-- A square face seen head-on. -->
+                        <Path Classes="toolGlyph"
+                              Data="M3,3 L15,3 L15,15 L3,15 Z M7,7 L11,7 L11,11 L7,11 Z" />
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- The stock toolbox's drawer (issue #7's picker): the category icons are on the tool
+                 control above, and clicking one drops this text list down under it; a drag on the
+                 paper then places a part already cut from the item picked. It stays open while
+                 parts are placed, and closes when its icon is clicked again. -->
+            <viewing:StockToolbox Name="StockToolboxPanel"
+                                  IsVisible="False"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Top"
+                                  Margin="10,56,10,10" />
+
+            <!--
+                One column owns the right-hand side (#73): the relationship list above, the Part
+                panel below it. They used to be placed independently in the same corner, so a long
+                list ran under the panel and on under the status bar. Now the list gets whatever
+                height the panel leaves and scrolls inside it; the two never overlap.
+            -->
+            <Grid Name="SidePanels"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Stretch"
+                  Margin="10"
+                  RowDefinitions="Auto,*">
+
+                <Border Name="RelationshipsPanel"
+                        Grid.Row="0"
+                        IsVisible="False"
+                        IsHitTestVisible="False"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Padding="10,8"
+                        MaxWidth="260"
+                        MaxHeight="320"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <DockPanel>
+                        <TextBlock Name="RelationshipsHeadline"
+                                   DockPanel.Dock="Top"
+                                   Text="Relationships"
+                                   FontSize="12"
+                                   FontWeight="SemiBold" />
+                        <ScrollViewer Name="RelationshipsScroller"
+                                      Margin="0,5,0,0"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Auto">
+                            <!-- A gutter on the right for the scroll bar, which overlays the
+                                 content: without it the bar sits on the rows' remove buttons. -->
+                            <StackPanel Name="RelationshipsList" Spacing="3" IsVisible="False" Margin="0,0,14,0" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <!--
+                    What the selected part is, as opposed to where it is: its name, the one dimension
+                    the plan cannot hold, which of the three the drawing is showing, and what stock it
+                    is cut from. This is the only way a box somebody drew becomes a piece somebody
+                    cuts (docs/design/parts-and-cut-list.md §1).
+                -->
+                <!-- The Part panel takes what the list leaves, and scrolls in a small window rather
+                     than pushing the list off the screen or running under the status bar. -->
+                <ScrollViewer Name="PropertiesScroller"
+                              Grid.Row="1"
+                              Margin="0,8,0,0"
+                              VerticalAlignment="Bottom"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                <StackPanel VerticalAlignment="Bottom" Spacing="6">
+                <!-- A note (renovation-sketches §8): its words and its symbol, six small pencil glyphs,
+                     the chosen one moss-washed. Counted on the shopping list, never modelled. -->
+                <Border Name="NotePanel"
+                        IsVisible="False"
+                        HorizontalAlignment="Right"
+                        Padding="10,8"
+                        Width="248"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Name="NoteHeadline" Text="Note" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <ComboBox Name="NotePhaseBox" Grid.Column="1" FontSize="11" MinWidth="0" Width="104" MinHeight="0" Height="24" Padding="6,0"
+                                      AutomationProperties.Name="Note phase" SelectionChanged="OnNotePhaseChanged" />
+                        </Grid>
+                        <TextBox Name="NoteTextBox" FontSize="12" PlaceholderText="outlet, switch, light, supply, drain, or any words"
+                                 AutomationProperties.Name="Note words"
+                                 ToolTip.Tip="What the note says. The rough-in words napkin knows get their symbol; Enter applies." />
+                        <StackPanel Name="NoteSymbolRow" Orientation="Horizontal" Spacing="4" />
+                        <TextBlock Name="NoteSymbolWord" FontSize="10" Opacity="0.8" />
+                    </StackPanel>
+                </Border>
+                <Border Name="PropertiesPanel"
+                        IsVisible="False"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Padding="10,8"
+                        Width="248"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <StackPanel Spacing="6">
+                        <!-- Apply sits by the headline, where it stays in sight when the panel has to
+                             scroll in a small window; Enter in any field applies too (#78). -->
+                        <!-- The phase sits in the headline row (renovation-sketches §6.1, §8): already there,
+                             going in, or coming out, on every entity, without pushing the panel down. -->
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <TextBlock Name="PropertiesHeadline"
+                                       Text="Part"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                            <ComboBox Name="PhaseBox" Grid.Column="1" FontSize="11" MinWidth="0" Width="104"
+                                      MinHeight="0" Height="24" Padding="6,0" Margin="0,0,6,0" VerticalAlignment="Center"
+                                      AutomationProperties.Name="Phase"
+                                      SelectionChanged="OnPhaseChanged"
+                                      ToolTip.Tip="Phase. New is bought; existing is already there and drawn faint; demolish comes out, drawn crossed." />
+                            <Button Name="ApplyPartButton"
+                                    Grid.Column="2"
+                                    Content="Apply"
+                                    FontSize="12"
+                                    Padding="10,3"
+                                    Click="OnApplyPartClicked" />
+                        </Grid>
+
+                        <TextBlock Name="PropertiesError"
+                                   IsVisible="False"
+                                   FontSize="11"
+                                   TextWrapping="Wrap" />
+
+                        <TextBox Name="PartNameBox" FontSize="12" PlaceholderText="Name" />
+
+                        <!-- Every box has a depth, part or not (assembly-model §1.2, §11 decision 7). -->
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Name="OutOfPlaneCaption" Grid.Column="0"
+                                       Text="Depth" FontSize="11"
+                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox Name="OutOfPlaneBox" Grid.Column="1" FontSize="12"
+                                     PlaceholderText="3/4&quot;" />
+                        </Grid>
+
+                        <!-- Where the part is (#78): the low corner of its extent — its least east–west,
+                             north–south and height — in the world's terms, not its anchor, which after
+                             a turn can be any corner. -->
+                        <StackPanel Spacing="2">
+                            <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*">
+                                <TextBlock Grid.Column="0" Text="At E" FontSize="11" VerticalAlignment="Center" Margin="0,0,3,0"
+                                           ToolTip.Tip="Where its south-west bottom corner is: east of the origin, north of it, and up off the floor." />
+                                <TextBox Name="PositionXBox" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,3"
+                                         ToolTip.Tip="How far east of the origin, like 1' 4&quot; — or -2&quot; for west of it." />
+                                <TextBlock Grid.Column="2" Text="N" FontSize="11" VerticalAlignment="Center" Margin="5,0,3,0" />
+                                <TextBox Name="PositionYBox" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,3"
+                                         ToolTip.Tip="How far north of the origin — or, negative, south of it." />
+                                <TextBlock Grid.Column="4" Text="Up" FontSize="11" VerticalAlignment="Center" Margin="5,0,3,0" />
+                                <TextBox Name="PositionZBox" Grid.Column="5" FontSize="11" MinWidth="0" Padding="4,3"
+                                         ToolTip.Tip="How high off the floor its lowest face is." />
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- A wall's or an opening's frame (#18): derived by FramingList, never stored. -->
+                        <StackPanel Name="FramingFields" Spacing="4" IsVisible="False">
+                            <TextBlock Name="FramingHeadline" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Wall or opening" />
+                            <!-- The code check on an opening (#18): derived, never stored. -->
+                            <StackPanel Name="CodeCheckFields" Spacing="3" IsVisible="False">
+                                <TextBlock Text="Code check" FontSize="11" FontWeight="SemiBold" />
+                                <TextBlock Name="CodeCheckHeadline" FontSize="11" TextWrapping="Wrap"
+                                           AutomationProperties.Name="Code check" />
+                                <TextBlock Name="CodeCheckInterpolation" FontSize="10" FontStyle="Italic" TextWrapping="Wrap" IsVisible="False"
+                                           AutomationProperties.Name="Code check interpolation" />
+                                <TextBlock Name="CodeCheckCitation" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
+                                           AutomationProperties.Name="Code check citation" />
+                                <Expander Name="CodeCheckWorking" Header="How it was found" FontSize="10" Padding="4,2"
+                                          HorizontalAlignment="Stretch">
+                                    <TextBlock Name="CodeCheckDetails" FontSize="10" TextWrapping="Wrap"
+                                               AutomationProperties.Name="Code check working" />
+                                </Expander>
+                            </StackPanel>
+                            <TextBlock Name="FramingReadout" FontSize="11" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Framing" />
+                            <TextBlock Name="FramingProblems" FontSize="11" TextWrapping="Wrap" IsVisible="False"
+                                       Foreground="{DynamicResource SystemErrorTextColor}"
+                                       AutomationProperties.Name="Framing problems" />
+                            <!-- What the wall carries (#18): one of the adopted code's table values, never assumed. -->
+                            <Grid Name="SupportsRow" ColumnDefinitions="Auto,*" IsVisible="False">
+                                <TextBlock Text="Supports" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox Name="SupportsBox" Grid.Column="1" FontSize="12" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="What the wall supports"
+                                          SelectionChanged="OnSupportsChanged" />
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Text="Studs at" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox Name="StudSpacingBox" Grid.Column="1" FontSize="12" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="Stud spacing"
+                                          SelectionChanged="OnStudSpacingChanged" />
+                            </Grid>
+                            <!-- What the wall is (renovation-sketches §4.3): entered, never defaulted. Side picks the
+                                 header table; a wall that is not bearing is not checked and takes the header typed. -->
+                            <Grid Name="WallTypeRow" ColumnDefinitions="Auto,*,Auto,*" IsVisible="False">
+                                <TextBlock Text="Side" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <ComboBox Name="SideBox" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="Wall side"
+                                          SelectionChanged="OnSideChanged"
+                                          ToolTip.Tip="Exterior or interior: which header table the code check asks, and which walls are insulated as exterior. napkin never assumes it." />
+                                <TextBlock Grid.Column="2" Text="Bearing" FontSize="11" VerticalAlignment="Center" Margin="6,0,6,0" />
+                                <ComboBox Name="BearingBox" Grid.Column="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="Bearing"
+                                          SelectionChanged="OnBearingChanged"
+                                          ToolTip.Tip="Whether the wall carries load. A wall that is not bearing gets no code check: you choose its header. napkin never assumes it." />
+                            </Grid>
+                            <Grid Name="HeaderRow" ColumnDefinitions="Auto,*" IsVisible="False">
+                                <TextBlock Text="Header" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox Name="HeaderBox" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="Header, your choice"
+                                          SelectionChanged="OnHeaderChanged"
+                                          ToolTip.Tip="The header over every opening in this wall: your choice, not a code result. Draw two walls for two headers." />
+                            </Grid>
+                            <TextBlock Name="WallNote" FontSize="10" TextWrapping="Wrap" IsVisible="False"
+                                       AutomationProperties.Name="Wall note" />
+                            <TextBlock Name="FramingNotes" FontSize="10" Opacity="0.8" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Framing notes" />
+                            <!-- The wall line's bracing (#39): segments from the drawing, a method per segment
+                                 chosen by the person from the adopted code's methods (never assumed), and the check. -->
+                            <StackPanel Name="BracingFields" Spacing="3" IsVisible="False">
+                                <TextBlock Text="Bracing" FontSize="11" FontWeight="SemiBold" />
+                                <StackPanel Name="BracingSegments" Spacing="2" />
+                                <TextBlock Name="BracingHeadline" FontSize="11" TextWrapping="Wrap"
+                                           AutomationProperties.Name="Bracing check" />
+                                <TextBlock Name="BracingCitation" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
+                                           AutomationProperties.Name="Bracing citation" />
+                                <Expander Name="BracingWorking" Header="How it was worked out" FontSize="10" Padding="4,2"
+                                          HorizontalAlignment="Stretch">
+                                    <TextBlock Name="BracingDetails" FontSize="10" TextWrapping="Wrap"
+                                               AutomationProperties.Name="Bracing working" />
+                                </Expander>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- A room's finishes and what was measured (renovation-sketches §5): ticks and the
+                             values typed from the packages, none defaulted but napkin's own 10 % flooring
+                             allowance. The Area takeoff is on the shopping list; its lines are here too. -->
+                        <StackPanel Name="RoomFields" Spacing="4" IsVisible="False">
+                            <TextBlock Name="RoomHeadline" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Room" />
+                            <TextBlock Name="RoomBoundsText" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Bounding walls" />
+                            <Grid ColumnDefinitions="Auto,3*,Auto,2*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Text="Drywall" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <ComboBox Name="DrywallBox" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,0,2"
+                                          AutomationProperties.Name="Drywall" SelectionChanged="OnRoomChoiceChanged" />
+                                <TextBlock Grid.Row="1" Text="Sheet" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="SheetBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2"
+                                         PlaceholderText="the size you buy, e.g. 4' x 8'" AutomationProperties.Name="Drywall sheet size"
+                                         ToolTip.Tip="Type the sheet size from the package: width x length. napkin carries no sheet size." />
+                                <TextBlock Grid.Row="2" Text="Insulation" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <ComboBox Name="InsulationBox" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,0,2"
+                                          AutomationProperties.Name="Insulation" SelectionChanged="OnRoomChoiceChanged" />
+                                <TextBlock Grid.Row="3" Text="by" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,6,2" />
+                                <ComboBox Name="InsulationByBox" Grid.Row="3" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,4,2"
+                                          AutomationProperties.Name="Insulation by" SelectionChanged="OnRoomChoiceChanged" />
+                                <TextBlock Grid.Row="3" Grid.Column="2" Text="bag" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                <TextBox Name="InsulationCoverageBox" Grid.Row="3" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2"
+                                         PlaceholderText="sq ft" AutomationProperties.Name="Insulation coverage"
+                                         ToolTip.Tip="Square feet a bag covers, from the package. Whole square feet." />
+                                <TextBlock Grid.Row="4" Text="Paint" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <ComboBox Name="PaintBox" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,0,2"
+                                          AutomationProperties.Name="Paint" SelectionChanged="OnRoomChoiceChanged" />
+                                <TextBlock Grid.Row="5" Text="Coats" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="PaintCoatsBox" Grid.Row="5" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,4,2"
+                                         PlaceholderText="coats" AutomationProperties.Name="Paint coats" />
+                                <TextBlock Grid.Row="5" Grid.Column="2" Text="gallon" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                <TextBox Name="PaintCoverageBox" Grid.Row="5" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2"
+                                         PlaceholderText="sq ft" AutomationProperties.Name="Paint coverage"
+                                         ToolTip.Tip="Square feet a gallon covers, from the can." />
+                                <CheckBox Name="FlooringCheck" Grid.Row="6" Content="Floor" FontSize="11" Margin="0,0,6,2"
+                                          AutomationProperties.Name="Flooring" IsCheckedChanged="OnRoomTicked" />
+                                <TextBox Name="FlooringWasteBox" Grid.Row="6" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,4,2"
+                                         PlaceholderText="waste %" AutomationProperties.Name="Flooring waste"
+                                         ToolTip.Tip="The waste allowance, a whole percent: napkin's allowance of 10 % to start, not a fact about your floor. Type any other, 0 included." />
+                                <TextBlock Grid.Row="6" Grid.Column="2" Text="box" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                <TextBox Name="FlooringBoxBox" Grid.Row="6" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2"
+                                         PlaceholderText="sq ft" AutomationProperties.Name="Flooring box coverage"
+                                         ToolTip.Tip="Square feet a box covers, from the box." />
+                                <CheckBox Name="BaseboardCheck" Grid.Row="7" Content="Base" FontSize="11" Margin="0,0,6,2"
+                                          AutomationProperties.Name="Baseboard" IsCheckedChanged="OnRoomTicked" />
+                                <TextBox Name="BaseboardStickBox" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2"
+                                         PlaceholderText="the stick you buy, e.g. 8'" AutomationProperties.Name="Baseboard stick length"
+                                         ToolTip.Tip="The length of stick you will buy. napkin has read no stock-length list for trim." />
+                            </Grid>
+                            <Expander Name="MeasuredExpander" Header="Measured" FontSize="10" Padding="4,2" HorizontalAlignment="Stretch">
+                                <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto">
+                                    <TextBlock Text="S" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredSouthBox" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Measured south" />
+                                    <TextBlock Grid.Column="2" Text="N" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredNorthBox" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2" AutomationProperties.Name="Measured north" />
+                                    <TextBlock Grid.Row="1" Text="W" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredWestBox" Grid.Row="1" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Measured west" />
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="E" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredEastBox" Grid.Row="1" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2" AutomationProperties.Name="Measured east" />
+                                    <TextBlock Grid.Row="2" Text="D1" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredDiagonal1Box" Grid.Row="2" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Measured diagonal 1" />
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="D2" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredDiagonal2Box" Grid.Row="2" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2" AutomationProperties.Name="Measured diagonal 2" />
+                                </Grid>
+                            </Expander>
+                            <TextBlock Name="RoomNotesText" FontSize="10" TextWrapping="Wrap" IsVisible="False"
+                                       AutomationProperties.Name="Room notes" />
+                            <TextBlock Name="RoomTakeoffText" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Area takeoff" />
+                        </StackPanel>
+
+                        <CheckBox Name="IsPartCheck"
+                                  Content="This is a piece to cut"
+                                  FontSize="12"
+                                  IsCheckedChanged="OnIsPartChanged"
+                                  ToolTip.Tip="A wall or an opening is a box nobody cuts, and stays off the cut list." />
+
+                        <StackPanel Name="PartFields" Spacing="6" IsVisible="False">
+                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                                <TextBlock Name="PlanXCaption" Grid.Row="0" Grid.Column="0" Text="East–west" FontSize="11"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox Name="PlanXBox" Grid.Row="0" Grid.Column="1" FontSize="12"
+                                          HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+
+                                <TextBlock Name="PlanYCaption" Grid.Row="1" Grid.Column="0" Text="North–south" FontSize="11"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox Name="PlanYBox" Grid.Row="1" Grid.Column="1" FontSize="12"
+                                          HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Qty" FontSize="11"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBox Name="QuantityBox" Grid.Row="2" Grid.Column="1" FontSize="12"
+                                         PlaceholderText="1" />
+                            </Grid>
+
+                            <TextBox Name="StockBox" FontSize="12" PlaceholderText="Stock, e.g. 2x4" />
+                            <TextBlock Name="StockReadout" FontSize="10" Opacity="0.8" TextWrapping="Wrap" />
+                            <CheckBox Name="RoughCheck" Content="Rough" FontSize="12"
+                                      AutomationProperties.Name="Rough"
+                                      ToolTip.Tip="Rough: its sizes are as drawn and its stock not yet chosen. Untick it for a part that is fine as drawn; Firm up clears it too." />
+                            <TextBox Name="SpeciesBox" FontSize="12" PlaceholderText="Species" />
+                            <TextBlock Name="PartJoints" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Joints of this part" />
+                            <TextBox Name="HardwareBox" FontSize="12" AcceptsReturn="True" MinHeight="54"
+                                     PlaceholderText="Hardware, one per line: Drawer pull × 1"
+                                     AutomationProperties.Name="Hardware"
+                                     ToolTip.Tip="Slides, pulls, hinges: what this part carries that is not wood, one per line, a name then × and how many. Each copy of the part carries them. Enter starts a new line; Ctrl+Enter (Command+Enter on a Mac) applies." />
+                        </StackPanel>
+
+                    </StackPanel>
+                </Border>
+                </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- The join popover (joinery note §5.1): a sheet over the paper at the contact, like the refusal
+                 panel, not a window. Enter joins, Escape cancels; the fields are the whole of a joint. -->
+            <Border Name="JoinPanel"
+                    IsVisible="False"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Width="430"
+                    Padding="12,10"
+                    CornerRadius="4"
+                    BorderThickness="1"
+                    AutomationProperties.Name="Join">
+                <StackPanel Spacing="7">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Name="JoinTitle" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                        <Button Name="JoinSwapButton" Grid.Column="1" Focusable="False" Content="&#x21C4; swap" FontSize="11" Padding="6,1"
+                                AutomationProperties.Name="Swap which part receives"
+                                ToolTip.Tip="Swap which part receives and which is inserted." />
+                    </Grid>
+
+                    <ScrollViewer MaxHeight="170" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Name="JoinPairs" Spacing="3" IsVisible="False" />
+                    </ScrollViewer>
+
+                    <WrapPanel Name="JoinTypes" Orientation="Horizontal" />
+
+                    <Grid ColumnDefinitions="Auto,*,Auto,90" RowDefinitions="Auto,Auto,Auto" >
+                        <TextBlock Text="Fastening" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <ComboBox Name="JoinFasteningBox" Grid.Column="1" FontSize="12" HorizontalAlignment="Stretch"
+                                  AutomationProperties.Name="Fastening" />
+                        <TextBlock Text="Count" FontSize="11" Grid.Column="2" VerticalAlignment="Center" Margin="10,0,8,0" />
+                        <TextBox Name="JoinCountBox" Grid.Column="3" FontSize="12"
+                                 AutomationProperties.Name="Fastener count"
+                                 ToolTip.Tip="Leave blank for the recipe's number; type a number to say how many this joint takes." />
+
+                        <TextBlock Name="JoinPocketCaption" Grid.Row="1" Text="Pocket holes from" FontSize="11"
+                                   VerticalAlignment="Center" Margin="0,4,8,0" />
+                        <ComboBox Name="JoinPocketBox" Grid.Row="1" Grid.Column="1" FontSize="12" HorizontalAlignment="Stretch"
+                                  Margin="0,4,0,0" AutomationProperties.Name="Pocket holes from" />
+
+                        <TextBlock Name="JoinDepthCaption" Grid.Row="2" Text="Depth" FontSize="11" VerticalAlignment="Center"
+                                   Margin="0,4,8,0" />
+                        <TextBox Name="JoinDepthBox" Grid.Row="2" Grid.Column="1" FontSize="12" Margin="0,4,0,0"
+                                 PlaceholderText="e.g. 1/4&quot;" AutomationProperties.Name="Depth" />
+                    </Grid>
+
+                    <CheckBox Name="JoinGlueCheck" Content="Glue" FontSize="12" AutomationProperties.Name="Glue" />
+                    <TextBlock Name="JoinMessage" FontSize="11" IsVisible="False" TextWrapping="Wrap" />
+
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBlock Text="Enter to join · Esc to cancel" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                        <Button Name="JoinCancelButton" Grid.Column="1" Content="Cancel" FontSize="12" Padding="10,3" Margin="0,0,6,0" />
+                        <Button Name="JoinOkButton" Grid.Column="2" Content="Join" FontSize="12" Padding="10,3"
+                                AutomationProperties.Name="Join the parts" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Firm up (sketch-mode §3): the join popover's sibling, a sheet over the paper. Three
+                 sections — relationships, stock, sizes — a tick per line, all ticked where there is
+                 something to accept; Enter accepts the ticked ones as one undo step, Escape cancels. -->
+            <Border Name="FirmUpPanel"
+                    IsVisible="False"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Margin="0,56,0,0"
+                    Width="480"
+                    Padding="12,10"
+                    CornerRadius="4"
+                    BorderThickness="1"
+                    AutomationProperties.Name="Firm up">
+                <StackPanel Spacing="7">
+                    <TextBlock Name="FirmUpTitle" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap" />
+                    <ScrollViewer MaxHeight="460" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Name="FirmUpLines" Spacing="2" Margin="0,0,14,0" />
+                    </ScrollViewer>
+                    <TextBlock Name="FirmUpMessageText" FontSize="11" IsVisible="False" TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBlock Text="Enter to firm up · Esc to cancel" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                        <Button Name="FirmUpCancelButton" Grid.Column="1" Content="Cancel" FontSize="12" Padding="10,3" Margin="0,0,6,0" />
+                        <Button Name="FirmUpOkButton" Grid.Column="2" Content="Firm up" FontSize="12" Padding="10,3"
+                                AutomationProperties.Name="Firm up the ticked lines" />
+                    </Grid>
+                </StackPanel>
+            </Border>
 
             <!-- Its colours come from the canvas palette in the code-behind, not from a theme
                  resource: the panel sits on the drawing, so it should be lit the same way, and a
@@ -95,9 +1278,50 @@
                     <TextBlock Name="RefusalDismissHint"
                                Text="Press Escape, or click this message, to dismiss it."
                                FontSize="11"
-                               Opacity="0.7"
-                               TextWrapping="Wrap" />
+                               Opacity="0.7" />
                 </StackPanel>
+            </Border>
+
+            <!--
+                "Save changes first?" — asked over the drawing whenever something would throw the
+                drawing's unsaved changes away: a new sheet, another file or sample, quitting. It is
+                a sheet over the paper like the refusal panel, not a second window, and the backdrop
+                under it takes the pointer so nothing behind it can be edited while it waits.
+            -->
+            <Border Name="UnsavedBackdrop"
+                    IsVisible="False"
+                    Background="#59000000">
+                <Border Name="UnsavedPanel"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        MaxWidth="460"
+                        Margin="16"
+                        Padding="16,14"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <StackPanel Spacing="10">
+                        <TextBlock Name="UnsavedHeadline"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Name="UnsavedDetail"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Text="Changes that are not saved are lost. Escape goes back to the drawing." />
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    HorizontalAlignment="Right">
+                            <Button Name="UnsavedSaveButton"
+                                    Content="Save"
+                                    Click="OnUnsavedSaveClicked" />
+                            <Button Name="UnsavedDiscardButton"
+                                    Content="Don't save"
+                                    Click="OnUnsavedDiscardClicked" />
+                            <Button Name="UnsavedCancelButton"
+                                    Content="Cancel"
+                                    Click="OnUnsavedCancelClicked" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </Border>
         </Panel>
 

@@ -1,0 +1,238 @@
+{
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES. Each expectation is worked by hand from the synthetic section, not exported from the pack.",
+  "pack": "us-zz-brace-a",
+  "section": "ZZ-BRACE.1",
+  "source": "zz-synth-base",
+  "transcriber": {
+    "who": "synthetic",
+    "on": "2026-09-25"
+  },
+  "cases": [
+    {
+      "row": "q.w99",
+      "location": "synthetic p. 3, row 1",
+      "inputs": {
+        "ultimateWindSpeed": 90,
+        "lineLength": "16ft 0in",
+        "wallHeight": "8ft 0in",
+        "segments": [
+          {
+            "length": "30in",
+            "method": "zz-panel"
+          },
+          {
+            "length": "60in",
+            "method": "zz-panel"
+          },
+          {
+            "length": "30in",
+            "method": "zz-panel"
+          }
+        ]
+      },
+      "expect": {
+        "passes": {
+          "required": "6ft 6in",
+          "provided": "10ft 0in",
+          "factors": []
+        }
+      }
+    },
+    {
+      "row": "q.w199",
+      "location": "synthetic p. 3, row 2; p. 4, item 1",
+      "inputs": {
+        "ultimateWindSpeed": 160,
+        "lineLength": "16ft 0in",
+        "wallHeight": "8ft 0in",
+        "segments": [
+          {
+            "length": "30in",
+            "method": "zz-panel"
+          },
+          {
+            "length": "22in",
+            "method": "zz-panel"
+          },
+          {
+            "length": "50in",
+            "method": null
+          }
+        ]
+      },
+      "expect": {
+        "fails": {
+          "required": "10ft 0in",
+          "provided": "2ft 6in",
+          "shortfall": "7ft 6in",
+          "factors": [
+            "f.wind"
+          ]
+        }
+      }
+    },
+    {
+      "row": "q.w99",
+      "location": "synthetic p. 3, row 1; p. 4, item 2; p. 5, row 2; p. 6",
+      "inputs": {
+        "ultimateWindSpeed": 99,
+        "lineLength": "12ft 0in",
+        "wallHeight": "10ft 0in",
+        "segments": [
+          {
+            "length": "29in",
+            "method": "zz-panel"
+          },
+          {
+            "length": "97in",
+            "method": "zz-board"
+          }
+        ]
+      },
+      "expect": {
+        "passes": {
+          "required": "5ft 10in",
+          "provided": "8ft 0in",
+          "factors": [
+            "f.tall"
+          ]
+        }
+      }
+    },
+    {
+      "row": "q.w99",
+      "generated": "boundary",
+      "location": "synthetic p. 3, row 1",
+      "inputs": {
+        "ultimateWindSpeed": 90,
+        "lineLength": "16ft 0in",
+        "wallHeight": "8ft 0in",
+        "segments": [
+          {
+            "length": "40in",
+            "method": "zz-panel"
+          },
+          {
+            "length": "38in",
+            "method": "zz-panel"
+          }
+        ]
+      },
+      "expect": {
+        "passes": {
+          "required": "6ft 6in",
+          "provided": "6ft 6in",
+          "factors": []
+        }
+      }
+    },
+    {
+      "row": "q.w99",
+      "generated": "boundary",
+      "location": "synthetic p. 3, row 1",
+      "inputs": {
+        "ultimateWindSpeed": 90,
+        "lineLength": "16ft 0in",
+        "wallHeight": "8ft 0in",
+        "segments": [
+          {
+            "length": "40in",
+            "method": "zz-panel"
+          },
+          {
+            "length": "37-1023/1024in",
+            "method": "zz-panel"
+          }
+        ]
+      },
+      "expect": {
+        "fails": {
+          "required": "6ft 6in",
+          "provided": "6ft 4in",
+          "shortfall": "2in",
+          "factors": []
+        }
+      }
+    },
+    {
+      "location": "synthetic p. 3, note",
+      "inputs": {
+        "ultimateWindSpeed": 90,
+        "lineLength": "16ft 0in",
+        "wallHeight": "12ft 1in",
+        "segments": [
+          {
+            "length": "60in",
+            "method": "zz-panel"
+          }
+        ]
+      },
+      "expect": {
+        "outOfScope": {
+          "reason": "NotPrescriptive",
+          "limitRow": "l.tall"
+        }
+      }
+    },
+    {
+      "location": "synthetic p. 3, row 2",
+      "inputs": {
+        "ultimateWindSpeed": 200,
+        "lineLength": "16ft 0in",
+        "wallHeight": "8ft 0in",
+        "segments": [
+          {
+            "length": "60in",
+            "method": "zz-panel"
+          }
+        ]
+      },
+      "expect": {
+        "outOfScope": {
+          "reason": "InputAboveTableBands",
+          "limitRow": "q.w199"
+        }
+      }
+    },
+    {
+      "location": "synthetic p. 3",
+      "inputs": {
+        "lineLength": "16ft 0in",
+        "wallHeight": "8ft 0in",
+        "segments": [
+          {
+            "length": "60in",
+            "method": "zz-panel"
+          }
+        ]
+      },
+      "expect": {
+        "inputMissing": {
+          "inputs": [
+            "ultimateWindSpeed"
+          ]
+        }
+      }
+    },
+    {
+      "location": "synthetic p. 3, row 1",
+      "inputs": {
+        "ultimateWindSpeed": 0,
+        "lineLength": "16ft 0in",
+        "wallHeight": "8ft 0in",
+        "segments": [
+          {
+            "length": "60in",
+            "method": "zz-panel"
+          }
+        ]
+      },
+      "expect": {
+        "outOfScope": {
+          "reason": "InputBelowTableBands",
+          "limitRow": "q.w99"
+        }
+      }
+    }
+  ]
+}

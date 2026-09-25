@@ -1,0 +1,587 @@
+using System.Collections.Immutable;
+using System.Globalization;
+
+using Napkin.Core.Geometry;
+using Napkin.Core.Materials;
+using Napkin.Core.RulesEngine;
+
+namespace Napkin.Modules.Building;
+
+/// <summary>
+/// The code packs napkin found: every one that loaded, and every one that did not with its problems
+/// (docs/design/rules-engine-model.md §9.3). Read once from the packs roots; the check itself never
+/// touches the disk.
+/// </summary>
+public sealed class CodePacks
+{
+    /// <summary>Builds the set from load results (a test's, or <see cref="Discover"/>'s).</summary>
+    public CodePacks(IEnumerable<PackLoadResult> results)
+    {
+        ArgumentNullException.ThrowIfNull(results);
+        List<PackLoadResult> all = [.. results];
+        Loaded = [.. all.OfType<PackLoadResult.Loaded>().Select(loaded => loaded.Pack)];
+        Invalid = [.. all.OfType<PackLoadResult.Invalid>()];
+    }
+
+    /// <summary>No packs at all.</summary>
+    public static CodePacks None { get; } = new([]);
+
+    /// <summary>Every pack that loaded, in the order found.</summary>
+    public ImmutableArray<LoadedPack> Loaded { get; }
+
+    /// <summary>Every pack that did not, with its problems.</summary>
+    public ImmutableArray<PackLoadResult.Invalid> Invalid { get; }
+
+    /// <summary>Every pack under each packs root that exists, in root order (<see cref="PackLocations.All()"/> for the app).</summary>
+    public static CodePacks Discover(IEnumerable<string> packsRoots)
+    {
+        ArgumentNullException.ThrowIfNull(packsRoots);
+        return new CodePacks(packsRoots
+            .Where(root => Directory.Exists(Path.Combine(root, "packs")))
+            .SelectMany(root => PackCatalog.Discover(root)));
+    }
+
+    /// <summary>
+    /// The pack a project's choice names, or why there is none: a locked choice takes exactly its
+    /// revision, a following one the newest installed revision of the same pack.
+    /// </summary>
+    public CodeResolution Resolve(CodeChoice? choice)
+    {
+        if (choice is null)
+        {
+            return new CodeResolution(null, CodeCheck.NoCodeSelectedText);
+        }
+
+        List<LoadedPack> same = [.. Loaded.Where(pack => pack.Manifest.Id == choice.PackId).OrderByDescending(pack => pack.Manifest.Revision)];
+        if (choice.Mode == CodeMode.Following && same.Count > 0)
+        {
+            return new CodeResolution(same[0], null);
+        }
+
+        if (same.FirstOrDefault(pack => pack.Manifest.Revision == choice.Revision) is { } locked)
+        {
+            return new CodeResolution(locked, null);
+        }
+
+        if (same.Count > 0)
+        {
+            return new CodeResolution(
+                null,
+                $"This project is locked to code pack {choice.PackId} revision {choice.Revision}, and the installed pack is revision "
+                + $"{string.Join(", ", same.Select(pack => pack.Manifest.Revision))}. Nothing is computed under a revision the project did not choose: "
+                + $"lock to the installed one, or follow it, under {CodeCheck.WhereToChoose}.");
+        }
+
+        if (Invalid.FirstOrDefault(pack => pack.PackId == choice.PackId) is { } invalid)
+        {
+            return new CodeResolution(
+                null,
+                $"Code pack {choice.PackId} is installed but does not load: {string.Join("; ", invalid.Problems.Take(3))}.");
+        }
+
+        return new CodeResolution(null, $"Code pack {choice.PackId}, which this project chose, is not installed (docs/rules-engine.md says where packs go).");
+    }
+}
+
+/// <summary>The pack a project's code choice resolves to, or why there is none.</summary>
+/// <param name="Pack">The pack, or null.</param>
+/// <param name="Problem">Why there is no pack, in plain words; null when there is one.</param>
+public sealed record CodeResolution(LoadedPack? Pack, string? Problem);
+
+/// <summary>One opening and its header result.</summary>
+/// <param name="Opening">The opening.</param>
+/// <param name="Result">
+/// What the adopted code says about its header, or null when napkin does not check it: an opening
+/// in a wall marked not bearing (renovation-sketches §4.3), whose <see cref="NotChecked"/> says why.
+/// </param>
+public sealed record OpeningCheck(Opening Opening, HeaderResult? Result)
+{
+    /// <summary>Why the header is not checked — "Wall 1 is marked not bearing, …" — or null when it is.</summary>
+    public string? NotChecked { get; init; }
+}
+
+/// <summary>
+/// The code check on walls' openings (issue #18): every opening's header, sized by the rules
+/// engine from the project's adopted code, its site values and what the wall supports. Pure and
+/// total: the same sketch and packs give the same results, every opening every time, and nothing is
+/// stored (docs/design/rules-engine-model.md §7.3; docs/building.md).
+/// </summary>
+/// <remarks>
+/// The request: the wall kind is <see cref="WallKind.ExteriorBearing"/> (the only kind napkin
+/// draws yet, design §3.2); the header span is the opening's rough width; <c>supports</c> is the
+/// wall's; the site is the project's. A pack table's jack and king stud counts are read as per
+/// side of the opening.
+/// </remarks>
+public static class CodeCheck
+{
+    /// <summary>
+    /// What the status line says after the adopted code changes: which code now resolves, and how
+    /// many results changed, were newly flagged, or can no longer be computed. A result that had no
+    /// answer and still has none (only the pack named in it differs) is not counted as changed.
+    /// </summary>
+    /// <example>"Now checking against ZZ BRACE B (…): every result recomputed; 2 changed, 1 newly flagged, none can no longer be computed."</example>
+    public static string SwitchSummary(AdoptedCodeRef? code, RecomputeReport headers, BracingRecomputeReport bracing)
+    {
+        int changed = headers.Changes.Count(change => change.Kind is not (ChangeKind.CitationOnly or ChangeKind.NoAnswerChanged))
+                      + bracing.Changes.Count(change => change.Kind is not (BracingChangeKind.CitationOnly or BracingChangeKind.NoAnswerChanged));
+        int flagged = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope) + bracing.NewlyFlagged.Count();
+        int lost = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToNoAnswer or ChangeKind.OutOfScopeToNoAnswer) + bracing.NoLongerComputable.Count();
+        string under = code is null ? "No code resolves now" : $"Now checking against {PackLabel(code)}";
+        return $"{under}: every result recomputed; {Tally(changed, "changed")}, {Tally(flagged, "newly flagged")}, "
+               + $"{Tally(lost, "can no longer be computed")}.";
+
+        static string Tally(int n, string words) => n == 0 ? $"none {words}" : $"{n} {words}";
+    }
+
+    /// <summary>Where in the app the code and the site values are chosen.</summary>
+    public const string WhereToChoose = "Project → Adopted code and site";
+
+    /// <summary>Where a person reads how to add tables.</summary>
+    public const string WhereToAddTables = "Where to add tables: docs/rules-engine.md";
+
+    /// <summary>The status line's text when no code is adopted at all.</summary>
+    public const string NoCodeSelectedText = "No code selected: choose one under " + WhereToChoose + ".";
+
+    /// <summary>A code named with its pack, in a sentence: "ZZ FRAME (IRC 2099, pack us-zz-frame rev 1)".</summary>
+    /// <param name="code">The code.</param>
+    public static string PackLabel(AdoptedCodeRef code)
+    {
+        ArgumentNullException.ThrowIfNull(code);
+        return $"{code.ShortName} ({code.BaseCode}, pack {code.PackId} rev {code.Revision})";
+    }
+
+    /// <summary>What the shopping list's code-check note starts with: "Code check under ZZ FRAME (…)", or "Code check" with no code.</summary>
+    /// <param name="code">The code checked against, or null when none resolves.</param>
+    public static string UnderHeading(AdoptedCodeRef? code) => code is null ? "Code check" : $"Code check under {PackLabel(code)}";
+
+    /// <summary>The code window's lock note when nothing is chosen.</summary>
+    public const string ChooseToLockNote = "Choose a code to lock it or let it follow.";
+
+    /// <summary>The code window's lock note for a locked code: "Locked on 2026-09-25 to pack us-zz-frame revision 1."</summary>
+    /// <param name="on">The day it was locked.</param>
+    /// <param name="packId">The pack.</param>
+    /// <param name="revision">The revision it is locked to.</param>
+    public static string LockedNote(DateOnly on, string packId, int revision)
+        => $"Locked on {on.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)} to pack {packId} revision {revision}.";
+
+    /// <summary>The code window's lock note for a code that follows its pack's newest revision.</summary>
+    /// <param name="packId">The pack.</param>
+    public static string FollowingNote(string packId)
+        => $"Following pack {packId}: a newer revision is used when one is installed, and napkin says what changed.";
+
+    /// <summary>What the code window adds when a pack has neither header tables nor bracing provisions.</summary>
+    public const string NoBaseTablesNote = "Its base tables are not loaded: no header can be sized until they are (docs/rules-engine.md says how to add them).";
+
+    /// <summary>What the code window adds when a pack has bracing provisions but no header table.</summary>
+    public const string NoHeaderTablesNote = "It has no header table, so headers are not sized; walls' bracing is checked.";
+
+    /// <summary>What the code window adds when a pack has header tables but no bracing provisions.</summary>
+    public const string NoBracingNote = "It has no wall-bracing provisions, so no wall's bracing is checked.";
+
+    /// <summary>The code window's status for a pack that loaded: "Checking against …." and what it cannot check.</summary>
+    /// <param name="pack">The resolved pack.</param>
+    public static string CheckingStatus(LoadedPack pack)
+    {
+        ArgumentNullException.ThrowIfNull(pack);
+        return $"Checking against {pack.Code}."
+               + (pack.HasHeaderTables ? string.Empty
+                   : pack.Bracing is null ? " " + NoBaseTablesNote
+                   : " " + NoHeaderTablesNote)
+               + (pack.HasHeaderTables && pack.Bracing is null ? " " + NoBracingNote : string.Empty);
+    }
+
+    /// <summary>The Supports picker's tooltip when the adopted code has no header table to choose from.</summary>
+    /// <param name="shortName">The code's short name ("CT 2022").</param>
+    public static string NoHeaderTableTip(string shortName)
+        => $"{shortName} has no header table loaded, so there is nothing to choose from yet (docs/rules-engine.md).";
+
+    /// <summary>A sized header's headline: "Header (1) 2x8, 1 jack stud and 1 king stud each side."</summary>
+    /// <param name="header">The header as the table gives it ("(1) 2x8").</param>
+    /// <param name="jackStuds">Jack studs each side.</param>
+    /// <param name="kingStuds">King studs each side.</param>
+    public static string HeaderText(string header, int jackStuds, int kingStuds)
+        => $"Header {header}, {Count(jackStuds, "jack stud")} and {Count(kingStuds, "king stud")} each side.";
+
+    /// <summary>The message bar's line when a header comes to be beyond its table: "Header for Window 1 is now beyond Table ZZ-HEADER: get it engineered."</summary>
+    /// <param name="opening">The opening's name.</param>
+    /// <param name="table">The table it is beyond.</param>
+    public static string NowBeyondText(string opening, string table) => $"Header for {opening} is now beyond Table {table}: get it engineered.";
+
+    /// <summary>The rules engine's site inputs for the project's typed values; null stays null.</summary>
+    public static SiteInputs Site(SiteValues site)
+    {
+        ArgumentNullException.ThrowIfNull(site);
+        return new SiteInputs(
+            site.GroundSnowLoadPsf,
+            site.UltimateWindSpeedMph,
+            site.SeismicDesignCategory,
+            site.FrostDepth,
+            site.BuildingWidth,
+            site.RoofLiveLoadPsf,
+            site.Source is { } source ? new InputProvenance(source.Text, source.On) : null);
+    }
+
+    /// <summary>The rules engine's code selection for the project's choice, or null when none is chosen.</summary>
+    public static CodeSelection? Selection(CodeChoice? choice)
+        => choice is null ? null : new CodeSelection(
+            choice.PackId,
+            choice.Revision,
+            choice.Mode == CodeMode.Locked ? CodeLockMode.Locked : CodeLockMode.Following,
+            choice.LockedOn);
+
+    /// <summary>The header table a pack uses for a kind of wall (exterior-bearing unless said), or null.</summary>
+    public static HeaderSizingTable? Table(LoadedPack? pack, WallKind kind = WallKind.ExteriorBearing)
+        => pack?.Tables.FirstOrDefault(table => table.WallKind == kind);
+
+    /// <summary>The values a pack's header table declares for what a wall supports, in the table's order; empty with no table.</summary>
+    public static ImmutableArray<string> SupportsChoices(LoadedPack? pack, WallKind kind = WallKind.ExteriorBearing)
+        => Table(pack, kind)?.Inputs.FirstOrDefault(column => column.Name == "supports") is { } column ? [.. column.Values] : [];
+
+    /// <summary>The header table a wall's side asks for (renovation-sketches §4.3): interior-bearing for an interior wall, exterior otherwise.</summary>
+    public static WallKind KindOf(Wall wall)
+    {
+        ArgumentNullException.ThrowIfNull(wall);
+        return wall.Box.WallInputs?.Side == WallSide.Interior ? WallKind.InteriorBearing : WallKind.ExteriorBearing;
+    }
+
+    /// <summary>
+    /// Why a not-bearing wall's opening is not checked, and the header the person chose for it:
+    /// "Wall 1 is marked not bearing, so napkin does not size this header from the code. Header: (2) 2x6, your choice."
+    /// </summary>
+    public static string NotBearingText(Wall wall)
+    {
+        ArgumentNullException.ThrowIfNull(wall);
+        return $"{wall.Name} is marked not bearing, so napkin does not size this header from the code. "
+               + (wall.Box.WallInputs?.Header is { } header
+                   ? $"Header: {header}, your choice."
+                   : "No header chosen: choose one under Header in the wall's panel; until then the header buys nothing.");
+    }
+
+    /// <summary>What the panel says after "Not checked" for a demolished bearing wall (renovation-sketches §1.4).</summary>
+    public const string BearingDemolishedText = "Removing a bearing wall needs an engineer; napkin does nothing here.";
+
+    /// <summary>What the typed header's jacks and kings are, said wherever the frame is shown.</summary>
+    public const string ChosenHeaderJacks = "1 jack and 1 king stud each side of a header you chose: napkin's placeholder counts, not a code result";
+
+    /// <summary>
+    /// Every opening in every wall of the building as it will be (<see cref="Sketch.After"/>,
+    /// renovation-sketches §6.1), with its header result: a demolished wall or opening is in no check.
+    /// </summary>
+    public static ImmutableArray<OpeningCheck> Of(Sketch sketch, CodePacks packs)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(packs);
+        return OfView(sketch.After(), packs);
+    }
+
+    /// <summary>Every opening in every wall of a view exactly as given — the before view, for the framing diff.</summary>
+    public static ImmutableArray<OpeningCheck> OfView(Sketch view, CodePacks packs)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        ArgumentNullException.ThrowIfNull(packs);
+        CodeResolution code = packs.Resolve(view.Code);
+        return
+        [
+            .. Wall.All(view)
+                .SelectMany(wall => Opening.In(view, wall))
+                .Select(opening => Check(view, opening, code)),
+        ];
+    }
+
+    /// <summary>
+    /// One opening's check, routed by its wall's side and bearing (renovation-sketches §4.3): a wall
+    /// marked not bearing is not checked; otherwise <see cref="For"/>.
+    /// </summary>
+    public static OpeningCheck Check(Sketch sketch, Opening opening, CodeResolution code)
+    {
+        ArgumentNullException.ThrowIfNull(opening);
+        return opening.Wall.Box.WallInputs?.Bearing == false
+            ? new OpeningCheck(opening, null) { NotChecked = NotBearingText(opening.Wall) }
+            : new OpeningCheck(opening, For(sketch, opening, code));
+    }
+
+    /// <summary>One opening's header result under a resolved code.</summary>
+    public static HeaderResult For(Sketch sketch, Opening opening, CodeResolution code)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(opening);
+        ArgumentNullException.ThrowIfNull(code);
+
+        WallKind kind = KindOf(opening.Wall);
+        if (code.Pack is not { } pack)
+        {
+            return new HeaderResult.NoData(NoDataReason.NoPackSelected, null, kind, code.Problem!);
+        }
+
+        // Which table, and whether any: napkin never assumes a wall's side or whether it bears.
+        WallInputs? inputs = opening.Wall.Box.WallInputs;
+        List<string> unsaid = [];
+        List<string> say = [];
+        if (inputs?.Side is null)
+        {
+            unsaid.Add("side");
+            say.Add($"Say whether {opening.Wall.Name} is exterior or interior (Part panel).");
+        }
+
+        if (inputs?.Bearing is null)
+        {
+            unsaid.Add("bearing");
+            say.Add($"Say whether {opening.Wall.Name} is bearing (Part panel).");
+        }
+
+        if (unsaid.Count > 0)
+        {
+            return new HeaderResult.InputMissing(new ValueList<string>([.. unsaid]), Table(pack, kind)?.Designation ?? string.Empty, pack.Code, string.Join(" ", say));
+        }
+
+        string? supports = inputs!.Supports;
+        if (supports is null && Table(pack, kind) is { } table)
+        {
+            return new HeaderResult.InputMissing(
+                new ValueList<string>(["supports"]),
+                table.Designation,
+                pack.Code,
+                $"Table {table.Designation} needs what {opening.Wall.Name} supports, which has not been chosen. "
+                + "Choose it under Supports in the wall's panel; napkin never assumes it.");
+        }
+
+        HeaderRequest request = new(supports ?? string.Empty, kind, opening.Width, Site(sketch.Site));
+        return RulesEngine.For(pack).SizeHeader(request);
+    }
+
+    /// <summary>
+    /// The framing options with the code check plugged in: a sized opening's jack and king counts
+    /// and its header member (the library lumber the result names, as many plies as it says);
+    /// anything else stays unsized.
+    /// </summary>
+    public static FramingOptions Framing(IEnumerable<OpeningCheck> checks, MaterialsLibrary library, FramingOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(checks);
+        ArgumentNullException.ThrowIfNull(library);
+        List<OpeningCheck> all = [.. checks];
+        Dictionary<EntityId, HeaderResult.Sized> sized = all
+            .Where(check => check.Result is HeaderResult.Sized)
+            .ToDictionary(check => check.Opening.Id, check => (HeaderResult.Sized)check.Result!);
+
+        // A not-bearing wall's openings take the header the person typed, with napkin's placeholder
+        // jack and king (one each side), said so (renovation-sketches §4.3).
+        Dictionary<EntityId, TypedHeader?> chosen = all
+            .Where(check => check.NotChecked is not null)
+            .ToDictionary(check => check.Opening.Id, check => check.Opening.Wall.Box.WallInputs?.Header);
+
+        return (options ?? new FramingOptions()) with
+        {
+            JacksPerSide = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s) ? s.JackStuds : chosen.ContainsKey(opening.Id) ? 1 : null,
+            KingsPerSide = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s) ? s.KingStuds : null,
+            Header = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s)
+                ? library.TryFindLumber(s.Header.Nominal, out LumberStock lumber) ? new HeaderMember(s.Header.Plies, lumber) : null
+                : chosen.TryGetValue(opening.Id, out TypedHeader? typed) && typed is { } t && library.TryFindLumber(t.Lumber, out LumberStock picked)
+                    ? new HeaderMember(t.Plies, picked)
+                    : null,
+            Chosen = opening => chosen.ContainsKey(opening.Id),
+        };
+    }
+
+    /// <summary>A check in plain words: <see cref="Words(HeaderResult, MaterialsLibrary)"/>, or "Not checked: …" for a not-bearing wall's opening.</summary>
+    public static CheckWords Words(OpeningCheck check, MaterialsLibrary library)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        return check.Result is { } result
+            ? Words(result, library)
+            : new CheckWords($"Not checked: {check.NotChecked}", string.Empty, string.Empty, string.Empty);
+    }
+
+    /// <summary>A check's short form for a list: <see cref="Short(HeaderResult)"/>, or "not checked: not bearing, (2) 2x6 your choice".</summary>
+    public static string Short(OpeningCheck check)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        return check.Result is { } result
+            ? Short(result)
+            : check.Opening.Wall.Box.WallInputs?.Header is { } header
+                ? $"not checked: not bearing, {header} your choice"
+                : "not checked: not bearing, no header chosen";
+    }
+
+    /// <summary>The result in plain words for the part panel: a headline, the citation line, and the details behind it.</summary>
+    public static CheckWords Words(HeaderResult result, MaterialsLibrary library)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        ArgumentNullException.ThrowIfNull(library);
+        return result switch
+        {
+            HeaderResult.Sized s => new CheckWords(
+                HeaderText(s.Header.ToString(), s.JackStuds, s.KingStuds)
+                + (library.TryFindLumber(s.Header.Nominal, out _) ? string.Empty : $" {s.Header.Nominal} is not in the materials library, so the header is not on the shopping list."),
+                s.Citation.ToString(),
+                Details(s.Citation),
+                s.Citation.Interpolation?.Summary(s.Citation.Code) ?? string.Empty),
+            HeaderResult.OutOfScope o => new CheckWords(
+                $"This opening is beyond what Table {o.Limit.Table} covers: {Limit(o.Explanation)} napkin stops here: get this header engineered.",
+                $"Limit: {o.Limit}",
+                Details(o.Limit),
+                o.Limit.Interpolation?.Summary(o.Limit.Code) ?? string.Empty),
+            HeaderResult.InputMissing m when m.Inputs.Any(input => input is "side" or "bearing") => new CheckWords(
+                $"Not checked: {m.Explanation}",
+                m.Table.Length > 0 ? $"Table {m.Table}, {m.Code}" : string.Empty,
+                string.Empty,
+                string.Empty),
+            HeaderResult.InputMissing m => new CheckWords(
+                $"Not checked: {Named(m.Inputs)} {(m.Inputs.Count == 1 ? "is" : "are")} not entered, and napkin never assumes a value. "
+                + Where(m.Inputs),
+                $"Table {m.Table}, {m.Code}",
+                string.Empty,
+                string.Empty),
+            _ => NoDataWords((HeaderResult.NoData)result),
+        };
+    }
+
+    private static CheckWords NoDataWords(HeaderResult.NoData n)
+        => n.Code is { } code
+            ? new CheckWords($"{n.Explanation} {WhereToAddTables}", code.ToString(), string.Empty, string.Empty)
+            : new CheckWords(n.Explanation, string.Empty, string.Empty, string.Empty);
+
+    /// <summary>A short form of a result for a list or the message bar: "(2) 2x10 (Table T row R)".</summary>
+    public static string Short(HeaderResult result) => result switch
+    {
+        HeaderResult.Sized s => $"{s.Header}, {s.JackStuds} jack and {s.KingStuds} king each side (Table {s.Citation.Table} row {s.Citation.RowId})",
+        HeaderResult.OutOfScope o => $"beyond Table {o.Limit.Table}: get it engineered",
+        HeaderResult.InputMissing m => $"not checked: {Named(m.Inputs)} not entered",
+        _ => "no data to check it against",
+    };
+
+    /// <summary>
+    /// What a recompute changed, one sentence per opening whose result differs, the most serious
+    /// first (design §7.3). Openings added or removed between the two are not changes of a result.
+    /// </summary>
+    public static ImmutableArray<string> Changes(IReadOnlyList<OpeningCheck> before, IReadOnlyList<OpeningCheck> after)
+    {
+        RecomputeReport report = Report(before, after);
+        Dictionary<EntityId, string> names = after.ToDictionary(check => check.Opening.Id, check => check.Opening.Name);
+
+        return
+        [
+            .. report.Changes
+                .Where(change => !SameRow(change))
+                .OrderBy(change => Rank(change.Kind))
+                .Select(change => Sentence(names[change.Element], change)),
+        ];
+    }
+
+    /// <summary>The engine's diff over the openings present both before and after.</summary>
+    public static RecomputeReport Report(IReadOnlyList<OpeningCheck> before, IReadOnlyList<OpeningCheck> after)
+    {
+        ArgumentNullException.ThrowIfNull(before);
+        ArgumentNullException.ThrowIfNull(after);
+        // An opening napkin does not check (a not-bearing wall's) has no result to compare.
+        HashSet<EntityId> both =
+        [
+            .. before.Where(check => check.Result is not null).Select(check => check.Opening.Id)
+                .Intersect(after.Where(check => check.Result is not null).Select(check => check.Opening.Id)),
+        ];
+        return Recompute.Diff(
+            [.. before.Where(check => both.Contains(check.Opening.Id)).Select(check => KeyValuePair.Create(check.Opening.Id, check.Result!))],
+            [.. after.Where(check => both.Contains(check.Opening.Id)).Select(check => KeyValuePair.Create(check.Opening.Id, check.Result!))]);
+    }
+
+    /// <summary>
+    /// The same member from the same row of the same code, only the inputs traced differently (a
+    /// resize inside one band): not a change of the result, so not announced.
+    /// </summary>
+    private static bool SameRow(ResultChange change)
+        => change is { Kind: ChangeKind.CitationOnly, Before: HeaderResult.Sized a, After: HeaderResult.Sized b }
+           && a.Citation with { Trace = ValueList<BandMatch>.Empty } == b.Citation with { Trace = ValueList<BandMatch>.Empty };
+
+    private static string Sentence(string name, ResultChange change) => change.Kind switch
+    {
+        ChangeKind.CitationOnly => $"Header for {name} is unchanged, {Cited((HeaderResult.Sized)change.After)}.",
+        ChangeKind.SizedToSized => $"Header for {name} changed: {((HeaderResult.Sized)change.Before).Header} → {Short(change.After)}.",
+        ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope or ChangeKind.OutOfScopeChanged =>
+            NowBeyondText(name, ((HeaderResult.OutOfScope)change.After).Limit.Table),
+        ChangeKind.OutOfScopeToSized or ChangeKind.NoAnswerToSized => $"Header for {name} is now sized: {Short(change.After)}.",
+        ChangeKind.SizedToNoAnswer => $"Header for {name} is no longer sized: {Short(change.After)}.",
+        ChangeKind.OutOfScopeToNoAnswer => $"Header for {name} can no longer be checked: {Short(change.After)}.",
+        _ => $"Header for {name} still cannot be checked: {Short(change.After)}.",
+    };
+
+    private static string Cited(HeaderResult.Sized b)
+        => $"{b.Header}, now cited from {b.Citation.Code.ShortName} rev {b.Citation.Code.Revision} Table {b.Citation.Table} row {b.Citation.RowId}";
+
+    /// <summary>The order changes are said in: losing a size first (design §7.3), a citation-only change last.</summary>
+    private static readonly ChangeKind[] Ranked =
+    [
+        ChangeKind.SizedToOutOfScope, ChangeKind.SizedToNoAnswer, ChangeKind.NoAnswerToOutOfScope, ChangeKind.OutOfScopeChanged,
+        ChangeKind.SizedToSized, ChangeKind.OutOfScopeToSized, ChangeKind.NoAnswerToSized, ChangeKind.OutOfScopeToNoAnswer,
+        ChangeKind.NoAnswerChanged, ChangeKind.CitationOnly,
+    ];
+
+    private static int Rank(ChangeKind kind) => Array.IndexOf(Ranked, kind);
+
+    private static string Details(Napkin.Core.RulesEngine.Citation citation)
+        => string.Join(
+            "\n",
+            citation.Trace.Select(match => $"How it was found: {match}")
+                .Concat(citation.Interpolation is { } working ? [$"Interpolation: {working}"] : [])
+                .Concat(citation.Footnotes.Select(note => $"Footnote {note.Id}: {note.Text}"))
+                .Append($"Source: {citation.Source.Title}, {citation.Source.Location} ({citation.Source.Url}, retrieved {citation.Source.RetrievedOn:yyyy-MM-dd})"));
+
+    /// <summary>The explanation's first sentence, the one that names the limit; the "get an engineer" sentence is said by the headline.</summary>
+    private static string Limit(string explanation)
+    {
+        foreach (string tail in new[] { " This opening is outside", " This case is outside" })
+        {
+            int at = explanation.IndexOf(tail, StringComparison.Ordinal);
+            if (at > 0)
+            {
+                return explanation[..at];
+            }
+        }
+
+        return explanation;
+    }
+
+    private static string Where(IEnumerable<string> inputs)
+    {
+        List<string> said = [];
+        List<string> all = [.. inputs];
+        if (all.Contains("supports"))
+        {
+            said.Add("Choose what the wall supports under Supports in the wall's panel.");
+        }
+
+        if (all.Any(input => input != "supports" && input != "headerSpan"))
+        {
+            said.Add($"Enter the site values under {WhereToChoose}.");
+        }
+
+        return string.Join(" ", said);
+    }
+
+    private static string Named(IEnumerable<string> inputs) => string.Join(", ", inputs.Select(input => Input(input)));
+
+    /// <summary>A table input's name in plain words.</summary>
+    public static string Input(string name) => name switch
+    {
+        "supports" => "what the wall supports",
+        "groundSnowLoad" => "the ground snow load",
+        "ultimateWindSpeed" => "the wind speed",
+        "seismicDesignCategory" => "the seismic design category",
+        "frostDepth" => "the frost depth",
+        "buildingWidth" => "the building width",
+        "roofLiveLoad" => "the roof live load",
+        "side" => "which side the wall is on",
+        "bearing" => "whether the wall is bearing",
+        _ => name,
+    };
+
+    private static string Count(int count, string what) => $"{count} {what}{(count == 1 ? string.Empty : "s")}";
+}
+
+/// <summary>A header result in plain words.</summary>
+/// <param name="Headline">What it means, in a sentence or two.</param>
+/// <param name="Citation">The citation line, as the engine gives it (empty when there is none).</param>
+/// <param name="Details">The band trace, footnotes and source, one per line (empty when there is none).</param>
+/// <param name="Interpolation">
+/// For a span interpolated by a footnote: "Interpolated between the 30 psf row (…) and the 50 psf row (…)
+/// (CT 2022 footnote e, p. 145)"; empty otherwise.
+/// </param>
+public sealed record CheckWords(string Headline, string Citation, string Details, string Interpolation);

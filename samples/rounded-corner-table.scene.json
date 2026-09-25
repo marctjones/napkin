@@ -1,0 +1,384 @@
+{
+  "formatVersion": 10,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
+  ],
+  "entities": [
+    {
+      "id": "50000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Top",
+      "phase": "new",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 16640
+      },
+      "width": 49152,
+      "height": 24576,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": [
+        {
+          "kind": "roundedCorner",
+          "corner": "southWest",
+          "radius": 1024
+        },
+        {
+          "kind": "roundedCorner",
+          "corner": "southEast",
+          "radius": 1024
+        },
+        {
+          "kind": "roundedCorner",
+          "corner": "northEast",
+          "radius": 1024
+        },
+        {
+          "kind": "roundedCorner",
+          "corner": "northWest",
+          "radius": 1024
+        }
+      ]
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, south-west",
+      "phase": "new",
+      "anchor": {
+        "x": 1536,
+        "y": 1536,
+        "z": 0
+      },
+      "width": 2560,
+      "height": 2560,
+      "depth": 16640,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "thickness"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000003",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, south-east",
+      "phase": "new",
+      "anchor": {
+        "x": 45056,
+        "y": 1536,
+        "z": 0
+      },
+      "width": 2560,
+      "height": 2560,
+      "depth": 16640,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "thickness"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000004",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, north-west",
+      "phase": "new",
+      "anchor": {
+        "x": 1536,
+        "y": 20480,
+        "z": 0
+      },
+      "width": 2560,
+      "height": 2560,
+      "depth": 16640,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "thickness"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000005",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, north-east",
+      "phase": "new",
+      "anchor": {
+        "x": 45056,
+        "y": 20480,
+        "z": 0
+      },
+      "width": 2560,
+      "height": 2560,
+      "depth": 16640,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "thickness"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000006",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Apron, long, south",
+      "phase": "new",
+      "anchor": {
+        "x": 4096,
+        "y": 1536,
+        "z": 13056
+      },
+      "width": 40960,
+      "height": 768,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000007",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Apron, long, north",
+      "phase": "new",
+      "anchor": {
+        "x": 4096,
+        "y": 22272,
+        "z": 13056
+      },
+      "width": 40960,
+      "height": 768,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000008",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Apron, short, west",
+      "phase": "new",
+      "anchor": {
+        "x": 1536,
+        "y": 4096,
+        "z": 13056
+      },
+      "width": 768,
+      "height": 16384,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000009",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Apron, short, east",
+      "phase": "new",
+      "anchor": {
+        "x": 46848,
+        "y": 4096,
+        "z": 13056
+      },
+      "width": 768,
+      "height": 16384,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "50000000-0000-4000-8000-00000000000a",
+      "type": "dimension",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Top width",
+      "phase": "new",
+      "measures": {
+        "kind": "boxWidth",
+        "box": "50000000-0000-4000-8000-000000000001"
+      },
+      "drives": "60000000-0000-4000-8000-000000000002",
+      "placement": {
+        "offset": 4096,
+        "side": "south"
+      }
+    },
+    {
+      "id": "50000000-0000-4000-8000-00000000000b",
+      "type": "dimension",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Top depth",
+      "phase": "new",
+      "measures": {
+        "kind": "boxHeight",
+        "box": "50000000-0000-4000-8000-000000000001"
+      },
+      "drives": "60000000-0000-4000-8000-000000000003",
+      "placement": {
+        "offset": 4096,
+        "side": "west"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "60000000-0000-4000-8000-000000000001",
+      "kind": "anchored",
+      "entity": "50000000-0000-4000-8000-000000000001"
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000002",
+      "kind": "paramValue",
+      "param": {
+        "kind": "boxWidth",
+        "box": "50000000-0000-4000-8000-000000000001"
+      },
+      "value": 49152
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000003",
+      "kind": "paramValue",
+      "param": {
+        "kind": "boxHeight",
+        "box": "50000000-0000-4000-8000-000000000001"
+      },
+      "value": 24576
+    }
+  ],
+  "fastenerChoices": [],
+  "supplies": [],
+  "code": null,
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
+}

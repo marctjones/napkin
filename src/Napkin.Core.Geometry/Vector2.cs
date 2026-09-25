@@ -1,13 +1,26 @@
 namespace Napkin.Core.Geometry;
 
-/// <summary>Which of the two axes a relationship or a measurement runs along.</summary>
+/// <summary>Which axis a relationship or a measurement runs along.</summary>
+/// <remarks>
+/// <see cref="Z"/> exists for the value types of docs/design/assembly-model.md &#xA7;1.4
+/// (<see cref="Vector3"/>, <see cref="Point3"/>, <see cref="Orientation"/>) and for a box's
+/// <see cref="Box.Depth"/>. The plan-view types — <see cref="Point2"/>, <see cref="Vector2"/> — have
+/// no Z and throw when handed it, rather than quietly answering with Y; the propagator and the
+/// checker are taught about it in &#xA7;10 steps 3 and 4.
+/// </remarks>
 public enum Axis
 {
     /// <summary>The horizontal axis; X increases to the right.</summary>
     X,
 
-    /// <summary>The vertical axis; Y increases upward (the CAD, DXF and PDF convention).</summary>
+    /// <summary>The vertical axis of the plan; Y increases upward (the CAD, DXF and PDF convention).</summary>
     Y,
+
+    /// <summary>
+    /// The axis out of the plan; Z increases toward the viewer of the plan view, so that X, Y, Z
+    /// is right-handed (docs/design/assembly-model.md &#xA7;1.4).
+    /// </summary>
+    Z,
 }
 
 /// <summary>
@@ -21,15 +34,43 @@ public readonly record struct Vector2(Length Dx, Length Dy)
     public static readonly Vector2 Zero = new(Length.Zero, Length.Zero);
 
     /// <summary>A displacement along one axis only.</summary>
-    public static Vector2 Along(Axis axis, Length distance)
-        => axis == Axis.X ? new Vector2(distance, Length.Zero) : new Vector2(Length.Zero, distance);
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="axis"/> is <see cref="Axis.Z"/>, which the plan does not have.</exception>
+    public static Vector2 Along(Axis axis, Length distance) => axis switch
+    {
+        Axis.X => new Vector2(distance, Length.Zero),
+        Axis.Y => new Vector2(Length.Zero, distance),
+        _ => throw NotInThePlan(axis),
+    };
 
     /// <summary>The component along <paramref name="axis"/>.</summary>
-    public Length Component(Axis axis) => axis == Axis.X ? Dx : Dy;
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="axis"/> is <see cref="Axis.Z"/>, which the plan does not have.</exception>
+    public Length Component(Axis axis) => axis switch
+    {
+        Axis.X => Dx,
+        Axis.Y => Dy,
+        _ => throw NotInThePlan(axis),
+    };
 
     /// <summary>This displacement with the component along <paramref name="axis"/> replaced.</summary>
-    public Vector2 WithComponent(Axis axis, Length value)
-        => axis == Axis.X ? this with { Dx = value } : this with { Dy = value };
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="axis"/> is <see cref="Axis.Z"/>, which the plan does not have.</exception>
+    public Vector2 WithComponent(Axis axis, Length value) => axis switch
+    {
+        Axis.X => this with { Dx = value },
+        Axis.Y => this with { Dy = value },
+        _ => throw NotInThePlan(axis),
+    };
+
+    /// <summary>
+    /// The error a plan-only type gives when asked about an axis the plan does not have. Before
+    /// <see cref="Axis.Z"/> existed these members were two-way tests, and a Z would have been read
+    /// as Y with no complaint; now it is refused out loud.
+    /// </summary>
+    internal static ArgumentOutOfRangeException NotInThePlan(Axis axis) => new(
+        nameof(axis),
+        axis,
+        axis == Axis.Z
+            ? "The plan has only X and Y; Z is out of the plan, so a plan point or displacement has no component along it."
+            : "Not an axis.");
 
     /// <summary>
     /// Rotates this displacement.

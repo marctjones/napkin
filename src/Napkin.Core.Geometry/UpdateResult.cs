@@ -60,7 +60,14 @@ public sealed record OverConstrained(ConflictReport Conflict) : UpdateResult;
 /// is unchanged.
 /// </summary>
 /// <param name="Reason">Why the request was refused.</param>
-public sealed record Rejected(RejectionReason Reason) : UpdateResult;
+/// <param name="Detail">
+/// Which box and which site, for a refusal that has one — the cut refusals of
+/// <c>docs/design/shaped-parts-model.md</c> §2.2 and §2.3, whose whole point is that the canvas can
+/// say <em>which</em> cut does not fit and offer to remove it. <see langword="null"/> for every
+/// other reason, where the reason is the whole story. This is the same <see cref="Rejected"/>, not
+/// a fourth result type: §2.2 asks for new reasons and no new type.
+/// </param>
+public sealed record Rejected(RejectionReason Reason, ValidationError? Detail = null) : UpdateResult;
 
 /// <summary>What an update changed, so the canvas can redraw and explain only that.</summary>
 /// <param name="Added">Entities added.</param>
@@ -74,7 +81,10 @@ public sealed record Rejected(RejectionReason Reason) : UpdateResult;
 /// </param>
 /// <param name="RelationshipsAdded">Relationships added.</param>
 /// <param name="RelationshipsRemoved">Relationships removed.</param>
-/// <param name="AppliedDelta">For a drag, what actually happened; <see langword="null"/> otherwise.</param>
+/// <param name="AppliedDelta">
+/// For a drag, what actually happened, in the world; <see langword="null"/> otherwise. A plan-canvas
+/// drag's has a zero Z (docs/design/assembly-model.md &#xA7;2.4).
+/// </param>
 public sealed record ChangeSet(
     ImmutableHashSet<EntityId> Added,
     ImmutableHashSet<EntityId> Removed,
@@ -83,7 +93,7 @@ public sealed record ChangeSet(
     ImmutableHashSet<EntityId> Modified,
     ImmutableHashSet<RelationshipId> RelationshipsAdded,
     ImmutableHashSet<RelationshipId> RelationshipsRemoved,
-    Vector2? AppliedDelta)
+    Vector3? AppliedDelta)
 {
     /// <summary>Nothing changed.</summary>
     public static readonly ChangeSet Empty = new(
@@ -180,9 +190,9 @@ public abstract record AssignmentTarget
 public sealed record ParamTarget(ParamRef Param) : AssignmentTarget;
 
 /// <summary>One axis of a point.</summary>
-/// <param name="Point">Which point.</param>
+/// <param name="Point">Which place.</param>
 /// <param name="Axis">Which axis of it.</param>
-public sealed record PointAxisTarget(PointRef Point, Axis Axis) : AssignmentTarget;
+public sealed record PointAxisTarget(PlaceRef Point, Axis Axis) : AssignmentTarget;
 
 /// <summary>How a value was arrived at: the chain of relationships back to the request.</summary>
 /// <param name="Target">What was assigned.</param>
@@ -224,17 +234,53 @@ public enum RejectionReason
     RotationNotSupported,
 
     /// <summary>
-    /// The box has relationships that rotating it would reinterpret. The canvas offers to remove
-    /// them first (design &#xA7;4.4).
+    /// The box has relationships that turning it would reinterpret, or a dimension a turn would
+    /// stand along world Z (<c>docs/design/assembly-model.md</c> &#xA7;2.4, invariant 13). The
+    /// <see cref="Rejected.Detail"/> names which; the canvas offers to remove it first. Once
+    /// <c>RotationWithRelationships</c>: the same rule, one axis up.
     /// </summary>
-    RotationWithRelationships,
+    OrientationWithRelationships,
 
     /// <summary>A <see cref="ParamValue"/> drives that size, so a drag must not override it.</summary>
     DrivenSize,
+
+    /// <summary>
+    /// Another cut is already at that site, or a curved edge claims it — shaped-parts invariants
+    /// 5 and 6 (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.2).
+    /// </summary>
+    CutSiteTaken,
+
+    /// <summary>
+    /// A cut does not fit the blank it is on — shaped-parts invariants 7, 8 and 9. Either the cut
+    /// being set is too big for the blank, or a resize has made the blank too small for a cut it
+    /// already carries (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.3).
+    /// </summary>
+    CutDoesNotFit,
+
+    /// <summary>
+    /// There is no cut at the site a <see cref="RemoveCut"/> names
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.2).
+    /// </summary>
+    NoSuchCut,
 
     /// <summary>
     /// This updater does not implement that kind of request at all. See
     /// docs/design/geometry-model.md &#xA7;10.
     /// </summary>
     UnsupportedRequest,
+
+    /// <summary>
+    /// The relationship pairs places that do not fix the axes it needs — a <see cref="Flush"/>
+    /// between a face pointing up and one pointing north, a <see cref="Coincident"/> between a face
+    /// and a vertex — so it could never hold (<c>docs/design/assembly-model.md</c> &#xA7;2.3). The
+    /// <see cref="Rejected.Detail"/> names both places and the axes each fixes.
+    /// </summary>
+    PlacesNotComparable,
+
+    /// <summary>
+    /// A <see cref="Joint"/>'s own fields break a rule of the joinery note (&#xA7;3.3, &#xA7;4.4): a
+    /// missing depth, a fastening the type does not allow, a count on no fastening. The
+    /// <see cref="Rejected.Detail"/> says which.
+    /// </summary>
+    InvalidJoint,
 }

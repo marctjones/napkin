@@ -1,7 +1,7 @@
-using Napkin.App.Designs;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Xunit;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.GuiTests.Unit;
 
@@ -93,7 +93,7 @@ public class DimensionLabelTests
         Design moved = design with
         {
             Sketch = design.Sketch.WithEntity(
-                opening with { Anchor = new Point2(Length.Feet(6), opening.Anchor.Y) }),
+                opening with { Anchor = opening.Anchor with { X = Length.Feet(6) } }),
         };
 
         Assert.Equal("6'-0\"", Measure(moved, toOpening.EntityId).Label(AtSixteenths));

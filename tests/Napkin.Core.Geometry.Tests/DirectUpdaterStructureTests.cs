@@ -65,8 +65,8 @@ public class DirectUpdaterStructureTests
 
         UpdateResult result = Updater.Apply(builder.Sketch, new AddRelationship(new Parallel(
             SketchBuilder.RelationshipIdAt(99),
-            new BoxEdgeRef(a, BoxEdge.South),
-            new BoxEdgeRef(b, BoxEdge.South))));
+            TestRefs.Edge(a, BoxEdge.South),
+            TestRefs.Edge(b, BoxEdge.South))));
 
         Assert.Equal(new Rejected(RejectionReason.UnsupportedRelationship), result);
         Assert.DoesNotContain(typeof(Parallel), Updater.SupportedRelationships);
@@ -100,12 +100,12 @@ public class DirectUpdaterStructureTests
         Assert.Equal(
             new Rejected(RejectionReason.NonPositiveSize),
             Updater.Apply(builder.Sketch, new AddEntity(
-                new Box(EntityId.New(), LayerId.Default, Point2.Origin, Length.Zero, Length.Inches(4), Angle.Zero))));
+                Box.AsDrawn(EntityId.New(), LayerId.Default, Point2.Origin, Length.Zero, Length.Inches(4), Box.DefaultDepth, Angle.Zero))));
 
         Assert.Equal(
             new Rejected(RejectionReason.RotationNotSupported),
-            Updater.Apply(builder.Sketch, new AddEntity(new Box(
-                EntityId.New(), LayerId.Default, Point2.Origin, Length.Inches(4), Length.Inches(4), Angle.Degrees(45)))));
+            Updater.Apply(builder.Sketch, new AddEntity(Box.AsDrawn(
+                EntityId.New(), LayerId.Default, Point2.Origin, Length.Inches(4), Length.Inches(4), Box.DefaultDepth, Angle.Degrees(45)))));
 
         Assert.Equal(
             new Rejected(RejectionReason.DanglingReference),
@@ -162,10 +162,10 @@ public class DirectUpdaterStructureTests
             Updater.Apply(sketch, new SetLayer(SketchBuilder.EntityIdAt(99), LayerId.Default)));
         Assert.Equal(
             new Rejected(RejectionReason.UnknownEntity),
-            Updater.Apply(sketch, new SetPosition(SketchBuilder.EntityIdAt(99), Point2.Origin)));
+            Updater.Apply(sketch, SetPosition.InPlan(SketchBuilder.EntityIdAt(99), Point2.Origin)));
         Assert.Equal(
             new Rejected(RejectionReason.UnknownEntity),
-            Updater.Apply(sketch, new SetRotation(SketchBuilder.EntityIdAt(99), Angle.Right)));
+            Updater.Apply(sketch, new SetOrientation(SketchBuilder.EntityIdAt(99), BoxFace.Top, Angle.Right)));
     }
 
     [Fact]
@@ -180,8 +180,8 @@ public class DirectUpdaterStructureTests
             new Rejected(RejectionReason.DuplicateRelationship),
             Updater.Apply(builder.Sketch, new AddRelationship(new Flush(
                 SketchBuilder.RelationshipIdAt(99),
-                new BoxEdgeRef(a, BoxEdge.East),
-                new BoxEdgeRef(b, BoxEdge.West)))));
+                TestRefs.Edge(a, BoxEdge.East),
+                TestRefs.Edge(b, BoxEdge.West)))));
     }
 
     [Fact]

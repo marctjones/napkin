@@ -1,13 +1,20 @@
-using System.Globalization;
+using System.Collections.Immutable;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Media;
+using Avalonia.Styling;
 using Napkin.App.Designs;
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
+using Napkin.App.Editing;
+using Napkin.App.Settings;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
+using Napkin.Core.Project;
+using Napkin.Modules.Furniture;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App;
 
@@ -16,15 +23,17 @@ namespace Napkin.App;
 /// </summary>
 /// <remarks>
 /// <para>
-/// M1 is a viewer. The window opens a design, hands it to the canvas and reports where the view is;
-/// it never edits anything, and there is no path from here to a <see cref="Sketch"/> that differs
-/// from the one the design source produced.
+/// The window opens a design, hands it to the <see cref="DesignEditor"/> the canvas draws and
+/// edits, and reports what the last edit did. It never touches geometry itself: every change in
+/// the application is a <see cref="Request"/> put to an <see cref="IGeometryUpdater"/> by the
+/// editor, and nothing here — or in the canvas — can reach an entity to change it (CVS-005).
 /// </para>
 /// <para>
-/// Every design comes from a file. The Samples menu lists the scene files that shipped beside the
-/// executable (<see cref="SampleFiles"/>) and <em>File &#x2192; Open&#x2026;</em> opens any other
-/// one; both go through <see cref="FileDesignSource"/> and the same reader, so a sample and a file
-/// a person picked are trusted exactly as far as each other.
+/// Every design comes from a file, or from <em>File &#x2192; New</em>. The Samples menu lists the
+/// scene files that shipped beside the executable (<see cref="SampleFiles"/>) and
+/// <em>File &#x2192; Open&#x2026;</em> opens any other one; both go through
+/// <see cref="FileDesignSource"/> and the same reader, so a sample and a file a person picked are
+/// trusted exactly as far as each other.
 /// </para>
 /// <para>
 /// <strong>A refusal changes nothing.</strong> <see cref="ShowDesign"/> loads before it assigns, so
@@ -35,37 +44,185 @@ namespace Napkin.App;
 /// </remarks>
 public partial class MainWindow : Window
 {
+    /// <summary>
+    /// What the properties panel offers when a plain box is about to become a part: lying flat,
+    /// its depth its thickness. Nothing about a box says which it is, so something has to be first.
+    /// </summary>
+    static readonly Part DefaultPart = new(
+        Stock: null,
+        Species: null,
+        Quantity: 1,
+        new PlanAxes(PartDimension.Length, PartDimension.Width));
+
+    /// <summary>How much of the drawing's right side the side column can cover, in pixels (#90).</summary>
+    const double SidePanelsReserve = 280;
+
     readonly List<MenuItem> _sampleItems = [];
     ISceneFilePicker _filePicker;
+    CutListWindow? _cutList;
     bool _opening;
+    bool _saving;
+    bool _closeConfirmed;
+    string? _documentPath;
+    Func<Task>? _afterAnswer;
+    bool _showingProperties;
+    RelationshipEntry? _rowUnderPointer;
+    Box? _propertiesShown;
+    EntityId? _editingBox;
+    SizeAxis _editingAxis = SizeAxis.Width;
 
-    public MainWindow()
+    /// <summary>The window on the person's real settings file.</summary>
+    public MainWindow() : this(SettingsStore.ForUser())
     {
+    }
+
+    /// <summary>The window on a given settings store; tests pass one that is not the person's.</summary>
+    public MainWindow(SettingsStore settings)
+    {
+        Settings = settings;
         InitializeComponent();
+        ExtendTitleBarIntoBench();
 
         _filePicker = new StorageProviderScenePicker(this);
 
+        DrawingCanvas.Editor = Editor;
+
+        // The side column's widest (the list's MaxWidth) and its margins: both views frame the
+        // drawing beside it rather than under it (#90).
+        DrawingCanvas.FitReserveRight = SidePanelsReserve;
+        ModelDrawing.FitReserveRight = SidePanelsReserve;
+        Editor.MessageChanged += (_, _) =>
+        {
+            // A change of a header result is said with the edit that caused it (#18, design §7.3).
+            if (SayRecompute())
+            {
+                return;
+            }
+
+            UpdateMessageBar();
+            UpdateAttention();
+        };
+        Editor.DesignOpened += (_, _) => ResetRecompute();
+        Editor.DesignChanged += (_, _) => OnDesignChanged();
+        Editor.SelectionChanged += (_, _) => OnSelectionChanged();
+        Editor.History.Changed += (_, _) => UpdateMenuEnablement();
+
         BuildSamplesMenu();
         BuildKeyBindings();
+        ApplySettings();
 
-        DrawingCanvas.ViewChanged += (_, _) => UpdateZoomReadout();
-        DrawingCanvas.PointerWorldPositionChanged += (_, point) => UpdateCursorReadout(point);
+        // The window opens on the plan; View says so the way Samples marks the open sample.
+        ShowViewChrome();
+
+        DrawingCanvas.ViewChanged += (_, _) =>
+        {
+            UpdateZoomReadout();
+            PlaceDimensionEditor();
+        };
+        // Only the view on screen speaks for the pointer: the plan, hidden as another view shows, says the
+        // pointer left it, and must not overwrite that view's readout.
+        DrawingCanvas.PointerWorldPositionChanged += (_, point) =>
+        {
+            if (!IsShowingModel)
+            {
+                UpdateCursorReadout(point);
+            }
+        };
+        DrawingCanvas.ToolChanged += (_, _) => UpdateToolButtons();
+        DrawingCanvas.HoveredPartChanged += (_, _) => UpdateRelationships();
+        DrawingCanvas.DimensionEditRequested += (_, request) =>
+            OpenDimensionEditor(request.Box, request.Axis);
+        WireJoinery();
+        WireRough();
+        WireFirmUp();
+        WireRenovation();
+        WireRoom();
+        WireNotes();
+        DrawingCanvas.CommandRequested += (_, request) => request.Handled = Run(request.Command);
+        ModelDrawing.CommandRequested += (_, request) => request.Handled = Run(request.Command);
+        DrawingCanvas.ViewRequested += (_, view) => ShowView(view);
+
+        // The 3D view: the same editor, so the same drawing, selection and undo (assembly-model
+        // §8.1). What it asks of the selection is done by the plan canvas's own commands, so there
+        // is one Delete, one Pin, one Duplicate.
+        ModelDrawing.Editor = Editor;
+        ModelDrawing.ViewChanged += (_, _) => UpdateZoomReadout();
+        ModelDrawing.HoveredPartChanged += (_, _) => UpdateRelationships();
+        ModelDrawing.PointerModelPositionChanged += (_, point) =>
+        {
+            if (IsShowingModel)
+            {
+                UpdateCursorReadout(point);
+            }
+        };
+        ModelDrawing.ViewRequested += (_, view) => ShowView(view);
+        ModelDrawing.PlacementChanged += (_, _) => UpdateToolButtons();
+        StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
+        StockToolboxPanel.CategoryChanged += (_, _) => OnStockCategoryChanged();
+
+        // The stock category icons sit on the main toolbar beside Select and Rectangle, always in
+        // reach; the toolbox itself is only the drawer that drops down under the one picked.
+        ToolRow.Children.Add(StockToolboxPanel.CategoryRow);
+        BuildStockMenu();
+
+        // A click on a category icon or an item gives the keyboard back to the drawing, so Escape
+        // still reaches it; the toolbox has nothing to type into.
+        ToolBar.AddHandler(Button.ClickEvent, (_, _) => FocusDrawing());
+        StockToolboxPanel.AddHandler(Button.ClickEvent, (_, _) => FocusDrawing());
+
+        WireWorkshop();
+
         RefusalPanel.PointerPressed += (_, e) =>
         {
             DismissRefusal();
             e.Handled = true;
         };
 
-        ApplyRefusalPalette();
-        ActualThemeVariantChanged += (_, _) => ApplyRefusalPalette();
+        DimensionEntryBox.KeyDown += OnDimensionEntryKeyDown;
+        DimensionEntryBox.LostFocus += (_, _) => CloseDimensionEditor(focusCanvas: false);
 
-        // The canvas takes focus when the window opens so the arrow keys steer the drawing, not
-        // the menu bar. Anything a person clicks afterwards is welcome to take it.
-        Opened += (_, _) => DrawingCanvas.Focus();
+        ApplyEditingPalette();
+        ActualThemeVariantChanged += (_, _) => ApplyEditingPalette();
+
+        // The canvas takes focus when the window opens so the keys steer the drawing, not the
+        // menu bar. Anything a person clicks afterwards is welcome to take it.
+        Opened += (_, _) => FocusDrawing();
+
+        // The cut list is a reading of this drawing, so it goes when the drawing does rather than
+        // being left behind as a window with no design under it.
+        Closed += (_, _) => _cutList?.Close();
 
         // Keys that reach the window with the menu focused still steer the view, so arrowing after
         // a menu click does what it looks like it should.
         AddHandler(KeyDownEvent, OnShellKeyDown, RoutingStrategies.Bubble);
+
+        // The list takes up to a third of the side column — never less than about three rows — and
+        // the Part panel, below it, the rest (#73, #78).
+        SidePanels.SizeChanged += (_, e) =>
+            RelationshipsPanel.MaxHeight = Math.Clamp(e.NewSize.Height / 3, 96, 320);
+
+        // Enter in any of the Part panel's text fields applies the panel, the way the dimension
+        // field applies on Enter: typing a number and reaching for the mouse is a step too many (#78).
+        // The hardware box takes several lines, so Enter there is a new line and Ctrl+Enter applies.
+        PropertiesPanel.AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key == Key.Enter && e.Source is TextBox room && IsRoomField(room))
+            {
+                // A room's typed value applies on its own, one undo step (renovation-sketches §8).
+                ApplyRoom();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && e.Source is TextBox box
+                && (!box.AcceptsReturn || e.KeyModifiers.HasFlag(CommandModifier)))
+            {
+                ApplyProperties();
+                e.Handled = true;
+            }
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+
+        // The backdrop behind the save question takes every press, so nothing on the paper can be
+        // edited while it waits for an answer.
+        UnsavedBackdrop.PointerPressed += (_, e) => e.Handled = true;
 
         if (Samples.Count > 0)
         {
@@ -73,16 +230,21 @@ public partial class MainWindow : Window
         }
         else
         {
-            // A build that shipped without its samples still starts, with an empty sheet and a
+            // A build that shipped without its samples still starts, on a blank sheet, with a
             // status line that says why rather than a stack trace.
+            ShowDesign(new NewSheet());
             DesignText.Text =
                 $"No sample designs found in {SampleFiles.SampleDirectory}. "
-                + "Use File → Open… to open a scene file.";
+                + "Use File → Open… to open a scene file, or press R and drag to draw a part.";
         }
 
+        UpdateToolButtons();
         UpdateZoomReadout();
-        UpdateCursorReadout(null);
+        UpdateCursorReadout((Point2?)null);
     }
+
+    /// <summary>The drawing being edited, and the one place a sketch is ever replaced.</summary>
+    public DesignEditor Editor { get; } = new();
 
     /// <summary>The sample scene files the Samples menu offers, in menu order.</summary>
     public IReadOnlyList<IDesignSource> Samples { get; } = SampleFiles.All;
@@ -110,6 +272,63 @@ public partial class MainWindow : Window
     /// <summary>The <em>File &#x2192; Open&#x2026;</em> item.</summary>
     public MenuItem OpenMenuEntry => OpenMenuItem;
 
+    /// <summary>The <em>File &#x2192; New</em> item.</summary>
+    public MenuItem NewMenuEntry => NewMenuItem;
+
+    /// <summary>The tool control that floats over the drawing.</summary>
+    public Border ToolControl => ToolBar;
+
+    /// <summary>The rectangle tool's button.</summary>
+    public ToggleButton RectangleToolControl => RectangleToolButton;
+
+    /// <summary>The wall tool's button (#18).</summary>
+    public ToggleButton WallToolControl => WallToolButton;
+
+    /// <summary>The select tool's button.</summary>
+    public ToggleButton SelectToolControl => SelectToolButton;
+
+    /// <summary>The toolbar's Shape button, which opens the selected part in the shape workshop.</summary>
+    public Button ShapeToolControl => ShapeToolButton;
+
+    /// <summary>The toolbar's Duplicate button.</summary>
+    public Button DuplicateToolControl => DuplicateToolButton;
+
+    /// <summary>The toolbar's Pin in place button.</summary>
+    public Button PinToolControl => PinToolButton;
+
+    /// <summary>The toolbar's Delete button.</summary>
+    public Button DeleteToolControl => DeleteToolButton;
+
+    /// <summary>
+    /// Every icon button on the toolbar ahead of the stock categories, in the order it shows them:
+    /// the tools, then the actions on the selection.
+    /// </summary>
+    public IReadOnlyList<Button> ToolButtons =>
+    [
+        SelectToolButton,
+        RectangleToolButton,
+        WallToolButton,
+        ShapeToolButton,
+        DuplicateToolButton,
+        PinToolButton,
+        DeleteToolButton,
+    ];
+
+    /// <summary>The <em>Draw</em> menu, which reaches everything the toolbar does.</summary>
+    public MenuItem DrawMenuItem => DrawMenu;
+
+    /// <summary>
+    /// <em>Draw &#x2192; Stock</em>: one submenu per stock category, in the toolbar's order, each
+    /// holding one item per size.
+    /// </summary>
+    public MenuItem StockMenuItem => StockMenu;
+
+    /// <summary>The stock toolbox: its drawer, and through it the category icons on the toolbar.</summary>
+    public StockToolbox Toolbox => StockToolboxPanel;
+
+    /// <summary>Whether a stock category's drawer of sizes is open under its icon.</summary>
+    public bool IsShowingStockSizes => StockToolboxPanel.IsVisible;
+
     /// <summary>The status line at the foot of the window.</summary>
     public Border StatusLine => StatusBar;
 
@@ -121,6 +340,55 @@ public partial class MainWindow : Window
 
     /// <summary>The status line's zoom percentage.</summary>
     public TextBlock ZoomReadout => ZoomText;
+
+    /// <summary>What the last edit did, as it is showing now. Empty when nothing is showing.</summary>
+    public string MessageOnScreen => MessageBar.IsVisible ? MessageText.Text ?? string.Empty : string.Empty;
+
+    /// <summary>Whether the last message offers a way out: of a conflict, or of a refused turn.</summary>
+    public bool IsOfferingAWayOut => MessageOfferButton.IsVisible;
+
+    /// <summary>The wording of that offer.</summary>
+    public string OfferText => MessageOfferButton.Content as string ?? string.Empty;
+
+    /// <summary>The button that takes the offer.</summary>
+    public Button OfferButton => MessageOfferButton;
+
+    /// <summary>The relationship list panel.</summary>
+    public Border Relationships => RelationshipsPanel;
+
+    /// <summary>
+    /// What the relationship list is showing, one line each. Empty while it is collapsed to its
+    /// badge, because then no sentence is on the screen.
+    /// </summary>
+    public IReadOnlyList<string> RelationshipsOnScreen =>
+    [
+        .. RelationshipsList.Children.OfType<Grid>().Select(row => row.Children.OfType<TextBlock>().First().Text ?? string.Empty),
+    ];
+
+    /// <summary>The row of the relationship list that says this, when the list is open.</summary>
+    public Control? RelationshipRow(string text) =>
+        RelationshipsList.Children.OfType<Grid>().FirstOrDefault(row => row.Children.OfType<TextBlock>().First().Text == text);
+
+    /// <summary>The button on a row of the relationship list that removes what the row says.</summary>
+    public Button? RemoveRelationshipButton(string text) =>
+        RelationshipRow(text) is Grid row ? row.Children.OfType<Button>().FirstOrDefault() : null;
+
+    /// <summary>Whether the relationship list is open to its sentences rather than showing only its count.</summary>
+    public bool IsRelationshipListExpanded => RelationshipsPanel.IsVisible && RelationshipsList.IsVisible;
+
+    /// <summary>What the relationship panel's headline says: the count badge, or the list's title.</summary>
+    public string RelationshipHeadlineText =>
+        RelationshipsPanel.IsVisible ? RelationshipsHeadline.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The inline dimension field, when one is open.</summary>
+    public TextBox DimensionField => DimensionEntryBox;
+
+    /// <summary>Whether a dimension is open for typing.</summary>
+    public bool IsEditingDimension => DimensionEditor.IsVisible;
+
+    /// <summary>What the dimension field is complaining about, or empty when it is not.</summary>
+    public string DimensionFieldError =>
+        DimensionEditorError.IsVisible ? DimensionEditorError.Text ?? string.Empty : string.Empty;
 
     /// <summary>The panel that lists why a file was refused. Hidden until one is.</summary>
     public Border Refusal => RefusalPanel;
@@ -137,8 +405,8 @@ public partial class MainWindow : Window
     /// <summary>The line above the problems: which file could not be opened.</summary>
     public string RefusalHeadlineText => RefusalHeadline.Text ?? string.Empty;
 
-    /// <summary>The design on screen, or null before the first one is opened.</summary>
-    public Design? CurrentDesign => DrawingCanvas.Design;
+    /// <summary>The design on screen.</summary>
+    public Design? CurrentDesign => Editor.Design;
 
     /// <summary>
     /// Opens a design and frames it.
@@ -167,8 +435,14 @@ public partial class MainWindow : Window
         }
 
         DismissRefusal();
-        DrawingCanvas.Design = design;
-        Title = $"napkin — {design.Name}";
+        CloseDimensionEditor(focusCanvas: false);
+        Editor.Open(design);
+
+        // A file a person opened is where Save writes back to. A sample is not: it ships beside
+        // the executable, and a plain Save must not quietly overwrite it — the first Save of an
+        // edited sample asks where to put the copy, as a new sheet's does.
+        _documentPath = source is FileDesignSource file && !Samples.Contains(source) ? file.Path : null;
+        UpdateTitle();
         DesignText.Text = $"{design.Name} — {source.Description}";
 
         foreach (MenuItem item in _sampleItems)
@@ -178,7 +452,97 @@ public partial class MainWindow : Window
                 : null;
         }
 
+        // The new design starts in the view the person chose for new designs (or was last in).
+        ShowView(Settings.Current.ViewForNewDesign());
+
         return true;
+    }
+
+    /// <summary>Starts a blank sheet — after asking about unsaved changes, if there are any.</summary>
+    public void NewSheetCommand() =>
+        _ = WhenChangesAreSafe("starting a new sheet", () => Now(() => ShowDesign(new NewSheet())));
+
+    /// <summary>
+    /// Opens one of the samples — after asking about unsaved changes, if there are any.
+    /// </summary>
+    public void OpenSampleCommand(IDesignSource sample)
+    {
+        ArgumentNullException.ThrowIfNull(sample);
+        _ = WhenChangesAreSafe($"opening {sample.Name}", () => Now(() => ShowDesign(sample)));
+    }
+
+    /// <summary>The cut-list window, when one is open.</summary>
+    public CutListWindow? CutList => _cutList;
+
+    /// <summary>The <em>View &#x2192; Cut list</em> item.</summary>
+    public MenuItem CutListMenuEntry => CutListMenuItem;
+
+    /// <summary>
+    /// Opens the cut list for the design on screen, or brings the open one forward.
+    /// </summary>
+    /// <remarks>
+    /// One window, not one per invocation: a second cut list of the same design would be two
+    /// things to keep in step and nothing to gain by it. It is not modal — the drawing goes on
+    /// being edited with it open, and every edit re-reads it.
+    /// </remarks>
+    /// <returns>The window.</returns>
+    public CutListWindow OpenCutList()
+    {
+        if (_cutList is null)
+        {
+            _cutList = new CutListWindow
+            {
+                ApplyRequest = (request, what) => Editor.Apply(request, what),
+                Packs = Packs,
+                KerfChanged = kerf => Settings.Update(settings => settings with { SawKerf = kerf }),
+            };
+            _cutList.SawKerf = Settings.Current.SawKerf;
+            _cutList.Closed += (_, _) => _cutList = null;
+        }
+
+        _cutList.ShowDesign(CurrentDesign);
+        _cutList.Show(this);
+        _cutList.Activate();
+        return _cutList;
+    }
+
+    /// <summary>
+    /// Opens the cut-list window on its shopping-list tab (issue #9), or brings the open one forward
+    /// and shows that tab.
+    /// </summary>
+    /// <returns>The window.</returns>
+    public CutListWindow OpenShoppingList()
+    {
+        CutListWindow window = OpenCutList();
+        window.ShowShoppingList();
+        return window;
+    }
+
+    /// <summary>Opens the cut-list window on its cut-layout tab (issue #138), or shows that tab on the open one.</summary>
+    /// <returns>The window.</returns>
+    public CutListWindow OpenCutLayout()
+    {
+        CutListWindow window = OpenCutList();
+        window.ShowCutLayout();
+        return window;
+    }
+
+    /// <summary>Opens the cut layout with the saw kerf field ready to type into (Project &#x2192; Saw kerf…).</summary>
+    /// <returns>The window.</returns>
+    public CutListWindow OpenSawKerf()
+    {
+        CutListWindow window = OpenCutList();
+        window.EditKerf();
+        return window;
+    }
+
+    /// <summary>Opens the cut-list window on its fastener sizes and supplies tab.</summary>
+    /// <returns>The window.</returns>
+    public CutListWindow OpenFastenerSizes()
+    {
+        CutListWindow window = OpenCutList();
+        window.ShowSizes();
+        return window;
     }
 
     /// <summary>
@@ -186,10 +550,13 @@ public partial class MainWindow : Window
     /// </summary>
     /// <remarks>
     /// The picker is awaited rather than blocked on, because the platform dialog is asynchronous.
-    /// Anything it throws becomes a visible refusal: the one thing this path must never do is take
-    /// the application down between a person choosing a file and seeing what happened to it.
+    /// An I/O or container-format failure (<see cref="ProjectFile.IsFileException"/>) becomes a
+    /// visible refusal; anything else — a programming error — is not caught here (#175), because
+    /// hiding a real bug behind "file refused" is worse than a visible crash to fix.
     /// </remarks>
-    public async Task OpenFileAsync()
+    public Task OpenFileAsync() => WhenChangesAreSafe("opening another file", PickAndOpenFileAsync);
+
+    async Task PickAndOpenFileAsync()
     {
         if (_opening)
         {
@@ -205,7 +572,7 @@ public partial class MainWindow : Window
                 ShowDesign(new FileDesignSource(path));
             }
         }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
+        catch (Exception exception) when (ProjectFile.IsFileException(exception))
         {
             ShowRefusal("the file you chose", [exception.Message]);
         }
@@ -213,170 +580,5 @@ public partial class MainWindow : Window
         {
             _opening = false;
         }
-    }
-
-    /// <summary>Takes the refusal panel off the drawing.</summary>
-    public void DismissRefusal()
-    {
-        if (!RefusalPanel.IsVisible)
-        {
-            return;
-        }
-
-        RefusalPanel.IsVisible = false;
-        RefusalProblemList.Children.Clear();
-        RefusalProblems = [];
-        RefusalHeadline.Text = string.Empty;
-    }
-
-    void ShowRefusal(string what, IReadOnlyList<string> problems)
-    {
-        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
-        RefusalProblems = [.. problems];
-        RefusalHeadline.Text = problems.Count == 1
-            ? $"Could not open {what}:"
-            : $"Could not open {what} ({problems.Count} problems):";
-
-        // One line per problem, all of them. Showing the first and hiding the rest would make a
-        // file look like it had one thing wrong with it when it had four.
-        RefusalProblemList.Children.Clear();
-        foreach (string problem in RefusalProblems)
-        {
-            RefusalProblemList.Children.Add(new TextBlock
-            {
-                Text = problem,
-                FontSize = 12,
-                TextWrapping = TextWrapping.Wrap,
-                Foreground = new SolidColorBrush(palette.Label),
-            });
-        }
-
-        RefusalPanel.IsVisible = true;
-    }
-
-    /// <summary>
-    /// Lights the refusal panel from the same palette the drawing uses, so it reads as a note on
-    /// the paper in either theme.
-    /// </summary>
-    void ApplyRefusalPalette()
-    {
-        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
-        RefusalPanel.Background = new SolidColorBrush(palette.Background);
-        RefusalPanel.BorderBrush = new SolidColorBrush(palette.Dimension);
-        RefusalHeadline.Foreground = new SolidColorBrush(palette.Dimension);
-        RefusalDismissHint.Foreground = new SolidColorBrush(palette.Label);
-
-        foreach (Control line in RefusalProblemList.Children)
-        {
-            if (line is TextBlock text)
-            {
-                text.Foreground = new SolidColorBrush(palette.Label);
-            }
-        }
-    }
-
-    void BuildSamplesMenu()
-    {
-        KeyModifiers command = CommandModifier;
-        for (int i = 0; i < Samples.Count; i++)
-        {
-            IDesignSource source = Samples[i];
-            MenuItem item = new()
-            {
-                Header = source.Name,
-                Tag = source,
-            };
-
-            // The first nine samples get a command-digit shortcut; past that the menu is the way
-            // in, because there is no tenth digit to give.
-            if (i < 9)
-            {
-                item.InputGesture = new KeyGesture(Key.D1 + i, command);
-            }
-
-            item.Click += (_, _) => ShowDesign(source);
-            _sampleItems.Add(item);
-        }
-
-        SamplesMenu.ItemsSource = _sampleItems;
-        OpenMenuItem.InputGesture = new KeyGesture(Key.O, command);
-        ZoomToFitMenuItem.InputGesture = new KeyGesture(Key.D0, command);
-        ZoomInMenuItem.InputGesture = new KeyGesture(Key.OemPlus);
-        ZoomOutMenuItem.InputGesture = new KeyGesture(Key.OemMinus);
-    }
-
-    void BuildKeyBindings()
-    {
-        KeyModifiers command = CommandModifier;
-        KeyBindings.Add(new KeyBinding
-        {
-            Gesture = new KeyGesture(Key.O, command),
-            Command = new RelayCommand(() => _ = OpenFileAsync()),
-        });
-
-        for (int i = 0; i < Samples.Count && i < 9; i++)
-        {
-            IDesignSource source = Samples[i];
-            KeyBindings.Add(new KeyBinding
-            {
-                Gesture = new KeyGesture(Key.D1 + i, command),
-                Command = new RelayCommand(() => ShowDesign(source)),
-            });
-        }
-    }
-
-    /// <summary>
-    /// Control on Windows, Command on macOS, read from the platform rather than hardcoded.
-    /// </summary>
-    static KeyModifiers CommandModifier =>
-        Application.Current?.PlatformSettings?.HotkeyConfiguration.CommandModifiers
-        ?? KeyModifiers.Control;
-
-    void OnShellKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Handled)
-        {
-            return;
-        }
-
-        if (e.Key == Key.Escape && IsRefusalShowing)
-        {
-            DismissRefusal();
-            e.Handled = true;
-            return;
-        }
-
-        if (!DrawingCanvas.IsFocused && DrawingCanvas.HandleViewKey(e.Key, e.KeyModifiers))
-        {
-            e.Handled = true;
-        }
-    }
-
-    void OnOpenClicked(object? sender, RoutedEventArgs e) => _ = OpenFileAsync();
-
-    void OnZoomToFitClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.ZoomToFit();
-
-    void OnZoomInClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.ZoomIn();
-
-    void OnZoomOutClicked(object? sender, RoutedEventArgs e) => DrawingCanvas.ZoomOut();
-
-    void OnExitClicked(object? sender, RoutedEventArgs e) => Close();
-
-    void UpdateZoomReadout() => ZoomText.Text = string.Create(
-        CultureInfo.InvariantCulture,
-        $"Zoom {DrawingCanvas.View.ZoomPercent:0.#}%");
-
-    void UpdateCursorReadout(Point2? point) => CursorText.Text = point is { } position
-        ? $"x {Show(position.X)}   y {Show(position.Y)}"
-        : "x —   y —";
-
-    /// <summary>
-    /// A coordinate as a person reads a tape measure, marked with &#x2248; when the text is not the
-    /// stored value (docs/design/geometry-model.md &#xA7;1.4).
-    /// </summary>
-    string Show(Length value)
-    {
-        FormattedLength formatted = value.Format(DrawingCanvas.LabelFormat);
-        return formatted.IsExact ? formatted.Text : "≈" + formatted.Text;
     }
 }

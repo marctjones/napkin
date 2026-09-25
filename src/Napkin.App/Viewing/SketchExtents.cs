@@ -23,17 +23,25 @@ public static class SketchExtents
             switch (entity)
             {
                 case Box box:
+                {
+                    // What the plan shows of a box is its footprint (assembly-model §7.1).
+                    Footprint footprint = box.Footprint();
                     bounds = bounds.Including(
                     [
-                        box.Corner(BoxCorner.SouthWest),
-                        box.Corner(BoxCorner.SouthEast),
-                        box.Corner(BoxCorner.NorthEast),
-                        box.Corner(BoxCorner.NorthWest),
+                        footprint.Corner(BoxCorner.SouthWest),
+                        footprint.Corner(BoxCorner.SouthEast),
+                        footprint.Corner(BoxCorner.NorthEast),
+                        footprint.Corner(BoxCorner.NorthWest),
                     ]);
                     break;
+                }
 
                 case Node node:
                     bounds = bounds.Including(node.Position);
+                    break;
+
+                case Note note:
+                    bounds = bounds.Including(note.Position);
                     break;
 
                 case Segment segment

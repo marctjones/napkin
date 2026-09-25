@@ -17,13 +17,21 @@ public sealed class SceneReaderRejectionTests
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": 5,
           "entities": 5,
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
           "relationships": 5
         }
         """;
 
     [Theory]
     [InlineData(0)]
+    [InlineData(1)]
     [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(5)]
+    [InlineData(7)]
+    [InlineData(8)]
+    [InlineData(9)]
+    [InlineData(11)]
     [Trait("Feature", "PRJ-004")]
     public void A_file_from_another_format_version_fails_before_the_scene_is_parsed(int version)
     {
@@ -53,7 +61,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_file_with_no_version_stamp_is_refused()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 1,", string.Empty),
+            Scenes.OneBox.With("\"formatVersion\": 10,", string.Empty),
             LoadProblemKind.MissingField,
             "formatVersion");
 
@@ -61,7 +69,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_text_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 1", "\"formatVersion\": \"1\""),
+            Scenes.OneBox.With("\"formatVersion\": 10", "\"formatVersion\": \"4\""),
             LoadProblemKind.Malformed,
             "formatVersion");
 
@@ -69,7 +77,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_a_decimal_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 1", "\"formatVersion\": 1.0"),
+            Scenes.OneBox.With("\"formatVersion\": 10", "\"formatVersion\": 10.0"),
             LoadProblemKind.NotAnInteger,
             "formatVersion");
 
@@ -95,14 +103,20 @@ public sealed class SceneReaderRejectionTests
     public void An_unknown_field_is_refused_and_named()
     {
         Scenes.RefuseWith(
-            Scenes.OneBox.With("\"rotation\": 0 }", "\"rotation\": 0, \"colour\": \"walnut\" }"),
+            Scenes.OneBox.With("\"rotation\": 0,", "\"rotation\": 0, \"colour\": \"walnut\","),
             LoadProblemKind.UnknownField,
             "colour");
 
         Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 1,", "\"formatVersion\": 1, \"author\": \"someone\","),
+            Scenes.OneBox.With("\"formatVersion\": 10,", "\"formatVersion\": 10, \"author\": \"someone\","),
             LoadProblemKind.UnknownField,
             "author");
+
+        // A part's own object is read as strictly as the entity around it.
+        Scenes.RefuseWith(
+            Scenes.OneBox.With("\"quantity\": 1,", "\"quantity\": 1, \"grain\": \"quartersawn\","),
+            LoadProblemKind.UnknownField,
+            "grain");
     }
 
     [Fact]
@@ -171,12 +185,12 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-002")]
     public void A_reference_that_names_the_wrong_kind_of_entity_is_refused_and_not_evaluated()
     {
-        // A corner of a node is not a thing. If this reached the relationship checker it would
+        // A feature of a node is not a thing. If this reached the relationship checker it would
         // throw rather than refuse, which is why kinds are resolved before any geometry is read.
         Scenes.RefuseWith(
             Scenes.TurnedBoxAndNode.With(
-                $"\"kind\": \"corner\", \"box\": \"{Scenes.BoxId}\"",
-                $"\"kind\": \"corner\", \"box\": \"{Scenes.NodeId}\""),
+                $"\"kind\": \"feature\", \"box\": \"{Scenes.BoxId}\"",
+                $"\"kind\": \"feature\", \"box\": \"{Scenes.NodeId}\""),
             LoadProblemKind.WrongReferenceKind,
             Scenes.NodeId,
             "box");
@@ -237,7 +251,7 @@ public sealed class SceneReaderRejectionTests
     [Theory]
     [InlineData("\"type\": \"box\"", "\"type\": \"cube\"", "cube")]
     [InlineData("\"kind\": \"paramValue\"", "\"kind\": \"almostEqual\"", "almostEqual")]
-    [InlineData("\"kind\": \"boxWidth\"", "\"kind\": \"boxDepth\"", "boxDepth")]
+    [InlineData("\"kind\": \"boxWidth\"", "\"kind\": \"boxLength\"", "boxLength")]
     [Trait("Feature", "PRJ-002")]
     public void A_type_or_kind_this_build_does_not_know_is_refused_and_named(
         string original, string replacement, string named)
@@ -247,9 +261,9 @@ public sealed class SceneReaderRejectionTests
             named);
 
     [Theory]
-    [InlineData("\"corner\": \"southEast\"", "\"corner\": \"middle\"", "middle")]
+    [InlineData("\"faces\": [\"south\", \"east\"]", "\"faces\": [\"south\", \"middle\"]", "middle")]
     [Trait("Feature", "PRJ-002")]
-    public void A_corner_this_build_does_not_know_is_refused_and_named(
+    public void A_face_this_build_does_not_know_is_refused_and_named(
         string original, string replacement, string named)
         => Scenes.RefuseWith(
             Scenes.TurnedBoxAndNode.With(original, replacement),
@@ -257,7 +271,7 @@ public sealed class SceneReaderRejectionTests
             named);
 
     [Theory]
-    [InlineData("\"axis\": \"x\"", "\"axis\": \"z\"", "z")]
+    [InlineData("\"axis\": \"x\"", "\"axis\": \"w\"", "w")]
     [InlineData("\"side\": \"south\"", "\"side\": \"below\"", "below")]
     [Trait("Feature", "PRJ-002")]
     public void An_axis_or_side_this_build_does_not_know_is_refused_and_named(
@@ -325,13 +339,76 @@ public sealed class SceneReaderRejectionTests
             LoadProblemKind.MissingField,
             "height");
 
+    [Theory]
+    [InlineData("\"name\": \"Shelf\",", "name")]
+    [InlineData("\"part\": ", "part")]
+    [InlineData("\"cuts\": ", "cuts")]
+    [Trait("Feature", "CUT-001")]
+    public void A_name_a_part_and_a_cut_list_are_required_on_a_box(string original, string named)
+        => Scenes.RefuseWith(
+            Scenes.OneBox.With(original, original.Replace(named, $"{named}Of", StringComparison.Ordinal)),
+            LoadProblemKind.MissingField,
+            named);
+
+    [Theory]
+    [InlineData("\"name\": \"Shelf\"", "\"name\": 7")]
+    [InlineData("\"stock\": \"1x6\"", "\"stock\": 24")]
+    [InlineData("\"species\": null", "\"species\": 24")]
+    [Trait("Feature", "CUT-001")]
+    public void A_name_a_stock_and_a_species_are_text_or_nothing(string original, string replacement)
+        => Scenes.RefuseWith(Scenes.OneBox.With(original, replacement), LoadProblemKind.Malformed, "found a number");
+
+    [Theory]
+    [InlineData("\"quantity\": 0")]
+    [InlineData("\"quantity\": -1")]
+    [Trait("Feature", "CUT-001")]
+    public void A_part_counts_at_least_one_piece(string replacement)
+        => Scenes.RefuseWith(
+            Scenes.OneBox.With("\"quantity\": 1", replacement),
+            LoadProblemKind.InvalidValue,
+            "quantity");
+
+    [Fact]
+    [Trait("Feature", "CUT-001")]
+    public void A_plan_axis_this_build_does_not_know_is_refused_and_named()
+        => Scenes.RefuseWith(
+            Scenes.OneBox.With("\"y\": \"width\"", "\"y\": \"depth\""),
+            LoadProblemKind.UnknownValue,
+            "depth");
+
+    [Fact]
+    [Trait("Feature", "CUT-001")]
+    public void Two_plan_axes_naming_one_dimension_are_refused()
+    {
+        // Both axes claiming "length" would leave no name for the box's depth to carry, so the part
+        // would have two dimensions and a spare number rather than three dimensions.
+        LoadProblem problem = Scenes.RefuseWith(
+            Scenes.OneBox.With("\"y\": \"width\"", "\"y\": \"length\""),
+            LoadProblemKind.InvalidValue,
+            "planAxes");
+
+        Assert.Contains("length", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-001")]
+    public void A_stock_name_this_build_has_never_heard_of_still_loads()
+    {
+        // Deliberate: a file is refused for being malformed, never for naming something this
+        // build's materials library does not carry. The cut list says so instead.
+        Sketch sketch = Scenes.Accept(Scenes.OneBox.With("\"stock\": \"1x6\"", "\"stock\": \"9x17 unobtainium\""));
+
+        Box box = Assert.IsType<Box>(sketch.Find(new EntityId(Guid.Parse(Scenes.BoxId))));
+        Assert.Equal("9x17 unobtainium", box.Part?.Stock);
+    }
+
     [Fact]
     [Trait("Feature", "PRJ-002")]
     public void A_file_with_several_faults_reports_them_all_and_returns_no_sketch()
     {
         Refused refused = Scenes.Refuse(
             Scenes.OneBox
-                .With("\"rotation\": 0 }", "\"rotation\": 0, \"colour\": \"walnut\" }")
+                .With("\"rotation\": 0,", "\"rotation\": 0, \"colour\": \"walnut\",")
                 .With("\"name\": \"Default\"", "\"name\": \"Default\", \"visible\": true"));
 
         Assert.Equal(2, refused.Problems.Count);

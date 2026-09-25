@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Napkin.Core.Project;
+using Napkin.Modules.Editing;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App.Designs;
 
@@ -15,18 +17,19 @@ namespace Napkin.App.Designs;
 /// to be trusted by.
 /// </para>
 /// <para>
-/// <strong>It refuses rather than repairs, and it never throws past the window.</strong> The reader
-/// returns <see cref="Refused"/> for a missing, empty, garbled, wrong-version or
-/// dangling-reference file, and that becomes a <see cref="DesignLoadException"/> carrying one line
-/// per <see cref="LoadProblem"/>. Anything the reader did not anticipate is caught here and becomes
-/// the same thing, because a viewer that dies on a bad file is worse than one that says what was
-/// wrong.
+/// <strong>It refuses rather than repairs, and it never throws an I/O or format failure past the
+/// window.</strong> The reader returns <see cref="Refused"/> for a missing, empty, garbled,
+/// wrong-version or dangling-reference file, and that becomes a <see cref="DesignLoadException"/>
+/// carrying one line per <see cref="LoadProblem"/>. An I/O or container-format exception the
+/// reader did not itself catch (<see cref="ProjectFile.IsFileException"/>) becomes the same thing;
+/// a programming error is not caught here (#175) and is left to surface as the bug it is, rather
+/// than as a misleading "file refused".
 /// </para>
 /// <para>
-/// <strong>Entities carry no name.</strong> The M1 scene format stores ids, geometry and
-/// relationships, so <see cref="Design.Labels"/> is empty for every file and nothing is drawn on a
-/// part. A name per entity is a new field and a format-version bump, which the cut list (#8) will
-/// want; see <c>docs/file-format.md</c>.
+/// <strong>Entities carry a name.</strong> Scene format version 2 put one on every entity, so
+/// <see cref="Design.Labels"/> is filled from the file itself and a leg drawn from
+/// <c>coffee-table.scene.json</c> says "Leg, south-west" on the canvas. A name left empty is a
+/// name the file does not state, and nothing is drawn for it.
 /// </para>
 /// </remarks>
 public sealed class FileDesignSource : IDesignSource
@@ -73,11 +76,13 @@ public sealed class FileDesignSource : IDesignSource
         {
             result = SceneReader.ReadFile(Path);
         }
-        catch (Exception exception) when (exception is not OutOfMemoryException and not StackOverflowException)
+        catch (Exception exception) when (ProjectFile.IsFileException(exception))
         {
-            // The reader is written to return a refusal rather than throw, so reaching here is a
-            // bug in it — but the person holding a bad file should still be told what happened
-            // instead of watching the application disappear.
+            // The reader is written to return a refusal rather than throw for a bad file, so
+            // reaching here means the same class of I/O or format failure escaped it (a file that
+            // vanished or was locked between the picker and the read, say). Narrowed to that set
+            // (#175, ProjectFile.IsFileException) so a genuine programming error is not swallowed
+            // and reported as "file refused" — it propagates and is visibly a bug.
             throw new DesignLoadException(
                 $"{FileName} could not be read: {exception.Message}",
                 exception);
@@ -85,7 +90,7 @@ public sealed class FileDesignSource : IDesignSource
 
         return result switch
         {
-            Loaded loaded => Design.Unlabelled(Name, loaded.Sketch),
+            Loaded loaded => Design.Named(Name, loaded.Sketch),
             Refused refused => throw new DesignLoadException(
                 refused.Summary,
                 refused.Problems.Select(problem => problem.ToString())),
@@ -97,7 +102,7 @@ public sealed class FileDesignSource : IDesignSource
 }
 
 /// <summary>
-/// Asks the person for a scene file to open.
+/// Asks the person for a scene file to open, or for where to save one.
 /// </summary>
 /// <remarks>
 /// The seam exists for one reason: the platform's open dialog is native, and the headless GUI suite
@@ -112,6 +117,12 @@ public interface ISceneFilePicker
     /// The scene file to open, or <see langword="null"/> when the person cancelled.
     /// </summary>
     Task<string?> PickSceneFileAsync();
+
+    /// <summary>
+    /// Where to save the drawing, or <see langword="null"/> when the person cancelled.
+    /// </summary>
+    /// <param name="suggestedName">The file name the dialog offers to begin with.</param>
+    Task<string?> PickSaveDestinationAsync(string suggestedName);
 }
 
 /// <summary>The platform's own open dialog, through Avalonia's storage provider.</summary>
@@ -147,5 +158,28 @@ public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicke
         // is not something the file reader can open, and pretending otherwise would fail later and
         // further from the cause.
         return chosen.Count == 0 ? null : chosen[0].TryGetLocalPath();
+    }
+
+    /// <inheritdoc/>
+    public async Task<string?> PickSaveDestinationAsync(string suggestedName)
+    {
+        IStorageProvider? storage = owner.StorageProvider;
+        if (storage is null || !storage.CanSave)
+        {
+            return null;
+        }
+
+        IStorageFile? chosen = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save this napkin design",
+            SuggestedFileName = suggestedName,
+            DefaultExtension = "scene.json",
+            FileTypeChoices = [SceneFiles],
+            ShowOverwritePrompt = true,
+        }).ConfigureAwait(true);
+
+        // The same rule as opening: a destination with no local path is one the writer cannot
+        // write to, and saying nothing now is better than failing further from the cause.
+        return chosen?.TryGetLocalPath();
     }
 }

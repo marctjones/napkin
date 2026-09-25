@@ -1,0 +1,152 @@
+{
+  "formatVersion": 10,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
+  ],
+  "entities": [
+    {
+      "id": "60000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Rail",
+      "phase": "new",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "width": 24512,
+      "height": 1088,
+      "depth": 192,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Strip",
+      "phase": "new",
+      "anchor": {
+        "x": 25600,
+        "y": 0,
+        "z": 0
+      },
+      "width": 10336,
+      "height": 80,
+      "depth": 64,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000003",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Spacer",
+      "phase": "new",
+      "anchor": {
+        "x": 37888,
+        "y": 0,
+        "z": 0
+      },
+      "width": 6208,
+      "height": 96,
+      "depth": 80,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000004",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Third",
+      "phase": "new",
+      "anchor": {
+        "x": 46080,
+        "y": 0,
+        "z": 0
+      },
+      "width": 341,
+      "height": 64,
+      "depth": 64,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    }
+  ],
+  "relationships": [],
+  "fastenerChoices": [],
+  "supplies": [],
+  "code": null,
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
+}

@@ -1,0 +1,276 @@
+{
+  "formatVersion": 10,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
+  ],
+  "entities": [
+    {
+      "id": "90000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Foot",
+      "phase": "new",
+      "anchor": {
+        "x": 512,
+        "y": 512,
+        "z": 256
+      },
+      "width": 6144,
+      "height": 4096,
+      "depth": 512,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "90000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Upright",
+      "phase": "new",
+      "anchor": {
+        "x": 512,
+        "y": 512,
+        "z": 768
+      },
+      "width": 512,
+      "height": 4096,
+      "depth": 5376,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "90000000-0000-4000-8000-000000000003",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Boss, top",
+      "phase": "new",
+      "anchor": {
+        "x": 5632,
+        "y": 512,
+        "z": 768
+      },
+      "width": 1024,
+      "height": 1024,
+      "depth": 1024,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "90000000-0000-4000-8000-000000000004",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Skid, bottom",
+      "phase": "new",
+      "anchor": {
+        "x": 3072,
+        "y": 2048,
+        "z": 0
+      },
+      "width": 1024,
+      "height": 1024,
+      "depth": 256,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "90000000-0000-4000-8000-000000000005",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Tab, east",
+      "phase": "new",
+      "anchor": {
+        "x": 6656,
+        "y": 2048,
+        "z": 256
+      },
+      "width": 1024,
+      "height": 1024,
+      "depth": 512,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "90000000-0000-4000-8000-000000000006",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Nub, west",
+      "phase": "new",
+      "anchor": {
+        "x": 0,
+        "y": 2048,
+        "z": 3072
+      },
+      "width": 512,
+      "height": 1024,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "90000000-0000-4000-8000-000000000007",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Rib, north",
+      "phase": "new",
+      "anchor": {
+        "x": 512,
+        "y": 4608,
+        "z": 2048
+      },
+      "width": 512,
+      "height": 512,
+      "depth": 2048,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "90000000-0000-4000-8000-000000000008",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Lug, south",
+      "phase": "new",
+      "anchor": {
+        "x": 512,
+        "y": 0,
+        "z": 4096
+      },
+      "width": 512,
+      "height": 512,
+      "depth": 1024,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": null,
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    }
+  ],
+  "relationships": [],
+  "fastenerChoices": [],
+  "supplies": [],
+  "code": null,
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
+}

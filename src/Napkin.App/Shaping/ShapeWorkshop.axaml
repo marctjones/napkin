@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewing="clr-namespace:Napkin.App.Viewing"
+             x:Class="Napkin.App.Shaping.ShapeWorkshop">
+
+    <!--
+        The shape workshop (docs/design/shaped-parts-model.md §7.1): one blank drawn large, the
+        stock it is cut from, its cuts listed beside it and the selected cut's typed numbers (§7.2).
+        The window decides when it is open and what else hides while it is; this control owns what
+        is on the sheet.
+    -->
+    <Border Name="Sheet" BorderThickness="0">
+        <Grid RowDefinitions="Auto,*,Auto">
+
+            <StackPanel Grid.Row="0" Spacing="6" Margin="14,10,14,6">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Name="WorkshopHeadline"
+                               Grid.Column="0"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+                    <Button Name="WorkshopDoneButton"
+                            Grid.Column="1"
+                            Content="Done"
+                            FontSize="12"
+                            Padding="12,3"
+                            Click="OnWorkshopDoneClicked"
+                            ToolTip.Tip="Back to the drawing, with the part where it was. Escape does the same." />
+                </Grid>
+
+                <!-- The stock picker leads, because the normal way to start a shaped part
+                     is to say what it is cut from (§1.2). -->
+                <Grid ColumnDefinitions="Auto,200,Auto,*">
+                    <TextBlock Grid.Column="0" Text="Cut from" FontSize="11"
+                               VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBox Name="WorkshopStockBox" Grid.Column="1" FontSize="12"
+                             PlaceholderText="Stock, e.g. 1x6" />
+                    <Button Name="WorkshopStockButton"
+                            Grid.Column="2"
+                            Content="Use this stock"
+                            FontSize="12"
+                            Padding="10,3"
+                            Margin="6,0,0,0"
+                            Click="OnWorkshopStockClicked" />
+                    <TextBlock Name="WorkshopStockReadout"
+                               Grid.Column="3"
+                               FontSize="10"
+                               Opacity="0.85"
+                               Margin="10,0,0,0"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center" />
+                </Grid>
+            </StackPanel>
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,232">
+                <viewing:WorkshopView Name="WorkshopDrawing" Grid.Column="0" />
+
+                <Border Name="WorkshopCutsPanel"
+                        Grid.Column="1"
+                        Margin="8,0,12,0"
+                        Padding="10,8"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <StackPanel Spacing="5">
+                        <TextBlock Name="WorkshopCutsHeadline"
+                                   Text="Cuts"
+                                   FontSize="12"
+                                   FontWeight="SemiBold" />
+                        <ListBox Name="WorkshopCutsList"
+                                 FontSize="11"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 MaxHeight="140" />
+                        <TextBlock Name="WorkshopCutsEmpty"
+                                   Text="Nothing has been cut off this blank yet."
+                                   FontSize="11"
+                                   Opacity="0.75"
+                                   TextWrapping="Wrap" />
+
+                        <!--
+                            The selected cut's numbers, while the shape workshop is open
+                            (docs/design/shaped-parts-model.md §7.2). Typing one is a SetCut with the
+                            new value — the "resize by typing a dimension" pattern applied to a cut —
+                            and an angle typed for a corner cut is converted to the setback it implies
+                            with one explicit rounding.
+                        -->
+                        <StackPanel Name="CutFields" Spacing="5" IsVisible="False">
+                            <Border Height="1"
+                                    Name="CutFieldsRule"
+                                    Margin="0,2"
+                                    BorderThickness="0,1,0,0" />
+
+                            <TextBlock Name="CutHeadline" FontSize="12" FontWeight="SemiBold" />
+
+                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                                <TextBlock Name="CutFirstCaption" Grid.Row="0" Grid.Column="0"
+                                           FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBox Name="CutFirstBox" Grid.Row="0" Grid.Column="1" FontSize="12"
+                                         Margin="0,0,0,4" />
+
+                                <TextBlock Name="CutSecondCaption" Grid.Row="1" Grid.Column="0"
+                                           FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBox Name="CutSecondBox" Grid.Row="1" Grid.Column="1" FontSize="12"
+                                         Margin="0,0,0,4" />
+
+                                <TextBlock Name="CutAngleCaption" Grid.Row="2" Grid.Column="0"
+                                           Text="Angle" FontSize="11"
+                                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBox Name="CutAngleBox" Grid.Row="2" Grid.Column="1" FontSize="12"
+                                         PlaceholderText="45" />
+                            </Grid>
+
+                            <TextBlock Name="CutReadout" FontSize="10" Opacity="0.85" TextWrapping="Wrap" />
+
+                            <TextBlock Name="CutError"
+                                       IsVisible="False"
+                                       FontSize="11"
+                                       TextWrapping="Wrap" />
+
+                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                                <Button Name="FullMitreButton"
+                                        Content="Full mitre"
+                                        FontSize="11"
+                                        Padding="8,3"
+                                        Click="OnFullMitreClicked"
+                                        ToolTip.Tip="Both setbacks at the blank's width, once. It does not keep them related afterwards." />
+                                <Button Name="RemoveCutButton"
+                                        Content="Remove"
+                                        FontSize="11"
+                                        Padding="8,3"
+                                        Click="OnRemoveCutClicked" />
+                                <Button Name="ApplyCutButton"
+                                        Content="Apply"
+                                        FontSize="11"
+                                        Padding="8,3"
+                                        Click="OnApplyCutClicked" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <TextBlock Name="WorkshopHint"
+                       Grid.Row="2"
+                       Margin="14,4,14,10"
+                       FontSize="11"
+                       TextWrapping="Wrap" />
+        </Grid>
+    </Border>
+</UserControl>

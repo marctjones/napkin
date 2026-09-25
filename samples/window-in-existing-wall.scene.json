@@ -1,0 +1,90 @@
+{
+  "formatVersion": 10,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    },
+    {
+      "id": "61000000-0000-4000-8000-000000000001",
+      "name": "Wall"
+    },
+    {
+      "id": "61000000-0000-4000-8000-000000000002",
+      "name": "Opening"
+    }
+  ],
+  "entities": [
+    {
+      "id": "62000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "61000000-0000-4000-8000-000000000001",
+      "name": "Wall 1",
+      "phase": "existing",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "width": 147456,
+      "height": 3584,
+      "depth": 98304,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": {
+        "supports": null,
+        "studSpacing": null,
+        "bracing": null,
+        "side": "exterior",
+        "bearing": true,
+        "header": null
+      },
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "62000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "61000000-0000-4000-8000-000000000002",
+      "name": "Window 1",
+      "phase": "new",
+      "anchor": {
+        "x": 55296,
+        "y": 0,
+        "z": 36864
+      },
+      "width": 36864,
+      "height": 3584,
+      "depth": 49152,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": null,
+      "room": null,
+      "cuts": []
+    }
+  ],
+  "relationships": [],
+  "fastenerChoices": [],
+  "supplies": [],
+  "code": {
+    "pack": "us-ct-2022",
+    "revision": 1,
+    "mode": "locked",
+    "lockedOn": "2026-09-25"
+  },
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "fixture": "picture-frame",
+  "scene": "picture-frame.scene.json",
+  "design": "picture-frame.design.md",
+  "derivedBy": "hand, from the stated dimensions in picture-frame.design.md; never regenerated from napkin's output",
+  "formatVersion": 10,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 4,
+    "pieces": 4,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 11264,
+    "depthUnits": 13312,
+    "heightUnits": 768,
+    "widthText": "11\"",
+    "depthText": "1'-1\"",
+    "heightText": "3/4\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Stile, left",
+      "id": "b0000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 1536,
+        "y": 13312,
+        "z": 768
+      },
+      "derivation": "Drawn upright on the west side: 1 1/2\" across X, 13\" up Y (the outer height, 10 + 2 x 1 1/2), 3/4\" thick. Its inside edge is its east edge, x = 1 1/2. Occupies x 0..1 1/2, y 0..13, z 0..3/4."
+    },
+    {
+      "name": "Stile, right",
+      "id": "b0000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 9728,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 11264,
+        "y": 13312,
+        "z": 768
+      },
+      "derivation": "The left stile's twin, turned half a turn (180 degrees = 648000\") about its anchor at (11, 13) so that its local east (inside) edge faces west: local x 0..1 1/2 maps to 11 - 1 1/2 .. 11 = 9 1/2..11 and local y 0..13 to 13 - 13 .. 13 = 0..13. Occupies x 9 1/2..11, y 0..13, z 0..3/4."
+    },
+    {
+      "name": "Rail, bottom",
+      "id": "b0000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 11264,
+        "y": 1536,
+        "z": 768
+      },
+      "derivation": "Drawn along X at the bottom: 11\" (the outer width, 8 + 2 x 1 1/2) across X, 1 1/2\" up Y, 3/4\" thick. Its inside edge is its north edge, y = 1 1/2. Occupies x 0..11, y 0..1 1/2, z 0..3/4."
+    },
+    {
+      "name": "Rail, top",
+      "id": "b0000000-0000-4000-8000-000000000004",
+      "minUnits": {
+        "x": 0,
+        "y": 11776,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 11264,
+        "y": 13312,
+        "z": 768
+      },
+      "derivation": "The bottom rail's twin, turned half a turn about its anchor at (11, 13) so that its local north (inside) edge faces south: local x 0..11 maps to 0..11 and local y 0..1 1/2 to 13 - 1 1/2 .. 13 = 11 1/2..13. Occupies x 0..11, y 11 1/2..13, z 0..3/4."
+    }
+  ],
+  "totalVolumeCubicUnits": 57982058496,
+  "cutList": [
+    {
+      "label": "Stile",
+      "quantity": 2,
+      "lengthUnits": 13312,
+      "widthUnits": 1536,
+      "thicknessUnits": 768,
+      "lengthText": "1'-1\"",
+      "widthText": "1 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "b0000000-0000-4000-8000-000000000001",
+        "b0000000-0000-4000-8000-000000000002"
+      ],
+      "cuts": [
+        "Mitre the south end: from 1 1/2\" in along the east edge to the south-west corner (45° off square).",
+        "Mitre the north end: from 1 1/2\" in along the east edge to the north-west corner (45° off square)."
+      ],
+      "derivation": "Plan axes x = width, y = length: width 1 1/2\" = 1536, length 13\" = 13312, thickness (the depth) 3/4\" = 768. The length is the blank, which is the long point: the mitres run from the inside edge to the outside corners, so the outside edge keeps the whole 13\" and the inside edge is 13 - 2 x 1 1/2 = 10\", the opening's height. Both boxes carry the same cuts in their own frames (south-east and north-east, 1 1/2\" x 1 1/2\"), so they are one row of 2 (§4.3); one is simply turned. Sentences (§4.4, cuts in site order south-east then north-east): at the south-east corner the setback along X, 1 1/2\", is the whole south end, so it is a mitre of the south end from a mark 1 1/2\" along the east edge to the far corner of the south end, south-west; equal setbacks are exactly 45 degrees. North-east likewise: the north end, to the north-west corner. Text: 13 = 1 x 12 + 1 -> 1'-1\". Label: \"Stile, left\" and \"Stile, right\" share \"Stile, \" -> \"Stile\"."
+    },
+    {
+      "label": "Rail",
+      "quantity": 2,
+      "lengthUnits": 11264,
+      "widthUnits": 1536,
+      "thicknessUnits": 768,
+      "lengthText": "11\"",
+      "widthText": "1 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "b0000000-0000-4000-8000-000000000003",
+        "b0000000-0000-4000-8000-000000000004"
+      ],
+      "cuts": [
+        "Mitre the east end: from 1 1/2\" in along the north edge to the south-east corner (45° off square).",
+        "Mitre the west end: from 1 1/2\" in along the north edge to the south-west corner (45° off square)."
+      ],
+      "derivation": "Plan axes x = length, y = width: length 11\" = 11264, width 1 1/2\" = 1536, thickness 3/4\" = 768. Long point 11\"; the inside edge is 11 - 2 x 1 1/2 = 8\", the opening's width. Same cuts on both (north-west and north-east), so one row of 2. Sentences, in site order north-east then north-west: at the north-east corner the setback along Y, 1 1/2\", is the whole east end, so: mitre the east end from a mark 1 1/2\" along the north edge to the far corner of the east end, south-east; at the north-west corner, the west end, to the south-west corner. Both exactly 45 degrees. Sorted after the stiles because 11\" < 13\". Label: \"Rail, bottom\" and \"Rail, top\" share \"Rail, \" -> \"Rail\"."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+    "Stile,2,\"1'-1\"\"\",\"1 1/2\"\"\",\"3/4\"\"\",,,\"Mitre the south end: from 1 1/2\"\" in along the east edge to the south-west corner (45° off square).; Mitre the north end: from 1 1/2\"\" in along the east edge to the north-west corner (45° off square).\",",
+    "Rail,2,\"11\"\"\",\"1 1/2\"\"\",\"3/4\"\"\",,,\"Mitre the east end: from 1 1/2\"\" in along the north edge to the south-east corner (45° off square).; Mitre the west end: from 1 1/2\"\" in along the north edge to the south-west corner (45° off square).\","
+  ]
+}

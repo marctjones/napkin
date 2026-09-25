@@ -9,7 +9,7 @@ using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Project;
 using Xunit;
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App.GuiTests.Workflows;
 
@@ -52,7 +52,7 @@ public class ViewerWorkflows
         app.Expect("the wall sample is on screen", () =>
         {
             Assert.Equal("Wall with window", window.CurrentDesign?.Name);
-            Assert.Equal("napkin — Wall with window", window.Title);
+            Assert.Equal(Design.WindowTitle("Wall with window", hasUnsavedChanges: false), window.Title);
         });
 
         // Now the coffee table, the way a person opens a file they were sent: the shortcut, the
@@ -63,7 +63,7 @@ public class ViewerWorkflows
         {
             Design design = window.CurrentDesign!;
             Assert.Equal("coffee-table.scene.json", design.Name);
-            Assert.Equal("napkin — coffee-table.scene.json", window.Title);
+            Assert.Equal(Design.WindowTitle("coffee-table.scene.json", hasUnsavedChanges: false), window.Title);
             Assert.Contains(
                 "coffee-table.scene.json",
                 window.DesignReadout.Text!,
@@ -94,13 +94,14 @@ public class ViewerWorkflows
                 $"the point under the pointer moved to {after}, not {wanted}.");
         });
 
-        app.Drag(new Point(450, 300), new Point(500, 340), new Point(540, 380));
+        // A Shift-drag pans wherever it starts; a plain drag that starts on a part moves the part (#85).
+        app.DragWith(KeyModifiers.Shift, new Point(450, 300), new Point(500, 340), new Point(540, 380));
         app.Press(Key.Left);
         app.Expect("moving around the drawing moved nothing in it", () =>
         {
             Assert.Same(asOpened, window.CurrentDesign!.Sketch);
             Assert.Equal(FreshlyRead("coffee-table"), window.CurrentDesign!.Sketch);
-            Assert.Matches(@"^Zoom \d+(\.\d)?%$", window.ZoomReadout.Text!);
+            Assert.Matches(@"^Zoom \d+(\.\d)?%( · Snap .+)?$", window.ZoomReadout.Text!);
         });
 
         app.SaveFrame("coffee-table");
@@ -129,7 +130,8 @@ public class ViewerWorkflows
 
         ViewTransform beforeDrag = canvas.View;
         Point2 under = beforeDrag.ToWorld(probe);
-        app.Drag(new Point(450, 300), new Point(500, 330), new Point(560, 360));
+        // Shift, because the drag starts on the table top: a plain drag there would move it (#85).
+        app.DragWith(KeyModifiers.Shift, new Point(450, 300), new Point(500, 330), new Point(560, 360));
         app.Expect("the drag moved the drawing by exactly the drag, not by more", () =>
         {
             // The model point that was under the pointer is under it still, 110 across and 60
@@ -293,7 +295,7 @@ public class ViewerWorkflows
             // "untouched" means more than "nothing had happened yet".
             app.Chord(Key.D1);
             app.Chord(Key.D0);
-            app.Drag(new Point(430, 300), new Point(480, 330), new Point(520, 350));
+            app.DragWith(KeyModifiers.Shift, new Point(430, 300), new Point(480, 330), new Point(520, 350));
 
             Design opened = window.CurrentDesign!;
             Sketch asOpened = opened.Sketch;
@@ -380,7 +382,7 @@ public class ViewerWorkflows
             {
                 Assert.False(window.IsRefusalShowing);
                 Assert.Equal("wall-with-window.scene.json", window.CurrentDesign?.Name);
-                Assert.Equal("napkin — wall-with-window.scene.json", window.Title);
+                Assert.Equal(Design.WindowTitle("wall-with-window.scene.json", hasUnsavedChanges: false), window.Title);
                 Assert.NotSame(asOpened, window.CurrentDesign!.Sketch);
                 Assert.Equal(FreshlyRead("wall-with-window"), window.CurrentDesign!.Sketch);
                 Assert.True(IsWhollyVisible(canvas), "the new drawing was not framed.");
@@ -392,6 +394,7 @@ public class ViewerWorkflows
     /// <summary>Opens a sample the way a person does: the Samples menu, with the mouse.</summary>
     static void OpenThroughTheMenu(AppDriver app, MainWindow window, string sample)
     {
+        app.Click(CentreOf(window, window.FileMenuItem));
         app.Click(CentreOf(window, window.SamplesMenuItem));
 
         MenuItem item = window.GetVisualDescendants()
@@ -541,5 +544,7 @@ public class ViewerWorkflows
     sealed class ScriptedPicker(string path) : ISceneFilePicker
     {
         public Task<string?> PickSceneFileAsync() => Task.FromResult<string?>(path);
+
+        public Task<string?> PickSaveDestinationAsync(string suggestedName) => Task.FromResult<string?>(null);
     }
 }

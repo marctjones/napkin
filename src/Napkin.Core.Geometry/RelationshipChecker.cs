@@ -80,6 +80,14 @@ public static class RelationshipChecker
 
         foreach (Relationship relationship in sketch.RelationshipsInOrder)
         {
+            // A joint is data, not a constraint (joinery note §4.3): parts that have drifted apart
+            // leave it unsatisfied — drawn hollow, flagged in the cut list — and never make a
+            // file unloadable or an edit refused. IsSatisfied is how that is asked.
+            if (relationship is Joint)
+            {
+                continue;
+            }
+
             Residual residual = Evaluate(sketch, relationship);
             if (Holds(residual, tolerances))
             {
@@ -103,6 +111,19 @@ public static class RelationshipChecker
         ArgumentNullException.ThrowIfNull(relationship);
 
         return Evaluate(sketch, relationship).Exact;
+    }
+
+    /// <summary>
+    /// Whether a joint's parts still touch and its numbers still make sense
+    /// (<see cref="JointGeometry.IsSatisfied"/>). <see cref="Check(Sketch)"/> never lists a joint,
+    /// so this is the one place to ask.
+    /// </summary>
+    public static bool IsSatisfied(Sketch sketch, Joint joint)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(joint);
+
+        return Holds(Evaluate(sketch, joint), Tolerances.Default);
     }
 
     private static bool Holds(Residual residual, Tolerances tolerances)
@@ -146,39 +167,74 @@ public static class RelationshipChecker
         PointOnEdge pointOnEdge => PointOnEdgeResidual(sketch, pointOnEdge),
         Symmetric symmetric => SymmetricResidual(sketch, symmetric),
 
+        // Zero while the two faces touch; NotEvaluable once they do not (joinery note §4.3).
+        Joint joint => JointGeometry.IsSatisfied(sketch, joint)
+            ? Residual.FromDistance(Length.Zero, exact: true)
+            : Residual.NotEvaluable,
+
         // Tangent and Radius are about arcs, and there are no arcs in #5 (design §3.2, §10).
         Tangent or Radius => Residual.NotEvaluable,
 
         _ => Residual.NotEvaluable,
     };
 
+    /// <summary>
+    /// Equal on every axis both places fix (<c>docs/design/assembly-model.md</c> &#xA7;2.1): the
+    /// residual is the largest gap on any of them. Places with no axis in common have nothing to
+    /// compare, and <see cref="PlaceRules"/> refuses them before they are stored.
+    /// </summary>
     private static Residual CoincidentResidual(Sketch sketch, Coincident coincident)
     {
-        Vector2 gap = sketch.PointOf(coincident.A) - sketch.PointOf(coincident.B);
-        return Residual.FromDistance(
-            Length.Max(Length.Abs(gap.Dx), Length.Abs(gap.Dy)),
-            ExactPoint(sketch, coincident.A) && ExactPoint(sketch, coincident.B));
+        Place a = sketch.PlaceOf(coincident.A);
+        Place b = sketch.PlaceOf(coincident.B);
+        ImmutableArray<Axis> common = Place.Common(a, b);
+        if (common.IsEmpty)
+        {
+            return Residual.NotEvaluable;
+        }
+
+        Length gap = Length.Zero;
+        foreach (Axis axis in common)
+        {
+            gap = Length.Max(gap, Length.Abs(a[axis] - b[axis]));
+        }
+
+        return Residual.FromDistance(gap, ExactPlace(sketch, coincident.A) && ExactPlace(sketch, coincident.B));
     }
 
-    private static Residual AxisAlignmentResidual(Sketch sketch, EdgeRef edge, Axis mustNotVary)
+    private static Residual AxisAlignmentResidual(Sketch sketch, PlaceRef edge, Axis mustNotVary)
     {
-        (Point2 from, Point2 to) = sketch.EdgeOf(edge);
+        if (sketch.PlanLineOf(edge) is not (Point2 from, Point2 to))
+        {
+            return Residual.NotEvaluable;
+        }
+
         return Residual.FromDistance(
             Length.Abs(to.Component(mustNotVary) - from.Component(mustNotVary)),
-            ExactEdge(sketch, edge));
+            ExactPlace(sketch, edge));
     }
 
+    /// <summary>
+    /// The same plane: two places that each fix one axis, the same one, compared on it — two faces,
+    /// or a face and an axis-aligned segment, in any of the 24 orientations. Anything else is judged
+    /// geometrically in the plan, in the tolerance class, as it was before assembly-model: how far
+    /// the second line's ends sit off the first's.
+    /// </summary>
     private static Residual FlushResidual(Sketch sketch, Flush flush)
     {
-        (Point2 a0, Point2 a1) = sketch.EdgeOf(flush.A);
-        (Point2 b0, Point2 b1) = sketch.EdgeOf(flush.B);
-
-        Axis? normalOfA = NormalAxis(a0, a1);
-        if (normalOfA is { } axis && NormalAxis(b0, b1) == axis)
+        Place a = sketch.PlaceOf(flush.A);
+        Place b = sketch.PlaceOf(flush.B);
+        if (a.Count == 1 && b.Count == 1 && a.Axes[0] == b.Axes[0])
         {
+            Axis axis = a.Axes[0];
             return Residual.FromDistance(
-                Length.Abs(a0.Component(axis) - b0.Component(axis)),
-                ExactEdge(sketch, flush.A) && ExactEdge(sketch, flush.B));
+                Length.Abs(a[axis] - b[axis]),
+                ExactPlace(sketch, flush.A) && ExactPlace(sketch, flush.B));
+        }
+
+        if (sketch.PlanLineOf(flush.A) is not (Point2 a0, Point2 a1) || sketch.PlanLineOf(flush.B) is not (Point2 b0, Point2 b1))
+        {
+            return Residual.NotEvaluable;
         }
 
         // Not both axis-aligned the same way: how far B's ends sit off A's line.
@@ -189,29 +245,39 @@ public static class RelationshipChecker
 
     private static Residual AxisDistanceResidual(Sketch sketch, AxisDistance relationship)
     {
-        Length actual = sketch.PointOf(relationship.To).Component(relationship.Axis)
-                        - sketch.PointOf(relationship.From).Component(relationship.Axis);
+        Place from = sketch.PlaceOf(relationship.From);
+        Place to = sketch.PlaceOf(relationship.To);
+        if (!from.Fixes(relationship.Axis) || !to.Fixes(relationship.Axis))
+        {
+            return Residual.NotEvaluable;
+        }
+
+        Length actual = to[relationship.Axis] - from[relationship.Axis];
 
         return Residual.FromDistance(
             Length.Abs(actual - relationship.Distance),
-            ExactPoint(sketch, relationship.From) && ExactPoint(sketch, relationship.To));
+            ExactPlace(sketch, relationship.From) && ExactPlace(sketch, relationship.To));
     }
 
     private static Residual CenteredResidual(Sketch sketch, Centered centered)
     {
-        Length a = sketch.PointOf(centered.A).Component(centered.Axis);
-        Length b = sketch.PointOf(centered.B).Component(centered.Axis);
-        Length middle = sketch.PointOf(centered.Middle).Component(centered.Axis);
+        Length? a = sketch.PlaceOf(centered.A).Coordinate(centered.Axis);
+        Length? b = sketch.PlaceOf(centered.B).Coordinate(centered.Axis);
+        Length? middle = sketch.PlaceOf(centered.Middle).Coordinate(centered.Axis);
+        if (a is null || b is null || middle is null)
+        {
+            return Residual.NotEvaluable;
+        }
 
         return Residual.FromDistance(
-            MiddleResidual(middle, a, b),
-            ExactPoint(sketch, centered.Middle) && ExactPoint(sketch, centered.A) && ExactPoint(sketch, centered.B));
+            MiddleResidual(middle.Value, a.Value, b.Value),
+            ExactPlace(sketch, centered.Middle) && ExactPlace(sketch, centered.A) && ExactPlace(sketch, centered.B));
     }
 
     /// <summary>
     /// The midpoint of a span, rounded half to even. What the propagator puts a middle point at.
     /// </summary>
-    internal static Length Midpoint(Length a, Length b) => (a + b).Divide(2, Rounding.HalfToEven);
+    public static Length Midpoint(Length a, Length b) => (a + b).Divide(2, Rounding.HalfToEven);
 
     /// <summary>
     /// How far a middle point is from the nearest position that centres it.
@@ -255,31 +321,51 @@ public static class RelationshipChecker
     internal static bool IsCentred(Length middle, Length a, Length b)
         => MiddleResidual(middle, a, b) == Length.Zero;
 
+    // The solver-reserved kinds below are plan-view measurements, as they were before
+    // assembly-model: between plan points and against plan lines. A place that is neither — a face
+    // lying flat, a horizontal edge — gives them nothing to measure (docs/design/assembly-model.md
+    // §2.3 leaves them otherwise untouched, and the direct updater refuses them).
     private static Residual DistanceResidual(Sketch sketch, Distance distance)
     {
-        Vector2 gap = sketch.PointOf(distance.B) - sketch.PointOf(distance.A);
-        return Residual.FromDistance(Length.Abs(gap.Magnitude() - distance.Value), exact: false);
+        if (sketch.PlanPointOf(distance.A) is not { } a || sketch.PlanPointOf(distance.B) is not { } b)
+        {
+            return Residual.NotEvaluable;
+        }
+
+        return Residual.FromDistance(Length.Abs((b - a).Magnitude() - distance.Value), exact: false);
     }
 
     private static Residual PointOnEdgeResidual(Sketch sketch, PointOnEdge relationship)
     {
-        (Point2 from, Point2 to) = sketch.EdgeOf(relationship.Edge);
-        return Residual.FromDistance(
-            PerpendicularDistance(from, to, sketch.PointOf(relationship.Point)),
-            exact: false);
+        if (sketch.PlanLineOf(relationship.Edge) is not (Point2 from, Point2 to)
+            || sketch.PlanPointOf(relationship.Point) is not { } point)
+        {
+            return Residual.NotEvaluable;
+        }
+
+        return Residual.FromDistance(PerpendicularDistance(from, to, point), exact: false);
     }
 
     private static Residual SymmetricResidual(Sketch sketch, Symmetric symmetric)
     {
-        (Point2 from, Point2 to) = sketch.EdgeOf(symmetric.Mirror);
-        Point2 reflected = Reflect(from, to, sketch.PointOf(symmetric.A));
-        return Residual.FromDistance((sketch.PointOf(symmetric.B) - reflected).Magnitude(), exact: false);
+        if (sketch.PlanLineOf(symmetric.Mirror) is not (Point2 from, Point2 to)
+            || sketch.PlanPointOf(symmetric.A) is not { } a
+            || sketch.PlanPointOf(symmetric.B) is not { } b)
+        {
+            return Residual.NotEvaluable;
+        }
+
+        Point2 reflected = Reflect(from, to, a);
+        return Residual.FromDistance((b - reflected).Magnitude(), exact: false);
     }
 
-    private static Residual AngularResidual(Sketch sketch, EdgeRef a, EdgeRef b, Angle target, bool undirected)
+    private static Residual AngularResidual(Sketch sketch, PlaceRef a, PlaceRef b, Angle target, bool undirected)
     {
-        (Point2 a0, Point2 a1) = sketch.EdgeOf(a);
-        (Point2 b0, Point2 b1) = sketch.EdgeOf(b);
+        if (sketch.PlanLineOf(a) is not (Point2 a0, Point2 a1) || sketch.PlanLineOf(b) is not (Point2 b0, Point2 b1))
+        {
+            return Residual.NotEvaluable;
+        }
+
         Length span = Length.Max((a1 - a0).Magnitude(), (b1 - b0).Magnitude());
 
         // Both directions are stored Angles the repair pass can copy, so the relationship is
@@ -328,17 +414,25 @@ public static class RelationshipChecker
         return folded > period / 2 ? period - folded : folded;
     }
 
-    private static Angle? ExactDirection(Sketch sketch, EdgeRef edge)
+    private static Angle? ExactDirection(Sketch sketch, PlaceRef edge)
     {
-        if (edge is not BoxEdgeRef boxEdge
-            || sketch.Find<Box>(boxEdge.Box) is not { } box
+        if (edge is not FeatureRef { Feature.Faces: [var face] } feature
+            || sketch.Find<Box>(feature.Box) is not { } box
             || !box.Rotation.IsRightAngleMultiple)
         {
             return null;
         }
 
-        // South and North run along the box's local X; East and West along its local Y.
-        Angle local = boxEdge.Edge is BoxEdge.South or BoxEdge.North ? Angle.Zero : Angle.Right;
+        // A side face is seen from above as a line across the footprint: one whose tipped normal
+        // is plan Y runs along plan X, and one whose normal is plan X runs along Y. For a box lying
+        // as drawn, South and North run along its local X and East and West along its local Y.
+        Axis normal = new Orientation(box.FaceUp, Angle.Zero).Normal(face).Axis;
+        if (normal == Axis.Z)
+        {
+            return null;
+        }
+
+        Angle local = normal == Axis.Y ? Angle.Zero : Angle.Right;
         return box.Rotation + local;
     }
 
@@ -398,19 +492,15 @@ public static class RelationshipChecker
             Length.FromInches(lineFrom.Y.ToInches() + (2 * along * dy) - py, Rounding.HalfToEven));
     }
 
-    private static bool ExactPoint(Sketch sketch, PointRef reference) => reference switch
-    {
-        NodeRef => true,
-        CornerRef corner => sketch.Find<Box>(corner.Box)?.Rotation.IsRightAngleMultiple ?? false,
-        CenterRef centre => sketch.Find<Box>(centre.Box)?.Rotation.IsRightAngleMultiple ?? false,
-        _ => false,
-    };
-
-    private static bool ExactEdge(Sketch sketch, EdgeRef reference) => reference switch
+    /// <summary>
+    /// Whether a place's coordinates are exact integers: a node's and a segment's always, a box's
+    /// features and centre when the box is on one of the 24 orientations (design &#xA7;5.3).
+    /// </summary>
+    private static bool ExactPlace(Sketch sketch, PlaceRef reference) => reference switch
     {
         // A segment's ends are node positions, which are exact integers whatever they are.
-        SegmentRef => true,
-        BoxEdgeRef boxEdge => sketch.Find<Box>(boxEdge.Box)?.Rotation.IsRightAngleMultiple ?? false,
+        NodeRef or SegmentRef => true,
+        CenterRef or FeatureRef => sketch.Find<Box>(reference.Owner)?.Rotation.IsRightAngleMultiple ?? false,
         _ => false,
     };
 
@@ -418,14 +508,13 @@ public static class RelationshipChecker
     {
         switch (reference)
         {
-            case BoxWidthRef or BoxHeightRef:
+            case BoxWidthRef or BoxHeightRef or BoxDepthRef:
                 // What the user typed, stored as typed, whatever the rotation.
                 return true;
 
             case SegmentLengthRef segmentLength:
             {
-                (Point2 from, Point2 to) = sketch.EdgeOf(new SegmentRef(segmentLength.Segment));
-                return NormalAxis(from, to) is not null;
+                return sketch.PlaceOf(new SegmentRef(segmentLength.Segment)).Count == 1;
             }
 
             default:

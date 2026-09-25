@@ -30,6 +30,35 @@ public class PropagatorTests
         Assert.Equal(Length.Inches(30), propagated.Assignments[new ScalarKey(upright, ScalarKind.Width)].Value);
     }
 
+    /// <summary>
+    /// docs/design/assembly-model.md &#xA7;9.1 case 17: the same 45&#xB0; engine test with the Z and
+    /// Depth scalars present and every box top up. The spin is about Z, so a cap of a box spun off
+    /// the quarter turns still fixes Z exactly, and the repair pass the solver will run holds a
+    /// flush between caps and a typed depth on the rotated box without a <see cref="double"/>.
+    /// </summary>
+    [Fact]
+    public void Case17_TheEngineHoldsZAndDepthOnARotatedSketchTheWrapperRefuses()
+    {
+        SketchBuilder builder = new();
+        EntityId tilted = builder.AddBox(Point2.Origin, Length.Inches(20), Length.Inches(4), Angle.Degrees(45));
+        EntityId upright = builder.AddBox(50, 0, 10, 4);
+        RelationshipId depth = builder.DepthIs(tilted, Length.Inches(2));
+        builder.FlushFaces(tilted, BoxFace.Top, upright, BoxFace.Bottom);
+        Assert.Equal(BoxFace.Top, builder.BoxOf(tilted).FaceUp);
+
+        Assert.Equal(
+            new Rejected(RejectionReason.RotationNotSupported),
+            DirectUpdater.Instance.Apply(builder.Sketch, new SetParameter(depth, Length.Inches(2))));
+
+        Propagated propagated = Assert.IsType<Propagated>(
+            Propagator.Run(builder.Sketch, NoSeeds, builder.Sketch.Relationships.Values));
+
+        Assert.Equal(Length.Inches(2), propagated.Assignments[new ScalarKey(tilted, ScalarKind.Depth)].Value);
+        Assert.Equal(Length.Inches(2), propagated.Assignments[new ScalarKey(upright, ScalarKind.Z)].Value);
+        Assert.False(propagated.Assignments.ContainsKey(new ScalarKey(upright, ScalarKind.X)));
+        Assert.False(propagated.Assignments.ContainsKey(new ScalarKey(upright, ScalarKind.Y)));
+    }
+
     [Fact]
     public void AnEmptySeedStillRepairsTheExactClassRelationships()
     {

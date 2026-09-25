@@ -3,7 +3,7 @@
   "scene": "wall-with-window.scene.json",
   "design": "wall-with-window.design.md",
   "derivedBy": "hand, from the stated dimensions in wall-with-window.design.md; never regenerated from napkin's output",
-  "formatVersion": 1,
+  "formatVersion": 10,
   "unitsPerInch": 1024,
 
   "counts": { "layers": 1, "entities": 7, "boxes": 2, "dimensions": 5, "relationships": 8 },
@@ -19,10 +19,12 @@
   "boxes": [
     { "id": "30000000-0000-4000-8000-000000000001", "name": "Wall",
       "anchorXUnits": 0, "anchorYUnits": 0, "widthUnits": 147456, "heightUnits": 5632, "rotationArcseconds": 0,
-      "derivation": "Origin of the design. Length 12'-0\" = 144\" = 147456; thickness 5 1/2\" = 5.5 x 1024 = 5632. Occupies x 0..147456, y 0..5632." },
+      "anchorZUnits": 0, "depthUnits": 98304, "faceUp": "top",
+      "derivation": "Origin of the design. Length 12'-0\" = 144\" = 147456; thickness 5 1/2\" = 5.5 x 1024 = 5632. Occupies x 0..147456, y 0..5632. In space (format version 4): lying as drawn, face-up top, anchor z 0 (the wall stands on the floor). Depth is the wall's stated height, 8'-0\" = 96\" = 96 x 1024 = 98304. See wall-with-window.design.md." },
     { "id": "30000000-0000-4000-8000-000000000002", "name": "Opening",
       "anchorXUnits": 55296, "anchorYUnits": 0, "widthUnits": 36864, "heightUnits": 5632, "rotationArcseconds": 0,
-      "derivation": "Width 3'-0\" = 36\" = 36864. Centred on the wall: the wall's centre is at 144 / 2 = 72\", the opening's half-width is 36 / 2 = 18\", so its west edge is at 72 - 18 = 54\" = 54 x 1024 = 55296 and its east edge at 54 + 36 = 90\" = 92160. It runs the full thickness of the wall, so its height equals the wall's, 5632, and its anchor y is the wall's, 0." }
+      "anchorZUnits": 36864, "depthUnits": 43008, "faceUp": "top",
+      "derivation": "Width 3'-0\" = 36\" = 36864. Centred on the wall: the wall's centre is at 144 / 2 = 72\", the opening's half-width is 36 / 2 = 18\", so its west edge is at 72 - 18 = 54\" = 54 x 1024 = 55296 and its east edge at 54 + 36 = 90\" = 92160. It runs the full thickness of the wall, so its height equals the wall's, 5632, and its anchor y is the wall's, 0. In space: lying as drawn, face-up top, anchor z is the stated sill, 3'-0\" = 36\" = 36 x 1024 = 36864; depth is the stated opening height, 3'-6\" = 42\" = 42 x 1024 = 43008. The opening's top is therefore at z = 36864 + 43008 = 79872 = 78\" = 6'-6\", leaving 18\" of wall above it for a header, under a 96\"/8'-0\" wall. See wall-with-window.design.md." }
   ],
 
   "partsList": [
@@ -60,8 +62,20 @@
 
   "statedNotInScene": [],
 
+  "cutList": [],
+
+  "cutListOrder": "Empty by construction: a wall and an opening are boxes that nobody cuts, so both carry \"part\": null in the scene and the cut list collects nothing. That is the case the cut list must not treat as an error.",
+
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery"
+  ],
+
   "notes": [
     "M1 is a geometry and labelling fixture only: entity positions and the exact feet-inch-fraction text of each dimension label.",
-    "No header size, stud count or bracing length is expected here. Those arrive in M4 and M5, read by a person from Connecticut's published adopted text with the page cited, never from memory and never from napkin's own output."
+    "Format version 2 gave every entity a name and every box a part. This fixture's two boxes are not parts, so they carry \"part\": null; their names are the ones this file already stated.",
+    "No header size, stud count or bracing length is expected here. Those arrive in M4 and M5, read by a person from Connecticut's published adopted text with the page cited, never from memory and never from napkin's own output.",
+    "Format version 4 (docs/design/assembly-model.md §10) requires every box to have a depth, an anchor z and a face-up. This design now states all three: a wall height of 8'-0\" (Marc, 2026-09-23 — this fixture never stated one, back to M1), an opening height of 3'-6\" and a sill of 3'-0\", both also Marc's call. Both boxes carry face-up top; the wall's anchor z is 0 (it stands on the floor) and depth is its height, 98304; the opening's anchor z is its sill, 36864, and depth is its height, 43008. See wall-with-window.design.md.",
+    "The cut list's CSV gained a trailing Cuts column when cuts on a blank arrived (docs/design/shaped-parts-model.md §4.5). Nothing in this fixture is cut and nothing here is a part, so the only change is the column name in the header line above."
   ]
 }

@@ -1,0 +1,110 @@
+{
+  "fixture": "scale-extremes",
+  "scene": "scale-extremes.scene.json",
+  "design": "scale-extremes.design.md",
+  "derivedBy": "hand, from the stated dimensions in scale-extremes.design.md; never regenerated from napkin's output",
+  "formatVersion": 10,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 3,
+    "pieces": 2,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 491520,
+    "depthUnits": 3584,
+    "heightUnits": 99872,
+    "widthText": "40'-0\"",
+    "depthText": "3 1/2\"",
+    "heightText": "≈8'-1 9/16\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Plate",
+      "id": "70000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 491520,
+        "y": 3584,
+        "z": 1536
+      },
+      "derivation": "A 40' bottom plate lies flat: 480\" (491520 units) across X, 3 1/2\" up Y, 1 1/2\" thick. Occupies x 0..480, y 0..3 1/2, z 0..1 1/2."
+    },
+    {
+      "name": "Shim",
+      "id": "70000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 242688,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 248832,
+        "y": 3584,
+        "z": 1568
+      },
+      "derivation": "A 6\" x 3 1/2\" shim, 1/32\" (32 units) thick, on the plate's top face at mid-span: x 237..243, z 1 1/2..1 17/32."
+    },
+    {
+      "name": "Wall",
+      "id": "70000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 1568
+      },
+      "maxUnits": {
+        "x": 491520,
+        "y": 3584,
+        "z": 99872
+      },
+      "derivation": "The wall itself (a thing built, not a part: part is null) stands on the shim's top at 1 17/32\", 96\" tall: z 1 17/32..97 17/32. (49/32 = 1.53125)."
+    }
+  ],
+  "totalVolumeCubicUnits": 2706534039552,
+  "cutList": [
+    {
+      "label": "Plate",
+      "quantity": 1,
+      "lengthUnits": 491520,
+      "widthUnits": 3584,
+      "thicknessUnits": 1536,
+      "lengthText": "40'-0\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "1 1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "70000000-0000-4000-8000-000000000001"
+      ],
+      "derivation": "480\" = 40'-0\" long, 3 1/2\", 1 1/2\": 491520 x 3584 x 1536 units."
+    },
+    {
+      "label": "Shim",
+      "quantity": 1,
+      "lengthUnits": 6144,
+      "widthUnits": 3584,
+      "thicknessUnits": 32,
+      "lengthText": "6\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "≈1/16\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "70000000-0000-4000-8000-000000000002"
+      ],
+      "derivation": "6\" x 3 1/2\" x 1/32\" = 6144 x 3584 x 32 units. 1/32\" is half a sixteenth, so the thickness reads 1/16 (half away from zero), marked approx. The wall has no part and no row."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+    "Plate,1,\"40'-0\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",,,,",
+    "Shim,1,\"6\"\"\",\"3 1/2\"\"\",\"≈1/16\"\"\",,,,"
+  ]
+}

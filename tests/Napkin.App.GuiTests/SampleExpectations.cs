@@ -36,7 +36,8 @@ public sealed record SampleExpectations(
     ExpectedCounts Counts,
     ExpectedOverall Overall,
     IReadOnlyList<ExpectedBox> Boxes,
-    IReadOnlyList<ExpectedLabel> DimensionLabels)
+    IReadOnlyList<ExpectedLabel> DimensionLabels,
+    IReadOnlyList<ExpectedCutRow> CutList)
 {
     static readonly JsonSerializerOptions Options = new()
     {
@@ -111,6 +112,35 @@ public sealed record ExpectedBox(
 {
     /// <summary>The entity id the scene file gives this part.</summary>
     public EntityId EntityId => new(Guid.Parse(Id));
+}
+
+/// <summary>
+/// One row of the hand-derived cut list: what the table must say, word for word and number for
+/// number.
+/// </summary>
+public sealed record ExpectedCutRow(
+    string Label,
+    int Quantity,
+    long LengthUnits,
+    long WidthUnits,
+    long ThicknessUnits,
+    string LengthText,
+    string WidthText,
+    string ThicknessText,
+    string Material,
+    bool Unresolved,
+    IReadOnlyList<string> Members,
+    string Derivation)
+{
+    /// <summary>The line this row reads as on screen, tab separated, as the table renders it.</summary>
+    public string OnScreen => string.Join(
+        "\t",
+        Label,
+        Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        LengthText,
+        WidthText,
+        ThicknessText,
+        Material);
 }
 
 /// <summary>One dimension: what it measures and what it must read.</summary>

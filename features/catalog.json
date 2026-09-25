@@ -275,7 +275,7 @@
       "id": "CUT-005",
       "area": "furniture",
       "title": "The shopping list matches hand-computed expectations",
-      "acceptance": "The coffee-table fixture aggregates to the expectations file's stock counts (boards, sheets and fasteners), and a part that fits within one board still reports one board to buy while the cut list reports each part.",
+      "acceptance": "The stocked-bench fixture (the shopping list's worked example: the coffee table names no stock and is not edited) aggregates to the expectations file's stock counts (boards and sheets; nothing in the model references a fastener yet), and parts that fit within one board still report one board to buy while the cut list reports each part.",
       "milestone": "M3",
       "issue": 37,
       "kind": "golden"
@@ -419,7 +419,7 @@
       "id": "RUL-005",
       "area": "rules-engine",
       "title": "The bracing evaluator runs over a whole wall line",
-      "acceptance": "Given a wall line's bracing inputs and all its openings, the evaluator reports whether the required braced length is met, cites the section it applied, and re-runs whenever an opening on that line changes.",
+      "acceptance": "Given a wall line's solid segments (from its openings), the bracing method a person assigned to each, and the site, the evaluator reports whether the pack's required braced length is met, cites the section it applied, and re-runs whenever an opening on that line changes.",
       "milestone": "M5",
       "issue": 39,
       "kind": "unit"
@@ -554,7 +554,7 @@
       "id": "BLD-005",
       "area": "building",
       "title": "Enlarging an opening rechecks the wall line's bracing",
-      "acceptance": "With the wall line's existing sheathing type and braced length entered by the user, enlarging an opening past what the line can carry flags the wall, naming the section applied and the shortfall.",
+      "acceptance": "With the bracing method already on each of the wall line's segments entered by the user, enlarging an opening past what the line can carry flags the wall, naming the section applied and the shortfall.",
       "milestone": "M5",
       "issue": 39,
       "kind": "unit"
@@ -659,24 +659,6 @@
       "kind": "unit"
     },
     {
-      "id": "IOP-004",
-      "area": "interop",
-      "title": "No proprietary import dependency enters without a recorded decision",
-      "acceptance": "The dependency gate fails the build if a package outside the license policy, including a proprietary SketchUp SDK, is referenced without a committed exception carrying a written justification.",
-      "milestone": "backlog",
-      "issue": 24,
-      "kind": "unit"
-    },
-    {
-      "id": "CUT-007",
-      "area": "furniture",
-      "title": "Sheet-goods nesting reports the sheets a project needs",
-      "acceptance": "Given a stock panel size and a cut list of sheet parts, the layout places every part inside the panels without overlap and reports the number of sheets needed.",
-      "milestone": "backlog",
-      "issue": 26,
-      "kind": "unit"
-    },
-    {
       "id": "PKG-001",
       "area": "packaging",
       "title": "Self-contained builds start on a clean machine",
@@ -690,7 +672,7 @@
       "area": "packaging",
       "title": "First-run instructions and the source offer ship with every build",
       "acceptance": "The README documents the macOS System Settings path for opening an unsigned app and the Windows SmartScreen path with every URL reachable, and each published artifact contains the AGPL-3.0 text and a written offer of source naming the commit it was built from.",
-      "milestone": "M1",
+      "milestone": "backlog",
       "issue": 27,
       "kind": "unit"
     },
@@ -699,7 +681,7 @@
       "area": "release",
       "title": "A tag produces downloadable macOS and Windows artifacts",
       "acceptance": "Pushing a tag matching the release pattern builds a macOS artifact and a Windows artifact and attaches both to a GitHub release created for that tag.",
-      "milestone": "M1",
+      "milestone": "backlog",
       "issue": 38,
       "kind": "unit"
     },
@@ -708,7 +690,7 @@
       "area": "release",
       "title": "Every release is a pre-release",
       "acceptance": "The release the pipeline creates has the pre-release flag set and is not marked latest, and a test over the workflow definition fails if that flag is ever removed.",
-      "milestone": "M1",
+      "milestone": "backlog",
       "issue": 38,
       "kind": "unit"
     },
@@ -717,7 +699,7 @@
       "area": "release",
       "title": "The arm64 macOS artifact carries its ad-hoc signature only",
       "acceptance": "The published macOS arm64 binary verifies as carrying the toolchain's automatic ad-hoc signature, which arm64 code needs to run at all, and carries no Developer ID signature or notarization ticket.",
-      "milestone": "M1",
+      "milestone": "backlog",
       "issue": 38,
       "kind": "unit"
     },
@@ -878,7 +860,7 @@
       "id": "GUI-CUT-02",
       "area": "ui",
       "title": "Assign materials to parts",
-      "acceptance": "Select the four legs, choose a nominal stock size from the materials picker, and each part's reported stock changes to that size's actual dimensions.",
+      "acceptance": "A floating toolbox groups stock by category (dimensional lumber, sheet goods, hardwood, fasteners) with one icon per category; choosing a category opens a text list of its items; hovering an item shows its actual size and citation before it is placed; placing one sets the part's stock reference.",
       "milestone": "M3",
       "issue": 7,
       "kind": "workflow"
@@ -899,6 +881,15 @@
       "acceptance": "Open the materials list window, read the stock counts against the fixture's expectations, export it as CSV, and the exported rows match the table on screen.",
       "milestone": "M3",
       "issue": 9,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CUT-05",
+      "area": "ui",
+      "title": "Make a drawn box into a part",
+      "acceptance": "Draw a box, name it and say in the properties panel what its third dimension is, which of the three the drawing is showing, how many there are and what stock it is cut from; the panel reports what the library says that stock actually measures before anything is applied, and applying it puts a row on the cut list with the dimensions the stock fixes set from the library and the free ones as drawn.",
+      "milestone": "M3",
+      "issue": 8,
       "kind": "workflow"
     },
     {
@@ -929,10 +920,19 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-CHECK-04",
+      "area": "ui",
+      "title": "With the shipped pack's tables not loaded, the check says so",
+      "acceptance": "Choose the shipped Connecticut pack, whose model-code tables are not loaded; the picker labels it 'base tables not loaded' and a window's code check says there is no data and where to add tables, never a size.",
+      "milestone": "M4",
+      "issue": 18,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-BRACE-01",
       "area": "ui",
       "title": "Enlarge an opening until the bracing check flags it",
-      "acceptance": "With the wall line's existing sheathing and braced length entered, widen the opening step by step until the wall line is flagged, and the flag names the section applied and the shortfall.",
+      "acceptance": "With the bracing method already on each of the wall line's segments entered, widen the opening step by step until the wall line is flagged, and the flag names the section applied and the shortfall.",
       "milestone": "M5",
       "issue": 39,
       "kind": "workflow"
@@ -950,9 +950,513 @@
       "id": "GUI-BRACE-03",
       "area": "ui",
       "title": "A result that no longer holds is re-flagged, not carried over",
-      "acceptance": "After the code change, an opening the previous pack sized but the new pack does not cover shows as out of scope rather than keeping the number the old pack produced.",
+      "acceptance": "After the code change, a result that no longer holds under the new pack (an opening it does not cover, or a wall line whose bracing now runs short or uses a method the new pack does not have) is re-flagged rather than keeping what the old pack produced, and the message bar says how many results changed, became flagged or can no longer be computed.",
       "milestone": "M5",
       "issue": 19,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-BRACE-04",
+      "area": "ui",
+      "title": "With the shipped pack, the bracing check says there is no data",
+      "acceptance": "Choose the shipped Connecticut pack, which has no wall-bracing provisions; a wall's Bracing block lists its segments with disabled method pickers that say why, and its check says there is no data and where to add it, never a length.",
+      "milestone": "M5",
+      "issue": 39,
+      "kind": "workflow"
+    },
+    {
+      "id": "CVS-011",
+      "area": "ui",
+      "title": "Tool buttons show a tooltip",
+      "acceptance": "Hovering the Select or Rectangle tool button shows a tooltip naming the tool and its keyboard shortcut.",
+      "milestone": "M2",
+      "issue": 62,
+      "kind": "workflow"
+    },
+    {
+      "id": "CVS-012",
+      "area": "ui",
+      "title": "Relationship glyphs show their sentence on hover",
+      "acceptance": "Hovering a relationship glyph on the canvas (e.g. a flush indicator) shows the same plain-language sentence as its row in the relationship list.",
+      "milestone": "M2",
+      "issue": 62,
+      "kind": "workflow"
+    },
+    {
+      "id": "CVS-013",
+      "area": "ui",
+      "title": "Rough mode snaps one rung coarser and states nothing it catches",
+      "acceptance": "The rough step is the rung above the precise step, never below 1 inch, on the ladder and a multiple of the precise step up to 48 inches; a rough drag lands on it; a rough drop still catches another part's edge but adds no relationship, where a precise drop adds one.",
+      "milestone": "M7",
+      "issue": 174,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-014",
+      "area": "ui",
+      "title": "A rough rectangle is a plank",
+      "acceptance": "The rectangle tool in Rough mode makes a box whose part has no stock, no species, quantity 1, its longer plan side the length, marked rough, 3/4 inch deep; in Precise the box has no part, as before.",
+      "milestone": "M7",
+      "issue": 174,
+      "kind": "unit"
+    },
+    {
+      "id": "GUI-SKETCH-01",
+      "area": "ui",
+      "title": "Sketch a quick bench roughly",
+      "acceptance": "Press Q: the status bar reads ROUGH and the toolbar shows Rough; draw the four parts of the quick bench a little off the round numbers; each lands on whole inches as a rough plank, nothing is stated though a leg was dragged against the top; the selected leg's labels wait until the pointer is over it; the status bar reads its name and three sizes.",
+      "milestone": "M7",
+      "issue": 174,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SKETCH-02",
+      "area": "ui",
+      "title": "Firm up a rough bench and read its cut list",
+      "acceptance": "With the quick bench sketched rough, F opens Firm up listing its four contacts, four stock lines and four size lines, all ticked; untick one relationship with the pointer and press Enter: three Flushes land, every part is firm and cut from its nearest stock, in one undo step; Ctrl+Z makes all four rough again with nothing stated; Ctrl+Y; the cut list opened from the menu has no rough row and the rows worked out by hand.",
+      "milestone": "M7",
+      "issue": 178,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SKETCH-03",
+      "area": "ui",
+      "title": "Type a size on a rough part",
+      "acceptance": "Draw one plank rough; its labels are quiet until the pointer is over it; click the width label, type 3'-0\" and press Enter: the width is exactly 36 inches and the part is no longer rough; one undo restores both the width and the rough mark.",
+      "milestone": "M7",
+      "issue": 180,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SKETCH-04",
+      "area": "ui",
+      "title": "Rough on the cut list, and the mark by hand",
+      "acceptance": "Draw two planks rough; the cut list tags both rows rough and says two rows are; select one, untick Rough in the Part panel with the pointer, Tab, Enter: the undo step is 'mark firm', the cut list has one rough row, and the CSV says yes on that row only.",
+      "milestone": "M7",
+      "issue": 180,
+      "kind": "workflow"
+    },
+    {
+      "id": "ACC-001",
+      "area": "ui",
+      "title": "The canvas exposes one automation element per part",
+      "acceptance": "Every Box in the Sketch is reachable as a distinct automation element under the canvas, with a name, a read-only size value, and a bounding rectangle that follows pan/zoom/edits — proven by querying Avalonia's own automation peer tree in-process, not a screenshot.",
+      "milestone": "M2",
+      "issue": 64,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-016",
+      "area": "geometry",
+      "title": "A joint is a relationship between two faces the updater neither propagates nor refuses",
+      "acceptance": "A Joint names one face of each of two parts; moving or resizing a part with a joint is Solved and leaves the joint as it was; the checker never lists a joint; the joint is unsatisfied (not refused) once the two faces no longer share a rectangle, or when its depth is not less than the receiving thickness; removing either part removes the joint.",
+      "milestone": "M3",
+      "issue": 144,
+      "kind": "unit"
+    },
+    {
+      "id": "PRJ-008",
+      "area": "project-file",
+      "title": "Format version 5 carries joints, hardware, fastener choices and supplies",
+      "acceptance": "A joint, a part's hardware, the fastener choices and the supplies lines round-trip byte for byte through the writer and reader; every refusal row of the joinery note section 4.4 is refused naming its field; a version-4 file is refused with the unsupported-version message.",
+      "milestone": "M3",
+      "issue": 144,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-017",
+      "area": "geometry",
+      "title": "A joint's two boxes imply its contact, groove, rabbet and half-lap, and which part receives",
+      "acceptance": "Derived from the drawn boxes and never stored: the contact rectangle of two faces (apron end on a leg: 3/4 x 5 1/2), a groove along the length (drawer bottom in a side: 1/4 wide, 1/2 from the bottom edge) or a dado across the width, a rabbet at the nearer end, a half-lap overlap and each part's lap; and the direction rule of note 4.1 (inserted part is the one whose contact face is an end, the thinner for a groove, the top for a tabletop, lower id first for a half-lap, larger part receiving when it cannot decide).",
+      "milestone": "M3",
+      "issue": 145,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-007",
+      "area": "furniture",
+      "title": "Joinery allowances and the fixed joint sentences are in the cut list",
+      "acceptance": "A part inserted into a groove or rabbet lists its drawn size plus the depth at each grooved edge or rabbeted end (drawer box front 16000 -> 16512, bottom 16000 x 15360 -> 16512 x 15872); each groove, dado, rabbet, half-lap, run of pocket holes and set of tabletop clips reads as the note 6.2 sentence, in the part's own frame.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-008",
+      "area": "furniture",
+      "title": "Joinery is in the group key, up to a half-turn of the part",
+      "acceptance": "Four legs and the two side aprons (pocket holes from opposite faces at opposite ends) are one row each; left and right drawer sides are two rows; two parts equal but for a groove depth are two rows.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-009",
+      "area": "furniture",
+      "title": "An unsatisfied joint keeps its allowance and flags the row",
+      "acceptance": "A joint whose parts moved apart still lengthens the inserted part and says nothing that needs a contact; the row says joint not satisfied; a depth not less than the receiving thickness adds no allowance.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-010",
+      "area": "furniture",
+      "title": "The CSV has a Joinery column and the new header line",
+      "acceptance": "The first line reads finished sizes: joinery allowances included; before saw kerf (#138); the header ends Cuts,Joinery; the Joinery column parses back to the rows' sentences, followed by joint not satisfied on a flagged row.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-011",
+      "area": "furniture",
+      "title": "Fastener recipes give the counts the sentences read",
+      "acceptance": "Pocket screws max(2, ceil(L/2)), screws 6, brads 1.5, nails 4, dowels 4, biscuits max(1, ceil(L/8)), clips max(2, ceil(L/12)); a typed count overrides.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-012",
+      "area": "furniture",
+      "title": "The fastener list sums the joints' fasteners by kind and typed size",
+      "acceptance": "Counts by (kind, thickness) in kind order then thickness descending; the size is the person's typed choice and a missing choice says size not chosen; packs are ceil(count / pack size); each line names its joints; the sample gives 27, 6, 8, 24 and 10.",
+      "milestone": "M3",
+      "issue": 147,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-013",
+      "area": "furniture",
+      "title": "Hardware, supplies and the glue line join the shopping list",
+      "acceptance": "Hardware sums quantity times part quantity by exact name; supplies are the typed lines plus Glue: N of M joints; fasteners, hardware and supplies are rows below the boards, in a CSV with columns Section,Item,Size,Count,Pack,Packs,For that equals the rows on screen.",
+      "milestone": "M3",
+      "issue": 148,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-018",
+      "area": "geometry",
+      "title": "The join tool proposes the faces, the type, the direction and the pocket face",
+      "acceptance": "For two touching parts: the largest contact between faces that face each other; overlap of one thickness laps, a bottom face on a long thin contact is a tabletop, a thinner part's edge entering a face with margin is a groove, else a butt; pocket holes default to the inserted part's broad face nearer the middle of everything, both offered on a tie.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "unit"
+    },
+    {
+      "id": "GEO-019",
+      "area": "geometry",
+      "title": "Firm up proposes the relationships touching parts imply",
+      "acceptance": "For each pair of the given parts that touch over an area, older id first: one Flush per pair of faces facing each other, and one per pair of X or Y faces facing the same way at one coordinate whose other extents meet; none for parts that do not touch, overlap, or are walls; none already held in either order; ordered by pair, against before alongside, axis, then face; each accepted by the updater without moving anything.",
+      "milestone": "M7",
+      "issue": 172,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-014",
+      "area": "furniture",
+      "title": "A joint reads as one sentence: type, parts, depth, fasteners with their typed size, glue",
+      "acceptance": "Rabbet, Drawer side, left, A from Drawer box front, A: 1/4 deep, 1/2 wide, 3 brads with the chosen size or size not chosen, glue; parts that no longer touch say so and drop the recipe count.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "unit"
+    },
+    {
+      "id": "GUI-JOIN-01",
+      "area": "ui",
+      "title": "Join two parts with J, read the marker and its tooltip, edit and delete it",
+      "acceptance": "Draw two parts, refusal messages for one part and for two that do not touch, J, Enter makes a butt with a solid marker in plan and 3D; the tooltip reads as one sentence; double-click or Enter reopens it; Delete removes it and undo brings it back.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-02",
+      "area": "ui",
+      "title": "Join the leg frame in one gesture with Shift+J",
+      "acceptance": "Nine selected parts give ten touching pairs, pairs of another suggested type are unticked, pocket screws chosen with the keys, the web's tied pocket face picked, one Enter makes ten joints and one undo removes them.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-03",
+      "area": "ui",
+      "title": "Join a drawer: rabbet with a typed depth, groove pre-selected, typed count over the recipe",
+      "acceptance": "A rabbet needs a depth and says so; the bottom's groove is pre-selected; the count box shows recipe: 3 and 4 typed over it is kept; Shift+J on two parts repeats the last joint.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-04",
+      "area": "ui",
+      "title": "Move a joined part: markers go hollow, the cut-list row is flagged, undo restores",
+      "acceptance": "Nothing is refused and nothing follows the move; two markers are hollow, the tooltip says the parts no longer touch, the rows say joint not satisfied, one undo puts it all back.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-05",
+      "area": "ui",
+      "title": "Type a fastener size and watch the shopping list change",
+      "acceptance": "Blank sizes first; a typed size and pack update the fastener line and packs; a bad pack size is refused in words; a size nobody needs survives saving; undo restores.",
+      "milestone": "M3",
+      "issue": 148,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-06",
+      "area": "ui",
+      "title": "Type hardware on a part and supplies on the list, and export them",
+      "acceptance": "The Part panel's hardware box, Ctrl+Enter, the hardware section summed, supplies typed with notes, the glue line, the CSV equal to the screen, undo.",
+      "milestone": "M3",
+      "issue": 148,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-JOIN-07",
+      "area": "ui",
+      "title": "Join the whole table and read the cut list and the fasteners",
+      "acceptance": "The storyboard on the DIY table: frame, cleats, both drawers, tabletop, all 34 joints as the sample records them, 13 cut-list rows, sizes and supplies typed, 27 / 6 / 8 / 24 / 10 fasteners.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "workflow"
+    },
+    {
+      "id": "CUT-015",
+      "area": "furniture",
+      "title": "The cut layout puts each lumber piece on a board with the saw kerf",
+      "acceptance": "Per stock and species the pieces go longest first onto boards opened at the longest stocked length, then each board shrinks to the smallest stocked length that holds it; a board takes n cuts when an offcut remains and n-1 when the pieces and kerfs exactly fill it; a piece longer than any stocked length is refused by name; sheet goods are reported as counted by sheets, not nested. 36 + 24 + 20 in on a 96 in board with a 1/8 in kerf is 80 3/8 in used and a 15 5/8 in offcut.",
+      "milestone": "M3",
+      "issue": 138,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-016",
+      "area": "furniture",
+      "title": "The shopping list's boards are the cut layout's boards",
+      "acceptance": "The shopping list takes its board counts from the cut layout with the kerf given, so the two never disagree; the stocked bench needs one 12 ft 1x4 and one 14 ft 2x4 at a 1/8 in kerf.",
+      "milestone": "M3",
+      "issue": 138,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-017",
+      "area": "furniture",
+      "title": "Firm up suggests the stock a rough part is nearest",
+      "acceptance": "StockSuggestion lists library items whose every fixed dimension is within 1 inch of the part's finished size: items fixing more dimensions first, then the smallest total difference, then the name; a part near nothing gets none; a fastener never appears; the values are the library's.",
+      "milestone": "M7",
+      "issue": 176,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-018",
+      "area": "furniture",
+      "title": "Rough rows are tagged on the cut list, the CSV and the shopping list",
+      "acceptance": "A cut-list row is rough when any member is; roughness is not in the grouping key; the table tags it and says how many rows are rough; the CSV has a Rough column (yes or empty) after Material and says rough rows are as drawn; the shopping list says how many rough parts have no stock and are not on it.",
+      "milestone": "M7",
+      "issue": 176,
+      "kind": "unit"
+    },
+    {
+      "id": "GUI-CUT-08",
+      "area": "ui",
+      "title": "Read the cut layout and change the saw kerf",
+      "acceptance": "Open a sample, open the cut list, turn to the Cut layout tab, see a line and a drawn bar per board, change the saw kerf and see the boards change, and the exported file equals the lines on screen.",
+      "milestone": "M3",
+      "issue": 138,
+      "kind": "workflow"
+    },
+    {
+      "id": "VIEW-001",
+      "area": "ui",
+      "title": "The six standard views look along exact axes",
+      "acceptance": "StandardViews.Axes gives standard-views §1.1's table exactly for Top, Bottom, Front, Back, Left and Right, right-handed (Right x Up = TowardViewer); CameraFor's camera has exactly those vectors (no 1e-16 from cos 90), is orthographic, keeps centre and scale, and looks the same way as the matching 3D view-snap direction.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-002",
+      "area": "ui",
+      "title": "Front of the l-bracket and the coffee table, measured",
+      "acceptance": "In Front the l-bracket spans 7 1/2 x 6; the lug is left of the boss, 4 1/2 in from its left edge and 3 1/4 in higher; the nub is leftmost and the tab rightmost. The coffee table spans 48 x 17 and each of its four legs is exactly 16 1/4 tall.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-003",
+      "area": "ui",
+      "title": "Keys 1-7 name the views; modified digits do not",
+      "acceptance": "Unmodified 1-7 on the top row or the number pad give Top, Bottom, Front, Back, Left, Right and 3D; Cmd/Ctrl/Shift+digit, 0, 8 and other keys give none; standard views and design views map one to one by name.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-004",
+      "area": "ui",
+      "title": "Settings version 2 keeps every view; version 1 is refused",
+      "acceptance": "Every one of the seven DesignView values round-trips as LastView through settings.json version 2; a version-1 file (LastView \"Plan\") is refused with a notice naming its version and the defaults apply (Top).",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-005",
+      "area": "ui",
+      "title": "The standard views' frame: axes, names, readable coordinates",
+      "acceptance": "StandardViewFrame gives every view its section 1.1 axes as signed world axes, right-handed, its name, whether it is an elevation, and the two coordinates its readout shows (x y in Top/Bottom, x z in Front/Back, y z in Left/Right).",
+      "milestone": "M2",
+      "issue": 128,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-006",
+      "area": "ui",
+      "title": "All six views of the l-bracket and the coffee table, hand-derived",
+      "acceptance": "Extents 7.5x5, 7.5x6, 5x6; Back mirrors Front (nub rightmost, tab leftmost); Right has the boss left of the upright, the lug leftmost and the rib rightmost; Left the rib leftmost; Bottom the lug above the rib; the coffee table's Front equals Back mirrored and Left equals Right; every leg is 16 1/4 tall in all four elevations.",
+      "milestone": "M2",
+      "issue": 128,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-007",
+      "area": "ui",
+      "title": "Hidden edges: each face's edges less what a strictly nearer face covers",
+      "acceptance": "HiddenEdges.Split on hand-drawn faces: flush squares hide nothing; nearer by more than 1/2048 inch hides, by less does not; a corner overlap hides exactly its quarter; a notch in a nearer outline lets the edge show through; an outline exactly behind another shows no dash; a dash is dropped only where a solid edge lies along it; rulings and zero-length edges get no line; a tilted face hides only where nearer everywhere.",
+      "milestone": "M2",
+      "issue": 129,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-008",
+      "area": "ui",
+      "title": "One table of drawing line kinds and weights",
+      "acceptance": "DrawingLines: visible heavier than hidden heavier than dimension (= extension); hidden is 1 px, dash [3,3], 0.35; the others solid but the centre chain; every kind has a line. A hidden dash is lighter than a visible edge yet at least 1.15:1 on every layer's flat fill, light, dark and napkin.",
+      "milestone": "M2",
+      "issue": 134,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-009",
+      "area": "ui",
+      "title": "Hidden edges on the l-bracket and the coffee table; the setting",
+      "acceptance": "Front: lug whole, rib dashed (one 1/2-inch dash at z 2); Back the reverse; Right tab whole, nub dashed; Left nub whole, tab dashed; Bottom skid whole, boss dashed. Coffee table Front dashes only each short apron's inner side and bottom (z 12 3/4 to 16 1/4, 3/4 wide, inside a near leg). ShowHiddenEdges is on by default and remembered.",
+      "milestone": "M2",
+      "issue": 129,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-010",
+      "area": "ui",
+      "title": "Dimensions per standard view, laid out in its plane",
+      "acceptance": "A view shows a dimension along its screen-right or screen-up axis (X,Y in Top/Bottom; X in Front/Back; Y in Left/Right); South/West low, North/East high with the plan's fallback. Coffee table: 6, 6, 4, 4, 2, 2 by name; every label is Top's; Top is the plan's layout; Front's top width lies at z 12 1/4 (4 below the top); Back runs right to left; Bottom's South line is on the screen-up side; the inset (North, 1) lies at z 18; a short apron (West, 2) at z 10 3/4.",
+      "milestone": "M2",
+      "issue": 130,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-011",
+      "area": "ui",
+      "title": "Rulers and grid of a standard view in world values",
+      "acceptance": "ViewGrid: a mirrored axis shows the same world span counted the other way; grid lines on the plan's ladder, heavy on the next step; an elevation's floor (z = 0) heavy even with no heavier step; no lines for a bad or huge span. StandardViewRulers on the l-bracket: Back's and Left's horizontal rulers count down, Bottom's vertical counts down upward, Front's and Right's rise both ways; the tick at x 6 1/2 sits where the camera projects it in Front and Back; the floor line in Front is heavy and in place.",
+      "milestone": "M2",
+      "issue": 131,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-012",
+      "area": "ui",
+      "title": "The standard views' sentences come from one Module type",
+      "acceptance": "StandardViewWords: the read-only hint and the not-in-this-view refusal name the view; the three hidden-edge sentences are fixed. GUI tests compare against these, not copies.",
+      "milestone": "M2",
+      "issue": 185,
+      "kind": "unit"
+    },
+    {
+      "id": "GUI-VIEW-08",
+      "area": "ui",
+      "title": "Switch between Top, Front and 3D by key, chip and menu",
+      "acceptance": "Open the l-bracket; 3 shows Front (orthographic, lug up-left of the boss), 7 shows 3D, V returns to Front and V twice lands back; the Top, 3D and Front chips and View > Standard views > Front do the same; after each the status text, the pressed chip and the menu tick agree; 4 shows Back and says it is read-only, and O leaves it orthographic.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-09",
+      "area": "ui",
+      "title": "Front is read-only: pan, zoom and select",
+      "acceptance": "In Front the rectangle tool is disabled with a tooltip and the turn and snap buttons are hidden; a click selects the lug with no handles; a drag on it pans and changes nothing; the left arrow pans; Home fits; Delete removes the selected lug and Undo brings it back, still in Front.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-10",
+      "area": "ui",
+      "title": "A digit typed as a length is not a view",
+      "acceptance": "After dragging an arrow in 3D, 3 goes into the typed length (the view stays 3D) and Enter moves the part exactly 3 in; with no length pending, 3 shows Front.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-11",
+      "area": "ui",
+      "title": "The tool keys work in 3D and say why not in a standard view",
+      "acceptance": "Open the coffee table, select the south apron and press 7: R holds a plain board to place, S puts it down and is the select tool, still in 3D; 3 then C says the workshop is not in Front yet and opens nothing; W brings the plan forward with the wall tool.",
+      "milestone": "M2",
+      "issue": 168,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-12",
+      "area": "ui",
+      "title": "All six views by key, chip and menu, each with its own camera and a two-coordinate readout",
+      "acceptance": "Open the l-bracket; 2 shows Bottom (lug above rib), the Back chip shows Back (nub right of tab), 5 shows Left (rib left of lug) and the pointer on the nub reads y 2 1/2 z 3 3/8 with no x; View > Standard views > Right shows Right (boss left of upright); a pan in Right survives a trip to Front; 7 reads three coordinates again; the six views draw six different pictures.",
+      "milestone": "M2",
+      "issue": 128,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-13",
+      "area": "ui",
+      "title": "Hidden edges toggle by menu and by H, kept across windows",
+      "acceptance": "Open the l-bracket; in the plan the item is disabled and H says where hidden edges are drawn; 3 shows Front with them ticked and the rib dashed; View > Hidden edges turns them off and only pixels on the rib's dash change; H turns them back on to the same picture; off again, a new window on the same settings has them off.",
+      "milestone": "M2",
+      "issue": 129,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-14",
+      "area": "ui",
+      "title": "Each view of the coffee table draws its dimensions and follows an edit",
+      "acceptance": "Open the coffee table; 3 draws the four X dimensions, the top's width below the top; 5 the two Y ones; the Bottom chip all six; in Top, Tab 50 Enter widens the top; 4 shows 4'-2\" at once; 7 draws none.",
+      "milestone": "M2",
+      "issue": 130,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-15",
+      "area": "ui",
+      "title": "Rulers and grid in Back count down, follow a pan, and step with the zoom",
+      "acceptance": "Open the l-bracket; 4 then View > Rulers: labels on both rulers, the top one descending, the toolbar stepped in, no scale bar, the floor a heavy grid line; the right arrow pans and the numbers move, still descending; a 40 px drag moves every tick 40 px; a wheel zoom out steps the ladder up; 7 shows no rulers.",
+      "milestone": "M2",
+      "issue": 131,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SET-07",
+      "area": "ui",
+      "title": "The last view is remembered; 2D plan opens Top",
+      "acceptance": "With Open designs in > Last used, press 3; the next design opens in Front, and so does a new window on the same settings; choose Open designs in > 2D plan and the next design opens on Top.",
+      "milestone": "M2",
+      "issue": 107,
       "kind": "workflow"
     }
   ]

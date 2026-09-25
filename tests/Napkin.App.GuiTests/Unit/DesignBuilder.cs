@@ -1,8 +1,8 @@
 using System.Collections.Immutable;
 using System.Security.Cryptography;
 using System.Text;
-using Napkin.App.Designs;
 using Napkin.Core.Geometry;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.GuiTests.Unit;
 
@@ -83,7 +83,7 @@ public sealed class DesignBuilder
                 nameof(key));
         }
 
-        _sketch = _sketch.WithEntity(new Box(id, layer, anchor, width, height, Angle.Zero));
+        _sketch = _sketch.WithEntity(Box.AsDrawn(id, layer, anchor, width, height, Box.DefaultDepth, Angle.Zero));
         if (label is not null)
         {
             _labels[id] = label;
@@ -126,8 +126,8 @@ public sealed class DesignBuilder
     public EntityId AddDistanceDimension(
         string name,
         LayerId layer,
-        PointRef from,
-        PointRef to,
+        PlaceRef from,
+        PlaceRef to,
         Axis axis,
         DimensionSide side,
         Length offset)

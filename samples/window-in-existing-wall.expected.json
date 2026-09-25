@@ -1,0 +1,165 @@
+{
+  "fixture": "window-in-existing-wall",
+  "scene": "window-in-existing-wall.scene.json",
+  "design": "window-in-existing-wall.design.md",
+  "derivedBy": "hand, from the stated dimensions in window-in-existing-wall.design.md and docs/design/renovation-sketches.md §10.3; never regenerated from napkin's output",
+  "formatVersion": 10,
+  "unitsPerInch": 1024,
+  "counts": {
+    "layers": 3,
+    "entities": 2,
+    "boxes": 2,
+    "dimensions": 0,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 147456,
+    "depthUnits": 3584,
+    "widthText": "12'-0\"",
+    "depthText": "3 1/2\"",
+    "derivation": "The wall's stated length and thickness: 144 x 1024 = 147456; 3.5 x 1024 = 3584. The window lies inside the wall."
+  },
+  "boxes": [
+    {
+      "id": "62000000-0000-4000-8000-000000000001",
+      "name": "Wall 1",
+      "phase": "existing",
+      "anchorXUnits": 0,
+      "anchorYUnits": 0,
+      "widthUnits": 147456,
+      "heightUnits": 3584,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 0,
+      "depthUnits": 98304,
+      "faceUp": "top",
+      "derivation": "Origin of the design. 12'-0\" = 144\" = 147456; 3 1/2\" = 3584; 8'-0\" tall = 96\" = 98304 as its depth. Existing: already there, drawn faint, never bought."
+    },
+    {
+      "id": "62000000-0000-4000-8000-000000000002",
+      "name": "Window 1",
+      "phase": "new",
+      "anchorXUnits": 55296,
+      "anchorYUnits": 0,
+      "widthUnits": 36864,
+      "heightUnits": 3584,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 36864,
+      "depthUnits": 49152,
+      "faceUp": "top",
+      "derivation": "Centred: (144 - 36) / 2 = 54\" = 55296 along; 36\" = 36864 wide; the wall's full thickness 3584; sill 36\" = 36864 as its anchor z; 4'-0\" = 48\" = 49152 tall as its depth. New."
+    }
+  ],
+  "partsList": [
+    {
+      "name": "Wall 1",
+      "quantity": 1,
+      "planWidthUnits": 147456,
+      "planHeightUnits": 3584,
+      "planWidthText": "12'-0\"",
+      "planHeightText": "3 1/2\""
+    },
+    {
+      "name": "Window 1",
+      "quantity": 1,
+      "planWidthUnits": 36864,
+      "planHeightUnits": 3584,
+      "planWidthText": "3'-0\"",
+      "planHeightText": "3 1/2\""
+    }
+  ],
+  "relationshipKinds": {},
+  "dimensionLabels": [],
+  "statedNotInScene": [],
+  "cutList": [],
+  "cutListOrder": "Empty: a wall and an opening are boxes nobody cuts.",
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery"
+  ],
+  "framingDiff": {
+    "wall": "Wall 1",
+    "underPack": "us-zz-reno (SYNTHETIC TEST DATA - NOT CODE VALUES), supports zz-roof, ground snow 30 psf, typed in the test",
+    "new": [
+      {
+        "role": "KingStud",
+        "quantity": 2,
+        "lengthUnits": 93696,
+        "stock": "2x4",
+        "derivation": "96 - 3 x 1 1/2 = 91 1/2\" = 93696; one king each side."
+      },
+      {
+        "role": "JackStud",
+        "quantity": 2,
+        "lengthUnits": 84480,
+        "stock": "2x4",
+        "derivation": "sill 36 + height 48 - 1 1/2 = 82 1/2\" = 84480."
+      },
+      {
+        "role": "Header",
+        "quantity": 2,
+        "lengthUnits": 39936,
+        "stock": "2x6",
+        "derivation": "36 + 2 x 1 1/2 = 39\" = 39936; (2) 2x6 from the synthetic pack."
+      },
+      {
+        "role": "RoughSill",
+        "quantity": 1,
+        "lengthUnits": 36864,
+        "stock": "2x4",
+        "derivation": "The window's width, 36\"."
+      },
+      {
+        "role": "CrippleBelow",
+        "quantity": 2,
+        "lengthUnits": 33792,
+        "stock": "2x4",
+        "derivation": "36 - 2 x 1 1/2 = 33\" = 33792 at 64 and 80, wholly inside [54, 90)."
+      },
+      {
+        "role": "CrippleAbove",
+        "quantity": 2,
+        "lengthUnits": 3584,
+        "stock": "2x4",
+        "derivation": "room 96 - 3 - 84 = 9\", less the 5 1/2\" header: 3 1/2\" = 3584, at 64 and 80 within [52 1/2, 91 1/2]."
+      }
+    ],
+    "out": [
+      {
+        "role": "Stud",
+        "quantity": 2,
+        "lengthUnits": 93696,
+        "stock": "2x4",
+        "derivation": "Ten studs before, eight after: the ones at 64 and 80 touch the window's zone [51, 93)."
+      }
+    ],
+    "sentence": "new — 2 king studs, 2 jack studs, header, sill, 4 cripples; out — 2 studs",
+    "assumption": "assuming a regular 16\" layout in the existing wall",
+    "boards": {
+      "2x4": "1 × 10'-0\", 1 × 14'-0\", 1 × 16'-0\"",
+      "2x6": "1 × 8'-0\""
+    },
+    "boardsDerivation": "See the design: 2x4 16' (two kings and both 3 1/2s, 190 3/8), 14' (two jacks, 165 1/8), 10' (36 + 33 + 33 + 2/8 = 102 1/4); 2x6 one 8' (78 1/8)."
+  },
+  "demolition": [
+    "Wall 1: 2 studs 7'-7 1/2\" (2x4) come out (assuming a regular 16\" layout in the existing wall)"
+  ],
+  "codeCheck": {
+    "synthetic": "Header (2) 2x6, 1 jack stud and 1 king stud each side.",
+    "shipped": "The loaded pack CT 2022 has no header table for exterior-bearing walls, so napkin cannot size this header.",
+    "notBearing": "Not checked: Wall 1 is marked not bearing, so napkin does not size this header from the code. No header chosen: choose one under Header in the wall's panel; until then the header buys nothing.",
+    "bearingNotSaid": "Say whether Wall 1 is bearing (Part panel)."
+  },
+  "bracingSegments": [
+    {
+      "label": "wall start to Window 1",
+      "lengthUnits": 55296
+    },
+    {
+      "label": "Window 1 to wall end",
+      "lengthUnits": 55296
+    }
+  ],
+  "notes": [
+    "Renovation worked example 2 (docs/design/renovation-sketches.md §3, §10.3). The wall is Existing, the window New; nothing is stated about what the wall supports because the shipped pack has no table to choose from."
+  ]
+}

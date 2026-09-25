@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\napkin.ico</ApplicationIcon>
 
     <!-- The executable is called `napkin`, never `Napkin.App`. macOS 26 kills, at launch and with
          no message (exit 137), any executable FILE whose name ends in `.app`: it takes it for a
@@ -26,10 +27,20 @@
     <ProjectReference Include="..\Napkin.Core.Geometry\Napkin.Core.Geometry.csproj" />
     <ProjectReference Include="..\Napkin.Modules.Furniture\Napkin.Modules.Furniture.csproj" />
     <ProjectReference Include="..\Napkin.Modules.Building\Napkin.Modules.Building.csproj" />
-    <ProjectReference Include="..\Napkin.Interop.Dxf\Napkin.Interop.Dxf.csproj" />
-    <ProjectReference Include="..\Napkin.Interop.SketchUp\Napkin.Interop.SketchUp.csproj" />
-    <ProjectReference Include="..\Napkin.Interop.Pdf\Napkin.Interop.Pdf.csproj" />
     <ProjectReference Include="..\Napkin.Core.Project\Napkin.Core.Project.csproj" />
+    <ProjectReference Include="..\Napkin.Modules.Editing\Napkin.Modules.Editing.csproj" />
+  </ItemGroup>
+
+  <!-- The app's icon, and the design system's fonts (docs/third-party-notices.md). The three OFL
+       license files ship next to the executable as well as inside it: the license requires its
+       notice to travel with every copy of the fonts, and a person should be able to find it without
+       unpacking a resource. -->
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <Content Include="Assets\Fonts\LICENSE-IBM-Plex-*.txt"
+             Link="licenses\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- The samples ship inside the build. They are the app's samples, not test data: the Samples
@@ -40,6 +51,15 @@
   <ItemGroup>
     <Content Include="..\..\samples\*.scene.json"
              Link="samples\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- The code packs ship beside the executable (packs/layers, packs/packs), like the samples. The
+       app looks there and in the per-user <config>/napkin/packs (docs/rules-engine.md). -->
+  <ItemGroup>
+    <Content Include="..\..\packs\**\*"
+             Link="packs\%(RecursiveDir)%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>

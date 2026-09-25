@@ -24,7 +24,7 @@ namespace Napkin.App.GuiTests.Harness;
 /// Coordinates are in the top level's device-independent pixels, origin at its top-left corner.
 /// </para>
 /// </remarks>
-public sealed class AppDriver
+public sealed class AppDriver : IGuiDriver
 {
     readonly List<GuiAction> _actions = [];
     int _framesSaved;
@@ -144,6 +144,69 @@ public sealed class AppDriver
     }
 
     /// <summary>
+    /// <see cref="Drag"/> with modifier keys held throughout — a Shift-drag, which pans the drawing
+    /// wherever it starts, where a plain drag that starts on a part moves the part (#85).
+    /// </summary>
+    /// <param name="modifiers">The keys held from the press to the release.</param>
+    /// <param name="path">At least two points: where the drag starts, then where it goes.</param>
+    public void DragWith(KeyModifiers modifiers, params Point[] path)
+    {
+        if (path.Length < 2)
+        {
+            throw new ArgumentException(
+                "A drag needs a start and at least one further point.", nameof(path));
+        }
+
+        RawInputModifiers raw = ToRaw(modifiers);
+        Target.MouseMove(path[0], raw);
+        Target.MouseDown(path[0], MouseButton.Left, raw);
+        for (var i = 1; i < path.Length; i++)
+        {
+            Target.MouseMove(path[i], raw | RawInputModifiers.LeftMouseButton);
+        }
+
+        Target.MouseUp(path[^1], MouseButton.Left, raw);
+        Settle();
+        Record(GuiActionKind.Pointer,
+            $"drag along {string.Join(" -> ", path.Select(Format))} with {modifiers}");
+    }
+
+    /// <summary>
+    /// Presses the left button at a point, and leaves it down.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Drag"/> is one verb from press to release, which is right for a gesture whose
+    /// result is only visible afterwards. A drag that is <em>supposed</em> to show something while
+    /// it is running — a snap indicator, a dimension counting up — has to be stopped in the
+    /// middle, so it is driven with these three instead. They are the same simulated input
+    /// <see cref="Drag"/> sends; the only difference is that the scenario gets to look between
+    /// them.
+    /// </remarks>
+    public void PressAt(Point point)
+    {
+        Target.MouseMove(point);
+        Target.MouseDown(point, MouseButton.Left);
+        Settle();
+        Record(GuiActionKind.Pointer, $"press at {Format(point)}");
+    }
+
+    /// <summary>Moves the pointer with the left button still held.</summary>
+    public void DragTo(Point point)
+    {
+        Target.MouseMove(point, RawInputModifiers.LeftMouseButton);
+        Settle();
+        Record(GuiActionKind.Pointer, $"drag to {Format(point)}");
+    }
+
+    /// <summary>Releases the left button at a point.</summary>
+    public void ReleaseAt(Point point)
+    {
+        Target.MouseUp(point, MouseButton.Left);
+        Settle();
+        Record(GuiActionKind.Pointer, $"release at {Format(point)}");
+    }
+
+    /// <summary>
     /// Turns the mouse wheel at a point. Positive Y scrolls up, as Avalonia reports it.
     /// </summary>
     public void Wheel(Point point, Vector delta, KeyModifiers modifiers = KeyModifiers.None)
@@ -246,6 +309,14 @@ public sealed class AppDriver
         Record(GuiActionKind.Expect, what);
     }
 
+    /// <summary>
+    /// A caption for a person watching the live host. Headless nobody is watching, so it does
+    /// nothing and is not recorded: it cannot help a scenario satisfy the workflow rule.
+    /// </summary>
+    public void Say(string caption)
+    {
+    }
+
     // ---- Frames --------------------------------------------------------------------------
 
     /// <summary>
@@ -269,6 +340,8 @@ public sealed class AppDriver
         Record(GuiActionKind.Window, $"save frame \"{step}\"");
         return path;
     }
+
+    void IGuiDriver.SaveFrame(string step) => SaveFrame(step);
 
     /// <summary>Ticks the render timer and returns the frame that was rendered, if any.</summary>
     public Bitmap? CaptureFrame()

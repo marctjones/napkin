@@ -26,34 +26,29 @@ interface).
 
 ## Status
 
-Early scaffold, pre-1.0 beta. The solution structure builds; almost none of the actual
-functionality (geometry, the rules engine, the UI) exists yet.
+Early beta. M1 through M5 are done: open and draw a sample design with dimensions (M1); draw,
+resize by typing a dimension, undo, save (M2); build the coffee table and get its cut list and
+shopping list (M3, audited 0.93.0-beta); put a window in a wall and get a header size with the
+code row it came from (M4, 0.97.0-beta); the bracing check and switching a project's adopted code
+(M5, 0.101.0-beta). What's being built now is a Hardening pass — architecture drift, correctness
+and doc fixes from a full-repo review — before M6 Views and drawings (six locked orthographic
+views, a third-angle sheet, a Parts view).
 
-The work is organised into five milestones, each of them something you can hold rather than a
-layer of the architecture — **M1 Look** (open a sample design and look at it), **M2 Draw** (draw,
-resize by typing a dimension, undo, save), **M3 Cut** (build the coffee table and get its cut list
-and shopping list), **M4 Check** (put a window in a wall and get a header size with the code row it
-came from), **M5 Brace and compare** (the bracing check, and switching a project's adopted code).
-What each one gets you, and which issues build it, is the milestone table in
+The work is organised into milestones, each of them something you can hold rather than a layer of
+the architecture — **M1 Look**, **M2 Draw**, **M3 Cut**, **M4 Check**, **M5 Brace and compare**,
+**Hardening**, then **M6 Views and drawings**, **M7 Sketch mode**, **M8 Renovation**, **M9 Shape**,
+and **M10 Real code**. What each one gets you, and which issues build it, is the milestone table in
 [`PLAN.md`](./PLAN.md); the same milestones are on the issue tracker.
 
 napkin is a **beta indefinitely**: every release is a pre-release, breaking changes are always
 allowed, and there is no migration path between betas (an older project file gets a clear
-"unsupported version" error, not a conversion). Each milestone earns a tagged pre-release when it
-is done, and its version number is assigned then rather than planned. See
+"unsupported version" error, not a conversion). See
 [`DESIGN.md` §12](./DESIGN.md#12-versioning-and-releases-beta-policy).
 
-## Download
+## Trying it
 
-**There is no stable release, and there will not be one.** napkin publishes pre-releases only, one
-each time a milestone is worth it, from the
-[Releases page](https://github.com/marctjones/napkin/releases). If that page is empty, nothing has
-been published yet; you can [build it yourself](#building) in the meantime.
-
-The builds are **unsigned and not notarized**, so Windows and macOS will warn you the first time
-you open one. [`docs/first-run.md`](./docs/first-run.md) walks you past the warning on both, and
-shows how to check your download against `SHA256SUMS.txt`. How releases are made is in
-[`docs/release.md`](./docs/release.md).
+There are no downloadable builds; building and releasing installers is parked until the core
+functionality exists. Run it from source (see [Building](#building)).
 
 ## Building
 
@@ -71,26 +66,30 @@ dotnet run --project src/Napkin.App
 ```
 src/
   Napkin.Core.Geometry        # platform-agnostic geometry: points, lines, dimensions, units
+  Napkin.Core.Materials       # the materials library: stock lumber, panels, hardware, fasteners
   Napkin.Core.RulesEngine     # prescriptive tables keyed by adopted code + evaluation
   Napkin.Core.Project         # project file format: scene graph, serialization
   Napkin.Modules.Furniture    # parts, joinery, cut lists, materials lists
   Napkin.Modules.Building     # sites, walls, openings, decks — consumes the rules engine
-  Napkin.Interop.Dxf          # DXF import/export (interop with FreeCAD/QCAD/LibreCAD)
-  Napkin.Interop.SketchUp     # read-only .skp import
-  Napkin.Interop.Pdf          # true-scale vector PDF export
+  Napkin.Modules.Editing      # the editing model: design editor, undo, snapping, drawing tools
   Napkin.App                  # Avalonia UI (Windows + macOS)
 tests/
   Napkin.Core.RulesEngine.Tests   # golden tests against each state's published adopted text
   Napkin.Core.Geometry.Tests
+  ...                              # one test project per src/ assembly, plus Napkin.App.GuiTests
 ```
+
+DXF, SketchUp and PDF interop are parked (backlog), not yet in the tree — the three stub projects
+that once held their place were removed in Hardening (#182); they come back when that work starts.
 
 `Core.*` and `Modules.*` have no UI dependency — the rules engine in particular is meant to be
 testable and auditable independent of the app around it.
 
 ## Versioning
 
-napkin is a pre-1.0 beta indefinitely. Every version is `0.N.0-beta`: the minor number goes up with
-each merged pull request, and nothing is promised to stay compatible between betas. The version is
+napkin is a pre-1.0 beta indefinitely. Every version is `0.N.0-beta`: the minor number goes up by
+exactly one with each change landed on `main` (development is direct to `main`, no pull requests,
+since 2026-09-22), and nothing is promised to stay compatible between betas. The version is
 set in one place, [`Directory.Build.props`](./Directory.Build.props); see
 [`DESIGN.md` §12](./DESIGN.md#12-versioning-and-releases-beta-policy).
 
@@ -102,14 +101,16 @@ kept to permissive (MIT/Apache-2.0/BSD) or weak-copyleft (LGPL/MPL) licenses onl
 
 ## Scope note
 
-Four adopted codes are wanted (DESIGN.md §11), and they arrive one at a time. The **2026
-Connecticut State Building Code** (IRC 2024 base, effective September 18, 2026) is encoded first,
-in M4; the 2022 Connecticut code follows in M5, which is what makes code locking demonstrable —
-a project stays locked to the code in force when its permit was applied for, and switching a
-project's code recomputes every result. Massachusetts 780 CMR 10th edition and the Pennsylvania
-Uniform Construction Code come after that. The rules engine is data-driven and keyed by adopted
-code, not by IRC year, specifically so further jurisdictions are a data change rather than a code
-change — see `DESIGN.md` for details. Imperial units only; 2D only.
+Four adopted codes are wanted (DESIGN.md §11), and they arrive one at a time. The **2022
+Connecticut State Building Code** (IRC 2021 as amended) shipped first, in M4 and M5 — the engine,
+pack format, overlay, interpolation and picker are complete, and switching a project's adopted
+code recomputes every result, which is what makes code locking demonstrable. The IRC 2021 base
+tables themselves are bring-your-own until M10 transcribes them from a primary source (#158/#14).
+The 2026 Connecticut code (IRC 2024 base) is not yet in force and is not yet encoded. Massachusetts
+780 CMR 10th edition and the Pennsylvania Uniform Construction Code come after that. The rules
+engine is data-driven and keyed by adopted code, not by IRC year, specifically so further
+jurisdictions are a data change rather than a code change — see `DESIGN.md` for details. Imperial
+units only; 2D only.
 
 This is not legal or engineering advice, and it is not a substitute for your local building
 department's review or a licensed professional's judgment about site-specific conditions a

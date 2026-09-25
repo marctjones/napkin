@@ -22,4 +22,10 @@
     <ProjectReference Include="..\..\src\Napkin.App\Napkin.App.csproj" />
   </ItemGroup>
 
+  <!-- The code-check workflows' SYNTHETIC packs (NOT CODE VALUES), shared with the building
+       module's tests; the shipped packs arrive beside the app under packs/. -->
+  <ItemGroup>
+    <Content Include="..\Napkin.Modules.Building.Tests\CodePacks\**\*" Link="CodePacks\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

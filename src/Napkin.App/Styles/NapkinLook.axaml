@@ -1,0 +1,134 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Styles.Resources>
+      <ResourceDictionary>
+        <!-- The bench: one colour for the menu bar, status bar and title bar in BOTH themes ("the
+             workbench does not change when the lights go down", brand book, Color). The vendored
+             token file gives SeBenchColor #1c1c1c in its Light dictionary and #141413 in its Dark
+             one, contradicting the brand book, so these fix the Light value. Contrast on the bench:
+             heading #e0e0d8 12.8:1, text #a0a090 6.4:1, both above 4.5:1. -->
+        <Color x:Key="NapkinBenchColor">#1c1c1c</Color>
+        <SolidColorBrush x:Key="NapkinBenchBrush" Color="{StaticResource NapkinBenchColor}" />
+        <Color x:Key="NapkinBenchHeadingColor">#e0e0d8</Color>
+        <SolidColorBrush x:Key="NapkinBenchHeadingBrush" Color="{StaticResource NapkinBenchHeadingColor}" />
+        <Color x:Key="NapkinBenchTextColor">#a0a090</Color>
+        <SolidColorBrush x:Key="NapkinBenchTextBrush" Color="{StaticResource NapkinBenchTextColor}" />
+        <Color x:Key="NapkinBenchRuleColor">#505048</Color>
+        <SolidColorBrush x:Key="NapkinBenchRuleBrush" Color="{StaticResource NapkinBenchRuleColor}" />
+
+        <!-- A note lying on the napkin sheet. Lighter than the sheet (#F1E8D6) so it reads as a
+             card, ink from the pencil (#4A3F36): 9.2:1 on the note, 8.4:1 on the sheet itself.
+             Border is the sheet's own fold colour. Used by the panels in napkin/carpenter look;
+             the code-behind (ChromeColours) mirrors these for the other sheets. -->
+        <Color x:Key="NapkinNoteColor">#F8F2E6</Color>
+        <SolidColorBrush x:Key="NapkinNoteBrush" Color="{StaticResource NapkinNoteColor}" />
+        <Color x:Key="NapkinNoteRuleColor">#D3C2A2</Color>
+        <SolidColorBrush x:Key="NapkinNoteRuleBrush" Color="{StaticResource NapkinNoteRuleColor}" />
+
+        <!-- The selected tab's pipe, moss: the token's Light and Dark values, by theme. -->
+        <ResourceDictionary.ThemeDictionaries>
+            <ResourceDictionary x:Key="Light">
+                <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="#4a7c4a" />
+                <SolidColorBrush x:Key="ToolTipBackground" Color="#f8f8f6" />
+                <SolidColorBrush x:Key="ToolTipForeground" Color="#1c1c1c" />
+                <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#dcdcd4" />
+            </ResourceDictionary>
+            <ResourceDictionary x:Key="Dark">
+                <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="#80a080" />
+                <SolidColorBrush x:Key="ToolTipBackground" Color="#1c1c1c" />
+                <SolidColorBrush x:Key="ToolTipForeground" Color="#e0e0d8" />
+                <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#3a3a36" />
+            </ResourceDictionary>
+        </ResourceDictionary.ThemeDictionaries>
+
+        <!-- Focus is a 2px moss outline (brand book, Interaction states), not Fluent's black/white
+             dashed pair. -->
+        <SolidColorBrush x:Key="SystemControlFocusVisualPrimaryBrush" Color="{DynamicResource SeFocusColor}" />
+        <SolidColorBrush x:Key="SystemControlFocusVisualSecondaryBrush" Color="Transparent" />
+
+      </ResourceDictionary>
+    </Styles.Resources>
+
+    <!-- The document windows (the cut list, the shop's tables): paper with ink on it, in either
+         theme, from the tokens; the menu, the bench, is styled in MainWindow. -->
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{DynamicResource SePaperBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource SeInkBodyBrush}" />
+    </Style>
+
+    <!-- Buttons: flat, paper-sunk, a 1px rule, radius 4, no shadow; hover darkens toward ink. -->
+    <Style Selector="Button">
+        <Setter Property="Background" Value="{DynamicResource SePaperSunkBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SeRuleBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource SeRadiusMd}" />
+        <Setter Property="Foreground" Value="{DynamicResource SeInkBrush}" />
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SeRuleSoftBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SeRuleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource SeInkBrush}" />
+    </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SeRuleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SeInkMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource SeInkBrush}" />
+    </Style>
+
+    <!-- The notes' own buttons (the toolbar, the stock drawer, remove buttons) sit on the sheet
+         and carry no fill or frame until pointed at; an armed tool is a moss wash. -->
+    <Style Selector="Border.note Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.note Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#22705F4A" />
+        <Setter Property="BorderBrush" Value="{DynamicResource NapkinNoteRuleBrush}" />
+    </Style>
+    <Style Selector="Border.note Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#33705F4A" />
+        <Setter Property="BorderBrush" Value="{DynamicResource NapkinNoteRuleBrush}" />
+    </Style>
+
+    <!-- Text entry: near-square (radius 3), a 1px rule, moss when focused. -->
+    <Style Selector="TextBox">
+        <Setter Property="CornerRadius" Value="{DynamicResource SeRadiusSm}" />
+        <Setter Property="FontFamily" Value="{DynamicResource SeFontMono}" />
+        <Setter Property="FontSize" Value="{DynamicResource SeFontSizeAppData}" />
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="CornerRadius" Value="{DynamicResource SeRadiusSm}" />
+    </Style>
+
+    <!-- The tabs of the cut-list window: Plex Mono headers, the selected one marked in moss. -->
+    <Style Selector="TabItem">
+        <Setter Property="FontFamily" Value="{DynamicResource SeFontMono}" />
+        <Setter Property="FontSize" Value="{DynamicResource SeFontSizeAppTitle}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{DynamicResource SeInkMutedBrush}" />
+    </Style>
+    <Style Selector="TabItem:selected">
+        <Setter Property="Foreground" Value="{DynamicResource SeMossInkBrush}" />
+    </Style>
+    <Style Selector="TabItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource SeInkBrush}" />
+    </Style>
+    <Style Selector="TabItem /template/ Border#PART_SelectedPipe">
+        <Setter Property="Background" Value="{DynamicResource SeMossBrush}" />
+    </Style>
+
+    <!-- Tooltips float, so they keep a border, and lose the shadow. -->
+    <Style Selector="ToolTip">
+        <Setter Property="Background" Value="{DynamicResource SePaperBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource SeInkBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SeRuleBrush}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource SeRadiusSm}" />
+        <Setter Property="FontFamily" Value="{DynamicResource SeFontSans}" />
+        <Setter Property="FontSize" Value="{DynamicResource SeFontSizeAppSmall}" />
+    </Style>
+
+    <!-- Menus that drop from the bench are paper, like the document they act on. -->
+    <Style Selector="MenuItem /template/ Popup Border">
+        <Setter Property="CornerRadius" Value="{DynamicResource SeRadiusMd}" />
+    </Style>
+</Styles>

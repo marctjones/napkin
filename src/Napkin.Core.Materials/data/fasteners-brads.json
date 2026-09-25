@@ -1,0 +1,305 @@
+{
+  "tableVersion": 1,
+  "kind": "stock",
+  "id": "brads-ffn105b",
+  "title": "Steel wire brads: length and wire diameter",
+  "category": "Fastener",
+  "citation": {
+    "designation": "FF-N-105B",
+    "standard": "Federal Specification FF-N-105B, Nails, Brads, Staples and Spikes: Wire, Cut and Wrought (17 March 1971)",
+    "publisher": "General Services Administration, United States of America — a U.S. Government federal specification, in the public domain",
+    "where": "§3.6.1, \"Type I - Brads. Steel wire, brad head, diamond point, round smooth shank, bright finish.\", page 8 (the page numbered 8 at its foot), whose table gives L (length, in), D (wire diameter, in) and No./lb, with S (the penny-size trade designation) beside some rows; \"--\" means none is given. Rows below are every row of that table. NOTE ON THE DOCUMENT'S STATUS: FF-N-105B was cancelled on 3 December 1996 (Notice 2) and ASTM F1667 is its successor; F1667's dimension tables are behind a paywall and were not read, so these rows are cited to the last readable primary source and a reviewer with F1667 should check them. Retrieved 2026-09-24 as a PDF from the url given (the fetch worked without a Referer that day), read as text.",
+    "url": "https://everyspec.com/FED_SPECS/F/download.php?spec=FF-N-105B.009866.pdf",
+    "retrieved": "2026-09-24"
+  },
+  "entries": [
+    {
+      "name": "Brad 3/8 in x .035",
+      "family": "brad",
+      "length": "3/8",
+      "shankDiameterInches": ".035",
+      "derivation": "§3.6.1 table: L = 3/8, D = .035, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1/2 in x .035",
+      "family": "brad",
+      "length": "1/2",
+      "shankDiameterInches": ".035",
+      "derivation": "§3.6.1 table: L = 1/2, D = .035, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1/2 in x .048",
+      "family": "brad",
+      "length": "1/2",
+      "shankDiameterInches": ".048",
+      "derivation": "§3.6.1 table: L = 1/2, D = .048, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 5/8 in x .035",
+      "family": "brad",
+      "length": "5/8",
+      "shankDiameterInches": ".035",
+      "derivation": "§3.6.1 table: L = 5/8, D = .035, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 5/8 in x .048",
+      "family": "brad",
+      "length": "5/8",
+      "shankDiameterInches": ".048",
+      "derivation": "§3.6.1 table: L = 5/8, D = .048, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 3/4 in x .035",
+      "family": "brad",
+      "length": "3/4",
+      "shankDiameterInches": ".035",
+      "derivation": "§3.6.1 table: L = 3/4, D = .035, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 3/4 in x .048",
+      "family": "brad",
+      "length": "3/4",
+      "shankDiameterInches": ".048",
+      "derivation": "§3.6.1 table: L = 3/4, D = .048, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 3/4 in x .062",
+      "family": "brad",
+      "length": "3/4",
+      "shankDiameterInches": ".062",
+      "derivation": "§3.6.1 table: L = 3/4, D = .062, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 7/8 in x .035",
+      "family": "brad",
+      "length": "7/8",
+      "shankDiameterInches": ".035",
+      "derivation": "§3.6.1 table: L = 7/8, D = .035, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 7/8 in x .048",
+      "family": "brad",
+      "length": "7/8",
+      "shankDiameterInches": ".048",
+      "derivation": "§3.6.1 table: L = 7/8, D = .048, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 7/8 in x .062",
+      "family": "brad",
+      "length": "7/8",
+      "shankDiameterInches": ".062",
+      "derivation": "§3.6.1 table: L = 7/8, D = .062, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1 in x .054",
+      "family": "brad",
+      "length": "1",
+      "shankDiameterInches": ".054",
+      "derivation": "§3.6.1 table: L = 1, D = .054, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1 in x .062",
+      "family": "brad",
+      "length": "1",
+      "shankDiameterInches": ".062",
+      "derivation": "§3.6.1 table: L = 1, D = .062, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1 in x .072",
+      "family": "brad",
+      "length": "1",
+      "shankDiameterInches": ".072",
+      "derivation": "§3.6.1 table: L = 1, D = .072, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1-1/4 in x .054",
+      "family": "brad",
+      "length": "1-1/4",
+      "shankDiameterInches": ".054",
+      "derivation": "§3.6.1 table: L = 1-1/4, D = .054, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1-1/4 in x .062",
+      "family": "brad",
+      "length": "1-1/4",
+      "shankDiameterInches": ".062",
+      "derivation": "§3.6.1 table: L = 1-1/4, D = .062, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1-1/4 in x .080",
+      "family": "brad",
+      "length": "1-1/4",
+      "shankDiameterInches": ".080",
+      "derivation": "§3.6.1 table: L = 1-1/4, D = .080, S = 3d.",
+      "pennySize": "3d"
+    },
+    {
+      "name": "Brad 1-1/2 in x .054",
+      "family": "brad",
+      "length": "1-1/2",
+      "shankDiameterInches": ".054",
+      "derivation": "§3.6.1 table: L = 1-1/2, D = .054, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1-1/2 in x .080",
+      "family": "brad",
+      "length": "1-1/2",
+      "shankDiameterInches": ".080",
+      "derivation": "§3.6.1 table: L = 1-1/2, D = .080, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1-1/2 in x .099",
+      "family": "brad",
+      "length": "1-1/2",
+      "shankDiameterInches": ".099",
+      "derivation": "§3.6.1 table: L = 1-1/2, D = .099, S = 4d.",
+      "pennySize": "4d"
+    },
+    {
+      "name": "Brad 1-3/4 in x .062",
+      "family": "brad",
+      "length": "1-3/4",
+      "shankDiameterInches": ".062",
+      "derivation": "§3.6.1 table: L = 1-3/4, D = .062, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1-3/4 in x .080",
+      "family": "brad",
+      "length": "1-3/4",
+      "shankDiameterInches": ".080",
+      "derivation": "§3.6.1 table: L = 1-3/4, D = .080, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 1-3/4 in x .099",
+      "family": "brad",
+      "length": "1-3/4",
+      "shankDiameterInches": ".099",
+      "derivation": "§3.6.1 table: L = 1-3/4, D = .099, S = 5d.",
+      "pennySize": "5d"
+    },
+    {
+      "name": "Brad 2 in x .062",
+      "family": "brad",
+      "length": "2",
+      "shankDiameterInches": ".062",
+      "derivation": "§3.6.1 table: L = 2, D = .062, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 2 in x .080",
+      "family": "brad",
+      "length": "2",
+      "shankDiameterInches": ".080",
+      "derivation": "§3.6.1 table: L = 2, D = .080, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 2 in x .113",
+      "family": "brad",
+      "length": "2",
+      "shankDiameterInches": ".113",
+      "derivation": "§3.6.1 table: L = 2, D = .113, S = 6d.",
+      "pennySize": "6d"
+    },
+    {
+      "name": "Brad 2-1/4 in x .080",
+      "family": "brad",
+      "length": "2-1/4",
+      "shankDiameterInches": ".080",
+      "derivation": "§3.6.1 table: L = 2-1/4, D = .080, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 2-1/4 in x .113",
+      "family": "brad",
+      "length": "2-1/4",
+      "shankDiameterInches": ".113",
+      "derivation": "§3.6.1 table: L = 2-1/4, D = .113, S = 7d.",
+      "pennySize": "7d"
+    },
+    {
+      "name": "Brad 2-1/2 in x .080",
+      "family": "brad",
+      "length": "2-1/2",
+      "shankDiameterInches": ".080",
+      "derivation": "§3.6.1 table: L = 2-1/2, D = .080, S = -- (no trade designation)."
+    },
+    {
+      "name": "Brad 2-1/2 in x .131",
+      "family": "brad",
+      "length": "2-1/2",
+      "shankDiameterInches": ".131",
+      "derivation": "§3.6.1 table: L = 2-1/2, D = .131, S = 8d.",
+      "pennySize": "8d"
+    },
+    {
+      "name": "Brad 2-3/4 in x .131",
+      "family": "brad",
+      "length": "2-3/4",
+      "shankDiameterInches": ".131",
+      "derivation": "§3.6.1 table: L = 2-3/4, D = .131, S = 9d.",
+      "pennySize": "9d"
+    },
+    {
+      "name": "Brad 3 in x .148",
+      "family": "brad",
+      "length": "3",
+      "shankDiameterInches": ".148",
+      "derivation": "§3.6.1 table: L = 3, D = .148, S = 10d.",
+      "pennySize": "10d"
+    },
+    {
+      "name": "Brad 3-1/4 in x .148",
+      "family": "brad",
+      "length": "3-1/4",
+      "shankDiameterInches": ".148",
+      "derivation": "§3.6.1 table: L = 3-1/4, D = .148, S = 12d.",
+      "pennySize": "12d"
+    },
+    {
+      "name": "Brad 3-1/2 in x .162",
+      "family": "brad",
+      "length": "3-1/2",
+      "shankDiameterInches": ".162",
+      "derivation": "§3.6.1 table: L = 3-1/2, D = .162, S = 16d.",
+      "pennySize": "16d"
+    },
+    {
+      "name": "Brad 4 in x .192",
+      "family": "brad",
+      "length": "4",
+      "shankDiameterInches": ".192",
+      "derivation": "§3.6.1 table: L = 4, D = .192, S = 20d.",
+      "pennySize": "20d"
+    },
+    {
+      "name": "Brad 4-1/2 in x .207",
+      "family": "brad",
+      "length": "4-1/2",
+      "shankDiameterInches": ".207",
+      "derivation": "§3.6.1 table: L = 4-1/2, D = .207, S = 30d.",
+      "pennySize": "30d"
+    },
+    {
+      "name": "Brad 5 in x .225",
+      "family": "brad",
+      "length": "5",
+      "shankDiameterInches": ".225",
+      "derivation": "§3.6.1 table: L = 5, D = .225, S = 40d.",
+      "pennySize": "40d"
+    },
+    {
+      "name": "Brad 5-1/2 in x .244",
+      "family": "brad",
+      "length": "5-1/2",
+      "shankDiameterInches": ".244",
+      "derivation": "§3.6.1 table: L = 5-1/2, D = .244, S = 50d.",
+      "pennySize": "50d"
+    },
+    {
+      "name": "Brad 6 in x .262",
+      "family": "brad",
+      "length": "6",
+      "shankDiameterInches": ".262",
+      "derivation": "§3.6.1 table: L = 6, D = .262, S = 60d.",
+      "pennySize": "60d"
+    }
+  ]
+}

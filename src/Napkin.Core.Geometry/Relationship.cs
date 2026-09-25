@@ -62,11 +62,15 @@ public sealed record Anchored(RelationshipId Id, EntityId Entity) : Relationship
     public override IEnumerable<EntityId> References => [Entity];
 }
 
-/// <summary>Two points are the same point.</summary>
+/// <summary>
+/// Two places are the same place: equal on every axis both fix — two vertices, two parallel edges,
+/// a node and an upright edge, a centre and a vertex. Legal when the places have two or three axes
+/// in common (<c>docs/design/assembly-model.md</c> &#xA7;2.3).
+/// </summary>
 /// <param name="Id">The relationship's identity.</param>
 /// <param name="A">The first point.</param>
 /// <param name="B">The second point.</param>
-public sealed record Coincident(RelationshipId Id, PointRef A, PointRef B) : Relationship(Id)
+public sealed record Coincident(RelationshipId Id, PlaceRef A, PlaceRef B) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [A.Owner, B.Owner];
@@ -76,7 +80,7 @@ public sealed record Coincident(RelationshipId Id, PointRef A, PointRef B) : Rel
 /// <remarks>Box edges are axis-aligned by rotation; this is for segments.</remarks>
 /// <param name="Id">The relationship's identity.</param>
 /// <param name="Edge">The edge held horizontal.</param>
-public sealed record Horizontal(RelationshipId Id, EdgeRef Edge) : Relationship(Id)
+public sealed record Horizontal(RelationshipId Id, PlaceRef Edge) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [Edge.Owner];
@@ -86,32 +90,37 @@ public sealed record Horizontal(RelationshipId Id, EdgeRef Edge) : Relationship(
 /// <remarks>Box edges are axis-aligned by rotation; this is for segments.</remarks>
 /// <param name="Id">The relationship's identity.</param>
 /// <param name="Edge">The edge held vertical.</param>
-public sealed record Vertical(RelationshipId Id, EdgeRef Edge) : Relationship(Id)
+public sealed record Vertical(RelationshipId Id, PlaceRef Edge) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [Edge.Owner];
 }
 
-/// <summary>Two parallel axis-aligned edges lie on the same line — a shelf flush with a side.</summary>
+/// <summary>
+/// Two places lie in the same plane — two faces coplanar, a shelf flush with a side, or a face and an
+/// axis-aligned segment. Legal when both fix exactly one axis, the same one
+/// (<c>docs/design/assembly-model.md</c> &#xA7;2.3).
+/// </summary>
 /// <param name="Id">The relationship's identity.</param>
 /// <param name="A">The first edge.</param>
 /// <param name="B">The second edge, which follows the first.</param>
-public sealed record Flush(RelationshipId Id, EdgeRef A, EdgeRef B) : Relationship(Id)
+public sealed record Flush(RelationshipId Id, PlaceRef A, PlaceRef B) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [A.Owner, B.Owner];
 }
 
 /// <summary>
-/// The signed distance between two points along one axis. This is what a driving linear dimension
-/// between two points is.
+/// The signed distance between two places along X, Y or Z. This is what a driving linear dimension
+/// between two places is. Legal when both places fix <see cref="Axis"/>
+/// (<c>docs/design/assembly-model.md</c> &#xA7;2.3).
 /// </summary>
 /// <param name="Id">The relationship's identity.</param>
-/// <param name="From">The point measured from.</param>
-/// <param name="To">The point measured to, which follows.</param>
+/// <param name="From">The place measured from.</param>
+/// <param name="To">The place measured to, which follows.</param>
 /// <param name="Axis">The axis measured along.</param>
 /// <param name="Distance">The signed distance, <c>To - From</c> along <paramref name="Axis"/>.</param>
-public sealed record AxisDistance(RelationshipId Id, PointRef From, PointRef To, Axis Axis, Length Distance)
+public sealed record AxisDistance(RelationshipId Id, PlaceRef From, PlaceRef To, Axis Axis, Length Distance)
     : Relationship(Id)
 {
     /// <inheritdoc/>
@@ -119,7 +128,7 @@ public sealed record AxisDistance(RelationshipId Id, PointRef From, PointRef To,
 }
 
 /// <summary>
-/// A box width or height, or a segment length, is a given value. This is what a driving dimension
+/// A box width, height or depth, or a segment length, is a given value. This is what a driving dimension
 /// on a part's size is, and it is the one owner of that number.
 /// </summary>
 /// <param name="Id">The relationship's identity.</param>
@@ -142,18 +151,19 @@ public sealed record EqualParam(RelationshipId Id, ParamRef A, ParamRef B) : Rel
 }
 
 /// <summary>
-/// The first point is midway between the other two along an axis.
+/// The first place is midway between the other two along an axis. Legal when all three fix that
+/// axis (<c>docs/design/assembly-model.md</c> &#xA7;2.3).
 /// </summary>
 /// <remarks>
 /// Exact when the span is an even number of units; otherwise the midpoint rounds half to even by
 /// half a unit, and the checker measures against that same rounded midpoint.
 /// </remarks>
 /// <param name="Id">The relationship's identity.</param>
-/// <param name="Middle">The point held at the midpoint.</param>
+/// <param name="Middle">The place held at the midpoint.</param>
 /// <param name="A">One end of the span.</param>
 /// <param name="B">The other end of the span.</param>
 /// <param name="Axis">The axis the midpoint is taken along.</param>
-public sealed record Centered(RelationshipId Id, PointRef Middle, PointRef A, PointRef B, Axis Axis)
+public sealed record Centered(RelationshipId Id, PlaceRef Middle, PlaceRef A, PlaceRef B, Axis Axis)
     : Relationship(Id)
 {
     /// <inheritdoc/>
@@ -170,7 +180,7 @@ public sealed record Centered(RelationshipId Id, PointRef Middle, PointRef A, Po
 /// <param name="Id">The relationship's identity.</param>
 /// <param name="A">The first edge.</param>
 /// <param name="B">The second edge.</param>
-public sealed record Parallel(RelationshipId Id, EdgeRef A, EdgeRef B) : Relationship(Id)
+public sealed record Parallel(RelationshipId Id, PlaceRef A, PlaceRef B) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [A.Owner, B.Owner];
@@ -180,7 +190,7 @@ public sealed record Parallel(RelationshipId Id, EdgeRef A, EdgeRef B) : Relatio
 /// <param name="Id">The relationship's identity.</param>
 /// <param name="A">The first edge.</param>
 /// <param name="B">The second edge.</param>
-public sealed record Perpendicular(RelationshipId Id, EdgeRef A, EdgeRef B) : Relationship(Id)
+public sealed record Perpendicular(RelationshipId Id, PlaceRef A, PlaceRef B) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [A.Owner, B.Owner];
@@ -191,7 +201,7 @@ public sealed record Perpendicular(RelationshipId Id, EdgeRef A, EdgeRef B) : Re
 /// <param name="A">The first edge.</param>
 /// <param name="B">The second edge.</param>
 /// <param name="Angle">The angle from <paramref name="A"/> to <paramref name="B"/>.</param>
-public sealed record AngleBetween(RelationshipId Id, EdgeRef A, EdgeRef B, Angle Angle) : Relationship(Id)
+public sealed record AngleBetween(RelationshipId Id, PlaceRef A, PlaceRef B, Angle Angle) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [A.Owner, B.Owner];
@@ -202,7 +212,7 @@ public sealed record AngleBetween(RelationshipId Id, EdgeRef A, EdgeRef B, Angle
 /// <param name="A">The first point.</param>
 /// <param name="B">The second point.</param>
 /// <param name="Value">The distance between them.</param>
-public sealed record Distance(RelationshipId Id, PointRef A, PointRef B, Length Value) : Relationship(Id)
+public sealed record Distance(RelationshipId Id, PlaceRef A, PlaceRef B, Length Value) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [A.Owner, B.Owner];
@@ -212,7 +222,7 @@ public sealed record Distance(RelationshipId Id, PointRef A, PointRef B, Length 
 /// <param name="Id">The relationship's identity.</param>
 /// <param name="Point">The point.</param>
 /// <param name="Edge">The edge it lies on.</param>
-public sealed record PointOnEdge(RelationshipId Id, PointRef Point, EdgeRef Edge) : Relationship(Id)
+public sealed record PointOnEdge(RelationshipId Id, PlaceRef Point, PlaceRef Edge) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [Point.Owner, Edge.Owner];
@@ -223,7 +233,7 @@ public sealed record PointOnEdge(RelationshipId Id, PointRef Point, EdgeRef Edge
 /// <param name="A">The first point.</param>
 /// <param name="B">The second point.</param>
 /// <param name="Mirror">The edge they are mirrored across.</param>
-public sealed record Symmetric(RelationshipId Id, PointRef A, PointRef B, EdgeRef Mirror) : Relationship(Id)
+public sealed record Symmetric(RelationshipId Id, PlaceRef A, PlaceRef B, PlaceRef Mirror) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [A.Owner, B.Owner, Mirror.Owner];
@@ -236,7 +246,7 @@ public sealed record Symmetric(RelationshipId Id, PointRef A, PointRef B, EdgeRe
 /// <param name="Id">The relationship's identity.</param>
 /// <param name="A">The first edge.</param>
 /// <param name="B">The second edge.</param>
-public sealed record Tangent(RelationshipId Id, EdgeRef A, EdgeRef B) : Relationship(Id)
+public sealed record Tangent(RelationshipId Id, PlaceRef A, PlaceRef B) : Relationship(Id)
 {
     /// <inheritdoc/>
     public override IEnumerable<EntityId> References => [A.Owner, B.Owner];

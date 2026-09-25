@@ -12,36 +12,6 @@ namespace Napkin.Features.Tests;
 
 public class PlannedFeatures
 {
-    [Fact(Skip = "planned: BLD-001 — Wall attributes are entered, never defaulted")]
-    [Trait("Feature", "BLD-001")]
-    public void BLD_001()
-    {
-    }
-
-    [Fact(Skip = "planned: BLD-002 — An opening is geometrically bound to its wall")]
-    [Trait("Feature", "BLD-002")]
-    public void BLD_002()
-    {
-    }
-
-    [Fact(Skip = "planned: BLD-003 — The header result is live")]
-    [Trait("Feature", "BLD-003")]
-    public void BLD_003()
-    {
-    }
-
-    [Fact(Skip = "planned: BLD-004 — Out of scope routes to an engineer, never to a number")]
-    [Trait("Feature", "BLD-004")]
-    public void BLD_004()
-    {
-    }
-
-    [Fact(Skip = "planned: BLD-005 — Enlarging an opening rechecks the wall line's bracing")]
-    [Trait("Feature", "BLD-005")]
-    public void BLD_005()
-    {
-    }
-
     [Fact(Skip = "planned: CODE-001 — Connecticut 2026 header and fastener tables")]
     [Trait("Feature", "CODE-001")]
     public void CODE_001()
@@ -84,81 +54,15 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: CUT-001 — A part resolves its stock through the materials library")]
-    [Trait("Feature", "CUT-001")]
-    public void CUT_001()
-    {
-    }
-
-    [Fact(Skip = "planned: CUT-002 — The cut list reads stored parameters, not derived corners")]
-    [Trait("Feature", "CUT-002")]
-    public void CUT_002()
-    {
-    }
-
-    [Fact(Skip = "planned: CUT-003 — The cut list groups identical parts")]
-    [Trait("Feature", "CUT-003")]
-    public void CUT_003()
-    {
-    }
-
-    [Fact(Skip = "planned: CUT-004 — The coffee-table cut list matches hand-computed expectations")]
-    [Trait("Feature", "CUT-004")]
-    public void CUT_004()
-    {
-    }
-
-    [Fact(Skip = "planned: CUT-005 — The shopping list matches hand-computed expectations")]
-    [Trait("Feature", "CUT-005")]
-    public void CUT_005()
-    {
-    }
-
-    [Fact(Skip = "planned: CUT-006 — Takeoff totals are grouped and rounded once")]
-    [Trait("Feature", "CUT-006")]
-    public void CUT_006()
-    {
-    }
-
-    [Fact(Skip = "planned: CUT-007 — Sheet-goods nesting reports the sheets a project needs")]
-    [Trait("Feature", "CUT-007")]
-    public void CUT_007()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-005 — Every edit goes through the update interface")]
-    [Trait("Feature", "CVS-005")]
-    public void CVS_005()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-006 — A snap creates a stored relationship the canvas can show")]
-    [Trait("Feature", "CVS-006")]
-    public void CVS_006()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-007 — Live dimensions follow the geometry while dragging")]
-    [Trait("Feature", "CVS-007")]
-    public void CVS_007()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-008 — Every update result has a place on screen")]
-    [Trait("Feature", "CVS-008")]
-    public void CVS_008()
-    {
-    }
-
-    [Fact(Skip = "planned: CVS-009 — Undo, redo and layers over immutable sketch values")]
-    [Trait("Feature", "CVS-009")]
-    public void CVS_009()
-    {
-    }
-
     [Fact(Skip = "planned: CVS-010 — Display precision is per project, and inexact display is marked")]
     [Trait("Feature", "CVS-010")]
     public void CVS_010()
+    {
+    }
+
+    [Fact(Skip = "planned: CVS-012 — Relationship glyphs show their sentence on hover")]
+    [Trait("Feature", "CVS-012")]
+    public void CVS_012()
     {
     }
 
@@ -192,105 +96,9 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: GUI-BRACE-01 — Enlarge an opening until the bracing check flags it")]
-    [Trait("Feature", "GUI-BRACE-01")]
-    public void GUI_BRACE_01()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-BRACE-02 — Change the project's adopted code and see results recomputed")]
-    [Trait("Feature", "GUI-BRACE-02")]
-    public void GUI_BRACE_02()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-BRACE-03 — A result that no longer holds is re-flagged, not carried over")]
-    [Trait("Feature", "GUI-BRACE-03")]
-    public void GUI_BRACE_03()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CHECK-01 — Place a window on a wall and get a cited header")]
-    [Trait("Feature", "GUI-CHECK-01")]
-    public void GUI_CHECK_01()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CHECK-02 — Resize the window and watch the header result update")]
-    [Trait("Feature", "GUI-CHECK-02")]
-    public void GUI_CHECK_02()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CHECK-03 — Hit an out-of-scope case")]
-    [Trait("Feature", "GUI-CHECK-03")]
-    public void GUI_CHECK_03()
-    {
-    }
-
     [Fact(Skip = "planned: GUI-CUT-01 — Build the coffee table end to end")]
     [Trait("Feature", "GUI-CUT-01")]
     public void GUI_CUT_01()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CUT-02 — Assign materials to parts")]
-    [Trait("Feature", "GUI-CUT-02")]
-    public void GUI_CUT_02()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CUT-03 — Open the cut list and check it")]
-    [Trait("Feature", "GUI-CUT-03")]
-    public void GUI_CUT_03()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-CUT-04 — Open the shopping list and export it")]
-    [Trait("Feature", "GUI-CUT-04")]
-    public void GUI_CUT_04()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-01 — Draw a rectangle by dragging")]
-    [Trait("Feature", "GUI-DRAW-01")]
-    public void GUI_DRAW_01()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-02 — Type a dimension in feet-inch-fraction text")]
-    [Trait("Feature", "GUI-DRAW-02")]
-    public void GUI_DRAW_02()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-03 — Recover from invalid dimension text")]
-    [Trait("Feature", "GUI-DRAW-03")]
-    public void GUI_DRAW_03()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-04 — Move a part until it snaps, and see the relationship")]
-    [Trait("Feature", "GUI-DRAW-04")]
-    public void GUI_DRAW_04()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-05 — Undo and redo a chain of edits")]
-    [Trait("Feature", "GUI-DRAW-05")]
-    public void GUI_DRAW_05()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-06 — Save a design, reopen it and find the same design")]
-    [Trait("Feature", "GUI-DRAW-06")]
-    public void GUI_DRAW_06()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-DRAW-07 — See a conflict explained rather than a wrong number")]
-    [Trait("Feature", "GUI-DRAW-07")]
-    public void GUI_DRAW_07()
     {
     }
 
@@ -312,42 +120,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: IOP-004 — No proprietary import dependency enters without a recorded decision")]
-    [Trait("Feature", "IOP-004")]
-    public void IOP_004()
-    {
-    }
-
-    [Fact(Skip = "planned: MAT-001 — Nominal lumber resolves to actual dimensions")]
-    [Trait("Feature", "MAT-001")]
-    public void MAT_001()
-    {
-    }
-
-    [Fact(Skip = "planned: MAT-002 — Sheet goods resolve to actual thickness and sheet size")]
-    [Trait("Feature", "MAT-002")]
-    public void MAT_002()
-    {
-    }
-
-    [Fact(Skip = "planned: MAT-003 — Decking and fasteners resolve from data")]
-    [Trait("Feature", "MAT-003")]
-    public void MAT_003()
-    {
-    }
-
-    [Fact(Skip = "planned: MAT-004 — Every reference table cites the standard it was authored from")]
-    [Trait("Feature", "MAT-004")]
-    public void MAT_004()
-    {
-    }
-
-    [Fact(Skip = "planned: MAT-005 — Adding a material is a data change")]
-    [Trait("Feature", "MAT-005")]
-    public void MAT_005()
-    {
-    }
-
     [Fact(Skip = "planned: PKG-001 — Self-contained builds start on a clean machine")]
     [Trait("Feature", "PKG-001")]
     public void PKG_001()
@@ -360,21 +132,9 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: PRJ-005 — The manifest records what the file means")]
-    [Trait("Feature", "PRJ-005")]
-    public void PRJ_005()
-    {
-    }
-
     [Fact(Skip = "planned: PRJ-006 — The project is a documented zip container")]
     [Trait("Feature", "PRJ-006")]
     public void PRJ_006()
-    {
-    }
-
-    [Fact(Skip = "planned: PRJ-007 — Save then load is an identity")]
-    [Trait("Feature", "PRJ-007")]
-    public void PRJ_007()
     {
     }
 
@@ -387,54 +147,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: REL-003 — The arm64 macOS artifact carries its ad-hoc signature only")]
     [Trait("Feature", "REL-003")]
     public void REL_003()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-001 — Adopted-code packs load from data")]
-    [Trait("Feature", "RUL-001")]
-    public void RUL_001()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-002 — Every result carries a full citation")]
-    [Trait("Feature", "RUL-002")]
-    public void RUL_002()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-003 — Out of scope is a first-class result")]
-    [Trait("Feature", "RUL-003")]
-    public void RUL_003()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-004 — The header evaluator returns the matching row")]
-    [Trait("Feature", "RUL-004")]
-    public void RUL_004()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-005 — The bracing evaluator runs over a whole wall line")]
-    [Trait("Feature", "RUL-005")]
-    public void RUL_005()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-006 — Overlays compose, and the citation names the layer")]
-    [Trait("Feature", "RUL-006")]
-    public void RUL_006()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-007 — The code picker is built from the installed packs")]
-    [Trait("Feature", "RUL-007")]
-    public void RUL_007()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-008 — Changing the project's code recomputes every result")]
-    [Trait("Feature", "RUL-008")]
-    public void RUL_008()
     {
     }
 

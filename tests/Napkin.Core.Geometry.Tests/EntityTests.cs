@@ -6,12 +6,13 @@ namespace Napkin.Core.Geometry.Tests;
 /// </summary>
 public class EntityTests
 {
-    private static Box At(int quarterTurns) => new(
+    private static Box At(int quarterTurns) => Box.AsDrawn(
         EntityId.New(),
         LayerId.Default,
         Point2.Inches(10, 20),
         Length.Inches(30),
         Length.Inches(8),
+        Box.DefaultDepth,
         Angle.Zero.Rotate90(quarterTurns));
 
     [Trait("Feature", "GEO-007")]
@@ -32,7 +33,7 @@ public class EntityTests
         Assert.Equal(Point2.Inches(nwX, nwY), box.Corner(BoxCorner.NorthWest));
 
         // The anchor is the south-west corner of the local frame, whatever the rotation.
-        Assert.Equal(box.Anchor, box.Corner(BoxCorner.SouthWest));
+        Assert.Equal(box.Anchor.XY, box.Corner(BoxCorner.SouthWest));
     }
 
     [Trait("Feature", "GEO-007")]
@@ -43,29 +44,30 @@ public class EntityTests
     [InlineData(3, 14, 5)]
     public void CentreIsDerivedFromTheParameters(int quarterTurns, int centreX, int centreY)
     {
-        Assert.Equal(Point2.Inches(centreX, centreY), At(quarterTurns).Center);
+        Assert.Equal(Point2.Inches(centreX, centreY), At(quarterTurns).Center.XY);
     }
 
     [Trait("Feature", "GEO-007")]
     [Fact]
     public void CentreRoundsByAtMostHalfAUnitOnAnOddSide()
     {
-        Box odd = new(EntityId.New(), LayerId.Default, Point2.Origin, new Length(3), new Length(5), Angle.Zero);
+        Box odd = Box.AsDrawn(EntityId.New(), LayerId.Default, Point2.Origin, new Length(3), new Length(5), Box.DefaultDepth, Angle.Zero);
 
         // 3/2 rounds half to even to 2; 5/2 rounds half to even to 2.
-        Assert.Equal(new Point2(new Length(2), new Length(2)), odd.Center);
+        Assert.Equal(new Point2(new Length(2), new Length(2)), odd.Center.XY);
     }
 
     [Fact]
     public void SizeIsWhatTheUserTypedEvenWhenTheCornersRound()
     {
         // A 10" part is 10" even when it is rotated 37° and its rounded corners are not (§2.3).
-        Box tilted = new(
+        Box tilted = Box.AsDrawn(
             EntityId.New(),
             LayerId.Default,
             Point2.Origin,
             Length.Inches(10),
             Length.Inches(10),
+            Box.DefaultDepth,
             Angle.Degrees(37));
 
         Assert.Equal(Length.Inches(10), tilted.Width);

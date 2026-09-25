@@ -1,10 +1,10 @@
 <Project>
 
-  <!-- The one place napkin's version is set (DESIGN.md §12). The minor number N is bumped by the
-       pull request that lands the work, by its author; patch stays 0. Every assembly and the app
+  <!-- The one place napkin's version is set (DESIGN.md §12). The minor number N is bumped by
+       whoever lands each change directly on main; patch stays 0. Every assembly and the app
        report 0.N.0-beta. CI adds the commit SHA to the informational version. -->
   <PropertyGroup>
-    <VersionPrefix>0.8.0</VersionPrefix>
+    <VersionPrefix>0.144.0</VersionPrefix>
     <VersionSuffix>beta</VersionSuffix>
   </PropertyGroup>
 

@@ -1,15 +1,52 @@
 # Sample designs (issue #37)
 
-Two hand-crafted designs, in the M1 scene format documented in
+Three hand-crafted designs, in the scene format documented in
 [`docs/file-format.md`](../docs/file-format.md), and the expectations a test asserts against them.
 
 | Fixture | Files |
 |---|---|
 | A coffee table | `coffee-table.design.md`, `coffee-table.scene.json`, `coffee-table.expected.json` |
 | A wall with a window | `wall-with-window.design.md`, `wall-with-window.scene.json`, `wall-with-window.expected.json` |
+| A table with rounded corners | `rounded-corner-table.design.md`, `rounded-corner-table.scene.json`, `rounded-corner-table.expected.json` |
+| A bookcase (#101) | `bookcase.design.md`, `bookcase.scene.json`, `bookcase.expected.json` |
+| A bench with one box standing for two rails (#101) | `bench.design.md`, `bench.scene.json`, `bench.expected.json` |
+| One beam placed four ways (#101) | `lying-beam.design.md`, `lying-beam.scene.json`, `lying-beam.expected.json` |
+| Five slats, each flush to the last (#101) | `chain-of-five.design.md`, `chain-of-five.scene.json`, `chain-of-five.expected.json` |
+| Awkward fractions, incl. an off-grid size (#101) | `fraction-stress.design.md`, `fraction-stress.scene.json`, `fraction-stress.expected.json` |
+| A 40-foot plate and wall with a 1/32" shim (#101) | `scale-extremes.design.md`, `scale-extremes.scene.json`, `scale-extremes.expected.json` |
+| 25 studs at 16" on centre and two plates (#101) | `framing-16-oc.design.md`, `framing-16-oc.scene.json`, `framing-16-oc.expected.json` |
+| An L-bracket, a distinct feature on every side (#101) | `l-bracket.design.md`, `l-bracket.scene.json`, `l-bracket.expected.json` |
+| Two boards in the same place and a peg through both (#101) | `overlap.design.md`, `overlap.scene.json`, `overlap.expected.json` |
+| A new 3 ft window in an existing 12 ft exterior wall — renovation example 2 (#161) | `window-in-existing-wall.design.md`, `window-in-existing-wall.scene.json`, `window-in-existing-wall.expected.json` |
+| Finishing a 12 × 14 ft basement room — renovation example 1 (#162) | `basement-room.design.md`, `basement-room.scene.json`, `basement-room.expected.json` |
+| A picture frame, four 45° mitres cut to the long point (#101, #97) | `picture-frame.design.md`, `picture-frame.scene.json`, `picture-frame.expected.json` |
+| A bench whose every part names its stock, for the shopping list (#9) | `stocked-bench.design.md`, `stocked-bench.scene.json`, `stocked-bench.expected.json` |
 
-`tests/Napkin.Core.Project.Tests` loads each scene with the #6 reader and asserts it matches its
-`*.expected.json` exactly, in integer units.
+`tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts
+it matches its `*.expected.json` exactly, in integer units, and checks every box of all three —
+its plan position and size and, since format version 4, its height, depth and face-up;
+`tests/Napkin.Modules.Furniture.Tests` does the same for all three fixtures' cut lists, and for the
+rounded-corner table's outline.
+
+**The rounded-corner table is the shaped-part fixture** (`docs/design/shaped-parts-model.md` §8).
+The coffee table is left exactly as drawn — five plain rectangles, square corners — because it is
+Marc's design and a feature does not get to edit it; a shaped part earns its own sample instead.
+The new one repeats the coffee table's frame so that the one thing that differs, a 1" radius at
+each of the top's four corners, is legible against a familiar shape. Its expectations carry the
+top's outline as well as its cut-list row, walked by hand from §1.5's rule.
+
+**The stocked bench is the shopping list's fixture** (#9). Every part names its stock — 2x4 legs
+and stretchers, 1x4 aprons and end rails, a 3/4 plywood top — so its cut list's five rows become
+three lines to buy, and each 6' 1x4 carries an apron and an end rail: several parts from one
+board. Its `shoppingList` and `shoppingListCsv` are worked by hand (first-fit decreasing over the
+library's stocked lengths, board feet summed exactly and rounded once), each row with its
+`derivation`; `SampleShoppingListTests` holds them and `GUI-CUT-04` reads them on screen.
+
+The ten before it are the **purpose-built situations** of issue #101 (the conflict case cannot be a file, see below; the picture frame is also #97's shaped-cut fixture, and its rows carry the mitre sentences worked out by hand from `docs/design/shaped-parts-model.md` §4.4). Their
+expectations add each box's world-space `minUnits`/`maxUnits`, the design's `overall` size and the
+`totalVolumeCubicUnits` of the cut list, all worked out by hand; `SampleSetTests` in
+`tests/Napkin.Modules.Furniture.Tests` holds them. Being files in this folder they also appear in
+the app's Samples menu, where they can be opened in the 3D view.
 
 ## The rule
 
@@ -44,16 +81,26 @@ after re-doing the arithmetic by hand and writing the new derivation down.
 
 ## What is deliberately **not** here
 
-- **No cut list and no materials list.** Those need finished sizes in three dimensions and the
-  materials library (#7), neither of which exists; catalogue features `CUT-004` and `CUT-005` stay
-  unclaimed until #8 and #9 can produce something to compare. The thicknesses and lengths the plan
-  view cannot hold are written in each `design.md` and repeated in the expectations file under
-  `statedNotInScene`, marked so that nobody mistakes them for something a test checks.
+- **No materials list, except the stocked bench's.** No part of the coffee table or the other
+  fixtures names a stock, deliberately (see the last bullet), so their shopping lists would report
+  every part under "no stock chosen". The shopping list's worked example is `stocked-bench` (#9,
+  below) rather than an edit to the coffee table.
+
+  The **cut list** is here, as of #8: `coffee-table.expected.json`'s `cutList` is four rows
+  re-derived by hand from `coffee-table.design.md`, each with its own `derivation`;
+  `rounded-corner-table.expected.json`'s is the same four rows re-derived again, with the
+  sentence its top's rounded corners read as; and `wall-with-window.expected.json`'s is empty
+  because neither of its boxes is a part. The
+  thicknesses and lengths a single 2D view cannot hold are still written in each `design.md` and
+  repeated under `statedNotInScene`; the scene itself holds all three dimensions, as each box's
+  `depth` alongside its length and width.
 - **No header size, stud count or bracing length** in the wall fixture. Those expectations are
   added in M4 and M5 by a person reading the relevant row of Connecticut's published adopted text
   and citing the page it came from — never from memory, and never from napkin's own output.
-- **No nominal-to-actual lumber sizes.** Every dimension in these fixtures is a finished dimension
-  the design itself states.
+- **No nominal-to-actual lumber sizes written here.** Every dimension in these fixtures is a
+  finished dimension the design itself states. The stocked bench states its parts at its stocks'
+  dry sizes, and those sizes and the stock lengths its shopping list buys in are the shipped
+  materials library's rows, cited there, not numbers written from memory.
 
 ## Opening these in the app
 
@@ -86,11 +133,80 @@ must be drawn at, so one set of hand-derived numbers is what both the reader and
 held to. It reads them from here, in the repository, rather than from the build output: they are
 the answers, not something the application ships.
 
-**Entities carry no name.** `Design.Labels` — the viewer's part names — has nothing to read from
-the file: the format stores ids, geometry and relationships only, so a design opened from one of
-these files is drawn with no name on any part. The names in these fixtures live in their
-`*.expected.json`. Putting a name in the scene file is a new field and a `formatVersion` bump,
-which the cut list (#8) may well want; see `docs/file-format.md`.
+**Entities carry a name, and boxes carry a part.** Scene format version 2 (#8) added both, so the
+names that used to live only in `*.expected.json` are now in the scene files too and
+`Design.Labels` — the viewer's part names — is filled straight from the file. The expectations
+file still states them, and the reader test asserts the two agree: the fixture is the answer and
+the scene is what is being checked, which is the wrong way round only if they are allowed to
+disagree silently.
+
+The coffee table's nine boxes are all parts; the wall and its opening are not, so they carry
+`"part": null`. A part's third dimension — the one a plan view cannot hold — is its box's `depth`
+(scene format version 4; it was the part's `outOfPlane` until then), and every value of it here is
+one of the three numbers already listed under `statedNotInScene`: 3/4″ = 768, 16 1/4″ = 16640 and
+3 1/2″ = 3584 units. Nothing was invented to make a cut list possible.
+
+**Every box is placed in space** (format version 4): an `anchor.z`, a `depth` and a `faceUp`.
+In the two tables every value is arithmetic on the stated dimensions — legs on the floor, the
+top's underside on the legs' tops, the aprons' upper edges flush under it — derived by hand in each
+`design.md` and in each box's `derivation`; no relationship holds any of it in Z. **The wall's
+are placeholders**: its design states no wall height, opening height or sill, so the wall and the
+opening carry `z` 0 and `depth` 768, what the version-3 reader gave a box that was not a part,
+until the design states real ones (`wall-with-window.design.md`).
+
+**Format version 5 (joinery, #144) changed no sample's meaning.** Every scene here gained the version
+number and the three empty lists the format now requires (`"hardware": []` on every part,
+`"fastenerChoices": []` and `"supplies": []` at the root) and nothing else; no sample has a joint, so
+every expectation in every `*.expected.json` is the hand-derived number it was, with only its
+`formatVersion` changed. The first sample with joints is the DIY coffee table (#146), whose
+expectations are derived by hand from `docs/design/joinery-and-fasteners.md` §2 and §6.5.
+
+**Format version 6 (the code check's inputs, #18/#19) changed no sample's meaning.** Every scene
+gained the version number, `"wall": null` on every box, and `"code": null` with an all-`null`
+`"site"` at the root (nothing entered), and nothing else; every `*.expected.json` changed only its
+`formatVersion`.
+
+**Format version 8 (wall bracing, #39) changed no sample's meaning.** A wall's inputs gained
+`"bracing"`; no sample has a wall with inputs (every box says `"wall": null`), so every scene and
+every `*.expected.json` changed only its `formatVersion`. Format version 7 (`site.roofLiveLoad`)
+likewise added only the null field and the version.
+
+**Format version 9 (the rough mark, `docs/design/sketch-mode.md` §4.1) changed no sample's
+meaning.** Every part gained `"rough": false` — no sample is rough — by `samples restamp`, which
+also rewrote each scene through the real `SceneWriter`; every `*.expected.json` changed only its
+`formatVersion`.
+
+**Format version 10 (renovation, `docs/design/renovation-sketches.md` §7) changed no sample's
+meaning.** Every entity gained `"phase": "new"`, every box `"room": null`, and every wall that has
+inputs `"side": null, "bearing": null, "header": null`, by `samples restamp`; every
+`*.expected.json` changed only its `formatVersion`.
+
+**A purely additive bump — a null field or an empty list, no sample's meaning changed, as every
+bump from version 5 on has been — no longer needs 15 scenes and 15 expectations rewritten by hand
+(#181).** Run
+
+```
+dotnet run --project tools/Napkin.Tools -- samples restamp
+```
+
+after bumping `FormatStamp.CurrentVersion` and teaching the writer the new field. It brings every
+`samples/*.scene.json` and `*.expected.json` still behind up to the current version — adding
+exactly the fields that version introduced, as null or empty, the same way this file has described
+each bump by hand above — and verifies the result with the real strict reader before writing it, so
+a sample it touches is provably still readable. It changes nothing in a sample already at the
+current version, so running it after there is nothing left to bump is a no-op with no diff. It
+refuses (rather than guessing) a sample older than format version 4, since versions 2-4 changed what
+existing fields *mean*, not just added new ones; a bump like that is still a by-hand rewrite, the
+way the samples were rewritten for those versions. See `SamplesCommand` in
+`tools/Napkin.Tools/Commands/` for the exact per-version field list.
+
+**Per-view camera state is a user setting, not scene data, decided ahead of the milestone that will
+tempt it (#181).** M6's per-view camera memory and Parts view (#127, #128) are exactly the kind of
+feature that invites "while we're adding a view, just save what it was looking at" into
+`scene.json`. It belongs in `UserSettings.cs` instead: it is what a person set for themselves while
+looking at a design, not a fact about the design, and it should not force every collaborator's
+saved file to carry it or every format bump to touch 15 samples for a field nothing else needs. See
+`docs/file-format.md` for where this is recorded for the format itself.
 
 **Layers are named "Default".** The viewer styles a part by the name of the layer it is on — a
 part on "Parts" is drawn as furniture, one on "Wall" as a wall, one on "Opening" as a dashed hole —

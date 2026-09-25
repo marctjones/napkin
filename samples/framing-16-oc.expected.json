@@ -1,0 +1,495 @@
+{
+  "fixture": "framing-16-oc",
+  "scene": "framing-16-oc.scene.json",
+  "design": "framing-16-oc.design.md",
+  "derivedBy": "hand, from the stated dimensions in framing-16-oc.design.md; never regenerated from napkin's output",
+  "formatVersion": 10,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 27,
+    "pieces": 27,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 394752,
+    "depthUnits": 3584,
+    "heightUnits": 98304,
+    "widthText": "32'-1 1/2\"",
+    "depthText": "3 1/2\"",
+    "heightText": "8'-0\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Plate, bottom",
+      "id": "80000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 394752,
+        "y": 3584,
+        "z": 1536
+      },
+      "derivation": "Lies flat: 385 1/2\" long (24 studs x 16\" + one 1 1/2\" stud), 3 1/2\" wide, 1 1/2\" thick. x 0..385 1/2, z 0..1 1/2."
+    },
+    {
+      "name": "Plate, top",
+      "id": "80000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 96768
+      },
+      "maxUnits": {
+        "x": 394752,
+        "y": 3584,
+        "z": 98304
+      },
+      "derivation": "The same plate on top of the studs: its underside at 1 1/2 + 92 1/2 = 94\". z 94..95 1/2."
+    },
+    {
+      "name": "Stud 1",
+      "id": "80000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 1536,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 1 at 16\" on centre: 1 1/2\" thick across X, west face at 0 x 16 = 0\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 0..3/2."
+    },
+    {
+      "name": "Stud 2",
+      "id": "80000000-0000-4000-8000-000000000004",
+      "minUnits": {
+        "x": 16384,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 17920,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 2 at 16\" on centre: 1 1/2\" thick across X, west face at 1 x 16 = 16\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 16..35/2."
+    },
+    {
+      "name": "Stud 3",
+      "id": "80000000-0000-4000-8000-000000000005",
+      "minUnits": {
+        "x": 32768,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 34304,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 3 at 16\" on centre: 1 1/2\" thick across X, west face at 2 x 16 = 32\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 32..67/2."
+    },
+    {
+      "name": "Stud 4",
+      "id": "80000000-0000-4000-8000-000000000006",
+      "minUnits": {
+        "x": 49152,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 50688,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 4 at 16\" on centre: 1 1/2\" thick across X, west face at 3 x 16 = 48\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 48..99/2."
+    },
+    {
+      "name": "Stud 5",
+      "id": "80000000-0000-4000-8000-000000000007",
+      "minUnits": {
+        "x": 65536,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 67072,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 5 at 16\" on centre: 1 1/2\" thick across X, west face at 4 x 16 = 64\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 64..131/2."
+    },
+    {
+      "name": "Stud 6",
+      "id": "80000000-0000-4000-8000-000000000008",
+      "minUnits": {
+        "x": 81920,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 83456,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 6 at 16\" on centre: 1 1/2\" thick across X, west face at 5 x 16 = 80\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 80..163/2."
+    },
+    {
+      "name": "Stud 7",
+      "id": "80000000-0000-4000-8000-000000000009",
+      "minUnits": {
+        "x": 98304,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 99840,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 7 at 16\" on centre: 1 1/2\" thick across X, west face at 6 x 16 = 96\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 96..195/2."
+    },
+    {
+      "name": "Stud 8",
+      "id": "80000000-0000-4000-8000-000000000010",
+      "minUnits": {
+        "x": 114688,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 116224,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 8 at 16\" on centre: 1 1/2\" thick across X, west face at 7 x 16 = 112\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 112..227/2."
+    },
+    {
+      "name": "Stud 9",
+      "id": "80000000-0000-4000-8000-000000000011",
+      "minUnits": {
+        "x": 131072,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 132608,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 9 at 16\" on centre: 1 1/2\" thick across X, west face at 8 x 16 = 128\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 128..259/2."
+    },
+    {
+      "name": "Stud 10",
+      "id": "80000000-0000-4000-8000-000000000012",
+      "minUnits": {
+        "x": 147456,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 148992,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 10 at 16\" on centre: 1 1/2\" thick across X, west face at 9 x 16 = 144\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 144..291/2."
+    },
+    {
+      "name": "Stud 11",
+      "id": "80000000-0000-4000-8000-000000000013",
+      "minUnits": {
+        "x": 163840,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 165376,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 11 at 16\" on centre: 1 1/2\" thick across X, west face at 10 x 16 = 160\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 160..323/2."
+    },
+    {
+      "name": "Stud 12",
+      "id": "80000000-0000-4000-8000-000000000014",
+      "minUnits": {
+        "x": 180224,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 181760,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 12 at 16\" on centre: 1 1/2\" thick across X, west face at 11 x 16 = 176\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 176..355/2."
+    },
+    {
+      "name": "Stud 13",
+      "id": "80000000-0000-4000-8000-000000000015",
+      "minUnits": {
+        "x": 196608,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 198144,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 13 at 16\" on centre: 1 1/2\" thick across X, west face at 12 x 16 = 192\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 192..387/2."
+    },
+    {
+      "name": "Stud 14",
+      "id": "80000000-0000-4000-8000-000000000016",
+      "minUnits": {
+        "x": 212992,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 214528,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 14 at 16\" on centre: 1 1/2\" thick across X, west face at 13 x 16 = 208\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 208..419/2."
+    },
+    {
+      "name": "Stud 15",
+      "id": "80000000-0000-4000-8000-000000000017",
+      "minUnits": {
+        "x": 229376,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 230912,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 15 at 16\" on centre: 1 1/2\" thick across X, west face at 14 x 16 = 224\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 224..451/2."
+    },
+    {
+      "name": "Stud 16",
+      "id": "80000000-0000-4000-8000-000000000018",
+      "minUnits": {
+        "x": 245760,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 247296,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 16 at 16\" on centre: 1 1/2\" thick across X, west face at 15 x 16 = 240\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 240..483/2."
+    },
+    {
+      "name": "Stud 17",
+      "id": "80000000-0000-4000-8000-000000000019",
+      "minUnits": {
+        "x": 262144,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 263680,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 17 at 16\" on centre: 1 1/2\" thick across X, west face at 16 x 16 = 256\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 256..515/2."
+    },
+    {
+      "name": "Stud 18",
+      "id": "80000000-0000-4000-8000-000000000020",
+      "minUnits": {
+        "x": 278528,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 280064,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 18 at 16\" on centre: 1 1/2\" thick across X, west face at 17 x 16 = 272\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 272..547/2."
+    },
+    {
+      "name": "Stud 19",
+      "id": "80000000-0000-4000-8000-000000000021",
+      "minUnits": {
+        "x": 294912,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 296448,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 19 at 16\" on centre: 1 1/2\" thick across X, west face at 18 x 16 = 288\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 288..579/2."
+    },
+    {
+      "name": "Stud 20",
+      "id": "80000000-0000-4000-8000-000000000022",
+      "minUnits": {
+        "x": 311296,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 312832,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 20 at 16\" on centre: 1 1/2\" thick across X, west face at 19 x 16 = 304\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 304..611/2."
+    },
+    {
+      "name": "Stud 21",
+      "id": "80000000-0000-4000-8000-000000000023",
+      "minUnits": {
+        "x": 327680,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 329216,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 21 at 16\" on centre: 1 1/2\" thick across X, west face at 20 x 16 = 320\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 320..643/2."
+    },
+    {
+      "name": "Stud 22",
+      "id": "80000000-0000-4000-8000-000000000024",
+      "minUnits": {
+        "x": 344064,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 345600,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 22 at 16\" on centre: 1 1/2\" thick across X, west face at 21 x 16 = 336\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 336..675/2."
+    },
+    {
+      "name": "Stud 23",
+      "id": "80000000-0000-4000-8000-000000000025",
+      "minUnits": {
+        "x": 360448,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 361984,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 23 at 16\" on centre: 1 1/2\" thick across X, west face at 22 x 16 = 352\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 352..707/2."
+    },
+    {
+      "name": "Stud 24",
+      "id": "80000000-0000-4000-8000-000000000026",
+      "minUnits": {
+        "x": 376832,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 378368,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 24 at 16\" on centre: 1 1/2\" thick across X, west face at 23 x 16 = 368\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 368..739/2."
+    },
+    {
+      "name": "Stud 25",
+      "id": "80000000-0000-4000-8000-000000000027",
+      "minUnits": {
+        "x": 393216,
+        "y": 0,
+        "z": 1536
+      },
+      "maxUnits": {
+        "x": 394752,
+        "y": 3584,
+        "z": 96256
+      },
+      "derivation": "Stud 25 at 16\" on centre: 1 1/2\" thick across X, west face at 24 x 16 = 384\"; 3 1/2\" wide up Y; 92 1/2\" tall between the plates (its depth), z 1 1/2..94. Occupies x 384..771/2."
+    }
+  ],
+  "totalVolumeCubicUnits": 17382135300096,
+  "cutList": [
+    {
+      "label": "Plate",
+      "quantity": 2,
+      "lengthUnits": 394752,
+      "widthUnits": 3584,
+      "thicknessUnits": 1536,
+      "lengthText": "32'-1 1/2\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "1 1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "80000000-0000-4000-8000-000000000001",
+        "80000000-0000-4000-8000-000000000002"
+      ],
+      "derivation": "385 1/2\" = 394752 units (385.5 x 1024); 3 1/2\" = 3584; 1 1/2\" = 1536. Two boxes, one row of 2; the names share \"Plate, \" -> \"Plate\". Text: 385 1/2 = 32 x 12 + 1 1/2 -> 32'-1 1/2\"."
+    },
+    {
+      "label": "Stud",
+      "quantity": 25,
+      "lengthUnits": 94720,
+      "widthUnits": 3584,
+      "thicknessUnits": 1536,
+      "lengthText": "7'-8 1/2\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "1 1/2\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "80000000-0000-4000-8000-000000000003",
+        "80000000-0000-4000-8000-000000000004",
+        "80000000-0000-4000-8000-000000000005",
+        "80000000-0000-4000-8000-000000000006",
+        "80000000-0000-4000-8000-000000000007",
+        "80000000-0000-4000-8000-000000000008",
+        "80000000-0000-4000-8000-000000000009",
+        "80000000-0000-4000-8000-000000000010",
+        "80000000-0000-4000-8000-000000000011",
+        "80000000-0000-4000-8000-000000000012",
+        "80000000-0000-4000-8000-000000000013",
+        "80000000-0000-4000-8000-000000000014",
+        "80000000-0000-4000-8000-000000000015",
+        "80000000-0000-4000-8000-000000000016",
+        "80000000-0000-4000-8000-000000000017",
+        "80000000-0000-4000-8000-000000000018",
+        "80000000-0000-4000-8000-000000000019",
+        "80000000-0000-4000-8000-000000000020",
+        "80000000-0000-4000-8000-000000000021",
+        "80000000-0000-4000-8000-000000000022",
+        "80000000-0000-4000-8000-000000000023",
+        "80000000-0000-4000-8000-000000000024",
+        "80000000-0000-4000-8000-000000000025",
+        "80000000-0000-4000-8000-000000000026",
+        "80000000-0000-4000-8000-000000000027"
+      ],
+      "derivation": "Stands up: plan holds thickness 1 1/2\" (1536) and width 3 1/2\" (3584); length is the depth, 92 1/2\" = 94720 units. Twenty-five boxes, one row of 25: one at each 16\" from 0 to 384\" (24 x 16 = 384, so 25 studs). Text: 92 1/2 = 7 x 12 + 8 1/2 -> 7'-8 1/2\". Names \"Stud 1\"..\"Stud 25\" share \"Stud \" -> \"Stud\"."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+    "Plate,2,\"32'-1 1/2\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",,,,",
+    "Stud,25,\"7'-8 1/2\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",,,,"
+  ]
+}

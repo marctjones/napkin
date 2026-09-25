@@ -187,7 +187,7 @@ public class DirectUpdaterPropagationTests
 
         Solved result = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, Batch.Of(
             new SetParameter(width, Length.Inches(30)),
-            new SetPosition(a, Point2.Inches(5, 5)))));
+            SetPosition.InPlan(a, Point2.Inches(5, 5)))));
 
         SketchAssert.BoxIs(result.Sketch, a, 5, 5, 30, 4);
         Assert.Contains(a, result.Changes.Moved);
@@ -202,7 +202,7 @@ public class DirectUpdaterPropagationTests
         RelationshipId anchor = builder.Anchor(box);
 
         OverConstrained result = Assert.IsType<OverConstrained>(
-            Updater.Apply(builder.Sketch, new SetPosition(box, Point2.Inches(5, 0))));
+            Updater.Apply(builder.Sketch, SetPosition.InPlan(box, Point2.Inches(5, 0))));
 
         Assert.Contains(anchor, result.Conflict.Relationships);
     }
@@ -217,7 +217,7 @@ public class DirectUpdaterPropagationTests
         Solved result = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new AddRelationship(
             new Coincident(
                 SketchBuilder.RelationshipIdAt(99),
-                new CornerRef(box, BoxCorner.NorthEast),
+                TestRefs.Corner(box, BoxCorner.NorthEast),
                 new NodeRef(node)))));
 
         // The box's north-east corner is at (20, 4); the node follows it.
@@ -237,7 +237,7 @@ public class DirectUpdaterPropagationTests
         Solved result = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new AddRelationship(
             new Coincident(
                 SketchBuilder.RelationshipIdAt(99),
-                new CornerRef(box, BoxCorner.NorthEast),
+                TestRefs.Corner(box, BoxCorner.NorthEast),
                 new NodeRef(node)))));
 
         // The node stays; the box moves so that its north-east corner lands on it.
@@ -248,28 +248,30 @@ public class DirectUpdaterPropagationTests
 
     [Trait("Feature", "GEO-013")]
     [Fact]
-    public void SetRotationIsRefusedWhenTheBoxHasRelationshipsRotatingWouldReinterpret()
+    public void SetOrientationIsRefusedWhenTheBoxHasRelationshipsRotatingWouldReinterpret()
     {
         (SketchBuilder builder, EntityId a, _, _, _) = FlushPair();
 
-        Assert.Equal(
-            new Rejected(RejectionReason.RotationWithRelationships),
-            Updater.Apply(builder.Sketch, new SetRotation(a, Angle.Right)));
+        Rejected refused = Assert.IsType<Rejected>(
+            Updater.Apply(builder.Sketch, new SetOrientation(a, BoxFace.Top, Angle.Right)));
+        Assert.Equal(RejectionReason.OrientationWithRelationships, refused.Reason);
+        Assert.Equal(ValidationErrorKind.TurnWouldReinterpret, refused.Detail!.Kind);
+        Assert.Contains("Flush", refused.Detail.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void SetRotationTurnsABoxWithOnlySizeAndAnchorRelationshipsAboutItsAnchor()
+    public void SetOrientationTurnsABoxWithOnlySizeAndAnchorRelationshipsAboutItsAnchor()
     {
         SketchBuilder builder = new();
         EntityId box = builder.AddBox(10, 20, 30, 8);
         builder.Anchor(box);
         builder.WidthIs(box, Length.Inches(30));
 
-        Solved result = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new SetRotation(box, Angle.Right)));
+        Solved result = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new SetOrientation(box, BoxFace.Top, Angle.Right)));
 
         Box rotated = result.Sketch.Find<Box>(box)!;
         Assert.Equal(Angle.Right, rotated.Rotation);
-        Assert.Equal(Point2.Inches(10, 20), rotated.Anchor);
+        Assert.Equal(Point3.Inches(10, 20, 0), rotated.Anchor);
         Assert.Equal(Point2.Inches(10, 50), rotated.Corner(BoxCorner.SouthEast));
 
         // A rotation leaves the anchor where it is, so it is neither a move nor a resize.
@@ -278,7 +280,7 @@ public class DirectUpdaterPropagationTests
 
         Assert.Equal(
             new Rejected(RejectionReason.RotationNotSupported),
-            Updater.Apply(builder.Sketch, new SetRotation(box, Angle.Degrees(45))));
+            Updater.Apply(builder.Sketch, new SetOrientation(box, BoxFace.Top, Angle.Degrees(45))));
     }
 
     [Fact]
@@ -321,8 +323,8 @@ public class DirectUpdaterPropagationTests
         builder.Flush(wall, BoxEdge.North, opening, BoxEdge.North);
         RelationshipId along = builder.Add(id => new AxisDistance(
             id,
-            new CornerRef(wall, BoxCorner.SouthWest),
-            new CornerRef(opening, BoxCorner.SouthWest),
+            TestRefs.Corner(wall, BoxCorner.SouthWest),
+            TestRefs.Corner(opening, BoxCorner.SouthWest),
             Axis.X,
             Length.Inches(36)));
         RelationshipId width = builder.WidthIs(opening, Length.Inches(36));

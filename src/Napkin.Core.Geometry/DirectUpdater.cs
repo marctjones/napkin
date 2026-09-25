@@ -40,6 +40,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         typeof(ParamValue),
         typeof(EqualParam),
         typeof(Centered),
+        typeof(Joint),
     ];
 
     /// <inheritdoc/>
@@ -57,14 +58,40 @@ public sealed class DirectUpdater : IGeometryUpdater
             RemoveEntity remove => ApplyRemoveEntity(sketch, remove),
             RemoveRelationship remove => ApplyRemoveRelationship(sketch, remove),
             SetLayer setLayer => ApplySetLayer(sketch, setLayer),
+            SetName setName => ApplySetName(sketch, setName),
+            AddLayer addLayer => sketch.Layers.Any(layer => layer.Id == addLayer.Layer.Id)
+                ? new Rejected(RejectionReason.DuplicateEntity)
+                : new Solved(sketch.WithLayer(addLayer.Layer), ChangeSet.Empty),
+            SetPart setPart => ApplySetPart(sketch, setPart),
+            SetFastenerChoices choices => new Solved(sketch with { FastenerChoices = choices.Choices }, ChangeSet.Empty),
+            SetSupplies supplies => new Solved(sketch with { Supplies = supplies.Supplies }, ChangeSet.Empty),
+            SetCode code => new Solved(sketch with { Code = code.Code }, ChangeSet.Empty),
+            SetSite site => new Solved(sketch with { Site = site.Site }, ChangeSet.Empty),
+            SetWallInputs wall => ApplySetWallInputs(sketch, wall),
+            SetPhase phase => sketch.Find(phase.Id) is { } phased
+                ? new Solved(sketch.WithEntity(phased with { Phase = phase.Phase }), ChangeSet.Empty with { Modified = [phase.Id] })
+                : new Rejected(RejectionReason.UnknownEntity),
+            SetRoomInputs room => ApplySetRoomInputs(sketch, room),
+            SetNote note => sketch.Find(note.Id) switch
+            {
+                Note found => new Solved(sketch.WithEntity(found with { Text = note.Text, Symbol = note.Symbol }), ChangeSet.Empty with { Modified = [note.Id] }),
+                null => new Rejected(RejectionReason.UnknownEntity),
+                _ => new Rejected(RejectionReason.DanglingReference),
+            },
+
+            // A cut is in the blank's local frame and moves with it, so setting or removing one
+            // moves no geometry and disturbs no relationship: structural, like a rename
+            // (docs/design/shaped-parts-model.md §2.2).
+            SetCut setCut => ApplySetCut(sketch, setCut),
+            RemoveCut removeCut => ApplyRemoveCut(sketch, removeCut),
 
             // Geometry requests need the rectilinear precondition first.
             AddRelationship add => ApplyAddRelationship(sketch, add),
             SetParameter setParameter => ApplySetParameter(sketch, setParameter),
             SetPosition setPosition => ApplySetPosition(sketch, setPosition),
-            SetRotation setRotation => ApplySetRotation(sketch, setRotation),
+            SetOrientation setOrientation => ApplySetOrientation(sketch, setOrientation),
             Drag drag => ApplyDrag(sketch, drag),
-            DragEdge dragEdge => ApplyDragEdge(sketch, dragEdge),
+            DragFace dragFace => ApplyDragFace(sketch, dragFace),
 
             Batch batch => ApplyBatch(sketch, batch),
 
@@ -95,7 +122,7 @@ public sealed class DirectUpdater : IGeometryUpdater
 
         if (entity is Box box)
         {
-            if (box.Width <= Length.Zero || box.Height <= Length.Zero)
+            if (box.Width <= Length.Zero || box.Height <= Length.Zero || box.Depth <= Length.Zero)
             {
                 return new Rejected(RejectionReason.NonPositiveSize);
             }
@@ -103,6 +130,13 @@ public sealed class DirectUpdater : IGeometryUpdater
             if (!box.Rotation.IsRightAngleMultiple)
             {
                 return new Rejected(RejectionReason.RotationNotSupported);
+            }
+
+            // A box arrives with its cuts already on it, so it is validated here rather than by a
+            // later SetCut (docs/design/shaped-parts-model.md §2.2).
+            if (CutsRefuse(box) is { } refusal)
+            {
+                return refusal;
             }
         }
 
@@ -117,6 +151,14 @@ public sealed class DirectUpdater : IGeometryUpdater
             if (!MeasurandResolves(sketch, dimension.Measures))
             {
                 return new Rejected(RejectionReason.DanglingReference);
+            }
+
+            // Invariant 13: a dimension lies in the plan, so one that would measure along world Z
+            // has nowhere to be drawn (docs/design/assembly-model.md §7.3). The number is not lost:
+            // it is a ParamValue or an AxisDistance, which needs no drawing.
+            if (PlaceRules.MeasurandRefusal(sketch, dimension) is { } leaves)
+            {
+                return new Rejected(RejectionReason.UnsupportedRequest, leaves);
             }
 
             if (dimension.Drives is { } driving && !sketch.Relationships.ContainsKey(driving))
@@ -231,6 +273,156 @@ public sealed class DirectUpdater : IGeometryUpdater
             ChangeSet.Empty with { Modified = [request.Id] });
     }
 
+    private static UpdateResult ApplySetName(Sketch sketch, SetName request)
+    {
+        if (sketch.Find(request.Id) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        return new Solved(
+            sketch.WithEntity(entity with { Name = request.Name }),
+            ChangeSet.Empty with { Modified = [request.Id] });
+    }
+
+    private static UpdateResult ApplySetWallInputs(Sketch sketch, SetWallInputs request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        if (request.Inputs?.StudSpacing is { } spacing && spacing <= Length.Zero)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        Box changed = box with { WallInputs = request.Inputs?.OrNull() };
+        return new Solved(sketch.WithEntity(changed), ChangeSet.Empty with { Modified = [box.Id] });
+    }
+
+    private static UpdateResult ApplySetRoomInputs(Sketch sketch, SetRoomInputs request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        if (request.Inputs is { } room && RoomRules.Refusal(room) is not null)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        return new Solved(sketch.WithEntity(box with { Room = request.Inputs }), ChangeSet.Empty with { Modified = [box.Id] });
+    }
+
+    private static UpdateResult ApplySetPart(Sketch sketch, SetPart request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        // Only a box can be a piece somebody cuts: a node has no size and a dimension is an
+        // annotation, so asking either to be a part is a mistake rather than a preference.
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        return new Solved(
+            sketch.WithEntity(box with { Part = request.Part }),
+            ChangeSet.Empty with { Modified = [request.Box] });
+    }
+
+    private static UpdateResult ApplySetCut(Sketch sketch, SetCut request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        // Only a box is a blank. A node has no edges to cut and a dimension is an annotation.
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        // "Adds a cut, or replaces the cut at the same site" (§2.2): one operation per site, so
+        // what was there goes and the new one takes its place. Box.Cuts's initialiser re-sorts.
+        Box candidate = box with
+        {
+            Cuts = box.Cuts.RemoveAll(existing => existing.Site == request.Cut.Site).Add(request.Cut),
+        };
+
+        if (CutsRefuse(candidate) is { } refusal)
+        {
+            return refusal;
+        }
+
+        if (candidate == box)
+        {
+            // The same cut again is not a change, and a change set that claimed one would make the
+            // canvas redraw for nothing — the no-op branch SetOrientation already has.
+            return new Solved(sketch, ChangeSet.Empty);
+        }
+
+        return new Solved(
+            sketch.WithEntity(candidate),
+            ChangeSet.Empty with { Modified = [request.Box] });
+    }
+
+    private static UpdateResult ApplyRemoveCut(Sketch sketch, RemoveCut request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        ImmutableList<Cut> left = box.Cuts.RemoveAll(cut => cut.Site == request.Site);
+        if (left.Count == box.Cuts.Count)
+        {
+            // No Detail: nothing about the sketch is wrong, and the request already names the box
+            // and the site the caller asked about.
+            return new Rejected(RejectionReason.NoSuchCut);
+        }
+
+        // Taking a cut off only gives the blank area back, so no invariant can break here.
+        return new Solved(
+            sketch.WithEntity(box with { Cuts = left }),
+            ChangeSet.Empty with { Modified = [request.Box] });
+    }
+
+    /// <summary>
+    /// The refusal a box's cuts earn it, or <see langword="null"/> when they are fine — the one
+    /// mapping from an invariant 5-to-9 failure to a <see cref="RejectionReason"/>, shared by
+    /// <see cref="AddEntity"/>, <see cref="SetCut"/> and the post-write check of &#xA7;2.3, so that
+    /// the same broken box is refused for the same reason whichever door it came in by.
+    /// </summary>
+    private static Rejected? CutsRefuse(Box box)
+        => CutRules.FirstError(box) is { } error
+            ? new Rejected(
+                error.Kind is ValidationErrorKind.CutDoesNotFit or ValidationErrorKind.NonPositiveArea
+                    ? RejectionReason.CutDoesNotFit
+                    : RejectionReason.CutSiteTaken,
+                error)
+            : null;
+
     // ---------------------------------------------------------------------------------------
     // Exact geometry requests
     // ---------------------------------------------------------------------------------------
@@ -263,6 +455,20 @@ public sealed class DirectUpdater : IGeometryUpdater
         if (relationship is ParamValue paramValue && paramValue.Value <= Length.Zero)
         {
             return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        // §2.3: a pairing that can never hold is refused, not stored and quietly violated. The
+        // loader asks the same question through Sketch.Validate.
+        if (PlaceRules.Refusal(sketch, relationship) is { } notComparable)
+        {
+            return new Rejected(RejectionReason.PlacesNotComparable, notComparable);
+        }
+
+        if (relationship is Joint joint && JointRules.Errors(joint).FirstOrDefault() is { } invalid)
+        {
+            return new Rejected(
+                RejectionReason.InvalidJoint,
+                new ValidationError(ValidationErrorKind.InvalidJoint, invalid));
         }
 
         Sketch target = sketch.WithRelationship(relationship);
@@ -324,6 +530,7 @@ public sealed class DirectUpdater : IGeometryUpdater
     {
         ParamValue { Param: BoxWidthRef width } => new HashSet<ScalarKey> { new(width.Box, ScalarKind.Width) },
         ParamValue { Param: BoxHeightRef height } => new HashSet<ScalarKey> { new(height.Box, ScalarKind.Height) },
+        ParamValue { Param: BoxDepthRef depth } => new HashSet<ScalarKey> { new(depth.Box, ScalarKind.Depth) },
         _ => ImmutableHashSet<ScalarKey>.Empty,
     };
 
@@ -339,6 +546,15 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.UnknownEntity);
         }
 
+        if (entity is Note placed)
+        {
+            // A note has no relationships and no Z: it goes where it is put (renovation §7).
+            Point2 at = new(request.Anchor.X, request.Anchor.Y);
+            return at == placed.Position
+                ? new Solved(sketch, ChangeSet.Empty)
+                : new Solved(sketch.WithEntity(placed with { Position = at }), ChangeSet.Empty with { Moved = [placed.Id] });
+        }
+
         if (entity is not (Box or Node))
         {
             // Only a box or a node carries coordinates of its own. This is a reference of the
@@ -352,10 +568,21 @@ public sealed class DirectUpdater : IGeometryUpdater
             [new ScalarKey(request.Id, ScalarKind.Y)] = request.Anchor.Y,
         };
 
+        if (entity is Box)
+        {
+            seeds[new ScalarKey(request.Id, ScalarKind.Z)] = request.Anchor.Z;
+        }
+        else if (request.Anchor.Z != Length.Zero)
+        {
+            // A node is plan-plane construction geometry at the plan datum (assembly-model §1.4,
+            // §11 decision 16). Putting one above it is refused out loud, not flattened onto Z = 0.
+            return new Rejected(RejectionReason.UnsupportedRequest);
+        }
+
         return Propagate(sketch, seeds, ChangeSet.Empty);
     }
 
-    private UpdateResult ApplySetRotation(Sketch sketch, SetRotation request)
+    private UpdateResult ApplySetOrientation(Sketch sketch, SetOrientation request)
     {
         if (GeometryPrecondition(sketch) is { } precondition)
         {
@@ -367,40 +594,62 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.UnknownEntity);
         }
 
+        if (!Enum.IsDefined(request.FaceUp))
+        {
+            return new Rejected(RejectionReason.UnsupportedRequest);
+        }
+
         if (!request.Rotation.IsRightAngleMultiple)
         {
             return new Rejected(RejectionReason.RotationNotSupported);
         }
 
-        // Edge and corner references are in the box's local frame, so rotating a box that has a
-        // Flush, Coincident, AxisDistance or Centered would turn a relationship between parallel
-        // edges into one between perpendicular edges. Rather than guess what the user meant, say
-        // so and let the canvas offer to remove them first (design §4.4).
-        foreach (Relationship relationship in sketch.RelationshipsInOrder)
-        {
-            if (!relationship.References.Contains(request.Box))
-            {
-                continue;
-            }
-
-            if (relationship is not (Anchored or ParamValue or EqualParam))
-            {
-                return new Rejected(RejectionReason.RotationWithRelationships);
-            }
-        }
-
-        if (box.Rotation == request.Rotation)
+        Box turned = box with { FaceUp = request.FaceUp, Rotation = request.Rotation };
+        if (turned.Orientation == box.Orientation)
         {
             return new Solved(sketch, ChangeSet.Empty);
         }
 
-        Sketch result = sketch.WithEntity(box with { Rotation = request.Rotation });
+        // Faces, edges and corners are named in the box's local frame, so turning a box that has a
+        // Flush, Coincident, AxisDistance or Centered would silently turn a face-to-face
+        // relationship into a face-to-edge one. Rather than guess what the user meant, say so and
+        // let the canvas offer to remove them first (assembly-model §2.4, §11 decision 6). Sizes
+        // and anchors are not named by place, so they turn with the box and mean what they meant.
+        foreach (Relationship relationship in sketch.RelationshipsInOrder)
+        {
+            if (relationship.References.Contains(request.Box)
+                && relationship is not (Anchored or ParamValue or EqualParam))
+            {
+                return new Rejected(
+                    RejectionReason.OrientationWithRelationships,
+                    new ValidationError(
+                        ValidationErrorKind.TurnWouldReinterpret,
+                        $"{relationship.GetType().Name} {relationship.Id} holds {NameOf(box)} by a place in its own frame, "
+                        + "and turning the box would change which place that is. Remove it first."));
+            }
+        }
+
+        // Invariant 13 after the turn: a dimension on the box — a reference dimension has no
+        // relationship above to catch it by — must still lie in the plan. Asked of the sketch the
+        // turn would write, through the one rule the loader and AddEntity use.
+        Sketch result = sketch.WithEntity(turned);
+        foreach (Dimension dimension in result.Entities.Values.OfType<Dimension>().OrderBy(dimension => dimension.Id))
+        {
+            if (MeasurandEntities(dimension.Measures).Contains(request.Box)
+                && PlaceRules.MeasurandRefusal(result, dimension) is { } leaves)
+            {
+                return new Rejected(RejectionReason.OrientationWithRelationships, leaves);
+            }
+        }
+
         AssertHolds(result);
 
-        // A rotation leaves the anchor where it is and moves everything else about the box, so it
-        // is neither a move nor a resize: the canvas has to redraw it all the same.
+        // A turn leaves the anchor where it is and moves everything else about the box, so it is
+        // neither a move nor a resize: the canvas has to redraw it all the same.
         return new Solved(result, ChangeSet.Empty with { Modified = [request.Box] });
     }
+
+    private static string NameOf(Entity entity) => entity.Name.Length > 0 ? entity.Name : entity.Id.ToString();
 
     // ---------------------------------------------------------------------------------------
     // Best-effort geometry requests
@@ -418,6 +667,15 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.UnknownEntity);
         }
 
+        if (entity is Note note)
+        {
+            // A note has no relationships to carry and no Z: it moves by the drag's plan part alone.
+            Vector2 plan = new(request.Delta.Dx, request.Delta.Dy);
+            return plan == Vector2.Zero
+                ? new Solved(sketch, ChangeSet.Empty)
+                : new Solved(sketch.WithEntity(note with { Position = note.Position + plan }), ChangeSet.Empty with { Moved = [note.Id] });
+        }
+
         HashSet<EntityId> seed = entity switch
         {
             Segment segment => [segment.Start, segment.End],
@@ -431,25 +689,33 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.DanglingReference);
         }
 
-        // The rigid group is per axis, because a Flush on a vertical edge blocks X and not Y, and
-        // an AxisDistance along X blocks X and not Y (design §4.4).
+        // The rigid group is per axis, because a Flush on a vertical face blocks X and not Y or Z,
+        // an AxisDistance along X blocks X only, and a Coincident blocks the axes its two places
+        // share (design §4.4, assembly-model §10 step 4).
         HashSet<EntityId> alongX = RigidGroup(sketch, seed, Axis.X);
         HashSet<EntityId> alongY = RigidGroup(sketch, seed, Axis.Y);
+        HashSet<EntityId> alongZ = RigidGroup(sketch, seed, Axis.Z);
 
-        Vector2 applied = new(
-            alongX.Any(id => IsAnchored(sketch, id)) ? Length.Zero : request.Delta.Dx,
-            alongY.Any(id => IsAnchored(sketch, id)) ? Length.Zero : request.Delta.Dy);
+        // A node has no Z to move: it is plan-plane construction geometry at the plan datum
+        // (assembly-model §1.4). A group along Z that holds one — which only a drag of a node or a
+        // segment starts, since no place a node owns fixes Z — goes nowhere along Z, the way a
+        // group holding an anchored entity goes nowhere.
+        Vector3 applied = new(
+            Blocked(sketch, alongX) ? Length.Zero : request.Delta.Dx,
+            Blocked(sketch, alongY) ? Length.Zero : request.Delta.Dy,
+            Blocked(sketch, alongZ) || alongZ.Any(id => sketch.Find(id) is Node) ? Length.Zero : request.Delta.Dz);
 
         Sketch result = sketch;
         ImmutableHashSet<EntityId>.Builder moved = ImmutableHashSet.CreateBuilder<EntityId>();
 
-        foreach (EntityId id in alongX.Union(alongY).OrderBy(id => id))
+        foreach (EntityId id in alongX.Union(alongY).Union(alongZ).OrderBy(id => id))
         {
-            Vector2 shift = new(
+            Vector3 shift = new(
                 alongX.Contains(id) ? applied.Dx : Length.Zero,
-                alongY.Contains(id) ? applied.Dy : Length.Zero);
+                alongY.Contains(id) ? applied.Dy : Length.Zero,
+                alongZ.Contains(id) ? applied.Dz : Length.Zero);
 
-            if (shift == Vector2.Zero)
+            if (shift == Vector3.Zero)
             {
                 continue;
             }
@@ -460,10 +726,14 @@ public sealed class DirectUpdater : IGeometryUpdater
 
         // A drag that goes nowhere is not a conflict: it is a question that got the answer "no".
         AssertHolds(result);
-        return new Solved(result, ChangeSet.Empty with { Moved = moved.ToImmutable(), AppliedDelta = applied });
+        return new Solved(
+            result,
+            ChangeSet.Empty with { Moved = moved.ToImmutable(), AppliedDelta = applied });
     }
 
-    private UpdateResult ApplyDragEdge(Sketch sketch, DragEdge request)
+    private static bool Blocked(Sketch sketch, HashSet<EntityId> group) => group.Any(id => IsAnchored(sketch, id));
+
+    private UpdateResult ApplyDragFace(Sketch sketch, DragFace request)
     {
         if (GeometryPrecondition(sketch) is { } precondition)
         {
@@ -475,9 +745,22 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.UnknownEntity);
         }
 
-        bool alongWidth = request.Edge is BoxEdge.East or BoxEdge.West;
-        Axis localAxis = alongWidth ? Axis.X : Axis.Y;
-        ParamRef size = alongWidth ? new BoxWidthRef(request.Box) : new BoxHeightRef(request.Box);
+        // The size along the local axis normal to the face changes (assembly-model §2.4).
+        (Axis localAxis, ScalarKind sizeKind, ParamRef size, bool atOrigin) = request.Face switch
+        {
+            BoxFace.West => (Axis.X, ScalarKind.Width, (ParamRef)new BoxWidthRef(request.Box), true),
+            BoxFace.East => (Axis.X, ScalarKind.Width, new BoxWidthRef(request.Box), false),
+            BoxFace.South => (Axis.Y, ScalarKind.Height, new BoxHeightRef(request.Box), true),
+            BoxFace.North => (Axis.Y, ScalarKind.Height, new BoxHeightRef(request.Box), false),
+            BoxFace.Bottom => (Axis.Z, ScalarKind.Depth, new BoxDepthRef(request.Box), true),
+            BoxFace.Top => (Axis.Z, ScalarKind.Depth, new BoxDepthRef(request.Box), false),
+            _ => default,
+        };
+
+        if (size is null)
+        {
+            return new Rejected(RejectionReason.UnsupportedRequest);
+        }
 
         // A drag never silently overrides a number the user typed.
         if (sketch.Relationships.Values.Any(relationship => relationship is ParamValue driven && driven.Param == size))
@@ -485,29 +768,43 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.DrivenSize);
         }
 
-        Length newSize = (alongWidth ? box.Width : box.Height) + request.Delta;
+        // Shaped parts §2.3: best effort, as always — the delta is clamped so a side face is never
+        // dragged past what the cuts on it claim, and the applied delta is what gets reported. A
+        // blank cannot be dragged shorter than its cuts, the way it cannot be dragged through an
+        // anchored neighbour. The floor is zero for a plain rectangle, and for the bottom and top,
+        // which a cut never reaches: every cut is square through the cap (assembly-model §4.2).
+        Length currentSize = box.Size(localAxis);
+        Length floor = localAxis == Axis.Z ? Length.Zero : CutRules.SmallestFitting(box, localAxis);
+        Length newSize = Length.Max(currentSize + request.Delta, floor);
         if (newSize <= Length.Zero)
         {
             return new Rejected(RejectionReason.NonPositiveSize);
         }
 
-        // Grabbing the anchor's own edge moves the anchor; grabbing the far edge leaves it. Either
-        // way the opposite edge stays put, so both anchor coordinates are seeded and pinned.
-        Vector2 anchorShift = request.Edge is BoxEdge.West or BoxEdge.South
-            ? Vector2.Along(localAxis, -request.Delta).Rotate(box.Rotation)
-            : Vector2.Zero;
-        Point2 anchor = box.Anchor + anchorShift;
+        Length delta = newSize - currentSize;
 
-        ScalarKey sizeKey = new(request.Box, alongWidth ? ScalarKind.Width : ScalarKind.Height);
+        // Grabbing a face at the local origin — west, south, bottom — moves the anchor; grabbing
+        // the far face leaves it. Either way the opposite face stays put, so all three anchor
+        // coordinates are seeded and pinned. The shift is the local one turned into the world by
+        // the box's orientation, the 3D form of "rotated by the box's rotation" (§2.4), so its
+        // sign is right for a box whose local origin face points up or east.
+        Vector3 anchorShift = atOrigin
+            ? box.Orientation.Apply(Vector3.Along(localAxis, -delta))
+            : Vector3.Zero;
+
+        Point3 anchor = box.Anchor + anchorShift;
+
+        ScalarKey sizeKey = new(request.Box, sizeKind);
         Dictionary<ScalarKey, Length> seeds = new()
         {
             [sizeKey] = newSize,
             [new ScalarKey(request.Box, ScalarKind.X)] = anchor.X,
             [new ScalarKey(request.Box, ScalarKind.Y)] = anchor.Y,
+            [new ScalarKey(request.Box, ScalarKind.Z)] = anchor.Z,
         };
 
         // The handle the user grabbed is what they are editing, so Anchored stands aside for
-        // everything this request seeds: the size, and the anchor corner that a west or south
+        // everything this request seeds: the size, and the anchor corner that an origin face's
         // handle necessarily drags with it. Without the anchor, the east handle of an anchored box
         // would work and the west one would silently refuse (Fable review of #35, finding 8).
         HashSet<ScalarKey> owned =
@@ -515,20 +812,30 @@ public sealed class DirectUpdater : IGeometryUpdater
             sizeKey,
             new ScalarKey(request.Box, ScalarKind.X),
             new ScalarKey(request.Box, ScalarKind.Y),
+            new ScalarKey(request.Box, ScalarKind.Z),
         ];
 
         if (Propagator.Run(sketch, seeds, sketch.Relationships.Values, owned) is not Propagated propagated)
         {
-            // Best effort: a Flush to an anchored box blocks the edge entirely, and the edge then
+            // Best effort: a Flush to an anchored box blocks the face entirely, and the face then
             // does not move at all.
-            return new Solved(sketch, ChangeSet.Empty with { AppliedDelta = Vector2.Zero });
+            return new Solved(sketch, ChangeSet.Empty with { AppliedDelta = Vector3.Zero });
         }
 
         Sketch written = Write(sketch, propagated.Assignments, out ImmutableHashSet<EntityId> moved, out ImmutableHashSet<EntityId> resized);
         AssertHolds(written);
 
-        Length outward = request.Edge is BoxEdge.West or BoxEdge.South ? -request.Delta : request.Delta;
-        Vector2 applied = Vector2.Along(localAxis, outward).Rotate(box.Rotation);
+        // The clamp above covers the box the user grabbed. Another box this resized through an
+        // EqualParam has cuts of its own, and a drag is a question rather than a demand, so a
+        // refusal there is the same answer the blocked-propagation arm gives: the face does not
+        // move at all. Nothing partial is ever handed back.
+        if (CutsStillFit(written, resized) is not null)
+        {
+            return new Solved(sketch, ChangeSet.Empty with { AppliedDelta = Vector3.Zero });
+        }
+
+        Length outward = atOrigin ? -delta : delta;
+        Vector3 applied = box.Orientation.Apply(Vector3.Along(localAxis, outward));
 
         return new Solved(
             written,
@@ -579,9 +886,43 @@ public sealed class DirectUpdater : IGeometryUpdater
         Sketch written = Write(target, propagated.Assignments, out ImmutableHashSet<EntityId> moved, out ImmutableHashSet<EntityId> resized);
         AssertHolds(written);
 
+        // §2.3's seam, "after the write, before the return": the propagator knows nothing about
+        // cuts and should not, so a typed dimension, an EqualParam from another box, a stock
+        // assignment or any future solver-produced write could otherwise shrink a blank below what
+        // its cuts need and nothing would catch it. `written` is a value nobody else has seen, so
+        // dropping it here leaves the caller's sketch untouched by construction — the same way the
+        // conflict arm above never wrote the working table back.
+        if (CutsStillFit(written, resized) is { } refusal)
+        {
+            return refusal;
+        }
+
         return new Solved(
             written,
             changes with { Moved = changes.Moved.Union(moved), Resized = changes.Resized.Union(resized) });
+    }
+
+    /// <summary>
+    /// Invariants 7 to 9 on every box a write resized, in id order so that the box named is the
+    /// same one whatever order the sketch's dictionaries were built in
+    /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;2.3).
+    /// </summary>
+    /// <remarks>
+    /// Only the resized boxes: a cut is in the blank's local frame, so moving or rotating a box
+    /// carries its cuts along unchanged, and a box whose size did not change cannot have stopped
+    /// fitting them.
+    /// </remarks>
+    private static Rejected? CutsStillFit(Sketch written, ImmutableHashSet<EntityId> resized)
+    {
+        foreach (EntityId id in resized.OrderBy(id => id))
+        {
+            if (written.Find<Box>(id) is { } box && CutsRefuse(box) is { } refusal)
+            {
+                return refusal;
+            }
+        }
+
+        return null;
     }
 
     private static Sketch Write(
@@ -609,23 +950,25 @@ public sealed class DirectUpdater : IGeometryUpdater
             {
                 case Box box:
                 {
-                    Point2 anchor = new(Value(ScalarKind.X), Value(ScalarKind.Y));
+                    Point3 anchor = new(Value(ScalarKind.X), Value(ScalarKind.Y), Value(ScalarKind.Z));
                     Length width = Value(ScalarKind.Width);
                     Length height = Value(ScalarKind.Height);
+                    Length depth = Value(ScalarKind.Depth);
 
                     if (anchor != box.Anchor)
                     {
                         movedBuilder.Add(id);
                     }
 
-                    if (width != box.Width || height != box.Height)
+                    bool sizeChanged = width != box.Width || height != box.Height || depth != box.Depth;
+                    if (sizeChanged)
                     {
                         resizedBuilder.Add(id);
                     }
 
-                    if (anchor != box.Anchor || width != box.Width || height != box.Height)
+                    if (anchor != box.Anchor || sizeChanged)
                     {
-                        result = result.WithEntity(box with { Anchor = anchor, Width = width, Height = height });
+                        result = result.WithEntity(box with { Anchor = anchor, Width = width, Height = height, Depth = depth });
                     }
 
                     break;
@@ -702,36 +1045,37 @@ public sealed class DirectUpdater : IGeometryUpdater
         return null;
     }
 
+    /// <summary>
+    /// Whether the propagator can hold this relationship: a kind it knows, on places it reads.
+    /// </summary>
+    /// <remarks>
+    /// Legal and holdable were two questions until docs/design/assembly-model.md &#xA7;10 step 4
+    /// gave the propagator its Z scalar and read a tipped box's depth where it stands. Now whatever
+    /// <see cref="PlaceRules"/> calls legal — any common set of axes, any axis, any of the 24
+    /// orientations — the propagator holds (&#xA7;3.1). What is left here is the kinds it does not
+    /// propagate at all, a size that is not one number (a segment's length), and a flush on a
+    /// segment that has stopped being axis-aligned.
+    /// </remarks>
     private static bool CanPropagate(Sketch sketch, Relationship relationship) => relationship switch
     {
-        Anchored or Coincident or AxisDistance or Centered => true,
-        ParamValue paramValue => paramValue.Param is BoxWidthRef or BoxHeightRef,
-        EqualParam equalParam => equalParam.A is BoxWidthRef or BoxHeightRef
-                                 && equalParam.B is BoxWidthRef or BoxHeightRef,
+        // A joint is held by nothing and holds nothing: it neither propagates nor is a reason to
+        // refuse a request (joinery note §4.3).
+        Anchored or Coincident or AxisDistance or Centered or Joint => true,
+        ParamValue paramValue => IsBoxSize(paramValue.Param),
+        EqualParam equalParam => IsBoxSize(equalParam.A) && IsBoxSize(equalParam.B),
         Horizontal horizontal => horizontal.Edge is SegmentRef,
         Vertical vertical => vertical.Edge is SegmentRef,
         Flush flush => FlushNormalAxis(sketch, flush) is not null,
         _ => false,
     };
 
+    private static bool IsBoxSize(ParamRef param) => param is BoxWidthRef or BoxHeightRef or BoxDepthRef;
+
+    /// <summary>The one axis both places of a flush fix, or null when they do not share exactly one.</summary>
     private static Axis? FlushNormalAxis(Sketch sketch, Flush flush)
-    {
-        Axis? first = NormalAxisOf(sketch.EdgeOf(flush.A));
-        return first is { } axis && NormalAxisOf(sketch.EdgeOf(flush.B)) == axis ? axis : null;
-    }
-
-    private static Axis? NormalAxisOf((Point2 From, Point2 To) edge)
-    {
-        bool sameX = edge.From.X == edge.To.X;
-        bool sameY = edge.From.Y == edge.To.Y;
-
-        if (sameX == sameY)
-        {
-            return null;
-        }
-
-        return sameX ? Axis.X : Axis.Y;
-    }
+        => sketch.PlaceOf(flush.A).Axes is [var first] && sketch.PlaceOf(flush.B).Axes is [var second] && first == second
+            ? first
+            : null;
 
     private static HashSet<EntityId> RigidGroup(Sketch sketch, HashSet<EntityId> seed, Axis axis)
     {
@@ -760,15 +1104,18 @@ public sealed class DirectUpdater : IGeometryUpdater
 
     /// <summary>
     /// The entities a relationship makes move together along one axis. A <see cref="Flush"/> on a
-    /// vertical edge couples X and not Y; an <see cref="AxisDistance"/> along X couples X and not
-    /// Y. <see cref="Horizontal"/> and <see cref="Vertical"/> are here too, although design
+    /// vertical face couples X and not Y or Z; an <see cref="AxisDistance"/> along X couples X
+    /// only; a <see cref="Coincident"/> couples the axes its two places share — X and Y for a node
+    /// on a plan upright, all three for two vertices (docs/design/assembly-model.md &#xA7;2.1).
+    /// <see cref="Horizontal"/> and <see cref="Vertical"/> are here too, although design
     /// &#xA7;4.4's list omits them: they tie a segment's two nodes together along one axis just as
     /// firmly, and a drag that ignored them would break them.
     /// </summary>
     private static IEnumerable<EntityId> CoupledOn(Sketch sketch, Relationship relationship, Axis axis)
         => relationship switch
         {
-            Coincident coincident => Movable(sketch, coincident.A.Owner).Concat(Movable(sketch, coincident.B.Owner)),
+            Coincident coincident when Place.Common(sketch.PlaceOf(coincident.A), sketch.PlaceOf(coincident.B)).Contains(axis)
+                => Movable(sketch, coincident.A.Owner).Concat(Movable(sketch, coincident.B.Owner)),
 
             Flush flush when FlushNormalAxis(sketch, flush) == axis
                 => Movable(sketch, flush.A.Owner).Concat(Movable(sketch, flush.B.Owner)),
@@ -797,14 +1144,15 @@ public sealed class DirectUpdater : IGeometryUpdater
     private static bool IsAnchored(Sketch sketch, EntityId entity)
         => sketch.Relationships.Values.Any(relationship => relationship is Anchored anchored && anchored.Entity == entity);
 
-    private static Sketch Translate(Sketch sketch, EntityId id, Vector2 shift) => sketch.Find(id) switch
+    // A node is only ever in a group along Z that goes nowhere (see ApplyDrag), so its XY is all of it.
+    private static Sketch Translate(Sketch sketch, EntityId id, Vector3 shift) => sketch.Find(id) switch
     {
         Box box => sketch.WithEntity(box with { Anchor = box.Anchor + shift }),
-        Node node => sketch.WithEntity(node with { Position = node.Position + shift }),
+        Node node when shift.XY != Vector2.Zero => sketch.WithEntity(node with { Position = node.Position + shift.XY }),
         _ => sketch,
     };
 
-    private static Sketch DemoteDimensions(
+    internal static Sketch DemoteDimensions(
         Sketch sketch,
         Func<RelationshipId, bool> wasRemoved,
         out ImmutableHashSet<EntityId> demoted)
@@ -825,7 +1173,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         return result;
     }
 
-    private static IEnumerable<EntityId> MeasurandEntities(Measurand measurand) => measurand switch
+    internal static IEnumerable<EntityId> MeasurandEntities(Measurand measurand) => measurand switch
     {
         ParamMeasurand param => [param.Param.Owner],
         AxisMeasurand axis => [axis.From.Owner, axis.To.Owner],
@@ -855,31 +1203,20 @@ public sealed class DirectUpdater : IGeometryUpdater
         Centered centered => ReferenceResolves(sketch, centered.Middle)
                              && ReferenceResolves(sketch, centered.A)
                              && ReferenceResolves(sketch, centered.B),
+        Joint joint => ReferenceResolves(sketch, joint.Receiving) && ReferenceResolves(sketch, joint.Inserted),
         _ => relationship.References.All(id => sketch.Find(id) is not null),
     };
 
-    private static bool ReferenceResolves(Sketch sketch, PointRef reference) => reference switch
-    {
-        NodeRef node => sketch.Find<Node>(node.Node) is not null,
-        CornerRef corner => sketch.Find<Box>(corner.Box) is not null,
-        CenterRef centre => sketch.Find<Box>(centre.Box) is not null,
-        _ => false,
-    };
-
-    private static bool ReferenceResolves(Sketch sketch, EdgeRef reference) => reference switch
-    {
-        SegmentRef segmentRef => sketch.Find<Segment>(segmentRef.Segment) is { } segment
-                                 && sketch.Find<Node>(segment.Start) is not null
-                                 && sketch.Find<Node>(segment.End) is not null,
-        BoxEdgeRef boxEdge => sketch.Find<Box>(boxEdge.Box) is not null,
-        _ => false,
-    };
+    // A feature naming no faces is not a feature (docs/design/assembly-model.md invariant 12), and
+    // there is nothing there to refer to.
+    private static bool ReferenceResolves(Sketch sketch, PlaceRef reference) => sketch.TryPlaceOf(reference) is not null;
 
     private static bool ReferenceResolves(Sketch sketch, ParamRef reference) => reference switch
     {
         BoxWidthRef width => sketch.Find<Box>(width.Box) is not null,
         BoxHeightRef height => sketch.Find<Box>(height.Box) is not null,
-        SegmentLengthRef length => ReferenceResolves(sketch, new SegmentRef(length.Segment)),
+        BoxDepthRef depth => sketch.Find<Box>(depth.Box) is not null,
+        SegmentLengthRef length => ReferenceResolves(sketch, (PlaceRef)new SegmentRef(length.Segment)),
         _ => false,
     };
 }

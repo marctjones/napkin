@@ -2,6 +2,7 @@ using Napkin.App.Designs;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Xunit;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.GuiTests.Unit;
 
@@ -43,7 +44,7 @@ public class SampleFileTests
         }
 
         Assert.Equal(
-            ["Coffee table", "Wall with window"],
+            ["Coffee table", "Rounded-corner table", "Wall with window", "Bookcase", "Bench", "Lying beam", "Chain of five", "Fraction stress", "Scale extremes", "Framing at 16\" o.c.", "L-bracket", "Overlap", "Picture frame", "Stocked bench", "DIY coffee table with drawers", "Window in an existing wall", "Basement room"],
             SampleFiles.All.Select(sample => sample.Name));
     }
 
@@ -99,12 +100,15 @@ public class SampleFileTests
 
     [Theory]
     [MemberData(nameof(Fixtures))]
-    public void A_sample_carries_no_part_names_because_the_format_stores_none(string fixture)
+    public void A_sample_carries_the_part_names_the_file_states(string fixture)
     {
-        // The M1 scene format holds ids, geometry and relationships and no name per entity, so a
-        // design read from a file has nothing to draw on its parts. Design.Labels still works; it
-        // is simply empty until naming becomes a format decision with the cut list (#8).
-        Assert.Empty(Load(fixture).Labels);
+        // Scene format version 2 put a name on every entity (#8), so a design read from a file has
+        // something to draw on its parts and Design.Labels is filled from the file itself.
+        Design design = Load(fixture);
+
+        Assert.NotEmpty(design.Labels);
+        Assert.All(design.Labels.Values, label => Assert.NotEmpty(label));
+        Assert.Equal(design.Sketch.Entities.Count, design.Labels.Count);
     }
 
     [Theory]

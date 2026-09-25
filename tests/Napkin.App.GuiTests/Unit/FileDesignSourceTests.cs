@@ -3,6 +3,7 @@ using Napkin.App.Designs;
 using Napkin.Core.Geometry;
 using Napkin.Core.Project;
 using Xunit;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.GuiTests.Unit;
 
@@ -46,9 +47,9 @@ public class FileDesignSourceTests
     {
         DesignLoadException failure = Refuse("from-the-future.scene.json", BadScenes.WrongVersion);
 
-        // Both versions by name: the file's, and the one this build reads. "2" on its own would
+        // Both versions by name: the file's, and the one this build reads. "3" on its own would
         // be satisfied by any GUID in the message.
-        Assert.Contains("format version 2", Assert.Single(failure.Problems), StringComparison.Ordinal);
+        Assert.Contains("format version 3", Assert.Single(failure.Problems), StringComparison.Ordinal);
         Assert.Contains(
             $"format version {SceneReader.FormatVersion.ToString(CultureInfo.InvariantCulture)}",
             failure.Message,
@@ -101,7 +102,7 @@ public class FileDesignSourceTests
 
         Assert.Equal(loaded.Sketch, design.Sketch);
         Assert.Equal("one-box.scene.json", design.Name);
-        Assert.Empty(design.Labels);
+        Assert.Equal("Shelf", Assert.Single(design.Labels).Value);
         Assert.Single(design.Sketch.Entities.Values.OfType<Box>());
     }
 

@@ -1,0 +1,300 @@
+{
+  "fixture": "basement-room",
+  "scene": "basement-room.scene.json",
+  "design": "basement-room.design.md",
+  "derivedBy": "hand, from the stated dimensions in basement-room.design.md and docs/design/renovation-sketches.md §10.2; never regenerated from napkin's output",
+  "formatVersion": 10,
+  "unitsPerInch": 1024,
+  "counts": {
+    "layers": 5,
+    "entities": 13,
+    "boxes": 7,
+    "dimensions": 0,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 179200,
+    "depthUnits": 154624,
+    "widthText": "14'-7\"",
+    "depthText": "12'-7\"",
+    "derivation": "The walls' outside: x 0..175, y 0..151 (the north wall's 147 1/2 + 3 1/2)."
+  },
+  "boxes": [
+    {
+      "id": "72000000-0000-4000-8000-000000000001",
+      "name": "Wall, south",
+      "phase": "new",
+      "anchorXUnits": 0,
+      "anchorYUnits": 0,
+      "widthUnits": 179200,
+      "heightUnits": 3584,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 0,
+      "depthUnits": 98304,
+      "faceUp": "top",
+      "derivation": "175\" running full along x from the origin; 3 1/2\" thick; 96\" tall."
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000002",
+      "name": "Wall, north",
+      "phase": "new",
+      "anchorXUnits": 0,
+      "anchorYUnits": 151040,
+      "widthUnits": 179200,
+      "heightUnits": 3584,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 0,
+      "depthUnits": 98304,
+      "faceUp": "top",
+      "derivation": "The inside width 144 + 3 1/2 = 147 1/2\" up."
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000003",
+      "name": "Wall, west",
+      "phase": "new",
+      "anchorXUnits": 3584,
+      "anchorYUnits": 3584,
+      "widthUnits": 147456,
+      "heightUnits": 3584,
+      "rotationArcseconds": 324000,
+      "anchorZUnits": 0,
+      "depthUnits": 98304,
+      "faceUp": "top",
+      "derivation": "Turned a quarter: its length runs north from y 3 1/2 and its thickness west of the anchor, x 0..3 1/2."
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000004",
+      "name": "Wall, east",
+      "phase": "new",
+      "anchorXUnits": 179200,
+      "anchorYUnits": 3584,
+      "widthUnits": 147456,
+      "heightUnits": 3584,
+      "rotationArcseconds": 324000,
+      "anchorZUnits": 0,
+      "depthUnits": 98304,
+      "faceUp": "top",
+      "derivation": "Turned a quarter at x 175: x 171 1/2..175."
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000005",
+      "name": "Room",
+      "phase": "new",
+      "anchorXUnits": 3584,
+      "anchorYUnits": 3584,
+      "widthUnits": 172032,
+      "heightUnits": 147456,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 0,
+      "depthUnits": 98304,
+      "faceUp": "top",
+      "derivation": "The inside faces: 14'-0\" = 168\" by 12'-0\" = 144\"; ceiling 8'-0\"."
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000006",
+      "name": "Door 1",
+      "phase": "new",
+      "anchorXUnits": 61440,
+      "anchorYUnits": 0,
+      "widthUnits": 36864,
+      "heightUnits": 3584,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 0,
+      "depthUnits": 81920,
+      "faceUp": "top",
+      "derivation": "5'-0\" = 60\" along the south wall; 3'-0\" wide; 6'-8\" = 80\" tall, sill 0."
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000007",
+      "name": "Window 1",
+      "phase": "new",
+      "anchorXUnits": 3584,
+      "anchorYUnits": 58880,
+      "widthUnits": 36864,
+      "heightUnits": 3584,
+      "rotationArcseconds": 324000,
+      "anchorZUnits": 49152,
+      "depthUnits": 24576,
+      "faceUp": "top",
+      "derivation": "Centred on the 144\" west wall: 54\" along its length from its anchor at y 3 1/2, so y 57 1/2; turned with the wall; sill 48\"; 24\" tall."
+    }
+  ],
+  "partsList": [],
+  "relationshipKinds": {},
+  "dimensionLabels": [],
+  "statedNotInScene": [],
+  "cutList": [],
+  "cutListOrder": "Empty: walls, openings and a room are boxes nobody cuts.",
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery"
+  ],
+  "framing": {
+    "walls": [
+      {
+        "name": "Wall, south",
+        "summary": "9 studs, 2 king studs, 2 jack studs, 3 cripples above, 3 plates, 2 header pieces (2x6)"
+      },
+      {
+        "name": "Wall, north",
+        "summary": "12 studs, 3 plates"
+      },
+      {
+        "name": "Wall, west",
+        "summary": "8 studs, 2 king studs, 2 jack studs, 2 cripples below, 2 cripples above, 1 rough sill, 3 plates, 2 header pieces (2x6)"
+      },
+      {
+        "name": "Wall, east",
+        "summary": "10 studs, 3 plates"
+      }
+    ],
+    "pieces2x4": [
+      {
+        "role": "Stud+KingStud",
+        "quantity": 43,
+        "lengthUnits": 93696,
+        "stock": "2x4",
+        "derivation": "39 studs (9 + 12 + 8 + 10) and 4 kings, 96 - 3 x 1 1/2 long."
+      },
+      {
+        "role": "JackStud",
+        "quantity": 2,
+        "lengthUnits": 80384,
+        "stock": "2x4",
+        "derivation": "The door's: 80 - 1 1/2."
+      },
+      {
+        "role": "JackStud",
+        "quantity": 2,
+        "lengthUnits": 72192,
+        "stock": "2x4",
+        "derivation": "The window's: 48 + 24 - 1 1/2."
+      },
+      {
+        "role": "CrippleBelow",
+        "quantity": 2,
+        "lengthUnits": 46080,
+        "stock": "2x4",
+        "derivation": "48 - 3 at 64 and 80."
+      },
+      {
+        "role": "RoughSill",
+        "quantity": 1,
+        "lengthUnits": 36864,
+        "stock": "2x4",
+        "derivation": "The window's width."
+      },
+      {
+        "role": "CrippleAbove",
+        "quantity": 2,
+        "lengthUnits": 15872,
+        "stock": "2x4",
+        "derivation": "21 - 5 1/2 over the window."
+      },
+      {
+        "role": "CrippleAbove",
+        "quantity": 3,
+        "lengthUnits": 7680,
+        "stock": "2x4",
+        "derivation": "13 - 5 1/2 over the door."
+      },
+      {
+        "role": "Plate",
+        "quantity": 6,
+        "lengthUnits": 179200,
+        "stock": "2x4",
+        "derivation": "Three each, south and north."
+      },
+      {
+        "role": "Plate",
+        "quantity": 6,
+        "lengthUnits": 147456,
+        "stock": "2x4",
+        "derivation": "Three each, west and east."
+      }
+    ],
+    "headers": [
+      {
+        "role": "Header",
+        "quantity": 4,
+        "lengthUnits": 39936,
+        "stock": "2x6",
+        "derivation": "(2) 2x6 over each of the two openings, 36 + 3."
+      }
+    ],
+    "boards": {
+      "2x4": "1 × 6'-0\", 3 × 12'-0\", 1 × 14'-0\", 31 × 16'-0\"",
+      "2x6": "1 × 14'-0\""
+    },
+    "boardFeet": {
+      "2x4": "368.0",
+      "2x6": "14.0"
+    },
+    "notes": "Not bearing: napkin's placeholder one jack and one king each side with the header typed, (2) 2x6; nothing is code-checked."
+  },
+  "areaTakeoff": [
+    {
+      "finish": "Surfaces",
+      "exactUnits": "58888028160",
+      "count": null,
+      "shown": "walls 416 sq ft less openings 26 = 390 sq ft; ceiling 168 sq ft; perimeter 52'-0\"",
+      "derivation": "P = 624\", x 96 = 59904 sq in = 416 sq ft; door 20 + window 6 = 26."
+    },
+    {
+      "finish": "Drywall",
+      "exactUnits": "84255178752",
+      "count": 18,
+      "shown": "walls and ceiling, 558 sq ft; 18 sheets 4'-0\" × 8'-0\"",
+      "derivation": "558 / 32 = 17.4375, up to 18: one pool for walls and ceiling."
+    },
+    {
+      "finish": "Insulation",
+      "exactUnits": "58888028160",
+      "count": 10,
+      "shown": "exterior walls, 390 sq ft; 10 bags at 40 sq ft",
+      "derivation": "All four walls exterior and bounding: 390 / 40 = 9.75, up to 10."
+    },
+    {
+      "finish": "InsulationBays",
+      "exactUnits": "37",
+      "count": 37,
+      "shown": "for reference, exterior walls, 37 bays, 7'-7 1/2\" tall, at 16\" on centre",
+      "derivation": "S 11 - 1 - 1 = 9, N 12 - 1 = 11, E 10 - 1 = 9, W 10 - 1 - 1 = 8."
+    },
+    {
+      "finish": "Paint",
+      "exactUnits": "168510357504",
+      "count": 4,
+      "shown": "walls and ceiling, 1116 sq ft to cover; 4 gallons at 350 sq ft a gallon",
+      "derivation": "558 x 2 coats = 1116 / 350 = 3.19, up to 4."
+    },
+    {
+      "finish": "Flooring",
+      "exactUnits": "2790386565120",
+      "count": 10,
+      "shown": "185 sq ft; 10 boxes at 20 sq ft",
+      "derivation": "168 x 110 / 100 = 184.8, shown up to 185; 184.8 / 20 = 9.24, up to 10. The exact quantity is the ceiling in square units times 110, before the one division by 100."
+    },
+    {
+      "finish": "Baseboard",
+      "exactUnits": "602112",
+      "count": 7,
+      "shown": "49'-0\"; 7 sticks of 8'-0\"",
+      "derivation": "624 - 36 (the door) = 588\" = 49'-0\"; 588 / 96 = 6.125, up to 7."
+    }
+  ],
+  "notes": [
+    "The rough-in notes (§2's table): four outlets, a switch by the door and a light in the middle, on the Notes layer; positions are the sketch's own, not measured."
+  ],
+  "notesLine": {
+    "line": "outlet × 4, switch × 1, light × 1",
+    "csv": [
+      "Notes",
+      "Note,Count",
+      "outlet,4",
+      "switch,1",
+      "light,1"
+    ],
+    "derivation": "Six New notes: four say outlet, one switch, one light; none without a symbol."
+  }
+}

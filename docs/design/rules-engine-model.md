@@ -1,7 +1,9 @@
 # Rules engine: adopted-code packs, amendment overlays and code locking
 
-Status: DRAFT — awaiting Marc's sign-off. Implementation of #13-#19 is not authorized until signed
-off.
+Status: **Implemented through M4 (0.97.0-beta) and M5 (0.101.0-beta), 2026-09-25.** #13-#19 shipped
+at Marc's direction ("Implement M4"); #12, tracking this document's own sign-off, is still open.
+What was built, and where it departs from the text below, is in "Scope of the first
+implementation" just after the milestones paragraph.
 
 Design document for issue #12, written by Fable per [`PLAN.md`](../../PLAN.md). It decides what
 #13 (evaluator, out-of-scope results, citations), #14-#17 (the four adopted-code packs), #19 (the
@@ -25,6 +27,55 @@ sizing (IRC 2024 base, R602.7), citations and out-of-scope results, one pack, pe
 **M5 "Brace and compare"** = the wall-bracing check (R602.10) plus a second pack (CT 2022) proving
 code locking and recompute. MA, PA and PA municipal overlays come later. Each section below says
 what M4 needs, what M5 adds, and what waits.
+
+## Scope of the first implementation (#13, 2026-09-25)
+
+**Edition.** M4 is built on the **Connecticut 2022 State Building Code (2021 IRC as amended)**,
+pack id `us-ct-2022`. The CT 2026 code is not in force (delayed; only a public-comment draft
+exists), so everything below that says "CT 2026 / IRC 2024" for M4 now reads "CT 2022 / IRC 2021";
+the 2026 code becomes a second pack once adopted (PLAN.md M4/M5 rows).
+
+**No real table rows ship yet.** Marc decided (#157, 2026-09-25) that napkin may ship transcribed
+code tables, each read from a primary or official source in the task that writes it and cited
+beside the data; none has been transcribed, so no IRC table values are in the repo. The engine is built and tested
+on SYNTHETIC fixtures under `tests/Napkin.Core.RulesEngine.Tests/Fixtures` and `Golden/` (ids like
+`TEST-HEADER-TABLE`, "IRC 2099", a banner in every file). Packs load from a **packs root on disk**
+(`layers/`, `packs/`) through `DirectoryPackSource` — the directory a person fills from their own
+copy of the code (`docs/rules-engine.md`); embedded packs (§1.2) and Decision 6 wait for real data.
+
+**Deviations from the text, and why.**
+- *Result kinds (§3.1).* `HeaderResult` has four members: `Sized`, `OutOfScope`, `InputMissing`,
+  `NoData`. `NoData` exists because a pack a person fills may legitimately lack a table (an
+  incomplete pack, not a broken one), and a project may have no pack; the honest answer is "no
+  data", never a guess. `InputMissing` exists because a hazard is required only by the tables
+  that use it: `SiteInputs` fields are nullable meaning "not entered", there are no default
+  values anywhere (a reflection test checks), and an unset input a table needs is named in the
+  result, never defaulted.
+- *Table schema (§1.4).* A header table declares `wallKind` (so the engine picks a table without
+  knowing table numbers); column names come from a closed set of request fields (`supports`,
+  `groundSnowLoad`, `ultimateWindSpeed`, `seismicDesignCategory`, `buildingWidth`, `frostDepth`,
+  `headerSpan`); footnotes declare `appliesTo` (`table` or `rows`) and an `as-limit` footnote a
+  `limit` (`above` a value or `equals` a category); rows may list their footnotes; every file may
+  carry a `notes` string. The loader is the schema; `Packs/schema/*.json` is not committed.
+- *Overlays (§1.3).* Row operations `add`/`amend`/`delete` and table operations
+  `add-table`/`amend-table` (metadata, rows kept)/`delete-table`. Base-layer tables cite the
+  layer's own `sources`; an overlay cites the sources of the pack that owns it. Every table below
+  needs an overlay file in each overlay layer, even with no operations.
+- *Interpolation and rounding (§4.4).* **DECIDED 2026-09-25 (Marc, #157):** a footnote that
+  permits interpolation is applied automatically. Footnotes may be encoded `as-operations` with a
+  `substitute-input` and an `interpolate` operation (semantics in §4.4); overlays gain
+  `amend-footnote`, which is *pending* (listed on `LoadedPack.Pending`, not an error) while the
+  base table is not loaded. Connecticut's R602.7(1) footnote e and R602.7(3) footnote b are
+  encoded this way. `roofLiveLoad` is a site input (scene format 7), asked for only when a
+  substitution's condition is reached. No other rounding rule is implemented.
+- *Band validation (§4.3).* Rows are compared by value, not file order (so P4's order
+  independence holds): a duplicate bound in a cell is an overlap; every combination of
+  upper-bound bands must have rows (no holes); each upper-bound column's top band must equal its
+  declared `domain.max`.
+- *Not built yet:* the loosening lint (§6.3), checklist-hash tests (§8.3 steps 3–4), the
+  municipal revision check (§6.1), `BracingResult`, `results.json`. `CodeSelection` (pack id,
+  revision, locked or following, lock date), `Recompute.Headers` and `Recompute.Diff` exist for
+  #19; `ChangeKind` is adapted to header results.
 
 ## 0. Two facts from the primary sources that shape everything below
 
@@ -510,6 +561,14 @@ public abstract record BracingResult
 }
 ```
 
+**Implemented 2026-09-25 (#39), as a mechanism proven on synthetic packs** — the schema,
+semantics and limits are in [`../rules-engine.md`](../rules-engine.md#wall-bracing). Deviations
+from the sketch above: `BracedWallLine` is one wall (its length, height and solid segments, each
+with the method a person assigned or none); `Passes` and `Fails` also carry the whole working
+(`BracingWorking`); the engine's `InputMissing` and `NoData` are members too; a pack's own limit is
+`OutOfScope(NotPrescriptive)`; `CheckBracing` is on `IRulesEngine` and on the static `RulesEngine`
+(for a project with no pack); the diff is `Recompute.DiffBracing` with its own `BracingChangeKind`.
+
 `Fails` is a third member, and it is not silent: it is the result DESIGN.md §5.3 calls "the check
 most DIY openings miss". The rule is not "two states"; it is "every state is a named, cited,
 expected answer, and there is no catch-all".
@@ -540,8 +599,11 @@ a loop over elements with a different engine.
 
 ### 3.5 What an evaluator may not do
 
-- Return a number for a request no row covers. Interpolation and extrapolation do not exist in
-  this codebase; the word "interpolate" appearing in `Core.RulesEngine` should fail review.
+- Return a number for a request no row covers. Extrapolation does not exist in this codebase.
+  Interpolation exists **only** as a footnote's declared `interpolate` operation, strictly between
+  the two columns it names (§4.4) — **DECIDED 2026-09-25 (Marc, #157)**, superseding "the word
+  interpolate in `Core.RulesEngine` should fail review". Interpolation anywhere else, or of
+  anything but the span, still should.
 - Read a hazard value from anywhere but the request.
 - Choose a band by rounding the input (§4.2: bands are chosen by comparison, exactly).
 - Return a result without a citation, or a citation whose `RowId` is not in the composed table
@@ -598,18 +660,43 @@ twice", not "the code meant something else".
 ### 4.4 Rounding and interpolation come from the text, not from this document
 
 Some model-code tables carry footnotes about how to treat inputs that fall between columns or
-how to round; whether the tables in scope do, and what they say, is **unverified — must be read
-from the adopted text**. The design's stance:
+how to round. The design's stance:
 
 - The default, absent a footnote, is the conservative direction in §4.1 and no interpolation.
-- If a footnote *permits* interpolation, the pack still records it (`footnotes[].encodedAs`),
-  and the evaluator still does not interpolate: it uses the next more demanding band, which is
-  never less safe than an interpolated value for a monotone table. The footnote is shown with the
-  result so the user knows a hand calculation could do better. This is Decision 3.
-- If a footnote *changes* which band applies (a rounding rule for building width, say), the
-  transcriber encodes its effect as rows (`as-rows`) where possible, or the schema gains an
-  explicit, named rounding kind for that column, with its own golden tests at the boundaries.
-  Never an unnamed adjustment inside the evaluator.
+- **DECIDED 2026-09-25 (Marc, #157): if a footnote permits interpolation, napkin applies it
+  automatically**, exactly as the pack's footnote declares it (`encodedAs: "as-operations"`,
+  operation `interpolate` with `input`, `between: [lower, upper]` and `quantity: "headerSpan"`).
+  The engine never decides to interpolate on its own: no footnote, no interpolation. The
+  semantics, chosen as the conservative readings of Connecticut's text ("For ground snow loads
+  between 30 and 50 psf, linear interpolation is permitted", 2022 CSBC p. 145):
+  1. Only for an input **strictly between** the two declared columns. At a column exactly the
+     plain row is used; outside the pair nothing is interpolated (between 50 and 70 psf the
+     70 psf column applies, per §4.1).
+  2. The two columns must be adjacent bands present for every group of rows (a load check).
+     Rows at the two columns are paired by member (plies and nominal); each member's permitted
+     span is `lowerSpan + (upperSpan − lowerSpan) × (x − lower)/(upper − lower)`, computed as an
+     exact fraction (Int128 numerator and denominator) of 1/1024″ units, never a double, and the
+     opening is compared to it exactly. The smallest member whose interpolated span covers the
+     opening is chosen, as for a table row. A member with a row at only one of the two columns is
+     not offered.
+  3. Count columns (jack and king studs) are never interpolated: the larger of the two rows is
+     used, and the trace says so.
+  4. The interpolated span is **displayed** rounded **down** to a whole 1/16″, never up; the
+     comparison uses the exact value.
+  5. The citation names the upper column's row (the row a plain lookup would give) and carries
+     both rows, their spans, the weight as an exact fraction, the exact and shown span, and the
+     footnote id, verbatim text and source page.
+- A footnote that *substitutes* an input declares `substitute-input` (`input`, `below`, `use`,
+  `when: {input, atMost}`): Connecticut's "Use 30 psf ground snow load for cases in which ground
+  snow load is less than 30 psf and the roof live load is equal to or less than 20 psf". An input
+  below `below` is taken as `use` when the condition input is at most `atMost`; when it is
+  greater, the request is out of scope (`NarrowedByFootnote`) citing the footnote, because the
+  text gives the table no meaning there; when it is not entered, `InputMissing`. Substitution
+  runs before any band is chosen, and `use` may not be below `below`.
+- If a footnote *changes* which band applies in some other way (a rounding rule for building
+  width, say), the transcriber encodes its effect as rows (`as-rows`) where possible, or the
+  schema gains an explicit, named operation for it, with its own tests at the boundaries. Never
+  an unnamed adjustment inside the evaluator.
 
 ## 5. Site and hazard inputs
 
@@ -1157,11 +1244,13 @@ decided by the design and can be overridden the same way.
    integer 1/1024″ units as in the project file.** Strings are what a reviewer can check against
    a PDF by eye; the parse is exact or the pack is refused. Integers would keep one rule across
    both file kinds. Recommendation: strings, for the review surface.
-3. **When a footnote permits interpolation, still do not interpolate; use the next more
-   demanding band and show the footnote.** This is always at least as safe for a monotone table
-   and keeps "no interpolation anywhere" true without exception. The alternative is to
-   implement the footnote's interpolation as a named, tested rule. Recommendation: no
-   interpolation in the betas; revisit only if a real case is over-conservative enough to matter.
+3. **When a footnote permits interpolation — DECIDED 2026-09-25 (Marc, #157): apply it
+   automatically**, as a named, tested footnote operation with the semantics in §4.4 (strictly
+   between the two declared columns only; exact rational span; smallest covering member; counts
+   take the larger row; display rounded down to 1/16″; both rows, the exact weight and the
+   footnote cited). The earlier recommendation (never interpolate; use the next more demanding
+   band) is superseded. Marc also decided that napkin may ship transcribed code tables, each read
+   from a primary source in the task that writes it and cited beside the data.
 4. **Municipal scope for the first betas: the mechanism plus zero real municipalities**, with a
    UI note pointing PA users at the DLI register (§6.4). The register has no ordinance texts, so
    each town is a document hunt plus a full transcribe-and-review cycle. Recommendation: none

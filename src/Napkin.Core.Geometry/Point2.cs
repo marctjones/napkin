@@ -16,11 +16,25 @@ public readonly record struct Point2(Length X, Length Y)
     public static Point2 Inches(long x, long y) => new(Length.Inches(x), Length.Inches(y));
 
     /// <summary>The coordinate along <paramref name="axis"/>.</summary>
-    public Length Component(Axis axis) => axis == Axis.X ? X : Y;
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="axis"/> is <see cref="Axis.Z"/>: a plan point has no Z, and answering with its
+    /// Y would be a silent wrong answer rather than an error (docs/design/assembly-model.md &#xA7;1.4).
+    /// </exception>
+    public Length Component(Axis axis) => axis switch
+    {
+        Axis.X => X,
+        Axis.Y => Y,
+        _ => throw Vector2.NotInThePlan(axis),
+    };
 
     /// <summary>This point with the coordinate along <paramref name="axis"/> replaced.</summary>
-    public Point2 WithComponent(Axis axis, Length value)
-        => axis == Axis.X ? this with { X = value } : this with { Y = value };
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="axis"/> is <see cref="Axis.Z"/>.</exception>
+    public Point2 WithComponent(Axis axis, Length value) => axis switch
+    {
+        Axis.X => this with { X = value },
+        Axis.Y => this with { Y = value },
+        _ => throw Vector2.NotInThePlan(axis),
+    };
 
     /// <summary>The displacement from <paramref name="b"/> to <paramref name="a"/>.</summary>
     public static Vector2 operator -(Point2 a, Point2 b) => new(a.X - b.X, a.Y - b.Y);

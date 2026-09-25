@@ -1,0 +1,153 @@
+{
+  "fixture": "rounded-corner-table",
+  "scene": "rounded-corner-table.scene.json",
+  "design": "rounded-corner-table.design.md",
+  "derivedBy": "hand, from the stated dimensions in rounded-corner-table.design.md; never regenerated from napkin's output",
+  "formatVersion": 10,
+  "unitsPerInch": 1024,
+
+  "counts": { "layers": 1, "entities": 11, "boxes": 9, "dimensions": 2, "relationships": 3 },
+
+  "overall": {
+    "widthUnits": 49152,
+    "depthUnits": 24576,
+    "widthText": "4'-0\"",
+    "depthText": "2'-0\"",
+    "derivation": "The top's stated blank size, 48\" x 24\": 48 x 1024 = 49152 and 24 x 1024 = 24576. Rounding the corners takes nothing off either overall dimension — an arc of radius r tangent to both edges touches each of them, so the extreme points in x and y are still on the blank's own edges."
+  },
+
+  "boxes": [
+    { "id": "50000000-0000-4000-8000-000000000001", "name": "Top",
+      "anchorXUnits": 0, "anchorYUnits": 0, "widthUnits": 49152, "heightUnits": 24576, "rotationArcseconds": 0,
+      "anchorZUnits": 16640, "depthUnits": 768, "faceUp": "top",
+      "derivation": "Origin of the design. 48\" x 1024 = 49152; 24\" x 1024 = 24576. The anchor is the blank's south-west corner, which the rounding does not move: a cut is an operation on the blank, and the blank's stored parameters are what the anchor and the sizes are. In space (format version 4): lying as drawn, face-up top. Its underside sits on the legs' tops, which are at the legs' stated length, 16 1/4\" = 16.25 x 1024 = 16640, so its anchor z is 16640; its depth is its stated thickness, 3/4\" = 0.75 x 1024 = 768, so its top surface is at 16640 + 768 = 17408 = 17\"." },
+
+    { "id": "50000000-0000-4000-8000-000000000002", "name": "Leg, south-west",
+      "anchorXUnits": 1536, "anchorYUnits": 1536, "widthUnits": 2560, "heightUnits": 2560, "rotationArcseconds": 0,
+      "anchorZUnits": 0, "depthUnits": 16640, "faceUp": "top",
+      "derivation": "Inset 1 1/2\" from the top's west and south edges: 1.5 x 1024 = 1536 in both axes. 2 1/2\" square = 2.5 x 1024 = 2560. Occupies x 1536..4096, y 1536..4096. In space: standing on the floor, face-up top, anchor z 0; its depth is its stated length, 16 1/4\" = 16.25 x 1024 = 16640, so its top end is at z 16640." },
+    { "id": "50000000-0000-4000-8000-000000000003", "name": "Leg, south-east",
+      "anchorXUnits": 45056, "anchorYUnits": 1536, "widthUnits": 2560, "heightUnits": 2560, "rotationArcseconds": 0,
+      "anchorZUnits": 0, "depthUnits": 16640, "faceUp": "top",
+      "derivation": "Its east face is inset 1 1/2\" from the top's east edge, so the face is at 48 - 1.5 = 46.5\" and the anchor (the west face) at 46.5 - 2.5 = 44\": 44 x 1024 = 45056. Same y as the south-west leg. In space: standing on the floor, face-up top, anchor z 0; its depth is its stated length, 16 1/4\" = 16.25 x 1024 = 16640, so its top end is at z 16640." },
+    { "id": "50000000-0000-4000-8000-000000000004", "name": "Leg, north-west",
+      "anchorXUnits": 1536, "anchorYUnits": 20480, "widthUnits": 2560, "heightUnits": 2560, "rotationArcseconds": 0,
+      "anchorZUnits": 0, "depthUnits": 16640, "faceUp": "top",
+      "derivation": "North face inset 1 1/2\" from the top's north edge: face at 24 - 1.5 = 22.5\", anchor at 22.5 - 2.5 = 20\": 20 x 1024 = 20480. Same x as the south-west leg. In space: standing on the floor, face-up top, anchor z 0; its depth is its stated length, 16 1/4\" = 16.25 x 1024 = 16640, so its top end is at z 16640." },
+    { "id": "50000000-0000-4000-8000-000000000005", "name": "Leg, north-east",
+      "anchorXUnits": 45056, "anchorYUnits": 20480, "widthUnits": 2560, "heightUnits": 2560, "rotationArcseconds": 0,
+      "anchorZUnits": 0, "depthUnits": 16640, "faceUp": "top",
+      "derivation": "The east x of the south-east leg with the north y of the north-west leg: (45056, 20480). In space: standing on the floor, face-up top, anchor z 0; its depth is its stated length, 16 1/4\" = 16.25 x 1024 = 16640, so its top end is at z 16640." },
+
+    { "id": "50000000-0000-4000-8000-000000000006", "name": "Apron, long, south",
+      "anchorXUnits": 4096, "anchorYUnits": 1536, "widthUnits": 40960, "heightUnits": 768, "rotationArcseconds": 0,
+      "anchorZUnits": 13056, "depthUnits": 3584, "faceUp": "top",
+      "derivation": "Runs between the legs along X: from the south-west leg's east face at 1.5 + 2.5 = 4\" (4 x 1024 = 4096) to the south-east leg's west face at 44\". Length 44 - 4 = 40\" = 40960. Its south face is flush with the legs' south faces at y = 1.5\" = 1536; thickness 3/4\" = 768, so it occupies y 1536..2304. In space: on edge under the top, face-up top. Its depth is its stated vertical face, 3 1/2\" = 3.5 x 1024 = 3584, and its upper edge is flush with the top's underside at 16640, so its anchor z is 16640 - 3584 = 13056 = 12 3/4\" (12.75 x 1024)." },
+    { "id": "50000000-0000-4000-8000-000000000007", "name": "Apron, long, north",
+      "anchorXUnits": 4096, "anchorYUnits": 22272, "widthUnits": 40960, "heightUnits": 768, "rotationArcseconds": 0,
+      "anchorZUnits": 13056, "depthUnits": 3584, "faceUp": "top",
+      "derivation": "Same length and thickness as the south long apron. Its north face is flush with the legs' north faces at y = 22.5\", so the anchor (the south face) is at 22.5 - 0.75 = 21.75\": 21.75 x 1024 = 22272. In space: on edge under the top, face-up top. Its depth is its stated vertical face, 3 1/2\" = 3.5 x 1024 = 3584, and its upper edge is flush with the top's underside at 16640, so its anchor z is 16640 - 3584 = 13056 = 12 3/4\" (12.75 x 1024)." },
+    { "id": "50000000-0000-4000-8000-000000000008", "name": "Apron, short, west",
+      "anchorXUnits": 1536, "anchorYUnits": 4096, "widthUnits": 768, "heightUnits": 16384, "rotationArcseconds": 0,
+      "anchorZUnits": 13056, "depthUnits": 3584, "faceUp": "top",
+      "derivation": "Runs between the legs along Y: from the south-west leg's north face at 1.5 + 2.5 = 4\" to the north-west leg's south face at 20\". Length 20 - 4 = 16\" = 16384. Its west face is flush with the legs' west faces at x = 1.5\" = 1536; thickness 3/4\" = 768. In space: on edge under the top, face-up top. Its depth is its stated vertical face, 3 1/2\" = 3.5 x 1024 = 3584, and its upper edge is flush with the top's underside at 16640, so its anchor z is 16640 - 3584 = 13056 = 12 3/4\" (12.75 x 1024)." },
+    { "id": "50000000-0000-4000-8000-000000000009", "name": "Apron, short, east",
+      "anchorXUnits": 46848, "anchorYUnits": 4096, "widthUnits": 768, "heightUnits": 16384, "rotationArcseconds": 0,
+      "anchorZUnits": 13056, "depthUnits": 3584, "faceUp": "top",
+      "derivation": "Same length and thickness as the west short apron. Its east face is flush with the legs' east faces at x = 46.5\", so the anchor (the west face) is at 46.5 - 0.75 = 45.75\": 45.75 x 1024 = 46848. In space: on edge under the top, face-up top. Its depth is its stated vertical face, 3 1/2\" = 3.5 x 1024 = 3584, and its upper edge is flush with the top's underside at 16640, so its anchor z is 16640 - 3584 = 13056 = 12 3/4\" (12.75 x 1024)." }
+  ],
+
+  "topCuts": [
+    { "kind": "roundedCorner", "corner": "southWest", "radiusUnits": 1024,
+      "derivation": "1\" x 1024 = 1024. Site order puts the south-west corner first (south-west, south-east, north-east, north-west), which is the order the file must be written in." },
+    { "kind": "roundedCorner", "corner": "southEast", "radiusUnits": 1024 },
+    { "kind": "roundedCorner", "corner": "northEast", "radiusUnits": 1024 },
+    { "kind": "roundedCorner", "corner": "northWest", "radiusUnits": 1024 }
+  ],
+
+  "topOutline": {
+    "derivation": "Worked out from the walk shaped-parts-model.md §1.5 states, not from napkin's output: the boundary runs counter-clockwise in the box's own frame, starting along the south edge, and each corner's own segment is emitted when the walk arrives at that corner. A rounded corner stops the incoming edge at the tangent point 1024 from the corner along it, emits the arc, and starts the outgoing edge at the tangent point 1024 along that one. The eight tangent points are each 1024 from a corner along an edge, and each arc's centre is its corner offset 1024 along both of its edges. Every value is a multiple of 1024, so nothing rounds.",
+    "segments": [
+      { "kind": "straight", "fromXUnits": 1024, "fromYUnits": 0, "toXUnits": 48128, "toYUnits": 0,
+        "derivation": "The south edge, from the south-west corner's tangent point (0 + 1024, 0) to the south-east corner's (49152 - 1024 = 48128, 0)." },
+      { "kind": "arc", "fromXUnits": 48128, "fromYUnits": 0, "toXUnits": 49152, "toYUnits": 1024,
+        "centerXUnits": 48128, "centerYUnits": 1024,
+        "derivation": "The south-east corner (49152, 0) rounded: in 1024 along the south edge to (48128, 0), out 1024 up the east edge to (49152, 1024), centre 1024 in along both at (48128, 1024)." },
+      { "kind": "straight", "fromXUnits": 49152, "fromYUnits": 1024, "toXUnits": 49152, "toYUnits": 23552,
+        "derivation": "The east edge, between the two tangent points on it: y from 1024 to 24576 - 1024 = 23552." },
+      { "kind": "arc", "fromXUnits": 49152, "fromYUnits": 23552, "toXUnits": 48128, "toYUnits": 24576,
+        "centerXUnits": 48128, "centerYUnits": 23552,
+        "derivation": "The north-east corner (49152, 24576) rounded: in 1024 down the east edge to (49152, 23552), out 1024 along the north edge to (48128, 24576), centre (48128, 23552)." },
+      { "kind": "straight", "fromXUnits": 48128, "fromYUnits": 24576, "toXUnits": 1024, "toYUnits": 24576,
+        "derivation": "The north edge, walked east to west: x from 48128 to 1024." },
+      { "kind": "arc", "fromXUnits": 1024, "fromYUnits": 24576, "toXUnits": 0, "toYUnits": 23552,
+        "centerXUnits": 1024, "centerYUnits": 23552,
+        "derivation": "The north-west corner (0, 24576) rounded: in 1024 along the north edge to (1024, 24576), out 1024 down the west edge to (0, 23552), centre (1024, 23552)." },
+      { "kind": "straight", "fromXUnits": 0, "fromYUnits": 23552, "toXUnits": 0, "toYUnits": 1024,
+        "derivation": "The west edge, walked north to south: y from 23552 to 1024." },
+      { "kind": "arc", "fromXUnits": 0, "fromYUnits": 1024, "toXUnits": 1024, "toYUnits": 0,
+        "centerXUnits": 1024, "centerYUnits": 1024,
+        "derivation": "The south-west corner (0, 0) rounded, emitted last because the walk arrives back at it at the end: in 1024 up the west edge to (0, 1024), out 1024 along the south edge to (1024, 0) — which is where the first segment started, so the boundary closes. Centre (1024, 1024)." }
+    ]
+  },
+
+  "cutList": [
+    { "label": "Top", "quantity": 1,
+      "lengthUnits": 49152, "widthUnits": 24576, "thicknessUnits": 768,
+      "lengthText": "4'-0\"", "widthText": "2'-0\"", "thicknessText": "3/4\"",
+      "material": "", "unresolved": false,
+      "members": [ "50000000-0000-4000-8000-000000000001" ],
+      "cuts": [ "Round all four corners to a 1\" radius." ],
+      "derivation": "The three dimensions are the blank's, exactly as they would be if the corners were square: the top lies flat, so length = the box's stored width 49152 (48\" x 1024) and width = its stored height 24576 (24\" x 1024), and the third dimension is the stated 3/4\" = 768. Text: 48\" = 4 x 12 + 0 -> 4'-0\"; 24\" = 2 x 12 + 0 -> 2'-0\"; 3/4\" is under a foot so no feet are shown. The four cuts are the same kind with the same value, so they are one sentence, and all four corners is said as \"all four corners\"; 1024 / 1024 = 1\". The out-of-plane dimension is the thickness, so the sentence stops there: a cut through the thickness is what \"cut\" means, and there is no \"for the full ...\" to add." },
+
+    { "label": "Apron, long", "quantity": 2,
+      "lengthUnits": 40960, "widthUnits": 3584, "thicknessUnits": 768,
+      "lengthText": "3'-4\"", "widthText": "3 1/2\"", "thicknessText": "3/4\"",
+      "material": "", "unresolved": false,
+      "members": [ "50000000-0000-4000-8000-000000000006", "50000000-0000-4000-8000-000000000007" ],
+      "cuts": [],
+      "derivation": "A long apron runs along X on edge: length across X = the box's stored width 40960 (44 - 4 = 40\" x 1024), thickness up Y = its stored height 768 (3/4\" x 1024), and the third dimension is the stated 3 1/2\" face: 3.5 x 1024 = 3584. Text: 40\" = 3 x 12 + 4 -> 3'-4\". Two boxes with the same three dimensions, the same (absent) stock and the same (empty) cuts, so one row of 1 + 1 = 2. Label: \"Apron, long, south\" and \"Apron, long, north\" share \"Apron, long, \", cut back to the last word boundary and stripped of trailing punctuation -> \"Apron, long\". Nothing is cut off these blanks, so the cuts column is empty." },
+
+    { "label": "Leg", "quantity": 4,
+      "lengthUnits": 16640, "widthUnits": 2560, "thicknessUnits": 2560,
+      "lengthText": "1'-4 1/4\"", "widthText": "2 1/2\"", "thicknessText": "2 1/2\"",
+      "material": "", "unresolved": false,
+      "members": [ "50000000-0000-4000-8000-000000000002", "50000000-0000-4000-8000-000000000003",
+                   "50000000-0000-4000-8000-000000000004", "50000000-0000-4000-8000-000000000005" ],
+      "cuts": [],
+      "derivation": "A leg stands up, so the plan holds its width and its thickness: both are the box's stored 2560 (2 1/2\" x 1024). The third dimension is its length, stated as 16 1/4\": 16.25 x 1024 = 16640. Text: 16 1/4\" = 1 x 12 + 4 1/4 -> 1'-4 1/4\". Four boxes identical in all three dimensions, in stock and in cuts, so one row of 4. Label: the four names share \"Leg, \" -> \"Leg\"." },
+
+    { "label": "Apron, short", "quantity": 2,
+      "lengthUnits": 16384, "widthUnits": 3584, "thicknessUnits": 768,
+      "lengthText": "1'-4\"", "widthText": "3 1/2\"", "thicknessText": "3/4\"",
+      "material": "", "unresolved": false,
+      "members": [ "50000000-0000-4000-8000-000000000008", "50000000-0000-4000-8000-000000000009" ],
+      "cuts": [],
+      "derivation": "A short apron runs along Y on edge, so the axes swap: thickness across X = the box's stored width 768, length up Y = its stored height 16384 (20 - 4 = 16\" x 1024). The third dimension is again the 3 1/2\" face = 3584. Text: 16\" = 1 x 12 + 4 -> 1'-4\". Two boxes, one row of 2, labelled \"Apron, short\"." }
+  ],
+
+  "cutListOrder": "Descending by length: 49152 > 40960 > 16640 > 16384, which is 48\" > 40\" > 16 1/4\" > 16\". No two rows tie on length, so neither the width and thickness tie-breaks nor the label, material and cut-sequence ones are exercised by this fixture.",
+
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+    "Top,1,\"4'-0\"\"\",\"2'-0\"\"\",\"3/4\"\"\",,,\"Round all four corners to a 1\"\" radius.\",",
+    "\"Apron, long\",2,\"3'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,,",
+    "Leg,4,\"1'-4 1/4\"\"\",\"2 1/2\"\"\",\"2 1/2\"\"\",,,,",
+    "\"Apron, short\",2,\"1'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,,"
+  ],
+
+  "statedNotInScene": [
+    { "what": "Top thickness", "text": "3/4\"" },
+    { "what": "Leg length", "text": "16 1/4\"" },
+    { "what": "Apron width (vertical face)", "text": "3 1/2\"" }
+  ],
+
+  "notes": [
+    "This fixture exists to carry the rounded corners that the coffee table deliberately does not (docs/design/shaped-parts-model.md §8). Its frame — four legs and four aprons — is the coffee table's, re-derived here, so that the one thing that differs is legible against a familiar shape.",
+    "Every number here is arithmetic on the dimensions rounded-corner-table.design.md states. The outline in particular is walked by hand from §1.5's rule, not read off napkin's own Outline(): an expectation copied from the code proves nothing.",
+    "The top's cut-list row is the row a square 48\" x 24\" top would have. That is the point of §4.1: the cut list lists the blank you start from, and the shopping list, which reads the same three dimensions and the same stock, is unchanged by the cuts (§4.6).",
+    "No part names a stock, as in the other two fixtures, so every material column is empty and a shopping list would report the whole table under \"no stock chosen\".",
+    "Format version 4 (docs/design/assembly-model.md §10) gave every box a depth, an anchor z and a face-up. The depths are the three stated numbers under statedNotInScene; the z values are the coffee table's, derived the same way in each box's derivation above and in rounded-corner-table.design.md. The cut list, its CSV and the top's outline are unchanged: the outline is in the blank's own frame and the cut list reads neither position nor orientation (§4, §5)."
+  ]
+}

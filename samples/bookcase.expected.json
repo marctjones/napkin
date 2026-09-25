@@ -1,0 +1,207 @@
+{
+  "fixture": "bookcase",
+  "scene": "bookcase.scene.json",
+  "design": "bookcase.design.md",
+  "derivedBy": "hand, from the stated dimensions in bookcase.design.md; never regenerated from napkin's output",
+  "formatVersion": 10,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 7,
+    "pieces": 7,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 30720,
+    "depthUnits": 11776,
+    "heightUnits": 36864,
+    "widthText": "2'-6\"",
+    "depthText": "11 1/2\"",
+    "heightText": "3'-0\"",
+    "derivation": "The extreme corners of every box, worked out in inches then x1024."
+  },
+  "boxes": [
+    {
+      "name": "Side, left",
+      "id": "20000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 768,
+        "y": 11520,
+        "z": 36864
+      },
+      "derivation": "Stands on the floor at the west end: 3/4\" thick across X, 11 1/4\" deep up Y, 36\" tall (its depth). Occupies x 0..3/4, y 0..11 1/4, z 0..36."
+    },
+    {
+      "name": "Side, right",
+      "id": "20000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 29952,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 30720,
+        "y": 11520,
+        "z": 36864
+      },
+      "derivation": "The east end, its outer face at 30\": 30 - 3/4 = 29 1/4\" is its west face. Occupies x 29 1/4..30, y 0..11 1/4, z 0..36."
+    },
+    {
+      "name": "Cap, bottom",
+      "id": "20000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 768,
+        "y": 0,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 29952,
+        "y": 11520,
+        "z": 768
+      },
+      "derivation": "Lies flat between the sides at the floor: 30 - 2 x 3/4 = 28 1/2\" long across X, 11 1/4\" up Y, 3/4\" thick. Occupies x 3/4..29 1/4, y 0..11 1/4, z 0..3/4."
+    },
+    {
+      "name": "Cap, top",
+      "id": "20000000-0000-4000-8000-000000000004",
+      "minUnits": {
+        "x": 768,
+        "y": 0,
+        "z": 36096
+      },
+      "maxUnits": {
+        "x": 29952,
+        "y": 11520,
+        "z": 36864
+      },
+      "derivation": "The same board flush with the sides' tops: its underside at 36 - 3/4 = 35 1/4\". Occupies z 35 1/4..36."
+    },
+    {
+      "name": "Shelf, lower",
+      "id": "20000000-0000-4000-8000-000000000005",
+      "minUnits": {
+        "x": 768,
+        "y": 768,
+        "z": 12288
+      },
+      "maxUnits": {
+        "x": 29952,
+        "y": 11520,
+        "z": 13056
+      },
+      "derivation": "Set back 3/4\" from the front (y = 3/4) so its back edge meets the back panel at 11 1/4\": 11 1/4 - 3/4 = 10 1/2\" deep. 28 1/2\" long, 3/4\" thick, its underside at 12\". Occupies z 12..12 3/4."
+    },
+    {
+      "name": "Shelf, upper",
+      "id": "20000000-0000-4000-8000-000000000006",
+      "minUnits": {
+        "x": 768,
+        "y": 768,
+        "z": 24576
+      },
+      "maxUnits": {
+        "x": 29952,
+        "y": 11520,
+        "z": 25344
+      },
+      "derivation": "The same shelf with its underside at 24\". Occupies z 24..24 3/4."
+    },
+    {
+      "name": "Back",
+      "id": "20000000-0000-4000-8000-000000000007",
+      "minUnits": {
+        "x": 0,
+        "y": 11520,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 30720,
+        "y": 11776,
+        "z": 36864
+      },
+      "derivation": "A 1/4\" panel across the whole back: 30\" wide across X, 1/4\" thick up Y, 36\" tall (its depth, so its length). Behind the carcass at y 11 1/4..11 1/2."
+    }
+  ],
+  "totalVolumeCubicUnits": 1940587020288,
+  "cutList": [
+    {
+      "label": "Back",
+      "quantity": 1,
+      "lengthUnits": 36864,
+      "widthUnits": 30720,
+      "thicknessUnits": 256,
+      "lengthText": "3'-0\"",
+      "widthText": "2'-6\"",
+      "thicknessText": "1/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "20000000-0000-4000-8000-000000000007"
+      ],
+      "derivation": "Stands up, so the plan holds its width (across X = 30\" = 30720) and its thickness (up Y = 1/4\" = 256); its length is its depth, 36\" = 36864. Largest by length (36\"), and among the two 36\" rows the wider one (30\" against 11 1/4\") comes first."
+    },
+    {
+      "label": "Side",
+      "quantity": 2,
+      "lengthUnits": 36864,
+      "widthUnits": 11520,
+      "thicknessUnits": 768,
+      "lengthText": "3'-0\"",
+      "widthText": "11 1/4\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "20000000-0000-4000-8000-000000000001",
+        "20000000-0000-4000-8000-000000000002"
+      ],
+      "derivation": "Stands up: the plan holds thickness (across X, 3/4\" = 768) and width (up Y, 11 1/4\" = 11520); length is the depth, 36\" = 36864. Two boxes, one row of 2. Label: \"Side, left\" and \"Side, right\" share \"Side, \", cut back to the last word boundary and stripped of its comma -> \"Side\"."
+    },
+    {
+      "label": "Cap",
+      "quantity": 2,
+      "lengthUnits": 29184,
+      "widthUnits": 11520,
+      "thicknessUnits": 768,
+      "lengthText": "2'-4 1/2\"",
+      "widthText": "11 1/4\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "20000000-0000-4000-8000-000000000003",
+        "20000000-0000-4000-8000-000000000004"
+      ],
+      "derivation": "Lies flat: length across X = 28 1/2\" = 29184 (28.5 x 1024), width up Y = 11 1/4\" = 11520, thickness its depth, 3/4\" = 768. Two boxes, one row of 2. Label: \"Cap, bottom\" and \"Cap, top\" share \"Cap, \" -> \"Cap\". Ordered after the 36\" rows, and before the shelves because 11 1/4\" is wider than 10 1/2\"."
+    },
+    {
+      "label": "Shelf",
+      "quantity": 2,
+      "lengthUnits": 29184,
+      "widthUnits": 10752,
+      "thicknessUnits": 768,
+      "lengthText": "2'-4 1/2\"",
+      "widthText": "10 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "",
+      "unresolved": false,
+      "members": [
+        "20000000-0000-4000-8000-000000000005",
+        "20000000-0000-4000-8000-000000000006"
+      ],
+      "derivation": "Lies flat: length 28 1/2\" = 29184, width 10 1/2\" = 10752, thickness 3/4\" = 768. It is not the same row as the caps: the width differs by 3/4\". Label: \"Shelf, lower\" and \"Shelf, upper\" share \"Shelf, \" -> \"Shelf\"."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+    "Back,1,\"3'-0\"\"\",\"2'-6\"\"\",\"1/4\"\"\",,,,",
+    "Side,2,\"3'-0\"\"\",\"11 1/4\"\"\",\"3/4\"\"\",,,,",
+    "Cap,2,\"2'-4 1/2\"\"\",\"11 1/4\"\"\",\"3/4\"\"\",,,,",
+    "Shelf,2,\"2'-4 1/2\"\"\",\"10 1/2\"\"\",\"3/4\"\"\",,,,"
+  ]
+}

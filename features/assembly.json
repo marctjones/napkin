@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "features": [
+    {
+      "id": "GUI-ASSEM-01",
+      "area": "ui",
+      "title": "Turn a part in the 3D view and see its side in the plan",
+      "acceptance": "Select a coffee-table leg in the plan and switch to the 3D view by keyboard; turning it about X is refused because relationships hold it in its own frame, a duplicate of it turned about X has its north face up and a 2 1/2\" by 16 1/4\" footprint in the plan, and one undo makes that footprint square again.",
+      "milestone": "backlog",
+      "issue": null,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-02",
+      "area": "ui",
+      "title": "Set a part under the top in the 3D view",
+      "acceptance": "In the 3D view, drag a coffee-table apron's Z arrow down and then up until the snap catches the top's underside; the drop stores a Flush of the top's bottom face and the apron's top face, the relationship list says so, and typing a 5\" depth in the properties panel grows the apron downward while the top stays where it was.",
+      "milestone": "backlog",
+      "issue": null,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-03",
+      "area": "ui",
+      "title": "The Part panel follows an edit made in the 3D view",
+      "acceptance": "Resize a coffee-table apron's depth by its top face handle in the 3D view; the Part panel shows the new depth without reselecting, renaming it and pressing Apply keeps that depth and states no typed depth, and two undos bring back both the original name and depth in the panel.",
+      "milestone": "backlog",
+      "issue": 69,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-04",
+      "area": "ui",
+      "title": "The relationship list and the Part panel share one column",
+      "acceptance": "At 900x600 with a coffee-table leg selected in the plan, and again with an apron picked in the 3D view, the open relationship list and the Part panel do not overlap each other or the status bar, the list scrolls because its 33 rows do not fit, and the selected part's rows come first.",
+      "milestone": "backlog",
+      "issue": 73,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-05",
+      "area": "ui",
+      "title": "A refused turn offers to let go of the relationships and turn",
+      "acceptance": "Pressing X on a coffee-table leg in the 3D view is refused, outlines exactly the parts the relationships holding it by place name, and offers 'Let go of N and turn'; taking the offer turns the leg in place and removes exactly those relationships, and one undo restores the drawing.",
+      "milestone": "backlog",
+      "issue": 76,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-06",
+      "area": "ui",
+      "title": "Remove a relationship from its row in the list",
+      "acceptance": "With a coffee-table leg selected, resting the pointer on the first row of the relationship list outlines the parts that relationship holds, clicking the row's remove button removes only that relationship without moving any part, and undo brings it back.",
+      "milestone": "backlog",
+      "issue": 77,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-07",
+      "area": "ui",
+      "title": "Zoom to fit frames the drawing beside the side panels",
+      "acceptance": "With a coffee-table leg selected and the Part panel showing, zoom to fit in the plan and Home in the 3D view each put every corner of every part left of the Part panel.",
+      "milestone": "backlog",
+      "issue": 90,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-08",
+      "area": "ui",
+      "title": "The words and the plan's mark follow a part when it is turned",
+      "acceptance": "With a standing coffee-table leg selected the Part panel's rows read East–west, North–south and Length (up) and the relationship list uses compass words with no left, right or bottom edge; a duplicate tipped about X reads East–west, Up and Length (north–south) and carries the plan mark '↑ thickness', and undo removes the mark.",
+      "milestone": "backlog",
+      "issue": 81,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-09",
+      "area": "ui",
+      "title": "Stretch a part by its face handle until it meets another part's face",
+      "acceptance": "In the 3D view, a coffee-table leg shrunk by its top face handle and stretched back up shows a live readout naming its length and 'flush with Top's bottom face' mid-drag, and on release its top is exactly at the top's underside with a Flush of the top's bottom face and the leg's top face.",
+      "milestone": "backlog",
+      "issue": 80,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-10",
+      "area": "ui",
+      "title": "Press and drag moves a part in both views without clicking it first",
+      "acceptance": "With nothing selected, a drag that starts on a coffee-table leg in the plan moves and selects it without moving the view, a drag that starts on the south apron's face in the 3D view slides it in that face's plane and selects it without moving the camera, and a drag on the pinned top moves nothing and says it is pinned.",
+      "milestone": "backlog",
+      "issue": 85,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-11",
+      "area": "ui",
+      "title": "Type where a part is, and what is held to it follows",
+      "acceptance": "With a coffee-table apron snapped flush under the top and the top's pin removed from its row, typing 20\" in the top's Up position field and pressing Enter puts the top's underside exactly 20\" off the floor, keeps it where it was east-west and north-south, and raises the apron with it.",
+      "milestone": "backlog",
+      "issue": 78,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-12",
+      "area": "ui",
+      "title": "Type a length after or during a 3D drag",
+      "acceptance": "In the 3D view, dragging a coffee-table apron's Z arrow down, typing 3 1/2 and pressing Enter leaves it exactly 3 1/2\" below where the drag began; typing 5 and Enter while dragging its top face handle makes it exactly 5\" deep; and one undo takes each back.",
+      "milestone": "backlog",
+      "issue": 79,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-13",
+      "area": "ui",
+      "title": "Mirror, duplicate and move several parts at once",
+      "acceptance": "M on the coffee table's south-west leg puts a mirror copy at 44\" to 46 1/2\" east-west; a leg and its apron duplicated together are selected copies held to each other as the originals are; and the pair's shared Z arrow in the 3D view raises both by the same amount.",
+      "milestone": "backlog",
+      "issue": 87,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-14",
+      "area": "ui",
+      "title": "Place a part in the 3D view on the face under the pointer",
+      "acceptance": "With the 3D view showing, a 2x4 picked from the toolbox previews lying flat on the coffee table's top, a click places it there with its stock and a Flush of the top's upper face and its underside, one undo removes it all, a drag on the floor places a 2x4 as long as the drag held by nothing, and Escape puts the 2x4 down.",
+      "milestone": "backlog",
+      "issue": 74,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-15",
+      "area": "ui",
+      "title": "Turn the placement preview before placing it",
+      "acceptance": "Holding a 2x4 in the 3D view over the coffee table's top, Y stands the preview on end 24\" tall on the top, a click places it standing there with its stock and a Flush of the top's upper face, and one undo removes it and the flush.",
+      "milestone": "backlog",
+      "issue": 92,
+      "kind": "workflow"
+    }
+  ]
+}
