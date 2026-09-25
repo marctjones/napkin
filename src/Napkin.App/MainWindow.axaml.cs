@@ -3439,14 +3439,17 @@ public partial class MainWindow : Window
             Settings.Update(s => s with { Projection = ModelDrawing.Projection });
         }
 
-        ZoomText.Text = IsShowingModel
+        // A standard view is orthographic by definition and nothing in it snaps: its zoom is all it says.
+        ZoomText.Text = IsShowingStandardView
+            ? string.Create(CultureInfo.InvariantCulture, $"Zoom {ModelDrawing.Camera.ZoomPercent:0.#}%")
+            : IsShowingModel
             ? string.Create(
                 CultureInfo.InvariantCulture,
                 $"{(ModelDrawing.Projection == CameraProjection.Perspective ? "Perspective" : "Orthographic")} · Zoom {ModelDrawing.Camera.ZoomPercent:0.#}%")
             : string.Create(CultureInfo.InvariantCulture, $"Zoom {DrawingCanvas.View.ZoomPercent:0.#}%");
 
         // While snapping is on, the step a drag lands on: it changes with the zoom, as the grid does.
-        if (Settings.Current.SnapToGrid)
+        if (Settings.Current.SnapToGrid && !IsShowingStandardView)
         {
             double step = IsShowingModel ? ModelDrawing.GridStepInches : DrawingCanvas.GridStepInches;
             ZoomText.Text += " · Snap " + Show(new Length(SnapGrid.UnitsPerStep(step)));

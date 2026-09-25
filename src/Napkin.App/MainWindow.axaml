@@ -405,7 +405,6 @@
                     <!-- Which view is showing (standard-views §4.2): Top, Front, 3D, "3D, perspective". -->
                     <TextBlock Name="ViewText"
                                Grid.Column="2"
-                               MinWidth="104"
                                FontSize="12"
                                FontFamily="{DynamicResource SeFontMono}"
                                Margin="16,0,0,0"

@@ -1,6 +1,13 @@
 # The six standard 2D views
 
-Status: **DRAFT, not yet signed off by Marc.** Written for issue #106 (the design) and owed to
+Status: **Signed off by Marc 2026-09-25 (by instruction); implementation began.** §10's three
+recommendations are taken as decided: Top is the plan canvas; height dimensions are deferred; read-only
+keeps the selection's menu commands live. Slice A (#107) deviates in two small places, both for
+room: the seven views sit in a View ▸ Standard views submenu (the View menu no longer fits a small
+window otherwise), and the chips sit in the status bar beside the view's name rather than in the
+drawing's top-right corner (the side panels own that corner, and chips over the paper take its clicks).
+
+Written for issue #106 (the design) and owed to
 #107 (the read-only implementation) and #108 (the view switcher), both in milestone Views, both
 in umbrella #116. §1–§6 decide what each view is and how it is drawn, dimensioned, switched and
 navigated, exactly enough to implement from; §7 is the test plan; §8 is the plan in slices, each
