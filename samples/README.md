@@ -89,8 +89,9 @@ after re-doing the arithmetic by hand and writing the new derivation down.
   `rounded-corner-table.expected.json`'s is the same four rows re-derived again, with the
   sentence its top's rounded corners read as; and `wall-with-window.expected.json`'s is empty
   because neither of its boxes is a part. The
-  thicknesses and lengths the plan view cannot hold are still written in each `design.md` and
-  repeated under `statedNotInScene`; they are now also in the scene, as each box's `depth`.
+  thicknesses and lengths a single 2D view cannot hold are still written in each `design.md` and
+  repeated under `statedNotInScene`; the scene itself holds all three dimensions, as each box's
+  `depth` alongside its length and width.
 - **No header size, stud count or bracing length** in the wall fixture. Those expectations are
   added in M4 and M5 by a person reading the relevant row of Connecticut's published adopted text
   and citing the page it came from — never from memory, and never from napkin's own output.

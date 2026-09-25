@@ -5,7 +5,7 @@ show**: the top's four corners are rounded to a 1" radius. Everything else is he
 sample is a table somebody could build, rather than a top floating on its own
 (`docs/design/shaped-parts-model.md` §8).
 
-Plan view (looking down). X runs to the right, Y runs up the page, the origin is the top's
+Drawn from above. X runs to the right, Y runs up the page, the origin is the top's
 south-west corner — which is now the centre of a 1" arc rather than a square corner. Every number
 below is a **finished** dimension of this design: it is stated here, not looked up.
 
@@ -34,12 +34,12 @@ below is a **finished** dimension of this design: it is stated here, not looked 
 |---|---|---|
 | Top, in plan | 48" × 24" | 4'-0" by 2'-0" — the blank, before the corners are rounded |
 | Top, corner radius | 1" | at all four corners |
-| Top, thickness | 3/4" | Not in the plan view, which has no third dimension; in the scene as the top's `depth`. |
+| Top, thickness | 3/4" | The scene holds all three dimensions; this is the top's `depth`. |
 | Leg, in plan | 2 1/2" × 2 1/2" | four of them, identical |
-| Leg, length | 16 1/4" | Not in the plan view; in the scene as each leg's `depth`. |
+| Leg, length | 16 1/4" | The scene holds all three dimensions; this is each leg's `depth`. |
 | Leg inset from each edge of the top | 1 1/2" | the top overhangs the leg frame all round |
 | Apron thickness, in plan | 3/4" | |
-| Apron width (the vertical face) | 3 1/2" | Not in the plan view; in the scene as each apron's `depth`. |
+| Apron width (the vertical face) | 3 1/2" | The scene holds all three dimensions; this is each apron's `depth`. |
 | Apron faces | flush with the outer faces of the legs | |
 | Long aprons (south, north) | run between the legs along X | length derived in the expectations |
 | Short aprons (west, east) | run between the legs along Y | length derived in the expectations |

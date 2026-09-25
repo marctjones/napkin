@@ -1,10 +1,13 @@
 # The viewer
 
-napkin's window (issue #36, milestone **M1 Look**): it opens a design file and draws it in plan
-view, and lets you move around it. M1 was the whole of that on purpose — the drawing and the
-navigation had to feel right before anything was allowed to change the model — and M2 added
-drawing and editing on top of it without changing any of it. M3's cut list and properties panel
-are the sections below the controls.
+napkin's window (issue #36, milestone **M1 Look**): it opens a design file and draws it, and lets
+you move around it. M1 was the whole of that on purpose — the drawing and the navigation had to
+feel right before anything was allowed to change the model — and M2 added drawing and editing on
+top of it without changing any of it. What follows is still M1's plan-view controls and hasn't been
+rewritten for what M2-M5 added on top: editing and selection (M2), the 3D view alongside plan, a
+wall tool, the code check and the bracing check (M4/M5), and the properties panel's wall and
+opening fields. M3's cut list and properties panel are the sections below the controls; see
+`docs/design/standard-views.md` for the views work this doc predates.
 
 ![The coffee-table sample](screenshots/m1-coffee-table.png)
 
@@ -58,9 +61,9 @@ configure; the sample files ship inside the build.
 | **Ctrl/Cmd + L** | Open the cut list, or bring it forward. |
 | **Escape** | Dismiss a refusal message. |
 
-Left-drag pans because M1 has nothing to select. When editing lands (#10) the left button becomes
-the selection gesture and panning keeps the middle button; the wheel and the keyboard do not
-change.
+Left-drag pans in M1's read-only viewer, because there is nothing to select. Editing (M2, #10)
+made the left button the selection gesture instead, with panning kept on the middle button and the
+wheel; that table is this doc's M1 baseline, not what the shipped app's Select tool does today.
 
 Zoom is limited at both ends — from an inch drawn at a fiftieth of a pixel, which fits a
 1,500-foot site in a window, to an inch drawn across 2,400 pixels, which is finer than the
