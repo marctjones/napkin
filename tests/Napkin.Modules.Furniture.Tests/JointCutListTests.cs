@@ -568,4 +568,69 @@ public class JointCutListTests
         Assert.Equal(3, Recipes.Count(recipe, Inch(16)));
         Assert.Equal(4, Recipes.Count(typed, Inch(16)));
     }
+
+    // ------------------------------------------------------------------------------------------------
+    // The three half-turns, each on its own (note 6.3): about x south and north swap, and bottom and top;
+    // about y east and west swap, and bottom and top; about z south and north swap, and east and west.
+    // ------------------------------------------------------------------------------------------------
+
+    private static JointFact Groove(BoxFace face, BoxFace from)
+        => new(JointFactKind.Groove, face, from, Direction: GrooveDirection.AlongLength, Width: Inch(0.25), Depth: Inch(0.25), Offset: Inch(0.5));
+
+    private static JointFact Pocket(BoxFace from, BoxFace end, int count)
+        => new(JointFactKind.PocketHoles, from, end, Count: count);
+
+    [Trait("Feature", "CUT-008")]
+    [Fact]
+    public void A_half_turn_about_x_swaps_south_with_north_and_bottom_with_top()
+    {
+        // Pocket holes at the south end from the top face and a groove in the east face from the bottom edge:
+        // about x, south -> north and top -> bottom; the east face and its groove keep their face, and lose "bottom".
+        ImmutableArray<JointFact> asDrawn = [Pocket(BoxFace.Top, BoxFace.South, 2), Groove(BoxFace.East, BoxFace.Bottom)];
+        ImmutableArray<JointFact> turned = [Pocket(BoxFace.Bottom, BoxFace.North, 2), Groove(BoxFace.East, BoxFace.Top)];
+        ImmutableArray<JointFact> notTurned = [Pocket(BoxFace.Bottom, BoxFace.North, 2), Groove(BoxFace.East, BoxFace.Bottom)];
+
+        Assert.True(JointDescription.SameJoinery(asDrawn, turned));
+        Assert.False(JointDescription.SameJoinery(asDrawn, notTurned));
+    }
+
+    [Trait("Feature", "CUT-008")]
+    [Fact]
+    public void A_half_turn_about_y_swaps_east_with_west_and_bottom_with_top()
+    {
+        // About y: east <-> west and bottom <-> top; south and north stay.
+        ImmutableArray<JointFact> asDrawn = [Pocket(BoxFace.East, BoxFace.South, 2), Groove(BoxFace.North, BoxFace.Bottom)];
+        ImmutableArray<JointFact> turned = [Pocket(BoxFace.West, BoxFace.South, 2), Groove(BoxFace.North, BoxFace.Top)];
+        ImmutableArray<JointFact> notTurned = [Pocket(BoxFace.West, BoxFace.North, 2), Groove(BoxFace.North, BoxFace.Top)];
+
+        Assert.True(JointDescription.SameJoinery(asDrawn, turned));
+        Assert.False(JointDescription.SameJoinery(asDrawn, notTurned));
+    }
+
+    [Trait("Feature", "CUT-008")]
+    [Fact]
+    public void A_half_turn_about_z_swaps_south_with_north_and_east_with_west_and_leaves_bottom_and_top()
+    {
+        // About z: south <-> north and east <-> west; bottom and top stay.
+        ImmutableArray<JointFact> asDrawn = [Pocket(BoxFace.East, BoxFace.South, 2), Groove(BoxFace.North, BoxFace.Bottom)];
+        ImmutableArray<JointFact> turned = [Pocket(BoxFace.West, BoxFace.North, 2), Groove(BoxFace.South, BoxFace.Bottom)];
+        ImmutableArray<JointFact> notTurned = [Pocket(BoxFace.West, BoxFace.North, 2), Groove(BoxFace.South, BoxFace.Top)];
+
+        Assert.True(JointDescription.SameJoinery(asDrawn, turned));
+        Assert.False(JointDescription.SameJoinery(asDrawn, notTurned));
+    }
+
+    [Trait("Feature", "CUT-008")]
+    [Fact]
+    public void Joinery_is_compared_as_a_sorted_multiset_not_as_a_sequence_and_an_empty_set_equals_only_itself()
+    {
+        ImmutableArray<JointFact> ends = [Pocket(BoxFace.East, BoxFace.South, 3), Pocket(BoxFace.East, BoxFace.North, 2)];
+        ImmutableArray<JointFact> reversed = [Pocket(BoxFace.East, BoxFace.North, 2), Pocket(BoxFace.East, BoxFace.South, 3)];
+
+        Assert.True(JointDescription.SameJoinery(ends, reversed));
+        Assert.True(JointDescription.SameJoinery([], []));
+        Assert.False(JointDescription.SameJoinery(ends, []));
+        Assert.False(JointDescription.SameJoinery(ends, [Pocket(BoxFace.East, BoxFace.South, 3)]));
+        Assert.False(JointDescription.SameJoinery(ends, [Pocket(BoxFace.East, BoxFace.South, 3), Pocket(BoxFace.East, BoxFace.North, 3)]));
+    }
 }
