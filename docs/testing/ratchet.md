@@ -1,9 +1,11 @@
 # The coverage ratchet
 
 Test coverage in this repository is allowed to go up and not down. A committed file records what
-each assembly has already achieved, and CI fails a pull request that falls below it.
+each assembly has already achieved, and the local gate (`tools/scripts/gate.sh`) refuses to land a
+change that falls below it — there is no PR check to fail instead; development is direct to `main`
+(no pull requests since 2026-09-22, CLAUDE.md), so this is enforced by whoever lands the change.
 
-This is a deliberate gate on pull requests — Marc asked for it. It is **not** a gate on tags or
+This is a deliberate gate on landing changes — Marc asked for it. It is **not** a gate on tags or
 releases, and it has nothing to do with the [feature scorecard](./scorecard.md), which measures
 progress and never fails anything.
 
