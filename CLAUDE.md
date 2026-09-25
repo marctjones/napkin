@@ -121,6 +121,6 @@ every rules-engine code pack (#13-#17) without exception.
 ## Decisions that are Marc's, not an agent's
 
 Flag these rather than guessing: signing off on a Fable design doc before implementation starts
-(`docs/design/*.md` headers say when this applies); the copyright stance on transcribing
-state-adopted code tables (blocks #13-#17); cutting the first release tag; anything that trades
+(`docs/design/*.md` headers say when this applies); (decided 2026-09-25: napkin MAY ship transcribed code tables, each read from a primary or
+official source in the same task and cited beside the data; see issue #157); cutting the first release tag; anything that trades
 off product scope rather than implementing an already-decided design.
