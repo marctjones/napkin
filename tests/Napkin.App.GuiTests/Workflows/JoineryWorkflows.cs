@@ -64,7 +64,7 @@ public class JoineryWorkflows
         app.Expect("two parts that do not touch: the status line says so, by name, and nothing opens", () =>
         {
             Assert.False(window.IsJoining);
-            Assert.Equal("Part 1 and Part 3 don't touch.", window.Editor.LastMessage!.Text);
+            Assert.Equal(JointTooltip.DontTouch("Part 1", "Part 3"), window.Editor.LastMessage!.Text);
         });
 
         app.Click(new Point(120, 320));
@@ -323,14 +323,14 @@ public class JoineryWorkflows
         app.Expect("a rabbet with no depth is refused in the sheet, in words, and nothing is joined", () =>
         {
             Assert.True(window.IsJoining);
-            Assert.Equal("A rabbet needs a depth greater than zero, like 1/4\".", window.JoinRefusal);
+            Assert.Equal(JointTooltip.DepthRefusal(JointType.Rabbet), window.JoinRefusal);
             Assert.Equal(0, Sketch(window).RelationshipsInOrder.OfType<Joint>().Count(drawerA));
         });
 
         ClickControl(app, window, window.JoinDepthControl);
         app.Type("0");
         app.Press(Key.Enter);
-        Assert.Contains("greater than zero", window.JoinRefusal, StringComparison.Ordinal);
+        Assert.Equal(JointTooltip.DepthRefusal(JointType.Rabbet), window.JoinRefusal);
         app.Chord(Key.A);
         app.Type("1/4");
         Choose(app, window, "Brads");
@@ -375,14 +375,14 @@ public class JoineryWorkflows
 
         app.Expect("the count box shows the recipe's number as a suggestion, not a value", () =>
         {
-            Assert.Equal("recipe: 3", window.JoinCountControl.PlaceholderText);
+            Assert.Equal(Recipes.Placeholder(3), window.JoinCountControl.PlaceholderText);
             Assert.True(string.IsNullOrEmpty(window.JoinCountControl.Text));
         });
 
         ClickControl(app, window, window.JoinCountControl);
         app.Type("0");
         app.Press(Key.Enter);
-        Assert.Contains("whole number of at least 1", window.JoinRefusal, StringComparison.Ordinal);
+        Assert.Equal(Recipes.CountRefusal, window.JoinRefusal);
         app.Chord(Key.A);
         app.Type("4");
         Assert.False(window.JoinGlueControl.IsChecked, "glue starts as the last joint had it: unglued");
@@ -471,7 +471,7 @@ public class JoineryWorkflows
             Assert.Equal(2, hollow.Length);
             Assert.Contains(list.Rows.LinesOnScreen, line => line.Contains("joint not satisfied", StringComparison.Ordinal));
             Joint apron = Sketch(window).RelationshipsInOrder.OfType<Joint>().Single(joint => Name(window, joint.Inserted.Box) == "Web" && Name(window, joint.Receiving.Box) == "Apron, back");
-            Assert.StartsWith("Butt (parts no longer touch)", JointTooltip.Of(Sketch(window), apron), StringComparison.Ordinal);
+            Assert.StartsWith(JointTooltip.TypeName(JointType.Butt) + JointTooltip.PartsNoLongerTouch, JointTooltip.Of(Sketch(window), apron), StringComparison.Ordinal);
         });
 
         AppDriver lists = AppDriver.Attach(list, "flagged");
@@ -565,7 +565,7 @@ public class JoineryWorkflows
         CutListWindow list = window.CutList!;
         app.Expect("the cut list is thirteen rows and its CSV is the hand-worked one, joinery column and all", () =>
         {
-            Assert.Contains("13 rows, 24 pieces to cut", list.Headline, StringComparison.Ordinal);
+            Assert.Contains(CutList.Headline(13, 24), list.Headline, StringComparison.Ordinal);
             string[] want = [.. expected.GetProperty("cutListCsv").EnumerateArray().Select(line => line.GetString()!)];
             string[] lines = list.Csv.Split('\n', StringSplitOptions.RemoveEmptyEntries);
             Assert.Equal(want.Skip(2).Order(StringComparer.Ordinal), lines.Skip(2).Order(StringComparer.Ordinal));
@@ -578,7 +578,7 @@ public class JoineryWorkflows
         {
             string[][] rows = [.. list.Extras.LinesOnScreen.Skip(1).Where(line => line.StartsWith("Fasteners", StringComparison.Ordinal)).Select(line => line.Split('\t'))];
             Assert.Equal(["27", "6", "8", "24", "10"], rows.Select(row => row[3]));
-            Assert.All(rows, row => Assert.Equal("size not chosen", row[2]));
+            Assert.All(rows, row => Assert.Equal(SuppliesList.SizeNotChosen, row[2]));
         });
         lists.SaveFrame("unsized");
 
@@ -686,7 +686,7 @@ public class JoineryWorkflows
         app.Expect("the shopping list has the five fastener lines, sized as the sample's builder typed them", () =>
         {
             string[] lines = [.. list.Extras.LinesOnScreen];
-            Assert.Equal("Section\tItem\tSize\tCount\tPack\tPacks\tFor", lines[0]);
+            Assert.Equal(SuppliesList.Header.Replace(',', '\t'), lines[0]);
             Assert.StartsWith("Fasteners\tPocket screw, 3/4\" stock\t1-1/4 in coarse\t27\t100\t1\t", lines[1], StringComparison.Ordinal);
             Assert.StartsWith("Fasteners\tTabletop clip\tfigure-8, with screws\t10\t8\t2\t", lines[5], StringComparison.Ordinal);
         });
@@ -740,7 +740,7 @@ public class JoineryWorkflows
         lists.Chord(Key.A);
         lists.Type("0");
         lists.Click(CentreOf(list, list.SaveSizesControl));
-        Assert.Contains("at least 1", list.SizesMessage, StringComparison.Ordinal);
+        Assert.Equal(SuppliesList.PackSizeRefusal("0"), list.SizesMessage);
         lists.Click(CentreOf(list, list.PackBox(0)));
         lists.Chord(Key.A);
         lists.Type("many");
@@ -748,7 +748,7 @@ public class JoineryWorkflows
 
         app.Expect("a pack size that is not a number is refused where it was typed, and the design keeps its 20", () =>
         {
-            Assert.Contains("whole number", list.SizesMessage, StringComparison.Ordinal);
+            Assert.Equal(SuppliesList.PackSizeRefusal("many"), list.SizesMessage);
             Assert.Equal(20, window.CurrentDesign!.Sketch.FastenerChoices.Single(choice => choice.Kind == FastenerKind.TabletopClip).PackSize);
         });
 

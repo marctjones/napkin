@@ -55,6 +55,13 @@ public static class CutList
     /// </summary>
     public const string NothingToCut = "This design has nothing in it to cut.";
 
+    /// <summary>The cut list in a phrase after the design's name: "4 rows, 9 pieces to cut", or "nothing to cut".</summary>
+    /// <param name="rows">How many rows.</param>
+    /// <param name="pieces">How many pieces, over all rows.</param>
+    public static string Headline(int rows, int pieces) => rows == 0
+        ? "nothing to cut"
+        : $"{rows} {(rows == 1 ? "row" : "rows")}, {pieces} {(pieces == 1 ? "piece" : "pieces")} to cut";
+
     /// <summary>
     /// The cut list for a design.
     /// </summary>

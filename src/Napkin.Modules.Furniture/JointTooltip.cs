@@ -22,6 +22,18 @@ public static class JointTooltip
         _ => "Tabletop",
     };
 
+    /// <summary>What the sentence adds after the type when the joint's parts have moved apart.</summary>
+    public const string PartsNoLongerTouch = " (parts no longer touch)";
+
+    /// <summary>Why a joint that needs a depth is refused without one: "A rabbet needs a depth greater than zero, like 1/4"."</summary>
+    /// <param name="type">The joint's type.</param>
+    public static string DepthRefusal(JointType type) => $"A {TypeName(type).ToLowerInvariant()} needs a depth greater than zero, like 1/4\".";
+
+    /// <summary>Why joining two parts did nothing when they do not touch: "Part 1 and Part 3 don't touch."</summary>
+    /// <param name="first">The first part's name.</param>
+    /// <param name="second">The second part's name.</param>
+    public static string DontTouch(string first, string second) => $"{first} and {second} don't touch.";
+
     /// <summary>The one letter its marker carries: B butt, G groove, R rabbet, L half-lap, T tabletop (&#xA7;5.2).</summary>
     /// <param name="type">The type.</param>
     public static char Letter(JointType type) => type switch
@@ -49,7 +61,7 @@ public static class JointTooltip
         string inserted = nameOf(joint.Inserted.Box);
 
         StringBuilder text = new();
-        text.Append(TypeName(joint.Type)).Append(satisfied ? string.Empty : " (parts no longer touch)")
+        text.Append(TypeName(joint.Type)).Append(satisfied ? string.Empty : PartsNoLongerTouch)
             .Append(" — ").Append(receiving).Append(" ← ").Append(inserted).Append('.');
 
         if (joint.Depth is { } depth)

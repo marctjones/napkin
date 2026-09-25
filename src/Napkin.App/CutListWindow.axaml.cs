@@ -250,7 +250,7 @@ public partial class CutListWindow : Window
                 Text = row.SizeText,
                 Width = 220,
                 FontSize = 12,
-                PlaceholderText = "size not chosen",
+                PlaceholderText = SuppliesList.SizeNotChosen,
             };
             TextBox pack = new()
             {
@@ -304,7 +304,7 @@ public partial class CutListWindow : Window
             {
                 if (!int.TryParse(packText, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int parsed) || parsed < 1)
                 {
-                    SizesError.Text = $"A pack size is a whole number of at least 1, or blank; \"{packText}\" is not.";
+                    SizesError.Text = SuppliesList.PackSizeRefusal(packText);
                     SizesError.IsVisible = true;
                     return;
                 }
@@ -504,7 +504,7 @@ public partial class CutListWindow : Window
         Title = design is null ? "Cut list" : $"Cut list — {design.Name}";
         DesignHeadline.Text = design is null
             ? "No design is open."
-            : $"{design.Name}: {Describe(rows)}";
+            : $"{design.Name}: {CutList.Headline(rows.Length, rows.Sum(row => row.Quantity))}";
 
         // An empty list is never silence: a design with nothing to cut says which of the two
         // reasons it is, because "no rows" and "no parts" are different problems to a person.
@@ -532,19 +532,5 @@ public partial class CutListWindow : Window
             ? code.Problem ?? string.Empty
             : string.Join("; ", checks.Select(check => $"{check.Opening.Name}: {CodeCheck.Short(check)}")) + ".";
         return $"\n{under}: {results}";
-    }
-
-    private static string Describe(ImmutableArray<CutListRow> rows)
-    {
-        if (rows.IsEmpty)
-        {
-            return "nothing to cut";
-        }
-
-        int pieces = rows.Sum(row => row.Quantity);
-        string rowWord = rows.Length == 1 ? "row" : "rows";
-        string pieceWord = pieces == 1 ? "piece" : "pieces";
-
-        return $"{rows.Length} {rowWord}, {pieces} {pieceWord} to cut";
     }
 }

@@ -44,7 +44,7 @@ public sealed record FastenerRow(
             List<string> notes = [];
             if (SizeText.Length == 0)
             {
-                notes.Add("size not chosen");
+                notes.Add(SuppliesList.SizeNotChosen);
             }
 
             int apart = Sources.Count(source => source is { JointLength: null, Typed: false });
