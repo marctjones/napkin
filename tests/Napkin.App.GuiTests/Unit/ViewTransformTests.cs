@@ -202,6 +202,24 @@ public class ViewTransformTests
     }
 
     [Fact]
+    public void A_fit_below_the_covered_toolbar_frames_the_design_under_it()
+    {
+        // The floating toolbar covers the top 56 px (#186): the design is framed, centred, in the
+        // 544 px below it, and nothing of it is drawn under the toolbar.
+        Design design = CoffeeTable();
+        WorldBounds extents = SketchExtents.Of(design.Sketch);
+
+        ViewTransform fitted = ViewTransform.Default.FitTo(extents, Viewport, coveredRight: 280, coveredTop: 56);
+
+        Point low = fitted.ToScreen(extents.MinX.ToInches(), extents.MinY.ToInches());
+        Point high = fitted.ToScreen(extents.MaxX.ToInches(), extents.MaxY.ToInches());
+        Assert.True(high.Y >= 56 + (544 * ViewTransform.FitMarginFraction) - 1e-6, $"the design's north edge is at {high.Y}, under the toolbar.");
+        Assert.True(low.Y <= 600 - (544 * ViewTransform.FitMarginFraction) + 1e-6);
+        Assert.Equal(56 + 272, (low.Y + high.Y) / 2, 6);
+        Assert.Equal(310, (low.X + high.X) / 2, 6);
+    }
+
+    [Fact]
     [Trait("Feature", "CVS-002")]
     public void A_fit_frames_the_whole_design_with_a_margin()
     {
