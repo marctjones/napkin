@@ -207,40 +207,45 @@ public static class SpaceSnapResolver
     /// <param name="wanted">Where the pointer puts that face, on the world axis it faces along.</param>
     /// <param name="radius">How near a face has to be to catch.</param>
     /// <returns>The plan, with one hit: on a face, or — at <paramref name="wanted"/> — the grid.</returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="atPress"/>'s rotation is not a right-angle multiple, so it has no face whose
+    /// normal lies along a single world axis for the handle to resize along.
+    /// </exception>
     public static SpaceSnapPlan ResolveFace(Sketch sketch, Box atPress, BoxFace face, Length wanted, Length radius)
     {
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(atPress);
+        if (!atPress.Orientation.IsExact)
+        {
+            throw new ArgumentException($"Box {atPress.Id} is skewed (not a right-angle rotation); it has no face aligned with a single world axis to resize along.", nameof(atPress));
+        }
 
         (Axis axis, bool positive) = atPress.Orientation.Normal(face);
         Candidate? caught = null;
-        if (atPress.Orientation.IsExact)
+        (Point3 myLow, Point3 myHigh) = Extent(atPress);
+        foreach (Box other in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
         {
-            (Point3 myLow, Point3 myHigh) = Extent(atPress);
-            foreach (Box other in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
+            if (other.Id == atPress.Id || !other.Orientation.IsExact)
             {
-                if (other.Id == atPress.Id || !other.Orientation.IsExact)
+                continue;
+            }
+
+            (Point3 theirLow, Point3 theirHigh) = Extent(other);
+            if (!OverlapsAcross(axis, myLow, myHigh, theirLow, theirHigh, radius, out double area))
+            {
+                continue;
+            }
+
+            foreach ((Length theirs, bool theirPositive) in Faces(axis, theirLow, theirHigh))
+            {
+                Length shift = theirs - wanted;
+                if (Length.Abs(shift) > radius)
                 {
                     continue;
                 }
 
-                (Point3 theirLow, Point3 theirHigh) = Extent(other);
-                if (!OverlapsAcross(axis, myLow, myHigh, theirLow, theirHigh, radius, out double area))
-                {
-                    continue;
-                }
-
-                foreach ((Length theirs, bool theirPositive) in Faces(axis, theirLow, theirHigh))
-                {
-                    Length shift = theirs - wanted;
-                    if (Length.Abs(shift) > radius)
-                    {
-                        continue;
-                    }
-
-                    Candidate candidate = new(axis, shift, theirs, other.Id, FaceFacing(other, axis, theirPositive), face, Mating: positive != theirPositive, area);
-                    caught = caught is null ? candidate : Better(caught, candidate);
-                }
+                Candidate candidate = new(axis, shift, theirs, other.Id, FaceFacing(other, axis, theirPositive), face, Mating: positive != theirPositive, area);
+                caught = caught is null ? candidate : Better(caught, candidate);
             }
         }
 

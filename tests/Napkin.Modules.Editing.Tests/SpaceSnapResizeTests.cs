@@ -210,4 +210,18 @@ public class SpaceSnapResizeTests
         Assert.Throws<ArgumentNullException>(() => SpaceSnapResolver.FaceFacing(null!, Axis.Z, true));
         Assert.Throws<ArgumentNullException>(() => SpaceSnapResolver.Extent(null!));
     }
+
+    [Fact]
+    public void A_skewed_part_refuses_a_face_resize_instead_of_throwing_from_Normal()
+    {
+        // Not a right-angle multiple: the guard (checked before any Orientation.Normal call) must
+        // catch this itself and name the part, rather than letting Normal's RequireExact throw
+        // InvalidOperationException first (#183).
+        Box skewed = Leg with { Rotation = Angle.Degrees(30) };
+
+        ArgumentException thrown = Assert.Throws<ArgumentException>(
+            () => SpaceSnapResolver.ResolveFace(SketchOf(skewed), skewed, BoxFace.Top, Inches(11.75), Radius));
+        Assert.Equal("atPress", thrown.ParamName);
+        Assert.Contains(skewed.Id.ToString(), thrown.Message);
+    }
 }
