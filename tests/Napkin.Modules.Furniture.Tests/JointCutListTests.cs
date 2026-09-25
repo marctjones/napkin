@@ -633,4 +633,49 @@ public class JointCutListTests
         Assert.False(JointDescription.SameJoinery(ends, [Pocket(BoxFace.East, BoxFace.South, 3)]));
         Assert.False(JointDescription.SameJoinery(ends, [Pocket(BoxFace.East, BoxFace.South, 3), Pocket(BoxFace.East, BoxFace.North, 3)]));
     }
+
+    [Trait("Feature", "CUT-008")]
+    [Fact]
+    public void Every_face_pair_is_the_same_joinery_as_its_image_under_each_half_turn()
+    {
+        // The maps, written out here and not read from the code: about x south<->north and bottom<->top; about y
+        // east<->west and bottom<->top; about z south<->north and east<->west.
+        Dictionary<BoxFace, BoxFace> x = new() { [BoxFace.South] = BoxFace.North, [BoxFace.North] = BoxFace.South, [BoxFace.East] = BoxFace.East, [BoxFace.West] = BoxFace.West, [BoxFace.Bottom] = BoxFace.Top, [BoxFace.Top] = BoxFace.Bottom };
+        Dictionary<BoxFace, BoxFace> y = new() { [BoxFace.South] = BoxFace.South, [BoxFace.North] = BoxFace.North, [BoxFace.East] = BoxFace.West, [BoxFace.West] = BoxFace.East, [BoxFace.Bottom] = BoxFace.Top, [BoxFace.Top] = BoxFace.Bottom };
+        Dictionary<BoxFace, BoxFace> z = new() { [BoxFace.South] = BoxFace.North, [BoxFace.North] = BoxFace.South, [BoxFace.East] = BoxFace.West, [BoxFace.West] = BoxFace.East, [BoxFace.Bottom] = BoxFace.Bottom, [BoxFace.Top] = BoxFace.Top };
+
+        foreach (BoxFace face in Enum.GetValues<BoxFace>())
+        {
+            foreach (BoxFace end in Enum.GetValues<BoxFace>())
+            {
+                foreach (Dictionary<BoxFace, BoxFace> turn in new[] { x, y, z })
+                {
+                    Assert.True(
+                        JointDescription.SameJoinery([Pocket(face, end, 2)], [Pocket(turn[face], turn[end], 2)]),
+                        $"({face}, {end}) and its half-turn image are the same part.");
+                }
+            }
+        }
+
+        // And a face pair that is not any turn of another is not equal to it: (east, south) is never (east, north)'s image.
+        Assert.False(JointDescription.SameJoinery([Pocket(BoxFace.East, BoxFace.South, 2)], [Pocket(BoxFace.East, BoxFace.Top, 2)]));
+    }
+
+    [Trait("Feature", "CUT-007")]
+    [Fact]
+    public void On_one_face_the_one_nearer_its_edge_reads_first_whatever_kind_it_is()
+    {
+        ImmutableArray<JointFact> facts =
+        [
+            Groove(BoxFace.East, BoxFace.Bottom) with { Offset = Inch(10) },
+            new(JointFactKind.HalfLap, BoxFace.East, BoxFace.West, Depth: Inch(0.375), Long: Inch(1.5)),
+        ];
+
+        Assert.Equal(
+            [
+                "Half-lap the east face at the west end: 1 1/2\" long, 3/8\" deep, across the width.",
+                "Groove the east face: 1/4\" wide, 1/4\" deep, 10\" from the bottom edge, full length.",
+            ],
+            JointDescription.Describe(facts));
+    }
 }
