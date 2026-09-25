@@ -983,6 +983,33 @@
       "kind": "workflow"
     },
     {
+      "id": "CVS-013",
+      "area": "ui",
+      "title": "Rough mode snaps one rung coarser and states nothing it catches",
+      "acceptance": "The rough step is the rung above the precise step, never below 1 inch, on the ladder and a multiple of the precise step up to 48 inches; a rough drag lands on it; a rough drop still catches another part's edge but adds no relationship, where a precise drop adds one.",
+      "milestone": "M7",
+      "issue": 174,
+      "kind": "unit"
+    },
+    {
+      "id": "CVS-014",
+      "area": "ui",
+      "title": "A rough rectangle is a plank",
+      "acceptance": "The rectangle tool in Rough mode makes a box whose part has no stock, no species, quantity 1, its longer plan side the length, marked rough, 3/4 inch deep; in Precise the box has no part, as before.",
+      "milestone": "M7",
+      "issue": 174,
+      "kind": "unit"
+    },
+    {
+      "id": "GUI-SKETCH-01",
+      "area": "ui",
+      "title": "Sketch a quick bench roughly",
+      "acceptance": "Press Q: the status bar reads ROUGH and the toolbar shows Rough; draw the four parts of the quick bench a little off the round numbers; each lands on whole inches as a rough plank, nothing is stated though a leg was dragged against the top; the selected leg's labels wait until the pointer is over it; the status bar reads its name and three sizes.",
+      "milestone": "M7",
+      "issue": 174,
+      "kind": "workflow"
+    },
+    {
       "id": "ACC-001",
       "area": "ui",
       "title": "The canvas exposes one automation element per part",

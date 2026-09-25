@@ -161,6 +161,11 @@
                           Header="_Rectangle"
                           Click="OnRectangleToolClicked"
                           ToolTip.Tip="Drag out a new part." />
+                <MenuItem Name="RoughMenuItem"
+                          Header="Rough s_ketching"
+                          ToggleType="CheckBox"
+                          Click="OnRoughMenuClicked"
+                          ToolTip.Tip="Draw roughly: big round steps, parts that just touch with nothing stated, rectangles drawn as planks. Firm it up later." />
                 <MenuItem Name="WallsMenu" Header="_Walls">
                     <MenuItem Name="WallToolMenuItem"
                               Header="_Wall"
@@ -383,12 +388,33 @@
                 </Border>
 
                 <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="12,5">
-                    <TextBlock Name="DesignText"
-                               Grid.Column="0"
-                               FontSize="12"
-                               FontFamily="{DynamicResource SeFontMono}"
-                               VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" />
+                    <!-- The entry mode, always named first on the row (sketch-mode §1.1): a mode that is
+                         not visible is a mode error waiting to happen. In Rough, the live size follows it
+                         (§2.4): the labels are quiet on the paper, so the numbers are here. -->
+                    <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*">
+                        <TextBlock Name="EntryModeText"
+                                   Grid.Column="0"
+                                   Text="PRECISE"
+                                   FontSize="12"
+                                   FontFamily="{DynamicResource SeFontMono}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"
+                                   AutomationProperties.Name="Entry mode" />
+                        <TextBlock Name="SizeReadoutText"
+                                   Grid.Column="1"
+                                   IsVisible="False"
+                                   FontSize="12"
+                                   FontFamily="{DynamicResource SeFontMono}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"
+                                   AutomationProperties.Name="Size" />
+                        <TextBlock Name="DesignText"
+                                   Grid.Column="2"
+                                   FontSize="12"
+                                   FontFamily="{DynamicResource SeFontMono}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
                     <!-- The view switcher (standard-views §4.2): seven chips, one pressed, each with its
                          key. In the status bar, beside the view's name, rather than floating over the
                          drawing: the corners of the drawing are the toolbar's, the side panels' and the
@@ -571,6 +597,25 @@
                     </Style>
                 </Border.Styles>
                 <StackPanel Name="ToolRow" Orientation="Horizontal" Spacing="4">
+                    <!-- Rough | Precise (sketch-mode §1.1): how the next gesture enters the design, at the
+                         left end because it changes what every tool after it does. The active one is in
+                         the moss wash the armed tool uses. Q switches; so does Draw > Rough sketching. -->
+                    <ToggleButton Name="RoughModeButton"
+                                  Padding="5,3"
+                                  FontSize="11"
+                                  Content="Rough"
+                                  Click="OnRoughModeClicked"
+                                  AutomationProperties.Name="Rough"
+                                  ToolTip.Tip="Rough: big round steps, parts that just touch with nothing stated, rectangles drawn as planks (Q)" />
+                    <ToggleButton Name="PreciseModeButton"
+                                  Padding="5,3"
+                                  FontSize="11"
+                                  Content="Precise"
+                                  IsChecked="True"
+                                  Click="OnPreciseModeClicked"
+                                  AutomationProperties.Name="Precise"
+                                  ToolTip.Tip="Precise: the grid's own step, and what a drag lines up is stated (Q)" />
+                    <Border Name="ToolRowModeDivider" Width="1" Margin="4,3" />
                     <ToggleButton Name="SelectToolButton"
                                   Padding="5"
                                   Click="OnSelectToolClicked"

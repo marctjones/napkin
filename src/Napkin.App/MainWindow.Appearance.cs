@@ -69,6 +69,15 @@ public partial class MainWindow
         ToolBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
         ToolRowDivider.Background = new SolidColorBrush(palette.GridMajor);
         ToolRowActionsDivider.Background = new SolidColorBrush(palette.GridMajor);
+        ToolRowModeDivider.Background = new SolidColorBrush(palette.GridMajor);
+        // The mode words are text, not glyphs: the theme's checked foreground is white, unreadable on
+        // the moss wash over paper, so both states use the pencil's colour.
+        SolidColorBrush modeInk = new(palette.Dimension);
+        foreach (string key in (string[])["ToggleButtonForeground", "ToggleButtonForegroundPointerOver", "ToggleButtonForegroundPressed",
+                     "ToggleButtonForegroundChecked", "ToggleButtonForegroundCheckedPointerOver", "ToggleButtonForegroundCheckedPressed"])
+        {
+            ToolBar.Resources[key] = modeInk;
+        }
         StockToolboxPanel.ApplyPalette(palette);
 
         // The tool icons are drawn the way the stock category icons are, so the row reads as one.
@@ -335,7 +344,8 @@ public partial class MainWindow
         // While snapping is on, the step a drag lands on: it changes with the zoom, as the grid does.
         if (Settings.Current.SnapToGrid && !IsShowingStandardView)
         {
-            double step = IsShowingModel ? ModelDrawing.GridStepInches : DrawingCanvas.GridStepInches;
+            // In Rough mode that is the rough step, not the grid's (sketch-mode §2.1).
+            double step = IsShowingModel ? ModelDrawing.SnapStepInches : DrawingCanvas.SnapStepInches;
             ZoomText.Text += " · Snap " + Show(new Length(SnapGrid.UnitsPerStep(step)));
         }
 

@@ -133,6 +133,7 @@ public partial class MainWindow : Window
         DrawingCanvas.DimensionEditRequested += (_, request) =>
             OpenDimensionEditor(request.Box, request.Axis);
         WireJoinery();
+        WireRough();
         DrawingCanvas.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         ModelDrawing.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         DrawingCanvas.ViewRequested += (_, view) => ShowView(view);
