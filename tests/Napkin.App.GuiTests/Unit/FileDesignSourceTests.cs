@@ -3,6 +3,7 @@ using Napkin.App.Designs;
 using Napkin.Core.Geometry;
 using Napkin.Core.Project;
 using Xunit;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.GuiTests.Unit;
 

@@ -4,8 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Automation;
 using Avalonia.Input;
 
-using Napkin.App.Designs;
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;

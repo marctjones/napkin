@@ -3,13 +3,13 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 
-using Napkin.App.Designs;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Settings;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 
 using Xunit;
+using Napkin.Modules.Editing;
 
 using static Napkin.App.GuiTests.Workflows.AssemblyWorkflows;
 
@@ -124,7 +124,7 @@ public class StandardViewWorkflows
         MainWindow window = (MainWindow)app.Target;
         OpenSample(app, window, "L-bracket");
         Box lug = BoxNamed(window, "Lug, south");
-        Napkin.App.Designs.Design before = window.CurrentDesign!;
+        Napkin.Modules.Editing.Design before = window.CurrentDesign!;
 
         app.Press(Key.D3);
         app.Expect("in Front the drawing tools are put down and say why", () =>

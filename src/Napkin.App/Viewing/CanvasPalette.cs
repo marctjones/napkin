@@ -1,6 +1,6 @@
 using Avalonia.Media;
 using Avalonia.Styling;
-using Napkin.App.Designs;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.Viewing;
 

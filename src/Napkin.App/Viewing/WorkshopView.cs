@@ -5,9 +5,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 
-using Napkin.App.Designs;
-using Napkin.App.Editing;
 using Napkin.Core.Geometry;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.Viewing;
 

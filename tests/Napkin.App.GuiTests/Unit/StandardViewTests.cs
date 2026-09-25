@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Input;
-using Napkin.App.Designs;
 using Napkin.App.Settings;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;

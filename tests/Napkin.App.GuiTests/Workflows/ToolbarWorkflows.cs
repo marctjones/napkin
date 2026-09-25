@@ -4,11 +4,11 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 
-using Napkin.App.Editing;
 using Napkin.App.GuiTests.Harness;
 using Napkin.Core.Geometry;
 
 using Xunit;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.GuiTests.Workflows;
 

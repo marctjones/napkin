@@ -1,5 +1,4 @@
 using Avalonia;
-using Napkin.App.Designs;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Xunit;

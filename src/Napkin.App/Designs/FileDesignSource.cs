@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Napkin.Core.Project;
+using Napkin.Modules.Editing;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App.Designs;
 

@@ -10,8 +10,9 @@ using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
 
 using Xunit;
+using Napkin.Modules.Editing;
 
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App.GuiTests.Workflows;
 

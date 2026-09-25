@@ -8,7 +8,7 @@ using Napkin.Core.Geometry;
 using Napkin.Core.RulesEngine;
 using Napkin.Modules.Building;
 
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App;
 
