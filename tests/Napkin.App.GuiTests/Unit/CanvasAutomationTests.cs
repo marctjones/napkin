@@ -228,9 +228,11 @@ public class CanvasAutomationTests
             AutomationPeer root = ControlAutomationPeer.CreatePeerForElement(window);
 
             Assert.Equal("File", Named(root, "FileMenu"));
+            Assert.Equal("Edit", Named(root, "EditMenu"));
             Assert.Equal("Draw", Named(root, "DrawMenu"));
-            Assert.Equal("Samples", Named(root, "SamplesMenu"));
             Assert.Equal("View", Named(root, "ViewMenu"));
+            Assert.Equal("Project", Named(root, "ProjectMenu"));
+            Assert.Equal("Lists", Named(root, "ListsMenu"));
         });
     }
 
@@ -289,6 +291,9 @@ public class CanvasAutomationTests
         HeadlessWindow.Run(window =>
         {
             AutomationPeer root = ControlAutomationPeer.CreatePeerForElement(window);
+            window.FileMenuItem.IsSubMenuOpen = true;
+            HeadlessWindow.Settle();
+            Assert.Equal("Samples", Named(root, "SamplesMenu"));
             window.SamplesMenuItem.IsSubMenuOpen = true;
             HeadlessWindow.Settle();
 

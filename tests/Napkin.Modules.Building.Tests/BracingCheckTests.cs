@@ -203,11 +203,11 @@ public class BracingCheckTests
         Assert.StartsWith("This wall line is beyond what Section ZZ-BRACE.1 covers: Section ZZ-BRACE.1 limit l.tall excludes wallHeight 12'-1\"", BracingCheck.Words(tall).Headline, StringComparison.Ordinal);
 
         Assert.Equal(
-            "Not checked: the wind speed is not entered, and napkin never assumes a value. Enter the site values under Edit → Adopted code and site.",
+            "Not checked: the wind speed is not entered, and napkin never assumes a value. Enter the site values under Project → Adopted code and site.",
             BracingCheck.Words(AllPanels(Design(wind: null)).Result()).Headline);
 
         Plan none = Design() with { Sketch = Design().Sketch with { Code = null } };
-        Assert.Equal("No code selected: choose one under Edit → Adopted code and site.", BracingCheck.Words(none.Result()).Headline);
+        Assert.Equal("No code selected: choose one under Project → Adopted code and site.", BracingCheck.Words(none.Result()).Headline);
 
         CodePacks shipped = CodePacks.Discover([RealPacks]);
         CodeChoice ct = new("us-ct-2022", shipped.Loaded.Single().Manifest.Revision, CodeMode.Locked, new DateOnly(2026, 9, 25));

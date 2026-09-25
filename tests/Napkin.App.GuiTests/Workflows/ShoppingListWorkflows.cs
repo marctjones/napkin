@@ -117,12 +117,14 @@ public class ShoppingListWorkflows
     static void PickTheme(AppDriver app, MainWindow window, string itemName)
     {
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("AppearanceMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeMenuItem")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>(itemName)!));
     }
 
     static void OpenSample(AppDriver app, MainWindow window, string sample)
     {
+        app.Click(CentreOf(window, window.FileMenuItem));
         app.Click(CentreOf(window, window.SamplesMenuItem));
 
         MenuItem item = window.GetVisualDescendants()

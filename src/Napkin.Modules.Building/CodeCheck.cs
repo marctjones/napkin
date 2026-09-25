@@ -126,7 +126,7 @@ public static class CodeCheck
     }
 
     /// <summary>Where in the app the code and the site values are chosen.</summary>
-    public const string WhereToChoose = "Edit → Adopted code and site";
+    public const string WhereToChoose = "Project → Adopted code and site";
 
     /// <summary>Where a person reads how to add tables.</summary>
     public const string WhereToAddTables = "Where to add tables: docs/rules-engine.md";

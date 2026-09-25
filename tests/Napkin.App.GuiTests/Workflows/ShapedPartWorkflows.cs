@@ -352,6 +352,7 @@ public class ShapedPartWorkflows
     /// <summary>Opens a sample through the Samples menu, with the mouse.</summary>
     static void OpenSample(AppDriver app, MainWindow window, string sample)
     {
+        app.Click(CentreOf(window, window.FileMenuItem));
         app.Click(CentreOf(window, window.SamplesMenuItem));
 
         MenuItem item = window.GetVisualDescendants()

@@ -99,6 +99,7 @@ public class SketchLookWorkflows
     static void Pick(AppDriver app, MainWindow window, string itemName)
     {
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("AppearanceMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("SketchMenuItem")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>(itemName)!));
     }

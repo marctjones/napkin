@@ -61,6 +61,10 @@
                     <Setter Property="Foreground" Value="{DynamicResource NapkinBenchHeadingBrush}" />
                 </Style>
             </Menu.Styles>
+            <!-- The menus (#169): File is the document, Edit acts on the selection, Draw holds the
+                 tools and nothing else, View is how the drawing is looked at, Project is what the
+                 design is checked and cut against, Lists is what comes out of it. Every item keeps
+                 its Name, which the GUI suite finds it by. -->
             <MenuItem Name="FileMenu" Header="_File">
                 <MenuItem Name="NewMenuItem"
                           Header="_New"
@@ -70,6 +74,10 @@
                           Header="_Open…"
                           Click="OnOpenClicked"
                           ToolTip.Tip="Open a napkin scene file. A file this build cannot read is refused, and whatever is on screen stays." />
+                <!-- Samples are built from SampleFiles.All in the code-behind: one item per scene file
+                     that shipped beside the executable, opened through the same reader as any other
+                     file. -->
+                <MenuItem Name="SamplesMenu" Header="Sa_mples" />
                 <Separator />
                 <MenuItem Name="SaveMenuItem"
                           Header="_Save"
@@ -84,64 +92,15 @@
             </MenuItem>
 
             <!-- Undo and redo say what they would take back or put back, and grey out when there
-                 is nothing to. Their headers are filled in the code-behind from the history. -->
+                 is nothing to. Their headers are filled in the code-behind from the history. Below
+                 them, everything that acts on the selection: each item runs the same command as its
+                 key and its toolbar button (MainWindow.Run). -->
             <MenuItem Name="EditMenu" Header="_Edit">
                 <MenuItem Name="UndoMenuItem" Header="_Undo" Click="OnUndoClicked" />
                 <MenuItem Name="RedoMenuItem" Header="_Redo" Click="OnRedoClicked" />
                 <Separator />
-                <MenuItem Name="JoinMenuItem"
-                          Header="_Join…"
-                          Click="OnJoinClicked"
-                          ToolTip.Tip="Join the two selected parts: say what kind of joint, what holds it, and whether it is glued." />
-                <MenuItem Name="JoinAllMenuItem"
-                          Header="Join all _touching…"
-                          Click="OnJoinAllClicked"
-                          ToolTip.Tip="Join every touching pair among the selected parts in one go; with two selected, repeat the last joint." />
-                <Separator />
-                <MenuItem Name="CodeMenuItem"
-                          Header="Adopted code and _site…"
-                          Click="OnCodeClicked"
-                          ToolTip.Tip="Choose the building code this project is checked against, lock it or let it follow new revisions, and enter the site's snow load and other values. Nothing is assumed." />
-            </MenuItem>
-
-            <!-- The Draw menu is the toolbar, in the toolbar's order: the tools, the actions on the
-                 selection, then the stock. Each item runs the same handler as its toolbar button. -->
-            <MenuItem Name="DrawMenu" Header="_Draw">
-                <MenuItem Name="SelectToolMenuItem"
-                          Header="_Select"
-                          Click="OnSelectToolClicked"
-                          ToolTip.Tip="Pick, move and resize parts." />
-                <MenuItem Name="RectangleToolMenuItem"
-                          Header="_Rectangle"
-                          Click="OnRectangleToolClicked"
-                          ToolTip.Tip="Drag out a new part." />
-                <MenuItem Name="WallToolMenuItem"
-                          Header="_Wall"
-                          Click="OnWallToolClicked"
-                          ToolTip.Tip="Drag out a wall, framed with the studs last picked: 2x4 (3 1/2&quot; thick) to start." />
-                <MenuItem Name="Wall2x4MenuItem"
-                          Header="Wall, 2x4 studs"
-                          Click="OnWall2x4Clicked"
-                          ToolTip.Tip="Drag out a wall 3 1/2&quot; thick, framed with 2x4 studs." />
-                <MenuItem Name="Wall2x6MenuItem"
-                          Header="Wall, 2x6 studs"
-                          Click="OnWall2x6Clicked"
-                          ToolTip.Tip="Drag out a wall 5 1/2&quot; thick, framed with 2x6 studs." />
-                <MenuItem Name="WindowToolMenuItem"
-                          Header="Wi_ndow"
-                          Click="OnWindowToolClicked"
-                          ToolTip.Tip="Click on a wall to put a window in it." />
-                <MenuItem Name="DoorToolMenuItem"
-                          Header="D_oor"
-                          Click="OnDoorToolClicked"
-                          ToolTip.Tip="Click on a wall to put a door in it." />
-                <Separator />
-                <MenuItem Name="ShapeMenuItem"
-                          Header="_Cut to shape…"
-                          Click="OnShapeClicked"
-                          ToolTip.Tip="Open the selected part in the shape workshop: pick its stock and cut its corners and edges." />
                 <MenuItem Name="DuplicateMenuItem"
-                          Header="D_uplicate"
+                          Header="_Duplicate"
                           Click="OnDuplicateClicked"
                           ToolTip.Tip="Copy the selected parts, with the relationships among them, and put the copies beside them." />
                 <MenuItem Name="MirrorEastWestMenuItem"
@@ -157,7 +116,7 @@
                           Click="OnPinClicked"
                           ToolTip.Tip="Hold the selection where it is." />
                 <MenuItem Name="DeleteMenuItem"
-                          Header="_Delete"
+                          Header="De_lete"
                           Click="OnDeleteClicked"
                           ToolTip.Tip="Remove the selection, with its relationships." />
                 <Separator />
@@ -176,6 +135,55 @@
                           Click="OnTurnZClicked"
                           ToolTip.Tip="Turn the selected part a quarter turn about the vertical axis. Shift+Z turns it back." />
                 <Separator />
+                <MenuItem Name="ShapeMenuItem"
+                          Header="_Cut to shape…"
+                          Click="OnShapeClicked"
+                          ToolTip.Tip="Open the selected part in the shape workshop: pick its stock and cut its corners and edges." />
+                <Separator />
+                <MenuItem Name="JoinMenuItem"
+                          Header="_Join…"
+                          Click="OnJoinClicked"
+                          ToolTip.Tip="Join the two selected parts: say what kind of joint, what holds it, and whether it is glued." />
+                <MenuItem Name="JoinAllMenuItem"
+                          Header="Join all _touching…"
+                          Click="OnJoinAllClicked"
+                          ToolTip.Tip="Join every touching pair among the selected parts in one go; with two selected, repeat the last joint." />
+            </MenuItem>
+
+            <!-- The Draw menu is the tools, in the toolbar's order: what the next press on the paper
+                 does. Each item runs the same handler as its toolbar button. -->
+            <MenuItem Name="DrawMenu" Header="_Draw">
+                <MenuItem Name="SelectToolMenuItem"
+                          Header="_Select"
+                          Click="OnSelectToolClicked"
+                          ToolTip.Tip="Pick, move and resize parts." />
+                <MenuItem Name="RectangleToolMenuItem"
+                          Header="_Rectangle"
+                          Click="OnRectangleToolClicked"
+                          ToolTip.Tip="Drag out a new part." />
+                <MenuItem Name="WallsMenu" Header="_Walls">
+                    <MenuItem Name="WallToolMenuItem"
+                              Header="_Wall"
+                              Click="OnWallToolClicked"
+                              ToolTip.Tip="Drag out a wall, framed with the studs last picked: 2x4 (3 1/2&quot; thick) to start." />
+                    <MenuItem Name="Wall2x4MenuItem"
+                              Header="Wall, _2x4 studs"
+                              Click="OnWall2x4Clicked"
+                              ToolTip.Tip="Drag out a wall 3 1/2&quot; thick, framed with 2x4 studs." />
+                    <MenuItem Name="Wall2x6MenuItem"
+                              Header="Wall, 2x_6 studs"
+                              Click="OnWall2x6Clicked"
+                              ToolTip.Tip="Drag out a wall 5 1/2&quot; thick, framed with 2x6 studs." />
+                </MenuItem>
+                <MenuItem Name="WindowToolMenuItem"
+                          Header="Wi_ndow"
+                          Click="OnWindowToolClicked"
+                          ToolTip.Tip="Click on a wall to put a window in it." />
+                <MenuItem Name="DoorToolMenuItem"
+                          Header="D_oor"
+                          Click="OnDoorToolClicked"
+                          ToolTip.Tip="Click on a wall to put a door in it." />
+                <Separator />
                 <!-- The toolbar's stock icons, by menu: one submenu per category, one item per
                      size, built in the code-behind from the same library the toolbox lists. -->
                 <MenuItem Name="StockMenu"
@@ -183,18 +191,7 @@
                           ToolTip.Tip="Real stock by category: pick a size, then drag it onto the paper." />
             </MenuItem>
 
-            <!-- Samples are built from SampleFiles.All in the code-behind: one item per scene file
-                 that shipped beside the executable, opened through the same reader as any other
-                 file. -->
-            <MenuItem Name="SamplesMenu" Header="Sa_mples" />
-
             <MenuItem Name="ViewMenu" Header="_View">
-                <!-- The views of one drawing (docs/design/standard-views.md §4.2): the six standard
-                     views and 3D, on the keys 1-7. Top is the plan, where parts are drawn; the other
-                     five are read-only for now. Same document, same selection, same undo; V goes
-                     from a 2D view to 3D and back to the 2D view last shown. -->
-                <!-- In a submenu, as CAD programs keep their standard views: the View menu is already
-                     as tall as a small window. The keys are the quick way in. -->
                 <MenuItem Name="StandardViewsMenu" Header="Standard _views">
                     <MenuItem Name="TopViewMenuItem"
                               Header="_Top (plan)"
@@ -233,19 +230,22 @@
                               Click="OnViewMenuClicked"
                               ToolTip.Tip="The drawing in three dimensions: turn parts, and move and resize them along any axis (7)." />
                 </MenuItem>
-                <Separator />
-                <MenuItem Name="LookXMenuItem" Header="Look along _X" Click="OnLookXClicked"
-                          ToolTip.Tip="3D view: from the east; again for the west." />
-                <MenuItem Name="LookYMenuItem" Header="Look along _Y" Click="OnLookYClicked"
-                          ToolTip.Tip="3D view: from the south; again for the north." />
-                <MenuItem Name="LookZMenuItem" Header="Look along _Z" Click="OnLookZClicked"
-                          ToolTip.Tip="3D view: from above; again for below." />
-                <MenuItem Name="NextSurfaceMenuItem" Header="Next _surface" Click="OnNextSurfaceClicked"
-                          ToolTip.Tip="3D view: look square-on at each face of the selected part in turn, or along each axis with nothing selected." />
+                <!-- Look along an axis, or at the next surface of the selected part: the 3D view's
+                     square-on views, which also sit on the toolbar. -->
+                <MenuItem Name="LookAlongMenu" Header="_Look along">
+                    <MenuItem Name="LookXMenuItem" Header="Look along _X" Click="OnLookXClicked"
+                              ToolTip.Tip="3D view: from the east; again for the west." />
+                    <MenuItem Name="LookYMenuItem" Header="Look along _Y" Click="OnLookYClicked"
+                              ToolTip.Tip="3D view: from the south; again for the north." />
+                    <MenuItem Name="LookZMenuItem" Header="Look along _Z" Click="OnLookZClicked"
+                              ToolTip.Tip="3D view: from above; again for below." />
+                    <MenuItem Name="NextSurfaceMenuItem" Header="Next _surface" Click="OnNextSurfaceClicked"
+                              ToolTip.Tip="3D view: look square-on at each face of the selected part in turn, or along each axis with nothing selected." />
+                </MenuItem>
                 <Separator />
                 <!-- How the 3D view looks: orthographic to measure with (a length along an axis is the
                      same size anywhere), perspective to judge how it looks (things shrink with
-                     distance). O switches. -->
+                     distance). O switches, and shows on the one it would switch to. -->
                 <MenuItem Name="OrthographicMenuItem"
                           Header="_Orthographic"
                           Click="OnOrthographicClicked"
@@ -254,6 +254,14 @@
                           Header="Pers_pective"
                           Click="OnPerspectiveClicked"
                           ToolTip.Tip="Perspective projection, to judge how it looks: things shrink with distance (O switches)." />
+                <Separator />
+                <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
+                <MenuItem Name="ResetViewMenuItem"
+                          Header="R_eset view"
+                          Click="OnResetViewClicked"
+                          ToolTip.Tip="The plan fits the drawing; the 3D view goes back to its first angle." />
+                <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />
+                <MenuItem Name="ZoomOutMenuItem" Header="Zoom Ou_t" Click="OnZoomOutClicked" />
                 <Separator />
                 <MenuItem Name="RulersMenuItem"
                           Header="_Rulers"
@@ -270,6 +278,45 @@
                           Click="OnSnapToGridClicked"
                           ToolTip.Tip="Drags and drawing tools land on the grid's steps (the step is in the status bar). Separate from Grid: you can snap with the lines hidden, or show them and move freely." />
                 <Separator />
+                <!-- How napkin looks, not what the design is: the theme, and the paper and pencil
+                     (#142). -->
+                <MenuItem Name="AppearanceMenu" Header="_Appearance">
+                    <!-- Light, dark, or whichever the operating system is in (and following it live). -->
+                    <MenuItem Name="ThemeMenuItem" Header="_Theme">
+                        <MenuItem Name="ThemeLightMenuItem" Header="_Light" Click="OnThemeLightClicked" />
+                        <MenuItem Name="ThemeDarkMenuItem" Header="_Dark" Click="OnThemeDarkClicked" />
+                        <MenuItem Name="ThemeSystemMenuItem"
+                                  Header="_Follow system"
+                                  Click="OnThemeSystemClicked"
+                                  ToolTip.Tip="Wear whichever theme the operating system is in, and change with it." />
+                    </MenuItem>
+                    <MenuItem Name="SketchMenuItem" Header="_Paper and line">
+                        <MenuItem Header="Paper" IsEnabled="False" />
+                        <MenuItem Name="PaperScreenMenuItem" Header="_Screen" Click="OnPaperScreenClicked" />
+                        <MenuItem Name="PaperGraphMenuItem" Header="_Graph paper" Click="OnPaperGraphClicked" />
+                        <MenuItem Name="PaperPlainMenuItem" Header="_Plain sheet" Click="OnPaperPlainClicked" />
+                        <MenuItem Name="PaperNapkinMenuItem" Header="_Napkin" Click="OnPaperNapkinClicked" />
+                        <Separator />
+                        <MenuItem Header="Line" IsEnabled="False" />
+                        <MenuItem Name="LineCleanMenuItem" Header="_Clean" Click="OnLineCleanClicked" />
+                        <MenuItem Name="LinePencilMenuItem" Header="Pen_cil" Click="OnLinePencilClicked" />
+                        <MenuItem Name="LineCarpenterMenuItem" Header="Carpenter's p_encil" Click="OnLineCarpenterClicked" />
+                    </MenuItem>
+                </MenuItem>
+            </MenuItem>
+
+            <!-- What this design is checked and cut against, and how designs open: settings of the
+                 project, not of the view. -->
+            <MenuItem Name="ProjectMenu" Header="_Project">
+                <MenuItem Name="CodeMenuItem"
+                          Header="_Adopted code and site…"
+                          Click="OnCodeClicked"
+                          ToolTip.Tip="Choose the building code this project is checked against, lock it or let it follow new revisions, and enter the site's snow load and other values. Nothing is assumed." />
+                <MenuItem Name="SawKerfMenuItem"
+                          Header="Saw _kerf…"
+                          Click="OnSawKerfClicked"
+                          ToolTip.Tip="How much the blade takes: set on the cut layout, which packs the pieces with it between them." />
+                <Separator />
                 <!-- Which view the next design opens in; the one on screen is not moved. -->
                 <MenuItem Name="OpenInMenuItem" Header="Open designs _in">
                     <MenuItem Name="OpenInPlanMenuItem" Header="_2D plan" Click="OnOpenInPlanClicked" />
@@ -279,37 +326,10 @@
                               Click="OnOpenInLastClicked"
                               ToolTip.Tip="A design opens in whichever view you were last in." />
                 </MenuItem>
-                <!-- Light, dark, or whichever the operating system is in (and following it live). -->
-                <MenuItem Name="ThemeMenuItem" Header="_Theme">
-                    <MenuItem Name="ThemeLightMenuItem" Header="_Light" Click="OnThemeLightClicked" />
-                    <MenuItem Name="ThemeDarkMenuItem" Header="_Dark" Click="OnThemeDarkClicked" />
-                    <MenuItem Name="ThemeSystemMenuItem"
-                              Header="_Follow system"
-                              Click="OnThemeSystemClicked"
-                              ToolTip.Tip="Wear whichever theme the operating system is in, and change with it." />
-                </MenuItem>
-                <!-- Paper and pencil: a purely cosmetic look for the drawing (#142). -->
-                <MenuItem Name="SketchMenuItem" Header="Ske_tch">
-                    <MenuItem Header="Paper" IsEnabled="False" />
-                    <MenuItem Name="PaperScreenMenuItem" Header="_Screen" Click="OnPaperScreenClicked" />
-                    <MenuItem Name="PaperGraphMenuItem" Header="_Graph paper" Click="OnPaperGraphClicked" />
-                    <MenuItem Name="PaperPlainMenuItem" Header="_Plain sheet" Click="OnPaperPlainClicked" />
-                    <MenuItem Name="PaperNapkinMenuItem" Header="_Napkin" Click="OnPaperNapkinClicked" />
-                    <Separator />
-                    <MenuItem Header="Line" IsEnabled="False" />
-                    <MenuItem Name="LineCleanMenuItem" Header="_Clean" Click="OnLineCleanClicked" />
-                    <MenuItem Name="LinePencilMenuItem" Header="Pen_cil" Click="OnLinePencilClicked" />
-                    <MenuItem Name="LineCarpenterMenuItem" Header="Carpenter's p_encil" Click="OnLineCarpenterClicked" />
-                </MenuItem>
-                <Separator />
-                <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
-                <MenuItem Name="ResetViewMenuItem"
-                          Header="R_eset view"
-                          Click="OnResetViewClicked"
-                          ToolTip.Tip="The plan fits the drawing; the 3D view goes back to its first angle." />
-                <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />
-                <MenuItem Name="ZoomOutMenuItem" Header="Zoom _Out" Click="OnZoomOutClicked" />
-                <Separator />
+            </MenuItem>
+
+            <!-- What comes out of the design: one window, a tab each. -->
+            <MenuItem Name="ListsMenu" Header="_Lists">
                 <MenuItem Name="CutListMenuItem"
                           Header="_Cut list"
                           Click="OnCutListClicked"
@@ -319,9 +339,13 @@
                           Click="OnShoppingListClicked"
                           ToolTip.Tip="The stock to buy for the cut list, with its board feet — beside the cut list, in the same window." />
                 <MenuItem Name="CutLayoutMenuItem"
-                          Header="Cut lay_out"
+                          Header="Cut la_yout"
                           Click="OnCutLayoutClicked"
                           ToolTip.Tip="Which piece is cut from which board, with the saw kerf and the offcuts — a tab of the same window." />
+                <MenuItem Name="FastenerSizesMenuItem"
+                          Header="_Fastener sizes and supplies"
+                          Click="OnFastenerSizesClicked"
+                          ToolTip.Tip="The fasteners the joints call for, with the sizes to buy, and the supplies list — a tab of the same window." />
             </MenuItem>
         </Menu>
 

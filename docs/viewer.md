@@ -71,7 +71,7 @@ Zoom is limited at both ends — from an inch drawn at a fiftieth of a pixel, wh
 
 ## The cut list, and what makes a box a part
 
-**Ctrl/Cmd + L**, or *View → Cut list*, opens a window listing every piece the design says to cut:
+**Ctrl/Cmd + L**, or *Lists → Cut list*, opens a window listing every piece the design says to cut:
 the part's name, how many, its finished length, width and thickness, and what it is cut from. It is
 not modal and it is not a snapshot — it follows the drawing, so an edit with the list open changes
 the row. Every column sorts, and sorting reorders what is shown and changes no number. The header

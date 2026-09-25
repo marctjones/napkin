@@ -79,6 +79,7 @@ public class ThemeWorkflows
     static void PickTheme(AppDriver app, MainWindow window, string itemName, string? frame = null)
     {
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("AppearanceMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeMenuItem")!));
         if (frame is not null)
         {

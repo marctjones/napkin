@@ -90,7 +90,7 @@ public class OpenInWorkflows
 
     static void ChooseOpenIn(AppDriver app, MainWindow window, string itemName)
     {
-        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ProjectMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("OpenInMenuItem")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>(itemName)!));
     }

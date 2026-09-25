@@ -30,6 +30,7 @@ public partial class MainWindow
         bool shapeable = Editor.OnlySelected is not null && !IsShapingPart && !IsShowingStandardView;
         DeleteMenuItem.IsEnabled = DeleteToolButton.IsEnabled = anything;
         PinMenuItem.IsEnabled = PinToolButton.IsEnabled = anything;
+        DuplicateMenuItem.IsEnabled = DuplicateToolButton.IsEnabled = anything;
         MirrorEastWestMenuItem.IsEnabled = MirrorNorthSouthMenuItem.IsEnabled = anything;
         ShapeMenuItem.IsEnabled = ShapeToolButton.IsEnabled = shapeable;
 

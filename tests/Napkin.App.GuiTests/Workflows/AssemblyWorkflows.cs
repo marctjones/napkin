@@ -244,6 +244,7 @@ public class AssemblyWorkflows
     /// <summary>Opens a sample through the Samples menu, with the mouse.</summary>
     internal static void OpenSample(IGuiDriver app, MainWindow window, string sample)
     {
+        app.Click(CentreOf(window, window.FileMenuItem));
         app.Click(CentreOf(window, window.SamplesMenuItem));
 
         MenuItem item = window.GetVisualDescendants()

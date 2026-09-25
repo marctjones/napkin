@@ -252,7 +252,7 @@ public class StandardViewWorkflows
             }
         });
 
-        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ProjectMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("OpenInMenuItem")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("OpenInPlanMenuItem")!));
         OpenSample(app, window, "L-bracket");

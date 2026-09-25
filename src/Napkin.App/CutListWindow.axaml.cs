@@ -91,6 +91,20 @@ public partial class CutListWindow : Window
     /// <summary>Shows the cut layout's tab.</summary>
     public void ShowCutLayout() => Lists.SelectedItem = CutLayoutTab;
 
+    /// <summary>Shows the cut layout with the keyboard in the saw kerf field, to type a new one.</summary>
+    public void EditKerf()
+    {
+        ShowCutLayout();
+        KerfBox.Focus();
+        KerfBox.SelectAll();
+    }
+
+    /// <summary>Whether the fastener sizes and supplies tab is the one showing.</summary>
+    public bool IsShowingSizes => ReferenceEquals(Lists.SelectedItem, SizesTab);
+
+    /// <summary>Shows the fastener sizes and supplies tab.</summary>
+    public void ShowSizes() => Lists.SelectedItem = SizesTab;
+
     /// <summary>The parts' boards, for the GUI suite to read.</summary>
     public CutLayoutView LayoutRows => LayoutView;
 

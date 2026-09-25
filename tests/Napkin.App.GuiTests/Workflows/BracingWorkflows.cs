@@ -228,7 +228,7 @@ public class BracingWorkflows
 
     static CodeWindow OpenCode(AppDriver app, MainWindow window)
     {
-        app.Click(CentreOf(window, window.EditMenuItem));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ProjectMenu")!));
         app.Click(CentreOf(window, window.CodeMenuEntry));
         return window.CodeSite ?? throw new InvalidOperationException("The code window did not open.");
     }
