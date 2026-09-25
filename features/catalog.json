@@ -1062,6 +1062,15 @@
       "milestone": "M3",
       "issue": 148,
       "kind": "unit"
+    },
+    {
+      "id": "GEO-018",
+      "area": "geometry",
+      "title": "The join tool proposes the faces, the type, the direction and the pocket face",
+      "acceptance": "For two touching parts: the largest contact between faces that face each other; overlap of one thickness laps, a bottom face on a long thin contact is a tabletop, a thinner part's edge entering a face with margin is a groove, else a butt; pocket holes default to the inserted part's broad face nearer the middle of everything, both offered on a tie.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "unit"
     }
   ]
 }

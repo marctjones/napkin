@@ -38,18 +38,7 @@ public static class JointDescription
     /// The centre of everything drawn: the middle of the extent of all the sketch's boxes and this
     /// one. Which of an apron's two long faces is its inside is the one nearer it (&#xA7;6.2).
     /// </summary>
-    private static (Length X, Length Y, Length Z) CentreOf(Sketch sketch, Box box)
-    {
-        (Point3 low, Point3 high) = JointGeometry.Extent(box);
-        foreach (Box other in sketch.Entities.Values.OfType<Box>().Where(other => other.Orientation.IsExact))
-        {
-            (Point3 l, Point3 h) = JointGeometry.Extent(other);
-            low = new Point3(Length.Min(low.X, l.X), Length.Min(low.Y, l.Y), Length.Min(low.Z, l.Z));
-            high = new Point3(Length.Max(high.X, h.X), Length.Max(high.Y, h.Y), Length.Max(high.Z, h.Z));
-        }
-
-        return (RelationshipChecker.Midpoint(low.X, high.X), RelationshipChecker.Midpoint(low.Y, high.Y), RelationshipChecker.Midpoint(low.Z, high.Z));
-    }
+    private static Point3 CentreOf(Sketch sketch, Box box) => JointGeometry.CentreOfEverything(sketch, box);
 
     /// <summary>
     /// The joinery of one part: what its joints do to it, each in structural form. Empty for a part
@@ -74,7 +63,7 @@ public static class JointDescription
             return [];
         }
 
-        (Length X, Length Y, Length Z) centre = CentreOf(sketch, box);
+        Point3 centre = CentreOf(sketch, box);
         List<JointFact> facts = [];
         foreach (Joint joint in sketch.RelationshipsInOrder.OfType<Joint>())
         {
@@ -114,7 +103,7 @@ public static class JointDescription
         => facts.Where(fact => fact.Kind == JointFactKind.Allowance && fact.Dimension == dimension)
             .Aggregate(Length.Zero, (total, fact) => total + fact.Depth);
 
-    private static void AddInserted(Sketch sketch, Box box, Part part, Joint joint, (Length X, Length Y, Length Z) centre, List<JointFact> facts)
+    private static void AddInserted(Sketch sketch, Box box, Part part, Joint joint, Point3 centre, List<JointFact> facts)
     {
         BoxFace face = joint.Inserted.Feature.Faces[0];
         Box? receiving = sketch.Find<Box>(joint.Receiving.Box);
@@ -200,7 +189,7 @@ public static class JointDescription
 
     // The face tabletop clips are on: of the two long faces flanking the part's top edge, the one nearer the middle
     // of everything drawn (§6.2) — the inside of an apron. A tie takes the lower face.
-    private static BoxFace? InsideFace(Box box, BoxFace contact, (Length X, Length Y, Length Z) middle)
+    private static BoxFace? InsideFace(Box box, BoxFace contact, Point3 middle)
     {
         Axis contactAxis = JointGeometry.LocalAxisOf(contact);
         Axis lengthAxis = JointGeometry.LengthAxis(box);
@@ -217,19 +206,7 @@ public static class JointDescription
             _ => [BoxFace.Bottom, BoxFace.Top],
         };
 
-        (Point3 low, Point3 high) = JointGeometry.Extent(box);
-        Length Distance(BoxFace face)
-        {
-            (Axis axis, bool positive) = box.Orientation.Normal(face);
-            Length plane = positive ? high.Component(axis) : low.Component(axis);
-            Length centreOnAxis = axis switch
-            {
-                Axis.X => middle.X,
-                Axis.Y => middle.Y,
-                _ => middle.Z,
-            };
-            return Length.Abs(plane - centreOnAxis);
-        }
+        Length Distance(BoxFace face) => JointGeometry.DistanceFromPoint(box, face, middle);
 
         return Distance(pair[1]) < Distance(pair[0]) ? pair[1] : pair[0];
     }
