@@ -16,14 +16,16 @@ kinds of thing:
 
 | Excluded | Why |
 |---|---|
-| `Napkin.App` | A GUI shell is not usefully covered by unit tests. Its ratchet is the count of passing GUI workflows (issue #33), not a line rate. |
+| `Napkin.App` | The Avalonia shell: windows, views, input wiring. It is not usefully covered by unit tests, and its ratchet is the count of passing GUI workflows (issue #33), not a line rate. The model logic the shell drives (the design editor, undo, snapping, dimension entry, the drawing tools) is *not* here: it lives in `Napkin.Modules.Editing` (#166), which has a floor like every other library. Anything Avalonia-free that grows in the app belongs there too. |
 | `*.Tests` | Covering the tests measures nothing. |
 | `Napkin.Tools` | Repository tooling, never shipped. It has its own tests; it is not part of the product's coverage. |
 
 Both line and branch coverage are recorded, per assembly, in percentage points.
 
-An assembly can only be measured if some test project references it. Today that means
-`Napkin.Core.Geometry` and `Napkin.Core.RulesEngine`; the rest appear as soon as they have tests.
+An assembly can only be measured if a test project that collects coverage references it. Every
+`src` library has one today. `tests/Napkin.App.GuiTests` does not collect coverage (it drives
+`Napkin.App`, which is excluded), so `Napkin.Modules.Editing`'s floor counts only what
+`tests/Napkin.Modules.Editing.Tests` exercises directly, not what the GUI workflows happen to touch.
 
 ## Running it
 
