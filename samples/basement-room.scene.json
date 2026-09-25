@@ -1,0 +1,252 @@
+{
+  "formatVersion": 10,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    },
+    {
+      "id": "71000000-0000-4000-8000-000000000001",
+      "name": "Wall"
+    },
+    {
+      "id": "71000000-0000-4000-8000-000000000002",
+      "name": "Opening"
+    },
+    {
+      "id": "71000000-0000-4000-8000-000000000003",
+      "name": "Room"
+    }
+  ],
+  "entities": [
+    {
+      "id": "72000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000001",
+      "name": "Wall, south",
+      "phase": "new",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "width": 179200,
+      "height": 3584,
+      "depth": 98304,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": {
+        "supports": null,
+        "studSpacing": null,
+        "bracing": null,
+        "side": "exterior",
+        "bearing": false,
+        "header": {
+          "plies": 2,
+          "lumber": "2x6"
+        }
+      },
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000001",
+      "name": "Wall, north",
+      "phase": "new",
+      "anchor": {
+        "x": 0,
+        "y": 151040,
+        "z": 0
+      },
+      "width": 179200,
+      "height": 3584,
+      "depth": 98304,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": {
+        "supports": null,
+        "studSpacing": null,
+        "bracing": null,
+        "side": "exterior",
+        "bearing": false,
+        "header": {
+          "plies": 2,
+          "lumber": "2x6"
+        }
+      },
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000003",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000001",
+      "name": "Wall, west",
+      "phase": "new",
+      "anchor": {
+        "x": 3584,
+        "y": 3584,
+        "z": 0
+      },
+      "width": 147456,
+      "height": 3584,
+      "depth": 98304,
+      "faceUp": "top",
+      "rotation": 324000,
+      "part": null,
+      "wall": {
+        "supports": null,
+        "studSpacing": null,
+        "bracing": null,
+        "side": "exterior",
+        "bearing": false,
+        "header": {
+          "plies": 2,
+          "lumber": "2x6"
+        }
+      },
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000004",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000001",
+      "name": "Wall, east",
+      "phase": "new",
+      "anchor": {
+        "x": 179200,
+        "y": 3584,
+        "z": 0
+      },
+      "width": 147456,
+      "height": 3584,
+      "depth": 98304,
+      "faceUp": "top",
+      "rotation": 324000,
+      "part": null,
+      "wall": {
+        "supports": null,
+        "studSpacing": null,
+        "bracing": null,
+        "side": "exterior",
+        "bearing": false,
+        "header": {
+          "plies": 2,
+          "lumber": "2x6"
+        }
+      },
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000005",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000003",
+      "name": "Room",
+      "phase": "new",
+      "anchor": {
+        "x": 3584,
+        "y": 3584,
+        "z": 0
+      },
+      "width": 172032,
+      "height": 147456,
+      "depth": 98304,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": null,
+      "room": {
+        "drywall": "walls-and-ceiling",
+        "sheet": {
+          "width": 49152,
+          "length": 98304
+        },
+        "insulation": "exterior",
+        "insulationBy": "area",
+        "insulationCoverage": 40,
+        "paint": "walls-and-ceiling",
+        "paintCoats": 2,
+        "paintCoverage": 350,
+        "flooring": true,
+        "flooringWaste": 10,
+        "flooringBox": 20,
+        "baseboard": true,
+        "baseboardStick": 98304,
+        "measured": {
+          "south": null,
+          "north": null,
+          "east": null,
+          "west": null,
+          "diagonal1": null,
+          "diagonal2": null
+        }
+      },
+      "cuts": []
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000006",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000002",
+      "name": "Door 1",
+      "phase": "new",
+      "anchor": {
+        "x": 61440,
+        "y": 0,
+        "z": 0
+      },
+      "width": 36864,
+      "height": 3584,
+      "depth": 81920,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000007",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000002",
+      "name": "Window 1",
+      "phase": "new",
+      "anchor": {
+        "x": 3584,
+        "y": 58880,
+        "z": 49152
+      },
+      "width": 36864,
+      "height": 3584,
+      "depth": 24576,
+      "faceUp": "top",
+      "rotation": 324000,
+      "part": null,
+      "wall": null,
+      "room": null,
+      "cuts": []
+    }
+  ],
+  "relationships": [],
+  "fastenerChoices": [],
+  "supplies": [],
+  "code": null,
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
+}

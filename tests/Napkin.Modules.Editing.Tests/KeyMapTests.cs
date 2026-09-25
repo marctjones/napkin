@@ -41,6 +41,7 @@ public class KeyMapTests
         { KeyName.S, None, EditCommand.SelectTool },
         { KeyName.R, None, EditCommand.RectangleTool },
         { KeyName.W, None, EditCommand.WallTool },
+        { KeyName.W, Shift, EditCommand.RoomTool },
         { KeyName.C, None, EditCommand.Shape },
         { KeyName.D, None, EditCommand.Duplicate },
         { KeyName.M, None, EditCommand.MirrorEastWest },

@@ -86,6 +86,12 @@ public static class ModelPicker
         FeatureHit? best = null;
         foreach (Box box in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
         {
+            // A room is an outline in the plan, not a solid (renovation-sketches §4.2).
+            if (Napkin.Modules.Building.Room.Is(sketch, box))
+            {
+                continue;
+            }
+
             if (!box.Orientation.IsExact)
             {
                 continue;
@@ -338,6 +344,12 @@ public static class ModelPicker
         SurfaceHit? nearest = null;
         foreach (Box box in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
         {
+            // A room is an outline in the plan, not a solid (renovation-sketches §4.2).
+            if (Napkin.Modules.Building.Room.Is(sketch, box))
+            {
+                continue;
+            }
+
             SurfaceHit? hit = null;
             if (box.Cuts.IsEmpty && box.Orientation.IsExact)
             {

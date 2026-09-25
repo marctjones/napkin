@@ -57,6 +57,7 @@ public sealed record CanvasPalette(
             [DesignLayers.Framing] = new EntityStyle(Color.Parse("#1FA08A5A"), Color.Parse("#9A8253"), 1.1),
             [DesignLayers.Wall] = new EntityStyle(Color.Parse("#D8D3C9"), Color.Parse("#4B4843"), 1.8),
             [DesignLayers.Opening] = new EntityStyle(Color.Parse("#F8F8F6"), Color.Parse("#505048"), 1.6, Dashed: true),
+            [DesignLayers.Room] = new EntityStyle(Color.Parse("#164A7C4A"), Color.Parse("#5E7A50"), 1.0),
         },
         Neutral = new EntityStyle(Color.Parse("#18000000"), Color.Parse("#5A554C"), 1.3),
     };
@@ -79,6 +80,7 @@ public sealed record CanvasPalette(
             [DesignLayers.Framing] = new EntityStyle(Color.Parse("#22C0B48F"), Color.Parse("#9A9275"), 1.1),
             [DesignLayers.Wall] = new EntityStyle(Color.Parse("#34383E"), Color.Parse("#C2C6CC"), 1.8),
             [DesignLayers.Opening] = new EntityStyle(Color.Parse("#1C1C1C"), Color.Parse("#A0A090"), 1.6, Dashed: true),
+            [DesignLayers.Room] = new EntityStyle(Color.Parse("#186FA86F"), Color.Parse("#8FB08F"), 1.0),
         },
         Neutral = new EntityStyle(Color.Parse("#22FFFFFF"), Color.Parse("#A9ADB4"), 1.3),
     };

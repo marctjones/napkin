@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
@@ -183,12 +184,123 @@ public class RenovationWorkflows
         },
         defaultLook: true);
 
+    [GuiWorkflow("GUI-RENO-02")]
+    public void Draw_a_room_type_its_sizes_tick_finishes_and_read_the_area_takeoff() => GuiWorkflow.Run(
+        app =>
+        {
+            MainWindow window = (MainWindow)app.Target;
+            // The basement sample, worked by hand in samples/basement-room.design.md: pick its room.
+            app.Click(CentreOf(window, window.FileMenuItem));
+            app.Click(CentreOf(window, window.SamplesMenuItem));
+            app.Click(CentreOf(window, window.GetVisualDescendants().OfType<MenuItem>().Single(item => (item.Header as string) == "Basement room")));
+            app.Click(At(window, Point2.Inches(40, 100)));
+            app.Expect("the sample's room is bounded by its four walls, with both openings, and takes off 18 sheets and 10 bags", () =>
+            {
+                Assert.Equal("Bounded by Wall, south, Wall, north, Wall, west, Wall, east; openings: Door 1, Window 1.", window.RoomBoundsLine);
+                Assert.Contains("18 sheets 4'-0\" × 8'-0\"", window.RoomTakeoffLines, StringComparison.Ordinal);
+                Assert.Contains("exterior walls, 390 sq ft; 10 bags at 40 sq ft", window.RoomTakeoffLines, StringComparison.Ordinal);
+            });
+            app.SaveFrame("basement-sample");
+            app.Press(Key.Escape);
+            app.Chord(Key.D0);
+            app.SaveFrame("basement-plan");
+
+            NewSheet(app, window);
+            app.Wheel(At(window, Point2.Inches(0, 0)), new Vector(0, -8));
+            app.Wheel(At(window, Point2.Inches(0, 0)), new Vector(0, -4));
+
+            // Shift+W and a click on bare paper: a room at the starting size, 10'-0" square, 8'-0" tall.
+            app.Press(Key.W, KeyModifiers.Shift);
+            app.Expect("the room tool is taken", () => Assert.Equal(Napkin.Modules.Editing.EditTool.Room, window.Canvas.Tool));
+            // Low on the left of the paper, so a 14 x 12 ft room and its labels stay in sight.
+            app.Click(InWindow(window, new Point(window.Canvas.Bounds.Width * 0.12, window.Canvas.Bounds.Height * 0.8)));
+            Box room = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>());
+            app.Expect("a 10 ft room on the Room layer, selected, with its block in the panel", () =>
+            {
+                Assert.Equal((Length.Inches(120), Length.Inches(120), Length.Inches(96)), (room.Width, room.Height, room.Depth));
+                Assert.True(Room.Is(window.CurrentDesign!.Sketch, room));
+                Assert.Equal(room.Id, window.Editor.OnlySelected);
+                Assert.True(window.IsShowingRoom);
+                Assert.Equal("No walls bound this room; openings are not subtracted.", window.RoomBoundsLine);
+            });
+
+            // Its length and width typed on its labels, the way any dimension is typed.
+            TypeOnLabel(app, window, room.Id, Napkin.App.Editing.SizeAxis.Width, "14'");
+            TypeOnLabel(app, window, room.Id, Napkin.App.Editing.SizeAxis.Height, "12'");
+            app.Expect("the room is 14 ft by 12 ft inside", () =>
+                Assert.Equal("Room 1: 14'-0\" × 12'-0\" inside, ceiling 8'-0\".", window.RoomHeadlineText));
+
+            // Drywall on walls and ceiling, a 4 x 8 sheet; the floor, a 20 sq ft box.
+            var controls = window.RoomControls;
+            Pick(app, window, controls.Drywall, Key.Down, times: 2);
+            TypeInto(app, window, controls.Sheet, "4' x 8'");
+            Reveal(app, window, controls.Flooring);
+            app.Click(CentreOf(window, controls.Flooring));
+            TypeInto(app, window, controls.Box, "20");
+            app.Expect("the finishes are the room's, one undo step each", () =>
+            {
+                RoomInputs inputs = window.CurrentDesign!.Sketch.Find<Box>(room.Id)!.Room!;
+                Assert.Equal(RoomSurfaces.WallsAndCeiling, inputs.Drywall);
+                Assert.Equal(new SheetSize(Length.Inches(48), Length.Inches(96)), inputs.Sheet);
+                Assert.True(inputs.Flooring);
+                Assert.Equal((10, 20), (inputs.FlooringWaste, inputs.FlooringBox));
+            });
+            app.SaveFrame("room-with-finishes");
+
+            // P = 2(168 + 144) = 624" = 52'; walls 624 × 96 = 416 sq ft, nothing bounds it so nothing
+            // is subtracted; ceiling 168. Drywall 584 / 32 = 18.25 → 19 sheets. Floor 168 × 1.1 = 184.8,
+            // shown up to 185; 184.8 / 20 = 9.24 → 10 boxes.
+            app.Chord(Key.L, KeyModifiers.Shift);
+            app.Expect("the shopping list's Area takeoff says each line, rounded once, and the CSV carries it", () =>
+            {
+                CutListWindow list = window.CutList!;
+                Assert.True(list.IsShowingAreaTakeoff);
+                Assert.Equal(
+                    [
+                        "Surfaces: walls 416 sq ft less openings 0 = 416 sq ft; ceiling 168 sq ft; perimeter 52'-0\" (no walls bound this room; openings are not subtracted)",
+                        "Drywall: walls and ceiling, 584 sq ft; 19 sheets 4'-0\" × 8'-0\" (sheets by area — a layout may need more)",
+                        "Flooring: 185 sq ft; 10 boxes at 20 sq ft (10 % allowance, napkin's allowance, not a fact about your floor; rounded up)",
+                    ],
+                    list.TakeoffLines.Select(line => line.Text));
+                string[] csv = list.AreaTakeoffCsv.Split('\n');
+                Assert.Equal(["Area takeoff", "Room,Finish,Quantity,Count,Note"], csv[..2]);
+                Assert.StartsWith("Room 1,Drywall,\"walls and ceiling, 584 sq ft; 19 sheets", csv[3], StringComparison.Ordinal);
+                Assert.StartsWith("Room 1,Flooring,185 sq ft; 10 boxes at 20 sq ft,10,", csv[4], StringComparison.Ordinal);
+            });
+            AppDriver.Attach(window.CutList!, "reno-takeoff").SaveFrame("area-takeoff");
+
+        },
+        defaultLook: true);
+
+    static void TypeOnLabel(AppDriver app, MainWindow window, EntityId box, Napkin.App.Editing.SizeAxis axis, string text)
+    {
+        app.Click(InWindow(window, window.Canvas.SelectionDimensionLabelAt(box, axis)
+            ?? throw new InvalidOperationException($"{box} shows no {axis} label.")));
+        app.Press(Key.A, AppDriver.CommandModifier);
+        app.Type(text);
+        app.Press(Key.Enter);
+    }
+
+    /// <summary>A text box in the Part panel, scrolled into sight: a click, the text over what was there, then Enter.</summary>
+    static void TypeInto(AppDriver app, MainWindow window, TextBox box, string text)
+    {
+        Reveal(app, window, box);
+        app.Click(CentreOf(window, box));
+        app.Press(Key.A, AppDriver.CommandModifier);
+        app.Type(text);
+        app.Press(Key.Enter);
+    }
+
     /// <summary>A picker in the Part panel, scrolled into sight: a click, one key, then Enter.</summary>
-    static void Pick(AppDriver app, MainWindow window, Control picker, Key key)
+    static void Pick(AppDriver app, MainWindow window, Control picker, Key key, int times = 1)
     {
         Reveal(app, window, picker);
         app.Click(CentreOf(window, picker));
-        app.Press(key);
+        for (int i = 0; i < times; i++)
+        {
+            app.Press(key);
+        }
+
         app.Press(Key.Enter);
     }
 

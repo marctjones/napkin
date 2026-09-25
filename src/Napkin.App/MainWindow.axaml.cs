@@ -136,6 +136,7 @@ public partial class MainWindow : Window
         WireRough();
         WireFirmUp();
         WireRenovation();
+        WireRoom();
         DrawingCanvas.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         ModelDrawing.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         DrawingCanvas.ViewRequested += (_, view) => ShowView(view);
@@ -204,7 +205,13 @@ public partial class MainWindow : Window
         // The hardware box takes several lines, so Enter there is a new line and Ctrl+Enter applies.
         PropertiesPanel.AddHandler(KeyDownEvent, (_, e) =>
         {
-            if (e.Key == Key.Enter && e.Source is TextBox box
+            if (e.Key == Key.Enter && e.Source is TextBox room && IsRoomField(room))
+            {
+                // A room's typed value applies on its own, one undo step (renovation-sketches §8).
+                ApplyRoom();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && e.Source is TextBox box
                 && (!box.AcceptsReturn || e.KeyModifiers.HasFlag(CommandModifier)))
             {
                 ApplyProperties();

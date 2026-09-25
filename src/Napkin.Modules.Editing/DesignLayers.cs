@@ -26,6 +26,12 @@ public static class DesignLayers
     /// <summary>Openings cut into a wall.</summary>
     public const string Opening = Napkin.Modules.Building.BuildingLayers.Opening;
 
+    /// <summary>Rooms, in plan: a light wash inside the walls (renovation-sketches §4.2).</summary>
+    public const string Room = Napkin.Modules.Building.BuildingLayers.Room;
+
+    /// <summary>Notes: words and rough-in symbols (renovation-sketches §7).</summary>
+    public const string Notes = Napkin.Modules.Building.BuildingLayers.Notes;
+
     /// <summary>Annotation: dimensions and, later, notes and callouts.</summary>
     public const string Dimensions = "Dimensions";
 
@@ -49,6 +55,11 @@ public static class DesignLayers
             if (Napkin.Modules.Building.Wall.Is(sketch, box))
             {
                 return Wall;
+            }
+
+            if (Napkin.Modules.Building.Room.Is(sketch, box))
+            {
+                return Room;
             }
         }
 

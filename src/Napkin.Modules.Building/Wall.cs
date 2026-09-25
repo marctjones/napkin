@@ -12,6 +12,12 @@ public static class BuildingLayers
 
     /// <summary>The layer a window or door opening is drawn on.</summary>
     public const string Opening = "Opening";
+
+    /// <summary>The layer a room is drawn on (renovation-sketches §4.2).</summary>
+    public const string Room = "Room";
+
+    /// <summary>The layer notes are drawn on (renovation-sketches §7).</summary>
+    public const string Notes = "Notes";
 }
 
 /// <summary>Whether an opening is a window or a door.</summary>

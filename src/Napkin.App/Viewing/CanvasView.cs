@@ -134,6 +134,7 @@ public sealed class CanvasView : Control
     readonly RectangleTool _rectangle = new();
     readonly StockTool _stock = new();
     readonly WallTool _wall = new();
+    readonly RectangleTool _room = new();
     OpeningKind _openingKind = OpeningKind.Window;
     EditTool _tool = EditTool.Select;
 
@@ -252,6 +253,7 @@ public sealed class CanvasView : Control
 
             _rectangle.Cancel();
             _wall.Cancel();
+            _room.Cancel();
 
             // Leaving the stock tool puts the stock down: the toolbox shows nothing picked, and a
             // later press on the paper cannot place something nobody is holding any more.
@@ -357,7 +359,7 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>Whether a press on the paper starts drawing rather than picking or panning.</summary>
-    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening;
+    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room;
 
     /// <summary>
     /// The precision dimension labels are shown at. Fixed at 1/16&#x2033;; the per-project picker
@@ -443,7 +445,7 @@ public sealed class CanvasView : Control
         TryPreview(out _, out Length width, out Length height, out _) ? (width, height) : null;
 
     /// <summary>Whether a part is being drawn or dragged right now.</summary>
-    public bool IsEditing => _gesture != Gesture.None || _rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing;
+    public bool IsEditing => _gesture != Gesture.None || _rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing || _room.IsDrawing;
 
     /// <summary>What the drag in progress has caught, or null when nothing is being dragged.</summary>
     public SnapPlan? ActiveSnap => _snap;
@@ -723,6 +725,15 @@ public sealed class CanvasView : Control
             return;
         }
 
+        if (_tool == EditTool.Room)
+        {
+            _room.Begin(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
+            _roomPressedAt = _view.ToWorld(position);
+            e.Pointer.Capture(this);
+            InvalidateVisual();
+            return;
+        }
+
         Point2 world = _view.ToWorld(position);
 
         // A press on a selected part's grip resizes it, and one on a selected part's body moves it.
@@ -807,6 +818,11 @@ public sealed class CanvasView : Control
             _wall.MoveTo(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             InvalidateVisual();
         }
+        else if (_room.IsDrawing)
+        {
+            _room.MoveTo(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
+            InvalidateVisual();
+        }
         else if (_gesture != Gesture.None)
         {
             ContinueEdit(_view.ToWorld(position));
@@ -870,6 +886,10 @@ public sealed class CanvasView : Control
         {
             CompleteWall();
         }
+        else if (_room.IsDrawing)
+        {
+            CompleteRoom();
+        }
         else if (_gesture != Gesture.None)
         {
             CompleteEdit();
@@ -900,11 +920,12 @@ public sealed class CanvasView : Control
     {
         base.OnPointerCaptureLost(e);
 
-        if (_rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing)
+        if (_rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing || _room.IsDrawing)
         {
             _rectangle.Cancel();
             _stock.Cancel();
             _wall.Cancel();
+            _room.Cancel();
             InvalidateVisual();
         }
 
@@ -993,10 +1014,11 @@ public sealed class CanvasView : Control
 
         switch (command)
         {
-            case EditCommand.Cancel when editor.SelectedJoint is null && (_rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing):
+            case EditCommand.Cancel when editor.SelectedJoint is null && (_rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing || _room.IsDrawing):
                 _rectangle.Cancel();
                 _stock.Cancel();
                 _wall.Cancel();
+                _room.Cancel();
                 InvalidateVisual();
                 return true;
 
@@ -1337,6 +1359,68 @@ public sealed class CanvasView : Control
             EditSeverity.Hint,
             $"Wall tool, {_wall.Member?.Name} studs: drag along the paper for the wall's length. It is {Label(_wall.Member?.Width ?? Length.Zero)} thick "
             + $"and starts {Label(_wall.Height)} tall; type its own height in the panel's Depth.");
+    }
+
+    /// <summary>
+    /// Picks up the room tool (renovation-sketches §8): the next drag draws a room whose edges snap to
+    /// the walls' faces; a click inside four walls makes the room of their inside faces.
+    /// </summary>
+    public void ArmRoom()
+    {
+        Tool = EditTool.Room;
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+        _editor?.Say(
+            EditSeverity.Hint,
+            $"Room tool: drag out the room, or click inside four walls to take their inside faces; then type its length and width on its labels. "
+            + $"It starts {Label(RoomTool.StartingHeight)} tall: type its ceiling height in the panel's Depth.");
+    }
+
+    Point2 _roomPressedAt;
+
+    void CompleteRoom()
+    {
+        if (_editor is not { } editor)
+        {
+            _room.Cancel();
+            return;
+        }
+
+        bool dragged = _room.TryRectangle(out Point2 anchor, out Length length, out Length width);
+        _room.Cancel();
+        Sketch sketch = editor.Sketch;
+        string how;
+        if (dragged)
+        {
+            // The drag's edges land on the wall faces within a grid step of them.
+            (anchor, length, width) = RoomTool.SnapToWalls(sketch, anchor, length, width, Length.FromInches(Math.Max(SnapStepInches, 1), Rounding.HalfToEven));
+            how = "drawn";
+        }
+        else if (RoomTool.Enclosure(sketch, _roomPressedAt) is { } inside)
+        {
+            (anchor, length, width) = inside;
+            how = "on the walls' inside faces";
+        }
+        else
+        {
+            anchor = SnapGrid.Snap(_roomPressedAt, SnapStepInches);
+            (length, width) = (RoomTool.StartingSide, RoomTool.StartingSide);
+            how = "a starting size, not a standard: type its length and width on its labels";
+        }
+
+        EntityId id = EntityId.New();
+        LayerId layer = editor.LayerNamed(DesignLayers.Room, out Request? addLayer);
+        string name = editor.NextName("Room");
+        const string what = "Drew a room";
+        editor.BeginGesture(what);
+        if (editor.Apply(RoomTool.Request(layer, addLayer, id, name, anchor, length, width), what) is Succeeded)
+        {
+            editor.Select(id);
+            editor.Say(EditSeverity.Done, $"Drew {name}, {Label(length)} × {Label(width)} inside, {how}; ceiling {Label(RoomTool.StartingHeight)}.");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
     }
 
     /// <summary>Picks up the opening tool (#18): the next click on a wall puts a window or door in it.</summary>
@@ -2234,6 +2318,11 @@ public sealed class CanvasView : Control
         }
 
         stockName = _stock.IsDrawing ? _stock.Stock?.Name : null;
+        if (_room.IsDrawing)
+        {
+            return _room.TryRectangle(out anchor, out width, out height);
+        }
+
         return _stock.IsDrawing
             ? _stock.TryShape(out anchor, out width, out height, out _)
             : _rectangle.IsDrawing & _rectangle.TryRectangle(out anchor, out width, out height);

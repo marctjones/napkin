@@ -110,6 +110,10 @@ public static class SampleFiles
             "window-in-existing-wall.scene.json",
             "Window in an existing wall",
             "A new 3'-0\" window in an existing 12'-0\" exterior wall — what is new material and which studs come out."),
+        new(
+            "basement-room.scene.json",
+            "Basement room",
+            "A 14'-0\" × 12'-0\" room inside four new walls, a door and a window — drywall, insulation, paint, flooring and baseboard by area."),
     ];
 
     private static readonly string[] SceneSuffixes = [".scene.json", ".json"];

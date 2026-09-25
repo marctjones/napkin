@@ -214,6 +214,35 @@ plan draws a joined pair with no seam between them. Each wall is still framed al
 studs, blocking or nailers are counted. An opening whose width reaches into a joined wall's
 thickness is refused: "it reaches the corner with Wall 2".
 
+## Rooms and the area takeoff
+
+A **room** is a box on the layer Room ([`design/renovation-sketches.md`](design/renovation-sketches.md)
+§4.2, §5): its plan width and height are the inside length and width, its depth the ceiling height.
+**Draw → Room** (Shift+W) drags one out, its edges landing on the wall faces within a grid step; a
+click inside four walls takes their inside faces exactly; a click anywhere else makes a 10'-0"
+square room to type over (a starting size, not a standard). It starts 8'-0" tall. A room is drawn,
+never found from the walls, and is never framed, cut or bought as a box.
+
+A wall **bounds** a room when one of its long faces lies on the line of a room edge and overlaps
+it — exactly, no tolerance; a wall a little off is named in the panel ("not bounded by Wall 2 —
+snap it to the wall"). The bounding walls' openings that lie within the room's edge are the room's.
+
+The room's panel block takes the finishes and the values **you type from the packages** — napkin
+carries no sheet size, coverage or stick length: drywall (walls and ceiling, or walls) and the sheet
+size; insulation (exterior walls — the bounding walls whose Side is exterior — or all walls) by area
+with a bag's coverage, or by stud bays; paint with the coats and a gallon's coverage; flooring with
+its waste allowance (napkin's own 10 % to start, labelled so, editable, 0 allowed) and a box's
+coverage; baseboard and the stick length. The shopping list's **Area takeoff** section works each
+New room exactly in square units and rounds each line once: sheets by area in one pool for walls and
+ceiling ("a layout may need more"), bags, gallons, boxes up, sticks up ("not allowing for corners or
+waste"); the flooring area is shown rounded up to a whole square foot. Nothing typed: the area alone
+and what to type. Stud bays are counted, not sized: the gaps between full-height members, less one
+per opening, and the line says to buy by area for square feet.
+
+**Measured** in the room's panel takes the four wall lengths and two diagonals of the real room:
+unequal opposite sides or diagonals, or one diagonal whose square is not L² + W² (compared exactly),
+say "out of square"; the takeoff stays on the drawn size and says so. Nothing is redrawn.
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code

@@ -36,6 +36,7 @@ text: no shortcut below except the window's fires while a field has the keyboard
 | `S` | Select tool |
 | `R` | Rectangle tool; in 3D, a plain board to place; in a standard view, says why not |
 | `W` | Wall tool, with the member it last had; brings the plan forward |
+| `Shift+W` | Room tool: drag out a room, or click inside four walls for their inside faces; brings the plan forward |
 | `C` | Cut the selected part to shape (the shape workshop); not in a standard view |
 | `D` | Duplicate the selection |
 | `M` | Mirror copy east–west |
