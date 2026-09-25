@@ -3,7 +3,7 @@
   "scene": "rounded-corner-table.scene.json",
   "design": "rounded-corner-table.design.md",
   "derivedBy": "hand, from the stated dimensions in rounded-corner-table.design.md; never regenerated from napkin's output",
-  "formatVersion": 6,
+  "formatVersion": 7,
   "unitsPerInch": 1024,
 
   "counts": { "layers": 1, "entities": 11, "boxes": 9, "dimensions": 2, "relationships": 3 },

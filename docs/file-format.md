@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 6
+# The napkin project file — container version 1, scene format version 7
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -25,7 +25,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 6` and nothing else. A file from an older *or* a
+   `"containerVersion": 1` and `"formatVersion": 7` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
@@ -189,7 +189,7 @@ Two places where the bytes legitimately differ:
 
 ```json
 {
-  "formatVersion": 6,
+  "formatVersion": 7,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ … ],
   "entities": [ … ],
@@ -203,7 +203,7 @@ Two places where the bytes legitimately differ:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `formatVersion` | integer | Exactly `6`. Judged before anything else is read. |
+| `formatVersion` | integer | Exactly `7`. Judged before anything else is read. |
 | `units` | object | `length` is exactly `"inch/1024"`, `angle` is exactly `"arcsecond"`. The unit is named in the file so that a reader never has to assume one. |
 | `layers` | array | Every layer, in the order the UI shows them. |
 | `entities` | array | Every entity, in any order; ids may be referred to before they appear. |
@@ -524,14 +524,16 @@ None of these texts is napkin data: they are what the builder typed.
 
 ### Building inputs
 
-Format version 6 (issues #18 and #19; [`building.md`](./building.md), [`rules-engine.md`](./rules-engine.md)).
+Format version 6 (issues #18 and #19; [`building.md`](./building.md), [`rules-engine.md`](./rules-engine.md));
+version 7 added `site.roofLiveLoad` (a header table's footnote may ask for it: Connecticut's 30 psf
+rule, [`rules-engine.md`](./rules-engine.md)). A version-6 file is refused, with no converter.
 What a person enters for the code check. None of it is napkin data and none of it is ever
 defaulted: `null` means "not entered", and the check says which input it is missing.
 
 ```json
 "code": { "pack": "us-ct-2022", "revision": 1, "mode": "locked", "lockedOn": "2026-09-25" },
 "site": { "groundSnowLoad": 30, "ultimateWindSpeed": 115, "seismicDesignCategory": "B",
-          "frostDepth": 43008, "buildingWidth": 294912,
+          "frostDepth": 43008, "buildingWidth": 294912, "roofLiveLoad": 20,
           "source": { "text": "Town building department, by phone", "on": "2026-09-24" } }
 ```
 
@@ -550,6 +552,7 @@ values are illustrations of the shape, not code data).
 | `site.seismicDesignCategory` | text as the pack's tables name it, or `null` | empty text |
 | `site.frostDepth` | a length, or `null` | negative |
 | `site.buildingWidth` | a length, or `null` | 0 or negative |
+| `site.roofLiveLoad` | whole psf, or `null`; asked for only when a table's footnote needs it | negative, or not an integer |
 | `site.source` | `{ "text": text, "on": yyyy-MM-dd or null }` — where the values came from — or `null` | a missing field |
 | `wall` (on a box) | `null`, or `{ "supports": text or null, "studSpacing": length or null }` | both fields `null` (write `"wall": null`), empty `supports`, a spacing of 0 or less |
 
@@ -564,7 +567,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 ```jsonc
 {
-  "formatVersion": 6,                                  // exactly 6, judged first
+  "formatVersion": 7,                                  // exactly 7, judged first
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
   "entities": [
@@ -628,7 +631,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
   "supplies": [],                                      // and no typed supplies
   "code": null,                                        // no adopted code chosen yet
   "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null,
-            "frostDepth": null, "buildingWidth": null, "source": null }   // nothing entered
+            "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null }   // nothing entered
 }
 ```
 

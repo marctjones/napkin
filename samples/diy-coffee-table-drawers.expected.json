@@ -3,7 +3,7 @@
   "scene": "diy-coffee-table-drawers.scene.json",
   "design": "diy-coffee-table-drawers.design.md",
   "derivedBy": "hand, from the dimensions in docs/design/joinery-and-fasteners.md section 2 and the rules of sections 6 and 7.2; never regenerated from napkin's output",
-  "formatVersion": 6,
+  "formatVersion": 7,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 24,
