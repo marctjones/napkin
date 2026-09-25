@@ -88,6 +88,9 @@ public partial class CodeWindow : Window
     /// <summary>The ground snow load field.</summary>
     public TextBox SnowField => SnowBox;
 
+    /// <summary>The wind speed field (mph).</summary>
+    public TextBox WindField => WindBox;
+
     /// <summary>The roof live load field (psf), asked for only when a table's footnote needs it.</summary>
     public TextBox RoofLiveLoadField => RoofLiveBox;
 
@@ -175,7 +178,11 @@ public partial class CodeWindow : Window
             _ => $"Following pack {code.PackId}: a newer revision is used when one is installed, and napkin says what changed.",
         };
         CodeStatus.Text = resolved.Pack is { } pack
-            ? $"Checking against {pack.Code}." + (pack.HasHeaderTables ? string.Empty : " Its base tables are not loaded: no header can be sized until they are (docs/rules-engine.md says how to add them).")
+            ? $"Checking against {pack.Code}."
+              + (pack.HasHeaderTables ? string.Empty
+                  : pack.Bracing is null ? " Its base tables are not loaded: no header can be sized until they are (docs/rules-engine.md says how to add them)."
+                  : " It has no header table, so headers are not sized; walls' bracing is checked.")
+              + (pack.HasHeaderTables && pack.Bracing is null ? " It has no wall-bracing provisions, so no wall's bracing is checked." : string.Empty)
             : resolved.Problem;
     }
 

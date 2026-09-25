@@ -20,7 +20,12 @@ public partial class MainWindow
     IReadOnlyList<string> _packRoots = PackLocations.All();
     CodePacks? _packs;
     ImmutableArray<OpeningCheck> _checksShown = [];
+    ImmutableArray<WallBracingCheck> _bracingShown = [];
+    AdoptedCodeRef? _codeShown;
     bool _sayingRecompute;
+    bool _fillingBracing;
+    readonly List<ComboBox> _bracingPickers = [];
+    readonly List<TextBlock> _bracingLabels = [];
     bool _fillingSpacing;
     bool _fillingSupports;
     CodeWindow? _codeWindow;
@@ -93,6 +98,24 @@ public partial class MainWindow
     /// <summary>The code check's working: band trace, footnotes, source.</summary>
     public string CodeCheckWorkingText => CodeCheckDetails.Text ?? string.Empty;
 
+    /// <summary>Every wall's bracing result for the design on screen, computed now.</summary>
+    public ImmutableArray<WallBracingCheck> BracingChecks => BracingCheck.Of(Editor.Sketch, Packs);
+
+    /// <summary>The bracing check's headline for the selected wall (or the selected opening's), empty when neither is selected.</summary>
+    public string BracingText => FramingFields.IsVisible && BracingFields.IsVisible ? BracingHeadline.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The bracing check's citation line.</summary>
+    public string BracingCitationText => FramingFields.IsVisible && BracingFields.IsVisible ? BracingCitation.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The bracing check's working: the base row, each factor, each segment's contribution.</summary>
+    public string BracingWorkingText => BracingDetails.Text ?? string.Empty;
+
+    /// <summary>The segment lines in the Bracing block, start to end: "1. wall start to Window 1, 2'-6"".</summary>
+    public IReadOnlyList<string> BracingSegmentTexts => BracingFields.IsVisible ? [.. _bracingLabels.Select(label => label.Text ?? string.Empty)] : [];
+
+    /// <summary>The method picker of each segment, start to end.</summary>
+    public IReadOnlyList<ComboBox> BracingPickers => BracingFields.IsVisible ? _bracingPickers : [];
+
     /// <summary>The Edit menu's entry for the code and site.</summary>
     public MenuItem CodeMenuEntry => CodeMenuItem;
 
@@ -140,7 +163,12 @@ public partial class MainWindow
     void OnCodeClicked(object? sender, RoutedEventArgs e) => OpenCode();
 
     /// <summary>Takes the results now on screen as the ones later changes are measured from.</summary>
-    void ResetRecompute() => _checksShown = CodeCheck.Of(Editor.Sketch, Packs);
+    void ResetRecompute()
+    {
+        _checksShown = CodeCheck.Of(Editor.Sketch, Packs);
+        _bracingShown = BracingCheck.Of(Editor.Sketch, Packs);
+        _codeShown = Packs.Resolve(Editor.Sketch.Code).Pack?.Code;
+    }
 
     /// <summary>
     /// Recomputes every header (total, design §7.3) and, when any result changed since the last
@@ -155,9 +183,24 @@ public partial class MainWindow
         }
 
         ImmutableArray<OpeningCheck> now = CodeCheck.Of(Editor.Sketch, Packs);
-        ImmutableArray<string> changes = CodeCheck.Changes(_checksShown, now);
+        ImmutableArray<WallBracingCheck> bracing = BracingCheck.Of(Editor.Sketch, Packs);
+        AdoptedCodeRef? code = Packs.Resolve(Editor.Sketch.Code).Pack?.Code;
+        List<string> changes = [];
+
+        // A switch of the code (or of its revision) is a total recompute of every result: say how
+        // many changed, how many became flagged and how many can no longer be computed (#19, #39).
+        if (code != _codeShown)
+        {
+            changes.Add(SwitchSummary(code, CodeCheck.Report(_checksShown, now), BracingCheck.Report(_bracingShown, bracing)));
+        }
+
+        changes.AddRange(BracingCheck.Changes(_bracingShown, bracing));
+        changes.AddRange(CodeCheck.Changes(_checksShown, now));
+        changes.AddRange(BracingCheck.Unassigned(_bracingShown, bracing));
         _checksShown = now;
-        if (changes.IsEmpty)
+        _bracingShown = bracing;
+        _codeShown = code;
+        if (changes.Count == 0)
         {
             return false;
         }
@@ -177,6 +220,21 @@ public partial class MainWindow
         }
 
         return true;
+    }
+
+    /// <summary>"Now checking against ZZ BRACE B (…): every result recomputed; 2 changed, 1 newly flagged, none can no longer be computed."</summary>
+    static string SwitchSummary(AdoptedCodeRef? code, RecomputeReport headers, BracingRecomputeReport bracing)
+    {
+        // A result that had no answer and still has none (only the pack named in it differs) is not counted as changed.
+        int changed = headers.Changes.Count(change => change.Kind is not (ChangeKind.CitationOnly or ChangeKind.NoAnswerChanged))
+                      + bracing.Changes.Count(change => change.Kind is not (BracingChangeKind.CitationOnly or BracingChangeKind.NoAnswerChanged));
+        int flagged = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope) + bracing.NewlyFlagged.Count();
+        int lost = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToNoAnswer or ChangeKind.OutOfScopeToNoAnswer) + bracing.NoLongerComputable.Count();
+        string under = code is null ? "No code resolves now" : $"Now checking against {code.ShortName} ({code.BaseCode}, pack {code.PackId} rev {code.Revision})";
+        return $"{under}: every result recomputed; {Count(changed, "changed", "changed")}, {Count(flagged, "newly flagged", "newly flagged")}, "
+               + $"{Count(lost, "can no longer be computed", "can no longer be computed")}.";
+
+        static string Count(int n, string one, string many) => n == 0 ? $"none {many}" : $"{n} {(n == 1 ? one : many)}";
     }
 
     /// <summary>Fills the panel's framing part for a wall or an opening, or hides it for anything else.</summary>
@@ -217,6 +275,7 @@ public partial class MainWindow
 
         ShowCodeCheck(check);
         ShowSupports(opening is null ? wall : null);
+        ShowBracing(wall);
 
         _fillingSpacing = true;
         try
@@ -248,6 +307,142 @@ public partial class MainWindow
         CodeCheckDetails.Text = words.Details;
         CodeCheckWorking.IsVisible = words.Details.Length > 0;
         ToolTip.SetTip(CodeCheckCitation, words.Details.Length > 0 ? words.Details : null);
+    }
+
+    /// <summary>
+    /// The Bracing block for a wall (the selected one, or the selected opening's): each segment with
+    /// its length and a method picker (the adopted code's methods; disabled with why when there are
+    /// none), and the check's result in plain words with its citation.
+    /// </summary>
+    void ShowBracing(Wall wall)
+    {
+        WallLine line = WallLine.Of(Editor.Sketch, wall);
+        CodeResolution code = Packs.Resolve(Editor.Sketch.Code);
+        ImmutableArray<BracingMethod> methods = BracingCheck.Methods(code.Pack);
+        BracingResult result = BracingCheck.For(Editor.Sketch, line, code);
+        BracingFields.IsVisible = true;
+        string tip = methods.IsEmpty
+            ? code.Pack is null
+                ? $"No code selected: choose one under {CodeCheck.WhereToChoose} first."
+                : $"{code.Pack.Code.ShortName} has no wall-bracing provisions loaded, so there is no method to choose (docs/rules-engine.md)."
+            : "The bracing already on this segment, as the adopted code names its methods. Not braced until you choose; napkin never assumes it.";
+
+        _fillingBracing = true;
+        try
+        {
+            while (_bracingPickers.Count > line.Segments.Length)
+            {
+                BracingSegments.Children.RemoveAt(BracingSegments.Children.Count - 1);
+                _bracingPickers.RemoveAt(_bracingPickers.Count - 1);
+                _bracingLabels.RemoveAt(_bracingLabels.Count - 1);
+            }
+
+            while (_bracingPickers.Count < line.Segments.Length)
+            {
+                int index = _bracingPickers.Count;
+                // The segment's words above its picker, so neither squeezes the other in a narrow panel.
+                TextBlock label = new() { FontSize = 11, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+                ComboBox picker = new()
+                {
+                    FontSize = 12,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                    Margin = new Avalonia.Thickness(12, 1, 0, 2),
+                    Tag = index,
+                };
+                Avalonia.Automation.AutomationProperties.SetName(picker, $"Bracing method, segment {index + 1}");
+                picker.SelectionChanged += OnBracingChanged;
+                StackPanel row = new();
+                row.Children.Add(label);
+                row.Children.Add(picker);
+                BracingSegments.Children.Add(row);
+                _bracingPickers.Add(picker);
+                _bracingLabels.Add(label);
+            }
+
+            foreach (WallSegment segment in line.Segments)
+            {
+                _bracingLabels[segment.Index].Text = $"{segment.Index + 1}. {segment.Label}, {segment.Length.Format(Editor.LabelFormat).Text}";
+                List<string> items = ["not braced", .. methods.Select(method => method.Name)];
+                int selected = segment.Method is null ? 0 : methods.Select(method => method.Id).ToList().IndexOf(segment.Method) + 1;
+                if (segment.Method is not null && selected == 0)
+                {
+                    // A method this code does not have (another pack's) is shown as it is, not dropped.
+                    items.Add($"{segment.Method} (not in this code)");
+                    selected = items.Count - 1;
+                }
+
+                ComboBox picker = _bracingPickers[segment.Index];
+                picker.ItemsSource = items.ToArray();
+                picker.SelectedIndex = selected;
+                picker.IsEnabled = !methods.IsEmpty;
+                ToolTip.SetTip(picker, tip);
+            }
+        }
+        finally
+        {
+            _fillingBracing = false;
+        }
+
+        CheckWords words = BracingCheck.Words(result);
+        BracingHeadline.Text = line.Segments.IsEmpty ? $"{words.Headline} ({wall.Name} has no solid segment to brace.)" : words.Headline;
+        BracingHeadline.Foreground = result is BracingResult.Fails or BracingResult.OutOfScope
+            ? this.FindResource("SystemErrorTextColor") is Avalonia.Media.Color error ? new Avalonia.Media.SolidColorBrush(error) : null
+            : null;
+        if (BracingHeadline.Foreground is null)
+        {
+            BracingHeadline.ClearValue(TextBlock.ForegroundProperty);
+        }
+
+        BracingCitation.Text = words.Citation;
+        BracingCitation.IsVisible = words.Citation.Length > 0;
+        BracingDetails.Text = words.Details;
+        BracingWorking.IsVisible = words.Details.Length > 0;
+        ToolTip.SetTip(BracingCitation, words.Details.Length > 0 ? words.Details : null);
+    }
+
+    void OnBracingChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_fillingBracing || sender is not ComboBox { Tag: int index, SelectedIndex: >= 0 and var chosen })
+        {
+            return;
+        }
+
+        ImmutableArray<BracingMethod> methods = BracingCheck.Methods(Packs.Resolve(Editor.Sketch.Code).Pack);
+        if (chosen == 0)
+        {
+            SetSegmentBracing(index, null);
+        }
+        else if (chosen - 1 < methods.Length)
+        {
+            SetSegmentBracing(index, methods[chosen - 1].Id);
+        }
+    }
+
+    /// <summary>
+    /// Assigns a bracing method (null: not braced) to segment <paramref name="index"/> of the
+    /// selected wall, or of the selected opening's wall; one undo step.
+    /// </summary>
+    public void SetSegmentBracing(int index, string? method)
+    {
+        if (SelectedWall() is not { } wall)
+        {
+            return;
+        }
+
+        WallLine line = WallLine.Of(Editor.Sketch, wall);
+        if (index < 0 || index >= line.Segments.Length || line.Segments[index].Method == method)
+        {
+            return;
+        }
+
+        WallSegment segment = line.Segments[index];
+        string? name = method is null ? null : BracingCheck.Methods(Packs.Resolve(Editor.Sketch.Code).Pack).FirstOrDefault(m => m.Id == method)?.Name ?? method;
+        WallInputs inputs = (wall.Box.WallInputs ?? new WallInputs(null, null)) with { Bracing = line.Assign(index, method) };
+        Editor.Apply(
+            new SetWallInputs(wall.Id, inputs),
+            method is null
+                ? $"Cleared the bracing on {wall.Name}'s segment {segment.Label}"
+                : $"Braced {wall.Name}'s segment {segment.Label} with {name}");
     }
 
     /// <summary>The supports picker for a selected wall: the adopted code's table values, or disabled with why.</summary>

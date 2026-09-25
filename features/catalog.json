@@ -950,9 +950,18 @@
       "id": "GUI-BRACE-03",
       "area": "ui",
       "title": "A result that no longer holds is re-flagged, not carried over",
-      "acceptance": "After the code change, an opening the previous pack sized but the new pack does not cover shows as out of scope rather than keeping the number the old pack produced.",
+      "acceptance": "After the code change, a result that no longer holds under the new pack (an opening it does not cover, or a wall line whose bracing now runs short or uses a method the new pack does not have) is re-flagged rather than keeping what the old pack produced, and the message bar says how many results changed, became flagged or can no longer be computed.",
       "milestone": "M5",
       "issue": 19,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-BRACE-04",
+      "area": "ui",
+      "title": "With the shipped pack, the bracing check says there is no data",
+      "acceptance": "Choose the shipped Connecticut pack, which has no wall-bracing provisions; a wall's Bracing block lists its segments with disabled method pickers that say why, and its check says there is no data and where to add it, never a length.",
+      "milestone": "M5",
+      "issue": 39,
       "kind": "workflow"
     },
     {

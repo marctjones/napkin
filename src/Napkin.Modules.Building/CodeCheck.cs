@@ -254,13 +254,8 @@ public static class CodeCheck
     /// </summary>
     public static ImmutableArray<string> Changes(IReadOnlyList<OpeningCheck> before, IReadOnlyList<OpeningCheck> after)
     {
-        ArgumentNullException.ThrowIfNull(before);
-        ArgumentNullException.ThrowIfNull(after);
-        HashSet<EntityId> both = [.. before.Select(check => check.Opening.Id).Intersect(after.Select(check => check.Opening.Id))];
+        RecomputeReport report = Report(before, after);
         Dictionary<EntityId, string> names = after.ToDictionary(check => check.Opening.Id, check => check.Opening.Name);
-        RecomputeReport report = Recompute.Diff(
-            [.. before.Where(check => both.Contains(check.Opening.Id)).Select(check => KeyValuePair.Create(check.Opening.Id, check.Result))],
-            [.. after.Where(check => both.Contains(check.Opening.Id)).Select(check => KeyValuePair.Create(check.Opening.Id, check.Result))]);
 
         return
         [
@@ -269,6 +264,17 @@ public static class CodeCheck
                 .OrderBy(change => Rank(change.Kind))
                 .Select(change => Sentence(names[change.Element], change)),
         ];
+    }
+
+    /// <summary>The engine's diff over the openings present both before and after.</summary>
+    public static RecomputeReport Report(IReadOnlyList<OpeningCheck> before, IReadOnlyList<OpeningCheck> after)
+    {
+        ArgumentNullException.ThrowIfNull(before);
+        ArgumentNullException.ThrowIfNull(after);
+        HashSet<EntityId> both = [.. before.Select(check => check.Opening.Id).Intersect(after.Select(check => check.Opening.Id))];
+        return Recompute.Diff(
+            [.. before.Where(check => both.Contains(check.Opening.Id)).Select(check => KeyValuePair.Create(check.Opening.Id, check.Result))],
+            [.. after.Where(check => both.Contains(check.Opening.Id)).Select(check => KeyValuePair.Create(check.Opening.Id, check.Result))]);
     }
 
     /// <summary>
