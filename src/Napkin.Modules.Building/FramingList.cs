@@ -115,9 +115,7 @@ public sealed record WallFraming(
             foreach (IGrouping<string?, FramingPiece> header in Pieces.Where(piece => piece.Role == FramingRole.Header).GroupBy(piece => piece.Stock?.Name))
             {
                 int count = header.Sum(piece => piece.Quantity);
-                parts.Add(header.Key is { } stock
-                    ? $"{count} header {(count == 1 ? "piece" : "pieces")} ({stock})"
-                    : $"{count} {(count == 1 ? "header" : "headers")} (not yet sized)");
+                parts.Add(FramingList.HeaderPieces(count, header.Key));
             }
 
             return string.Join(", ", parts);
@@ -196,6 +194,13 @@ public sealed record FramingOptions
 /// </remarks>
 public static class FramingList
 {
+    /// <summary>The headers in the frame's one line: "1 header piece (2x8)", or "1 header (not yet sized)" with no stock.</summary>
+    /// <param name="count">How many.</param>
+    /// <param name="stock">The sized header's stock, or null when not yet sized.</param>
+    public static string HeaderPieces(int count, string? stock) => stock is null
+        ? $"{count} {(count == 1 ? "header" : "headers")} (not yet sized)"
+        : $"{count} header {(count == 1 ? "piece" : "pieces")} ({stock})";
+
     /// <summary>A stud spacing as the spacing picker writes it, e.g. <c>16" on centre</c>.</summary>
     public static string SpacingWords(Length spacing) => $"{spacing.Format(new InchesOnlyFormat(16)).Text} on centre";
 

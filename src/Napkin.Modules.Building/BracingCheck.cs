@@ -57,6 +57,50 @@ public static class BracingCheck
     /// <summary>The methods a pack offers for a segment, in the pack's order; empty with no pack or no provisions.</summary>
     public static ImmutableArray<BracingMethod> Methods(LoadedPack? pack) => pack?.Bracing is { } b ? [.. b.Methods] : [];
 
+    /// <summary>What a segment's picker offers first: no method, which is what napkin assumes until one is chosen.</summary>
+    public const string NotBraced = "not braced";
+
+    /// <summary>A segment's method that the adopted code does not have (another pack's), shown as it is: "zz-board (not in this code)".</summary>
+    /// <param name="method">The method's id as the design stores it.</param>
+    public static string NotInThisCode(string method) => $"{method} (not in this code)";
+
+    /// <summary>The pickers' tooltip when the adopted code has no bracing methods to choose from.</summary>
+    /// <param name="shortName">The code's short name ("CT 2022").</param>
+    public static string NoProvisionsTip(string shortName)
+        => $"{shortName} has no wall-bracing provisions loaded, so there is no method to choose (docs/rules-engine.md).";
+
+    /// <summary>A passing line's headline: "Braced length 10'-0" of 6'-6" required: passes (ZZ-BRACE.1)."</summary>
+    /// <param name="provided">The braced length.</param>
+    /// <param name="required">The required length.</param>
+    /// <param name="table">The section it is cited to.</param>
+    public static string PassesText(Length provided, Length required, string table)
+        => $"Braced length {Show(provided)} of {Show(required)} required: passes ({table}).";
+
+    /// <summary>A failing line's headline: "Braced length 5'-0" of 6'-6" required: SHORT by 1'-6" (ZZ-BRACE.1)."</summary>
+    /// <param name="provided">The braced length.</param>
+    /// <param name="required">The required length.</param>
+    /// <param name="shortfall">How much is missing.</param>
+    /// <param name="table">The section it is cited to.</param>
+    public static string FailsText(Length provided, Length required, Length shortfall, string table)
+        => $"Braced length {Show(provided)} of {Show(required)} required: SHORT by {Show(shortfall)} ({table}).";
+
+    /// <summary>The message bar's line when a wall's braced line comes to pass: "Wall 1's braced line now passes, braced 8'-0" of 6'-6" required (ZZ-BRACE.1)."</summary>
+    /// <param name="wall">The wall's name.</param>
+    /// <param name="provided">The braced length.</param>
+    /// <param name="required">The required length.</param>
+    /// <param name="table">The section it is cited to.</param>
+    public static string NowPassesText(string wall, Length provided, Length required, string table)
+        => $"{wall}'s braced line now {ShortPasses(provided, required, table)}.";
+
+    /// <summary>The message bar's line when a wall's braced line comes to fail: "Wall 1's braced line is now SHORT by 1'-6", braced 5'-0" of 6'-6" required (ZZ-BRACE.1)."</summary>
+    /// <param name="wall">The wall's name.</param>
+    /// <param name="provided">The braced length.</param>
+    /// <param name="required">The required length.</param>
+    /// <param name="shortfall">How much is missing.</param>
+    /// <param name="table">The section it is cited to.</param>
+    public static string NowFailsText(string wall, Length provided, Length required, Length shortfall, string table)
+        => $"{wall}'s braced line is now {ShortFails(provided, required, shortfall, table)}.";
+
     /// <summary>
     /// The result in plain words for the part panel: "Braced length 5'-0" of 6'-6" required: SHORT by
     /// 1'-6" (ZZ-BRACE.1)", the citation line, and the working behind it.
@@ -67,12 +111,12 @@ public static class BracingCheck
         return result switch
         {
             BracingResult.Passes p => new CheckWords(
-                $"Braced length {Show(p.Provided)} of {Show(p.Required)} required: passes ({p.Citation.Table}).",
+                PassesText(p.Provided, p.Required, p.Citation.Table),
                 p.Citation.ToString(),
                 Details(p.Citation, p.Working),
                 string.Empty),
             BracingResult.Fails f => new CheckWords(
-                $"Braced length {Show(f.Provided)} of {Show(f.Required)} required: SHORT by {Show(f.Shortfall)} ({f.Citation.Table}).",
+                FailsText(f.Provided, f.Required, f.Shortfall, f.Citation.Table),
                 f.Citation.ToString(),
                 Details(f.Citation, f.Working),
                 string.Empty),
@@ -94,8 +138,8 @@ public static class BracingCheck
     /// <summary>A short form for a list or the message bar.</summary>
     public static string Short(BracingResult result) => result switch
     {
-        BracingResult.Passes p => $"passes, braced {Show(p.Provided)} of {Show(p.Required)} required ({p.Citation.Table})",
-        BracingResult.Fails f => $"SHORT by {Show(f.Shortfall)}, braced {Show(f.Provided)} of {Show(f.Required)} required ({f.Citation.Table})",
+        BracingResult.Passes p => ShortPasses(p.Provided, p.Required, p.Citation.Table),
+        BracingResult.Fails f => ShortFails(f.Provided, f.Required, f.Shortfall, f.Citation.Table),
         BracingResult.OutOfScope o => $"beyond Section {o.Limit.Table}: get it engineered",
         BracingResult.InputMissing m => $"not checked: {Named(m.Inputs)} not entered",
         _ => "no data to check it against",
@@ -169,9 +213,9 @@ public static class BracingCheck
     private static string Sentence(string wall, BracingChange change) => change.Kind switch
     {
         BracingChangeKind.PassToFail or BracingChangeKind.ToFail or BracingChangeKind.FailChanged =>
-            $"{wall}'s braced line is now {Short(change.After)}.",
+            NowFails(wall, (BracingResult.Fails)change.After),
         BracingChangeKind.FailToPass or BracingChangeKind.ToPass or BracingChangeKind.PassChanged =>
-            $"{wall}'s braced line now {Short(change.After)}.",
+            NowPasses(wall, (BracingResult.Passes)change.After),
         BracingChangeKind.ToOutOfScope or BracingChangeKind.NoAnswerToOutOfScope or BracingChangeKind.OutOfScopeChanged =>
             $"{wall}'s bracing is now {Short(change.After)}.",
         BracingChangeKind.ToNoAnswer => $"{wall}'s bracing can no longer be checked: {Short(change.After)}.",
@@ -197,6 +241,16 @@ public static class BracingCheck
         int at = explanation.IndexOf(" This wall line is outside", StringComparison.Ordinal);
         return at > 0 ? explanation[..at] : explanation;
     }
+
+    private static string NowPasses(string wall, BracingResult.Passes p) => NowPassesText(wall, p.Provided, p.Required, p.Citation.Table);
+
+    private static string NowFails(string wall, BracingResult.Fails f) => NowFailsText(wall, f.Provided, f.Required, f.Shortfall, f.Citation.Table);
+
+    private static string ShortPasses(Length provided, Length required, string table)
+        => $"passes, braced {Show(provided)} of {Show(required)} required ({table})";
+
+    private static string ShortFails(Length provided, Length required, Length shortfall, string table)
+        => $"SHORT by {Show(shortfall)}, braced {Show(provided)} of {Show(required)} required ({table})";
 
     private static string Show(Length length) => CellValue.Of(length).ToString();
 

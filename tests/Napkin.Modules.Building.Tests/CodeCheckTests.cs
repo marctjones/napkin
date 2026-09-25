@@ -503,4 +503,19 @@ public class CodeCheckTests
         HeaderResult missing = RulesEngine.SizeHeader(pack, new HeaderRequest("zz-roof", WallKind.ExteriorBearing, In(60), CodeCheck.Site(SiteValues.NotEntered with { GroundSnowLoadPsf = 25 })));
         Assert.StartsWith("Not checked: the roof live load is not entered", CodeCheck.Words(missing, Library).Headline, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void The_code_windows_status_says_what_a_pack_cannot_check()
+    {
+        LoadedPack frame = One.Loaded.Single(pack => pack.Code.PackId == "us-zz-frame");
+        LoadedPack brace = CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "CodePacks", "brace")]).Loaded.Single(pack => pack.Code.PackId == "us-zz-brace-a");
+        LoadedPack ct = Assert.Single(CodePacks.Discover([RealPacks]).Loaded);
+
+        Assert.Equal($"Checking against {frame.Code}. It has no wall-bracing provisions, so no wall's bracing is checked.", CodeCheck.CheckingStatus(frame));
+        Assert.Equal($"Checking against {brace.Code}. It has no header table, so headers are not sized; walls' bracing is checked.", CodeCheck.CheckingStatus(brace));
+        Assert.Equal(
+            $"Checking against {ct.Code}. Its base tables are not loaded: no header can be sized until they are (docs/rules-engine.md says how to add them).",
+            CodeCheck.CheckingStatus(ct));
+        Assert.Equal($"Checking against {frame.Code}.", CodeCheck.CheckingStatus(frame with { Bracing = brace.Bracing }));
+    }
 }

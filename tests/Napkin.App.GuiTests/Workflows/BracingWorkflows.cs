@@ -38,8 +38,8 @@ public class BracingWorkflows
         app.Expect("the wall's three solid segments are listed with their lengths, none braced, and the line is short by all of it", () =>
         {
             Assert.Equal(["1. wall start to Window 1, 2'-6\"", "2. Window 1 to Window 2, 5'-0\"", "3. Window 2 to wall end, 2'-6\""], window.BracingSegmentTexts);
-            Assert.All(window.BracingPickers, picker => Assert.Equal("not braced", picker.SelectedItem));
-            Assert.Equal("Braced length 0\" of 6'-6\" required: SHORT by 6'-6\" (ZZ-BRACE.1).", window.BracingText);
+            Assert.All(window.BracingPickers, picker => Assert.Equal(BracingCheck.NotBraced, picker.SelectedItem));
+            Assert.Equal(BracingCheck.FailsText(Length.Zero, Length.FeetInches(6, 6), Length.FeetInches(6, 6), "ZZ-BRACE.1"), window.BracingText);
         });
 
         for (int segment = 0; segment < 3; segment++)
@@ -50,7 +50,7 @@ public class BracingWorkflows
         app.Expect("with ZZ panel on every segment, 10'-0\" is braced of 6'-6\" required: it passes, citing the section", () =>
         {
             // 30 + 60 + 30 = 120" ≥ 78".
-            Assert.Equal("Braced length 10'-0\" of 6'-6\" required: passes (ZZ-BRACE.1).", window.BracingText);
+            Assert.Equal(BracingCheck.PassesText(Length.Feet(10), Length.FeetInches(6, 6), "ZZ-BRACE.1"), window.BracingText);
             Assert.StartsWith("IRC 2099 Section ZZ-BRACE.1, as adopted by ZZ BRACE A row q.w99", window.BracingCitationText, StringComparison.Ordinal);
             Assert.Equal(3, Assert.Single(Wall.All(window.CurrentDesign!.Sketch)).Box.WallInputs!.Bracing.Length);
             Assert.Contains("Braced Wall 1's segment Window 2 to wall end with ZZ panel (synthetic)", window.MessageOnScreen, StringComparison.Ordinal);
@@ -62,20 +62,20 @@ public class BracingWorkflows
         app.Expect("Window 1 widened to 5'-0\": the middle segment is 36\", the line still passes, and the message bar says so", () =>
         {
             // 126 − (30 + 60) = 36": 30 + 36 + 30 = 96" (8'-0").
-            Assert.Equal("Braced length 8'-0\" of 6'-6\" required: passes (ZZ-BRACE.1).", window.BracingText);
-            Assert.Contains("Wall 1's braced line now passes, braced 8'-0\" of 6'-6\" required (ZZ-BRACE.1).", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Equal(BracingCheck.PassesText(Length.Feet(8), Length.FeetInches(6, 6), "ZZ-BRACE.1"), window.BracingText);
+            Assert.Contains(BracingCheck.NowPassesText("Wall 1", Length.Feet(8), Length.FeetInches(6, 6), "ZZ-BRACE.1"), window.MessageOnScreen, StringComparison.Ordinal);
         });
 
         TypeWidth(app, window, one, "6'");
         app.Expect("at 6'-0\" the middle segment is 24\", exactly the minimum panel: still passes", () =>
-            Assert.Equal("Braced length 7'-0\" of 6'-6\" required: passes (ZZ-BRACE.1).", window.BracingText));
+            Assert.Equal(BracingCheck.PassesText(Length.Feet(7), Length.FeetInches(6, 6), "ZZ-BRACE.1"), window.BracingText));
 
         TypeWidth(app, window, one, "6' 1\"");
         app.Expect("one inch wider the middle segment is under the minimum and counts for nothing: SHORT by 1'-6\", said with the edit", () =>
         {
             // 23" < 24": 30 + 0 + 30 = 60" (5'-0") of 78": short 18".
-            Assert.Equal("Braced length 5'-0\" of 6'-6\" required: SHORT by 1'-6\" (ZZ-BRACE.1).", window.BracingText);
-            Assert.Contains("Wall 1's braced line is now SHORT by 1'-6\", braced 5'-0\" of 6'-6\" required (ZZ-BRACE.1).", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Equal(BracingCheck.FailsText(Length.Feet(5), Length.FeetInches(6, 6), Length.FeetInches(1, 6), "ZZ-BRACE.1"), window.BracingText);
+            Assert.Contains(BracingCheck.NowFailsText("Wall 1", Length.Feet(5), Length.FeetInches(6, 6), Length.FeetInches(1, 6), "ZZ-BRACE.1"), window.MessageOnScreen, StringComparison.Ordinal);
             Assert.Contains("shorter than the 2'-0\" minimum panel", window.BracingWorkingText, StringComparison.Ordinal);
         });
 
@@ -88,7 +88,7 @@ public class BracingWorkflows
         app.Expect("the wall's Bracing block lists the 23\" middle segment and flags the line", () =>
         {
             Assert.Equal("2. Window 1 to Window 2, 1'-11\"", window.BracingSegmentTexts[1]);
-            Assert.Equal("Braced length 5'-0\" of 6'-6\" required: SHORT by 1'-6\" (ZZ-BRACE.1).", window.BracingText);
+            Assert.Equal(BracingCheck.FailsText(Length.Feet(5), Length.FeetInches(6, 6), Length.FeetInches(1, 6), "ZZ-BRACE.1"), window.BracingText);
         });
 
         app.SaveFrame("short-panel");
@@ -96,8 +96,8 @@ public class BracingWorkflows
         app.Chord(Key.Z);
         app.Expect("undo puts the 6'-0\" window back, and the line passes again", () =>
         {
-            Assert.Equal("Braced length 7'-0\" of 6'-6\" required: passes (ZZ-BRACE.1).", window.BracingText);
-            Assert.Contains("Wall 1's braced line now passes", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Equal(BracingCheck.PassesText(Length.Feet(7), Length.FeetInches(6, 6), "ZZ-BRACE.1"), window.BracingText);
+            Assert.Contains(BracingCheck.NowPassesText("Wall 1", Length.Feet(7), Length.FeetInches(6, 6), "ZZ-BRACE.1"), window.MessageOnScreen, StringComparison.Ordinal);
         });
 
         app.SaveFrame("undone");
@@ -115,7 +115,7 @@ public class BracingWorkflows
         app.Expect("under ZZ BRACE A, panel, board and panel brace 10'-0\" of 6'-6\": it passes", () =>
         {
             // 30 (panel) + 60 (board, ≥ 48") + 30 (panel) = 120".
-            Assert.Equal("Braced length 10'-0\" of 6'-6\" required: passes (ZZ-BRACE.1).", window.BracingText);
+            Assert.Equal(BracingCheck.PassesText(Length.Feet(10), Length.FeetInches(6, 6), "ZZ-BRACE.1"), window.BracingText);
             Assert.Equal("ZZ board (synthetic)", window.BracingPickers[1].SelectedItem);
         });
 
@@ -131,7 +131,7 @@ public class BracingWorkflows
                 StringComparison.Ordinal);
 
             // B: the 30" panels are under its 36" minimum and zz-board is not one of its methods: 0" of 72".
-            Assert.Contains("Wall 1's braced line is now SHORT by 6'-0\", braced 0\" of 6'-0\" required (ZZ-BRACE-B.7).", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Contains(BracingCheck.NowFailsText("Wall 1", Length.Zero, Length.Feet(6), Length.Feet(6), "ZZ-BRACE-B.7"), window.MessageOnScreen, StringComparison.Ordinal);
         });
 
         picker.SaveFrame("switched");
@@ -141,8 +141,8 @@ public class BracingWorkflows
         SelectWall(app, window);
         app.Expect("the wall is re-flagged under B, nothing carried over: the board segment says it is not in this code", () =>
         {
-            Assert.Equal("Braced length 0\" of 6'-0\" required: SHORT by 6'-0\" (ZZ-BRACE-B.7).", window.BracingText);
-            Assert.Equal("zz-board (not in this code)", window.BracingPickers[1].SelectedItem);
+            Assert.Equal(BracingCheck.FailsText(Length.Zero, Length.Feet(6), Length.Feet(6), "ZZ-BRACE-B.7"), window.BracingText);
+            Assert.Equal(BracingCheck.NotInThisCode("zz-board"), window.BracingPickers[1].SelectedItem);
             Assert.Equal("ZZ panel B (synthetic)", window.BracingPickers[0].SelectedItem);
             Assert.Contains("method 'zz-board' is not one of ZZ BRACE B's methods", window.BracingWorkingText, StringComparison.Ordinal);
         });
@@ -152,7 +152,7 @@ public class BracingWorkflows
         app.Expect("undo puts ZZ BRACE A back, and its passing result", () =>
         {
             Assert.Equal("us-zz-brace-a", window.CurrentDesign!.Sketch.Code!.PackId);
-            Assert.Equal("Braced length 10'-0\" of 6'-6\" required: passes (ZZ-BRACE.1).", window.BracingText);
+            Assert.Equal(BracingCheck.PassesText(Length.Feet(10), Length.FeetInches(6, 6), "ZZ-BRACE.1"), window.BracingText);
             Assert.Contains("Now checking against ZZ BRACE A", window.MessageOnScreen, StringComparison.Ordinal);
         });
     }, packRoots: [Brace]);
@@ -173,7 +173,7 @@ public class BracingWorkflows
         {
             Assert.Equal(2, window.BracingPickers.Count);
             Assert.All(window.BracingPickers, picker => Assert.False(picker.IsEnabled));
-            Assert.Contains("CT 2022 has no wall-bracing provisions loaded", ToolTip.GetTip(window.BracingPickers[0]) as string ?? string.Empty, StringComparison.Ordinal);
+            Assert.Equal(BracingCheck.NoProvisionsTip("CT 2022"), ToolTip.GetTip(window.BracingPickers[0]) as string);
             Assert.StartsWith("The loaded pack CT 2022 has no wall-bracing provisions, so napkin cannot check this wall line's bracing.", window.BracingText, StringComparison.Ordinal);
             Assert.EndsWith(CodeCheck.WhereToAddTables, window.BracingText, StringComparison.Ordinal);
             Assert.DoesNotContain("SHORT", window.BracingText, StringComparison.Ordinal);

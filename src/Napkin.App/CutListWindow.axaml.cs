@@ -527,7 +527,7 @@ public partial class CutListWindow : Window
         }
 
         CodeResolution code = Packs.Resolve(sketch.Code);
-        string under = code.Pack is { } pack ? $"Code check under {pack.Code.ShortName} ({pack.Code.BaseCode}, pack {pack.Code.PackId} rev {pack.Code.Revision})" : "Code check";
+        string under = CodeCheck.UnderHeading(code.Pack?.Code);
         string results = code.Pack is null
             ? code.Problem ?? string.Empty
             : string.Join("; ", checks.Select(check => $"{check.Opening.Name}: {CodeCheck.Short(check)}")) + ".";
