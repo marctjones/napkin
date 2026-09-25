@@ -217,9 +217,18 @@ public static class ProjectFile
     private static NotSaved Unwritable(string message)
         => new([new SaveProblem(SaveProblemKind.Unwritable, message)]);
 
-    private static bool Writing(Exception exception)
+    private static bool Writing(Exception exception) => IsFileException(exception);
+
+    /// <summary>
+    /// Whether <paramref name="exception"/> is one of the I/O and container-format exceptions this
+    /// type itself catches and turns into a refusal (a locked file, a missing directory, a
+    /// permission error, a corrupt zip) — never a programming error such as a null reference or an
+    /// index out of range. Shared with the shell (<c>MainWindow</c>, <c>FileDesignSource</c>) so a
+    /// real bug surfaces as a bug, not as "file refused" (#175).
+    /// </summary>
+    public static bool IsFileException(Exception exception)
         => exception is IOException or UnauthorizedAccessException or NotSupportedException
-            or SecurityException or ObjectDisposedException;
+            or SecurityException or ObjectDisposedException or InvalidDataException;
 
     /// <summary>
     /// The container, byte for byte the same for the same drawing: a fixed entry order, fixed

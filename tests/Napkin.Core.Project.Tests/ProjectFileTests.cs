@@ -520,6 +520,33 @@ public sealed class ProjectFileTests
         Assert.Equal(sample, Open(ProjectFile.SaveToBytes(sample), seed: 0).Sketch);
     }
 
+    /// <summary>
+    /// Review §2.2 (#175): the shell (<c>MainWindow</c>, <c>FileDesignSource</c>) narrows its
+    /// catch-almost-everything filters to this predicate, so that a real programming error is not
+    /// reported as a refused file. Prove the predicate itself draws that line correctly: true for
+    /// every I/O or container-format exception this type catches, false for a programming error.
+    /// </summary>
+    public static TheoryData<Func<Exception>, bool> FileExceptionCases => new()
+    {
+        { () => new IOException(), true },
+        { () => new UnauthorizedAccessException(), true },
+        { () => new NotSupportedException(), true },
+        { () => new System.Security.SecurityException(), true },
+        { () => new ObjectDisposedException(nameof(ProjectFileTests)), true },
+        { () => new InvalidDataException(), true },
+        { () => new NullReferenceException(), false },
+        { () => new InvalidOperationException(), false },
+        { () => new IndexOutOfRangeException(), false },
+        { () => new ArgumentException(), false },
+    };
+
+    [Theory]
+    [MemberData(nameof(FileExceptionCases))]
+    public void IsFileException_narrows_to_IO_and_format_failures_only(Func<Exception> makeException, bool expected)
+    {
+        Assert.Equal(expected, ProjectFile.IsFileException(makeException()));
+    }
+
     // ---------------------------------------------------------------------------------------
     // Plumbing
     // ---------------------------------------------------------------------------------------
