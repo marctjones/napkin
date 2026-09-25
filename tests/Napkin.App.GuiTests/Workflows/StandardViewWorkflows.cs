@@ -401,6 +401,72 @@ public class StandardViewWorkflows
         app.Expect("the free 3D view draws no view dimensions", () => Assert.Empty(window.Model.ViewDimensions));
     }, defaultLook: true);
 
+    [GuiWorkflow("GUI-VIEW-15")]
+    public void Rulers_and_grid_in_Back_count_down_follow_a_pan_and_step_with_the_zoom() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "L-bracket");
+        app.Press(Key.D4);
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("RulersMenuItem")!));
+
+        // Back looks from the north: screen right is west, so x counts down left to right (§5.2).
+        double[] Across() => [.. window.Model.Rulers!.Top.Select(placed => placed.Mark.Inches)];
+        double[] before = [];
+        app.Expect("View > Rulers in Back: labels on both rulers, the top one counting down, the toolbar stepped in", () =>
+        {
+            Assert.Equal(DesignView.Back, window.CurrentView);
+            Assert.NotEmpty(window.Model.RulerLabelsOnScreen);
+            before = Across();
+            Assert.True(before.Length > 3);
+            Assert.Equal(before.OrderDescending(), before);
+            Assert.Equal(CanvasView.RulerThickness + 10, window.FindControl<Border>("ToolBar")!.Margin.Left);
+            Assert.Null(window.Model.ScaleBarLabel);
+
+            // The floor, z = 0, is a heavy grid line where the camera puts it.
+            PlacedGridLine floor = Assert.Single(window.Model.Rulers!.Down, placed => placed.Line.World == 0);
+            Assert.True(floor.Line.Major);
+            Assert.Equal(window.Model.Camera.Project(new Vector3d(0, 0, 0)).Y, floor.Screen, 6);
+        });
+        app.SaveFrame("back-rulers-and-grid");
+
+        app.Press(Key.Right);
+        app.Expect("the right arrow pans: the numbers under the rulers move, still counting down", () =>
+        {
+            double[] after = Across();
+            Assert.NotEqual(before, after);
+            Assert.Equal(after.OrderDescending(), after);
+        });
+
+        Point middle = CentreOf(window, window.Model);
+        double[] beforeDrag = Across();
+        double tickBefore = window.Model.Rulers!.Top[0].Screen;
+        app.Drag(middle, middle + new Vector(20, 0), middle + new Vector(40, 0));
+        app.Expect("a drag on the paper pans too: every tick moved 40 px right with the drawing", () =>
+        {
+            PlacedTick same = window.Model.Rulers!.Top.Single(placed => placed.Mark.Inches == beforeDrag[0]);
+            Assert.Equal(tickBefore + 40, same.Screen, 6);
+        });
+
+        double stepBefore = SnapGrid.StepInches(window.Model.Camera.PixelsPerInch);
+        app.Wheel(middle, new Vector(0, -8));
+        app.Expect("zooming out steps the ladder up, as the plan's does", () =>
+        {
+            double step = SnapGrid.StepInches(window.Model.Camera.PixelsPerInch);
+            Assert.True(step > stepBefore, $"the step stayed {stepBefore}");
+            double[] ticks = Across();
+            Assert.Equal(step, ticks[0] - ticks[1], 9);
+        });
+        app.SaveFrame("back-rulers-zoomed-out");
+
+        app.Press(Key.D7);
+        app.Expect("3D has no rulers, and the toolbar goes back to its corner", () =>
+        {
+            Assert.Empty(window.Model.RulerLabelsOnScreen);
+            Assert.Equal(10, window.FindControl<Border>("ToolBar")!.Margin.Left);
+        });
+    }, defaultLook: true);
+
     [GuiWorkflow("GUI-VIEW-09")]
     public void Front_is_read_only_pan_zoom_and_select_and_the_selection_commands_still_work() => GuiWorkflow.Run(app =>
     {

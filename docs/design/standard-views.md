@@ -13,6 +13,9 @@ with #134's line table `DrawingLines`) put `HiddenEdges` in the Module too; H to
 menu item; a hidden piece lying along a solid edge is dropped rather than overdrawn. Slice D (#130):
 `DimensionLayout.Measure(Sketch, StandardView)` returns `ViewDimension`s in view coordinates; the rule
 (`AcrossFor`, `OnLowSide`) is in `StandardViewFrame`; the plan and the views draw through one routine.
+Slice E (#131): `ViewGrid` (Module) gives world spans, placements and grid lines; `StandardViewRulers`
+puts them through the camera; the rulers are drawn by the plan's routine; the floor line is part of the
+grid (off with Grid).
 
 Written for issue #106 (the design) and owed to
 #107 (the read-only implementation) and #108 (the view switcher), both in milestone Views, both
