@@ -1019,6 +1019,24 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-SKETCH-03",
+      "area": "ui",
+      "title": "Type a size on a rough part",
+      "acceptance": "Draw one plank rough; its labels are quiet until the pointer is over it; click the width label, type 3'-0\" and press Enter: the width is exactly 36 inches and the part is no longer rough; one undo restores both the width and the rough mark.",
+      "milestone": "M7",
+      "issue": 180,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SKETCH-04",
+      "area": "ui",
+      "title": "Rough on the cut list, and the mark by hand",
+      "acceptance": "Draw two planks rough; the cut list tags both rows rough and says two rows are; select one, untick Rough in the Part panel with the pointer, Tab, Enter: the undo step is 'mark firm', the cut list has one rough row, and the CSV says yes on that row only.",
+      "milestone": "M7",
+      "issue": 180,
+      "kind": "workflow"
+    },
+    {
       "id": "ACC-001",
       "area": "ui",
       "title": "The canvas exposes one automation element per part",

@@ -395,19 +395,20 @@
                     <!-- The entry mode, always named first on the row (sketch-mode §1.1): a mode that is
                          not visible is a mode error waiting to happen. In Rough, the live size follows it
                          (§2.4): the labels are quiet on the paper, so the numbers are here. -->
-                    <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*">
+                    <Grid Name="StatusLeft" Grid.Column="0" ColumnDefinitions="Auto,Auto,*">
                         <TextBlock Name="EntryModeText"
                                    Grid.Column="0"
                                    Text="PRECISE"
                                    FontSize="12"
                                    FontFamily="{DynamicResource SeFontMono}"
                                    VerticalAlignment="Center"
-                                   Margin="0,0,12,0"
+                                   Margin="0,0,8,0"
                                    AutomationProperties.Name="Entry mode" />
                         <TextBlock Name="SizeReadoutText"
                                    Grid.Column="1"
                                    IsVisible="False"
-                                   FontSize="12"
+                                   TextTrimming="CharacterEllipsis"
+                                   FontSize="11"
                                    FontFamily="{DynamicResource SeFontMono}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,12,0"

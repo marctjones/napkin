@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using Napkin.App;
+using Napkin.App.Editing;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
@@ -166,6 +167,123 @@ public class RoughWorkflows
             app.SaveFrame("cut-list");
         },
         defaultLook: true);
+
+    [GuiWorkflow("GUI-SKETCH-03")]
+    public void Type_a_size_on_a_rough_part() => GuiWorkflow.Run(
+        app =>
+        {
+            MainWindow window = (MainWindow)app.Target;
+            CanvasView canvas = window.Canvas;
+            app.Chord(Key.N);
+            app.Click(new Point(450, 320));
+            app.Press(Key.Q);
+            app.Press(Key.R);
+
+            // A new sheet in the default window is at about 16 px per inch: the precise step 1" (16 px),
+            // the rough one 3". (-23.2, -5.8) to (23.8, 6.2) lands on (-24, -6) to (24, 6): a plank 48 x 12.
+            app.Drag(At(window, Inches(-23.2, -5.8)), At(window, Point2.Inches(0, 0)), At(window, Inches(23.8, 6.2)));
+            Box plank = Assert.Single(Parts(window));
+            app.MoveTo(At(window, Point2.Inches(0, -13)));
+            app.Expect("a rough plank 48 x 12, selected, its labels quiet with the pointer away", () =>
+            {
+                Assert.Equal(3, canvas.SnapStepInches);
+                Assert.Equal(Length.Inches(48), plank.Width);
+                Assert.Equal(Length.Inches(12), plank.Height);
+                Assert.True(plank.Part!.Rough);
+                Assert.Equal(plank.Id, window.Editor.OnlySelected);
+                Assert.False(canvas.SelectionLabelsShown);
+            });
+
+            app.MoveTo(At(window, Point2.Inches(10, 2)));
+            app.Expect("over the plank its width label appears", () => Assert.True(canvas.SelectionLabelsShown));
+            app.SaveFrame("label-on-hover");
+
+            app.Click(LabelAt(window, plank.Id, SizeAxis.Width));
+            app.Press(Key.A, AppDriver.CommandModifier);
+            app.Type("3'-0\"");
+            app.Press(Key.Enter);
+            app.Expect("the plank is exactly 36\" wide and no longer rough", () =>
+            {
+                Box typed = Assert.Single(Parts(window));
+                Assert.Equal(Length.Inches(36), typed.Width);
+                Assert.False(typed.Part!.Rough);
+            });
+            app.SaveFrame("typed-firm");
+
+            app.Chord(Key.Z);
+            app.Expect("one undo restores the width and the rough mark together", () =>
+            {
+                Box back = Assert.Single(Parts(window));
+                Assert.Equal(Length.Inches(48), back.Width);
+                Assert.True(back.Part!.Rough);
+            });
+        },
+        defaultLook: true);
+
+    [GuiWorkflow("GUI-SKETCH-04")]
+    public void Rough_on_the_cut_list_and_the_mark_by_hand() => GuiWorkflow.Run(
+        app =>
+        {
+            MainWindow window = (MainWindow)app.Target;
+            app.Chord(Key.N);
+            app.Click(new Point(450, 320));
+            app.Press(Key.Q);
+
+            // Two planks of different sizes, so two rows, at the rough step of 3": (-23, -13) to (-1, -1)
+            // lands on (-24, -12) to (0, 0), 24 x 12; (5, -7) to (25.4, -0.8) lands on (6, -6) to (24, 0), 18 x 6.
+            app.Press(Key.R);
+            app.Drag(At(window, Point2.Inches(-23, -13)), At(window, Point2.Inches(-10, -5)), At(window, Point2.Inches(-1, -1)));
+            app.Press(Key.R);
+            app.Drag(At(window, Point2.Inches(5, -7)), At(window, Point2.Inches(15, -3)), At(window, Inches(25.4, -0.8)));
+
+            app.Chord(Key.L);
+            app.Expect("both rows are tagged rough and the footer says two rows are", () =>
+            {
+                CutListWindow list = window.CutList!;
+                Assert.Equal(2, list.Rows.Rows.Length);
+                Assert.All(list.Rows.Rows, row => Assert.True(row.Rough));
+                Assert.All(list.Rows.LinesOnScreen.Skip(1), line => Assert.Contains(" rough\t", line, StringComparison.Ordinal));
+                Assert.Equal("2 rows are rough — sizes as drawn, stock not chosen", list.RoughNoteText);
+            });
+            app.SaveFrame("rough-cut-list");
+
+            // Back in the plan: pick the 24 x 12 plank, untick Rough in the Part panel, Tab on, Enter.
+            window.Activate();
+            app.Click(At(window, Point2.Inches(-12, -6)));
+            Box first = Parts(window).Single(box => box.Width == Length.Inches(24));
+            app.Expect("the 24 x 12 plank is selected and its panel says Rough", () =>
+            {
+                Assert.Equal(first.Id, window.Editor.OnlySelected);
+                Assert.True(window.RoughField.IsChecked);
+            });
+            app.Click(CentreOf(window, window.RoughField));
+            app.Tab();
+            app.Press(Key.Enter);
+            app.Expect("the plank is firm, the undo step says so, and the cut list has one rough row", () =>
+            {
+                Assert.False(window.CurrentDesign!.Sketch.Find<Box>(first.Id)!.Part!.Rough);
+                Assert.Equal("mark firm", window.Editor.History.UndoWhat);
+                CutListWindow list = window.CutList!;
+                Assert.Single(list.Rows.Rows, row => row.Rough);
+                Assert.Equal("1 row is rough — sizes as drawn, stock not chosen", list.RoughNoteText);
+
+                // The CSV has "yes" on the 18 x 6 row only.
+                var lines = CutListCsv.Parse(list.Csv);
+                Assert.Equal("Rough", lines[1][6]);
+                Assert.Equal(2, lines.Length - 2);
+                Assert.Equal("yes", lines.Skip(2).Single(line => line[2] == CutListCsv.Text(Length.Inches(18)))[6]);
+                Assert.Equal(string.Empty, lines.Skip(2).Single(line => line[2] == CutListCsv.Text(Length.Inches(24)))[6]);
+            });
+        },
+        defaultLook: true);
+
+    static Point LabelAt(MainWindow window, EntityId box, SizeAxis axis)
+    {
+        Point onCanvas = window.Canvas.SelectionDimensionLabelAt(box, axis)
+            ?? throw new InvalidOperationException($"{box} shows no {axis} dimension.");
+        Point origin = window.Canvas.TranslatePoint(new Point(0, 0), window)!.Value;
+        return new Point(onCanvas.X + origin.X, onCanvas.Y + origin.Y);
+    }
 
     /// <summary>The design's boxes by name: Part 1, Part 2, …, the order they were drawn in.</summary>
     static Box[] Parts(MainWindow window) =>

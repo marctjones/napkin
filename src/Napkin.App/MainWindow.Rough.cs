@@ -92,5 +92,11 @@ public partial class MainWindow
 
         SizeReadoutText.Text = text ?? string.Empty;
         SizeReadoutText.IsVisible = text is not null;
+
+        // The readout and the design's name share the start of the row; while there is a size to read,
+        // it takes the room (the name is in the title bar), so neither runs under the view chips.
+        DesignText.IsVisible = text is null;
+        StatusLeft.ColumnDefinitions[1].Width = text is null ? GridLength.Auto : GridLength.Star;
+        StatusLeft.ColumnDefinitions[2].Width = text is null ? GridLength.Star : GridLength.Auto;
     }
 }

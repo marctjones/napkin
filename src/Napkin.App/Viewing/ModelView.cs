@@ -1910,7 +1910,35 @@ public sealed class ModelView : Control
             LineJoin = PenLineJoin.Round,
             DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
         };
+        if (IsRough(polygon.Box))
+        {
+            DrawLightEdges(context, polygon, style);
+            return;
+        }
+
         DrawEdges(context, pen, polygon, palette.Look.Line, style);
+    }
+
+    /// <summary>Whether a box is a rough part, which is drawn in the light pencil (sketch-mode §6.3).</summary>
+    bool IsRough(EntityId box) => _editor?.Sketch.Find<Box>(box)?.Part is { Rough: true };
+
+    void DrawLightEdges(DrawingContext context, ScenePolygon polygon, EntityStyle style)
+    {
+        int count = polygon.Points.Length;
+        for (int i = 0; i < count; i++)
+        {
+            if (polygon.EdgeDrawn[i])
+            {
+                Vector3d p = polygon.Points[i], q = polygon.Points[(i + 1) % count];
+                SketchInk.LightStroke(
+                    context,
+                    style.Stroke,
+                    style.Dashed,
+                    _camera.Project(p),
+                    _camera.Project(q),
+                    SketchStroke.SeedOf(p.X + (p.Z * 1.7), p.Y + (p.Z * 0.9), q.X + (q.Z * 1.7), q.Y + (q.Z * 0.9)));
+            }
+        }
     }
 
     /// <summary>The dimensions the last standard view drew; empty outside one.</summary>
@@ -1959,7 +1987,17 @@ public sealed class ModelView : Control
         {
             EntityStyle style = styles[segment.Face];
             Vector3d p = edges.InWorld(segment.From), q = edges.InWorld(segment.To);
-            if (palette.Look.Line != SketchLine.Clean)
+            if (IsRough(edges.Polygons[segment.Face].Box))
+            {
+                SketchInk.LightStroke(
+                    context,
+                    style.Stroke,
+                    style.Dashed,
+                    _camera.Project(p),
+                    _camera.Project(q),
+                    SketchStroke.SeedOf(p.X + (p.Z * 1.7), p.Y + (p.Z * 0.9), q.X + (q.Z * 1.7), q.Y + (q.Z * 0.9)));
+            }
+            else if (palette.Look.Line != SketchLine.Clean)
             {
                 SketchInk.Stroke(
                     context,

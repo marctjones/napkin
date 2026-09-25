@@ -26,8 +26,22 @@ internal static class SketchInk
 
         // Pencil: pressed twice, the second pass not quite where the first was.
         Polyline(context, SketchStroke.Wobble(a, b, seed, line), Pen(ink, 0.85, 0.9, dashed));
-        Polyline(context, SketchStroke.Wobble(a, b, unchecked((seed * 31) + 17), line), Pen(ink, 0.55, 0.7, dashed));
+        Polyline(context, SketchStroke.Wobble(a, b, unchecked((seed * 31) + 17), line), Pen(ink, LightOpacity, LightWidth, dashed));
     }
+
+    /// <summary>
+    /// A rough part's line (docs/design/sketch-mode.md &#xA7;6.3): the light pencil — the pencil's
+    /// second, lighter pass alone, the drafting convention for a construction line — whatever Line
+    /// is chosen, Clean included. A firm part is the one the pencil went over again.
+    /// </summary>
+    public static void LightStroke(DrawingContext context, Color ink, bool dashed, Point a, Point b, int seed)
+        => Polyline(context, SketchStroke.Wobble(a, b, unchecked((seed * 31) + 17), SketchLine.Pencil), Pen(ink, LightOpacity, LightWidth, dashed));
+
+    /// <summary>The light pencil's opacity: the pencil's second pass.</summary>
+    public const double LightOpacity = 0.55;
+
+    /// <summary>The light pencil's width in pixels: the pencil's second pass.</summary>
+    public const double LightWidth = 0.7;
 
     static Pen Pen(Color ink, double opacity, double width, bool dashed) => new(
         new SolidColorBrush(ink, opacity),

@@ -355,8 +355,16 @@ public partial class MainWindow
         PropertiesError.IsVisible = false;
 
         string name = PartNameBox.Text ?? string.Empty;
+        Request? typedDepth = DepthRequest(box, part, depth);
+
+        // Typing the depth of a rough part firms it, as typing either plan size does (sketch-mode §3.1).
+        if (typedDepth is not null && part is { Rough: true } && box.Part is { Rough: true })
+        {
+            part = part with { Rough = false };
+        }
+
         List<Request> requests = [new SetName(box.Id, name), Assignment(box, part)];
-        if (DepthRequest(box, part, depth) is { } typedDepth)
+        if (typedDepth is not null)
         {
             requests.Add(typedDepth);
         }

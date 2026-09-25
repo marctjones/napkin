@@ -135,8 +135,9 @@ public partial class MainWindow
                       + $"to {readable.Value.Format(Editor.LabelFormat).Text}";
 
         Editor.BeginGesture(what);
+        // Typing a size on a rough part firms it: the size and the clearing of the mark, one undo step (sketch-mode §3.1).
         UpdateResult result = Editor.Apply(
-            DimensionEntry.RequestFor(Editor.Design.Sketch, size, readable.Value),
+            RoughEntry.Typed(Editor.Design.Sketch, box, DimensionEntry.RequestFor(Editor.Design.Sketch, size, readable.Value)),
             what);
         Editor.EndGesture();
 

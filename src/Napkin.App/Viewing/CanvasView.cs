@@ -2359,7 +2359,8 @@ public sealed class CanvasView : Control
             LineJoin = PenLineJoin.Miter,
             DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
         };
-        if (palette.Look.Line != SketchLine.Clean && (box.Cuts.IsEmpty || !PlanShape.ShowsCap(box)))
+        bool rough = box.Part is { Rough: true };
+        if ((rough || palette.Look.Line != SketchLine.Clean) && (box.Cuts.IsEmpty || !PlanShape.ShowsCap(box)))
         {
             // Sketched: the fill stays flat, the outline is four hand-drawn lines over it.
             Footprint plain = box.Footprint();
@@ -2374,8 +2375,20 @@ public sealed class CanvasView : Control
             for (int i = 0; i < 4; i++)
             {
                 Point2 from = corners[i], to = corners[(i + 1) % 4];
-                SketchInk.Stroke(context, palette.Look.Line, style.Stroke, style.Dashed, _view.ToScreen(from), _view.ToScreen(to), SeedOf(from, to));
+                if (rough)
+                {
+                    // A rough part is in the light pencil, whatever Line is chosen (sketch-mode §6.3).
+                    SketchInk.LightStroke(context, style.Stroke, style.Dashed, _view.ToScreen(from), _view.ToScreen(to), SeedOf(from, to));
+                }
+                else
+                {
+                    SketchInk.Stroke(context, palette.Look.Line, style.Stroke, style.Dashed, _view.ToScreen(from), _view.ToScreen(to), SeedOf(from, to));
+                }
             }
+        }
+        else if (rough)
+        {
+            context.DrawGeometry(new SolidColorBrush(style.Fill), new Pen(new SolidColorBrush(style.Stroke, SketchInk.LightOpacity), SketchInk.LightWidth), Outline(box));
         }
         else
         {
