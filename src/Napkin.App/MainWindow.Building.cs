@@ -430,7 +430,9 @@ public partial class MainWindow
         }
 
         WallLine line = WallLine.Of(Editor.Sketch, wall);
-        if (index < 0 || index >= line.Segments.Length || line.Segments[index].Method == method)
+        // "Not braced" on a segment whose merged parts disagreed still writes: it clears the stale choices.
+        if (index < 0 || index >= line.Segments.Length
+            || (line.Segments[index].Method == method && line.Segments[index].Origin != AssignmentOrigin.MergedConflict))
         {
             return;
         }

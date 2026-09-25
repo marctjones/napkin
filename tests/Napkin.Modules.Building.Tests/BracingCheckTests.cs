@@ -166,6 +166,14 @@ public class BracingCheckTests
         Assert.Equal(
             ["Wall 1: the segment wall start to Window 2 merged braced segments with different methods, so it is not braced now; choose its method again."],
             BracingCheck.Unassigned([plan.Check], [merged.Check]));
+
+        // Said once: a later edit that leaves the conflict as it was does not say it again.
+        Assert.Empty(BracingCheck.Unassigned([merged.Check], [merged.Check]));
+
+        // Choosing "not braced" there rewrites the list for the current segments: the stale choices go.
+        Plan cleared = merged.Assign(0, null);
+        Assert.Equal([new BracingAssignment(plan.Two, null, Panel)], cleared.Sketch.Find<Box>(plan.Wall)!.WallInputs!.Bracing);
+        Assert.Equal(AssignmentOrigin.None, cleared.Line.Segments[0].Origin);
     }
 
     [Fact]

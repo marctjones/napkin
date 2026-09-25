@@ -419,7 +419,7 @@
       "id": "RUL-005",
       "area": "rules-engine",
       "title": "The bracing evaluator runs over a whole wall line",
-      "acceptance": "Given a wall line's bracing inputs and all its openings, the evaluator reports whether the required braced length is met, cites the section it applied, and re-runs whenever an opening on that line changes.",
+      "acceptance": "Given a wall line's solid segments (from its openings), the bracing method a person assigned to each, and the site, the evaluator reports whether the pack's required braced length is met, cites the section it applied, and re-runs whenever an opening on that line changes.",
       "milestone": "M5",
       "issue": 39,
       "kind": "unit"
@@ -554,7 +554,7 @@
       "id": "BLD-005",
       "area": "building",
       "title": "Enlarging an opening rechecks the wall line's bracing",
-      "acceptance": "With the wall line's existing sheathing type and braced length entered by the user, enlarging an opening past what the line can carry flags the wall, naming the section applied and the shortfall.",
+      "acceptance": "With the bracing method already on each of the wall line's segments entered by the user, enlarging an opening past what the line can carry flags the wall, naming the section applied and the shortfall.",
       "milestone": "M5",
       "issue": 39,
       "kind": "unit"
@@ -932,7 +932,7 @@
       "id": "GUI-BRACE-01",
       "area": "ui",
       "title": "Enlarge an opening until the bracing check flags it",
-      "acceptance": "With the wall line's existing sheathing and braced length entered, widen the opening step by step until the wall line is flagged, and the flag names the section applied and the shortfall.",
+      "acceptance": "With the bracing method already on each of the wall line's segments entered, widen the opening step by step until the wall line is flagged, and the flag names the section applied and the shortfall.",
       "milestone": "M5",
       "issue": 39,
       "kind": "workflow"

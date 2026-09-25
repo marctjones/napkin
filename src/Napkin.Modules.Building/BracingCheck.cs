@@ -141,11 +141,12 @@ public static class BracingCheck
                 bool wasBraced = was.Line.Segments.Any(old => old.Method is not null
                                                               && old.Start < segment.End && segment.Start < old.End
                                                               && !(old.From == segment.From && old.To == segment.To));
-                if (segment.Origin == AssignmentOrigin.MergedConflict)
+                bool alreadySaid = was.Line.Segments.Any(old => old.From == segment.From && old.To == segment.To && old.Origin == AssignmentOrigin.MergedConflict);
+                if (segment.Origin == AssignmentOrigin.MergedConflict && !alreadySaid)
                 {
                     said.Add($"{now.Wall.Name}: the segment {segment.Label} merged braced segments with different methods, so it is not braced now; choose its method again.");
                 }
-                else if (wasBraced)
+                else if (wasBraced && segment.Origin != AssignmentOrigin.MergedConflict)
                 {
                     said.Add($"{now.Wall.Name}: the segment {segment.Label} is a new segment where a braced one was, so it is not braced now; choose its method again.");
                 }
