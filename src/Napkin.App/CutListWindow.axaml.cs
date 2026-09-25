@@ -447,23 +447,24 @@ public partial class CutListWindow : Window
         LayoutSummary.Text = string.Join("\n", CutLayout.Summary(layout));
         ExtrasGrid.Rows = SuppliesList.Of(sketch);
 
+        // The walls' framing diff (renovation-sketches §6.3): new material is bought, what comes out
+        // is counted under Demolition with the demolished boxes.
+        ImmutableArray<WallDiff> diffs = FramingDiff.Of(sketch, MaterialsLibrary.Shipped, Packs);
+
         // What comes out, and the line that says only New is bought (renovation-sketches §6.2).
-        ImmutableArray<DemolitionLine> demolition = Demolition.Boxes(sketch);
+        ImmutableArray<DemolitionLine> demolition = [.. Demolition.Boxes(sketch), .. FramingDiff.Demolition(diffs)];
         DemolitionLines = demolition;
         DemolitionList.ItemsSource = demolition.Select(line => line.Text).ToArray();
         DemolitionSection.IsVisible = !demolition.IsEmpty;
         ShowNote(RenovationNote, Demolition.Header(sketch, demolition));
 
-        // The walls' frame is bought through the very aggregation the parts are, from rows
-        // FramingList derives; kept in a section of its own so a wall's studs read as a wall's.
-        // The checks run on the building as it will be; only a New wall's frame is bought.
+        // The walls' frame is bought through the very aggregation the parts are, from rows the
+        // framing diff derives — a New wall's whole frame, an existing wall's new pieces only; kept
+        // in a section of its own so a wall's studs read as a wall's. The checks run on the building
+        // as it will be.
         ImmutableArray<OpeningCheck> checks = CodeCheck.Of(sketch, Packs);
-        ImmutableArray<WallFraming> walls =
-        [
-            .. FramingList.Of(sketch.After(), MaterialsLibrary.Shipped, CodeCheck.Framing(checks, MaterialsLibrary.Shipped))
-                .Where(wall => wall.Wall.Box.Phase == Phase.New),
-        ];
-        ImmutableArray<CutListRow> framingRows = FramingList.CutRows(walls);
+        ImmutableArray<WallFraming> walls = FramingList.Of(sketch.After(), MaterialsLibrary.Shipped, CodeCheck.Framing(checks, MaterialsLibrary.Shipped));
+        ImmutableArray<CutListRow> framingRows = FramingDiff.CutRows(diffs);
         FramingTable.Rows = ShoppingList.Of(framingRows, _kerf);
         CutLayoutPlan framingLayout = CutLayout.Of(framingRows, _kerf);
         FramingLayoutView.Rows = CutLayout.Rows(framingLayout);
@@ -475,6 +476,7 @@ public partial class CutListWindow : Window
             : $"From {string.Join(", ", walls.Select(wall => $"{wall.Wall.Name} ({wall.Summary})"))}. "
               + string.Join(" ", walls.SelectMany(wall => wall.Notes).Distinct().Select(note => char.ToUpperInvariant(note[0]) + note[1..] + "."))
               + (walls.Any(wall => !wall.Problems.IsEmpty && !wall.Pieces.IsEmpty) ? " Some openings could not be framed; the drawing's panel says why." : string.Empty)
+              + string.Concat(diffs.Where(diff => diff.FromExisting && diff.Changes).Select(diff => $" {diff.Wall.Name} is existing: only its new pieces are bought ({diff.Sentence}), {diff.Assumption}."))
               + CodeCheckNote(sketch, checks);
         BuildSizes(sketch);
         string supplies = SuppliesText(sketch);
@@ -513,7 +515,7 @@ public partial class CutListWindow : Window
         string under = code.Pack is { } pack ? $"Code check under {pack.Code.ShortName} ({pack.Code.BaseCode}, pack {pack.Code.PackId} rev {pack.Code.Revision})" : "Code check";
         string results = code.Pack is null
             ? code.Problem ?? string.Empty
-            : string.Join("; ", checks.Select(check => $"{check.Opening.Name}: {CodeCheck.Short(check.Result)}")) + ".";
+            : string.Join("; ", checks.Select(check => $"{check.Opening.Name}: {CodeCheck.Short(check)}")) + ".";
         return $"\n{under}: {results}";
     }
 

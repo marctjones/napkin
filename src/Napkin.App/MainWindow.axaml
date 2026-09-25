@@ -981,6 +981,29 @@
                                           AutomationProperties.Name="Stud spacing"
                                           SelectionChanged="OnStudSpacingChanged" />
                             </Grid>
+                            <!-- What the wall is (renovation-sketches §4.3): entered, never defaulted. Side picks the
+                                 header table; a wall that is not bearing is not checked and takes the header typed. -->
+                            <Grid Name="WallTypeRow" ColumnDefinitions="Auto,*,Auto,*" IsVisible="False">
+                                <TextBlock Text="Side" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <ComboBox Name="SideBox" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="Wall side"
+                                          SelectionChanged="OnSideChanged"
+                                          ToolTip.Tip="Exterior or interior: which header table the code check asks, and which walls are insulated as exterior. napkin never assumes it." />
+                                <TextBlock Grid.Column="2" Text="Bearing" FontSize="11" VerticalAlignment="Center" Margin="6,0,6,0" />
+                                <ComboBox Name="BearingBox" Grid.Column="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="Bearing"
+                                          SelectionChanged="OnBearingChanged"
+                                          ToolTip.Tip="Whether the wall carries load. A wall that is not bearing gets no code check: you choose its header. napkin never assumes it." />
+                            </Grid>
+                            <Grid Name="HeaderRow" ColumnDefinitions="Auto,*" IsVisible="False">
+                                <TextBlock Text="Header" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <ComboBox Name="HeaderBox" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="Header, your choice"
+                                          SelectionChanged="OnHeaderChanged"
+                                          ToolTip.Tip="The header over every opening in this wall: your choice, not a code result. Draw two walls for two headers." />
+                            </Grid>
+                            <TextBlock Name="WallNote" FontSize="10" TextWrapping="Wrap" IsVisible="False"
+                                       AutomationProperties.Name="Wall note" />
                             <TextBlock Name="FramingNotes" FontSize="10" Opacity="0.8" TextWrapping="Wrap"
                                        AutomationProperties.Name="Framing notes" />
                             <!-- The wall line's bracing (#39): segments from the drawing, a method per segment

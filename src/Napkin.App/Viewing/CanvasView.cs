@@ -1397,7 +1397,9 @@ public sealed class CanvasView : Control
         }
 
         (Length width, Length sill, Length height) = StartingSize(_openingKind);
-        foreach (Wall wall in Wall.All(editor.Sketch))
+
+        // Only a wall that will be there takes an opening: not one being demolished (renovation §6.1).
+        foreach (Wall wall in Wall.All(editor.Sketch.After()))
         {
             if (OpeningPlacement.OffsetAt(wall, at, width) is not { } offset)
             {
@@ -1422,10 +1424,16 @@ public sealed class CanvasView : Control
             if (editor.Apply(request, what) is Succeeded)
             {
                 editor.Select(id);
+
+                // In a wall that is already there, the framing diff is said with the edit (§8).
+                string diff = wall.Box.Phase == Phase.Existing
+                              && FramingDiff.Of(editor.Sketch, MaterialsLibrary.Shipped, Packs()).FirstOrDefault(each => each.Wall.Id == wall.Id) is { } changed
+                    ? $" In {wall.Name} (existing): {changed.Sentence}{(changed.Out.IsEmpty ? string.Empty : $", {changed.Assumption}")}."
+                    : string.Empty;
                 editor.Say(
                     EditSeverity.Done,
                     $"Put {name} in {wall.Name}: {Label(width)} wide, {Label(height)} tall, sill {Label(sill)} — a starting size, not a standard. "
-                    + "Drag its ends or type its width; its height is the panel's Depth and its sill the panel's Up.");
+                    + "Drag its ends or type its width; its height is the panel's Depth and its sill the panel's Up." + diff);
                 Tool = EditTool.Select;
             }
 
@@ -2369,7 +2377,43 @@ public sealed class CanvasView : Control
             DashStyle = demolish ? new DashStyle([12, 6], 0) : style.Dashed ? new DashStyle([4, 3], 0) : null,
         };
         bool rough = box.Part is { Rough: true };
-        if ((rough || palette.Look.Line != SketchLine.Clean) && (box.Cuts.IsEmpty || !PlanShape.ShowsCap(box)))
+
+        // A joined pair of walls of one phase is drawn with no seam between them (renovation §4.1).
+        List<(Point2 From, Point2 To)> seams = Wall.Is(design.Sketch, box)
+            ?
+            [
+                .. WallJoins.Of(design.Sketch, new Wall(box))
+                    .Where(join => join.Other.Box.Phase == box.Phase && join.Seam is not null)
+                    .Select(join => join.Seam!.Value),
+            ]
+            : [];
+        if (seams.Count > 0 && !rough && box.Cuts.IsEmpty)
+        {
+            Footprint plain = box.Footprint();
+            Point2[] corners =
+            [
+                plain.Corner(BoxCorner.SouthWest),
+                plain.Corner(BoxCorner.SouthEast),
+                plain.Corner(BoxCorner.NorthEast),
+                plain.Corner(BoxCorner.NorthWest),
+            ];
+            context.DrawGeometry(new SolidColorBrush(style.Fill), null, Outline(box));
+            for (int i = 0; i < 4; i++)
+            {
+                foreach ((Point2 from, Point2 to) in WallJoins.Strokes(corners[i], corners[(i + 1) % 4], seams))
+                {
+                    if (palette.Look.Line == SketchLine.Clean)
+                    {
+                        context.DrawLine(pen, _view.ToScreen(from), _view.ToScreen(to));
+                    }
+                    else
+                    {
+                        SketchInk.Stroke(context, palette.Look.Line, style.Stroke, style.Dashed, _view.ToScreen(from), _view.ToScreen(to), SeedOf(from, to), demolish);
+                    }
+                }
+            }
+        }
+        else if ((rough || palette.Look.Line != SketchLine.Clean) && (box.Cuts.IsEmpty || !PlanShape.ShowsCap(box)))
         {
             // Sketched: the fill stays flat, the outline is four hand-drawn lines over it.
             Footprint plain = box.Footprint();
@@ -2495,6 +2539,9 @@ public sealed class CanvasView : Control
             _view.ToScreen(start),
             _view.ToScreen(end));
     }
+
+    /// <summary>The code packs the main window found, for the framing diff said when an opening goes into an existing wall.</summary>
+    public Func<CodePacks> Packs { get; set; } = () => CodePacks.None;
 
     /// <summary>How opaque an existing entity is drawn: ghosted, 40 % (renovation-sketches §6.4).</summary>
     internal const double ExistingOpacity = 0.4;

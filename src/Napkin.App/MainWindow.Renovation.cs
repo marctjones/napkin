@@ -27,6 +27,7 @@ public partial class MainWindow
 
     void WireRenovation()
     {
+        DrawingCanvas.Packs = () => Packs;
         Editor.SelectionChanged += (_, _) => ShowPhase();
         Editor.DesignChanged += (_, _) => ShowPhase();
     }

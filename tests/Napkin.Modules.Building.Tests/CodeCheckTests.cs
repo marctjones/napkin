@@ -44,7 +44,8 @@ public class CodeCheckTests
         Box wall = new Box(EntityId.New(), WallLayer, Point3.Origin, In(144), In(3, 1, 2), In(96), BoxFace.Top, Angle.Zero)
         {
             Name = "Wall 1",
-            WallInputs = new WallInputs(supports, null).OrNull(),
+            // An exterior bearing wall, said (renovation-sketches §4.3: napkin never assumes either).
+            WallInputs = new WallInputs(supports, null) { Side = WallSide.Exterior, Bearing = true },
         };
         Box window = new Box(EntityId.New(), OpeningLayer, new Point3(In(offset), Length.Zero, In(36)), width, In(3, 1, 2), In(42), BoxFace.Top, Angle.Zero)
         {
@@ -62,7 +63,7 @@ public class CodeCheckTests
         return (sketch, window.Id);
     }
 
-    static HeaderResult Check(Sketch sketch, CodePacks? packs = null) => Assert.Single(CodeCheck.Of(sketch, packs ?? One)).Result;
+    static HeaderResult Check(Sketch sketch, CodePacks? packs = null) => Assert.Single(CodeCheck.Of(sketch, packs ?? One)).Result!;
 
     static void AssertSized(HeaderResult result, int plies, string nominal, int jacks, int kings, string row)
     {
@@ -367,7 +368,7 @@ public class CodeCheckTests
     {
         (Sketch sketch, EntityId window) = Design(In(36));
         Box wall = Wall.All(sketch)[0].Box;
-        Sketch spaced = sketch.WithEntity(wall with { WallInputs = new WallInputs("zz-roof", In(24)) });
+        Sketch spaced = sketch.WithEntity(wall with { WallInputs = new WallInputs("zz-roof", In(24)) { Side = WallSide.Exterior, Bearing = true } });
         WallFraming framing = Assert.Single(FramingList.Of(spaced, Library));
         Assert.Equal(In(24), framing.Spacing);
         Assert.DoesNotContain(framing.Notes, note => note.Contains(FramingOptions.DefaultSpacingNote, StringComparison.Ordinal));
