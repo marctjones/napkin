@@ -169,6 +169,11 @@ gained the version number, `"wall": null` on every box, and `"code": null` with 
 every `*.expected.json` changed only its `formatVersion`. Format version 7 (`site.roofLiveLoad`)
 likewise added only the null field and the version.
 
+**Format version 9 (the rough mark, `docs/design/sketch-mode.md` §4.1) changed no sample's
+meaning.** Every part gained `"rough": false` — no sample is rough — by `samples restamp`, which
+also rewrote each scene through the real `SceneWriter`; every `*.expected.json` changed only its
+`formatVersion`.
+
 **A purely additive bump — a null field or an empty list, no sample's meaning changed, as every
 bump from version 5 on has been — no longer needs 15 scenes and 15 expectations rewritten by hand
 (#181).** Run

@@ -364,6 +364,8 @@ public static class SceneWriter
 
         writer.WriteEndArray();
 
+        writer.WriteBoolean(SceneNames.Rough, part.Rough);
+
         writer.WriteEndObject();
     }
 

@@ -1,5 +1,5 @@
 {
-  "formatVersion": 8,
+  "formatVersion": 9,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -34,9 +34,11 @@
           "x": "length",
           "y": "width"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     },
     {
       "id": "c0000000-0000-4000-8000-000000000002",
@@ -61,9 +63,11 @@
           "x": "thickness",
           "y": "width"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     },
     {
       "id": "c0000000-0000-4000-8000-000000000003",
@@ -88,9 +92,11 @@
           "x": "thickness",
           "y": "width"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     },
     {
       "id": "c0000000-0000-4000-8000-000000000004",
@@ -115,9 +121,11 @@
           "x": "thickness",
           "y": "width"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     },
     {
       "id": "c0000000-0000-4000-8000-000000000005",
@@ -142,9 +150,11 @@
           "x": "thickness",
           "y": "width"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     },
     {
       "id": "c0000000-0000-4000-8000-000000000006",
@@ -169,9 +179,11 @@
           "x": "length",
           "y": "thickness"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     },
     {
       "id": "c0000000-0000-4000-8000-000000000007",
@@ -196,9 +208,11 @@
           "x": "length",
           "y": "thickness"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     },
     {
       "id": "c0000000-0000-4000-8000-000000000008",
@@ -223,9 +237,11 @@
           "x": "thickness",
           "y": "length"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     },
     {
       "id": "c0000000-0000-4000-8000-000000000009",
@@ -250,9 +266,11 @@
           "x": "thickness",
           "y": "length"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     },
     {
       "id": "c0000000-0000-4000-8000-000000000010",
@@ -277,9 +295,11 @@
           "x": "length",
           "y": "width"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     },
     {
       "id": "c0000000-0000-4000-8000-000000000011",
@@ -304,14 +324,24 @@
           "x": "length",
           "y": "width"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": []
+      "wall": null,
+      "cuts": []
     }
   ],
   "relationships": [],
   "fastenerChoices": [],
   "supplies": [],
   "code": null,
-  "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null }
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
 }

@@ -1,77 +1,279 @@
 {
-  "formatVersion": 8,
-  "units": { "length": "inch/1024", "angle": "arcsecond" },
+  "formatVersion": 9,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
   "layers": [
-    { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" }
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
   ],
   "entities": [
-    { "id": "30000000-0000-4000-8000-000000000001", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
+    {
+      "id": "30000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall",
-      "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 147456, "height": 5632, "depth": 98304, "faceUp": "top", "rotation": 0,
-      "part": null, "wall": null, "cuts": [] },
-    { "id": "30000000-0000-4000-8000-000000000002", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "width": 147456,
+      "height": 5632,
+      "depth": 98304,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": null,
+      "cuts": []
+    },
+    {
+      "id": "30000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Opening",
-      "anchor": { "x": 55296, "y": 0, "z": 36864 }, "width": 36864, "height": 5632, "depth": 43008, "faceUp": "top", "rotation": 0,
-      "part": null, "wall": null, "cuts": [] },
-
-    { "id": "30000000-0000-4000-8000-000000000003", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",
+      "anchor": {
+        "x": 55296,
+        "y": 0,
+        "z": 36864
+      },
+      "width": 36864,
+      "height": 5632,
+      "depth": 43008,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": null,
+      "cuts": []
+    },
+    {
+      "id": "30000000-0000-4000-8000-000000000003",
+      "type": "dimension",
+      "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall length",
-      "measures": { "kind": "boxWidth", "box": "30000000-0000-4000-8000-000000000001" },
+      "measures": {
+        "kind": "boxWidth",
+        "box": "30000000-0000-4000-8000-000000000001"
+      },
       "drives": "40000000-0000-4000-8000-000000000002",
-      "placement": { "offset": 12288, "side": "south" } },
-    { "id": "30000000-0000-4000-8000-000000000004", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",
+      "placement": {
+        "offset": 12288,
+        "side": "south"
+      }
+    },
+    {
+      "id": "30000000-0000-4000-8000-000000000004",
+      "type": "dimension",
+      "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall thickness",
-      "measures": { "kind": "boxHeight", "box": "30000000-0000-4000-8000-000000000001" },
+      "measures": {
+        "kind": "boxHeight",
+        "box": "30000000-0000-4000-8000-000000000001"
+      },
       "drives": "40000000-0000-4000-8000-000000000003",
-      "placement": { "offset": 6144, "side": "west" } },
-    { "id": "30000000-0000-4000-8000-000000000005", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",
+      "placement": {
+        "offset": 6144,
+        "side": "west"
+      }
+    },
+    {
+      "id": "30000000-0000-4000-8000-000000000005",
+      "type": "dimension",
+      "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Opening width",
-      "measures": { "kind": "boxWidth", "box": "30000000-0000-4000-8000-000000000002" },
+      "measures": {
+        "kind": "boxWidth",
+        "box": "30000000-0000-4000-8000-000000000002"
+      },
       "drives": "40000000-0000-4000-8000-000000000004",
-      "placement": { "offset": 512, "side": "north" } },
-    { "id": "30000000-0000-4000-8000-000000000006", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",
+      "placement": {
+        "offset": 512,
+        "side": "north"
+      }
+    },
+    {
+      "id": "30000000-0000-4000-8000-000000000006",
+      "type": "dimension",
+      "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall west end to opening",
-      "measures": { "kind": "axis",
-        "from": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "west"] },
-        "to": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000002", "faces": ["south", "west"] },
-        "axis": "x" },
+      "measures": {
+        "kind": "axis",
+        "from": {
+          "kind": "feature",
+          "box": "30000000-0000-4000-8000-000000000001",
+          "faces": [
+            "south",
+            "west"
+          ]
+        },
+        "to": {
+          "kind": "feature",
+          "box": "30000000-0000-4000-8000-000000000002",
+          "faces": [
+            "south",
+            "west"
+          ]
+        },
+        "axis": "x"
+      },
       "drives": null,
-      "placement": { "offset": 6144, "side": "north" } },
-    { "id": "30000000-0000-4000-8000-000000000007", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",
+      "placement": {
+        "offset": 6144,
+        "side": "north"
+      }
+    },
+    {
+      "id": "30000000-0000-4000-8000-000000000007",
+      "type": "dimension",
+      "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Opening to wall east end",
-      "measures": { "kind": "axis",
-        "from": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000002", "faces": ["south", "east"] },
-        "to": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "east"] },
-        "axis": "x" },
+      "measures": {
+        "kind": "axis",
+        "from": {
+          "kind": "feature",
+          "box": "30000000-0000-4000-8000-000000000002",
+          "faces": [
+            "south",
+            "east"
+          ]
+        },
+        "to": {
+          "kind": "feature",
+          "box": "30000000-0000-4000-8000-000000000001",
+          "faces": [
+            "south",
+            "east"
+          ]
+        },
+        "axis": "x"
+      },
       "drives": null,
-      "placement": { "offset": 6144, "side": "north" } }
+      "placement": {
+        "offset": 6144,
+        "side": "north"
+      }
+    }
   ],
   "relationships": [
-    { "id": "40000000-0000-4000-8000-000000000001", "kind": "anchored",
-      "entity": "30000000-0000-4000-8000-000000000001" },
-    { "id": "40000000-0000-4000-8000-000000000002", "kind": "paramValue",
-      "param": { "kind": "boxWidth", "box": "30000000-0000-4000-8000-000000000001" }, "value": 147456 },
-    { "id": "40000000-0000-4000-8000-000000000003", "kind": "paramValue",
-      "param": { "kind": "boxHeight", "box": "30000000-0000-4000-8000-000000000001" }, "value": 5632 },
-    { "id": "40000000-0000-4000-8000-000000000004", "kind": "paramValue",
-      "param": { "kind": "boxWidth", "box": "30000000-0000-4000-8000-000000000002" }, "value": 36864 },
-    { "id": "40000000-0000-4000-8000-000000000005", "kind": "equalParam",
-      "a": { "kind": "boxHeight", "box": "30000000-0000-4000-8000-000000000001" },
-      "b": { "kind": "boxHeight", "box": "30000000-0000-4000-8000-000000000002" } },
-    { "id": "40000000-0000-4000-8000-000000000006", "kind": "flush",
-      "a": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south"] },
-      "b": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000002", "faces": ["south"] } },
-    { "id": "40000000-0000-4000-8000-000000000007", "kind": "flush",
-      "a": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["north"] },
-      "b": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000002", "faces": ["north"] } },
-    { "id": "40000000-0000-4000-8000-000000000008", "kind": "centered",
-      "middle": { "kind": "center", "box": "30000000-0000-4000-8000-000000000002" },
-      "a": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "west"] },
-      "b": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "east"] },
-      "axis": "x" }
+    {
+      "id": "40000000-0000-4000-8000-000000000001",
+      "kind": "anchored",
+      "entity": "30000000-0000-4000-8000-000000000001"
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000002",
+      "kind": "paramValue",
+      "param": {
+        "kind": "boxWidth",
+        "box": "30000000-0000-4000-8000-000000000001"
+      },
+      "value": 147456
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000003",
+      "kind": "paramValue",
+      "param": {
+        "kind": "boxHeight",
+        "box": "30000000-0000-4000-8000-000000000001"
+      },
+      "value": 5632
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000004",
+      "kind": "paramValue",
+      "param": {
+        "kind": "boxWidth",
+        "box": "30000000-0000-4000-8000-000000000002"
+      },
+      "value": 36864
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000005",
+      "kind": "equalParam",
+      "a": {
+        "kind": "boxHeight",
+        "box": "30000000-0000-4000-8000-000000000001"
+      },
+      "b": {
+        "kind": "boxHeight",
+        "box": "30000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000006",
+      "kind": "flush",
+      "a": {
+        "kind": "feature",
+        "box": "30000000-0000-4000-8000-000000000001",
+        "faces": [
+          "south"
+        ]
+      },
+      "b": {
+        "kind": "feature",
+        "box": "30000000-0000-4000-8000-000000000002",
+        "faces": [
+          "south"
+        ]
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000007",
+      "kind": "flush",
+      "a": {
+        "kind": "feature",
+        "box": "30000000-0000-4000-8000-000000000001",
+        "faces": [
+          "north"
+        ]
+      },
+      "b": {
+        "kind": "feature",
+        "box": "30000000-0000-4000-8000-000000000002",
+        "faces": [
+          "north"
+        ]
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000008",
+      "kind": "centered",
+      "middle": {
+        "kind": "center",
+        "box": "30000000-0000-4000-8000-000000000002"
+      },
+      "a": {
+        "kind": "feature",
+        "box": "30000000-0000-4000-8000-000000000001",
+        "faces": [
+          "south",
+          "west"
+        ]
+      },
+      "b": {
+        "kind": "feature",
+        "box": "30000000-0000-4000-8000-000000000001",
+        "faces": [
+          "south",
+          "east"
+        ]
+      },
+      "axis": "x"
+    }
   ],
   "fastenerChoices": [],
   "supplies": [],
   "code": null,
-  "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null }
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
 }

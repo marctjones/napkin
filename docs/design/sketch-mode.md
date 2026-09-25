@@ -1,10 +1,12 @@
 # Rough sketching: get it down fast, firm it up later
 
-Status: **DRAFT, awaiting Marc's sign-off.** Written by Fable for issue #159 (the umbrella; the
+Status: **Signed off by Marc 2026-09-25 with the recommended decisions (#159).** Written by Fable
+for issue #159 (the umbrella; the slices are #170, #172, #174, #176, #178 and #180 — §8 — in
+milestone **M7 Sketch mode**).
 
-> **Format-version coordination (2026-09-25):** this note and `renovation-sketches.md` each ask for one scene-format bump (8 to 9). Whichever is built first takes 9; the other takes the next number. Neither should assume 9.
-slices are #170, #172, #174, #176, #178 and #180 — §8 — in milestone **M7 Sketch mode**). Nothing here is implemented, and no slice
-starts until Marc has answered §10 or said "use the recommended defaults".
+> **Format-version coordination (2026-09-25):** this note and `renovation-sketches.md` each asked
+> for one scene-format bump. Sketch mode was built first and took **format 9** (slice A, #170);
+> renovation (#160) takes **10**.
 
 The idea, as proposed and asked for: napkin already *looks* like a napkin — the paper and the
 carpenter's pencil of [`napkin-look.md`](./napkin-look.md) are the defaults. This note is the

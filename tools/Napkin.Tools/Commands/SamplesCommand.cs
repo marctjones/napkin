@@ -256,6 +256,17 @@ public static class SamplesCommand
 
                 break;
 
+            case 9:
+                foreach (JsonNode? entity in Entities(root))
+                {
+                    if (entity?["part"] is JsonObject part && part["rough"] is null)
+                    {
+                        part["rough"] = false;
+                    }
+                }
+
+                break;
+
             default:
                 throw new InvalidOperationException($"samples restamp does not know what format version {version} added.");
         }

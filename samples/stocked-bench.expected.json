@@ -3,7 +3,7 @@
   "scene": "stocked-bench.scene.json",
   "design": "stocked-bench.design.md",
   "derivedBy": "hand, from the stated dimensions in stocked-bench.design.md; never regenerated from napkin's output",
-  "formatVersion": 8,
+  "formatVersion": 9,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 11,

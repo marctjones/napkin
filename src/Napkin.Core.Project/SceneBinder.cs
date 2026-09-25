@@ -658,6 +658,7 @@ internal sealed class SceneBinder
         long? quantity = ReadInteger(part, SceneNames.Quantity);
         PlanAxes? planAxes = ReadPlanAxes(part);
         ImmutableList<HardwareItem>? hardware = ReadHardware(part);
+        bool? rough = ReadBoolean(part, SceneNames.Rough);
         RejectUnknownFields(part);
 
         if (quantity is { } count && count < 1)
@@ -672,8 +673,8 @@ internal sealed class SceneBinder
         // A part's third dimension is its box's depth, which the box stores (format version 4,
         // assembly-model §1.2). A version-3 part's "outOfPlane" is therefore an unknown field here,
         // refused like any other, rather than a second copy of a number the box already holds.
-        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes && hardware is not null
-            ? (true, new Part(stock, species, (int)pieces, axes) { Hardware = hardware })
+        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes && hardware is not null && rough is { } isRough
+            ? (true, new Part(stock, species, (int)pieces, axes) { Hardware = hardware, Rough = isRough })
             : (false, null);
     }
 

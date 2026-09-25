@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 8
+# The napkin project file — container version 1, scene format version 9
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -345,7 +345,7 @@ called (`docs/design/parts-and-cut-list.md` §3).
 ### Parts
 
 `part` is a required field on a box. It is `null` on a box that is not a piece anybody cuts — a
-wall, an opening — and otherwise an object with exactly these five fields:
+wall, an opening — and otherwise an object with exactly these six fields:
 
 ```json
 "part": {
@@ -353,7 +353,8 @@ wall, an opening — and otherwise an object with exactly these five fields:
   "species": "Douglas fir",
   "quantity": 1,
   "planAxes": { "x": "width", "y": "thickness" },
-  "hardware": []
+  "hardware": [],
+  "rough": false
 }
 ```
 
@@ -364,6 +365,7 @@ wall, an opening — and otherwise an object with exactly these five fields:
 | `quantity` | integer | How many identical copies this one box stands for, for the four legs a person draws once. At least 1 | it is not an integer, or is less than 1 |
 | `planAxes` | object | `x` and `y`, each exactly one of `length`, `width`, `thickness` | a key is missing, a value is not one of the three, or `x` and `y` name the same one |
 | `hardware` | array | Counted items typed onto the part, each `{ "name": text, "quantity": integer }`: a slide, a pull, a hinge. `quantity` is per copy of the part | it is not an array, an item's `name` is empty, or its `quantity` is not an integer of at least 1 |
+| `rough` | boolean | Whether the part was entered roughly: drawn in Rough mode, its sizes as drawn and its stock not yet chosen ([`sketch-mode.md`](./design/sketch-mode.md) §4.1). Format version 9; a version-8 file is refused, with no converter | it is missing, or is not `true` or `false` |
 
 A part written with the `outOfPlane` field version 3 had is refused as an unknown field.
 
