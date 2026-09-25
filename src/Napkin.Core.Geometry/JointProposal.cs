@@ -73,7 +73,8 @@ public static class JointProposals
         }
 
         // A tabletop: one part's bottom face on the other's top, the contact long and thin like an apron's edge.
-        if ((pair.OfFirst == BoxFace.Bottom || pair.OfSecond == BoxFace.Bottom)
+        // "Bottom" is the face pointing down in the drawing, not the part's own bottom: an apron turned on edge has one end that is its own.
+        if ((a.Orientation.Normal(pair.OfFirst) == (Axis.Z, false) || b.Orientation.Normal(pair.OfSecond) == (Axis.Z, false))
             && pair.Contact.JointLength.Units >= 4 * pair.Contact.JointWidth.Units)
         {
             return JointType.Tabletop;
