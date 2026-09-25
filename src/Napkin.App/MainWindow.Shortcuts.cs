@@ -72,6 +72,7 @@ public partial class MainWindow
             (DuplicateMenuItem, EditCommand.Duplicate),
             (JoinMenuItem, EditCommand.Join),
             (JoinAllMenuItem, EditCommand.JoinAll),
+            (FirmUpMenuItem, EditCommand.FirmUp),
             (MirrorEastWestMenuItem, EditCommand.MirrorEastWest),
             (MirrorNorthSouthMenuItem, EditCommand.MirrorNorthSouth),
             (PinMenuItem, EditCommand.Pin),

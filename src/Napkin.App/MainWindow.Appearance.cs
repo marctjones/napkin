@@ -53,6 +53,9 @@ public partial class MainWindow
         RefusalPanel.BorderBrush = edge;
         JoinPanel.Background = paper;
         JoinPanel.BorderBrush = edge;
+        FirmUpPanel.Background = paper;
+        FirmUpPanel.BorderBrush = edge;
+        FirmUpTitle.Foreground = edge;
         JoinMessage.Foreground = edge;
         UnsavedPanel.Background = paper;
         UnsavedPanel.BorderBrush = edge;

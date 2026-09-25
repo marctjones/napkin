@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using Napkin.App;
@@ -6,6 +7,7 @@ using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Modules.Editing;
+using Napkin.Modules.Furniture;
 using Xunit;
 
 namespace Napkin.App.GuiTests.Workflows;
@@ -34,7 +36,8 @@ public class RoughWorkflows
             (long ox, long oy) = SketchTheBench(app, window);
             app.SaveFrame("rough-bench");
 
-            Box[] parts = [.. window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id)];
+            // By name, the order they were drawn in: Part 1 the top, 2 and 3 the legs, 4 the stretcher.
+            Box[] parts = Parts(window);
             app.Expect("every part landed on whole inches, is a plank marked rough, and nothing is stated", () =>
             {
                 Assert.Equal(4, parts.Length);
@@ -85,6 +88,88 @@ public class RoughWorkflows
             });
         },
         defaultLook: true);
+
+    [GuiWorkflow("GUI-SKETCH-02")]
+    public void Firm_it_up_and_read_the_cut_list() => GuiWorkflow.Run(
+        app =>
+        {
+            MainWindow window = (MainWindow)app.Target;
+            SketchTheBench(app, window);
+            Box[] parts = Parts(window);
+
+            app.Press(Key.F);
+            app.Expect("F opens Firm up over every part: the bench's four contacts, four stock lines and four size lines, all ticked", () =>
+            {
+                Assert.True(window.IsFirmingUp);
+                Assert.Equal(4, window.FirmUpRelationshipTicks.Count);
+                Assert.Equal(4, window.FirmUpStockTicks.Count);
+                Assert.Equal(4, window.FirmUpSizeTicks.Count);
+                Assert.All([.. window.FirmUpRelationshipTicks, .. window.FirmUpStockTicks, .. window.FirmUpSizeTicks], tick => Assert.True(tick.IsChecked));
+                Assert.Contains(window.FirmUpLineTexts, text => text.Contains("Part 1's south face against Part 2's north face", StringComparison.Ordinal));
+                Assert.Contains(window.FirmUpLineTexts, text => text.Contains("Part 2's east face against Part 4's west face", StringComparison.Ordinal));
+            });
+            app.SaveFrame("firm-up-sheet");
+
+            // Leave Leg 2 and the stretcher unheld: untick that line with the pointer.
+            int legTwoStretcher = window.FirmUpLineTexts.ToList().FindIndex(text => text.Contains("Part 3", StringComparison.Ordinal) && text.Contains("Part 4", StringComparison.Ordinal));
+            Assert.InRange(legTwoStretcher, 0, 3);
+            app.Click(CentreOf(window, window.FirmUpRelationshipTicks[legTwoStretcher]));
+            app.Expect("the Leg 2 – Stretcher line is unticked", () => Assert.False(window.FirmUpRelationshipTicks[legTwoStretcher].IsChecked));
+
+            app.Press(Key.Enter);
+
+            // The stocks, from the shipped library's softwood table: the top, 48 x 2 x 3/4, is 1/2" from
+            // a 1x2 (1 1/2 x 3/4) and from a 1x3 (2 1/2 x 3/4), a tie the name breaks: 1x2. A leg,
+            // 16 x 4 x 3/4, is 1/2" from a 1x4 (3 1/2 x 3/4), 3/4" in all from a 5/4x4 (3 1/2 x 1), and
+            // 1 1/4" from a 2x4: 1x4. The stretcher, 36 x 3 x 3/4, ties a 1x3 and a 1x4 at 1/2": 1x3.
+            app.Expect("three Flushes, nothing rough, and each part cut from its nearest stock", () =>
+            {
+                Assert.False(window.IsFirmingUp);
+                Sketch sketch = window.CurrentDesign!.Sketch;
+                Assert.Equal(3, sketch.RelationshipsInOrder.OfType<Flush>().Count());
+                Box[] now = Parts(window);
+                Assert.All(now, part => Assert.False(part.Part!.Rough));
+                Assert.Equal(["1x2", "1x4", "1x4", "1x3"], now.Select(part => part.Part!.Stock));
+                Assert.StartsWith("Firmed up 4 parts: 3 relationships, 4 stocks, 4 sizes.", window.Editor.LastMessage!.Text, StringComparison.Ordinal);
+            });
+
+            app.Chord(Key.Z);
+            app.Expect("one undo puts the sketch back: all four rough, no stock, nothing stated", () =>
+            {
+                Box[] back = Parts(window);
+                Assert.All(back, part => Assert.True(part.Part!.Rough));
+                Assert.All(back, part => Assert.Null(part.Part!.Stock));
+                Assert.Empty(window.CurrentDesign!.Sketch.RelationshipsInOrder);
+                Assert.Equal(parts.Select(part => part.Width), back.Select(part => part.Width));
+            });
+
+            app.Chord(Key.Y);
+            app.Click(CentreOf(window, window.FindControl<MenuItem>("ListsMenu")!));
+            app.Click(CentreOf(window, window.FindControl<MenuItem>("CutListMenuItem")!));
+            app.Expect("the cut list has no rough row, and is the three rows worked out by hand", () =>
+            {
+                CutListWindow list = window.CutList!;
+                Assert.Equal(string.Empty, list.RoughNoteText);
+                CutListRow[] rows = [.. list.Rows.Rows];
+                Assert.All(rows, row => Assert.False(row.Rough));
+
+                // Largest first: the top 48 x 1 1/2 x 3/4 (1x2), the stretcher 36 x 2 1/2 x 3/4 (1x3),
+                // the two legs 16 x 3 1/2 x 3/4 (1x4) as one row of two.
+                Assert.Equal(
+                    [
+                        (1, Length.Inches(48), Length.Inches(1, 1, 2), Length.Inches(0, 3, 4), "1x2"),
+                        (1, Length.Inches(36), Length.Inches(2, 1, 2), Length.Inches(0, 3, 4), "1x3"),
+                        (2, Length.Inches(16), Length.Inches(3, 1, 2), Length.Inches(0, 3, 4), "1x4"),
+                    ],
+                    rows.Select(row => (row.Quantity, row.Length, row.Width, row.Thickness, row.Material)).ToArray());
+            });
+            app.SaveFrame("cut-list");
+        },
+        defaultLook: true);
+
+    /// <summary>The design's boxes by name: Part 1, Part 2, …, the order they were drawn in.</summary>
+    static Box[] Parts(MainWindow window) =>
+        [.. window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Name, StringComparer.Ordinal)];
 
     /// <summary>
     /// Draws the quick bench roughly, the way a person would, and leaves the sheet in Rough mode

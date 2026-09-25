@@ -134,6 +134,7 @@ public partial class MainWindow : Window
             OpenDimensionEditor(request.Box, request.Axis);
         WireJoinery();
         WireRough();
+        WireFirmUp();
         DrawingCanvas.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         ModelDrawing.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         DrawingCanvas.ViewRequested += (_, view) => ShowView(view);
