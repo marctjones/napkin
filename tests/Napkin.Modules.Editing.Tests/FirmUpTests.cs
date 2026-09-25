@@ -161,6 +161,46 @@ public class FirmUpTests
     }
 
     [Fact]
+    public void Accepting_a_stock_alone_clears_the_mark_and_states_only_what_the_yard_fixes()
+    {
+        (DesignEditor editor, _, EntityId leg1, _, _) = Bench();
+        LumberStock oneByFour = (LumberStock)Item("1x4");
+
+        FirmUpOutcome outcome = FirmUp.Accept(editor, [], [(leg1, oneByFour)], []);
+
+        Box leg = editor.Sketch.Find<Box>(leg1)!;
+        Assert.Equal(1, outcome.Stocks);
+        Assert.Equal(1, outcome.PartsFirmed);
+        Assert.False(leg.Part!.Rough);
+        Assert.Equal("1x4", leg.Part.Stock);
+        Assert.Equal(oneByFour.Width, leg.Width);
+
+        // The free length keeps its rough value and nothing states it: that is the size line's job.
+        Assert.Equal(Length.Inches(16), leg.Height);
+        Assert.Null(DimensionEntry.DrivingRelationship(editor.Sketch, new BoxHeightRef(leg1)));
+    }
+
+    [Fact]
+    public void A_rough_part_that_already_has_stock_gets_no_stock_line_but_a_size_line()
+    {
+        DesignEditor editor = new();
+        editor.EntryMode = EntryMode.Rough;
+        StockTool tool = new();
+        Assert.True(tool.Arm(Item("2x4")));
+        tool.Begin(Point2.Inches(0, 0));
+        tool.MoveTo(Point2.Inches(36, 0));
+        EntityId id = EntityId.New();
+        Assert.True(tool.TryComplete(editor.Sketch, LayerId.Default, id, editor.NextPartName(), out Request? request, editor.EntryMode));
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(request, "Placed a 2x4"));
+
+        FirmUpPlan plan = FirmUp.Plan(editor.Sketch, [id], MaterialsLibrary.Shipped, editor.NameOf, Format);
+
+        Assert.Empty(plan.Stocks);
+        FirmUpSizeLine line = Assert.Single(plan.Sizes);
+        Assert.Equal(id, line.Part);
+    }
+
+    [Fact]
     public void A_part_that_is_gone_or_not_a_part_is_passed_over()
     {
         (DesignEditor editor, _, _, _, _) = Bench();
