@@ -76,6 +76,17 @@ document and stays one.
    by the same build gives byte-identical files: no timestamps, no counters, no machine name, a
    fixed field order, and entities and relationships sorted by id. A project file therefore diffs
    cleanly in git, and "has this changed?" is a checksum rather than an opinion.
+6. **Per-view camera state is a user setting, not scene data (#181).** What a person was looking at
+   — which view, the camera angle, zoom, pan — is not a fact about the design any more than a
+   scroll position is a fact about a document; it lives in `UserSettings.cs`, not in `scene.json`.
+   This was decided explicitly because the alternative keeps recurring: format version 4 through 8
+   landed in two days, and each of those bumps tempted "while we're touching every box's fields
+   anyway, just add the camera here too." Keeping it out of the scene means a project file a person
+   sends a collaborator does not silently reset their camera, and a future view feature (a Parts
+   view, per-view camera memory) does not need to be a format bump at all. When a bump is purely
+   additive — a null field or an empty list added to every entity, no sample's *meaning* changed —
+   `dotnet run --project tools/Napkin.Tools -- samples restamp` brings `samples/*.scene.json` and
+   `*.expected.json` up to date instead of a hand rewrite of all 15; see `samples/README.md`.
 
 ## The container
 

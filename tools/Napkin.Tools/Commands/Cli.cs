@@ -14,6 +14,7 @@ public static class Cli
           napkin-tools ratchet update    [--allow-lower --reason "<why>"] [options]
           napkin-tools scorecard report  [--summary] [--json <path>] [options]
           napkin-tools scorecard stubs   [options]
+          napkin-tools samples restamp   [options]
 
         ratchet check
           Fails when a baselined assembly's line or branch coverage has fallen below its floor,
@@ -31,6 +32,12 @@ public static class Cli
         scorecard stubs
           Regenerates tests/Napkin.Features.Tests/PlannedFeatures.g.cs — one skipped fact per
           catalogued feature that no hand-written test claims yet.
+
+        samples restamp
+          Brings every samples/*.scene.json and *.expected.json up to the reader's current format
+          version, adding the null/empty fields each version between theirs and the current one
+          introduced, and verifies the result with the real strict reader. A no-op, no-diff, for a
+          sample already at the current version.
 
         Common options:
           --root <path>          Repository root (default: the nearest napkin.sln above the
@@ -73,6 +80,7 @@ public static class Cli
                 "ratchet update" => RatchetCommand.Update(rest, output, error),
                 "scorecard report" => ScorecardCommand.Report(rest, output, error),
                 "scorecard stubs" => ScorecardCommand.Stubs(rest, output, error),
+                "samples restamp" => SamplesCommand.Restamp(rest, output, error),
                 _ => Unknown(command, output, error),
             };
         }

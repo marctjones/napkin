@@ -13,4 +13,10 @@
 
   <!-- No PackageReference by design: this tool uses the BCL only. -->
 
+  <ItemGroup>
+    <!-- `samples restamp` verifies its output with the real strict reader (#181) rather than a
+         second, tool-only notion of "valid". -->
+    <ProjectReference Include="..\..\src\Napkin.Core.Project\Napkin.Core.Project.csproj" />
+  </ItemGroup>
+
 </Project>
