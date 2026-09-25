@@ -68,7 +68,7 @@
 
   "cutListCsv": [
     "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
-    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery"
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery"
   ],
 
   "notes": [

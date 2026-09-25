@@ -37,7 +37,10 @@ namespace Napkin.Modules.Furniture;
 public static class CutListCsv
 {
     /// <summary>The column names, in the order they are written.</summary>
-    public const string Header = "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery";
+    public const string Header = "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery";
+
+    /// <summary>What the first line gains when any row is rough (<c>docs/design/sketch-mode.md</c> &#xA7;5).</summary>
+    public const string RoughClause = ", rough rows are as drawn";
 
     /// <summary>What separates one cut's sentence from the next in the <c>Cuts</c> column.</summary>
     public const string BetweenCuts = "; ";
@@ -51,11 +54,16 @@ public static class CutListCsv
     {
         ArgumentNullException.ThrowIfNull(rows);
 
+        List<CutListRow> all = [.. rows];
+        string statement = all.Any(row => row.Rough)
+            ? CutList.BeforeKerfAndJoinery[..^1] + RoughClause + "."
+            : CutList.BeforeKerfAndJoinery;
+
         StringBuilder csv = new();
-        csv.Append(Field(CutList.BeforeKerfAndJoinery)).Append('\n');
+        csv.Append(Field(statement)).Append('\n');
         csv.Append(Header).Append('\n');
 
-        foreach (CutListRow row in rows)
+        foreach (CutListRow row in all)
         {
             csv.Append(Field(row.Label)).Append(',')
                .Append(row.Quantity.ToString(CultureInfo.InvariantCulture)).Append(',')
@@ -63,6 +71,7 @@ public static class CutListCsv
                .Append(Quoted(Text(row.Width))).Append(',')
                .Append(Quoted(Text(row.Thickness))).Append(',')
                .Append(Field(row.MaterialText)).Append(',')
+               .Append(row.Rough ? "yes" : string.Empty).Append(',')
                .Append(Field(string.Join(BetweenCuts, row.CutText))).Append(',')
                .Append(Field(string.Join(BetweenCuts, row.JointText.AddRange(row.Flags))))
                .Append('\n');

@@ -371,6 +371,18 @@ public partial class CutListWindow : Window
     /// <summary>The shopping-list table, for the GUI suite to read and to click a header on.</summary>
     public ShoppingListTable ShoppingRows => ShoppingTable;
 
+    /// <summary>The line under the cut list about rough rows, empty when there are none (sketch-mode §5).</summary>
+    public string RoughNoteText => RoughNote.IsVisible ? RoughNote.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The line under the shopping list about rough parts with no stock, empty when there are none.</summary>
+    public string ShoppingRoughNoteText => ShoppingRoughNote.IsVisible ? ShoppingRoughNote.Text ?? string.Empty : string.Empty;
+
+    static void ShowNote(TextBlock note, string? text)
+    {
+        note.Text = text ?? string.Empty;
+        note.IsVisible = text is not null;
+    }
+
     /// <summary>The shopping list as a CSV file would carry it, in the order it is on screen.</summary>
     public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted, _kerf);
 
@@ -415,6 +427,8 @@ public partial class CutListWindow : Window
         // so the two tabs cannot disagree about what is being built (§4).
         ShoppingTable.Rows = ShoppingList.Of(rows, _kerf);
         ShoppingNote.Text = ShoppingList.Statement(_kerf);
+        ShowNote(RoughNote, CutList.RoughFooter(rows));
+        ShowNote(ShoppingRoughNote, ShoppingList.RoughFooter(rows));
         LayoutNote.Text = CutLayout.Statement(_kerf);
         CutLayoutPlan layout = CutLayout.Of(rows, _kerf);
         LayoutView.Rows = CutLayout.Rows(layout);

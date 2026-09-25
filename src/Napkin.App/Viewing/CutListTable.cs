@@ -193,11 +193,11 @@ public sealed class CutListTable : Grid
         {
             RowDefinitions.Add(new RowDefinition(GridLength.Auto));
 
-            Add(Cell(row.Label), line, 0);
+            Add(row.Rough ? RoughLabel(row.Label) : Cell(row.Label), line, 0);
             Add(Cell(row.Quantity.ToString(CultureInfo.InvariantCulture), right: true), line, 1);
-            Add(Cell(CutListCsv.Text(row.Length), right: true), line, 2);
-            Add(Cell(CutListCsv.Text(row.Width), right: true), line, 3);
-            Add(Cell(CutListCsv.Text(row.Thickness), right: true), line, 4);
+            Add(Sized(CutListCsv.Text(row.Length), row.Rough), line, 2);
+            Add(Sized(CutListCsv.Text(row.Width), row.Rough), line, 3);
+            Add(Sized(CutListCsv.Text(row.Thickness), row.Rough), line, 4);
 
             TextBlock material = Cell(row.MaterialText);
             if (row.Unresolved)
@@ -327,6 +327,45 @@ public sealed class CutListTable : Grid
 
         header.Click += (_, _) => SortByColumn(column);
         return header;
+    }
+
+    /// <summary>
+    /// A rough row's label: the label, then a <c>rough</c> tag in the pencil colour
+    /// (<c>docs/design/sketch-mode.md</c> &#xA7;5).
+    /// </summary>
+    private static StackPanel RoughLabel(string label)
+    {
+        TextBlock tag = new()
+        {
+            Text = RoughTag,
+            FontSize = 10,
+            FontStyle = FontStyle.Italic,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        void Ink() => tag.Foreground = new SolidColorBrush(CanvasPalette.For(tag.ActualThemeVariant).Dimension);
+        tag.AttachedToVisualTree += (_, _) => Ink();
+        tag.ActualThemeVariantChanged += (_, _) => Ink();
+        Ink();
+
+        StackPanel cell = new() { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 0 };
+        cell.Children.Add(Cell(label));
+        cell.Children.Add(tag);
+        return cell;
+    }
+
+    /// <summary>The word a rough row is tagged with.</summary>
+    public const string RoughTag = "rough";
+
+    /// <summary>A size cell; a rough row's in the lighter ink its part is drawn in (§6.3): sizes as drawn.</summary>
+    private static TextBlock Sized(string text, bool rough)
+    {
+        TextBlock cell = Cell(text, right: true);
+        if (rough)
+        {
+            cell.Opacity = 0.6;
+        }
+
+        return cell;
     }
 
     private static TextBlock Cell(string text, bool right = false) => new()

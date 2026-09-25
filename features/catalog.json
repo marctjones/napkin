@@ -1217,6 +1217,24 @@
       "kind": "unit"
     },
     {
+      "id": "CUT-017",
+      "area": "furniture",
+      "title": "Firm up suggests the stock a rough part is nearest",
+      "acceptance": "StockSuggestion lists library items whose every fixed dimension is within 1 inch of the part's finished size: items fixing more dimensions first, then the smallest total difference, then the name; a part near nothing gets none; a fastener never appears; the values are the library's.",
+      "milestone": "M7",
+      "issue": 176,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-018",
+      "area": "furniture",
+      "title": "Rough rows are tagged on the cut list, the CSV and the shopping list",
+      "acceptance": "A cut-list row is rough when any member is; roughness is not in the grouping key; the table tags it and says how many rows are rough; the CSV has a Rough column (yes or empty) after Material and says rough rows are as drawn; the shopping list says how many rough parts have no stock and are not on it.",
+      "milestone": "M7",
+      "issue": 176,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-CUT-08",
       "area": "ui",
       "title": "Read the cut layout and change the saw kerf",

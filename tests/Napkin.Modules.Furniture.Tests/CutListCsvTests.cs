@@ -36,7 +36,7 @@ public sealed class CutListCsvTests
             CutListRow row = rows[i];
             ImmutableArray<string> line = lines[i + 2];
 
-            Assert.Equal(8, line.Length);
+            Assert.Equal(9, line.Length);
             Assert.Equal(row.Label, line[0]);
             Assert.Equal(row.Quantity, int.Parse(line[1], System.Globalization.CultureInfo.InvariantCulture));
             Assert.Equal(CutListCsv.Text(row.Length), line[2]);
@@ -44,9 +44,10 @@ public sealed class CutListCsvTests
             Assert.Equal(CutListCsv.Text(row.Thickness), line[4]);
             Assert.Equal(row.MaterialText, line[5]);
 
-            // Nothing in this design is cut or joined, so the last two columns are empty on every line.
+            // Nothing in this design is rough, cut or joined, so the last three columns are empty on every line.
             Assert.Equal(string.Empty, line[6]);
             Assert.Equal(string.Empty, line[7]);
+            Assert.Equal(string.Empty, line[8]);
         }
     }
 
@@ -212,13 +213,13 @@ public sealed class CutListCsvTests
         {
             Assert.Equal(
                 string.Join(CutListCsv.BetweenCuts, rows[i].CutText),
-                lines[i + 2][6]);
+                lines[i + 2][7]);
         }
 
         // The top's one sentence survives a quote-carrying length and the round trip; the apron's
         // column is empty rather than absent.
-        Assert.Equal("Round all four corners to a 1\" radius.", lines[2][6]);
-        Assert.Equal(string.Empty, lines[3][6]);
+        Assert.Equal("Round all four corners to a 1\" radius.", lines[2][7]);
+        Assert.Equal(string.Empty, lines[3][7]);
     }
 
     /// <summary>A row of one arbitrary 1-inch cube, for tests about a row rather than a design.</summary>
