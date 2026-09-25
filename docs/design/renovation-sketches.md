@@ -134,6 +134,12 @@ drags one out or, after one click, takes typed length and width the way any dime
 (M2), and starts at the same 8'-0" a wall starts at — a starting value, not a standard. A room is
 never framed, never cut, never bought as a box; it carries the finishes (§5).
 
+**Draw → Room snaps its edges to wall faces** through the flush snap M2 already has, so a room
+dragged or typed inside four walls lands exactly on their inside faces; the rule below has no
+tolerance, and a room that misses a wall by 1/1024" reads "not bounded by Wall 2 — snap it to the
+wall" in the panel (risk §12.4's stance). A room is a rectangle the person draws, never something
+napkin finds from the walls around it (§1.2, §13.11).
+
 A wall **bounds** a room when one of the wall's long faces lies on the line of a room edge and the
 wall's extent along that edge overlaps the edge's extent. The bounding walls' openings whose extent
 along the edge lies within the room's edge are the room's openings. A room with no bounding wall
@@ -389,7 +395,8 @@ Nothing else moves. No new window, no wizard.
 2. Select all four; Part panel: Side exterior, Bearing no, Header (2) 2x6.
 3. **Draw → Door** on the south wall; type 3'-0" on its label; Depth 6'-8". **Draw → Window** on
    the west wall; 3'-0", Depth 2'-0", Up 4'-0".
-4. **Shift+W**, click inside, type 14'-0" and 12'-0"; Depth 8'-0". Tick drywall, insulation,
+4. **Shift+W**, click inside, type 14'-0" and 12'-0"; the room snaps to the four inside faces
+   (the panel names all four bounding walls); Depth 8'-0". Tick drywall, insulation,
    paint, flooring, baseboard; type 4' × 8', 40, 2, 350, 20, 8'-0".
 5. **Shift+N** four times: "outlet"; once "switch"; once "light".
 6. **Ctrl+Shift+L**: the Framing section (§10.2), Area takeoff (§10.2), Notes line; no Demolition.
@@ -617,3 +624,8 @@ Each in plain words, with the default I recommend, so a "yes" is enough.
 10. **Corners: draw them clean, but do not add corner studs to the count?** Recommended: yes for
     now; the extra corner and blocking pieces are a small follow-up once a real framing text is
     read for them.
+11. **A room is a rectangle you draw, not something napkin works out from the walls around it?**
+    Recommended: draw it — it snaps to the walls' inside faces, and napkin then knows which walls
+    and openings belong to it. Working rooms out from the walls would need napkin to understand how
+    walls connect up, which this note deliberately keeps out (§1.2), and it would give the same
+    answer for any room a DIY sketch has.
