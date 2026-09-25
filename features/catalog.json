@@ -1010,6 +1010,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-SKETCH-02",
+      "area": "ui",
+      "title": "Firm up a rough bench and read its cut list",
+      "acceptance": "With the quick bench sketched rough, F opens Firm up listing its four contacts, four stock lines and four size lines, all ticked; untick one relationship with the pointer and press Enter: three Flushes land, every part is firm and cut from its nearest stock, in one undo step; Ctrl+Z makes all four rough again with nothing stated; Ctrl+Y; the cut list opened from the menu has no rough row and the rows worked out by hand.",
+      "milestone": "M7",
+      "issue": 178,
+      "kind": "workflow"
+    },
+    {
       "id": "ACC-001",
       "area": "ui",
       "title": "The canvas exposes one automation element per part",

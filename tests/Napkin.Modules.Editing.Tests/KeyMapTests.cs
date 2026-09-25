@@ -51,6 +51,7 @@ public class KeyMapTests
         { KeyName.J, None, EditCommand.Join },
         { KeyName.J, Shift, EditCommand.JoinAll },
         { KeyName.Q, None, EditCommand.ToggleRough },
+        { KeyName.F, None, EditCommand.FirmUp },
         { KeyName.X, None, EditCommand.TurnX },
         { KeyName.X, Shift, EditCommand.TurnXBack },
         { KeyName.Y, None, EditCommand.TurnY },

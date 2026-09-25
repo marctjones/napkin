@@ -48,6 +48,9 @@ public enum EditCommand
     /// <summary>Switch between Rough and Precise entry (docs/design/sketch-mode.md &#xA7;1.1).</summary>
     ToggleRough,
 
+    /// <summary>Firm up the selection, or every part: proposed relationships, stock and sizes (docs/design/sketch-mode.md &#xA7;3).</summary>
+    FirmUp,
+
     /// <summary>A quarter turn of the selection about X.</summary>
     TurnX,
 
@@ -333,6 +336,7 @@ public static class KeyMaps
             new(K(KeyName.J), EditCommand.Join),
             new(Shift(KeyName.J), EditCommand.JoinAll),
             new(K(KeyName.Q), EditCommand.ToggleRough),
+            new(K(KeyName.F), EditCommand.FirmUp),
             new(K(KeyName.X), EditCommand.TurnX),
             new(Shift(KeyName.X), EditCommand.TurnXBack),
             new(K(KeyName.Y), EditCommand.TurnY),
@@ -367,6 +371,7 @@ public static class KeyMaps
             [EditCommand.Delete] = "Delete the selected joint, or the selection",
             [EditCommand.Join] = "Join the two selected parts",
             [EditCommand.JoinAll] = "Join every pair of touching parts",
+            [EditCommand.FirmUp] = "Firm up the selection, or every part: the relationships touching parts imply, the nearest stock, the drawn sizes stated",
             [EditCommand.ToggleRough] = "Rough sketching on or off: big round steps, nothing stated, rectangles drawn as planks",
             [EditCommand.TurnX] = "Turn the selection about X (while placing stock in 3D: turn what is held)",
             [EditCommand.TurnXBack] = "Turn about X the other way",
