@@ -43,6 +43,20 @@ public sealed class UndoHistory
     public int RedoCount => _redo.Count;
 
     /// <summary>
+    /// The Undo menu item's header for what <paramref name="what"/> describes, or "_Undo" alone
+    /// when there is nothing (#179). An underscore in the description is doubled so the menu shows
+    /// it rather than taking it as an access key.
+    /// </summary>
+    public static string UndoMenuHeader(string? what) =>
+        what is null ? "_Undo" : $"_Undo {EscapedForMenu(what)}";
+
+    /// <summary>The Redo menu item's header for what <paramref name="what"/> describes (#179).</summary>
+    public static string RedoMenuHeader(string? what) =>
+        what is null ? "_Redo" : $"_Redo {EscapedForMenu(what)}";
+
+    static string EscapedForMenu(string text) => text.Replace("_", "__", StringComparison.Ordinal);
+
+    /// <summary>
     /// Records a gesture that just ended. Anything that had been undone can no longer be redone:
     /// the drawing has gone a different way from it.
     /// </summary>

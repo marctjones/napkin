@@ -42,9 +42,9 @@ public class EditHistoryWorkflows
         app.Expect("the Edit menu offers to undo the drawing, and nothing to redo", () =>
         {
             Assert.True(window.UndoMenuEntry.IsEnabled);
-            Assert.Equal("_Undo Drew a part", window.UndoMenuEntry.Header);
+            Assert.Equal(UndoHistory.UndoMenuHeader("Drew a part"), window.UndoMenuEntry.Header);
             Assert.False(window.RedoMenuEntry.IsEnabled);
-            Assert.Equal("_Redo", window.RedoMenuEntry.Header);
+            Assert.Equal(UndoHistory.RedoMenuHeader(null), window.RedoMenuEntry.Header);
         });
 
         // The undo key typed into a dimension field is the field's: it edits the text, and the
@@ -93,7 +93,7 @@ public class EditHistoryWorkflows
             Assert.Equal(Length.Inches(15).Units, Part(window, id).Height.Units);
             Assert.Equal(id, window.Editor.OnlySelected);
             Assert.Equal(6, window.Editor.History.UndoCount);
-            Assert.StartsWith("_Undo Moved", (string)window.UndoMenuEntry.Header!, StringComparison.Ordinal);
+            Assert.StartsWith(UndoHistory.UndoMenuHeader("Moved"), (string)window.UndoMenuEntry.Header!, StringComparison.Ordinal);
         });
 
         // Five undos: four on the keyboard, one from the Edit menu with the pointer.
@@ -115,10 +115,10 @@ public class EditHistoryWorkflows
         {
             Assert.Same(states[0], window.CurrentDesign);
             Assert.Equal(id, window.Editor.OnlySelected);
-            Assert.Equal("_Undo Drew a part", window.UndoMenuEntry.Header);
+            Assert.Equal(UndoHistory.UndoMenuHeader("Drew a part"), window.UndoMenuEntry.Header);
             Assert.True(window.RedoMenuEntry.IsEnabled);
-            Assert.StartsWith("_Redo Moved", (string)window.RedoMenuEntry.Header!, StringComparison.Ordinal);
-            Assert.Equal("Undone: Moved Part 1.", window.MessageOnScreen);
+            Assert.StartsWith(UndoHistory.RedoMenuHeader("Moved"), (string)window.RedoMenuEntry.Header!, StringComparison.Ordinal);
+            Assert.Equal(DesignEditor.UndoneText("Moved Part 1"), window.MessageOnScreen);
         });
 
         // Five redos, on the platform's own redo key and once from the menu.
@@ -152,7 +152,7 @@ public class EditHistoryWorkflows
             Assert.Same(states[5], window.CurrentDesign);
             Assert.Equal(id, window.Editor.OnlySelected);
             Assert.False(window.RedoMenuEntry.IsEnabled);
-            Assert.Equal("_Redo", window.RedoMenuEntry.Header);
+            Assert.Equal(UndoHistory.RedoMenuHeader(null), window.RedoMenuEntry.Header);
         });
 
         app.SaveFrame("redone");

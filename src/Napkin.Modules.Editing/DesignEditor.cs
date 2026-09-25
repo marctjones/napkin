@@ -49,6 +49,15 @@ public sealed record GestureCommitted(string What, Design Before, Design After);
 /// </remarks>
 public sealed class DesignEditor
 {
+    /// <summary>What <see cref="Undo"/> says when it puts a gesture back, so the sentence is not
+    /// copied wherever it is checked (#179).</summary>
+    /// <param name="what">The gesture's own description, e.g. "Moved Part 1".</param>
+    public static string UndoneText(string what) => $"Undone: {what}.";
+
+    /// <summary>What <see cref="Redo"/> says when it puts a gesture forward again (#179).</summary>
+    /// <param name="what">The gesture's own description, e.g. "Moved Part 1".</param>
+    public static string RedoneText(string what) => $"Redone: {what}.";
+
     readonly IGeometryUpdater _updater;
     Design _design;
     ImmutableHashSet<EntityId> _selection = [];
@@ -418,7 +427,7 @@ public sealed class DesignEditor
         }
 
         Restore(gesture.Before);
-        Say(EditSeverity.Done, $"Undone: {gesture.What}.");
+        Say(EditSeverity.Done, UndoneText(gesture.What));
         return true;
     }
 
@@ -438,7 +447,7 @@ public sealed class DesignEditor
         }
 
         Restore(gesture.After);
-        Say(EditSeverity.Done, $"Redone: {gesture.What}.");
+        Say(EditSeverity.Done, RedoneText(gesture.What));
         return true;
     }
 

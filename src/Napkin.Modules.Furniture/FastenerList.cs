@@ -79,6 +79,12 @@ public sealed record FastenerRow(
 /// </summary>
 public static class FastenerList
 {
+    /// <summary>
+    /// The fixed core of what the stock toolbox says about a fastener it cannot arm to draw with
+    /// (#179): napkin counts and lists fasteners, but never places one on the drawing.
+    /// </summary>
+    public const string NotPlacedOnDrawing = "napkin does not place fasteners on the drawing yet";
+
     /// <summary>The typed choice for a kind of fastener in a thickness, or null when nothing is typed.</summary>
     /// <param name="sketch">The design.</param>
     /// <param name="kind">The fastener.</param>

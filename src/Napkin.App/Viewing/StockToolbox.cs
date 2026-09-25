@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Path = Avalonia.Controls.Shapes.Path;
 using Napkin.Core.Materials;
+using Napkin.Modules.Furniture;
 
 namespace Napkin.App.Viewing;
 
@@ -249,7 +250,7 @@ public sealed class StockToolbox : Border
         _caption.Text = category switch
         {
             null => "Pick a category.",
-            StockCategory.Fastener => "Listed for their sizes. napkin does not place fasteners on the drawing yet.",
+            StockCategory.Fastener => $"Listed for their sizes. {FastenerList.NotPlacedOnDrawing}.",
             { } drawer => $"{Words(drawer)} — {_itemButtons.Count} sizes",
         };
 

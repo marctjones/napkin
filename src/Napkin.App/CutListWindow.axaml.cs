@@ -460,7 +460,7 @@ public partial class CutListWindow : Window
               + "thickness and told which of its three dimensions the drawing is showing; a wall "
               + "and an opening are boxes nobody cuts, and they stay off this list; a wall's framing is on the "
               + "shopping list's tab."
-            : "This design has nothing in it to cut.";
+            : CutList.NothingToCut;
     }
 
     /// <summary>The code check in one line per opening, with the code it is checked against (#18).</summary>

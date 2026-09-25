@@ -11,6 +11,7 @@ using Napkin.Core.Materials;
 
 using Xunit;
 using Napkin.Modules.Editing;
+using Napkin.Modules.Furniture;
 
 namespace Napkin.App.GuiTests.Workflows;
 
@@ -194,8 +195,8 @@ public class StockToolboxWorkflows
         {
             Assert.Null(window.Canvas.ArmedStock);
             Assert.Equal(EditTool.Select, window.Canvas.Tool);
-            Assert.Contains("does not place fasteners", window.MessageOnScreen, StringComparison.Ordinal);
-            Assert.Contains("does not place fasteners", window.Toolbox.CaptionText, StringComparison.Ordinal);
+            Assert.Contains(FastenerList.NotPlacedOnDrawing, window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Contains(FastenerList.NotPlacedOnDrawing, window.Toolbox.CaptionText, StringComparison.Ordinal);
         });
 
         // Pick the 2x4 up again and put it down with Escape: nothing is placed.
@@ -343,7 +344,7 @@ public class StockToolboxWorkflows
             Assert.Null(window.Canvas.ArmedStock);
             Assert.Equal(EditTool.Select, window.Canvas.Tool);
             Assert.Equal(StockCategory.Fastener, window.Toolbox.Category);
-            Assert.Contains("does not place fasteners", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Contains(FastenerList.NotPlacedOnDrawing, window.MessageOnScreen, StringComparison.Ordinal);
             Assert.Equal(2, window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Count());
         });
 

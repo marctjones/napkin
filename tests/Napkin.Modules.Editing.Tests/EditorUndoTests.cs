@@ -208,4 +208,18 @@ public class EditorUndoTests
         editor.Apply(Drag.InPlan(EditingBuilder.Id(0), new Vector2(Length.Inches(-5), Length.Zero)), "Moved Part 1");
         Assert.False(editor.HasUnsavedChanges);
     }
+
+    [Fact]
+    [Trait("Feature", "CVS-009")]
+    public void The_undo_and_redo_menu_headers_say_nothing_is_there_or_double_an_underscore()
+    {
+        Assert.Equal("_Undo", UndoHistory.UndoMenuHeader(null));
+        Assert.Equal("_Redo", UndoHistory.RedoMenuHeader(null));
+        Assert.Equal("_Undo Moved Part 1", UndoHistory.UndoMenuHeader("Moved Part 1"));
+        Assert.Equal("_Redo Moved Part 1", UndoHistory.RedoMenuHeader("Moved Part 1"));
+
+        // A part named with an underscore is doubled, so the menu shows the character rather than
+        // treating it as an access-key marker.
+        Assert.Equal("_Undo Renamed A__B to A__B__C", UndoHistory.UndoMenuHeader("Renamed A_B to A_B_C"));
+    }
 }

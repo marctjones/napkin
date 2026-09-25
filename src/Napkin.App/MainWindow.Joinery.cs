@@ -183,7 +183,7 @@ public partial class MainWindow
         Box[] boxes = SelectionCommands.SelectedBoxes(Editor);
         if (boxes.Length < 2)
         {
-            Editor.Say(EditSeverity.Problem, "Select the two parts to join first, then press J.");
+            Editor.Say(EditSeverity.Problem, JointDescription.SelectTwoPartsPrompt);
             return;
         }
 

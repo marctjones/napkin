@@ -34,6 +34,9 @@ public static class JointDescription
     /// <summary>What the row says when one of its parts' joints no longer holds (&#xA7;6.4).</summary>
     public const string NotSatisfied = "joint not satisfied";
 
+    /// <summary>What pressing J says when fewer than two parts are selected to join (#179).</summary>
+    public const string SelectTwoPartsPrompt = "Select the two parts to join first, then press J.";
+
     /// <summary>
     /// The centre of everything drawn: the middle of the extent of all the sketch's boxes and this
     /// one. Which of an apron's two long faces is its inside is the one nearer it (&#xA7;6.2).

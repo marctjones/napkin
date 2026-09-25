@@ -59,6 +59,25 @@ public sealed record Design(
     public string? LabelFor(EntityId id) => Sketch.Find(id)?.Name is { Length: > 0 } name
         ? name
         : Labels.TryGetValue(id, out string? label) ? label : null;
+
+    /// <summary>
+    /// The window title for a document called <paramref name="documentName"/> (#179): "napkin —
+    /// " and the name, with a trailing "*" while there are unsaved changes.
+    /// </summary>
+    public static string WindowTitle(string documentName, bool hasUnsavedChanges) =>
+        hasUnsavedChanges ? $"napkin — {documentName}*" : $"napkin — {documentName}";
+
+    /// <summary>
+    /// The question asked before an unsaved document is put at risk (#179): save
+    /// <paramref name="documentName"/> before <paramref name="doing"/>, e.g. "starting a new
+    /// sheet" or "opening another drawing"?
+    /// </summary>
+    public static string SaveBeforeQuestion(string documentName, string doing) =>
+        $"Save the changes to {documentName} before {doing}?";
+
+    /// <summary>What Cancel says after <see cref="SaveBeforeQuestion"/>: neither branch was taken,
+    /// so the document is exactly as it was (#179).</summary>
+    public const string SaveQuestionCancelled = "Nothing was saved and nothing was thrown away.";
 }
 
 /// <summary>Something the viewer can open.</summary>

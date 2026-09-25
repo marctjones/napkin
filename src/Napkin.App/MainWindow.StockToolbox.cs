@@ -85,7 +85,7 @@ public partial class MainWindow
             {
                 Editor.Say(
                     EditSeverity.Hint,
-                    $"{item.HoverText}. napkin does not place fasteners on the drawing yet, so there is nothing to place.");
+                    $"{item.HoverText}. {FastenerList.NotPlacedOnDrawing}, so there is nothing to place.");
             }
 
             UpdateToolButtons();
@@ -103,7 +103,7 @@ public partial class MainWindow
         {
             Editor.Say(
                 EditSeverity.Hint,
-                $"{item.HoverText}. napkin does not place fasteners on the drawing yet, so there is nothing to drag.");
+                $"{item.HoverText}. {FastenerList.NotPlacedOnDrawing}, so there is nothing to drag.");
         }
 
         FocusDrawing();
