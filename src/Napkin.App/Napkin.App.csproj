@@ -19,9 +19,6 @@
     <ProjectReference Include="..\Napkin.Core.Geometry\Napkin.Core.Geometry.csproj" />
     <ProjectReference Include="..\Napkin.Modules.Furniture\Napkin.Modules.Furniture.csproj" />
     <ProjectReference Include="..\Napkin.Modules.Building\Napkin.Modules.Building.csproj" />
-    <ProjectReference Include="..\Napkin.Interop.Dxf\Napkin.Interop.Dxf.csproj" />
-    <ProjectReference Include="..\Napkin.Interop.SketchUp\Napkin.Interop.SketchUp.csproj" />
-    <ProjectReference Include="..\Napkin.Interop.Pdf\Napkin.Interop.Pdf.csproj" />
     <ProjectReference Include="..\Napkin.Core.Project\Napkin.Core.Project.csproj" />
   </ItemGroup>
 
