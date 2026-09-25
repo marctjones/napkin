@@ -79,6 +79,16 @@ public sealed record FastenerRow(
 /// </summary>
 public static class FastenerList
 {
+    /// <summary>The typed choice for a kind of fastener in a thickness, or null when nothing is typed.</summary>
+    /// <param name="sketch">The design.</param>
+    /// <param name="kind">The fastener.</param>
+    /// <param name="thickness">The inserted part's thickness, or null for a kind that does not depend on it.</param>
+    public static FastenerChoice? ChoiceFor(Sketch sketch, FastenerKind kind, Length? thickness)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        return sketch.FastenerChoices.FirstOrDefault(choice => choice.Kind == kind && choice.Thickness == thickness);
+    }
+
     /// <summary>The list, by kind then thickness descending.</summary>
     /// <param name="sketch">The design.</param>
     public static ImmutableArray<FastenerRow> Of(Sketch sketch)
@@ -117,7 +127,7 @@ public static class FastenerList
                 .Select(line =>
                 {
                     Length? thickness = line.Key.Thickness is { } units ? new Length(units) : null;
-                    FastenerChoice? choice = sketch.FastenerChoices.FirstOrDefault(c => c.Kind == line.Key.Kind && c.Thickness == thickness);
+                    FastenerChoice? choice = ChoiceFor(sketch, line.Key.Kind, thickness);
                     return new FastenerRow(
                         line.Key.Kind,
                         thickness,

@@ -1071,6 +1071,15 @@
       "milestone": "M3",
       "issue": 149,
       "kind": "unit"
+    },
+    {
+      "id": "CUT-014",
+      "area": "furniture",
+      "title": "A joint reads as one sentence: type, parts, depth, fasteners with their typed size, glue",
+      "acceptance": "Rabbet, Drawer side, left, A from Drawer box front, A: 1/4 deep, 1/2 wide, 3 brads with the chosen size or size not chosen, glue; parts that no longer touch say so and drop the recipe count.",
+      "milestone": "M3",
+      "issue": 149,
+      "kind": "unit"
     }
   ]
 }
