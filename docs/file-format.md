@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 9
+# The napkin project file — container version 1, scene format version 10
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -25,7 +25,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 8` and nothing else. A file from an older *or* a
+   `"containerVersion": 1` and `"formatVersion": 10` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
@@ -200,7 +200,7 @@ Two places where the bytes legitimately differ:
 
 ```json
 {
-  "formatVersion": 8,
+  "formatVersion": 10,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ … ],
   "entities": [ … ],
@@ -214,7 +214,7 @@ Two places where the bytes legitimately differ:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `formatVersion` | integer | Exactly `7`. Judged before anything else is read. |
+| `formatVersion` | integer | Exactly `10`. Judged before anything else is read. |
 | `units` | object | `length` is exactly `"inch/1024"`, `angle` is exactly `"arcsecond"`. The unit is named in the file so that a reader never has to assume one. |
 | `layers` | array | Every layer, in the order the UI shows them. |
 | `entities` | array | Every entity, in any order; ids may be referred to before they appear. |
@@ -244,8 +244,11 @@ layer the file defines.
 
 ### Entities
 
-Every entity has `id`, `type`, `layer` and `name`. `type` is one of `box`, `dimension`, `node`,
-`segment`.
+Every entity has `id`, `type`, `layer`, `name` and `phase`. `type` is one of `box`, `dimension`,
+`node`, `note`, `segment`. `phase` is `existing`, `new` or `demolish` (format version 10,
+[`renovation-sketches.md`](./design/renovation-sketches.md) §6.1): what is already there, what is
+going in, and what is coming out; anything else, or the field missing, is refused. The lists buy
+only `new`; every check runs on the building as it will be (existing and new).
 
 ```json
 { "id": "…", "type": "box", "layer": "…", "name": "Leg, south-west",
@@ -255,8 +258,14 @@ Every entity has `id`, `type`, `layer` and `name`. `type` is one of `box`, `dime
   "part": { "stock": null, "species": null, "quantity": 1,
             "planAxes": { "x": "width", "y": "thickness" } },
   "wall": null,
+  "room": null,
   "cuts": [] }
 ```
+
+A **note** (format version 10) is words at a point, counted on the shopping list and never
+modelled: `{ "id", "type": "note", "layer", "name", "phase", "position": { "x", "y" }, "text":
+text, "symbol": "none" | "outlet" | "switch" | "light" | "supply" | "drain" }`. `text` may be empty
+only when `symbol` is not `none`. A note has no size and no relationships.
 
 | `type` | Fields |
 |---|---|
@@ -540,8 +549,10 @@ None of these texts is napkin data: they are what the builder typed.
 Format version 6 (issues #18 and #19; [`building.md`](./building.md), [`rules-engine.md`](./rules-engine.md));
 version 7 added `site.roofLiveLoad` (a header table's footnote may ask for it: Connecticut's 30 psf
 rule, [`rules-engine.md`](./rules-engine.md)); version 8 added `wall.bracing`, the bracing
-method assigned to each segment of a wall line (#39, [`building.md`](./building.md)). A version-7
-file is refused, with no converter.
+method assigned to each segment of a wall line (#39, [`building.md`](./building.md)); version 10
+added the wall's `side`, `bearing` and typed `header`, and `room` on every box
+([`renovation-sketches.md`](./design/renovation-sketches.md) §7). An older file is refused, with
+no converter.
 What a person enters for the code check. None of it is napkin data and none of it is ever
 defaulted: `null` means "not entered", and the check says which input it is missing.
 
@@ -553,8 +564,9 @@ defaulted: `null` means "not entered", and the check says which input it is miss
 ```
 
 and on a box that is a wall: `"wall": { "supports": "roof-ceiling", "studSpacing": 16384,
-"bracing": [ { "from": null, "to": "<an opening's id>", "method": "some-method" } ] }` (the values
-are illustrations of the shape, not code data).
+"bracing": [ { "from": null, "to": "<an opening's id>", "method": "some-method" } ], "side":
+"exterior", "bearing": true, "header": null }` (the values are illustrations of the shape, not code
+data).
 
 | Field | Type | Refused when |
 |---|---|---|
@@ -570,7 +582,11 @@ are illustrations of the shape, not code data).
 | `site.buildingWidth` | a length, or `null` | 0 or negative |
 | `site.roofLiveLoad` | whole psf, or `null`; asked for only when a table's footnote needs it | negative, or not an integer |
 | `site.source` | `{ "text": text, "on": yyyy-MM-dd or null }` — where the values came from — or `null` | a missing field |
-| `wall` (on a box) | `null`, or `{ "supports": text or null, "studSpacing": length or null, "bracing": array or null }` | all three `null` (write `"wall": null`), empty `supports`, a spacing of 0 or less |
+| `wall` (on a box) | `null`, or `{ "supports": text or null, "studSpacing": length or null, "bracing": array or null, "side", "bearing", "header" }` | all six `null` (write `"wall": null`), empty `supports`, a spacing of 0 or less |
+| `wall.side` | `exterior`, `interior` or `null` (not said): which header table the check asks, and "insulation on exterior walls" | any other text |
+| `wall.bearing` | `true`, `false` or `null` (not said): only a bearing wall's headers are code-checked | not a boolean or `null` |
+| `wall.header` | `null`, or `{ "plies": 1–3, "lumber": text }`: the header the person chose for every opening of a not-bearing wall — their choice, never a code result; the lumber is not checked against the library | plies outside 1–3, empty lumber, an unknown field |
+| `room` (on a box) | `null`, or the room's finishes and measurements, below | a room on a box whose `part` or `wall` is not `null`; any field below refused |
 | `wall.bracing` | `null`, or a non-empty array of `{ "from": id or null, "to": id or null, "method": text }`: the method assigned to the segment that starts after opening `from` (null: the wall's start) and ends before opening `to` (null: the wall's end) | `[]` (write `null`), an empty `method`, `from` equal to a non-null `to`, the same segment twice, an id that is not a GUID |
 
 `supports` is one of the values the adopted code's header table declares; it is not checked
@@ -582,6 +598,30 @@ deleted keep a method they shared, and undo put the opening back
 ([`building.md`](./building.md#wall-bracing)). Assignments are rewritten for the current segments
 whenever a method is chosen on the wall. Every field is written, every time.
 
+**A room** (format version 10) is a box on the layer Room: its plan width and height are the
+inside length and width, its depth the ceiling height. Its `room` carries the finishes the person
+ticked and the values they typed from the packages — napkin defaults none of them, except the
+flooring waste allowance, napkin's own 10 % ([`renovation-sketches.md`](./design/renovation-sketches.md) §5):
+
+```json
+"room": { "drywall": "walls-and-ceiling", "sheet": { "width": 49152, "length": 98304 },
+          "insulation": "exterior", "insulationBy": "area", "insulationCoverage": 40,
+          "paint": "walls-and-ceiling", "paintCoats": 2, "paintCoverage": 350,
+          "flooring": true, "flooringWaste": 10, "flooringBox": 20,
+          "baseboard": true, "baseboardStick": 98304,
+          "measured": { "south": null, "north": null, "east": null, "west": null,
+                        "diagonal1": null, "diagonal2": null } }
+```
+
+(The values show the shape; they are a builder's typed choices, not data.) `drywall` and `paint`
+are `walls-and-ceiling`, `walls` or `none`; `insulation` is `exterior`, `all` or `none`;
+`insulationBy` is `area` or `bays`. The coverages (`insulationCoverage`, `paintCoverage` in square
+feet per gallon, `flooringBox`) are whole square feet greater than zero, or `null` when not typed;
+`paintCoats` is at least 1 or `null`; `flooringWaste` is a whole percent, 0 or more; `sheet` is
+`null` or two lengths greater than zero; `baseboardStick` and every `measured` length are greater
+than zero or `null`. An unknown text, a zero or negative coverage or length, or an unknown field is
+refused.
+
 ## An annotated example
 
 A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
@@ -589,7 +629,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 ```jsonc
 {
-  "formatVersion": 8,                                  // exactly 8, judged first
+  "formatVersion": 10,                                 // exactly 10, judged first
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
   "entities": [
@@ -599,23 +639,23 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
     // part is null — which is a statement, not an omission — and nothing has been cut off it,
     // which "cuts": [] says the same way.
     { "id": "30000000-0000-4000-8000-000000000001", "type": "box",
-      "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall",
+      "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall", "phase": "new",
       "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 147456, "height": 5632, "depth": 768,
       "faceUp": "top", "rotation": 0,
-      "part": null, "wall": null, "cuts": [] },
+      "part": null, "wall": null, "room": null, "cuts": [] },
 
     // The opening: 36" = 36864 units wide, the full thickness of the wall, starting 54" along.
     // Its anchor z would be its sill and its depth its height — placeholders here, like the wall's.
     { "id": "30000000-0000-4000-8000-000000000002", "type": "box",
-      "layer": "00000000-0000-0000-0000-000000000001", "name": "Opening",
+      "layer": "00000000-0000-0000-0000-000000000001", "name": "Opening", "phase": "new",
       "anchor": { "x": 55296, "y": 0, "z": 0 }, "width": 36864, "height": 5632, "depth": 768,
       "faceUp": "top", "rotation": 0,
-      "part": null, "wall": null, "cuts": [] },
+      "part": null, "wall": null, "room": null, "cuts": [] },
 
     // A driving dimension: the relationship named in "drives" owns the number 147456; this
     // annotation draws it, as 12'-0".
     { "id": "30000000-0000-4000-8000-000000000003", "type": "dimension",
-      "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall length",
+      "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall length", "phase": "new",
       "measures": { "kind": "boxWidth", "box": "30000000-0000-4000-8000-000000000001" },
       "drives": "40000000-0000-4000-8000-000000000002",
       "placement": { "offset": 12288, "side": "south" } },
@@ -624,7 +664,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
     // owns nothing, so "drives" is null. It reads 4'-6". Each end is the edge where a box's south
     // and west faces meet: on a box lying as drawn, the plan's south-west corner.
     { "id": "30000000-0000-4000-8000-000000000006", "type": "dimension",
-      "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall west end to opening",
+      "layer": "00000000-0000-0000-0000-000000000001", "name": "Wall west end to opening", "phase": "new",
       "measures": { "kind": "axis",
         "from": { "kind": "feature", "box": "30000000-0000-4000-8000-000000000001", "faces": ["south", "west"] },
         "to":   { "kind": "feature", "box": "30000000-0000-4000-8000-000000000002", "faces": ["south", "west"] },

@@ -444,6 +444,7 @@
                                    FontFamily="{DynamicResource SeFontMono}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,12,0"
+                                   TextTrimming="CharacterEllipsis"
                                    AutomationProperties.Name="Phase of the selection" />
                         <TextBlock Name="DesignText"
                                    Grid.Column="3"

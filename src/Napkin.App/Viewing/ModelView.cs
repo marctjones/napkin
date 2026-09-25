@@ -1903,7 +1903,7 @@ public sealed class ModelView : Control
 
     void DrawPolygon(DrawingContext context, CanvasPalette palette, EntityStyle style, ScenePolygon polygon)
     {
-        // Existing is ghosted, demolish long-dashed with a cross on its top face (renovation §6.4).
+        // Existing is ghosted, demolish long-dashed and crossed (renovation §6.4).
         Phase phase = _editor?.Sketch.Find(polygon.Box)?.Phase ?? Phase.New;
         using DrawingContext.PushedState? ghost = phase == Phase.Existing ? context.PushOpacity(CanvasView.ExistingOpacity) : null;
         bool demolish = phase == Phase.Demolish;
@@ -1921,7 +1921,8 @@ public sealed class ModelView : Control
         }
 
         DrawEdges(context, pen, polygon, demolish ? SketchLine.Clean : palette.Look.Line, style);
-        if (demolish && polygon.Of == BoxFace.Top && polygon.Points.Length == 4)
+        // Crossed out on every face it shows, not only the top: a wall's top is a sliver.
+        if (demolish && polygon.Points.Length == 4)
         {
             Pen cross = new(new SolidColorBrush(style.Stroke), Math.Min(style.StrokeThickness, 1.2));
             context.DrawLine(cross, _camera.Project(polygon.Points[0]), _camera.Project(polygon.Points[2]));
