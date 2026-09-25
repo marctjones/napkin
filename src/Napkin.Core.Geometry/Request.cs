@@ -84,6 +84,14 @@ public sealed record SetName(EntityId Id, string Name) : Request;
 /// <param name="Part">What it is a piece of, or <see langword="null"/> to make it a plain box again.</param>
 public sealed record SetPart(EntityId Box, Part? Part) : Request;
 
+/// <summary>Replaces the project's typed fastener sizes (joinery note &#xA7;7.3). Exact, moves nothing.</summary>
+/// <param name="Choices">All the choices, as the person now has them.</param>
+public sealed record SetFastenerChoices(System.Collections.Immutable.ImmutableList<FastenerChoice> Choices) : Request;
+
+/// <summary>Replaces the project's typed supplies checklist (joinery note &#xA7;8). Exact, moves nothing.</summary>
+/// <param name="Supplies">All the lines, as the person now has them.</param>
+public sealed record SetSupplies(System.Collections.Immutable.ImmutableList<SupplyLine> Supplies) : Request;
+
 /// <summary>
 /// Sets the number a driving relationship owns — what editing a driving dimension is. Exact.
 /// </summary>
