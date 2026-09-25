@@ -178,10 +178,13 @@ public sealed class CutFormatTests
         // as a sketch that no longer equals it. Refusing keeps Load(Save(s)) == s true, the same
         // stance the format takes on an un-normalised rotation.
         LoadProblem problem = Scenes.RefuseWith(
+            // "\n", not Environment.NewLine: EveryKindOfCut is a raw string literal, and
+            // .gitattributes (#3) now guarantees *.cs is checked out LF on every platform, so its
+            // embedded line endings are always "\n" — never Windows's "\r\n".
             EveryKindOfCut.With(
-                "{ \"kind\": \"roundedCorner\", \"corner\": \"southWest\", \"radius\": 1024 }," + Environment.NewLine
+                "{ \"kind\": \"roundedCorner\", \"corner\": \"southWest\", \"radius\": 1024 },\n"
                 + "        { \"kind\": \"cornerCut\", \"corner\": \"southEast\", \"alongX\": 3072, \"alongY\": 5120 },",
-                "{ \"kind\": \"cornerCut\", \"corner\": \"southEast\", \"alongX\": 3072, \"alongY\": 5120 }," + Environment.NewLine
+                "{ \"kind\": \"cornerCut\", \"corner\": \"southEast\", \"alongX\": 3072, \"alongY\": 5120 },\n"
                 + "        { \"kind\": \"roundedCorner\", \"corner\": \"southWest\", \"radius\": 1024 },"),
             LoadProblemKind.InvalidValue,
             "site order",
