@@ -2,12 +2,12 @@ using Avalonia;
 using Avalonia.Automation.Peers;
 using Avalonia.Automation.Provider;
 using Avalonia.Controls;
-using Napkin.App.Designs;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Xunit;
-using Design = Napkin.App.Designs.Design;
+using Napkin.Modules.Editing;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App.GuiTests.Unit;
 

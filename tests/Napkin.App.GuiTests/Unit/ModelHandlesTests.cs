@@ -34,7 +34,7 @@ public class ModelHandlesTests
         Box block = new(EntityId.New(), LayerId.Default, Point3.Inches(10, 20, 30), Length.Inches(40), Length.Inches(3, 1, 2), Length.Inches(0, 3, 4), faceUp, Angle.Right * quarters);
         Camera camera = FittedTo(block);
 
-        (Point3 low, Point3 high) = Napkin.App.Editing.SpaceSnapResolver.Extent(block);
+        (Point3 low, Point3 high) = Napkin.Modules.Editing.SpaceSnapResolver.Extent(block);
         Point middle = camera.Project((Vector3d.From(low) + Vector3d.From(high)) / 2);
 
         Assert.All(

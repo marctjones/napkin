@@ -2,7 +2,7 @@ using Napkin.App.Designs;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Xunit;
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App.GuiTests.Unit;
 

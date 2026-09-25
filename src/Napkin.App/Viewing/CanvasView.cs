@@ -5,12 +5,12 @@ using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
-using Napkin.App.Designs;
 using Napkin.App.Editing;
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
 using Napkin.Modules.Building;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.Viewing;
 

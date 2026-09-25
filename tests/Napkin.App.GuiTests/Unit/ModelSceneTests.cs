@@ -272,7 +272,7 @@ public class ModelSceneTests
         Box box = new(EntityId.New(), Layer, Point3.Inches(2, 3, 4), Length.Inches(5), Length.Inches(6), Length.Inches(7), faceUp, Angle.Right);
 
         // Straight down on the box's middle: whatever is up is what the ray enters.
-        (Point3 low, Point3 high) = Napkin.App.Editing.SpaceSnapResolver.Extent(box);
+        (Point3 low, Point3 high) = Napkin.Modules.Editing.SpaceSnapResolver.Extent(box);
         Vector3d over = (Vector3d.From(low) + Vector3d.From(high)) / 2 + new Vector3d(0, 0, 100);
 
         (double distance, BoxFace face) = ModelPicker.SlabEntry(box, over, new Vector3d(0, 0, -1))!.Value;

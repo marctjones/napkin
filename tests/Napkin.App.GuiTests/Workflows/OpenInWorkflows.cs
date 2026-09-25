@@ -1,11 +1,11 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 
-using Napkin.App.Designs;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Settings;
 
 using Xunit;
+using Napkin.Modules.Editing;
 
 using static Napkin.App.GuiTests.Workflows.AssemblyWorkflows;
 

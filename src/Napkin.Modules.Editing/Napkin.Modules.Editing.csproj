@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The Avalonia-free editing model (issue #166): the design editor, undo, snapping, dimension
+       entry and the drawing tools. It sits among the Modules, not Core, because the tools place
+       Furniture and Building parts; Napkin.App is the shell that drives it. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Napkin.Core.Geometry\Napkin.Core.Geometry.csproj" />
+    <ProjectReference Include="..\Napkin.Core.Materials\Napkin.Core.Materials.csproj" />
+    <ProjectReference Include="..\Napkin.Modules.Furniture\Napkin.Modules.Furniture.csproj" />
+    <ProjectReference Include="..\Napkin.Modules.Building\Napkin.Modules.Building.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -9,7 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Napkin.App.Designs;
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 using Napkin.App.Editing;
 using Napkin.App.Settings;
 using Napkin.App.Viewing;
@@ -18,6 +18,7 @@ using Napkin.Core.Materials;
 using Napkin.Core.Project;
 using Napkin.Modules.Building;
 using Napkin.Modules.Furniture;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App;
 

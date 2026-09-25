@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.Editing;
 

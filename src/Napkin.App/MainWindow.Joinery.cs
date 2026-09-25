@@ -9,10 +9,10 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 
-using Napkin.App.Editing;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Modules.Furniture;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App;
 

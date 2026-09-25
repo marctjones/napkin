@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using System.Globalization;
-using Napkin.App.Editing;
 using Napkin.Core.Geometry;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.Viewing;
 

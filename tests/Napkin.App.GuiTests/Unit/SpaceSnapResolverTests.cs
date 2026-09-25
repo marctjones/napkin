@@ -1,8 +1,8 @@
 using Avalonia;
-using Napkin.App.Editing;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Xunit;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.GuiTests.Unit;
 
@@ -217,7 +217,7 @@ public class SpaceSnapResolverTests
     {
         Box block = Block(0, 0, 0, 4, 2, 1);
         DesignEditor editor = new();
-        editor.Open(new Napkin.App.Designs.Design("turning", SketchOf(block), System.Collections.Immutable.ImmutableDictionary<EntityId, string>.Empty));
+        editor.Open(new Napkin.Modules.Editing.Design("turning", SketchOf(block), System.Collections.Immutable.ImmutableDictionary<EntityId, string>.Empty));
         editor.Select(block.Id);
 
         UpdateResult? result = SelectionTurn.Turn(editor, Axis.X, 1);

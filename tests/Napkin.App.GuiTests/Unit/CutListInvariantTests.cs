@@ -1,11 +1,11 @@
 using System.Collections.Immutable;
 using BigInteger = System.Numerics.BigInteger;
-using Napkin.App.Editing;
+using Napkin.Modules.Editing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
 using Napkin.Modules.Furniture;
 using Xunit;
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App.GuiTests.Unit;
 

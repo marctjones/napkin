@@ -14,6 +14,7 @@ using Napkin.Core.Materials;
 using Napkin.Modules.Furniture;
 
 using Xunit;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.GuiTests.Workflows;
 

@@ -2,12 +2,12 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 
-using Napkin.App.Editing;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Settings;
 using Napkin.Core.Geometry;
 
 using Xunit;
+using Napkin.Modules.Editing;
 
 using static Napkin.App.GuiTests.Workflows.AssemblyWorkflows;
 

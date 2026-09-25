@@ -120,7 +120,8 @@ no separate integration branch to stage them on first — verify locally after e
 - **Coverage ratchet** (`docs/testing/ratchet.md`) — per-assembly line/branch floors that only
   rise; a gate on landing on `main`, enforced locally by whoever merges (§"Landing changes" above),
   not by a published PR check. `Napkin.App` is excluded (a GUI shell isn't usefully covered by
-  unit tests).
+  unit tests); Avalonia-free editing logic goes in `Napkin.Modules.Editing`, which has a floor
+  (#166), not in the app.
 - **GUI workflow suite** (`docs/testing/gui-automation.md`, `tests/Napkin.App.GuiTests`) — real
   keyboard/pointer input via Avalonia.Headless, driving multi-step scenarios
   (`[GuiWorkflow("ID")]`, ≥5 actions, both keyboard and pointer, an assertion after a state

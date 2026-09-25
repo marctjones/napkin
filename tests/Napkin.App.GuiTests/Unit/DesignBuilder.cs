@@ -1,8 +1,8 @@
 using System.Collections.Immutable;
 using System.Security.Cryptography;
 using System.Text;
-using Napkin.App.Designs;
 using Napkin.Core.Geometry;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.GuiTests.Unit;
 

@@ -3,10 +3,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
-using Napkin.App.Editing;
 using Napkin.App.Settings;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.Viewing;
 
@@ -1809,8 +1809,8 @@ public sealed class ModelView : Control
         List<ScenePolygon> openings = [];
         foreach (ScenePolygon polygon in Scene.BackToFront(_camera))
         {
-            string layer = sketch.Find(polygon.Box) is { } entity ? Napkin.App.Designs.DesignLayers.StyleName(sketch, entity, layerNames) : string.Empty;
-            if (layer == Napkin.App.Designs.DesignLayers.Opening)
+            string layer = sketch.Find(polygon.Box) is { } entity ? Napkin.Modules.Editing.DesignLayers.StyleName(sketch, entity, layerNames) : string.Empty;
+            if (layer == Napkin.Modules.Editing.DesignLayers.Opening)
             {
                 openings.Add(polygon);
                 continue;
@@ -1821,7 +1821,7 @@ public sealed class ModelView : Control
 
         foreach (ScenePolygon polygon in openings)
         {
-            DrawPolygon(context, palette, palette.StyleFor(Napkin.App.Designs.DesignLayers.Opening), polygon);
+            DrawPolygon(context, palette, palette.StyleFor(Napkin.Modules.Editing.DesignLayers.Opening), polygon);
         }
 
         DrawAttention(context, palette);
@@ -2344,7 +2344,7 @@ public sealed class ModelView : Control
     };
 
     /// <summary>What a typed length would apply to: the arrow or face-handle drag just made (#79).</summary>
-    sealed record Typeable(Gesture Kind, EntityId Id, Box AtPress, Axis Axis, BoxFace? Face, Napkin.App.Designs.Design Before, Napkin.App.Designs.Design? After);
+    sealed record Typeable(Gesture Kind, EntityId Id, Box AtPress, Axis Axis, BoxFace? Face, Napkin.Modules.Editing.Design Before, Napkin.Modules.Editing.Design? After);
 
     enum Gesture
     {

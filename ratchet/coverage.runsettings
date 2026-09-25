@@ -8,6 +8,7 @@
     * Include only Napkin.* assemblies, so the BCL, Avalonia and xunit never dilute a percentage.
     * Napkin.App is excluded: a GUI shell is not usefully covered by unit tests, and its ratchet
       is the passing-workflow count from the GUI automation suite (issue #33), not a line rate.
+      The editing model it drives is Napkin.Modules.Editing (#166), which is measured.
     * Test and tooling assemblies are excluded; covering the tests would measure nothing.
 -->
 <RunSettings>

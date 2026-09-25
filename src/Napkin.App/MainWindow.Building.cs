@@ -3,12 +3,12 @@ using System.Collections.Immutable;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 
-using Napkin.App.Editing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
 using Napkin.Core.RulesEngine;
 using Napkin.Modules.Building;
 using Napkin.Modules.Furniture;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App;
 

@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
-using Napkin.App.Designs;
 using Napkin.Core.Geometry;
-using Design = Napkin.App.Designs.Design;
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App.GuiTests.Unit;
 
