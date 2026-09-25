@@ -24,6 +24,9 @@ public enum EditCommand
     /// <summary>The room tool: drag a room out, or click inside walls (renovation-sketches §8).</summary>
     RoomTool,
 
+    /// <summary>The note tool: click to put words — "outlet", "switch" — at a point (renovation-sketches §8).</summary>
+    NoteTool,
+
     /// <summary>Open the selected part in the shape workshop.</summary>
     Shape,
 
@@ -330,6 +333,7 @@ public static class KeyMaps
             new(K(KeyName.R), EditCommand.RectangleTool),
             new(K(KeyName.W), EditCommand.WallTool),
             new(Shift(KeyName.W), EditCommand.RoomTool),
+            new(Shift(KeyName.N), EditCommand.NoteTool),
             new(K(KeyName.C), EditCommand.Shape),
             new(K(KeyName.D), EditCommand.Duplicate),
             new(K(KeyName.M), EditCommand.MirrorEastWest),
@@ -368,6 +372,7 @@ public static class KeyMaps
             [EditCommand.RectangleTool] = "Rectangle tool; in 3D, a plain board to place; in a standard view, says why not",
             [EditCommand.WallTool] = "Wall tool, with the member it last had; brings the plan forward",
             [EditCommand.RoomTool] = "Room tool: drag out a room, or click inside four walls for their inside faces; brings the plan forward",
+            [EditCommand.NoteTool] = "Note tool: click to put a note, then type what it says — outlet, switch, light, supply, drain get their symbol; brings the plan forward",
             [EditCommand.Shape] = "Cut the selected part to shape (the shape workshop); not in a standard view",
             [EditCommand.Duplicate] = "Duplicate the selection",
             [EditCommand.MirrorEastWest] = "Mirror copy east–west",

@@ -112,6 +112,11 @@
                                            Text="By area from the drawn room, each line rounded once at its end; the sizes and coverages are the ones you typed from the packages." />
                                 <ItemsControl Name="AreaTakeoffList" FontSize="12" AutomationProperties.Name="Area takeoff" />
                             </StackPanel>
+                            <!-- The rough-in notes, counted by symbol (renovation-sketches §6.2): never modelled. -->
+                            <StackPanel Name="NotesSection" Spacing="2" IsVisible="False">
+                                <TextBlock Text="Notes" Margin="0,14,0,0" FontSize="12" FontWeight="SemiBold" />
+                                <TextBlock Name="NotesLine" FontSize="12" TextWrapping="Wrap" AutomationProperties.Name="Notes" />
+                            </StackPanel>
                             <TextBlock Name="ExtrasNote"
                                        Margin="0,14,0,4"
                                        FontSize="11"
