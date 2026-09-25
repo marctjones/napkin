@@ -22,4 +22,13 @@ public static class StandardViewWords
 
     /// <summary>What it says on turning them off.</summary>
     public const string HiddenEdgesNotShown = "Hidden edges: not shown.";
+
+    /// <summary>What the sheet says on arriving (§11): what it shows, and how to get back to one view.</summary>
+    public const string SheetHint = "Sheet: Top above Front, Right beside it, 3D in the corner — pick a part in any of them; 1–7 or V for one view.";
+
+    /// <summary>Why a drawing tool does nothing on the sheet, and where it does something.</summary>
+    public const string NotOnSheet = "Not on the sheet — 1 for the plan or 7 for 3D.";
+
+    /// <summary>The sheet's note on how its views are arranged (§11.6).</summary>
+    public const string ThirdAngle = "Third-angle projection";
 }

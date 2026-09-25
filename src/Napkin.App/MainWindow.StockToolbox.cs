@@ -32,9 +32,12 @@ public partial class MainWindow
         if (StockToolboxPanel.Category is null)
         {
             DrawingCanvas.ArmStock(null);
-            if (ModelDrawing.Placement.Stock is not null)
+            foreach (ModelView view in ModelViews)
             {
-                ModelDrawing.Disarm();
+                if (view.Placement.Stock is not null)
+                {
+                    view.Disarm();
+                }
             }
         }
 
@@ -74,7 +77,7 @@ public partial class MainWindow
         // out on the paper.
         if (IsShowingModel)
         {
-            if (ModelDrawing.Arm(item))
+            if (ActiveModel.Arm(item))
             {
                 Editor.Say(
                     EditSeverity.Hint,

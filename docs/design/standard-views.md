@@ -567,3 +567,56 @@ Then the editing design note (§6), which is its own issue and its own sign-off.
 3. **"Read-only" means no view gesture changes the model; selection-based menu commands stay
    live** (§5.4). Recommendation: yes; if Marc means read-only literally, slice A disables the
    Draw menu's selection commands while a locked view shows and nothing else changes.
+
+---
+
+## 11. The sheet: Top, Front and Right together (#133)
+
+Added for #133 with its recommended defaults (Marc's standing instruction on design questions is
+to take the recommendations; each is marked so it can be overturned). One view at a time (§2.1)
+cannot show related views together. The sheet shows three of them at once in the arrangement a
+drawing uses, third-angle as #133 states it: **Top above Front, Right to the right of Front**, and
+the free 3D view in the spare top-right corner.
+
+**11.1 A mode, not an eighth view.** `View ▸ Sheet` (a checkable item) turns the sheet on and off,
+remembered as `UserSettings.ShowSheet`. It is not a `DesignView`: the keys `1`–`7`, the chips,
+`V` and the View menu keep their one meaning, *show this view*, so any of them leaves the sheet for
+that single view, and `View ▸ Sheet` comes back. *Recommended over* letting the keys change what
+the pane under the pointer shows: a fixed arrangement is what makes it a drawing, and one key
+meaning is simpler to learn.
+
+**11.2 The layout is pure.** `SheetLayout.Panes(width, height, gutter)` in `Napkin.Modules.Editing`
+returns the four panes' rectangles in screen order (y down): Top top-left, 3D top-right, Front
+bottom-left, Right bottom-right, in equal halves with a gutter between. The sheet occupies the
+drawing area clear of the floating toolbar and the side column — the same strip and column that
+zoom to fit reserves (#186) — so no pane lies under chrome and no pane needs a reserve of its own.
+The positions are `double`s, for drawing, as `RelationshipGlyph`'s are. The PDF sheet (#25) can
+take its layout from here later.
+
+**11.3 Each pane is a `ModelView`.** Top, Front and Right are locked (§2.1), so they draw exactly
+as the single views do — flat fill, hidden edges dashed (§2.3), their dimensions (§3) — and are
+read-only as §5.4 says. Top in the sheet is the locked Top, not the plan canvas: the sheet is for
+reading, and there it draws a covered part dashed like the other two rather than translucent
+(§10 decision 1 is about where editing happens, which the sheet does not change). The 3D pane is a
+free `ModelView` with the current projection and does what the 3D view does, editing included.
+
+**11.4 One scale for the three drawings.** On entering the sheet, and on fit, Top, Front and Right
+share one scale — the largest at which each fits its pane — and each is centred on the design, so
+Top's width lines up over Front's and Right's height beside Front's, which is what the arrangement
+is for. The 3D pane fits on its own. After that each pane pans and zooms by itself. *Recommended
+over* one fit per pane, which would draw the same part at three sizes.
+
+**11.5 One editor.** Selection, hover and the attention outline are the editor's, so a part picked
+in any pane is selected in all of them, and the relationship list and Part panel follow as they do
+now. Fit, zoom and `H` act on the pane under the pointer, else Front; the cursor readout reads that
+pane; the status bar's view name reads `Sheet`.
+
+**11.6 Labelled.** Each pane is captioned with its view's name, and the sheet says **Third-angle
+projection** in its bottom-left corner. First-angle (Front above Top, the European arrangement) is
+a later option, not a slice: `SheetLayout` is where it would go.
+
+**11.7 Tests.** Unit: the layout's order, that Top and Front share an x-extent and Front and Right a
+y-extent, no overlaps, gutters, a small window. GUI workflow (≥ 5 actions, keyboard and pointer):
+turn the sheet on from the menu, check the arrangement and the shared scale, pick a part in one pane
+and see it selected in all, leave with a view key, come back from the menu, and find the choice
+remembered.

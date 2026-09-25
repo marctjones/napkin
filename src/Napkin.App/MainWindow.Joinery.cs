@@ -145,7 +145,10 @@ public partial class MainWindow
         AddHandler(KeyDownEvent, OnJoinKeyDown, RoutingStrategies.Tunnel);
 
         DrawingCanvas.JointActivated += (_, id) => EditJoint(id);
-        ModelDrawing.JointActivated += (_, id) => EditJoint(id);
+        foreach (ModelView view in ModelViews)
+        {
+            view.JointActivated += (_, id) => EditJoint(id);
+        }
     }
 
     void OnJoinKeyDown(object? sender, KeyEventArgs e)
@@ -568,9 +571,9 @@ public partial class MainWindow
         JointContact contact = pair.Faces.Contact;
         Point3 middle = contact.Centre;
         Point at = IsShowingModel
-            ? ModelDrawing.Camera.Project(middle)
+            ? ActiveModel.Camera.Project(middle)
             : DrawingCanvas.View.ToScreen(new Point2(middle.X, middle.Y));
-        Visual host = IsShowingModel ? ModelDrawing : DrawingCanvas;
+        Visual host = IsShowingModel ? ActiveModel : DrawingCanvas;
         Point inWindow = host.TranslatePoint(at, this) ?? new Point(200, 200);
         Point inParent = this.TranslatePoint(inWindow, (Visual)JoinPanel.Parent!) ?? inWindow;
         Size room = ((Control)JoinPanel.Parent!).Bounds.Size;

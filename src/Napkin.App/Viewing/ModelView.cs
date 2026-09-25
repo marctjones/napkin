@@ -580,6 +580,12 @@ public sealed class ModelView : Control
         ZoomToFit();
     }
 
+    /// <summary>
+    /// The scale a fit lands on instead of its own, when a sheet shares one scale across its drawings
+    /// (docs/design/standard-views.md §11.4) so that they line up; null fits alone.
+    /// </summary>
+    public double? FitScale { get; set; }
+
     /// <summary>Frames the whole drawing from the direction the camera is looking in.</summary>
     public void ZoomToFit()
     {
@@ -594,6 +600,11 @@ public sealed class ModelView : Control
         Camera = bounds.IsEmpty
             ? _camera with { CenterX = 0, CenterY = 0, CenterZ = 0, PixelsPerInch = CanvasView.BlankSheetPixelsPerInch }
             : _camera.FitTo(bounds, _camera.Viewport, coveredRight: FitReserveRight, coveredTop: FitReserveTop);
+        if (FitScale is { } shared && !bounds.IsEmpty)
+        {
+            // Fitted about the drawing's middle, so the shared scale keeps it centred.
+            Camera = _camera with { PixelsPerInch = shared };
+        }
     }
 
     /// <summary>

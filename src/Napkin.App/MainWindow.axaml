@@ -263,6 +263,11 @@
                               Click="OnViewMenuClicked"
                               ToolTip.Tip="The drawing in three dimensions: turn parts, and move and resize them along any axis (7)." />
                 </MenuItem>
+                <!-- The sheet (standard-views §11): Top above Front, Right beside it, 3D in the corner. -->
+                <MenuItem Name="SheetMenuItem"
+                          Header="Sheet"
+                          Click="OnSheetClicked"
+                          ToolTip.Tip="Top above Front and Right beside it, with 3D in the corner, all at once (third-angle). 1–7 or V for one view." />
                 <!-- Look along an axis, or at the next surface of the selected part: the 3D view's
                      square-on views, which also sit on the toolbar. -->
                 <MenuItem Name="LookAlongMenu" Header="_Look along">
@@ -546,6 +551,17 @@
                 plan canvas's place while it shows, and the chrome floats over it the same way.
             -->
             <viewing:ModelView Name="ModelDrawing" IsVisible="False" ClipToBounds="True" />
+
+            <!--
+                The sheet (docs/design/standard-views.md §11): Top above Front, Right beside Front, 3D
+                in the spare corner, over the same editor. It takes the drawing's place while it shows,
+                clear of the toolbar and the side column (its margin is set in the code-behind from the
+                same reserves zoom to fit uses), on the bench, so its gutters read as gaps.
+            -->
+            <viewing:SheetView Name="SheetDrawing"
+                               IsVisible="False"
+                               ClipToBounds="True"
+                               Background="{DynamicResource NapkinBenchBrush}" />
 
             <!--
                 The shape workshop (docs/design/shaped-parts-model.md §7.1): a sheet over the

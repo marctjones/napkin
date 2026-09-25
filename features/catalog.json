@@ -1451,6 +1451,24 @@
       "kind": "workflow"
     },
     {
+      "id": "VIEW-013",
+      "area": "ui",
+      "title": "The sheet's arrangement and shared scale are pure",
+      "acceptance": "SheetLayout puts Top above Front and Right beside Front, 3D in the spare corner, in equal panes with a gutter; SharedScale is the scale the tightest drawing fits at. The sheet's hint, refusal and projection note come from StandardViewWords.",
+      "milestone": "M6",
+      "issue": 133,
+      "kind": "unit"
+    },
+    {
+      "id": "GUI-VIEW-16",
+      "area": "ui",
+      "title": "The sheet shows Top over Front and Right beside it, at one scale, selection shared, remembered",
+      "acceptance": "Open the l-bracket; View > Sheet: four captioned panes in third-angle order, the three drawings at one scale so x lines up in Top and Front and z in Front and Right; a click on the upright in Front draws it selected in every pane; R says not on the sheet; 3 leaves for Front alone and forgets the sheet; View > Sheet brings it back, remembered, the upright still selected.",
+      "milestone": "M6",
+      "issue": 133,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-SET-07",
       "area": "ui",
       "title": "The last view is remembered; 2D plan opens Top",

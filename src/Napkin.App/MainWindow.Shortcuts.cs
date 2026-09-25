@@ -270,7 +270,7 @@ public partial class MainWindow
         }
 
         if (IsShowingModel
-                ? !ModelDrawing.IsFocused && ModelDrawing.Apply(command)
+                ? !ActiveModel.IsFocused && ActiveModel.Apply(command)
                 : !DrawingCanvas.IsFocused && DrawingCanvas.Apply(command))
         {
             e.Handled = true;
