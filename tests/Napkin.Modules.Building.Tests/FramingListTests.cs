@@ -486,6 +486,41 @@ public class FramingListTests
     }
 
     [Fact]
+    public void TwoJacksWidenTheHeaderForCripplesAbove()
+    {
+        // A 30 in window at 66 with two jacks each side: the header runs 66 − 3 = 63 to 96 + 3 = 99.
+        // Layout positions wholly over it: 64, 80, 96 (its body ends at 97 1/2): 3 above. The zone
+        // [66 − 4 1/2, 96 + 4 1/2) = [61 1/2, 100 1/2) takes 64, 80 and 96: 10 − 3 = 7 studs.
+        // Below, inside [66, 96): only 80.
+        Box wall = WallBox(In(144), In(3, 1, 2), In(96));
+        Sketch sketch = Empty().WithEntity(wall).WithEntity(OpeningBox(wall, In(66), In(30), In(36), In(42)));
+        WallFraming framing = Frame(sketch, new FramingOptions { JacksPerSide = _ => 2, HeaderDepth = _ => In(9) });
+
+        Assert.Equal(3, framing.Count(FramingRole.CrippleAbove));
+        Assert.Equal(7, framing.Count(FramingRole.Stud));
+        Assert.Equal(1, framing.Count(FramingRole.CrippleBelow));
+
+        // Neither the placeholder nor the default is in play: nothing to say about them.
+        Assert.Empty(Frame(sketch, new FramingOptions { JacksPerSide = _ => 2, Spacing = In(24) }).Notes);
+    }
+
+    [Fact]
+    public void TheDefaultSpacingAndThePlaceholderJacksAreSaid()
+    {
+        WallFraming framing = Frame(Sample());
+        Assert.Equal(
+            [
+                "studs 16\" on centre: design default, not a code requirement",
+                "1 jack each side: a placeholder until the code check (M4 part 2)",
+            ],
+            framing.Notes);
+
+        // A wall with no opening framed has no jacks to explain.
+        Box wall = WallBox(In(144), In(3, 1, 2), In(96));
+        Assert.Single(Frame(Empty().WithEntity(wall).WithEntity(OpeningBox(wall, In(0), In(36), In(36), In(42)))).Notes);
+    }
+
+    [Fact]
     public void TheFrameBuysBoardsThroughTheShoppingList()
     {
         // The sample's 2x6 pieces, longest first, first fit over 6'…16' (ShoppingList §4 step 2):

@@ -78,6 +78,12 @@ public sealed record WallFraming(
     ImmutableArray<FramingPiece> Pieces,
     ImmutableArray<string> Problems)
 {
+    /// <summary>
+    /// What the numbers rest on that is a choice rather than a fact: the spacing, when it is the
+    /// default, and the jack count, while it is part 1's placeholder. Said wherever the frame is shown.
+    /// </summary>
+    public ImmutableArray<string> Notes { get; init; } = [];
+
     /// <summary>How many of the pieces with a role there are.</summary>
     public int Count(FramingRole role) => Pieces.Where(piece => piece.Role == role).Sum(piece => piece.Quantity);
 
@@ -266,7 +272,18 @@ public static class FramingList
         int common = studs.Count(at => !zones.Any(zone => at < zone.To && at + t > zone.From));
         pieces.Add(new FramingPiece(FramingRole.Stud, common, studLength, stock));
 
-        return new WallFraming(wall, stock, spacing, [.. framed], Merge(pieces), [.. problems]);
+        List<string> notes = [];
+        if (spacing == FramingOptions.DefaultSpacing)
+        {
+            notes.Add($"studs {spacing.Format(new InchesOnlyFormat(16)).Text} on centre: {FramingOptions.DefaultSpacingNote}");
+        }
+
+        if (options.JacksPerSide is null && framed.Any(opening => opening.Refusal is null))
+        {
+            notes.Add(FramingOptions.PlaceholderJacks);
+        }
+
+        return new WallFraming(wall, stock, spacing, [.. framed], Merge(pieces), [.. problems]) { Notes = [.. notes] };
     }
 
     /// <summary>The frame of the wall with this id, or of the wall an opening with this id is in; null for anything else.</summary>
