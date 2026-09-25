@@ -1,7 +1,9 @@
 # napkin — research notes
 
-Supporting detail for the summary in `HANDOFF.md`. Covers the CAD/drawing tools evaluated, the
-file-format landscape, and the prescriptive-code research that shaped the rules engine design.
+Background research from early in the project (HANDOFF.md, which summarized it, was removed in
+Hardening — beta policy is to remove stale docs, not keep them). Covers the CAD/drawing tools
+evaluated, the file-format landscape, and the prescriptive-code research that shaped the rules
+engine design.
 
 ## CAD / drawing tools compared
 

@@ -238,8 +238,9 @@ worth stating now, because the second will surprise people:
 ### 1.5 The derived outline
 
 ```csharp
-/// The closed boundary of what is left of the blank, in world coordinates, counter-clockwise
-/// in the box's local frame (south edge first, from the south-west corner).
+/// The closed boundary of what is left of the blank, in the box's local XY frame, counter-clockwise
+/// (south edge first, from the south-west corner). World placement is the box's own orientation,
+/// applied afterwards (assembly-model §7.2).
 public sealed record Outline(ImmutableArray<OutlineSegment> Segments);
 
 public abstract record OutlineSegment(Point2 From, Point2 To);

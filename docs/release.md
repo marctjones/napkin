@@ -11,15 +11,16 @@ latest, and nothing is signed or notarized.
 ## The rule for when
 
 A milestone is tagged when it is worth a public pre-release, which is a decision for the project
-owner, not for the pipeline or for a merge. Nothing is tagged on a schedule (`DESIGN.md` §12). A
-merged pull request does **not** publish anything.
+owner, not for the pipeline or for a landing on `main`. Nothing is tagged on a schedule
+(`DESIGN.md` §12; `CLAUDE.md`). Landing a change does **not** publish anything.
 
 ## Cutting one
 
-1. **The version is already right.** The pull request that landed the work bumped
-   `VersionPrefix` in [`Directory.Build.props`](../Directory.Build.props) (`0.N.0`, suffix `beta`),
-   as every merged pull request does. That file is the only place the version lives; the pipeline
-   reads it and never takes a version from anywhere else.
+1. **The version is already right.** `tools/scripts/land.sh`, landing the work directly on `main`
+   (no pull requests since 2026-09-22), bumped `VersionPrefix` in
+   [`Directory.Build.props`](../Directory.Build.props) (`0.N.0`, suffix `beta`) by exactly one, as
+   every landing does. That file is the only place the version lives; the pipeline reads it and
+   never takes a version from anywhere else.
 2. **Tag the commit on `main` that carries that version, with exactly `v` in front of it.** For
    `0.4.0-beta` the tag is `v0.4.0-beta`.
 
@@ -103,9 +104,10 @@ no release and nothing public:
 - **Actions → Release → Run workflow** (`workflow_dispatch`), on any branch, once this workflow is
   on `main` (GitHub offers a manual run only for a workflow the default branch has). Or
   `gh workflow run release.yml --ref <branch>`.
-- **Any pull request that changes `.github/workflows/release.yml`** runs it automatically, and
-  only such a pull request does. (A change to the notes template or to `first-run.md` does not, on
-  purpose: run it by hand.)
+- **A pull request that changes `.github/workflows/release.yml`** runs it automatically as a dry
+  run, if one is ever opened — the workflow's own `pull_request:` trigger predates the
+  direct-to-`main` policy (no pull requests since 2026-09-22) and was left in place as a harmless,
+  unused safety net rather than removed. In normal use, run it by hand (below) instead.
 
 Then download the workflow artifacts from the run page: `zip-<rid>` for each build and
 `release-payload` for the zips, `SHA256SUMS.txt` and the rendered `RELEASE_NOTES.md`. Read the

@@ -1,6 +1,6 @@
 # Coffee table — the design, as you would write it on paper
 
-Plan view (looking down). X runs to the right, Y runs up the page, the origin is the top's
+Drawn from above. X runs to the right, Y runs up the page, the origin is the top's
 south-west corner. Every number below is a **finished** dimension of this design: it is stated
 here, not looked up. napkin has no materials library yet (#7), so nothing in this fixture depends
 on a nominal-to-actual size.
@@ -29,12 +29,12 @@ on a nominal-to-actual size.
 | What | Dimension | Notes |
 |---|---|---|
 | Top, in plan | 48" × 24" | 4'-0" by 2'-0" |
-| Top, thickness | 3/4" | Not in the plan view, which has no third dimension; in the scene as the top's `depth`. |
+| Top, thickness | 3/4" | The scene holds all three dimensions; this is the top's `depth`. |
 | Leg, in plan | 2 1/2" × 2 1/2" | four of them, identical |
-| Leg, length | 16 1/4" | Not in the plan view; in the scene as each leg's `depth`. |
+| Leg, length | 16 1/4" | The scene holds all three dimensions; this is each leg's `depth`. |
 | Leg inset from each edge of the top | 1 1/2" | the top overhangs the leg frame all round |
 | Apron thickness, in plan | 3/4" | |
-| Apron width (the vertical face) | 3 1/2" | Not in the plan view; in the scene as each apron's `depth`. |
+| Apron width (the vertical face) | 3 1/2" | The scene holds all three dimensions; this is each apron's `depth`. |
 | Apron faces | flush with the outer faces of the legs | |
 | Long aprons (south, north) | run between the legs along X | length derived below |
 | Short aprons (west, east) | run between the legs along Y | length derived below |

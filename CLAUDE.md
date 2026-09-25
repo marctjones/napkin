@@ -27,6 +27,10 @@ future you can just build when it arrives.
 `main` for a given piece of work bumps it by exactly one. A tag (`v0.N.0-beta`) is cut only when Marc says a milestone
 is worth naming — nothing is tagged or published without that.
 
+**Tags:** Marc authorised on 2026-09-25 tagging and pushing `v0.N.0-beta` when a milestone or
+major feature completes; pushing a `v*` tag runs `.github/workflows/release.yml` and publishes an
+unsigned pre-release.
+
 ## Build and test locally — do this, don't skip to CI
 
 Marc wants local builds run as part of the work, not deferred to CI. `tools/scripts/gate.sh` runs

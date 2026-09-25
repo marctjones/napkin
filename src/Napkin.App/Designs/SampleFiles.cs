@@ -49,15 +49,15 @@ public static class SampleFiles
         new(
             "coffee-table.scene.json",
             "Coffee table",
-            "A 4'-0\" × 2'-0\" top on four 2½\" legs, with aprons — the plan view."),
+            "A 4'-0\" × 2'-0\" top on four 2½\" legs, with aprons."),
         new(
             "rounded-corner-table.scene.json",
             "Rounded-corner table",
-            "The same table with its top's four corners rounded to a 1\" radius — the plan view."),
+            "The same table with its top's four corners rounded to a 1\" radius."),
         new(
             "wall-with-window.scene.json",
             "Wall with window",
-            "12'-0\" of 5½\" wall with a 3'-0\" opening centred in it — the plan view."),
+            "12'-0\" of 5½\" wall with a 3'-0\" opening centred in it."),
         new(
             "bookcase.scene.json",
             "Bookcase",

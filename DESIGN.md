@@ -377,19 +377,20 @@ with one concrete acceptance sentence, the milestone it belongs to and the issue
 Tests claim a feature with a trait; the scorecard reads the test results and reports what is
 passing, planned, partial or not started, by area and by milestone.
 
-**The scorecard measures progress and never gates anything** — not a build, not a pull request,
-not a tag. Its job is to make "how far along is napkin?" answerable from the test suite instead of
-from a status report, and to show what to build next. A metric that can block a merge stops being
-an honest measurement. Tracked in #34; see
+**The scorecard measures progress and never gates anything** — not a build, not a landing on
+`main`, not a tag. Its job is to make "how far along is napkin?" answerable from the test suite
+instead of from a status report, and to show what to build next. A metric that can block a landing
+stops being an honest measurement. Tracked in #34; see
 [`docs/testing/scorecard.md`](./docs/testing/scorecard.md).
 
 **4. The coverage ratchet — a gate, and it only goes up.**
 
-A committed baseline records each assembly's line and branch coverage. CI fails a pull request
-whose coverage falls below its floor, and the baseline is raised as coverage improves — never
-silently lowered. It gates pull requests and nothing else: it does not gate a tag or a release,
-because the beta policy says nothing is scheduled and a release is a snapshot of whatever is
-there. Tracked in #32; see [`docs/testing/ratchet.md`](./docs/testing/ratchet.md).
+A committed baseline records each assembly's line and branch coverage. The local gate
+(`tools/scripts/gate.sh`) refuses to land a change whose coverage falls below its floor, and the
+baseline is raised as coverage improves — never silently lowered. It gates a landing on `main` and
+nothing else: it does not gate a tag or a release, because the beta policy says nothing is
+scheduled and a release is a snapshot of whatever is there. Tracked in #32; see
+[`docs/testing/ratchet.md`](./docs/testing/ratchet.md).
 
 **5. The GUI workflow suite — a gate, and it only goes up.**
 
@@ -461,11 +462,13 @@ Nothing is scheduled toward a date (see "Versioning and releases" below).
 4. **M4 Check.** The differentiator, one answer at a time: a wall, an opening, a header size and
    stud count with the code edition, table and row behind it (§5.3, §5.4), and a hard out-of-scope
    result the moment the inputs leave what the table covers. One adopted code pack — **Connecticut
-   2026** — plus the per-project picker (§5.4).
+   2022** (IRC 2021 as amended; the 2026 code is not yet in force) — plus the per-project picker
+   (§5.4).
 5. **M5 Brace and compare.** The wall-bracing check (§5.3 — the check most DIY openings miss),
-   and a **second** pack, Connecticut 2022. The second pack is the point: locking a project to the
-   code in force at permit application, and recomputing every result when that changes, is only
-   demonstrable once there are two codes to move between.
+   and a **second** pack once one exists (Connecticut 2026 once adopted, or another jurisdiction).
+   The second pack is the point: locking a project to the code in force at permit application, and
+   recomputing every result when that changes, is only demonstrable once there are two codes to
+   move between.
 
 **Core first.** Marc's rule (2026-09-21): build the product before anything around it — design
 (M2), cut list (M3), code-cited sizing (M4, M5). Packaging, releases, installers, export formats and
@@ -629,9 +632,9 @@ to `main`): the minor number is bumped by whoever lands each change** (tracked a
 
 - A single `<VersionPrefix>0.N.0</VersionPrefix>` in a `Directory.Build.props` at the repository
   root, with `<VersionSuffix>beta</VersionSuffix>`, so every assembly and the app report the same
-  `0.N.0-beta`. The file exists; the first pull request of the beta line set it to `0.1.0-beta`.
-- The minor number `N` is bumped in the pull request that lands the work, by its author, as part
-  of that PR. Patch stays 0.
+  `0.N.0-beta`. The file exists; the first landing of the beta line set it to `0.1.0-beta`.
+- The minor number `N` is bumped by exactly one by whoever lands the work on `main`
+  (`tools/scripts/land.sh`), as part of that landing. Patch stays 0.
 - CI passes the commit SHA into the informational version, so a running beta can say exactly
   which commit it is.
 - When a milestone is worth naming, a `v0.N.0-beta` tag and a GitHub pre-release with the
