@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 
+using Napkin.Core.Project;
 using Napkin.Tools.Commands;
 
 namespace Napkin.Tools.Tests;
@@ -54,28 +55,35 @@ public class SamplesRestampTests
 
         JsonNode restamped = JsonNode.Parse(File.ReadAllText(scenePath))!;
         Assert.True(JsonNode.DeepEquals(original, restamped), $"restamped:\n{restamped.ToJsonString()}\n\noriginal:\n{original.ToJsonString()}");
+
+        // Byte-identical with a fresh save of the real, committed sample — not just semantically
+        // equal — because RestampScene writes through the real SceneWriter, not the JsonNode text.
+        string canonical = SceneWriter.WriteToText(((Loaded)SceneReader.ReadFile(Fixture.Path("samples/coffee-table.scene.json"))).Sketch);
+        Assert.Equal(canonical, File.ReadAllText(scenePath));
     }
 
     [Fact]
     public void ExpectationsRestampChangesOnlyTheFormatVersionField()
     {
-        JsonNode before = JsonNode.Parse(Fixture.Text("samples/coffee-table.expected.json"))!;
-        JsonNode lowered = before.DeepClone();
-        lowered["formatVersion"] = 6;
+        string before = Fixture.Text("samples/coffee-table.expected.json");
+        // A textual downgrade, matching how RestampExpectations itself edits the stamp, so the
+        // fixture stays byte-for-byte what a real committed expectations file looks like — not a
+        // JsonNode re-serialisation with different whitespace.
+        string stamp = $"\"formatVersion\": {CurrentVersion}";
+        Assert.Contains(stamp, before, StringComparison.Ordinal);
+        string lowered = before.Replace(stamp, "\"formatVersion\": 6", StringComparison.Ordinal);
 
         using var scratch = Fixture.NewDirectory();
         string samplesDir = System.IO.Path.Combine(scratch.Path, "samples");
         Directory.CreateDirectory(samplesDir);
         // An expectations file needs no matching scene to be restamped on its own.
         string expectedPath = System.IO.Path.Combine(samplesDir, "coffee-table.expected.json");
-        File.WriteAllText(expectedPath, lowered.ToJsonString());
+        File.WriteAllText(expectedPath, lowered);
 
         var (code, _, _) = Run("samples", "restamp", "--root", scratch.Path);
 
         Assert.Equal(ExitCode.Ok, code);
-        JsonNode after = JsonNode.Parse(File.ReadAllText(expectedPath))!;
-        Assert.Equal(CurrentVersion, after["formatVersion"]!.GetValue<int>());
-        Assert.True(JsonNode.DeepEquals(before, after), "restamping should change nothing but formatVersion, which was already 8 in `before`.");
+        Assert.Equal(before, File.ReadAllText(expectedPath));
     }
 
     [Fact]

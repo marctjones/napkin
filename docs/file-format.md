@@ -79,11 +79,11 @@ document and stays one.
 6. **Per-view camera state is a user setting, not scene data (#181).** What a person was looking at
    — which view, the camera angle, zoom, pan — is not a fact about the design any more than a
    scroll position is a fact about a document; it lives in `UserSettings.cs`, not in `scene.json`.
-   This was decided explicitly because the alternative keeps recurring: format version 4 through 8
-   landed in two days, and each of those bumps tempted "while we're touching every box's fields
-   anyway, just add the camera here too." Keeping it out of the scene means a project file a person
-   sends a collaborator does not silently reset their camera, and a future view feature (a Parts
-   view, per-view camera memory) does not need to be a format bump at all. When a bump is purely
+   This was decided explicitly (#181), ahead of the milestone that will tempt it: M6's per-view
+   camera memory and Parts view (#127, #128) are exactly the kind of feature that invites "while
+   we're adding a view, just save what it was looking at" into the scene. Keeping it out means a
+   project file a person sends a collaborator does not silently reset their camera, and that future
+   work does not need to be a format bump at all. When a bump is purely
    additive — a null field or an empty list added to every entity, no sample's *meaning* changed —
    `dotnet run --project tools/Napkin.Tools -- samples restamp` brings `samples/*.scene.json` and
    `*.expected.json` up to date instead of a hand rewrite of all 15; see `samples/README.md`.

@@ -271,11 +271,11 @@ public class StockToolboxWorkflows
 
         app.Click(CentreOf(window, twoByFourItem));
 
-        // Since Draw holds only the tools (#169) the menu is short, and the lumber submenu sits over
-        // where the drawer opens: the pointer goes to the paper, where the 2x4 is to be put down,
-        // rather than resting on a drawer item whose own size the readout would then show.
-        app.MoveTo(At(window, Point2.Inches(-2, -10)));
-
+        // No MoveTo here (#184 asked for it to be dropped): the readout is checked with the
+        // pointer exactly where the click left it, which is the drawer opening right under a
+        // resting pointer — the case that used to show the hovered item's size instead of what was
+        // just armed. See The_drawer_readout_shows_what_is_held_right_after_picking_from_the_menu_
+        // not_the_hovered_item for the regression test that pins the fix on its own.
         app.Expect("the pointer holds the 2x4, the menu is closed, and the drawer shows what is held", () =>
         {
             Assert.Same(twoByFour, window.Canvas.ArmedStock);
