@@ -20,7 +20,7 @@ public partial class MainWindow
 {
     static readonly (RoomSurfaces Value, string Word)[] SurfaceWords = [(RoomSurfaces.None, "none"), (RoomSurfaces.Walls, "walls"), (RoomSurfaces.WallsAndCeiling, "walls and ceiling")];
     static readonly (InsulatedWalls Value, string Word)[] InsulatedWords = [(InsulatedWalls.None, "none"), (InsulatedWalls.Exterior, "exterior walls"), (InsulatedWalls.All, "all walls")];
-    static readonly (InsulationBy Value, string Word)[] ByWords = [(InsulationBy.Area, "by area"), (InsulationBy.Bays, "by stud bays")];
+    static readonly (InsulationBy Value, string Word)[] ByWords = [(InsulationBy.Area, "area"), (InsulationBy.Bays, "stud bays")];
 
     bool _fillingRoom;
 

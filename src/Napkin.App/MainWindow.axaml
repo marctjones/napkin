@@ -1036,7 +1036,7 @@
                                        AutomationProperties.Name="Room" />
                             <TextBlock Name="RoomBoundsText" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
                                        AutomationProperties.Name="Bounding walls" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,3*,Auto,2*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                 <TextBlock Grid.Row="0" Text="Drywall" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
                                 <ComboBox Name="DrywallBox" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,0,2"
                                           AutomationProperties.Name="Drywall" SelectionChanged="OnRoomChoiceChanged" />
@@ -1045,12 +1045,13 @@
                                          PlaceholderText="the size you buy, e.g. 4' x 8'" AutomationProperties.Name="Drywall sheet size"
                                          ToolTip.Tip="Type the sheet size from the package: width x length. napkin carries no sheet size." />
                                 <TextBlock Grid.Row="2" Text="Insulation" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
-                                <ComboBox Name="InsulationBox" Grid.Row="2" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,4,2"
+                                <ComboBox Name="InsulationBox" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,0,2"
                                           AutomationProperties.Name="Insulation" SelectionChanged="OnRoomChoiceChanged" />
-                                <ComboBox Name="InsulationByBox" Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,0,2"
+                                <TextBlock Grid.Row="3" Text="by" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,6,2" />
+                                <ComboBox Name="InsulationByBox" Grid.Row="3" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,4,2"
                                           AutomationProperties.Name="Insulation by" SelectionChanged="OnRoomChoiceChanged" />
-                                <TextBlock Grid.Row="3" Text="Bag covers" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
-                                <TextBox Name="InsulationCoverageBox" Grid.Row="3" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,4,2"
+                                <TextBlock Grid.Row="3" Grid.Column="2" Text="bag" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                <TextBox Name="InsulationCoverageBox" Grid.Row="3" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2"
                                          PlaceholderText="sq ft" AutomationProperties.Name="Insulation coverage"
                                          ToolTip.Tip="Square feet a bag covers, from the package. Whole square feet." />
                                 <TextBlock Grid.Row="4" Text="Paint" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
