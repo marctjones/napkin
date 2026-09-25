@@ -739,7 +739,7 @@ public sealed class ModelView : Control
         Point position = e.GetPosition(this);
         if (_gesture == Gesture.None)
         {
-            ToolTip.SetTip(this, _editor is { } tipEditor ? _joints.TipAt(position, tipEditor.Sketch, tipEditor.NameOf) : null);
+            _joints.ShowTip(this, _editor is { } tipEditor ? _joints.TipAt(position, tipEditor.Sketch, tipEditor.NameOf) : null);
         }
 
         Vector step = position - _lastPointer;

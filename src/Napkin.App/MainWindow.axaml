@@ -87,6 +87,15 @@
             <MenuItem Name="EditMenu" Header="_Edit">
                 <MenuItem Name="UndoMenuItem" Header="_Undo" Click="OnUndoClicked" />
                 <MenuItem Name="RedoMenuItem" Header="_Redo" Click="OnRedoClicked" />
+                <Separator />
+                <MenuItem Name="JoinMenuItem"
+                          Header="_Join…"
+                          Click="OnJoinClicked"
+                          ToolTip.Tip="Join the two selected parts: say what kind of joint, what holds it, and whether it is glued." />
+                <MenuItem Name="JoinAllMenuItem"
+                          Header="Join all _touching…"
+                          Click="OnJoinAllClicked"
+                          ToolTip.Tip="Join every touching pair among the selected parts in one go; with two selected, repeat the last joint." />
             </MenuItem>
 
             <!-- The Draw menu is the toolbar, in the toolbar's order: the tools, the actions on the
@@ -105,14 +114,6 @@
                           Header="S_hape…"
                           Click="OnShapeClicked"
                           ToolTip.Tip="Open the selected part in the shape workshop: pick its stock and cut its corners and edges." />
-                <MenuItem Name="JoinMenuItem"
-                          Header="_Join…"
-                          Click="OnJoinClicked"
-                          ToolTip.Tip="Join the two selected parts: say what kind of joint, what holds it, and whether it is glued." />
-                <MenuItem Name="JoinAllMenuItem"
-                          Header="Join all _touching…"
-                          Click="OnJoinAllClicked"
-                          ToolTip.Tip="Join every touching pair among the selected parts in one go; with two selected, repeat the last joint." />
                 <MenuItem Name="DuplicateMenuItem"
                           Header="D_uplicate"
                           Click="OnDuplicateClicked"

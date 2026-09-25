@@ -193,11 +193,37 @@ public sealed class JointMarkerLayer
     /// <param name="project">World to screen.</param>
     /// <param name="selected">The selected joint, always placed.</param>
     public void Update(Sketch sketch, Func<Point3, Point> project, RelationshipId? selected)
-        => Placed = JointMarkers.Layout(JointMarkers.Of(sketch), project, selected);
+    {
+        // Where a joint is in the world only changes with the sketch; a redraw for a pointer move or a pan reuses it.
+        if (!ReferenceEquals(sketch, _sketch))
+        {
+            _sketch = sketch;
+            _markers = JointMarkers.Of(sketch);
+        }
+
+        Placed = JointMarkers.Layout(_markers, project, selected);
+    }
+
+    Sketch? _sketch;
+    ImmutableArray<JointMarker> _markers = [];
 
     /// <summary>The marker under a screen point, or null.</summary>
     /// <param name="point">The point.</param>
     public PlacedJointMarker? At(Point point) => JointMarkers.HitTest(Placed, point);
+
+    string? _tip;
+
+    /// <summary>Puts a tooltip on a control only when it differs from the last one put, so a pointer crossing the paper does not keep resetting it.</summary>
+    /// <param name="host">The view.</param>
+    /// <param name="tip">The text, or null for none.</param>
+    public void ShowTip(Avalonia.Controls.Control host, string? tip)
+    {
+        if (tip != _tip)
+        {
+            _tip = tip;
+            Avalonia.Controls.ToolTip.SetTip(host, tip);
+        }
+    }
 
     /// <summary>The tooltip for the marker under a point, or null.</summary>
     /// <param name="point">The point.</param>

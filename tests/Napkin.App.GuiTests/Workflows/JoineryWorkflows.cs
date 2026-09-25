@@ -205,8 +205,7 @@ public class JoineryWorkflows
             Assert.Equal(9, window.Editor.Selection.Count);
         });
 
-        window.Canvas.Focus();
-        app.Press(Key.J, KeyModifiers.Shift);
+        ChooseMenu(app, window, "EditMenu", "Join all _touching\u2026");
 
         app.Expect("the popover lists the ten touching pairs, all suggesting a butt, two with a pocket face to choose", () =>
         {
@@ -324,7 +323,7 @@ public class JoineryWorkflows
         {
             Assert.True(window.IsJoining);
             Assert.Equal("A rabbet needs a depth greater than zero, like 1/4\".", window.JoinRefusal);
-            Assert.Empty(Sketch(window).RelationshipsInOrder.OfType<Joint>().Where(drawerA));
+            Assert.Equal(0, Sketch(window).RelationshipsInOrder.OfType<Joint>().Count(drawerA));
         });
 
         ClickControl(app, window, window.JoinDepthControl);

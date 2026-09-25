@@ -745,7 +745,7 @@ public sealed class CanvasView : Control
         else
         {
             Hover(PickAt(_view.ToWorld(position)));
-            ToolTip.SetTip(this, _editor is { } tipEditor ? _joints.TipAt(position, tipEditor.Sketch, tipEditor.NameOf) : null);
+            _joints.ShowTip(this, _editor is { } tipEditor ? _joints.TipAt(position, tipEditor.Sketch, tipEditor.NameOf) : null);
         }
 
         PointerWorldPositionChanged?.Invoke(this, _view.ToWorld(position));
