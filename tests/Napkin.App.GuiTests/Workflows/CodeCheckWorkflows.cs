@@ -4,6 +4,7 @@ using Avalonia.Input;
 
 using Napkin.App.GuiTests.Harness;
 using Napkin.Core.Geometry;
+using Napkin.Core.RulesEngine;
 using Napkin.Modules.Building;
 
 using Xunit;
@@ -55,7 +56,7 @@ public class CodeCheckWorkflows
             Sketch sketch = window.CurrentDesign!.Sketch;
             Assert.Equal(new CodeChoice("us-zz-frame", 1, CodeMode.Locked, DateOnly.FromDateTime(DateTime.Today)), sketch.Code);
             Assert.Equal(SiteValues.NotEntered with { GroundSnowLoadPsf = 30 }, sketch.Site);
-            Assert.StartsWith("Locked on ", code.LockText, StringComparison.Ordinal);
+            Assert.Equal(CodeCheck.LockedNote(DateOnly.FromDateTime(DateTime.Today), "us-zz-frame", 1), code.LockText);
             Assert.StartsWith("Checking against ZZ FRAME (IRC 2099), pack us-zz-frame rev 1", code.StatusText, StringComparison.Ordinal);
         });
 
@@ -68,11 +69,11 @@ public class CodeCheckWorkflows
         app.Expect("the 3 ft window is sized from row r.s30.a, with its citation", () =>
         {
             // 36 in ≤ 4'-1" at snow ≤ 30, zz-roof: (1) 2x8, 1 jack, 1 king (CodeCheckTests).
-            Assert.Equal("Header (1) 2x8, 1 jack stud and 1 king stud each side.", window.CodeCheckText);
+            Assert.Equal(CodeCheck.HeaderText("(1) 2x8", 1, 1), window.CodeCheckText);
             Assert.StartsWith("IRC 2099 Table ZZ-HEADER, as adopted by ZZ FRAME row r.s30.a", window.CodeCheckCitationText, StringComparison.Ordinal);
             Assert.Contains("How it was found: headerSpan 3'-0\" → ≤ 4'-1\"", window.CodeCheckWorkingText, StringComparison.Ordinal);
             Assert.DoesNotContain("not yet sized", window.FramingHeadlineText, StringComparison.Ordinal);
-            Assert.Contains("1 header piece (2x8)", window.FramingText, StringComparison.Ordinal);
+            Assert.Contains(FramingList.HeaderPieces(1, "2x8"), window.FramingText, StringComparison.Ordinal);
         });
 
         app.SaveFrame("window-sized");
@@ -88,7 +89,7 @@ public class CodeCheckWorkflows
         app.Expect("at 5 ft the header is (2) 2x10 from row r.s30.b, and the message bar says what changed", () =>
         {
             // 60 in: past 4'-1", ≤ 6'-1": r.s30.b, (2) 2x10, 1 jack and 2 kings each side.
-            Assert.Equal("Header (2) 2x10, 1 jack stud and 2 king studs each side.", window.CodeCheckText);
+            Assert.Equal(CodeCheck.HeaderText("(2) 2x10", 1, 2), window.CodeCheckText);
             Assert.Contains("row r.s30.b", window.CodeCheckCitationText, StringComparison.Ordinal);
             Assert.Contains(
                 "Header for Window 1 changed: (1) 2x8 → (2) 2x10, 1 jack and 2 king each side (Table ZZ-HEADER row r.s30.b).",
@@ -103,7 +104,7 @@ public class CodeCheckWorkflows
         TypeWidth(app, window, opening, "6' 1\"");
         app.Expect("6'-1\" is the band's own edge: still (2) 2x10, and no change is announced", () =>
         {
-            Assert.Equal("Header (2) 2x10, 1 jack stud and 2 king studs each side.", window.CodeCheckText);
+            Assert.Equal(CodeCheck.HeaderText("(2) 2x10", 1, 2), window.CodeCheckText);
             Assert.DoesNotContain("Header for Window 1", window.MessageOnScreen, StringComparison.Ordinal);
         });
 
@@ -111,7 +112,7 @@ public class CodeCheckWorkflows
         app.Chord(Key.Z);
         app.Expect("two undos put the 3 ft window and its (1) 2x8 back, and say so", () =>
         {
-            Assert.Equal("Header (1) 2x8, 1 jack stud and 1 king stud each side.", window.CodeCheckText);
+            Assert.Equal(CodeCheck.HeaderText("(1) 2x8", 1, 1), window.CodeCheckText);
             Assert.Contains("Header for Window 1 changed: (2) 2x10 → (1) 2x8", window.MessageOnScreen, StringComparison.Ordinal);
         });
 
@@ -120,7 +121,7 @@ public class CodeCheckWorkflows
         {
             CutListWindow list = window.CutList!;
             Assert.Contains(list.FramingRows.Sorted, row => row.Material == "2x8");
-            Assert.Contains("Code check under ZZ FRAME (IRC 2099, pack us-zz-frame rev 1): Window 1: (1) 2x8", list.FramingNoteText, StringComparison.Ordinal);
+            Assert.Contains($"{CodeCheck.UnderHeading(new AdoptedCodeRef("us-zz-frame", 1, "ZZ FRAME", "IRC 2099", ReviewStatus.Unreviewed))}: Window 1: (1) 2x8", list.FramingNoteText, StringComparison.Ordinal);
             Assert.DoesNotContain("not yet sized", list.FramingNoteText, StringComparison.Ordinal);
         });
 
@@ -142,8 +143,8 @@ public class CodeCheckWorkflows
                 window.CodeCheckText);
             Assert.StartsWith("Limit: IRC 2099 Table ZZ-HEADER, as adopted by ZZ FRAME row r.s30.c", window.CodeCheckCitationText, StringComparison.Ordinal);
             Assert.DoesNotContain("2x", window.CodeCheckText, StringComparison.Ordinal);
-            Assert.Contains("1 header (not yet sized)", window.FramingText, StringComparison.Ordinal);
-            Assert.Contains("Header for Window 1 is now beyond Table ZZ-HEADER: get it engineered.", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Contains(FramingList.HeaderPieces(1, null), window.FramingText, StringComparison.Ordinal);
+            Assert.Contains(CodeCheck.NowBeyondText("Window 1", "ZZ-HEADER"), window.MessageOnScreen, StringComparison.Ordinal);
         });
 
         app.SaveFrame("beyond-the-table");
@@ -176,7 +177,7 @@ public class CodeCheckWorkflows
         EntityId opening = SetUp(app, window, "ZZ FRAME — IRC 2099, in force Jan 1, 2099 (pack us-zz-frame rev 1)", "30");
         TypeWidth(app, window, opening, "5'");
         app.Expect("locked to revision 1, the 5 ft window is (2) 2x10", () =>
-            Assert.Equal("Header (2) 2x10, 1 jack stud and 2 king studs each side.", window.CodeCheckText));
+            Assert.Equal(CodeCheck.HeaderText("(2) 2x10", 1, 2), window.CodeCheckText));
 
         CodeWindow code = OpenCode(app, window);
         AppDriver picker = AppDriver.Attach(code, "brace-02-code");
@@ -184,10 +185,10 @@ public class CodeCheckWorkflows
         app.Expect("following, the project takes revision 2, whose row r.s30.b is (2) 2x12, and says so", () =>
         {
             Assert.Equal(CodeMode.Following, window.CurrentDesign!.Sketch.Code!.Mode);
-            Assert.StartsWith("Following pack us-zz-frame", code.LockText, StringComparison.Ordinal);
+            Assert.Equal(CodeCheck.FollowingNote("us-zz-frame"), code.LockText);
             Assert.StartsWith("Checking against ZZ FRAME (IRC 2099), pack us-zz-frame rev 2", code.StatusText, StringComparison.Ordinal);
             Assert.Contains("Header for Window 1 changed: (2) 2x10 → (2) 2x12", window.MessageOnScreen, StringComparison.Ordinal);
-            Assert.Equal("Header (2) 2x12, 1 jack stud and 2 king studs each side.", window.CodeCheckText);
+            Assert.Equal(CodeCheck.HeaderText("(2) 2x12", 1, 2), window.CodeCheckText);
         });
 
         PickPack(picker, code, "ZZ OTHER");
@@ -208,7 +209,7 @@ public class CodeCheckWorkflows
         app.Expect("undo puts the followed ZZ FRAME back, and its (2) 2x12", () =>
         {
             Assert.Equal("us-zz-frame", window.CurrentDesign!.Sketch.Code!.PackId);
-            Assert.Equal("Header (2) 2x12, 1 jack stud and 2 king studs each side.", window.CodeCheckText);
+            Assert.Equal(CodeCheck.HeaderText("(2) 2x12", 1, 2), window.CodeCheckText);
             Assert.Contains("(3) 2x10 → (2) 2x12", window.MessageOnScreen, StringComparison.Ordinal);
         });
 
@@ -231,7 +232,7 @@ public class CodeCheckWorkflows
         app.Expect("the code is chosen, and the window says it cannot size a header until tables are loaded", () =>
         {
             Assert.Equal("us-ct-2022", window.CurrentDesign!.Sketch.Code!.PackId);
-            Assert.Contains("Its base tables are not loaded: no header can be sized until they are", code.StatusText, StringComparison.Ordinal);
+            Assert.Contains(CodeCheck.NoBaseTablesNote, code.StatusText, StringComparison.Ordinal);
         });
 
         window.Activate();
@@ -240,16 +241,16 @@ public class CodeCheckWorkflows
         {
             Assert.True(window.IsShowingSupports);
             Assert.False(window.SupportsControl.IsEnabled);
-            Assert.Contains("has no header table loaded", ToolTip.GetTip(window.SupportsControl) as string ?? string.Empty, StringComparison.Ordinal);
+            Assert.Equal(CodeCheck.NoHeaderTableTip("CT 2022"), ToolTip.GetTip(window.SupportsControl) as string);
         });
 
         PlaceWindow(app, window);
         app.Expect("the window's check is the engine's honest no-data text and where to add tables, never a size", () =>
         {
-            Assert.StartsWith("The loaded pack CT 2022 has no header table for exterior-bearing walls, so napkin cannot size this header.", window.CodeCheckText, StringComparison.Ordinal);
+            Assert.StartsWith(HeaderResult.NoData.NoTableExplanation("CT 2022", WallKind.ExteriorBearing), window.CodeCheckText, StringComparison.Ordinal);
             Assert.EndsWith(CodeCheck.WhereToAddTables, window.CodeCheckText, StringComparison.Ordinal);
             Assert.DoesNotContain("2x", window.CodeCheckText, StringComparison.Ordinal);
-            Assert.Contains("1 header (not yet sized)", window.FramingText, StringComparison.Ordinal);
+            Assert.Contains(FramingList.HeaderPieces(1, null), window.FramingText, StringComparison.Ordinal);
         });
 
         app.SaveFrame("no-data");
@@ -279,7 +280,7 @@ public class CodeCheckWorkflows
         app.Expect("a 4'-6\" opening at 40 psf takes the (1) 2x8, whose interpolated span is 5'-0\", and the check says it was interpolated", () =>
         {
             // The plain 50 psf column would allow only 4'-0" for the 2x8; interpolation between 6'-0" and 4'-0" gives 5'-0".
-            Assert.Equal("Header (1) 2x8, 1 jack stud and 1 king stud each side.", window.CodeCheckText);
+            Assert.Equal(CodeCheck.HeaderText("(1) 2x8", 1, 1), window.CodeCheckText);
             Assert.Equal(
                 "Interpolated between the 30 psf row (i.s30.a) and the 50 psf row (i.s50.a) (ZZ INTERP footnote e, p. 9)",
                 window.CodeCheckInterpolationText);
@@ -293,7 +294,7 @@ public class CodeCheckWorkflows
         Replace(site, code, code.SnowField, "30");
         app.Expect("at exactly 30 psf the plain 30 psf row is used and the interpolation line is gone", () =>
         {
-            Assert.Equal("Header (1) 2x8, 1 jack stud and 1 king stud each side.", window.CodeCheckText);
+            Assert.Equal(CodeCheck.HeaderText("(1) 2x8", 1, 1), window.CodeCheckText);
             Assert.Equal(string.Empty, window.CodeCheckInterpolationText);
             Assert.Contains("row i.s30.a", window.CodeCheckCitationText, StringComparison.Ordinal);
         });
@@ -443,7 +444,7 @@ public class CodeCheckWorkflows
         ChooseSupports(app, window);
         EntityId opening = PlaceWindow(app, window);
         app.Expect("the window is placed and sized: (1) 2x8 from row r.s30.a", () =>
-            Assert.Equal("Header (1) 2x8, 1 jack stud and 1 king stud each side.", window.CodeCheckText));
+            Assert.Equal(CodeCheck.HeaderText("(1) 2x8", 1, 1), window.CodeCheckText));
         return opening;
     }
 

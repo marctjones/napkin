@@ -17,7 +17,7 @@ namespace Napkin.App.Viewing;
 /// </summary>
 public sealed class ExtrasTable : Grid
 {
-    private static readonly string[] Headings = ["Section", "Item", "Size", "Count", "Pack", "Packs", "For"];
+    private static readonly string[] Headings = SuppliesList.Header.Split(',');
 
     private ImmutableArray<ExtraRow> _rows = [];
 

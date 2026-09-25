@@ -173,17 +173,11 @@ public partial class CodeWindow : Window
         LockBox.IsChecked = code?.Mode == CodeMode.Locked;
         LockNote.Text = code switch
         {
-            null => "Choose a code to lock it or let it follow.",
-            { Mode: CodeMode.Locked, LockedOn: { } on } => $"Locked on {on:yyyy-MM-dd} to pack {code.PackId} revision {code.Revision}.",
-            _ => $"Following pack {code.PackId}: a newer revision is used when one is installed, and napkin says what changed.",
+            null => CodeCheck.ChooseToLockNote,
+            { Mode: CodeMode.Locked, LockedOn: { } on } => CodeCheck.LockedNote(on, code.PackId, code.Revision),
+            _ => CodeCheck.FollowingNote(code.PackId),
         };
-        CodeStatus.Text = resolved.Pack is { } pack
-            ? $"Checking against {pack.Code}."
-              + (pack.HasHeaderTables ? string.Empty
-                  : pack.Bracing is null ? " Its base tables are not loaded: no header can be sized until they are (docs/rules-engine.md says how to add them)."
-                  : " It has no header table, so headers are not sized; walls' bracing is checked.")
-              + (pack.HasHeaderTables && pack.Bracing is null ? " It has no wall-bracing provisions, so no wall's bracing is checked." : string.Empty)
-            : resolved.Problem;
+        CodeStatus.Text = resolved.Pack is { } pack ? CodeCheck.CheckingStatus(pack) : resolved.Problem;
     }
 
     private void FillSite(SiteValues site)

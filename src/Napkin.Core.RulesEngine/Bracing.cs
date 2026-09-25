@@ -198,6 +198,12 @@ public sealed record BracingRequest(BracedWallLine Line, SiteInputs Site);
 /// <param name="Why">Why: "not braced: no method assigned", "shorter than … minimum panel … (row m.h8)", "min(…, cap …) rounded down to …".</param>
 public sealed record SegmentContribution(string Label, Length Length, string? Method, Length Contribution, string Why)
 {
+    /// <summary>Why a segment whose method is another code's counts for nothing: "method 'zz-board' is not one of ZZ BRACE B's methods, …".</summary>
+    /// <param name="method">The method's id.</param>
+    /// <param name="shortName">The adopted code's short name.</param>
+    public static string UnknownMethodWhy(string method, string shortName)
+        => $"method '{method}' is not one of {shortName}'s methods, so it counts for nothing: assign one of this code's methods";
+
     /// <inheritdoc/>
     public override string ToString() => $"{Label}, {CellValue.Of(Length)}: {CellValue.Of(Contribution)} ({Why})";
 }
@@ -314,6 +320,12 @@ public abstract record BracingResult
     /// <summary>There is no data to answer from: no pack, or a pack without bracing provisions.</summary>
     public sealed record NoData(BracingNoDataReason Reason, AdoptedCodeRef? Code, string Explanation) : BracingResult
     {
+        /// <summary>The explanation when the loaded pack has no wall-bracing provisions: "The loaded pack CT 2022 has no wall-bracing provisions, …".</summary>
+        /// <param name="shortName">The code's short name.</param>
+        public static string NoProvisionsExplanation(string shortName)
+            => $"The loaded pack {shortName} has no wall-bracing provisions, so napkin cannot check this wall line's bracing. "
+               + "Nothing is guessed: add them to the pack directory from your copy of the code (docs/rules-engine.md).";
+
         /// <inheritdoc/>
         public override string ToString() => Explanation;
     }

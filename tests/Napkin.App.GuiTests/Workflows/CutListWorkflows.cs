@@ -38,7 +38,7 @@ public class CutListWorkflows
         {
             CutListWindow list = window.CutList!;
             Assert.Empty(list.Rows.Rows);
-            Assert.Contains("nothing to cut", list.Headline, StringComparison.Ordinal);
+            Assert.Contains(CutList.Headline(0, 0), list.Headline, StringComparison.Ordinal);
             Assert.NotEmpty(list.EmptyMessage);
         });
 
@@ -56,7 +56,7 @@ public class CutListWorkflows
 
             // Four legs drawn as four boxes are one row of four, which is the whole point.
             Assert.Equal([1, 2, 4, 2], list.Rows.Sorted.Select(row => row.Quantity));
-            Assert.Contains("9 pieces to cut", list.Headline, StringComparison.Ordinal);
+            Assert.Contains(CutList.Headline(4, 9), list.Headline, StringComparison.Ordinal);
             Assert.Empty(list.EmptyMessage);
         });
 
@@ -293,7 +293,7 @@ public class CutListWorkflows
             CutListWindow list = window.CutList!;
 
             Assert.Equal(13, list.Rows.Rows.Length);
-            Assert.Contains("13 rows, 24 pieces to cut", list.Headline, StringComparison.Ordinal);
+            Assert.Contains(CutList.Headline(13, 24), list.Headline, StringComparison.Ordinal);
             Assert.Equal(
                 wantRows.Select(row => row.GetProperty("label").GetString()),
                 list.Rows.Sorted.Select(row => row.Label));

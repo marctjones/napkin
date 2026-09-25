@@ -9,6 +9,13 @@ namespace Napkin.Modules.Furniture;
 /// </summary>
 public static class Recipes
 {
+    /// <summary>Why a typed count is refused.</summary>
+    public const string CountRefusal = "A count is a whole number of at least 1, or blank for the recipe's.";
+
+    /// <summary>The count box's suggestion when nothing is typed: "recipe: 3".</summary>
+    /// <param name="count">The recipe's count.</param>
+    public static string Placeholder(int count) => $"recipe: {count}";
+
     /// <summary>
     /// The count for one joint: its own typed count, or the recipe's for its fastening and the joint's length.
     /// </summary>

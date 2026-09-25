@@ -316,7 +316,7 @@ public partial class MainWindow
         string tip = methods.IsEmpty
             ? code.Pack is null
                 ? $"No code selected: choose one under {CodeCheck.WhereToChoose} first."
-                : $"{code.Pack.Code.ShortName} has no wall-bracing provisions loaded, so there is no method to choose (docs/rules-engine.md)."
+                : BracingCheck.NoProvisionsTip(code.Pack.Code.ShortName)
             : "The bracing already on this segment, as the adopted code names its methods. Not braced until you choose; napkin never assumes it.";
 
         _fillingBracing = true;
@@ -354,12 +354,12 @@ public partial class MainWindow
             foreach (WallSegment segment in line.Segments)
             {
                 _bracingLabels[segment.Index].Text = $"{segment.Index + 1}. {segment.Label}, {segment.Length.Format(Editor.LabelFormat).Text}";
-                List<string> items = ["not braced", .. methods.Select(method => method.Name)];
+                List<string> items = [BracingCheck.NotBraced, .. methods.Select(method => method.Name)];
                 int selected = segment.Method is null ? 0 : methods.Select(method => method.Id).ToList().IndexOf(segment.Method) + 1;
                 if (segment.Method is not null && selected == 0)
                 {
                     // A method this code does not have (another pack's) is shown as it is, not dropped.
-                    items.Add($"{segment.Method} (not in this code)");
+                    items.Add(BracingCheck.NotInThisCode(segment.Method));
                     selected = items.Count - 1;
                 }
 
@@ -469,7 +469,7 @@ public partial class MainWindow
                 values.IsEmpty
                     ? code.Pack is null
                         ? $"No code selected: choose one under {CodeCheck.WhereToChoose} first."
-                        : $"{code.Pack.Code.ShortName} has no header table loaded, so there is nothing to choose from yet (docs/rules-engine.md)."
+                        : CodeCheck.NoHeaderTableTip(code.Pack.Code.ShortName)
                     : "What this wall carries, as the adopted code's header table names it. napkin never assumes it.");
         }
         finally

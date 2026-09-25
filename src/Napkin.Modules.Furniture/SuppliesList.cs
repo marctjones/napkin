@@ -56,6 +56,10 @@ public static class SuppliesList
     /// <summary>What a fastener with no typed choice shows in the Size column.</summary>
     public const string SizeNotChosen = "size not chosen";
 
+    /// <summary>Why a typed pack size is refused: "A pack size is a whole number of at least 1, or blank; "0" is not."</summary>
+    /// <param name="typed">What was typed, trimmed.</param>
+    public static string PackSizeRefusal(string typed) => $"A pack size is a whole number of at least 1, or blank; \"{typed}\" is not.";
+
     /// <summary>The fasteners, hardware and supplies, in that order.</summary>
     /// <param name="sketch">The design.</param>
     public static ImmutableArray<ExtraRow> Of(Sketch sketch)

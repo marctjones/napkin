@@ -217,9 +217,10 @@ public class SelectionCommandEdgeTests
 
         EditMessage message = editor.LastMessage!;
         Assert.Equal(EditSeverity.Problem, message.Severity);
-        Assert.StartsWith("Moved Part 1", message.Text, StringComparison.Ordinal);
+        Assert.Equal("Moved Part 1 did not happen: Part 1 is pinned where it is.", message.Text);
         Assert.Equal([pin.Id], message.Highlight);
         EditOffer offer = Assert.IsType<EditOffer>(message.Offer);
+        Assert.Equal("Unpin it", offer.Text);
         Assert.Equal(new RemoveRelationship(pin.Id), offer.Request);
 
         Assert.IsAssignableFrom<Succeeded>(editor.Apply(offer.Request, offer.What));
