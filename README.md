@@ -71,6 +71,7 @@ src/
   Napkin.Core.Project         # project file format: scene graph, serialization
   Napkin.Modules.Furniture    # parts, joinery, cut lists, materials lists
   Napkin.Modules.Building     # sites, walls, openings, decks — consumes the rules engine
+  Napkin.Modules.Editing      # the editing model: design editor, undo, snapping, drawing tools
   Napkin.App                  # Avalonia UI (Windows + macOS)
 tests/
   Napkin.Core.RulesEngine.Tests   # golden tests against each state's published adopted text
