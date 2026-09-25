@@ -1053,6 +1053,15 @@
       "milestone": "M3",
       "issue": 147,
       "kind": "unit"
+    },
+    {
+      "id": "CUT-013",
+      "area": "furniture",
+      "title": "Hardware, supplies and the glue line join the shopping list",
+      "acceptance": "Hardware sums quantity times part quantity by exact name; supplies are the typed lines plus Glue: N of M joints; fasteners, hardware and supplies are rows below the boards, in a CSV with columns Section,Item,Size,Count,Pack,Packs,For that equals the rows on screen.",
+      "milestone": "M3",
+      "issue": 148,
+      "kind": "unit"
     }
   ]
 }

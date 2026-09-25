@@ -863,6 +863,10 @@
                             <TextBox Name="StockBox" FontSize="12" PlaceholderText="Stock, e.g. 2x4" />
                             <TextBlock Name="StockReadout" FontSize="10" Opacity="0.8" TextWrapping="Wrap" />
                             <TextBox Name="SpeciesBox" FontSize="12" PlaceholderText="Species" />
+                            <TextBox Name="HardwareBox" FontSize="12" AcceptsReturn="True" MinHeight="54"
+                                     PlaceholderText="Hardware, one per line: Drawer pull × 1"
+                                     AutomationProperties.Name="Hardware"
+                                     ToolTip.Tip="Slides, pulls, hinges: what this part carries that is not wood, one per line, a name then × and how many. Each copy of the part carries them. Enter starts a new line; Ctrl+Enter (Command+Enter on a Mac) applies." />
                         </StackPanel>
 
                     </StackPanel>

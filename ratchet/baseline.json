@@ -3,7 +3,7 @@
   "coverage": {
     "Napkin.Core.Geometry": {
       "line": 95.54,
-      "branch": 91.96
+      "branch": 91.97
     },
     "Napkin.Core.Materials": {
       "line": 98.28,
@@ -15,11 +15,11 @@
     },
     "Napkin.Modules.Furniture": {
       "line": 100,
-      "branch": 99.8
+      "branch": 99.82
     }
   },
   "gui": {
-    "workflowsPassed": 52,
+    "workflowsPassed": 54,
     "workflowIds": [
       "CVS-011",
       "GUI-ASSEM-01",
@@ -55,6 +55,8 @@
       "GUI-DRAW-08",
       "GUI-DRAW-09",
       "GUI-DRAW-10",
+      "GUI-JOIN-05",
+      "GUI-JOIN-06",
       "GUI-SET-01",
       "GUI-SET-02",
       "GUI-SET-03",

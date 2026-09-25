@@ -187,14 +187,16 @@ public partial class MainWindow : Window
 
         // Enter in any of the Part panel's text fields applies the panel, the way the dimension
         // field applies on Enter: typing a number and reaching for the mouse is a step too many (#78).
-        PropertiesPanel.KeyDown += (_, e) =>
+        // The hardware box takes several lines, so Enter there is a new line and Ctrl+Enter applies.
+        PropertiesPanel.AddHandler(KeyDownEvent, (_, e) =>
         {
-            if (e.Key == Key.Enter && e.Source is TextBox)
+            if (e.Key == Key.Enter && e.Source is TextBox box
+                && (!box.AcceptsReturn || e.KeyModifiers.HasFlag(CommandModifier)))
             {
                 ApplyProperties();
                 e.Handled = true;
             }
-        };
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
 
         // The backdrop behind the save question takes every press, so nothing on the paper can be
         // edited while it waits for an answer.
@@ -469,7 +471,7 @@ public partial class MainWindow : Window
     {
         if (_cutList is null)
         {
-            _cutList = new CutListWindow();
+            _cutList = new CutListWindow { ApplyRequest = (request, what) => Editor.Apply(request, what) };
             _cutList.Closed += (_, _) => _cutList = null;
         }
 
@@ -1410,7 +1412,49 @@ public partial class MainWindow : Window
         QuantityBox.Text = part.Quantity.ToString(CultureInfo.InvariantCulture);
         StockBox.Text = part.Stock ?? string.Empty;
         SpeciesBox.Text = part.Species ?? string.Empty;
+        HardwareBox.Text = string.Join("\n", part.Hardware.Select(item => $"{item.Name} \u00d7 {item.Quantity}"));
     }
+
+    /// <summary>The hardware field's lines: "name" or "name &#xD7; 3" (or "x"), the count defaulting to one.</summary>
+    static bool TryHardware(string? typed, out ImmutableList<HardwareItem> items, out string problem)
+    {
+        List<HardwareItem> list = [];
+        problem = string.Empty;
+        foreach (string raw in (typed ?? string.Empty).Split('\n'))
+        {
+            string line = raw.Trim();
+            if (line.Length == 0)
+            {
+                continue;
+            }
+
+            System.Text.RegularExpressions.Match m = HardwareLine.Match(line);
+            string name = m.Success ? m.Groups[1].Value : line;
+            int quantity = 1;
+            if (m.Success && !int.TryParse(m.Groups[2].Value, NumberStyles.None, CultureInfo.InvariantCulture, out quantity))
+            {
+                quantity = 0;
+            }
+
+            if (quantity < 1)
+            {
+                problem = $"Hardware \"{name}\" needs a count of at least 1.";
+                items = [];
+                return false;
+            }
+
+            list.Add(new HardwareItem(name, quantity));
+        }
+
+        items = [.. list];
+        return true;
+    }
+
+    static readonly System.Text.RegularExpressions.Regex HardwareLine =
+        new(@"^(.*\S)\s+[x\u00d7]\s*(\d+)$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+    /// <summary>The hardware field, for the GUI suite to type into.</summary>
+    public TextBox HardwareField => HardwareBox;
 
     void FillDimensionChoices()
     {
@@ -1552,11 +1596,19 @@ public partial class MainWindow : Window
                 return Complain("A part stands for at least one piece.");
             }
 
+            if (!TryHardware(HardwareBox.Text, out ImmutableList<HardwareItem> hardware, out string problem))
+            {
+                return Complain(problem);
+            }
+
             part = new Part(
                 Blank(StockBox.Text),
                 Blank(SpeciesBox.Text),
                 quantity,
-                planAxes);
+                planAxes)
+            {
+                Hardware = hardware,
+            };
         }
 
         Point3 low = SpaceSnapResolver.Extent(box).Low;

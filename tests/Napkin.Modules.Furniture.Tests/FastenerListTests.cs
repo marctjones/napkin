@@ -160,7 +160,7 @@ public sealed class FastenerListTests
         Assert.Equal(["Rail 1", "Rail 2", "Rail 3"], pocket.Sources.Select(source => source.Inserted));
         Assert.Equal([false, false, true], pocket.Sources.Select(source => source.Typed));
         Assert.Equal("3 + 2 + 5 = 10", pocket.Derivation);
-        Assert.Equal("Rail 1 → Post, Rail 2 → Post, Rail 3 → Post", pocket.For);
+        Assert.Equal("Rail 1 → Post; Rail 2 → Post; Rail 3 → Post", pocket.For);
         Assert.Equal("2×2 = 4", rows[2].Derivation);
     }
 
@@ -175,7 +175,7 @@ public sealed class FastenerListTests
         FastenerRow pocket = FastenerList.Of(sketch)[0];
 
         Assert.Equal(13, pocket.Count);
-        Assert.StartsWith("Rail 1 → Post × 2, ", pocket.For);
+        Assert.StartsWith("Rail 1 → Post × 2; Rail 2 → Post", pocket.For);
     }
 
     [Fact]
@@ -241,6 +241,7 @@ public sealed class FastenerListTests
             Assert.Equal(want[i].GetProperty("count").GetInt32(), rows[i].Count);
             Assert.Equal(want[i].GetProperty("packs").GetInt32(), rows[i].Packs);
             Assert.Equal(want[i].GetProperty("packSize").GetInt32(), rows[i].PackSize);
+            Assert.Equal(want[i].GetProperty("for").GetString(), rows[i].For);
             Assert.Equal(string.Empty, rows[i].Note);
             Assert.False(string.IsNullOrWhiteSpace(want[i].GetProperty("derivation").GetString()));
         }

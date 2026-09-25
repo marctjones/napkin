@@ -255,4 +255,27 @@ public class PartTests
         Entity moved = named.OnLayer(new LayerId(Guid.NewGuid()));
         Assert.Equal("Shelf", moved.Name);
     }
+
+    [Fact]
+    [Trait("Feature", "CUT-013")]
+    public void Typed_fastener_sizes_and_supplies_replace_the_projects_lists_and_move_nothing()
+    {
+        SketchBuilder builder = new();
+        EntityId id = builder.AddBox(0, 0, 10, 4);
+        DirectUpdater updater = new();
+
+        FastenerChoice choice = new(FastenerKind.Brad, new Length(512), "18 ga x 1", 1000);
+        Solved sized = Assert.IsType<Solved>(updater.Apply(builder.Sketch, new SetFastenerChoices([choice])));
+        Solved supplied = Assert.IsType<Solved>(updater.Apply(sized.Sketch, new SetSupplies([new SupplyLine("Finish", "one quart")])));
+
+        Assert.Equal([choice], supplied.Sketch.FastenerChoices);
+        Assert.Equal([new SupplyLine("Finish", "one quart")], supplied.Sketch.Supplies);
+        Assert.Equal(builder.Sketch.Find(id), supplied.Sketch.Find(id));
+        Assert.Empty(supplied.Changes.Modified);
+
+        // A second request replaces the first list rather than adding to it.
+        Solved cleared = Assert.IsType<Solved>(updater.Apply(supplied.Sketch, new SetFastenerChoices([])));
+        Assert.Empty(cleared.Sketch.FastenerChoices);
+        Assert.Single(cleared.Sketch.Supplies);
+    }
 }

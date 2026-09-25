@@ -60,6 +60,8 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetLayer setLayer => ApplySetLayer(sketch, setLayer),
             SetName setName => ApplySetName(sketch, setName),
             SetPart setPart => ApplySetPart(sketch, setPart),
+            SetFastenerChoices choices => new Solved(sketch with { FastenerChoices = choices.Choices }, ChangeSet.Empty),
+            SetSupplies supplies => new Solved(sketch with { Supplies = supplies.Supplies }, ChangeSet.Empty),
 
             // A cut is in the blank's local frame and moves with it, so setting or removing one
             // moves no geometry and disturbs no relationship: structural, like a rename
