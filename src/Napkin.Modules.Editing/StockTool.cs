@@ -192,7 +192,8 @@ public sealed class StockTool
         LayerId layer,
         EntityId id,
         string name,
-        [NotNullWhen(true)] out Request? request)
+        [NotNullWhen(true)] out Request? request,
+        EntryMode mode = EntryMode.Precise)
     {
         ArgumentNullException.ThrowIfNull(sketch);
         request = null;
@@ -211,7 +212,9 @@ public sealed class StockTool
                                $"{stock.Name} fixes no thickness, so it cannot lie flat.");
 
         Box box = Box.AsDrawn(id, layer, anchor, width, height, thickness, Angle.Zero) with { Name = name };
-        Part part = new(stock.Name, Species: null, Quantity: 1, axes);
+        // In Rough mode the free length is a rough number, so the part is marked rough
+        // (docs/design/sketch-mode.md §2.3); the stock still fixes what it fixes.
+        Part part = new(stock.Name, Species: null, Quantity: 1, axes) { Rough = mode == EntryMode.Rough };
 
         request = Batch.Of(new AddEntity(box), StockAssignment.RequestsFor(sketch, box, part, stock));
         return true;

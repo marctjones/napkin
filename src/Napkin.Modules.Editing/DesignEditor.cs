@@ -98,6 +98,29 @@ public sealed class DesignEditor
     /// <summary>Raised when there is something new to say about the last edit.</summary>
     public event EventHandler? MessageChanged;
 
+    /// <summary>Raised when <see cref="EntryMode"/> changes.</summary>
+    public event EventHandler? EntryModeChanged;
+
+    EntryMode _entryMode = EntryMode.Precise;
+
+    /// <summary>
+    /// How the next gesture enters the design (<c>docs/design/sketch-mode.md</c> &#xA7;1): Precise
+    /// every launch, never saved. Switching is not an undo step — like Snap to grid, it changes
+    /// what the next gesture does, never the design — and survives opening another design.
+    /// </summary>
+    public EntryMode EntryMode
+    {
+        get => _entryMode;
+        set
+        {
+            if (_entryMode != value)
+            {
+                _entryMode = value;
+                EntryModeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
     /// <summary>
     /// Raised when a gesture that changed something ends, after it has been recorded in
     /// <see cref="History"/>.

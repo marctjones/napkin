@@ -50,6 +50,7 @@ public class KeyMapTests
         { KeyName.Backspace, None, EditCommand.Delete },
         { KeyName.J, None, EditCommand.Join },
         { KeyName.J, Shift, EditCommand.JoinAll },
+        { KeyName.Q, None, EditCommand.ToggleRough },
         { KeyName.X, None, EditCommand.TurnX },
         { KeyName.X, Shift, EditCommand.TurnXBack },
         { KeyName.Y, None, EditCommand.TurnY },
@@ -188,7 +189,7 @@ public class KeyMapTests
     [InlineData(KeyName.R, KeyMods.Command)]
     [InlineData(KeyName.D, KeyMods.Shift)]
     [InlineData(KeyName.P, KeyMods.Shift)]
-    [InlineData(KeyName.Q, KeyMods.None)]
+    [InlineData(KeyName.Q, KeyMods.Shift)]
     [InlineData(KeyName.O, KeyMods.Shift)]
     public void A_modifier_a_shortcut_does_not_hold_makes_it_a_different_key(KeyName key, KeyMods mods)
     {

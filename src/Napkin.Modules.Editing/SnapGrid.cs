@@ -46,6 +46,32 @@ public static class SnapGrid
     }
 
     /// <summary>
+    /// The rough step at a zoom (<c>docs/design/sketch-mode.md</c> &#xA7;2.1): the rung above the
+    /// precise step, never below an inch — whole inches close up, then 3&#x2033;, 6&#x2033;, 12&#x2033;, 24&#x2033;&#x2026;
+    /// </summary>
+    /// <param name="pixelsPerInch">The zoom.</param>
+    public static double RoughStepInches(double pixelsPerInch)
+    {
+        double fine = StepInches(pixelsPerInch);
+        int i = Ladder.IndexOf(fine);
+        double above = i + 1 < Ladder.Length ? Ladder[i + 1] : fine;
+        return Math.Max(1, above);
+    }
+
+    /// <summary>
+    /// The step a drag or a tool snaps to in a view: the rough step in Rough, the grid's in
+    /// Precise, and with snapping off the finest length there is, whatever the mode — the mode does
+    /// not fight the setting.
+    /// </summary>
+    /// <param name="snapToGrid">Whether Snap to grid is on.</param>
+    /// <param name="mode">The editor's entry mode.</param>
+    /// <param name="pixelsPerInch">The zoom.</param>
+    public static double SnapStepInches(bool snapToGrid, EntryMode mode, double pixelsPerInch)
+        => !snapToGrid ? 1.0 / Length.UnitsPerInch
+            : mode == EntryMode.Rough ? RoughStepInches(pixelsPerInch)
+            : StepInches(pixelsPerInch);
+
+    /// <summary>
     /// The heavier grid step drawn over the finer one, or zero when nothing on the ladder is far
     /// enough apart to be worth drawing.
     /// </summary>
