@@ -931,7 +931,7 @@ public partial class MainWindow : Window
         PlanViewMenuItem.Icon = model ? null : new TextBlock { Text = "✓" };
         ModelViewMenuItem.Icon = model ? new TextBlock { Text = "✓" } : null;
 
-        DesignView shown = model ? DesignView.Model : DesignView.Plan;
+        DesignView shown = model ? DesignView.Model : DesignView.Top;
         if (Settings.Current.LastView != shown)
         {
             Settings.Update(s => s with { LastView = shown });

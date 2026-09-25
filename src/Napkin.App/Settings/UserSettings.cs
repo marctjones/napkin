@@ -2,10 +2,18 @@ using Napkin.App.Viewing;
 
 namespace Napkin.App.Settings;
 
-/// <summary>The two views of a design.</summary>
+/// <summary>
+/// The views of a design: the six standard views (docs/design/standard-views.md §1, Top being the
+/// plan) and the 3D view, in the order of the View menu and the number keys 1–7.
+/// </summary>
 public enum DesignView
 {
-    Plan,
+    Top = 1,
+    Bottom,
+    Front,
+    Back,
+    Left,
+    Right,
     Model,
 }
 
@@ -34,7 +42,8 @@ public enum ThemeChoice
 public sealed record UserSettings
 {
     /// <summary>The file format's version. A file with any other version is not read (beta policy: no converters).</summary>
-    public const int CurrentVersion = 1;
+    /// <remarks>2: <see cref="DesignView"/> gained the six standard views, <c>Plan</c> becoming <c>Top</c>.</remarks>
+    public const int CurrentVersion = 2;
 
     public int Version { get; init; } = CurrentVersion;
 
@@ -69,12 +78,12 @@ public sealed record UserSettings
     public OpenDesignsIn OpenIn { get; init; } = OpenDesignsIn.LastUsed;
 
     /// <summary>The view the person was last in; what <see cref="OpenDesignsIn.LastUsed"/> means.</summary>
-    public DesignView LastView { get; init; } = DesignView.Plan;
+    public DesignView LastView { get; init; } = DesignView.Top;
 
-    /// <summary>The view a newly opened design starts in.</summary>
+    /// <summary>The view a newly opened design starts in: the plan is Top.</summary>
     public DesignView ViewForNewDesign() => OpenIn switch
     {
-        OpenDesignsIn.Plan => DesignView.Plan,
+        OpenDesignsIn.Plan => DesignView.Top,
         OpenDesignsIn.Model => DesignView.Model,
         _ => LastView,
     };
