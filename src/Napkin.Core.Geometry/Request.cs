@@ -59,6 +59,13 @@ public sealed record RemoveRelationship(RelationshipId Id) : Request;
 /// <param name="Layer">The layer to put it on.</param>
 public sealed record SetLayer(EntityId Id, LayerId Layer) : Request;
 
+/// <summary>
+/// Adds a layer after the others. Structural: moves nothing. Rejected when a layer with that id is
+/// already there. How a wall tool puts the first wall on a "Wall" layer a loaded design lacks (#18).
+/// </summary>
+/// <param name="Layer">The layer.</param>
+public sealed record AddLayer(Layer Layer) : Request;
+
 /// <summary>Renames an entity. Exact, and never moves geometry.</summary>
 /// <remarks>
 /// A name is not an id: nothing looks an entity up by one, two entities may share one, and an

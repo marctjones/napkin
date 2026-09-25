@@ -21,11 +21,37 @@ public static class DesignLayers
     public const string Framing = "Framing";
 
     /// <summary>Walls, in plan.</summary>
-    public const string Wall = "Wall";
+    public const string Wall = Napkin.Modules.Building.BuildingLayers.Wall;
 
     /// <summary>Openings cut into a wall.</summary>
-    public const string Opening = "Opening";
+    public const string Opening = Napkin.Modules.Building.BuildingLayers.Opening;
 
     /// <summary>Annotation: dimensions and, later, notes and callouts.</summary>
     public const string Dimensions = "Dimensions";
+
+    /// <summary>
+    /// The layer name an entity is styled by: "Wall" or "Opening" for a box napkin reads as one
+    /// (on that layer, or called that, as the <c>wall-with-window</c> sample's are), its own
+    /// layer's name otherwise.
+    /// </summary>
+    public static string StyleName(Napkin.Core.Geometry.Sketch sketch, Napkin.Core.Geometry.Entity entity, IReadOnlyDictionary<Napkin.Core.Geometry.LayerId, string> layerNames)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(entity);
+        ArgumentNullException.ThrowIfNull(layerNames);
+        if (entity is Napkin.Core.Geometry.Box box)
+        {
+            if (Napkin.Modules.Building.Opening.Is(sketch, box))
+            {
+                return Opening;
+            }
+
+            if (Napkin.Modules.Building.Wall.Is(sketch, box))
+            {
+                return Wall;
+            }
+        }
+
+        return layerNames.TryGetValue(entity.Layer, out string? name) ? name : string.Empty;
+    }
 }

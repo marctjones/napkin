@@ -73,6 +73,13 @@
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="4">
                             <viewing:ShoppingListTable Name="ShoppingTable" />
+                            <!-- The walls' framing (#18): derived from the walls and openings, bought through
+                                 the same aggregation as the parts, and shown apart from them. -->
+                            <StackPanel Name="FramingSection" Spacing="4" IsVisible="False">
+                                <TextBlock Text="Framing" Margin="0,14,0,0" FontSize="12" FontWeight="SemiBold" />
+                                <TextBlock Name="FramingNote" FontSize="11" Opacity="0.75" TextWrapping="Wrap" />
+                                <viewing:ShoppingListTable Name="FramingTable" />
+                            </StackPanel>
                             <TextBlock Name="ExtrasNote"
                                        Margin="0,14,0,4"
                                        FontSize="11"

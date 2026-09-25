@@ -529,6 +529,45 @@ public sealed class DesignEditor
     /// </remarks>
     public string NextPartName() => $"Part {_nextPartNumber++}";
 
+    /// <summary>
+    /// "Wall 3": the word and one more than the highest number any entity called that word and a
+    /// number already has, so walls and openings count themselves (#18).
+    /// </summary>
+    public string NextName(string word)
+    {
+        int highest = 0;
+        foreach (Entity entity in _design.Sketch.Entities.Values)
+        {
+            if (entity.Name.StartsWith(word + " ", StringComparison.Ordinal)
+                && int.TryParse(entity.Name.AsSpan(word.Length + 1), out int number))
+            {
+                highest = Math.Max(highest, number);
+            }
+        }
+
+        return $"{word} {highest + 1}";
+    }
+
+    /// <summary>
+    /// The layer with this name, or a new one and the <see cref="AddLayer"/> request that makes it,
+    /// to go in the same batch as the first thing drawn on it so that undo takes both away (#18).
+    /// </summary>
+    public LayerId LayerNamed(string name, out Request? add)
+    {
+        foreach (Layer layer in _design.Sketch.Layers)
+        {
+            if (string.Equals(layer.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                add = null;
+                return layer.Id;
+            }
+        }
+
+        Layer made = new(LayerId.New(), name);
+        add = new AddLayer(made);
+        return made.Id;
+    }
+
     /// <summary>Gives every part that was just added a name, so nothing on screen is a GUID.</summary>
     Design Named(Design design, ChangeSet changes)
     {

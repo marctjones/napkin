@@ -1659,9 +1659,7 @@ public sealed class ModelView : Control
         Dictionary<LayerId, string> layerNames = sketch.Layers.ToDictionary(layer => layer.Id, layer => layer.Name);
         foreach (ScenePolygon polygon in Scene.BackToFront(_camera))
         {
-            string layer = sketch.Find(polygon.Box) is { } entity && layerNames.TryGetValue(entity.Layer, out string? name)
-                ? name
-                : string.Empty;
+            string layer = sketch.Find(polygon.Box) is { } entity ? Napkin.App.Designs.DesignLayers.StyleName(sketch, entity, layerNames) : string.Empty;
             DrawPolygon(context, palette, palette.StyleFor(layer), polygon);
         }
 

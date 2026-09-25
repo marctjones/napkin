@@ -10,6 +10,7 @@ using Napkin.App.Editing;
 using Design = Napkin.App.Designs.Design;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Modules.Building;
 
 namespace Napkin.App.Viewing;
 
@@ -132,6 +133,8 @@ public sealed class CanvasView : Control
 
     readonly RectangleTool _rectangle = new();
     readonly StockTool _stock = new();
+    readonly WallTool _wall = new();
+    OpeningKind _openingKind = OpeningKind.Window;
     EditTool _tool = EditTool.Select;
 
     Gesture _gesture = Gesture.None;
@@ -359,7 +362,7 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>Whether a press on the paper starts drawing rather than picking or panning.</summary>
-    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock;
+    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening;
 
     /// <summary>
     /// The precision dimension labels are shown at. Fixed at 1/16&#x2033;; the per-project picker
@@ -396,7 +399,7 @@ public sealed class CanvasView : Control
     public event EventHandler? ToggleGridRequested;
 
     /// <summary>Whether a part is being drawn or dragged right now.</summary>
-    public bool IsEditing => _gesture != Gesture.None || _rectangle.IsDrawing || _stock.IsDrawing;
+    public bool IsEditing => _gesture != Gesture.None || _rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing;
 
     /// <summary>What the drag in progress has caught, or null when nothing is being dragged.</summary>
     public SnapPlan? ActiveSnap => _snap;
@@ -619,7 +622,7 @@ public sealed class CanvasView : Control
         Focus();
 
         // A joint's marker sits over the parts it joins: a press on it picks the joint, a double press opens it.
-        if (properties.IsLeftButtonPressed && _tool is not (EditTool.Rectangle or EditTool.Stock)
+        if (properties.IsLeftButtonPressed && !DrawsOnPress
             && _editor is { } jointEditor && _joints.At(position) is { } marker)
         {
             jointEditor.SelectJoint(marker.Marker.Id);
@@ -662,6 +665,20 @@ public sealed class CanvasView : Control
             _stock.Begin(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             e.Pointer.Capture(this);
             InvalidateVisual();
+            return;
+        }
+
+        if (_tool == EditTool.Wall)
+        {
+            _wall.Begin(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
+            e.Pointer.Capture(this);
+            InvalidateVisual();
+            return;
+        }
+
+        if (_tool == EditTool.Opening)
+        {
+            PlaceOpening(_view.ToWorld(position));
             return;
         }
 
@@ -738,6 +755,11 @@ public sealed class CanvasView : Control
             _stock.MoveTo(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             InvalidateVisual();
         }
+        else if (_wall.IsDrawing)
+        {
+            _wall.MoveTo(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
+            InvalidateVisual();
+        }
         else if (_gesture != Gesture.None)
         {
             ContinueEdit(_view.ToWorld(position));
@@ -803,6 +825,10 @@ public sealed class CanvasView : Control
         {
             CompleteStock();
         }
+        else if (_wall.IsDrawing)
+        {
+            CompleteWall();
+        }
         else if (_gesture != Gesture.None)
         {
             CompleteEdit();
@@ -833,10 +859,11 @@ public sealed class CanvasView : Control
     {
         base.OnPointerCaptureLost(e);
 
-        if (_rectangle.IsDrawing || _stock.IsDrawing)
+        if (_rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing)
         {
             _rectangle.Cancel();
             _stock.Cancel();
+            _wall.Cancel();
             InvalidateVisual();
         }
 
@@ -928,15 +955,20 @@ public sealed class CanvasView : Control
                 Tool = EditTool.Select;
                 return true;
 
+            case Key.W:
+                ArmWall(null);
+                return true;
+
             case Key.Escape when editor.SelectedJoint is not null:
                 editor.ClearSelection();
                 return true;
 
             case Key.Escape:
-                if (_rectangle.IsDrawing || _stock.IsDrawing)
+                if (_rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing)
                 {
                     _rectangle.Cancel();
                     _stock.Cancel();
+                    _wall.Cancel();
                     InvalidateVisual();
                     return true;
                 }
@@ -1347,6 +1379,127 @@ public sealed class CanvasView : Control
         InvalidateVisual();
     }
 
+    /// <summary>The stud stock the wall tool frames new walls from, 2x4 until another is picked.</summary>
+    public LumberStock? WallMember => _wall.Member;
+
+    /// <summary>The kind of opening the opening tool puts in, when it is the tool.</summary>
+    public OpeningKind? ArmedOpening => _tool == EditTool.Opening ? _openingKind : null;
+
+    /// <summary>
+    /// Picks up the wall tool (#18): the next drag on the paper draws a wall as thick as the member is
+    /// deep. Null keeps the member it had, 2x4 the first time.
+    /// </summary>
+    public void ArmWall(LumberStock? member)
+    {
+        _wall.Member = member
+                       ?? _wall.Member
+                       ?? (MaterialsLibrary.Shipped.TryFind(StockCategory.DimensionalLumber, "2x4", out StockItem found) ? found as LumberStock : null);
+        Tool = EditTool.Wall;
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+        _editor?.Say(
+            EditSeverity.Hint,
+            $"Wall tool, {_wall.Member?.Name} studs: drag along the paper for the wall's length. It is {Label(_wall.Member?.Width ?? Length.Zero)} thick "
+            + $"and starts {Label(_wall.Height)} tall; type its own height in the panel's Depth.");
+    }
+
+    /// <summary>Picks up the opening tool (#18): the next click on a wall puts a window or door in it.</summary>
+    public void ArmOpening(OpeningKind kind)
+    {
+        _openingKind = kind;
+        Tool = EditTool.Opening;
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+        _editor?.Say(EditSeverity.Hint, $"Click on a wall to put a {Word(kind)} in it.");
+    }
+
+    static string Word(OpeningKind kind) => kind == OpeningKind.Door ? "door" : "window";
+
+    void CompleteWall()
+    {
+        if (_editor is not { } editor)
+        {
+            _wall.Cancel();
+            return;
+        }
+
+        EntityId id = EntityId.New();
+        LayerId layer = editor.LayerNamed(DesignLayers.Wall, out Request? addLayer);
+        if (!_wall.TryComplete(layer, addLayer, id, editor.NextName("Wall"), out Request? request))
+        {
+            InvalidateVisual();
+            editor.Say(EditSeverity.Hint, "Drag to draw a wall — its length is the way you drag. A click on its own makes nothing.");
+            return;
+        }
+
+        const string what = "Drew a wall";
+        editor.BeginGesture(what);
+        if (editor.Apply(request, what) is Succeeded)
+        {
+            editor.Select(id);
+            editor.Say(EditSeverity.Done, $"Drew {editor.NameOf(id)}, {_wall.Member?.Name} studs, {Size(id)}, {Label(_wall.Height)} tall.");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+    }
+
+    /// <summary>
+    /// A window's starting rough opening, 3'-0" wide by 3'-6" tall on a 3'-0" sill, and a door's,
+    /// 3'-0" by 6'-8": starting sizes to type over, not standards (the window's are the
+    /// <c>wall-with-window</c> sample's, Marc, 2026-09-23).
+    /// </summary>
+    static (Length Width, Length Sill, Length Height) StartingSize(OpeningKind kind) => kind == OpeningKind.Door
+        ? (Length.Inches(36), Length.Zero, Length.Inches(80))
+        : (Length.Inches(36), Length.Inches(36), Length.Inches(42));
+
+    void PlaceOpening(Point2 at)
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        (Length width, Length sill, Length height) = StartingSize(_openingKind);
+        foreach (Wall wall in Wall.All(editor.Sketch))
+        {
+            if (OpeningPlacement.OffsetAt(wall, at, width) is not { } offset)
+            {
+                continue;
+            }
+
+            // Snapped along the wall to the grid step, like everything else drawn on the paper.
+            Length step = Length.FromInches(SnapStepInches, Rounding.HalfToEven);
+            if (step > Length.Zero)
+            {
+                offset = Length.Min(wall.Length - width, Length.Max(Length.Zero, step * (long)Math.Round(offset / step)));
+            }
+
+            EntityId id = EntityId.New();
+            LayerId layer = editor.LayerNamed(DesignLayers.Opening, out Request? addLayer);
+            string name = editor.NextName(_openingKind == OpeningKind.Door ? "Door" : "Window");
+            Request place = OpeningPlacement.Request(wall, layer, id, name, offset, width, sill, height);
+            Request request = addLayer is null ? place : Batch.Of(addLayer, place);
+
+            string what = $"Put a {Word(_openingKind)} in {wall.Name}";
+            editor.BeginGesture(what);
+            if (editor.Apply(request, what) is Succeeded)
+            {
+                editor.Select(id);
+                editor.Say(
+                    EditSeverity.Done,
+                    $"Put {name} in {wall.Name}: {Label(width)} wide, {Label(height)} tall, sill {Label(sill)} — a starting size, not a standard. "
+                    + "Drag its ends or type its width; its height is the panel's Depth and its sill the panel's Up.");
+                Tool = EditTool.Select;
+            }
+
+            editor.EndGesture();
+            InvalidateVisual();
+            return;
+        }
+
+        editor.Say(EditSeverity.Hint, $"Click on a wall to put a {Word(_openingKind)} in it — that was not on one.");
+    }
+
     string Size(EntityId id)
     {
         if (_editor?.Design!.Sketch.Find<Box>(id) is not { } box)
@@ -1709,7 +1862,7 @@ public sealed class CanvasView : Control
 
         foreach (Entity entity in sketch.Entities.Values.OrderBy(item => item.Id))
         {
-            string layerName = layerNames.TryGetValue(entity.Layer, out string? name) ? name : string.Empty;
+            string layerName = DesignLayers.StyleName(sketch, entity, layerNames);
             switch (entity)
             {
                 case Box box:
@@ -2022,6 +2175,24 @@ public sealed class CanvasView : Control
     /// </summary>
     bool TryPreview(out Point2 anchor, out Length width, out Length height, out string? stockName)
     {
+        if (_wall.IsDrawing)
+        {
+            stockName = _wall.Member?.Name;
+            if (_wall.TryShape(LayerId.Default, EntityId.New(), string.Empty, out Box? wall))
+            {
+                Point2[] corners = [.. new[] { BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest }.Select(wall.Corner)];
+                anchor = new Point2(corners.Min(corner => corner.X), corners.Min(corner => corner.Y));
+                width = corners.Max(corner => corner.X) - anchor.X;
+                height = corners.Max(corner => corner.Y) - anchor.Y;
+                return true;
+            }
+
+            anchor = default;
+            width = Length.Zero;
+            height = Length.Zero;
+            return false;
+        }
+
         stockName = _stock.IsDrawing ? _stock.Stock?.Name : null;
         return _stock.IsDrawing
             ? _stock.TryShape(out anchor, out width, out height, out _)
