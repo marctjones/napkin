@@ -548,6 +548,17 @@
             <viewing:ModelView Name="ModelDrawing" IsVisible="False" ClipToBounds="True" />
 
             <!--
+                The sheet (docs/design/standard-views.md §11): Top above Front, Right beside Front, 3D
+                in the spare corner, over the same editor. It takes the drawing's place while it shows,
+                clear of the toolbar and the side column (its margin is set in the code-behind from the
+                same reserves zoom to fit uses), on the bench, so its gutters read as gaps.
+            -->
+            <viewing:SheetView Name="SheetDrawing"
+                               IsVisible="False"
+                               ClipToBounds="True"
+                               Background="{DynamicResource NapkinBenchBrush}" />
+
+            <!--
                 The shape workshop (docs/design/shaped-parts-model.md §7.1): a sheet over the
                 drawing, not a second window and not a second document. It is a mode the window is
                 in, the way the rectangle tool is a mode, and it covers the canvas because its
