@@ -54,9 +54,9 @@ public class ShoppingListWorkflows
                 expected.Select(fields => string.Join("\t", fields)),
                 list.ShoppingRows.LinesOnScreen.Skip(1));
 
-            // Five cut-list rows become three lines to buy; the 1x4's four pieces are two boards.
+            // Five cut-list rows become three lines to buy; the 1x4's four pieces (120 in + 4 cuts of 1/8 in) are one 12' board.
             Assert.Equal(["1x4", "2x4", "3/4 plywood"], list.ShoppingRows.Sorted.Select(row => row.Material));
-            Assert.Equal([2, 3, 1], list.ShoppingRows.Sorted.Select(row => row.Count));
+            Assert.Equal([1, 1, 1], list.ShoppingRows.Sorted.Select(row => row.Count));
         });
 
         lists.SaveFrame("shopping-list-light");
@@ -69,7 +69,7 @@ public class ShoppingListWorkflows
             ShoppingListTable table = window.CutList!.ShoppingRows;
             Assert.Equal(ShoppingListColumn.Bought, table.SortBy);
             Assert.Equal(["2x4", "1x4", "3/4 plywood"], table.Sorted.Select(row => row.Material));
-            Assert.Equal(["12.0", "4.0", ""], table.Sorted.Select(row => row.BoughtText));
+            Assert.Equal(["9.3", "4.0", ""], table.Sorted.Select(row => row.BoughtText));
         });
 
         app.Expect("the export is the table as it is being read, row for row", () =>

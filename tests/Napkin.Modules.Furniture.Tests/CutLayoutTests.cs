@@ -333,4 +333,74 @@ public sealed class CutLayoutTests
         Assert.Empty(plan.Stocks);
         Assert.Contains(CutLayout.SheetGoodsNote, plan.Notes);
     }
+
+    [Fact]
+    [Trait("Feature", "CUT-015")]
+    public void Stock_that_is_not_laid_out_says_so_and_an_empty_plan_says_nothing()
+    {
+        // 5/4x6 has no stock-length list in the library; 4/4 hardwood is sold by the board foot.
+        ImmutableArray<CutListRow> rows = Rows(
+            ("Deck", In(60), In(5.5), new Piece("5/4x6", null, 2, new Length(In(1)), Flat)),
+            ("Slat", In(36), In(6), new Piece("4/4", "walnut", 2, new Length(In(0.8125)), Flat)));
+
+        CutLayoutPlan plan = CutLayout.Of(rows, Kerf);
+
+        Assert.Empty(plan.Stocks);
+        Assert.Equal(
+            [
+                "5/4x6: napkin has read no stock-length list for this size, so it is not laid out",
+                "hardwood: sold by the board foot in random widths, not laid out",
+            ],
+            plan.Notes);
+        Assert.Equal(plan.Notes, CutLayout.Summary(plan));
+
+        CutLayoutPlan empty = CutLayout.Of([], Kerf);
+        Assert.Equal(0, empty.WasteTenthsOfPercent);
+        Assert.Empty(CutLayout.Summary(empty));
+        Assert.Empty(CutLayout.Rows(empty));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-015")]
+    public void A_species_names_its_boards_and_a_lone_cut_is_a_cut()
+    {
+        // Species-labelled softwood: the stock line carries the species, one board, one piece.
+        ImmutableArray<CutListRow> rows = Rows(("Rail", In(30), In(3.5), new Piece("2x4", "pine", 1, new Length(In(1.5)), Flat)));
+        CutLayoutPlan plan = CutLayout.Of(rows, Kerf);
+
+        // 30 in on the 6' (72): one piece, 1 cut (an offcut remains), kerf 1/8, offcut 72 - 30 1/8 = 41 7/8.
+        Assert.Equal(
+            "Board 1: 2x4 (pine) x 6 ft: Rail 30 in | 1 cut, kerf 1/8 in | offcut 41 7/8 in",
+            CutLayout.Line(CutLayout.Fields(Assert.Single(CutLayout.Rows(plan)))));
+        Assert.Equal("2x4 (pine): 1 x 6 ft; 1 piece on 1 board", CutLayout.Summary(plan)[0]);
+
+        // Two 100 in pieces cannot share a board (200 > 192): two 10 ft boards, and a refusal; the refusal reads without a length.
+        CutLayoutPlan several = Plan(Kerf, Bar("Rail", 100, 2), Bar("Ridge", 200));
+        Assert.Equal("2x4: 2 x 10 ft; 2 pieces on 2 boards", CutLayout.Summary(several)[0]);
+        Assert.Equal(
+            "No board: 2x4: Ridge 200 in: no stocked size holds it, so none is bought",
+            CutLayout.Line(CutLayout.Fields(CutLayout.Rows(several).Last())));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-015")]
+    public void Lengths_read_in_inches_and_stocked_lengths_in_feet()
+    {
+        Assert.Equal("4 5/8 in", CutLayout.Inches(Length.Inches(4, 5, 8)));
+        Assert.Equal("3/8 in", CutLayout.Inches(Length.Inches(0, 3, 8)));
+        Assert.Equal("36 in", CutLayout.Inches(Length.Inches(36)));
+        Assert.Equal("-1/2 in", CutLayout.Inches(Length.Inches(0, -1, 2)));
+        Assert.Equal("3/1024 in", CutLayout.Inches(new Length(3)));
+        Assert.Equal("8 ft", CutLayout.Feet(Length.Inches(96)));
+        Assert.Equal("100 in", CutLayout.Feet(Length.Inches(100)));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-015")]
+    public void The_shopping_csv_header_names_the_kerf_it_was_given()
+    {
+        string csv = ShoppingListCsv.ToCsv([], Length.Inches(0, 3, 32));
+        Assert.Contains("includes a 3/32 in saw kerf per cut", csv, StringComparison.Ordinal);
+        Assert.Contains("includes a 1/8 in saw kerf per cut", ShoppingListCsv.ToCsv([]), StringComparison.Ordinal);
+    }
 }

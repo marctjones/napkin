@@ -254,19 +254,37 @@ reported on its own and never aggregated into anything.
 **Step 2 — per bucket, by stock kind.**
 
 **`LumberStock` — a linear problem**, because the cross-section is fixed and only length varies.
-Each row needs `quantity` pieces of `length`. Then **first-fit decreasing** over the stock lengths
-the library carries for that item (`StockItem.StandardLengths`):
+Each row needs `quantity` pieces of `length`. The shopping list does **not** pack them itself: it
+asks the cut-layout planner (`CutLayout`, #138) and buys the boards that plan uses, so the shopping
+list and the **Cut layout** tab can never disagree. The planner is first-fit decreasing over the
+stock lengths the library carries for that item (`StockItem.StandardLengths`):
 
-1. Sort every needed piece descending by length.
-2. Put each piece in the first already-bought board with enough remaining length.
-3. If none has room, buy the **shortest stocked length that fits this piece**, and put it there.
-4. If a piece is longer than the longest stocked length, report **"no stocked length holds this
-   piece"** and buy nothing for it. An honest refusal, not a failure: a 14-foot bench top is a real
-   design and the answer is that this stock does not come that long.
+1. Sort every needed piece descending by length (ties keep cut-list order).
+2. Put each piece on the first open board with room for it, saw kerf included (below).
+3. If none has room, open a new board of the **longest** stocked length.
+4. When every piece is placed, **shrink** each board to the smallest stocked length that still
+   holds its pieces.
+5. If a piece is longer than the longest stocked length, report **"no stocked length holds this
+   piece"**, name it, and buy nothing for it. An honest refusal, not a failure: a 14-foot bench top
+   is a real design and the answer is that this stock does not come that long.
 
-**No saw kerf.** A kerf is a real 1/8″ per cut and napkin does not know the blade, so the result is
-labelled "boards needed, before saw kerf and defect" on the table and in the CSV header. Adding a
-kerf setting later changes this step and nothing else.
+**Saw kerf (#138).** Each cut removes one kerf. A board with *n* pieces takes *n* cuts when an offcut
+remains (n-1 cuts separate the pieces and one more separates the last piece from the offcut) and
+*n-1* cuts when the pieces and their kerfs exactly fill the board, because the last piece then ends
+at the board's end. A board of length *L* holds its pieces when
+`pieces + kerf × (n-1) ≤ L`; the last cut takes a kerf, or whatever less than a kerf is left. The
+piece length is the cut-list row's length (a mitred piece's long point), so joinery allowances are
+already in it. Example: 36 + 24 + 20 in on a 96 in board with a 1/8 in kerf is 80 + 3 × 1/8 =
+80 3/8 in used, 15 5/8 in offcut. Because 4 × 24 in with kerf 0 exactly fills a 96 in board (three
+cuts) but with a 1/8 in kerf needs 96 1/2 in, the kerf can change which board is bought; and because
+boards open at the longest length and then shrink, a set of pieces that used to need several short
+boards may now be one longer board (four aprons and end rails: 120 1/2 in, one 12'; before, two 6').
+
+The kerf is a per-person setting (default 1/8 in, a *practice default*, not a fact about the person's
+blade, which they set on the Cut layout tab; 0 is allowed). It is stored in the user's settings as
+an exact length and passed to the planner as a parameter: the furniture module reads no settings.
+The table and the CSV header say which kerf was used: "includes a 1/8 in saw kerf per cut". It is
+still **before defect**, and 1-D first-fit decreasing is not an optimal packing.
 
 Where the library carries **no** stock-length list for an item — `StandardLengths` is empty, which
 happens whenever no grading rulebook has been read for that size — the bucket reports total linear
@@ -481,6 +499,24 @@ CLAUDE.md's "core functionality first" asks for.
    green 2x4 is 1 9/16″ × 3 9/16″, and someone building an outdoor structure from green lumber
    would want that. Adding it is a second pair of lengths on every lumber row plus a choice in the
    UI; it is not in this branch.
-5. **No saw kerf** (§1.3, §4), and since #146 joinery allowances *are* in the finished sizes. Kerf is
-   real and absent. The cut list and the shopping list say so on the table and in the CSV header rather than being quietly
-   optimistic.
+5. **Saw kerf** (§1.3, §4): the cut list's sizes are finished sizes and never have kerf added (joinery
+   allowances *are* in them since #146). Kerf is planned where boards are decided, in the shopping list
+   and the cut layout, from a per-person setting (#138); both say which kerf on the table and in the CSV.
+
+---
+
+## 9. Reading the cut layout (for people building)
+
+**View → Cut layout** (or the *Cut layout* tab of the cut-list window) says which piece is cut from
+which board. Each board is one line, for example
+`Board 1: 2x2 x 8 ft: Leg 36 in + Rail 24 in + Rail 20 in | 3 cuts, kerf 3/8 in | offcut 4 5/8 in`,
+with a bar under it: the pieces in cutting order, a dark mark at each cut, the offcut hatched. All
+bars in a list are drawn to one scale. Under the boards, a summary says how many boards of each length
+to buy and the waste (offcuts and kerf) in inches and as a percentage of the boards bought.
+
+**Saw kerf** is the box at the top of the tab: type your blade's kerf as a length (`1/8`, `3/32"`,
+`0`) and press Enter or *Set*. Text that is not a length is refused with a message and changes
+nothing. The shopping list uses the same kerf, and napkin remembers it between runs.
+The lists show sheet goods as "counted by sheets, not nested": laying pieces out on a sheet is a later
+feature. The layout is a plan, not a guarantee: it does not know about knots, checks or defects.
+The file the tab exports is exactly the lines on screen, one row per board.

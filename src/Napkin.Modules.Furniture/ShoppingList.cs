@@ -231,10 +231,6 @@ public static class ShoppingList
             Stock: null);
     }
 
-    /// <summary>One piece per unit of quantity, each the row's length.</summary>
-    private static IEnumerable<Length> Pieces(IEnumerable<CutListRow> rows)
-        => rows.SelectMany(row => Enumerable.Repeat(row.Length, row.Quantity));
-
     /// <summary>"Leg × 4, Stretcher × 2": what a row is for, in cut-list order.</summary>
     private static string For(IEnumerable<CutListRow> rows)
         => string.Join(", ", rows.Select(row => $"{row.Label} × {row.Quantity}"));
