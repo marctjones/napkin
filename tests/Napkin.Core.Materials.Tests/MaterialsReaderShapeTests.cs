@@ -226,6 +226,26 @@ public sealed class MaterialsReaderShapeTests
             "shankDiameterInches");
 
     [Fact]
+    [Trait("Feature", "MAT-003")]
+    public void AFastenerFamilyThatIsNeitherNailNorBradIsRefused()
+        => Refuses(
+            Table("Fastener", """
+                { "name": "1d", "family": "screw", "pennySize": "1d", "length": "1", "shankDiameterInches": ".05", "derivation": "x" }
+                """),
+            MaterialsProblemKind.UnknownValue,
+            "family");
+
+    [Fact]
+    [Trait("Feature", "MAT-003")]
+    public void AFastenerWithNoFamilyIsRefused()
+        => Refuses(
+            Table("Fastener", """
+                { "name": "1d", "pennySize": "1d", "length": "1", "shankDiameterInches": ".05", "derivation": "x" }
+                """),
+            MaterialsProblemKind.MissingField,
+            "family");
+
+    [Fact]
     [Trait("Feature", "MAT-005")]
     public void ASizeClassThatIsNotTextIsRefused()
         => Refuses(
