@@ -177,6 +177,14 @@ public class StandardViewWorkflows
             Assert.Equal(BoxNamed(window, "Nub, west").Id, window.Model.HoveredPart);
         });
 
+        // Over empty paper too: the point on the plane through the view's centre, y 5½, north of everything, and z 1 up.
+        app.MoveTo(InModel(window, window.Model.Camera.Project(new Vector3d(0, 5.5, 1))));
+        app.Expect("over empty paper in Left the readout still reads y and z", () =>
+        {
+            Assert.Equal("y 5 1/2\"   z 1\"", window.CursorReadout.Text);
+            Assert.Null(window.Model.HoveredPart);
+        });
+
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("StandardViewsMenu")!));
         app.Click(CentreOf(window, window.ViewMenuEntry(DesignView.Right)));
