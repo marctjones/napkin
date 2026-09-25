@@ -55,12 +55,17 @@ public sealed class RepoLayout
         return null;
     }
 
-    /// <summary>Makes a path readable in a message by trimming the repository root off it.</summary>
+    /// <summary>
+    /// Makes a path readable in a message by trimming the repository root off it and using `/`
+    /// throughout, so a message reads the same on Windows as everywhere else (#181's CI caught
+    /// this: a test asserted the `/`-separated form a Unix runner had printed).
+    /// </summary>
     public string Relative(string path)
     {
         var full = Path.GetFullPath(path);
-        return full.StartsWith(Root, StringComparison.Ordinal)
+        var trimmed = full.StartsWith(Root, StringComparison.Ordinal)
             ? full[Root.Length..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
             : full;
+        return trimmed.Replace(Path.DirectorySeparatorChar, '/');
     }
 }
