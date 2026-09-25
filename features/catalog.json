@@ -1044,6 +1044,15 @@
       "milestone": "M3",
       "issue": 146,
       "kind": "unit"
+    },
+    {
+      "id": "CUT-012",
+      "area": "furniture",
+      "title": "The fastener list sums the joints' fasteners by kind and typed size",
+      "acceptance": "Counts by (kind, thickness) in kind order then thickness descending; the size is the person's typed choice and a missing choice says size not chosen; packs are ceil(count / pack size); each line names its joints; the sample gives 27, 6, 8, 24 and 10.",
+      "milestone": "M3",
+      "issue": 147,
+      "kind": "unit"
     }
   ]
 }

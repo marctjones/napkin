@@ -50,4 +50,22 @@ public static class Recipes
         long spaced = (jointLength.Units + Spacing - 1) / Spacing;
         return (int)Math.Max(Least, spaced);
     }
+
+    /// <summary>The kind of fastener a fastening is made of, or null for none (&#xA7;7.2).</summary>
+    /// <param name="kind">The fastening.</param>
+    public static FastenerKind? FastenerOf(FasteningKind kind) => kind switch
+    {
+        FasteningKind.PocketScrews => FastenerKind.PocketScrew,
+        FasteningKind.Screws => FastenerKind.WoodScrew,
+        FasteningKind.Brads => FastenerKind.Brad,
+        FasteningKind.Nails => FastenerKind.Nail,
+        FasteningKind.Dowels => FastenerKind.Dowel,
+        FasteningKind.Biscuits => FastenerKind.Biscuit,
+        FasteningKind.Clips => FastenerKind.TabletopClip,
+        _ => null,
+    };
+
+    /// <summary>Whether a kind of fastener's size depends on the thickness it is fastened through (&#xA7;7.3): every kind but the tabletop clip.</summary>
+    /// <param name="kind">The fastener.</param>
+    public static bool DependsOnThickness(FastenerKind kind) => kind != FastenerKind.TabletopClip;
 }
