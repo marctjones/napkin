@@ -15,6 +15,7 @@ using Napkin.App.Settings;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Core.Project;
 using Napkin.Modules.Building;
 using Napkin.Modules.Furniture;
 
@@ -521,8 +522,9 @@ public partial class MainWindow : Window
     /// </summary>
     /// <remarks>
     /// The picker is awaited rather than blocked on, because the platform dialog is asynchronous.
-    /// Anything it throws becomes a visible refusal: the one thing this path must never do is take
-    /// the application down between a person choosing a file and seeing what happened to it.
+    /// An I/O or container-format failure (<see cref="ProjectFile.IsFileException"/>) becomes a
+    /// visible refusal; anything else — a programming error — is not caught here (#175), because
+    /// hiding a real bug behind "file refused" is worse than a visible crash to fix.
     /// </remarks>
     public Task OpenFileAsync() => WhenChangesAreSafe("opening another file", PickAndOpenFileAsync);
 
@@ -542,7 +544,7 @@ public partial class MainWindow : Window
                 ShowDesign(new FileDesignSource(path));
             }
         }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
+        catch (Exception exception) when (ProjectFile.IsFileException(exception))
         {
             ShowRefusal("the file you chose", [exception.Message]);
         }
@@ -624,7 +626,7 @@ public partial class MainWindow : Window
             {
                 path = await FilePicker.PickSaveDestinationAsync(SuggestedFileName()).ConfigureAwait(true);
             }
-            catch (Exception exception) when (exception is not OutOfMemoryException)
+            catch (Exception exception) when (ProjectFile.IsFileException(exception))
             {
                 Editor.Say(EditSeverity.Problem, $"Not saved: {exception.Message}");
                 return false;

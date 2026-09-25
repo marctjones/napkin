@@ -15,12 +15,13 @@ namespace Napkin.App.Designs;
 /// to be trusted by.
 /// </para>
 /// <para>
-/// <strong>It refuses rather than repairs, and it never throws past the window.</strong> The reader
-/// returns <see cref="Refused"/> for a missing, empty, garbled, wrong-version or
-/// dangling-reference file, and that becomes a <see cref="DesignLoadException"/> carrying one line
-/// per <see cref="LoadProblem"/>. Anything the reader did not anticipate is caught here and becomes
-/// the same thing, because a viewer that dies on a bad file is worse than one that says what was
-/// wrong.
+/// <strong>It refuses rather than repairs, and it never throws an I/O or format failure past the
+/// window.</strong> The reader returns <see cref="Refused"/> for a missing, empty, garbled,
+/// wrong-version or dangling-reference file, and that becomes a <see cref="DesignLoadException"/>
+/// carrying one line per <see cref="LoadProblem"/>. An I/O or container-format exception the
+/// reader did not itself catch (<see cref="ProjectFile.IsFileException"/>) becomes the same thing;
+/// a programming error is not caught here (#175) and is left to surface as the bug it is, rather
+/// than as a misleading "file refused".
 /// </para>
 /// <para>
 /// <strong>Entities carry a name.</strong> Scene format version 2 put one on every entity, so
@@ -73,11 +74,13 @@ public sealed class FileDesignSource : IDesignSource
         {
             result = SceneReader.ReadFile(Path);
         }
-        catch (Exception exception) when (exception is not OutOfMemoryException and not StackOverflowException)
+        catch (Exception exception) when (ProjectFile.IsFileException(exception))
         {
-            // The reader is written to return a refusal rather than throw, so reaching here is a
-            // bug in it — but the person holding a bad file should still be told what happened
-            // instead of watching the application disappear.
+            // The reader is written to return a refusal rather than throw for a bad file, so
+            // reaching here means the same class of I/O or format failure escaped it (a file that
+            // vanished or was locked between the picker and the read, say). Narrowed to that set
+            // (#175, ProjectFile.IsFileException) so a genuine programming error is not swallowed
+            // and reported as "file refused" — it propagates and is visibly a bug.
             throw new DesignLoadException(
                 $"{FileName} could not be read: {exception.Message}",
                 exception);

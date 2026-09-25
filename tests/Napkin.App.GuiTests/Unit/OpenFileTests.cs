@@ -104,9 +104,12 @@ public class OpenFileTests
 
     sealed class FailingPicker(string message) : ISceneFilePicker
     {
-        public Task<string?> PickSceneFileAsync() => throw new InvalidOperationException(message);
+        // IOException, not InvalidOperationException (#175): MainWindow now narrows its picker
+        // catch to ProjectFile.IsFileException, so a fixture standing in for "the platform dialog
+        // itself failed" has to throw a kind of exception that filter actually catches.
+        public Task<string?> PickSceneFileAsync() => throw new IOException(message);
 
         public Task<string?> PickSaveDestinationAsync(string suggestedName) =>
-            throw new InvalidOperationException(message);
+            throw new IOException(message);
     }
 }
