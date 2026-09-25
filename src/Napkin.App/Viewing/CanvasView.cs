@@ -257,6 +257,7 @@ public sealed class CanvasView : Control
             }
 
             _rectangle.Cancel();
+            _wall.Cancel();
 
             // Leaving the stock tool puts the stock down: the toolbox shows nothing picked, and a
             // later press on the paper cannot place something nobody is holding any more.

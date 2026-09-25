@@ -1,4 +1,6 @@
 using Napkin.Core.Geometry;
+using Napkin.Core.Materials;
+using Napkin.Core.Project;
 
 namespace Napkin.Modules.Building.Tests;
 
@@ -103,4 +105,20 @@ public class OpeningPlacementTests
         Wall wall = new(new Box(EntityId.New(), WallLayer, Point3.Origin, In(144), In(3, 1, 2), In(96), BoxFace.Top, Angle.Degrees(30)));
         Assert.Null(OpeningPlacement.OffsetAt(wall, new Point2(In(10), In(1)), In(36)));
     }
+
+    [Fact]
+    [Trait("Feature", "BLD-002")]
+    public void APlacedOpeningSurvivesASaveAndItsFrameWithIt()
+    {
+        (Sketch sketch, _, EntityId id) = Placed(Angle.Zero, In(54));
+        using MemoryStream stream = new(SceneWriter.WriteToBytes(sketch));
+        Sketch read = Assert.IsType<Loaded>(SceneReader.Read(stream)).Sketch;
+
+        Assert.Single(read.Relationships.Values.OfType<AxisDistance>());
+        Assert.Equal(In(54), Opening.Find(read, id)!.Offset);
+        Assert.Equal(
+            FramingList.Of(sketch, MaterialsLibrary.Shipped)[0].Summary,
+            FramingList.Of(read, MaterialsLibrary.Shipped)[0].Summary);
+    }
+
 }
