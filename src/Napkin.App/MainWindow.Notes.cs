@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
@@ -16,7 +15,7 @@ namespace Napkin.App;
 /// </summary>
 public partial class MainWindow
 {
-    readonly List<ToggleButton> _noteSymbolButtons = [];
+    readonly List<Button> _noteSymbolButtons = [];
     bool _fillingNote;
 
     /// <summary>Whether the note panel is showing (a note is selected).</summary>
@@ -26,7 +25,10 @@ public partial class MainWindow
     public TextBox NoteTextField => NoteTextBox;
 
     /// <summary>The six symbol buttons, none first, for the GUI suite.</summary>
-    public IReadOnlyList<ToggleButton> NoteSymbolButtons => _noteSymbolButtons;
+    public IReadOnlyList<Button> NoteSymbolButtons => _noteSymbolButtons;
+
+    /// <summary>The symbol whose button is washed as chosen, or null with no note shown.</summary>
+    public NoteSymbol? ChosenNoteSymbol => NotePanel.IsVisible ? SelectedNote()?.Symbol : null;
 
     /// <summary>What the panel says of the note's symbol.</summary>
     public string NoteSymbolText => NotePanel.IsVisible ? NoteSymbolWord.Text ?? string.Empty : string.Empty;
@@ -36,7 +38,7 @@ public partial class MainWindow
         NotePhaseBox.ItemsSource = PhaseChoices.Select(PhaseCommand.Word).ToArray();
         foreach (NoteSymbol symbol in NoteTool.Symbols)
         {
-            ToggleButton button = new()
+            Button button = new()
             {
                 Width = 30,
                 Height = 26,
@@ -94,11 +96,13 @@ public partial class MainWindow
             }
 
             NotePhaseBox.SelectedIndex = Array.IndexOf(PhaseChoices, note.Phase);
-            foreach (ToggleButton button in _noteSymbolButtons)
+            foreach (Button button in _noteSymbolButtons)
             {
+                // The chosen glyph is moss-washed, as an armed tool is; the others sit on the paper.
                 bool chosen = (NoteSymbol)button.Tag! == note.Symbol;
-                button.IsChecked = chosen;
-                button.Background = chosen ? new SolidColorBrush(palette.Selection, 0.22) : Brushes.Transparent;
+                button.Background = chosen ? new SolidColorBrush(palette.Selection, 0.28) : Brushes.Transparent;
+                button.BorderBrush = chosen ? new SolidColorBrush(palette.Selection) : Brushes.Transparent;
+                button.BorderThickness = new Avalonia.Thickness(1);
                 ((NoteGlyphIcon)button.Content!).Ink = palette.Dimension;
                 ((NoteGlyphIcon)button.Content!).InvalidateVisual();
             }

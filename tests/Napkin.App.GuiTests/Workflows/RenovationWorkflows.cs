@@ -272,6 +272,69 @@ public class RenovationWorkflows
         },
         defaultLook: true);
 
+    [GuiWorkflow("GUI-RENO-03")]
+    public void Put_notes_with_shift_n_type_their_words_pick_a_symbol_count_them_and_delete_one() => GuiWorkflow.Run(
+        app =>
+        {
+            MainWindow window = (MainWindow)app.Target;
+            NewSheet(app, window);
+
+            Point2 first = Point2.Inches(-20, 10), second = Point2.Inches(0, 10), third = Point2.Inches(20, 10);
+            PutNote(app, window, first, "outlet");
+            app.Expect("Shift+N and a click put a new note; typing outlet gives it the outlet symbol", () =>
+            {
+                Note note = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Note>());
+                Assert.Equal(("outlet", NoteSymbol.Outlet, Phase.New), (note.Text, note.Symbol, note.Phase));
+                Assert.Equal("Notes", window.CurrentDesign!.Sketch.Layers.Single(layer => layer.Id == note.Layer).Name);
+                Assert.True(window.IsShowingNote);
+                Assert.Equal("Symbol: outlet.", window.NoteSymbolText);
+            });
+
+            PutNote(app, window, second, "switch");
+            PutNote(app, window, third, "sump pit");
+            app.Expect("words napkin does not know keep no symbol", () =>
+                Assert.Equal(NoteSymbol.None, window.CurrentDesign!.Sketch.Entities.Values.OfType<Note>().Single(note => note.Text == "sump pit").Symbol));
+
+            // The drain glyph, with the pointer: the sump pit is a drain.
+            app.Click(CentreOf(window, window.NoteSymbolButtons[5]));
+            app.Expect("the pointer gave it the drain symbol, its words kept, and the glyph is washed", () =>
+            {
+                Note pit = window.CurrentDesign!.Sketch.Entities.Values.OfType<Note>().Single(note => note.Text == "sump pit");
+                Assert.Equal(NoteSymbol.Drain, pit.Symbol);
+                Assert.Equal(NoteSymbol.Drain, window.ChosenNoteSymbol);
+            });
+            app.SaveFrame("three-notes");
+
+            app.Chord(Key.L, KeyModifiers.Shift);
+            app.Expect("the shopping list counts them by symbol", () =>
+            {
+                Assert.Equal("outlet × 1, switch × 1, drain × 1", window.CutList!.NotesText);
+                Assert.Equal("Notes\nNote,Count\noutlet,1\nswitch,1\ndrain,1\n", window.CutList!.NotesCsv);
+            });
+
+            // Pick the switch with the pointer and delete it from the keyboard.
+            window.Activate();
+            app.Click(At(window, second));
+            app.Expect("the switch is picked", () => Assert.Equal("switch", window.CurrentDesign!.Sketch.Find<Note>(window.Editor.OnlySelected!.Value)!.Text));
+            app.Press(Key.Delete);
+            app.Expect("it is gone, and the Notes line with it", () =>
+            {
+                Assert.Equal(2, window.CurrentDesign!.Sketch.Entities.Values.OfType<Note>().Count());
+                Assert.Equal("outlet × 1, drain × 1", window.CutList!.NotesText);
+            });
+            app.SaveFrame("switch-deleted");
+        },
+        defaultLook: true);
+
+    /// <summary>Shift+N, a click on the paper, the words typed into the note's box, and Enter.</summary>
+    static void PutNote(AppDriver app, MainWindow window, Point2 at, string words)
+    {
+        app.Press(Key.N, KeyModifiers.Shift);
+        app.Click(At(window, at));
+        app.Type(words);
+        app.Press(Key.Enter);
+    }
+
     static void TypeOnLabel(AppDriver app, MainWindow window, EntityId box, Napkin.App.Editing.SizeAxis axis, string text)
     {
         app.Click(InWindow(window, window.Canvas.SelectionDimensionLabelAt(box, axis)
