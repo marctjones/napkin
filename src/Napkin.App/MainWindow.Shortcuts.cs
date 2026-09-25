@@ -79,6 +79,7 @@ public partial class MainWindow
             (TurnYMenuItem, EditCommand.TurnY),
             (TurnZMenuItem, EditCommand.TurnZ),
             (GridMenuItem, EditCommand.ToggleGrid),
+            (HiddenEdgesMenuItem, EditCommand.ToggleHiddenEdges),
         ])
         {
             item.InputGesture = Gesture(command);

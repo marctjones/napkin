@@ -245,6 +245,105 @@ public class StandardViewWorkflows
         });
     }, defaultLook: true);
 
+    /// <summary>The whole drawing area's pixels, with where the patch starts in the window.</summary>
+    static (List<Avalonia.Media.Color> Pixels, int Width, Point Origin) WholeDrawing(AppDriver app, MainWindow window)
+    {
+        Point origin = window.Model.TranslatePoint(new Point(0, 0), window)!.Value;
+        int width = (int)window.Model.Bounds.Width, height = (int)window.Model.Bounds.Height;
+        return (FrameSampling.Patch(app, (int)origin.X, (int)origin.Y, width, height), width, origin);
+    }
+
+    [GuiWorkflow("GUI-VIEW-13")]
+    public void Hidden_edges_toggle_by_menu_and_by_H_only_the_ribs_dash_changes_and_the_choice_is_kept() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "L-bracket");
+        EntityId rib = BoxNamed(window, "Rib, north").Id;
+
+        app.Expect("in the plan Hidden edges is not offered", () => Assert.False(window.FindControl<MenuItem>("HiddenEdgesMenuItem")!.IsEnabled));
+        app.Press(Key.H);
+        app.Expect("H in the plan says where hidden edges are drawn and changes nothing", () =>
+        {
+            Assert.Equal(MainWindow.HiddenEdgesElsewhere, window.MessageOnScreen);
+            Assert.True(window.Settings.Current.ShowHiddenEdges);
+        });
+
+        app.Press(Key.D3);
+        app.Expect("in Front hidden edges are on, ticked, and the rib behind the upright is dashed", () =>
+        {
+            // And the readout, coming from the plan, is Front's two coordinates, not the plan's (#129 found it).
+            Assert.Equal("x —   z —", window.CursorReadout.Text);
+            MenuItem item = window.FindControl<MenuItem>("HiddenEdgesMenuItem")!;
+            Assert.True(item.IsEnabled);
+            Assert.NotNull(item.Icon);
+            Assert.True(window.Model.ShowHiddenEdges);
+            StandardViewEdges edges = window.Model.StandardEdges!;
+            Assert.Contains(edges.Edges.Hidden, segment => edges.Polygons[segment.Face].Box == rib);
+        });
+        (List<Avalonia.Media.Color> with, int width, _) = WholeDrawing(app, window);
+        app.SaveFrame("front-hidden-edges-on");
+
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("HiddenEdgesMenuItem")!));
+        app.Expect("View > Hidden edges turns them off, unticks it and remembers it", () =>
+        {
+            Assert.False(window.Model.ShowHiddenEdges);
+            Assert.Null(window.FindControl<MenuItem>("HiddenEdgesMenuItem")!.Icon);
+            Assert.False(window.Settings.Current.ShowHiddenEdges);
+        });
+
+        // Hand-derived (standard-views §1.3): the rib's one dash is its bottom edge, x ½–1 at z 2.
+        (List<Avalonia.Media.Color> without, _, _) = WholeDrawing(app, window);
+        app.SaveFrame("front-hidden-edges-off");
+        app.Expect("only pixels on the rib's dash changed: none anywhere else in the drawing", () =>
+        {
+            Camera camera = window.Model.Camera;
+            Point from = camera.Project(new Vector3d(0.5, 4.5, 2)), to = camera.Project(new Vector3d(1, 4.5, 2));
+            int changed = 0;
+            for (int i = 0; i < with.Count; i++)
+            {
+                if (with[i] == without[i])
+                {
+                    continue;
+                }
+
+                changed++;
+                double x = i % width, y = i / width;
+                Assert.True(
+                    x >= Math.Min(from.X, to.X) - 3 && x <= Math.Max(from.X, to.X) + 3 && Math.Abs(y - from.Y) <= 3,
+                    $"pixel ({x}, {y}) changed, away from the rib's dash from {from} to {to}");
+            }
+
+            Assert.True(changed > 0, "turning hidden edges off changed nothing");
+        });
+
+        app.Press(Key.H);
+        app.Expect("H turns them back on, and the picture is the one before", () =>
+        {
+            Assert.True(window.Model.ShowHiddenEdges);
+            Assert.True(window.Settings.Current.ShowHiddenEdges);
+            Assert.Equal("Hidden edges: shown as light dashes.", window.MessageOnScreen);
+            Assert.True(with.SequenceEqual(WholeDrawing(app, window).Pixels));
+        });
+
+        app.Press(Key.H);
+        app.Expect("off again, and a new window on the same settings opens with them off", () =>
+        {
+            Assert.False(window.Settings.Current.ShowHiddenEdges);
+            var next = new MainWindow(new SettingsStore(window.Settings.Location));
+            try
+            {
+                next.Show();
+                Assert.False(next.Model.ShowHiddenEdges);
+                Assert.Null(next.FindControl<MenuItem>("HiddenEdgesMenuItem")!.Icon);
+            }
+            finally
+            {
+                next.Close();
+            }
+        });
+    }, defaultLook: true);
+
     [GuiWorkflow("GUI-VIEW-09")]
     public void Front_is_read_only_pan_zoom_and_select_and_the_selection_commands_still_work() => GuiWorkflow.Run(app =>
     {

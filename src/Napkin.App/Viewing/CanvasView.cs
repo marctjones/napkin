@@ -2391,7 +2391,9 @@ public sealed class CanvasView : Control
         }
 
         SolidColorBrush brush = new(ink);
-        Pen pen = new(brush, 1);
+
+        // Dimension and extension lines are the table's thin line (#134), under the parts' outlines.
+        Pen pen = new(brush, DrawingLines.Of(LineKind.Dimension).Pixels);
         Vector direction = along / length;
 
         // A dimension in its own ink is sketched; one shown in the selection's colour stays clean and readable.

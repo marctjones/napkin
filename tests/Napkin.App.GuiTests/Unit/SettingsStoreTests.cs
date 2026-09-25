@@ -38,6 +38,15 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    [Trait("Feature", "VIEW-009")]
+    public void Hidden_edges_are_on_by_default_and_turning_them_off_is_remembered()
+    {
+        Assert.True(new SettingsStore(FilePath).Current.ShowHiddenEdges);
+        new SettingsStore(FilePath).Update(s => s with { ShowHiddenEdges = false });
+        Assert.False(new SettingsStore(FilePath).Current.ShowHiddenEdges);
+    }
+
+    [Fact]
     public void The_saw_kerf_defaults_to_an_eighth_and_is_kept_exactly_including_zero()
     {
         Assert.Equal(Napkin.Core.Geometry.Length.Inches(0, 1, 8), new SettingsStore(FilePath).Current.SawKerf);

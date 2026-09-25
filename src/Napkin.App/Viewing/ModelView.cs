@@ -275,6 +275,25 @@ public sealed class ModelView : Control
         }
     }
 
+    bool _showHiddenEdges = true;
+
+    /// <summary>
+    /// Whether a standard view draws the edges a nearer part hides, as light dashes beneath the solid
+    /// ones (docs/design/standard-views.md §2.3). The free 3D view never does.
+    /// </summary>
+    public bool ShowHiddenEdges
+    {
+        get => _showHiddenEdges;
+        set
+        {
+            if (_showHiddenEdges != value)
+            {
+                _showHiddenEdges = value;
+                InvalidateVisual();
+            }
+        }
+    }
+
     /// <summary>Whether a drag or a tool lands on the grid. Independent of whether the grid is drawn.</summary>
     public bool SnapToGrid { get; set; } = true;
 
@@ -1716,22 +1735,33 @@ public sealed class ModelView : Control
         // An opening shares its faces with its wall, so it is painted in a second pass, over the wall,
         // where it reads as a hole. A visual stand-in only (#18): it is also painted over anything
         // standing in front of the wall.
-        List<ScenePolygon> openings = [];
-        foreach (ScenePolygon polygon in Scene.BackToFront(_camera))
+        string LayerOf(ScenePolygon polygon) =>
+            sketch.Find(polygon.Box) is { } entity ? Napkin.Modules.Editing.DesignLayers.StyleName(sketch, entity, layerNames) : string.Empty;
+
+        if (_locked is { } view)
         {
-            string layer = sketch.Find(polygon.Box) is { } entity ? Napkin.Modules.Editing.DesignLayers.StyleName(sketch, entity, layerNames) : string.Empty;
-            if (layer == Napkin.Modules.Editing.DesignLayers.Opening)
+            DrawStandardView(context, palette, view, LayerOf);
+        }
+        else
+        {
+            StandardEdges = null;
+            List<ScenePolygon> openings = [];
+            foreach (ScenePolygon polygon in Scene.BackToFront(_camera))
             {
-                openings.Add(polygon);
-                continue;
+                string layer = LayerOf(polygon);
+                if (layer == Napkin.Modules.Editing.DesignLayers.Opening)
+                {
+                    openings.Add(polygon);
+                    continue;
+                }
+
+                DrawPolygon(context, palette, palette.StyleFor(layer), polygon);
             }
 
-            DrawPolygon(context, palette, palette.StyleFor(layer), polygon);
-        }
-
-        foreach (ScenePolygon polygon in openings)
-        {
-            DrawPolygon(context, palette, palette.StyleFor(Napkin.Modules.Editing.DesignLayers.Opening), polygon);
+            foreach (ScenePolygon polygon in openings)
+            {
+                DrawPolygon(context, palette, palette.StyleFor(Napkin.Modules.Editing.DesignLayers.Opening), polygon);
+            }
         }
 
         DrawAttention(context, palette);
@@ -1807,6 +1837,84 @@ public sealed class ModelView : Control
 
     void DrawPolygon(DrawingContext context, CanvasPalette palette, EntityStyle style, ScenePolygon polygon)
     {
+        FillPolygon(context, new SolidColorBrush(Tone(palette, style, polygon.Normal)), polygon);
+
+        Pen pen = new(new SolidColorBrush(style.Stroke), Math.Min(style.StrokeThickness, 1.2))
+        {
+            LineJoin = PenLineJoin.Round,
+            DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
+        };
+        DrawEdges(context, pen, polygon, palette.Look.Line, style);
+    }
+
+    /// <summary>The edges the last standard view drew, split visible and hidden; null outside one.</summary>
+    public StandardViewEdges? StandardEdges { get; private set; }
+
+    /// <summary>
+    /// A standard view (§2.2, §2.3): every face in the flat fill, back to front — openings last, over
+    /// their walls — then the hidden edges as light dashes, then the visible edges solid over them, in
+    /// the weights of the one line table (#134).
+    /// </summary>
+    void DrawStandardView(DrawingContext context, CanvasPalette palette, StandardView view, Func<ScenePolygon, string> layerOf)
+    {
+        StandardViewEdges edges = StandardViewEdges.Of(Scene, _camera, view);
+        StandardEdges = edges;
+        EntityStyle[] styles = [.. edges.Polygons.Select(polygon => palette.StyleFor(layerOf(polygon)))];
+        bool[] opening = [.. edges.Polygons.Select(polygon => layerOf(polygon) == Napkin.Modules.Editing.DesignLayers.Opening)];
+        foreach (bool openings in (bool[])[false, true])
+        {
+            for (int i = 0; i < edges.Polygons.Count; i++)
+            {
+                if (opening[i] == openings)
+                {
+                    FillPolygon(context, new SolidColorBrush(Flat(palette, styles[i])), edges.Polygons[i]);
+                }
+            }
+        }
+
+        if (_showHiddenEdges)
+        {
+            LineStyle hidden = DrawingLines.Of(LineKind.Hidden);
+            foreach (FlatSegment segment in edges.Edges.Hidden)
+            {
+                Pen pen = new(new SolidColorBrush(styles[segment.Face].Stroke, hidden.Opacity), hidden.Pixels)
+                {
+                    DashStyle = new DashStyle(hidden.Dashes, 0),
+                };
+                context.DrawLine(pen, _camera.Project(edges.InWorld(segment.From)), _camera.Project(edges.InWorld(segment.To)));
+            }
+        }
+
+        LineStyle visible = DrawingLines.Of(LineKind.Visible);
+        foreach (FlatSegment segment in edges.Edges.Visible)
+        {
+            EntityStyle style = styles[segment.Face];
+            Vector3d p = edges.InWorld(segment.From), q = edges.InWorld(segment.To);
+            if (palette.Look.Line != SketchLine.Clean)
+            {
+                SketchInk.Stroke(
+                    context,
+                    palette.Look.Line,
+                    style.Stroke,
+                    style.Dashed,
+                    _camera.Project(p),
+                    _camera.Project(q),
+                    SketchStroke.SeedOf(p.X + (p.Z * 1.7), p.Y + (p.Z * 0.9), q.X + (q.Z * 1.7), q.Y + (q.Z * 0.9)));
+            }
+            else
+            {
+                Pen pen = new(new SolidColorBrush(style.Stroke), visible.Pixels)
+                {
+                    LineCap = PenLineCap.Round,
+                    DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
+                };
+                context.DrawLine(pen, _camera.Project(p), _camera.Project(q));
+            }
+        }
+    }
+
+    void FillPolygon(DrawingContext context, IBrush fill, ScenePolygon polygon)
+    {
         StreamGeometry face = new();
         using (StreamGeometryContext figure = face.Open())
         {
@@ -1819,14 +1927,7 @@ public sealed class ModelView : Control
             figure.EndFigure(isClosed: true);
         }
 
-        context.DrawGeometry(new SolidColorBrush(_locked is null ? Tone(palette, style, polygon.Normal) : Flat(palette, style)), null, face);
-
-        Pen pen = new(new SolidColorBrush(style.Stroke), Math.Min(style.StrokeThickness, 1.2))
-        {
-            LineJoin = PenLineJoin.Round,
-            DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
-        };
-        DrawEdges(context, pen, polygon, palette.Look.Line, style);
+        context.DrawGeometry(fill, null, face);
     }
 
     void DrawEdges(DrawingContext context, Pen pen, ScenePolygon polygon, SketchLine line = SketchLine.Clean, EntityStyle? style = null)
@@ -1858,7 +1959,7 @@ public sealed class ModelView : Control
     /// lays it, made opaque so the painter's order hides what is behind — no lift, no shade, since
     /// every face drawn in an axis view faces the eye.
     /// </summary>
-    internal static Color Flat(CanvasPalette palette, EntityStyle style)
+    public static Color Flat(CanvasPalette palette, EntityStyle style)
     {
         double alpha = style.Fill.A / 255.0;
         Color background = palette.Background;

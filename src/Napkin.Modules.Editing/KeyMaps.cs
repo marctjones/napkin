@@ -69,6 +69,9 @@ public enum EditCommand
     /// <summary>Show or hide the grid.</summary>
     ToggleGrid,
 
+    /// <summary>Show or hide the hidden edges' dashes in a standard view.</summary>
+    ToggleHiddenEdges,
+
     /// <summary>Stop what is under way, or let go of the selection.</summary>
     Cancel,
 
@@ -334,6 +337,7 @@ public static class KeyMaps
             new(Shift(KeyName.Z), EditCommand.TurnZBack),
             new(K(KeyName.V), EditCommand.OtherView),
             new(K(KeyName.G), EditCommand.ToggleGrid),
+            new(K(KeyName.H), EditCommand.ToggleHiddenEdges),
             new(K(KeyName.Escape), EditCommand.Cancel),
             new(K(KeyName.Enter), EditCommand.Confirm),
             new(K(KeyName.Tab), EditCommand.EditWidth),
@@ -367,6 +371,7 @@ public static class KeyMaps
             [EditCommand.TurnZBack] = "Turn about Z the other way",
             [EditCommand.OtherView] = "3D from a flat view; back to the last flat view from 3D",
             [EditCommand.ToggleGrid] = "Show or hide the grid",
+            [EditCommand.ToggleHiddenEdges] = "Show or hide hidden edges, as light dashes (Bottom, Front, Back, Left, Right)",
             [EditCommand.Cancel] = "Stop what is under way, put down the tool, or let go of the selection",
             [EditCommand.Confirm] = "Edit the selected joint",
             [EditCommand.EditWidth] = "Type the selected part's width (plan)",

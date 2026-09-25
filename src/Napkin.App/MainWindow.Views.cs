@@ -195,6 +195,8 @@ public partial class MainWindow
             item.IsEnabled = free3D;
         }
 
+        HiddenEdgesMenuItem.IsEnabled = readOnly;
+
         foreach (DesignView view in AllViews)
         {
             ViewMenuEntry(view).Icon = view == _view ? new TextBlock { Text = "✓" } : null;

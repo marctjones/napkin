@@ -1244,6 +1244,33 @@
       "kind": "unit"
     },
     {
+      "id": "VIEW-007",
+      "area": "ui",
+      "title": "Hidden edges: each face's edges less what a strictly nearer face covers",
+      "acceptance": "HiddenEdges.Split on hand-drawn faces: flush squares hide nothing; nearer by more than 1/2048 inch hides, by less does not; a corner overlap hides exactly its quarter; a notch in a nearer outline lets the edge show through; an outline exactly behind another shows no dash; a dash is dropped only where a solid edge lies along it; rulings and zero-length edges get no line; a tilted face hides only where nearer everywhere.",
+      "milestone": "M2",
+      "issue": 129,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-008",
+      "area": "ui",
+      "title": "One table of drawing line kinds and weights",
+      "acceptance": "DrawingLines: visible heavier than hidden heavier than dimension (= extension); hidden is 1 px, dash [3,3], 0.35; the others solid but the centre chain; every kind has a line. A hidden dash is lighter than a visible edge yet at least 1.15:1 on every layer's flat fill, light, dark and napkin.",
+      "milestone": "M2",
+      "issue": 134,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-009",
+      "area": "ui",
+      "title": "Hidden edges on the l-bracket and the coffee table; the setting",
+      "acceptance": "Front: lug whole, rib dashed (one 1/2-inch dash at z 2); Back the reverse; Right tab whole, nub dashed; Left nub whole, tab dashed; Bottom skid whole, boss dashed. Coffee table Front dashes only each short apron's inner side and bottom (z 12 3/4 to 16 1/4, 3/4 wide, inside a near leg). ShowHiddenEdges is on by default and remembered.",
+      "milestone": "M2",
+      "issue": 129,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-VIEW-08",
       "area": "ui",
       "title": "Switch between Top, Front and 3D by key, chip and menu",
@@ -1286,6 +1313,15 @@
       "acceptance": "Open the l-bracket; 2 shows Bottom (lug above rib), the Back chip shows Back (nub right of tab), 5 shows Left (rib left of lug) and the pointer on the nub reads y 2 1/2 z 3 3/8 with no x; View > Standard views > Right shows Right (boss left of upright); a pan in Right survives a trip to Front; 7 reads three coordinates again; the six views draw six different pictures.",
       "milestone": "M2",
       "issue": 128,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-13",
+      "area": "ui",
+      "title": "Hidden edges toggle by menu and by H, kept across windows",
+      "acceptance": "Open the l-bracket; in the plan the item is disabled and H says where hidden edges are drawn; 3 shows Front with them ticked and the rib dashed; View > Hidden edges turns them off and only pixels on the rib's dash change; H turns them back on to the same picture; off again, a new window on the same settings has them off.",
+      "milestone": "M2",
+      "issue": 129,
       "kind": "workflow"
     },
     {

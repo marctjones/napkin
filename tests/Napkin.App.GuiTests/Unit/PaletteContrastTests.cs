@@ -28,6 +28,32 @@ public class PaletteContrastTests
             Contrast(palette.Dimension, palette.Background) >= 4.5,
             $"{theme}: dimension {palette.Dimension} on {palette.Background} is {Contrast(palette.Dimension, palette.Background):0.00}:1.");
 
+    /// <summary>A colour laid at an opacity over an opaque one.</summary>
+    static Color Over(Color ink, double opacity, Color under) => Color.FromRgb(
+        (byte)Math.Round((ink.R * opacity) + (under.R * (1 - opacity))),
+        (byte)Math.Round((ink.G * opacity) + (under.G * (1 - opacity))),
+        (byte)Math.Round((ink.B * opacity) + (under.B * (1 - opacity))));
+
+    // #134: a hidden edge is lighter than a visible one on the same part, yet still there to see —
+    // in both themes and on the napkin, for every layer a part can be on.
+    [Theory]
+    [Trait("Feature", "VIEW-008")]
+    [MemberData(nameof(Palettes))]
+    public void A_hidden_dash_is_lighter_than_a_visible_edge_but_still_shows_on_the_part(string theme, CanvasPalette basis)
+    {
+        foreach (CanvasPalette palette in (CanvasPalette[])[basis, CanvasPalette.For(theme == "dark" ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light, new SketchLook(SketchPaper.Napkin, SketchLine.Carpenter))])
+        {
+            foreach (EntityStyle style in palette.Styles.Values.Append(palette.Neutral).Where(style => !style.Dashed))
+            {
+                Color fill = ModelView.Flat(palette, style);
+                double hidden = Contrast(Over(style.Stroke, Napkin.Modules.Editing.DrawingLines.Of(Napkin.Modules.Editing.LineKind.Hidden).Opacity, fill), fill);
+                double visible = Contrast(style.Stroke, fill);
+                Assert.True(hidden < visible, $"{theme}: a hidden dash ({hidden:0.00}:1) is not lighter than a visible edge ({visible:0.00}:1)");
+                Assert.True(hidden >= 1.15, $"{theme}: a hidden dash on {fill} is {hidden:0.00}:1, too faint to see");
+            }
+        }
+    }
+
     [Fact]
     public void The_ratio_matches_the_published_extremes()
     {

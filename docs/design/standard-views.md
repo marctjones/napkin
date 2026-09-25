@@ -8,7 +8,9 @@ window otherwise), and the chips sit in the status bar beside the view's name ra
 drawing's top-right corner (the side panels own that corner, and chips over the paper take its clicks).
 Slice B (#128) enabled the other four; the views' pure frame (axes, names, readable coordinates) is
 `StandardViewFrame` in `Napkin.Modules.Editing`, and per-view camera memory stays session state in
-`ModelView` (never scene data, docs/file-format.md rule 6; not persisted across runs).
+`ModelView` (never scene data, docs/file-format.md rule 6; not persisted across runs). Slice C (#129,
+with #134's line table `DrawingLines`) put `HiddenEdges` in the Module too; H toggles it beside the
+menu item; a hidden piece lying along a solid edge is dropped rather than overdrawn.
 
 Written for issue #106 (the design) and owed to
 #107 (the read-only implementation) and #108 (the view switcher), both in milestone Views, both

@@ -155,6 +155,7 @@ public partial class MainWindow
         ApplySketch();
         ApplyOpenIn(Settings.Current.OpenIn);
         ApplyGrid(Settings.Current.ShowGrid, Settings.Current.SnapToGrid);
+        ApplyHiddenEdges(Settings.Current.ShowHiddenEdges);
         _showRulers = Settings.Current.ShowRulers;
         DrawingCanvas.ShowRulers = _showRulers;
         ModelDrawing.ShowScaleBar = _showRulers;
@@ -174,6 +175,35 @@ public partial class MainWindow
         bool show = !Settings.Current.ShowGrid;
         Settings.Update(s => s with { ShowGrid = show });
         ApplyGrid(show, Settings.Current.SnapToGrid);
+    }
+
+    void OnHiddenEdgesClicked(object? sender, RoutedEventArgs e) => ToggleHiddenEdges();
+
+    /// <summary>
+    /// Hidden edges on or off (standard-views §2.3), remembered. Only a standard view other than Top
+    /// draws them; anywhere else the key says where to look instead of changing what cannot be seen.
+    /// </summary>
+    void ToggleHiddenEdges()
+    {
+        if (!IsShowingStandardView)
+        {
+            Editor.Say(EditSeverity.Hint, HiddenEdgesElsewhere);
+            return;
+        }
+
+        bool show = !Settings.Current.ShowHiddenEdges;
+        Settings.Update(s => s with { ShowHiddenEdges = show });
+        ApplyHiddenEdges(show);
+        Editor.Say(EditSeverity.Done, show ? "Hidden edges: shown as light dashes." : "Hidden edges: not shown.");
+    }
+
+    /// <summary>What H says outside the views that draw hidden edges.</summary>
+    public const string HiddenEdgesElsewhere = "Hidden edges are drawn in Bottom, Front, Back, Left and Right — 3 for Front.";
+
+    void ApplyHiddenEdges(bool show)
+    {
+        ModelDrawing.ShowHiddenEdges = show;
+        HiddenEdgesMenuItem.Icon = show ? new TextBlock { Text = "✓" } : null;
     }
 
     void OnSnapToGridClicked(object? sender, RoutedEventArgs e)
