@@ -886,7 +886,10 @@ public sealed class ModelView : Control
 
                 ModelPick? pick = PickAt(position);
                 Hover(pick?.Box);
-                PointerModelPositionChanged?.Invoke(this, pick?.Point);
+
+                // A standard view reads the point on the plane through its centre (standard-views §5.3):
+                // over empty paper too, and its two visible coordinates are the part's anyway.
+                PointerModelPositionChanged?.Invoke(this, _locked is null ? pick?.Point : _camera.OnCenterPlane(position));
                 break;
         }
     }
@@ -2239,7 +2242,9 @@ public sealed class ModelView : Control
                 Typeface.Default,
                 10,
                 brush);
-            context.DrawText(text, tip + new Vector(2, -text.Height / 2));
+            // Right of the tip — or, for an axis pointing left (X in Back, Y in Left), under it, so
+            // its name is not written across its own line and stays inside the corner.
+            context.DrawText(text, along.X < -1e-9 ? new Point(tip.X, tip.Y + 2) : tip + new Vector(2, -text.Height / 2));
         }
     }
 
