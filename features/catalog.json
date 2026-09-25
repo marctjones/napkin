@@ -1091,6 +1091,15 @@
       "kind": "unit"
     },
     {
+      "id": "GEO-019",
+      "area": "geometry",
+      "title": "Firm up proposes the relationships touching parts imply",
+      "acceptance": "For each pair of the given parts that touch over an area, older id first: one Flush per pair of faces facing each other, and one per pair of X or Y faces facing the same way at one coordinate whose other extents meet; none for parts that do not touch, overlap, or are walls; none already held in either order; ordered by pair, against before alongside, axis, then face; each accepted by the updater without moving anything.",
+      "milestone": "M7",
+      "issue": 172,
+      "kind": "unit"
+    },
+    {
       "id": "CUT-014",
       "area": "furniture",
       "title": "A joint reads as one sentence: type, parts, depth, fasteners with their typed size, glue",
