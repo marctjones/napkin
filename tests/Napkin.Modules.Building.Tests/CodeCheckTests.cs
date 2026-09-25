@@ -370,6 +370,109 @@ public class CodeCheckTests
         WallFraming framing = Assert.Single(FramingList.Of(spaced, Library));
         Assert.Equal(In(24), framing.Spacing);
         Assert.DoesNotContain(framing.Notes, note => note.Contains(FramingOptions.DefaultSpacingNote, StringComparison.Ordinal));
-        Assert.NotNull(window);
+        Assert.NotEqual(default, window);
+    }
+
+    [Fact]
+    public void A_pack_that_did_not_load_is_named_with_its_problems_and_no_packs_is_nothing()
+    {
+        CodePacks bad = new([new PackLoadResult.Invalid("us-zz-bad", new ValueList<PackProblem>([new PackProblem("pack.json", null, null, "SYNTHETIC problem")]))]);
+        CodeResolution resolved = bad.Resolve(Frame with { PackId = "us-zz-bad" });
+        Assert.Null(resolved.Pack);
+        Assert.Contains("us-zz-bad is installed but does not load", resolved.Problem, StringComparison.Ordinal);
+        Assert.Contains("SYNTHETIC problem", resolved.Problem, StringComparison.Ordinal);
+
+        Assert.Empty(CodePacks.None.Loaded);
+        Assert.Empty(CodePacks.None.Invalid);
+        Assert.Empty(CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "no-such-folder")]).Loaded);
+        Assert.Equal(new CodeSelection("us-zz-frame", 1, CodeLockMode.Following, null), CodeCheck.Selection(new CodeChoice("us-zz-frame", 1, CodeMode.Following, null)));
+    }
+
+    [Fact]
+    public void Supports_not_chosen_with_no_table_is_the_packs_no_data()
+    {
+        CodePacks shipped = CodePacks.Discover([RealPacks]);
+        (Sketch sketch, _) = Design(In(36), supports: null, code: new CodeChoice("us-ct-2022", 1, CodeMode.Following, null));
+        Assert.Equal(NoDataReason.NoTableForWallKind, Assert.IsType<HeaderResult.NoData>(Check(sketch, shipped)).Reason);
+    }
+
+    [Fact]
+    public void The_short_forms_and_the_words_cover_every_result()
+    {
+        HeaderResult.Sized sized = Assert.IsType<HeaderResult.Sized>(Check(Design(In(36)).Sketch));
+        HeaderResult.OutOfScope beyond = Assert.IsType<HeaderResult.OutOfScope>(Check(Design(In(98)).Sketch));
+        Assert.Equal("(1) 2x8, 1 jack and 1 king each side (Table ZZ-HEADER row r.s30.a)", CodeCheck.Short(sized));
+        Assert.Equal("beyond Table ZZ-HEADER: get it engineered", CodeCheck.Short(beyond));
+
+        // Two inputs missing at once: both named, and both places to enter them said.
+        HeaderResult.InputMissing both = new(new ValueList<string>(["groundSnowLoad", "supports"]), "ZZ-HEADER", sized.Citation.Code, "SYNTHETIC");
+        Assert.Equal(
+            "Not checked: the ground snow load, what the wall supports are not entered, and napkin never assumes a value. "
+            + "Choose what the wall supports under Supports in the wall's panel. Enter the site values under Edit → Adopted code and site.",
+            CodeCheck.Words(both, Library).Headline);
+        Assert.Equal("not checked: the ground snow load, what the wall supports not entered", CodeCheck.Short(both));
+
+        // A snow load past the heaviest band: "This case is outside …" is the sentence dropped.
+        HeaderResult.OutOfScope heavy = Assert.IsType<HeaderResult.OutOfScope>(Check(Design(In(36), snow: 61).Sketch));
+        Assert.Equal(
+            "This opening is beyond what Table ZZ-HEADER covers: groundSnowLoad 61 psf is above the largest band table ZZ-HEADER covers (60 psf, row r.s60.b). napkin stops here: get this header engineered.",
+            CodeCheck.Words(heavy, Library).Headline);
+
+        // An explanation without the engineer sentence is kept whole.
+        HeaderResult.OutOfScope plain = heavy with { Explanation = "SYNTHETIC limit." };
+        Assert.Contains("covers: SYNTHETIC limit. napkin stops here", CodeCheck.Words(plain, Library).Headline, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("supports", "what the wall supports")]
+    [InlineData("groundSnowLoad", "the ground snow load")]
+    [InlineData("ultimateWindSpeed", "the wind speed")]
+    [InlineData("seismicDesignCategory", "the seismic design category")]
+    [InlineData("frostDepth", "the frost depth")]
+    [InlineData("buildingWidth", "the building width")]
+    [InlineData("headerSpan", "headerSpan")]
+    public void Every_table_input_has_plain_words(string name, string words) => Assert.Equal(words, CodeCheck.Input(name));
+
+    [Fact]
+    public void Every_kind_of_change_is_said_the_most_serious_first()
+    {
+        (Sketch small, EntityId window) = Design(In(36));
+        Sketch beyond = small.WithEntity(small.Find<Box>(window)! with { Width = In(98) });
+        Sketch missing = small with { Site = SiteValues.NotEntered };
+
+        // Out of scope → sized; no answer → out of scope; out of scope at another limit (snow 45:
+        // r.s60.b's 61 in instead of r.s30.c's 97 in).
+        Assert.Equal(["Header for Window 1 is now sized: (1) 2x8, 1 jack and 1 king each side (Table ZZ-HEADER row r.s30.a)."], CodeCheck.Changes(CodeCheck.Of(beyond, One), CodeCheck.Of(small, One)));
+        Assert.Equal(["Header for Window 1 is now beyond Table ZZ-HEADER: get it engineered."], CodeCheck.Changes(CodeCheck.Of(missing, One), CodeCheck.Of(beyond, One)));
+        Assert.Equal(
+            ["Header for Window 1 is now beyond Table ZZ-HEADER: get it engineered."],
+            CodeCheck.Changes(CodeCheck.Of(beyond, One), CodeCheck.Of(beyond with { Site = SiteValues.NotEntered with { GroundSnowLoadPsf = 45 } }, One)));
+
+        // Two windows: one loses its size, one grows; the lost size is said first.
+        Box second = new Box(EntityId.New(), OpeningLayer, new Point3(In(100), Length.Zero, In(36)), In(20), In(3, 1, 2), In(42), BoxFace.Top, Angle.Zero) { Name = "Window 2" };
+        Sketch two = small.WithEntity(second);
+        Sketch after = two.WithEntity(second with { Width = In(30) }).WithEntity(small.Find<Box>(window)! with { Width = In(98) });
+        Sketch grown = two.WithEntity(second with { Width = In(60) });
+        Assert.Equal(
+            [
+                "Header for Window 1 is now beyond Table ZZ-HEADER: get it engineered.",
+                "Header for Window 2 changed: (1) 2x8 → (2) 2x10, 1 jack and 2 king each side (Table ZZ-HEADER row r.s30.b).",
+            ],
+            CodeCheck.Changes(CodeCheck.Of(two, One), CodeCheck.Of(after.WithEntity(second with { Width = In(60) }), One)));
+        Assert.Single(CodeCheck.Changes(CodeCheck.Of(two, One), CodeCheck.Of(grown, One)));
+    }
+
+    [Fact]
+    public void One_sized_header_piece_and_a_king_count_below_one_are_said()
+    {
+        (Sketch sketch, _) = Design(In(36));
+        WallFraming framing = Assert.Single(FramingList.Of(sketch, Library, CodeCheck.Framing(CodeCheck.Of(sketch, One), Library)));
+        Assert.Contains("1 header piece (2x8)", framing.Summary, StringComparison.Ordinal);
+
+        Box second = new Box(EntityId.New(), OpeningLayer, new Point3(In(100), Length.Zero, In(36)), In(20), In(3, 1, 2), In(42), BoxFace.Top, Angle.Zero) { Name = "Window 2" };
+        Assert.Contains("2 headers (not yet sized)", Assert.Single(FramingList.Of(sketch.WithEntity(second), Library)).Summary, StringComparison.Ordinal);
+
+        WallFraming refused = Assert.Single(FramingList.Of(sketch, Library, new FramingOptions { KingsPerSide = _ => 0 }));
+        Assert.Contains("Window 1: an opening needs at least one king stud each side", refused.Problems);
     }
 }

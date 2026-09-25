@@ -164,7 +164,7 @@ public static class CodeCheck
 
         if (code.Pack is not { } pack)
         {
-            return new HeaderResult.NoData(NoDataReason.NoPackSelected, null, WallKind.ExteriorBearing, code.Problem ?? string.Empty);
+            return new HeaderResult.NoData(NoDataReason.NoPackSelected, null, WallKind.ExteriorBearing, code.Problem!);
         }
 
         string? supports = opening.Wall.Box.WallInputs?.Supports;
@@ -222,28 +222,26 @@ public static class CodeCheck
                 $"Limit: {o.Limit}",
                 Details(o.Limit)),
             HeaderResult.InputMissing m => new CheckWords(
-                $"Not checked: {string.Join(", ", m.Inputs.Select(Input))} {(m.Inputs.Count == 1 ? "is" : "are")} not entered, and napkin never assumes a value. "
+                $"Not checked: {Named(m.Inputs)} {(m.Inputs.Count == 1 ? "is" : "are")} not entered, and napkin never assumes a value. "
                 + Where(m.Inputs),
                 $"Table {m.Table}, {m.Code}",
                 string.Empty),
-            HeaderResult.NoData n => new CheckWords(
-                n.Code is null && n.Explanation.StartsWith("No code selected", StringComparison.Ordinal)
-                    ? n.Explanation
-                    : $"{n.Explanation} {WhereToAddTables}",
-                n.Code?.ToString() ?? string.Empty,
-                string.Empty),
-            _ => throw new ArgumentOutOfRangeException(nameof(result), result, "Not a header result."),
+            _ => NoDataWords((HeaderResult.NoData)result),
         };
     }
+
+    private static CheckWords NoDataWords(HeaderResult.NoData n)
+        => n.Code is { } code
+            ? new CheckWords($"{n.Explanation} {WhereToAddTables}", code.ToString(), string.Empty)
+            : new CheckWords(n.Explanation, string.Empty, string.Empty);
 
     /// <summary>A short form of a result for a list or the message bar: "(2) 2x10 (Table T row R)".</summary>
     public static string Short(HeaderResult result) => result switch
     {
         HeaderResult.Sized s => $"{s.Header}, {s.JackStuds} jack and {s.KingStuds} king each side (Table {s.Citation.Table} row {s.Citation.RowId})",
         HeaderResult.OutOfScope o => $"beyond Table {o.Limit.Table}: get it engineered",
-        HeaderResult.InputMissing m => $"not checked: {string.Join(", ", m.Inputs.Select(Input))} not entered",
-        HeaderResult.NoData => "no data to check it against",
-        _ => throw new ArgumentOutOfRangeException(nameof(result), result, "Not a header result."),
+        HeaderResult.InputMissing m => $"not checked: {Named(m.Inputs)} not entered",
+        _ => "no data to check it against",
     };
 
     /// <summary>
@@ -277,36 +275,30 @@ public static class CodeCheck
         => change is { Kind: ChangeKind.CitationOnly, Before: HeaderResult.Sized a, After: HeaderResult.Sized b }
            && a.Citation with { Trace = ValueList<BandMatch>.Empty } == b.Citation with { Trace = ValueList<BandMatch>.Empty };
 
-    private static string Sentence(string name, ResultChange change) => (change.Kind, change.Before, change.After) switch
+    private static string Sentence(string name, ResultChange change) => change.Kind switch
     {
-        (ChangeKind.CitationOnly, _, HeaderResult.Sized b) =>
-            $"Header for {name} is unchanged, {b.Header}, now cited from {b.Citation.Code.ShortName} rev {b.Citation.Code.Revision} Table {b.Citation.Table} row {b.Citation.RowId}.",
-        (ChangeKind.SizedToSized, HeaderResult.Sized a, HeaderResult.Sized b) =>
-            $"Header for {name} changed: {a.Header} → {b.Header}, {b.JackStuds} jack and {b.KingStuds} king each side (Table {b.Citation.Table} row {b.Citation.RowId}).",
-        (_, _, HeaderResult.OutOfScope o) =>
-            $"Header for {name} is now beyond Table {o.Limit.Table}: get it engineered.",
-        (_, _, HeaderResult.Sized) =>
-            $"Header for {name} is now sized: {Short(change.After)}.",
-        (_, HeaderResult.Sized, _) =>
-            $"Header for {name} is no longer sized: {Short(change.After)}.",
-        (_, HeaderResult.OutOfScope, _) =>
-            $"Header for {name} can no longer be checked: {Short(change.After)}.",
+        ChangeKind.CitationOnly => $"Header for {name} is unchanged, {Cited((HeaderResult.Sized)change.After)}.",
+        ChangeKind.SizedToSized => $"Header for {name} changed: {((HeaderResult.Sized)change.Before).Header} → {Short(change.After)}.",
+        ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope or ChangeKind.OutOfScopeChanged =>
+            $"Header for {name} is now beyond Table {((HeaderResult.OutOfScope)change.After).Limit.Table}: get it engineered.",
+        ChangeKind.OutOfScopeToSized or ChangeKind.NoAnswerToSized => $"Header for {name} is now sized: {Short(change.After)}.",
+        ChangeKind.SizedToNoAnswer => $"Header for {name} is no longer sized: {Short(change.After)}.",
+        ChangeKind.OutOfScopeToNoAnswer => $"Header for {name} can no longer be checked: {Short(change.After)}.",
         _ => $"Header for {name} still cannot be checked: {Short(change.After)}.",
     };
 
-    private static int Rank(ChangeKind kind) => kind switch
-    {
-        ChangeKind.SizedToOutOfScope => 0,
-        ChangeKind.SizedToNoAnswer => 1,
-        ChangeKind.NoAnswerToOutOfScope => 2,
-        ChangeKind.OutOfScopeChanged => 3,
-        ChangeKind.SizedToSized => 4,
-        ChangeKind.OutOfScopeToSized => 5,
-        ChangeKind.NoAnswerToSized => 6,
-        ChangeKind.OutOfScopeToNoAnswer => 7,
-        ChangeKind.NoAnswerChanged => 8,
-        _ => 9,
-    };
+    private static string Cited(HeaderResult.Sized b)
+        => $"{b.Header}, now cited from {b.Citation.Code.ShortName} rev {b.Citation.Code.Revision} Table {b.Citation.Table} row {b.Citation.RowId}";
+
+    /// <summary>The order changes are said in: losing a size first (design §7.3), a citation-only change last.</summary>
+    private static readonly ChangeKind[] Ranked =
+    [
+        ChangeKind.SizedToOutOfScope, ChangeKind.SizedToNoAnswer, ChangeKind.NoAnswerToOutOfScope, ChangeKind.OutOfScopeChanged,
+        ChangeKind.SizedToSized, ChangeKind.OutOfScopeToSized, ChangeKind.NoAnswerToSized, ChangeKind.OutOfScopeToNoAnswer,
+        ChangeKind.NoAnswerChanged, ChangeKind.CitationOnly,
+    ];
+
+    private static int Rank(ChangeKind kind) => Array.IndexOf(Ranked, kind);
 
     private static string Details(Napkin.Core.RulesEngine.Citation citation)
         => string.Join(
@@ -346,6 +338,8 @@ public static class CodeCheck
 
         return string.Join(" ", said);
     }
+
+    private static string Named(IEnumerable<string> inputs) => string.Join(", ", inputs.Select(input => Input(input)));
 
     /// <summary>A table input's name in plain words.</summary>
     public static string Input(string name) => name switch
