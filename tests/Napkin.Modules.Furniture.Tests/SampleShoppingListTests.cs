@@ -76,8 +76,9 @@ public sealed class SampleShoppingListTests
     [Trait("Feature", "CUT-005")]
     public void Several_parts_from_one_board_make_the_two_lists_visibly_differ()
     {
-        // The cut list has four 1x4 pieces on two rows; the shopping list has one 1x4 line of two
-        // boards. That is the difference issue #9 asks a fixture to show.
+        // The cut list has four 1x4 pieces on two rows; the shopping list has one 1x4 line of one
+        // 12' board (46 + 46 + 14 + 14 = 120 in, 4 cuts x 1/8 = 1/2 in, 120 1/2 in > 10', <= 12').
+        // That is the difference issue #9 asks a fixture to show.
         ImmutableArray<CutListRow> cut = CutRows();
         ImmutableArray<ShoppingListRow> shop = ShoppingList.Of(cut);
 
@@ -85,7 +86,7 @@ public sealed class SampleShoppingListTests
         Assert.Equal(4, cut.Where(row => row.Material == "1x4").Sum(row => row.Quantity));
 
         ShoppingListRow oneByFour = Assert.Single(shop, row => row.Material == "1x4");
-        Assert.Equal(2, oneByFour.Count);
+        Assert.Equal(1, oneByFour.Count);
         Assert.Equal(5, cut.Length);
         Assert.Equal(3, shop.Length);
     }

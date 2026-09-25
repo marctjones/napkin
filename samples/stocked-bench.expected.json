@@ -292,20 +292,20 @@
       "for": "Apron × 2, End rail × 2",
       "boards": [
         {
-          "lengthUnits": 73728,
-          "count": 2
+          "lengthUnits": 147456,
+          "count": 1
         }
       ],
       "sheets": 0,
-      "count": 2,
+      "count": 1,
       "boughtCubicUnits": 618475290624,
       "usedCubicUnits": 515396075520,
-      "buy": "2 × 6'-0\"",
+      "buy": "1 × 12'-0\"",
       "boardFeetBought": "4.0",
       "boardFeetUsed": "3.3",
       "waste": "0.7",
       "note": "",
-      "derivation": "Pieces, longest first: 46, 46, 14, 14 (two aprons, two end rails). First-fit decreasing over 6', 8' ... 16': 46 -> no board yet; the shortest stocked length that holds 46\" is 6' = 72\", 26\" left. 46 -> board 1 has 26\", too short; a second 6', 26\" left. 14 -> board 1 (26\") holds it, 12\" left. 14 -> board 1 (12\") does not, board 2 (26\") does, 12\" left. So 2 x 6'-0\": four pieces out of two boards, and each board carries an apron AND an end rail — the cut list's two rows of 2 are two boards to buy. Board feet, nominal 1\" x 4\": bought 1 x 4 x (72 + 72) = 576 in³ / 144 = 4.0; used 1 x 4 x (46 + 46 + 14 + 14) = 1 x 4 x 120 = 480 in³ / 144 = 3.333... -> 3.3; waste 576 - 480 = 96 in³ / 144 = 0.666... -> 0.7."
+      "derivation": "Pieces, longest first: 46, 46, 14, 14 (inches). Kerf rule (napkin's default 1/8 in per cut): a board with n pieces takes n cuts when an offcut remains, n-1 when the pieces and kerfs exactly fill it; used length = pieces + kerf x cuts. First-fit decreasing puts each piece on the first open board with room, opening new boards of the longest stocked length (192 in), then each board shrinks to the smallest stocked length (72, 96, 120, 144, 168, 192 in) that holds it. All four go on one board: 46 + 46 + 14 + 14 = 120 in of pieces; with 4 cuts of 1/8 in that is 120 1/2 in. 10' (120 in) is 1/2 in short (120 1/2 > 120; the pieces are not an exact fill: 120 + 3 x 1/8 = 120 3/8 is not 120); 12' (144 in) holds it, offcut 144 - 120 1/2 = 23 1/2 in. So 1 × 12'-0\". Board feet, nominal 1\" x 4\": bought 1 x 4 x 144 = 576 in³ / 144 = 4.0; used 1 x 4 x 120 = 480 in³ / 144 = 3.333... -> 3.3; waste 96 in³ / 144 = 0.666... -> 0.7. Two 6' boards (72 + 72 = 144 in) would buy the same board feet; the layout buys one board because all four pieces and their kerf fit one 12'."
     },
     {
       "material": "2x4",
@@ -314,20 +314,20 @@
       "for": "Stretcher × 2, Leg × 4",
       "boards": [
         {
-          "lengthUnits": 73728,
-          "count": 3
+          "lengthUnits": 172032,
+          "count": 1
         }
       ],
       "sheets": 0,
-      "count": 3,
-      "boughtCubicUnits": 1855425871872,
+      "count": 1,
+      "boughtCubicUnits": 1443109011456,
       "usedCubicUnits": 1305670057984,
-      "buy": "3 × 6'-0\"",
-      "boardFeetBought": "12.0",
+      "buy": "1 × 14'-0\"",
+      "boardFeetBought": "9.3",
       "boardFeetUsed": "8.4",
-      "waste": "3.6",
+      "waste": "0.9",
       "note": "",
-      "derivation": "Pieces, longest first: 43, 43, 16 1/2 x 4 (two stretchers, four legs). 43 -> a 6' (72\"), 29\" left. 43 -> board 1 (29\") too short; a second 6', 29\" left. 16 1/2 -> board 1, 12 1/2\" left. 16 1/2 -> board 1 (12 1/2\") no, board 2 (29\") yes, 12 1/2\" left. 16 1/2 -> neither holds it; a third 6', 55 1/2\" left. 16 1/2 -> board 1 no, board 2 no, board 3 yes, 39\" left. So 3 x 6'-0\" for six pieces. Board feet, nominal 2\" x 4\": bought 2 x 4 x (3 x 72) = 1728 in³ / 144 = 12.0; used 2 x 4 x (43 + 43 + 4 x 16 1/2) = 2 x 4 x 152 = 1216 in³ / 144 = 8.444... -> 8.4; waste 1728 - 1216 = 512 in³ / 144 = 3.555... -> 3.6. Rounded once each, at the end: the four legs alone would be 2 x 4 x 16 1/2 = 132 in³ = 0.916... each."
+      "derivation": "Pieces, longest first: 43, 43, 16 1/2 x 4 (two stretchers, four legs). Kerf rule (napkin's default 1/8 in per cut): a board with n pieces takes n cuts when an offcut remains, n-1 when the pieces and kerfs exactly fill it; used length = pieces + kerf x cuts. First-fit decreasing puts each piece on the first open board with room, opening new boards of the longest stocked length (192 in), then each board shrinks to the smallest stocked length (72, 96, 120, 144, 168, 192 in) that holds it. All six go on one board: 43 + 43 + 4 x 16 1/2 = 152 in; with 6 cuts of 1/8 in = 3/4 in that is 152 3/4 in. 12' (144 in) is too short; 14' (168 in) holds it, offcut 168 - 152 3/4 = 15 1/4 in. So 1 × 14'-0\". Board feet, nominal 2\" x 4\": bought 2 x 4 x 168 = 1344 in³ / 144 = 9.333... -> 9.3; used 2 x 4 x 152 = 1216 in³ / 144 = 8.444... -> 8.4; waste 1344 - 1216 = 128 in³ / 144 = 0.888... -> 0.9."
     },
     {
       "material": "3/4 plywood",
@@ -348,10 +348,10 @@
     }
   ],
   "shoppingListCsv": [
-    "\"Shopping list: boards needed from finished sizes, joinery allowances included; before saw kerf and defect.\"",
+    "\"Shopping list: boards needed from finished sizes, joinery allowances included; includes a 1/8 in saw kerf per cut (set it in the Saw kerf box on the Cut layout tab); before defect.\"",
     "Material,Species,Buy,For,Board feet bought,Board feet used,Waste,Note",
-    "1x4,,\"2 × 6'-0\"\"\",\"Apron × 2, End rail × 2\",4.0,3.3,0.7,",
-    "2x4,,\"3 × 6'-0\"\"\",\"Stretcher × 2, Leg × 4\",12.0,8.4,3.6,",
+    "1x4,,\"1 × 12'-0\"\"\",\"Apron × 2, End rail × 2\",4.0,3.3,0.7,",
+    "2x4,,\"1 × 14'-0\"\"\",\"Stretcher × 2, Leg × 4\",9.3,8.4,0.9,",
     "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets by area — a nesting layout may need more"
   ]
 }

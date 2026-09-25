@@ -25,11 +25,13 @@ namespace Napkin.Modules.Furniture;
 public static class ShoppingList
 {
     /// <summary>
-    /// What a shopping list is before, said on the table and in the exported file, the way the cut
-    /// list says it (§1.3, §4 "No saw kerf").
+    /// What a shopping list includes, said on the table and in the exported file (§1.3, §4 "Saw kerf"):
+    /// the kerf it was planned with, and what it is still before.
     /// </summary>
-    public const string BeforeKerfAndJoinery =
-        "Shopping list: boards needed from finished sizes, joinery allowances included; before saw kerf and defect.";
+    /// <param name="kerf">The kerf used.</param>
+    public static string Statement(Length kerf)
+        => $"Shopping list: boards needed from finished sizes, joinery allowances included; includes a {CutLayout.Inches(kerf)} saw kerf per cut "
+           + "(set it in the Saw kerf box on the Cut layout tab); before defect.";
 
     /// <summary>The note on a sheet count, which is by area and so a floor.</summary>
     public const string SheetsByArea = "sheets by area — a nesting layout may need more";
@@ -51,7 +53,15 @@ public static class ShoppingList
     /// One row per stock item and species, ordinal by stock name and then species; then one row for
     /// each cut row that buys nothing, in cut-list order.
     /// </returns>
-    public static ImmutableArray<ShoppingListRow> Of(IEnumerable<CutListRow> rows)
+    public static ImmutableArray<ShoppingListRow> Of(IEnumerable<CutListRow> rows) => Of(rows, CutLayout.DefaultKerf);
+
+    /// <summary>
+    /// The shopping list for a cut list, its boards planned with a saw kerf.
+    /// </summary>
+    /// <param name="rows">The cut list's rows, in its own order.</param>
+    /// <param name="kerf">The kerf per saw cut; zero is allowed.</param>
+    /// <returns>As <see cref="Of(IEnumerable{CutListRow})"/>.</returns>
+    public static ImmutableArray<ShoppingListRow> Of(IEnumerable<CutListRow> rows, Length kerf)
     {
         ArgumentNullException.ThrowIfNull(rows);
 
@@ -70,7 +80,7 @@ public static class ShoppingList
             stocked.Add(stock switch
             {
                 LumberStock lumber when lumber.StandardLengths.IsEmpty => Unlisted(lumber, bucket.Key.Species, members),
-                LumberStock lumber => Boards(lumber, bucket.Key.Species, members),
+                LumberStock lumber => Boards(lumber, bucket.Key.Species, members, kerf),
                 PanelStock panel => Sheets(panel, bucket.Key.Species, members),
                 _ => Hardwood((HardwoodStock)stock, bucket.Key.Species, members),
             });
@@ -90,44 +100,18 @@ public static class ShoppingList
         ];
     }
 
-    /// <summary>Lumber: first-fit decreasing over the stocked lengths (§4 step 2).</summary>
-    private static ShoppingListRow Boards(LumberStock lumber, string species, CutListRow[] members)
+    /// <summary>Lumber: the boards <see cref="CutLayout"/> plans, so the two lists never disagree (§4 step 2, #138).</summary>
+    private static ShoppingListRow Boards(LumberStock lumber, string species, CutListRow[] members, Length kerf)
     {
-        // 1. Every needed piece, longest first. A stable sort, so equal pieces keep cut-list order.
-        Length[] pieces = [.. Pieces(members).OrderByDescending(piece => piece)];
-        Length longest = lumber.StandardLengths.Max();
+        StockLayout layout = CutLayout.Boards(lumber, species, members, kerf);
 
-        List<(Length Stock, Length Left)> bought = [];
-        List<Length> tooLong = [];
-        Int128 used = Int128.Zero;
-
-        foreach (Length piece in pieces)
-        {
-            // 4. Longer than any stocked length: an honest refusal, and nothing bought for it.
-            if (piece > longest)
-            {
-                tooLong.Add(piece);
-                continue;
-            }
-
-            used += Area.Volume(lumber.NominalThickness, lumber.NominalWidth, piece);
-
-            // 2. The first board already bought with room for it.
-            int board = bought.FindIndex(candidate => candidate.Left >= piece);
-            if (board >= 0)
-            {
-                bought[board] = (bought[board].Stock, bought[board].Left - piece);
-                continue;
-            }
-
-            // 3. Otherwise the shortest stocked length that holds it.
-            Length length = lumber.StandardLengths.Where(candidate => candidate >= piece).Min();
-            bought.Add((length, length - piece));
-        }
-
-        Int128 boughtVolume = bought.Aggregate(
+        // Used volume is the placed pieces' own; a piece nothing holds is refused and buys nothing.
+        Int128 used = layout.Boards
+            .SelectMany(board => board.Pieces)
+            .Aggregate(Int128.Zero, (sum, piece) => sum + Area.Volume(lumber.NominalThickness, lumber.NominalWidth, piece.Length));
+        Int128 boughtVolume = layout.Boards.Aggregate(
             Int128.Zero,
-            (sum, board) => sum + Area.Volume(lumber.NominalThickness, lumber.NominalWidth, board.Stock));
+            (sum, board) => sum + Area.Volume(lumber.NominalThickness, lumber.NominalWidth, board.StockLength));
 
         return new ShoppingListRow(
             lumber.Name,
@@ -135,15 +119,15 @@ public static class ShoppingList
             ShoppingListKind.Boards,
             For(members),
             [
-                .. bought
-                    .GroupBy(board => board.Stock)
+                .. layout.Boards
+                    .GroupBy(board => board.StockLength)
                     .OrderBy(group => group.Key)
                     .Select(group => new BoardsOfLength(group.Key, group.Count())),
             ],
             Sheets: 0,
             boughtVolume,
             used,
-            TooBig(tooLong.Select(Text)),
+            TooBig(layout.TooLong.Select(piece => Text(piece.Length))),
             lumber);
     }
 
@@ -246,10 +230,6 @@ public static class ShoppingList
             $"{why}, so nothing is bought for it",
             Stock: null);
     }
-
-    /// <summary>One piece per unit of quantity, each the row's length.</summary>
-    private static IEnumerable<Length> Pieces(IEnumerable<CutListRow> rows)
-        => rows.SelectMany(row => Enumerable.Repeat(row.Length, row.Quantity));
 
     /// <summary>"Leg × 4, Stretcher × 2": what a row is for, in cut-list order.</summary>
     private static string For(IEnumerable<CutListRow> rows)

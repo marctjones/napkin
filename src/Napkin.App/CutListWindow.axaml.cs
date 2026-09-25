@@ -37,11 +37,92 @@ public partial class CutListWindow : Window
     {
         InitializeComponent();
         KerfNote.Text = CutList.BeforeKerfAndJoinery;
-        ShoppingNote.Text = ShoppingList.BeforeKerfAndJoinery;
+        KerfBox.Text = CutLayout.Inches(_kerf);
+        SetKerfButton.Click += (_, _) => CommitKerf();
+        KerfBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                CommitKerf();
+                e.Handled = true;
+            }
+        };
         ExtrasNote.Text = SuppliesList.Statement;
         SaveSizesButton.Click += (_, _) => SaveSizes();
         SaveSuppliesButton.Click += (_, _) => SaveSupplies();
         ShowDesign(design: null);
+    }
+
+    private Length _kerf = CutLayout.DefaultKerf;
+
+    /// <summary>
+    /// The saw kerf the lists are planned with: a per-person setting the owner keeps, a practice default
+    /// until the person sets their blade's. Setting it re-plans the shopping list and the cut layout.
+    /// </summary>
+    public Length SawKerf
+    {
+        get => _kerf;
+        set
+        {
+            _kerf = value;
+            KerfBox.Text = CutLayout.Inches(value);
+            KerfError.IsVisible = false;
+            ShowDesign(Design);
+        }
+    }
+
+    /// <summary>Told the new kerf when the person sets one, so the owner can keep it between runs.</summary>
+    public Action<Length>? KerfChanged { get; set; }
+
+    /// <summary>The saw kerf text box, for the GUI suite.</summary>
+    public TextBox KerfField => KerfBox;
+
+    /// <summary>The button beside the kerf box.</summary>
+    public Button SetKerfControl => SetKerfButton;
+
+    /// <summary>The refusal under the kerf box, empty when there is none.</summary>
+    public string KerfMessage => KerfError.IsVisible ? KerfError.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The tab of the cut layout.</summary>
+    public TabItem CutLayoutTabItem => CutLayoutTab;
+
+    /// <summary>Whether the cut layout is the tab on show.</summary>
+    public bool IsShowingCutLayout => ReferenceEquals(Lists.SelectedItem, CutLayoutTab);
+
+    /// <summary>Shows the cut layout's tab.</summary>
+    public void ShowCutLayout() => Lists.SelectedItem = CutLayoutTab;
+
+    /// <summary>The parts' boards, for the GUI suite to read.</summary>
+    public CutLayoutView LayoutRows => LayoutView;
+
+    /// <summary>The walls' framing boards.</summary>
+    public CutLayoutView FramingLayoutRows => FramingLayoutView;
+
+    /// <summary>The summary lines under the parts' layout.</summary>
+    public string LayoutSummaryText => LayoutSummary.Text ?? string.Empty;
+
+    /// <summary>The cut layout of the parts as a CSV file would carry it, exactly the rows on screen.</summary>
+    public string LayoutCsv => CutLayout.ToCsv(LayoutView.Rows, _kerf);
+
+    /// <summary>The cut layout of the walls' framing as a CSV file would carry it.</summary>
+    public string FramingLayoutCsv => CutLayout.ToCsv(FramingLayoutView.Rows, _kerf);
+
+    /// <summary>Reads the kerf box: a length, zero allowed. A refusal says why and changes nothing.</summary>
+    private void CommitKerf()
+    {
+        string text = KerfBox.Text ?? string.Empty;
+        if (!Length.TryParse(text, out Length value, out _) || value < Length.Zero)
+        {
+            KerfError.Text = $"The saw kerf is a length like 1/8\" or 3/32\", or 0; \"{text.Trim()}\" is not.";
+            KerfError.IsVisible = true;
+            return;
+        }
+
+        KerfError.IsVisible = false;
+        _kerf = value;
+        KerfBox.Text = CutLayout.Inches(value);
+        KerfChanged?.Invoke(value);
+        ShowDesign(Design);
     }
 
     private readonly List<(FastenerKind Kind, Length? Thickness, TextBox Size, TextBox Pack)> _sizeEditors = [];
@@ -278,7 +359,7 @@ public partial class CutListWindow : Window
     public ShoppingListTable ShoppingRows => ShoppingTable;
 
     /// <summary>The shopping list as a CSV file would carry it, in the order it is on screen.</summary>
-    public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted);
+    public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted, _kerf);
 
     /// <summary>The code packs the main window found, for the code check on the walls' openings (#18).</summary>
     public CodePacks Packs { get; set; } = CodePacks.None;
@@ -293,7 +374,7 @@ public partial class CutListWindow : Window
     public string FramingNoteText => FramingNote.Text ?? string.Empty;
 
     /// <summary>The framing section as a CSV file would carry it, in the order on screen.</summary>
-    public string FramingCsv => ShoppingListCsv.ToCsv(FramingTable.Sorted);
+    public string FramingCsv => ShoppingListCsv.ToCsv(FramingTable.Sorted, _kerf);
 
     /// <summary>The tab that shows the shopping list, for the GUI suite to click.</summary>
     public TabItem ShoppingListTabItem => ShoppingListTab;
@@ -319,14 +400,24 @@ public partial class CutListWindow : Window
 
         // The shopping list is read from the cut list's rows, never from the design a second time,
         // so the two tabs cannot disagree about what is being built (§4).
-        ShoppingTable.Rows = ShoppingList.Of(rows);
+        ShoppingTable.Rows = ShoppingList.Of(rows, _kerf);
+        ShoppingNote.Text = ShoppingList.Statement(_kerf);
+        LayoutNote.Text = CutLayout.Statement(_kerf);
+        CutLayoutPlan layout = CutLayout.Of(rows, _kerf);
+        LayoutView.Rows = CutLayout.Rows(layout);
+        LayoutSummary.Text = string.Join("\n", CutLayout.Summary(layout));
         ExtrasGrid.Rows = SuppliesList.Of(sketch);
 
         // The walls' frame is bought through the very aggregation the parts are, from rows
         // FramingList derives; kept in a section of its own so a wall's studs read as a wall's.
         ImmutableArray<OpeningCheck> checks = CodeCheck.Of(sketch, Packs);
         ImmutableArray<WallFraming> walls = FramingList.Of(sketch, MaterialsLibrary.Shipped, CodeCheck.Framing(checks, MaterialsLibrary.Shipped));
-        FramingTable.Rows = ShoppingList.Of(FramingList.CutRows(walls));
+        ImmutableArray<CutListRow> framingRows = FramingList.CutRows(walls);
+        FramingTable.Rows = ShoppingList.Of(framingRows, _kerf);
+        CutLayoutPlan framingLayout = CutLayout.Of(framingRows, _kerf);
+        FramingLayoutView.Rows = CutLayout.Rows(framingLayout);
+        FramingLayoutSummary.Text = string.Join("\n", CutLayout.Summary(framingLayout));
+        FramingLayoutSection.IsVisible = !walls.IsEmpty;
         FramingSection.IsVisible = !walls.IsEmpty;
         FramingNote.Text = walls.IsEmpty
             ? string.Empty

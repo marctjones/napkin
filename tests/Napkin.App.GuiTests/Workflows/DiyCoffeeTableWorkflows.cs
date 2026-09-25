@@ -694,11 +694,11 @@ public class DiyCoffeeTableWorkflows
         Assert.Equal("1 × 6'-0\"", oneByTwo.BuyText);
         Assert.Equal(("1.0", "0.5", "0.5"), (oneByTwo.BoughtText, oneByTwo.UsedText, oneByTwo.WasteText));
 
-        // 1x6: 36 + 2 x 17 3/4 + 17 1/2 + 2 x 16 = 121 in of pieces, longest first: 36 + 17 3/4 +
-        // 17 3/4 = 71 1/2 fills one 6' board, and 17 1/2 + 16 + 16 = 49 1/2 needs a second: two 6'
-        // boards. 1 x 6 x 72 / 144 = 3.0 each, 6.0 bought; 6 x 121 / 144 = 5.04, used 5.0.
+        // 1x6: 36 + 2 x 17 3/4 + 17 1/2 + 2 x 16 = 121 in of pieces in 6 pieces; with a 1/8 in kerf,
+        // 6 cuts = 3/4 in, 121 3/4 in: too long for a 10' (120 in), inside a 12' (144 in): one 12' board.
+        // 1 x 6 x 144 / 144 = 6.0 bought; 6 x 121 / 144 = 5.04, used 5.0.
         ShoppingListRow oneBySix = Assert.Single(rows, row => row.Material == "1x6");
-        Assert.Equal("2 × 6'-0\"", oneBySix.BuyText);
+        Assert.Equal("1 × 12'-0\"", oneBySix.BuyText);
         Assert.Equal(("6.0", "5.0", "1.0"), (oneBySix.BoughtText, oneBySix.UsedText, oneBySix.WasteText));
 
         // 2x2: four legs of 16 1/4 = 65 in fit one 6' board. 2 x 2 x 72 / 144 = 2.0 bought; 4 x 65 / 144 = 1.8.

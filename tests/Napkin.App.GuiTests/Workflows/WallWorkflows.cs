@@ -129,7 +129,7 @@ public class WallWorkflows
             // Worked by hand in FramingListTests.TheFrameBuysBoardsThroughTheShoppingList.
             ShoppingListRow boards = list.FramingRows.Sorted[0];
             Assert.Equal("2x4", boards.Material);
-            Assert.Equal("2 × 6'-0\", 12 × 8'-0\", 3 × 12'-0\"", boards.BuyText);
+            Assert.Equal("1 × 14'-0\", 8 × 16'-0\"", boards.BuyText);
             Assert.Equal("header, not yet sized", list.FramingRows.Sorted[1].Material);
             Assert.Contains("placeholder until the code check", list.FramingNoteText, StringComparison.Ordinal);
 
