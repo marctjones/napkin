@@ -1,0 +1,794 @@
+{
+  "fixture": "diy-coffee-table-drawers",
+  "scene": "diy-coffee-table-drawers.scene.json",
+  "design": "diy-coffee-table-drawers.design.md",
+  "derivedBy": "hand, from the dimensions in docs/design/joinery-and-fasteners.md section 2 and the rules of sections 6 and 7.2; never regenerated from napkin's output",
+  "formatVersion": 5,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 24,
+    "pieces": 24,
+    "relationships": 34
+  },
+  "overall": {
+    "widthUnits": 43008,
+    "depthUnits": 22528,
+    "heightUnits": 17408,
+    "widthText": "3'-6\"",
+    "depthText": "1'-10\"",
+    "heightText": "1'-5\"",
+    "derivation": "The extreme corners of every box: the top spans x 0..42 and y 0..22 and is the highest at z 17; the legs are on the floor at z 0. x 1024."
+  },
+  "boxes": [
+    {
+      "name": "Top",
+      "id": "10000000-0000-4000-8000-000000000001",
+      "minUnits": {
+        "x": 0,
+        "y": 0,
+        "z": 16640
+      },
+      "maxUnits": {
+        "x": 43008,
+        "y": 22528,
+        "z": 17408
+      },
+      "derivation": "Lies as drawn: x 0..42 in, y 0..22 in, z 65/4..17 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Leg, south-west",
+      "id": "10000000-0000-4000-8000-000000000002",
+      "minUnits": {
+        "x": 1536,
+        "y": 1536,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 3072,
+        "y": 3072,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 3/2..3 in, y 3/2..3 in, z 0..65/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Leg, north-west",
+      "id": "10000000-0000-4000-8000-000000000003",
+      "minUnits": {
+        "x": 1536,
+        "y": 19456,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 3072,
+        "y": 20992,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 3/2..3 in, y 19..41/2 in, z 0..65/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Leg, south-east",
+      "id": "10000000-0000-4000-8000-000000000004",
+      "minUnits": {
+        "x": 39936,
+        "y": 1536,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 41472,
+        "y": 3072,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 39..81/2 in, y 3/2..3 in, z 0..65/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Leg, north-east",
+      "id": "10000000-0000-4000-8000-000000000005",
+      "minUnits": {
+        "x": 39936,
+        "y": 19456,
+        "z": 0
+      },
+      "maxUnits": {
+        "x": 41472,
+        "y": 20992,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 39..81/2 in, y 19..41/2 in, z 0..65/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Apron, back",
+      "id": "10000000-0000-4000-8000-000000000006",
+      "minUnits": {
+        "x": 3072,
+        "y": 20224,
+        "z": 11008
+      },
+      "maxUnits": {
+        "x": 39936,
+        "y": 20992,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 3..39 in, y 79/4..41/2 in, z 43/4..65/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Apron, side, west",
+      "id": "10000000-0000-4000-8000-000000000007",
+      "minUnits": {
+        "x": 1536,
+        "y": 3072,
+        "z": 11008
+      },
+      "maxUnits": {
+        "x": 2304,
+        "y": 19456,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 3/2..9/4 in, y 3..19 in, z 43/4..65/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Apron, side, east",
+      "id": "10000000-0000-4000-8000-000000000008",
+      "minUnits": {
+        "x": 40704,
+        "y": 3072,
+        "z": 11008
+      },
+      "maxUnits": {
+        "x": 41472,
+        "y": 19456,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 159/4..81/2 in, y 3..19 in, z 43/4..65/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Front rail",
+      "id": "10000000-0000-4000-8000-000000000009",
+      "minUnits": {
+        "x": 3072,
+        "y": 1536,
+        "z": 15104
+      },
+      "maxUnits": {
+        "x": 39936,
+        "y": 2304,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 3..39 in, y 3/2..9/4 in, z 59/4..65/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Web",
+      "id": "10000000-0000-4000-8000-000000000010",
+      "minUnits": {
+        "x": 21120,
+        "y": 2304,
+        "z": 11008
+      },
+      "maxUnits": {
+        "x": 21888,
+        "y": 20224,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 165/8..171/8 in, y 9/4..79/4 in, z 43/4..65/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Slide cleat, west",
+      "id": "10000000-0000-4000-8000-000000000011",
+      "minUnits": {
+        "x": 2304,
+        "y": 3072,
+        "z": 12288
+      },
+      "maxUnits": {
+        "x": 3072,
+        "y": 19456,
+        "z": 13824
+      },
+      "derivation": "Lies as drawn: x 9/4..3 in, y 3..19 in, z 12..27/2 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Slide cleat, east",
+      "id": "10000000-0000-4000-8000-000000000012",
+      "minUnits": {
+        "x": 39936,
+        "y": 3072,
+        "z": 12288
+      },
+      "maxUnits": {
+        "x": 40704,
+        "y": 19456,
+        "z": 13824
+      },
+      "derivation": "Lies as drawn: x 39..159/4 in, y 3..19 in, z 12..27/2 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer side, left, A",
+      "id": "10000000-0000-4000-8000-000000000013",
+      "minUnits": {
+        "x": 3584,
+        "y": 1536,
+        "z": 11264
+      },
+      "maxUnits": {
+        "x": 4096,
+        "y": 17920,
+        "z": 14848
+      },
+      "derivation": "Lies as drawn: x 7/2..4 in, y 3/2..35/2 in, z 11..29/2 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer side, right, A",
+      "id": "10000000-0000-4000-8000-000000000014",
+      "minUnits": {
+        "x": 20096,
+        "y": 1536,
+        "z": 11264
+      },
+      "maxUnits": {
+        "x": 20608,
+        "y": 17920,
+        "z": 14848
+      },
+      "derivation": "Lies as drawn: x 157/8..161/8 in, y 3/2..35/2 in, z 11..29/2 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer box front, A",
+      "id": "10000000-0000-4000-8000-000000000015",
+      "minUnits": {
+        "x": 4096,
+        "y": 1536,
+        "z": 11264
+      },
+      "maxUnits": {
+        "x": 20096,
+        "y": 2048,
+        "z": 14848
+      },
+      "derivation": "Lies as drawn: x 4..157/8 in, y 3/2..2 in, z 11..29/2 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer box back, A",
+      "id": "10000000-0000-4000-8000-000000000016",
+      "minUnits": {
+        "x": 4096,
+        "y": 17408,
+        "z": 11264
+      },
+      "maxUnits": {
+        "x": 20096,
+        "y": 17920,
+        "z": 14848
+      },
+      "derivation": "Lies as drawn: x 4..157/8 in, y 17..35/2 in, z 11..29/2 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer bottom, A",
+      "id": "10000000-0000-4000-8000-000000000017",
+      "minUnits": {
+        "x": 4096,
+        "y": 2048,
+        "z": 11776
+      },
+      "maxUnits": {
+        "x": 20096,
+        "y": 17408,
+        "z": 12032
+      },
+      "derivation": "Lies as drawn: x 4..157/8 in, y 2..17 in, z 23/2..47/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer front, A",
+      "id": "10000000-0000-4000-8000-000000000018",
+      "minUnits": {
+        "x": 3200,
+        "y": 768,
+        "z": 11008
+      },
+      "maxUnits": {
+        "x": 21376,
+        "y": 1536,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 25/8..167/8 in, y 3/4..3/2 in, z 43/4..65/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer side, left, B",
+      "id": "10000000-0000-4000-8000-000000000019",
+      "minUnits": {
+        "x": 22400,
+        "y": 1536,
+        "z": 11264
+      },
+      "maxUnits": {
+        "x": 22912,
+        "y": 17920,
+        "z": 14848
+      },
+      "derivation": "Lies as drawn: x 175/8..179/8 in, y 3/2..35/2 in, z 11..29/2 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer side, right, B",
+      "id": "10000000-0000-4000-8000-000000000020",
+      "minUnits": {
+        "x": 38912,
+        "y": 1536,
+        "z": 11264
+      },
+      "maxUnits": {
+        "x": 39424,
+        "y": 17920,
+        "z": 14848
+      },
+      "derivation": "Lies as drawn: x 38..77/2 in, y 3/2..35/2 in, z 11..29/2 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer box front, B",
+      "id": "10000000-0000-4000-8000-000000000021",
+      "minUnits": {
+        "x": 22912,
+        "y": 1536,
+        "z": 11264
+      },
+      "maxUnits": {
+        "x": 38912,
+        "y": 2048,
+        "z": 14848
+      },
+      "derivation": "Lies as drawn: x 179/8..38 in, y 3/2..2 in, z 11..29/2 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer box back, B",
+      "id": "10000000-0000-4000-8000-000000000022",
+      "minUnits": {
+        "x": 22912,
+        "y": 17408,
+        "z": 11264
+      },
+      "maxUnits": {
+        "x": 38912,
+        "y": 17920,
+        "z": 14848
+      },
+      "derivation": "Lies as drawn: x 179/8..38 in, y 17..35/2 in, z 11..29/2 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer bottom, B",
+      "id": "10000000-0000-4000-8000-000000000023",
+      "minUnits": {
+        "x": 22912,
+        "y": 2048,
+        "z": 11776
+      },
+      "maxUnits": {
+        "x": 38912,
+        "y": 17408,
+        "z": 12032
+      },
+      "derivation": "Lies as drawn: x 179/8..38 in, y 2..17 in, z 23/2..47/4 in (note 2.1), x 1024."
+    },
+    {
+      "name": "Drawer front, B",
+      "id": "10000000-0000-4000-8000-000000000024",
+      "minUnits": {
+        "x": 21632,
+        "y": 768,
+        "z": 11008
+      },
+      "maxUnits": {
+        "x": 39808,
+        "y": 1536,
+        "z": 16640
+      },
+      "derivation": "Lies as drawn: x 169/8..311/8 in, y 3/4..3/2 in, z 43/4..65/4 in (note 2.1), x 1024."
+    }
+  ],
+  "totalVolumeCubicUnits": 1892973281280,
+  "cutList": [
+    {
+      "label": "Top",
+      "quantity": 1,
+      "lengthUnits": 43008,
+      "widthUnits": 22528,
+      "thicknessUnits": 768,
+      "lengthText": "3'-6\"",
+      "widthText": "1'-10\"",
+      "thicknessText": "3/4\"",
+      "material": "3/4 plywood",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "derivation": "A 3/4 plywood top, 42 x 22 x 3/4 (note 2.2 item 1): length across X 42 x 1024 = 43008, width up Y 22 x 1024 = 22528, thickness 3/4 x 1024 = 768. No joint lengthens it: it receives four tabletop joints and is inserted into none.",
+      "joinery": []
+    },
+    {
+      "label": "Apron, back",
+      "quantity": 1,
+      "lengthUnits": 36864,
+      "widthUnits": 5632,
+      "thicknessUnits": 768,
+      "lengthText": "3'-0\"",
+      "widthText": "5 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "1x6",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000006"
+      ],
+      "derivation": "36 x 5 1/2 x 3/4: 39 - 2 x 1 1/2 between the legs = 36 (36864), width 5 1/2 (5632), thickness 768. No allowance. Pocket holes: joints J1 (contact 3/4 x 5 1/2, so max(2, ceil(5.5 / 2)) = 3) at each end from the inside (south) face; clips: one tabletop joint 36 long, max(2, ceil(36 / 12)) = 3, on the inside (south) face because the middle of the design is south of the apron.",
+      "joinery": [
+        "Drill 3 pocket holes in the west end and 3 in the east end, from the south face.",
+        "Fit 3 tabletop clips along the top edge on the south face (slot or recess per the clip's instructions)."
+      ]
+    },
+    {
+      "label": "Front rail",
+      "quantity": 1,
+      "lengthUnits": 36864,
+      "widthUnits": 1536,
+      "thicknessUnits": 768,
+      "lengthText": "3'-0\"",
+      "widthText": "1 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "1x2",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000009"
+      ],
+      "derivation": "36 x 1 1/2 x 3/4 (1x2): 36864 x 1536 x 768. Pocket holes: J3 contact 3/4 x 1 1/2, max(2, ceil(1.5 / 2)) = 2 at each end from the inside (north) face; clips: 36 long -> 3, on the north face.",
+      "joinery": [
+        "Drill 2 pocket holes in the west end and 2 in the east end, from the north face.",
+        "Fit 3 tabletop clips along the top edge on the north face (slot or recess per the clip's instructions)."
+      ]
+    },
+    {
+      "label": "Drawer front",
+      "quantity": 2,
+      "lengthUnits": 18176,
+      "widthUnits": 5632,
+      "thicknessUnits": 768,
+      "lengthText": "1'-5 3/4\"",
+      "widthText": "5 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "1x6",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000018",
+        "10000000-0000-4000-8000-000000000024"
+      ],
+      "derivation": "17 3/4 x 5 1/2 x 3/4 (1x6), two drawers: 18176 x 5632 x 768, quantity 2. Each is only the receiving part of one butt joint with screws (J10), which cuts nothing.",
+      "joinery": []
+    },
+    {
+      "label": "Web",
+      "quantity": 1,
+      "lengthUnits": 17920,
+      "widthUnits": 5632,
+      "thicknessUnits": 768,
+      "lengthText": "1'-5 1/2\"",
+      "widthText": "5 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "1x6",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000010"
+      ],
+      "derivation": "17 1/2 x 5 1/2 x 3/4: the 19 in between the aprons less the rail's and the apron's 3/4: 17.5 -> 17920 x 5632 x 768. Inserted in J4 (north end, contact 3/4 x 5 1/2 -> 3 pocket holes) and J5 (south end, contact 3/4 x 1 1/2 -> 2), both drilled from the west face (the builder's pick, the note's 6.2); the larger run is named first.",
+      "joinery": [
+        "Drill 3 pocket holes in the north end and 2 in the south end, from the west face."
+      ]
+    },
+    {
+      "label": "Leg",
+      "quantity": 4,
+      "lengthUnits": 16640,
+      "widthUnits": 1536,
+      "thicknessUnits": 1536,
+      "lengthText": "1'-4 1/4\"",
+      "widthText": "1 1/2\"",
+      "thicknessText": "1 1/2\"",
+      "material": "2x2",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000002",
+        "10000000-0000-4000-8000-000000000003",
+        "10000000-0000-4000-8000-000000000004",
+        "10000000-0000-4000-8000-000000000005"
+      ],
+      "derivation": "2x2, 16 1/4 tall: 16640 x 1536 x 1536, quantity 4. A leg only receives butt joints, so nothing is done to it and the four legs list as one row whichever way they are turned.",
+      "joinery": []
+    },
+    {
+      "label": "Drawer bottom",
+      "quantity": 2,
+      "lengthUnits": 16512,
+      "widthUnits": 15872,
+      "thicknessUnits": 256,
+      "lengthText": "1'-4 1/8\"",
+      "widthText": "1'-3 1/2\"",
+      "thicknessText": "1/4\"",
+      "material": "1/4 plywood",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000017",
+        "10000000-0000-4000-8000-000000000023"
+      ],
+      "derivation": "Drawn 15 5/8 x 15 x 1/4 (16000 x 15360 x 256). Four 1/4 grooves (J9): two into the sides on the length, two into the box front and back on the width. Finished 16000 + 2 x 256 = 16512 (16 1/8) by 15360 + 2 x 256 = 15872 (15 1/2). Quantity 2.",
+      "joinery": [
+        "Length includes 1/4\" into a groove at each end; width includes 1/4\" into a groove at each edge."
+      ]
+    },
+    {
+      "label": "Drawer box front",
+      "quantity": 2,
+      "lengthUnits": 16512,
+      "widthUnits": 3584,
+      "thicknessUnits": 512,
+      "lengthText": "1'-4 1/8\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "1/2\"",
+      "material": "1/2 plywood",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000015",
+        "10000000-0000-4000-8000-000000000021"
+      ],
+      "derivation": "Drawn 15 5/8 x 3 1/2 x 1/2 (16000). Rabbeted into both sides (J7): 16000 + 2 x 256 = 16512 (16 1/8), width 3584, thickness 512. Its north face is grooved for the bottom (J9): the bottom's edge is at z 11 1/2..11 3/4 in a box whose bottom edge is at 11, so 1/2 from the bottom edge and 1/4 wide, full length. Quantity 2.",
+      "joinery": [
+        "Length includes 1/4\" into a rabbet at each end.",
+        "Groove the north face: 1/4\" wide, 1/4\" deep, 1/2\" from the bottom edge, full length."
+      ]
+    },
+    {
+      "label": "Apron, side",
+      "quantity": 2,
+      "lengthUnits": 16384,
+      "widthUnits": 5632,
+      "thicknessUnits": 768,
+      "lengthText": "1'-4\"",
+      "widthText": "5 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "1x6",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000007",
+        "10000000-0000-4000-8000-000000000008"
+      ],
+      "derivation": "16 x 5 1/2 x 3/4: 19 - 2 x 1 1/2 = 16 (16384). Pocket holes at both ends (J2, contact 3/4 x 5 1/2 -> 3 each) from the inside face, which is the east face of the west apron and the west face of the east apron: turned end for end (a half-turn about the width axis) one is the other, so the two are one row of 2. Clips: 16 long -> max(2, ceil(16/12)) = 2 on the inside face.",
+      "joinery": [
+        "Drill 3 pocket holes in the south end and 3 in the north end, from the east face.",
+        "Fit 2 tabletop clips along the top edge on the east face (slot or recess per the clip's instructions)."
+      ]
+    },
+    {
+      "label": "Drawer side, left",
+      "quantity": 2,
+      "lengthUnits": 16384,
+      "widthUnits": 3584,
+      "thicknessUnits": 512,
+      "lengthText": "1'-4\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "1/2\"",
+      "material": "1/2 plywood",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000013",
+        "10000000-0000-4000-8000-000000000019"
+      ],
+      "derivation": "16 x 3 1/2 x 1/2 (16384 x 3584 x 512), quantity 2 (drawers A and B). The left side's inside face is east. Rabbet (J7) at its front (south) end on the east face: 1/2 wide (the front's thickness), 1/4 deep. Groove (J9) on the east face: 1/4 wide, 1/4 deep, 1/2 from the bottom edge.",
+      "joinery": [
+        "Rabbet the south end on the east face: 1/2\" wide, 1/4\" deep.",
+        "Groove the east face: 1/4\" wide, 1/4\" deep, 1/2\" from the bottom edge, full length."
+      ]
+    },
+    {
+      "label": "Drawer side, right",
+      "quantity": 2,
+      "lengthUnits": 16384,
+      "widthUnits": 3584,
+      "thicknessUnits": 512,
+      "lengthText": "1'-4\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "1/2\"",
+      "material": "1/2 plywood",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000014",
+        "10000000-0000-4000-8000-000000000020"
+      ],
+      "derivation": "The mirror of the left side: the same size, but its inside face is west. No half-turn makes it the left side: the rabbet pins the front end and the groove pins the bottom edge, so it is its own row of 2 -- four identical sides with two of them wrong is the mistake this row separates.",
+      "joinery": [
+        "Rabbet the south end on the west face: 1/2\" wide, 1/4\" deep.",
+        "Groove the west face: 1/4\" wide, 1/4\" deep, 1/2\" from the bottom edge, full length."
+      ]
+    },
+    {
+      "label": "Slide cleat",
+      "quantity": 2,
+      "lengthUnits": 16384,
+      "widthUnits": 1536,
+      "thicknessUnits": 768,
+      "lengthText": "1'-4\"",
+      "widthText": "1 1/2\"",
+      "thicknessText": "3/4\"",
+      "material": "1x2",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000011",
+        "10000000-0000-4000-8000-000000000012"
+      ],
+      "derivation": "1x2, 16 x 1 1/2 x 3/4: 16384 x 1536 x 768, quantity 2. Each only receives nothing and is inserted only in a butt joint with screws (J6), which cuts nothing.",
+      "joinery": []
+    },
+    {
+      "label": "Drawer box back",
+      "quantity": 2,
+      "lengthUnits": 16000,
+      "widthUnits": 3584,
+      "thicknessUnits": 512,
+      "lengthText": "1'-3 5/8\"",
+      "widthText": "3 1/2\"",
+      "thicknessText": "1/2\"",
+      "material": "1/2 plywood",
+      "unresolved": false,
+      "members": [
+        "10000000-0000-4000-8000-000000000016",
+        "10000000-0000-4000-8000-000000000022"
+      ],
+      "derivation": "Drawn 15 5/8 x 3 1/2 x 1/2 (16000 x 3584 x 512), quantity 2: butted between the sides (J8, nothing cut) and grooved on its south face for the bottom (J9), 1/2 from the bottom edge.",
+      "joinery": [
+        "Groove the south face: 1/4\" wide, 1/4\" deep, 1/2\" from the bottom edge, full length."
+      ]
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery",
+    "Top,1,\"3'-6\"\"\",\"1'-10\"\"\",\"3/4\"\"\",3/4 plywood,,",
+    "\"Apron, back\",1,\"3'-0\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,\"Drill 3 pocket holes in the west end and 3 in the east end, from the south face.; Fit 3 tabletop clips along the top edge on the south face (slot or recess per the clip's instructions).\"",
+    "Front rail,1,\"3'-0\"\"\",\"1 1/2\"\"\",\"3/4\"\"\",1x2,,\"Drill 2 pocket holes in the west end and 2 in the east end, from the north face.; Fit 3 tabletop clips along the top edge on the north face (slot or recess per the clip's instructions).\"",
+    "Drawer front,2,\"1'-5 3/4\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,",
+    "Web,1,\"1'-5 1/2\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,\"Drill 3 pocket holes in the north end and 2 in the south end, from the west face.\"",
+    "Leg,4,\"1'-4 1/4\"\"\",\"1 1/2\"\"\",\"1 1/2\"\"\",2x2,,",
+    "Drawer bottom,2,\"1'-4 1/8\"\"\",\"1'-3 1/2\"\"\",\"1/4\"\"\",1/4 plywood,,\"Length includes 1/4\"\" into a groove at each end; width includes 1/4\"\" into a groove at each edge.\"",
+    "Drawer box front,2,\"1'-4 1/8\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,\"Length includes 1/4\"\" into a rabbet at each end.; Groove the north face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the bottom edge, full length.\"",
+    "\"Apron, side\",2,\"1'-4\"\"\",\"5 1/2\"\"\",\"3/4\"\"\",1x6,,\"Drill 3 pocket holes in the south end and 3 in the north end, from the east face.; Fit 2 tabletop clips along the top edge on the east face (slot or recess per the clip's instructions).\"",
+    "\"Drawer side, left\",2,\"1'-4\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,\"Rabbet the south end on the east face: 1/2\"\" wide, 1/4\"\" deep.; Groove the east face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the bottom edge, full length.\"",
+    "\"Drawer side, right\",2,\"1'-4\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,\"Rabbet the south end on the west face: 1/2\"\" wide, 1/4\"\" deep.; Groove the west face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the bottom edge, full length.\"",
+    "Slide cleat,2,\"1'-4\"\"\",\"1 1/2\"\"\",\"3/4\"\"\",1x2,,",
+    "Drawer box back,2,\"1'-3 5/8\"\"\",\"3 1/2\"\"\",\"1/2\"\"\",1/2 plywood,,\"Groove the south face: 1/4\"\" wide, 1/4\"\" deep, 1/2\"\" from the bottom edge, full length.\""
+  ],
+  "shoppingList": [
+    {
+      "material": "1/2 plywood",
+      "species": "",
+      "kind": "sheets",
+      "for": "Drawer box front × 2, Drawer side, left × 2, Drawer side, right × 2, Drawer box back × 2",
+      "boards": [],
+      "sheets": 1,
+      "count": 1,
+      "boughtCubicUnits": 0,
+      "usedCubicUnits": 0,
+      "buy": "1 sheet, 4'-0\" × 8'-0\"",
+      "boardFeetBought": "",
+      "boardFeetUsed": "",
+      "waste": "",
+      "note": "sheets by area — a nesting layout may need more",
+      "derivation": "Area of the parts, finished sizes (allowances in): 1785/4 in² against one 48\" x 96\" sheet = 4608 in²; ceil(area / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
+    },
+    {
+      "material": "1/4 plywood",
+      "species": "",
+      "kind": "sheets",
+      "for": "Drawer bottom × 2",
+      "boards": [],
+      "sheets": 1,
+      "count": 1,
+      "boughtCubicUnits": 0,
+      "usedCubicUnits": 0,
+      "buy": "1 sheet, 4'-0\" × 8'-0\"",
+      "boardFeetBought": "",
+      "boardFeetUsed": "",
+      "waste": "",
+      "note": "sheets by area — a nesting layout may need more",
+      "derivation": "Area of the parts, finished sizes (allowances in): 3999/8 in² against one 48\" x 96\" sheet = 4608 in²; ceil(area / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
+    },
+    {
+      "material": "1x2",
+      "species": "",
+      "kind": "boards",
+      "for": "Front rail × 1, Slide cleat × 2",
+      "boards": [
+        {
+          "lengthUnits": 73728,
+          "count": 1
+        }
+      ],
+      "sheets": 0,
+      "count": 1,
+      "boughtCubicUnits": 154618822656,
+      "usedCubicUnits": 146028888064,
+      "buy": "1 × 6'-0\"",
+      "boardFeetBought": "1.0",
+      "boardFeetUsed": "0.9",
+      "waste": "0.1",
+      "note": "",
+      "derivation": "Pieces, longest first: 36, 16, 16 (inches). First-fit decreasing over 6', 8' ... 16': each piece goes in the first board with room, else a new board of the shortest stocked length that holds it. Boards bought (length, left over) = [['72', '4']]. So 1 × 6'-0\". Board feet, nominal 1\" x 2\": bought 1.0, used 0.9, waste 0.1, each rounded once at the end. Finished sizes are used: the drawer parts are already lengthened by their joinery allowances."
+    },
+    {
+      "material": "1x6",
+      "species": "",
+      "kind": "boards",
+      "for": "Apron, back × 1, Drawer front × 2, Web × 1, Apron, side × 2",
+      "boards": [
+        {
+          "lengthUnits": 73728,
+          "count": 2
+        }
+      ],
+      "sheets": 0,
+      "count": 2,
+      "boughtCubicUnits": 927712935936,
+      "usedCubicUnits": 779536564224,
+      "buy": "2 × 6'-0\"",
+      "boardFeetBought": "6.0",
+      "boardFeetUsed": "5.0",
+      "waste": "1.0",
+      "note": "",
+      "derivation": "Pieces, longest first: 36, 71/4, 71/4, 35/2, 16, 16 (inches). First-fit decreasing over 6', 8' ... 16': each piece goes in the first board with room, else a new board of the shortest stocked length that holds it. Boards bought (length, left over) = [['72', '1/2'], ['72', '45/2']]. So 2 × 6'-0\". Board feet, nominal 1\" x 6\": bought 6.0, used 5.0, waste 1.0, each rounded once at the end. Finished sizes are used: the drawer parts are already lengthened by their joinery allowances."
+    },
+    {
+      "material": "2x2",
+      "species": "",
+      "kind": "boards",
+      "for": "Leg × 4",
+      "boards": [
+        {
+          "lengthUnits": 73728,
+          "count": 1
+        }
+      ],
+      "sheets": 0,
+      "count": 1,
+      "boughtCubicUnits": 309237645312,
+      "usedCubicUnits": 279172874240,
+      "buy": "1 × 6'-0\"",
+      "boardFeetBought": "2.0",
+      "boardFeetUsed": "1.8",
+      "waste": "0.2",
+      "note": "",
+      "derivation": "Pieces, longest first: 65/4, 65/4, 65/4, 65/4 (inches). First-fit decreasing over 6', 8' ... 16': each piece goes in the first board with room, else a new board of the shortest stocked length that holds it. Boards bought (length, left over) = [['72', '7']]. So 1 × 6'-0\". Board feet, nominal 2\" x 2\": bought 2.0, used 1.8, waste 0.2, each rounded once at the end. Finished sizes are used: the drawer parts are already lengthened by their joinery allowances."
+    },
+    {
+      "material": "3/4 plywood",
+      "species": "",
+      "kind": "sheets",
+      "for": "Top × 1",
+      "boards": [],
+      "sheets": 1,
+      "count": 1,
+      "boughtCubicUnits": 0,
+      "usedCubicUnits": 0,
+      "buy": "1 sheet, 4'-0\" × 8'-0\"",
+      "boardFeetBought": "",
+      "boardFeetUsed": "",
+      "waste": "",
+      "note": "sheets by area — a nesting layout may need more",
+      "derivation": "Area of the parts, finished sizes (allowances in): 924 in² against one 48\" x 96\" sheet = 4608 in²; ceil(area / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
+    }
+  ],
+  "shoppingListCsv": [
+    "\"Shopping list: boards needed from finished sizes, joinery allowances included; before saw kerf and defect.\"",
+    "Material,Species,Buy,For,Board feet bought,Board feet used,Waste,Note",
+    "1/2 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",\"Drawer box front × 2, Drawer side, left × 2, Drawer side, right × 2, Drawer box back × 2\",,,,sheets by area — a nesting layout may need more",
+    "1/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Drawer bottom × 2,,,,sheets by area — a nesting layout may need more",
+    "1x2,,\"1 × 6'-0\"\"\",\"Front rail × 1, Slide cleat × 2\",1.0,0.9,0.1,",
+    "1x6,,\"2 × 6'-0\"\"\",\"Apron, back × 1, Drawer front × 2, Web × 1, Apron, side × 2\",6.0,5.0,1.0,",
+    "2x2,,\"1 × 6'-0\"\"\",Leg × 4,2.0,1.8,0.2,",
+    "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets by area — a nesting layout may need more"
+  ],
+  "notes": [
+    "totalVolumeCubicUnits is the sum of quantity x length x width x thickness of the FINISHED rows, so it is larger than the boxes' volume by the joinery allowances (a drawer box front is 512 units longer than drawn, a drawer bottom 512 in each direction).",
+    "The slide length, side clearance and every fastener size and pack size in the scene are the builder's typed choices, not napkin data (design.md).",
+    "Fasteners, hardware and supplies expectations belong to the slices that build them (#147, #148); the scene carries their inputs."
+  ]
+}

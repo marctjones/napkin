@@ -32,6 +32,7 @@ public sealed class SampleCutListTests
     [InlineData("overlap")]
     [InlineData("picture-frame")]
     [InlineData("stocked-bench")]
+    [InlineData("diy-coffee-table-drawers")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_cut_list_is_the_one_the_expectations_state(string fixture)
     {
@@ -64,6 +65,9 @@ public sealed class SampleCutListTests
             // as an empty list: no sentence is a sentence about nothing to do.
             Assert.Equal(want.Cuts ?? [], row.CutText);
 
+            // Likewise joinery: a fixture with no joints says nothing, and says it by an empty list.
+            Assert.Equal(want.Joinery ?? [], row.JointText);
+
             Assert.False(string.IsNullOrWhiteSpace(want.Derivation), $"{want.Label} has no derivation.");
         }
     }
@@ -83,6 +87,7 @@ public sealed class SampleCutListTests
     [InlineData("overlap")]
     [InlineData("picture-frame")]
     [InlineData("stocked-bench")]
+    [InlineData("diy-coffee-table-drawers")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_csv_is_the_one_the_expectations_state(string fixture)
     {

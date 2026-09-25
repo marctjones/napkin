@@ -1,0 +1,1615 @@
+{
+  "formatVersion": 5,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
+  ],
+  "entities": [
+    {
+      "id": "10000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Top",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 16640
+      },
+      "width": 43008,
+      "height": 22528,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "3/4 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, south-west",
+      "anchor": {
+        "x": 1536,
+        "y": 1536,
+        "z": 0
+      },
+      "width": 1536,
+      "height": 1536,
+      "depth": 16640,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "2x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "thickness"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000003",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, north-west",
+      "anchor": {
+        "x": 1536,
+        "y": 19456,
+        "z": 0
+      },
+      "width": 1536,
+      "height": 1536,
+      "depth": 16640,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "2x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "thickness"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000004",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, south-east",
+      "anchor": {
+        "x": 39936,
+        "y": 1536,
+        "z": 0
+      },
+      "width": 1536,
+      "height": 1536,
+      "depth": 16640,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "2x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "thickness"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000005",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, north-east",
+      "anchor": {
+        "x": 39936,
+        "y": 19456,
+        "z": 0
+      },
+      "width": 1536,
+      "height": 1536,
+      "depth": 16640,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "2x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "thickness"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000006",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Apron, back",
+      "anchor": {
+        "x": 3072,
+        "y": 20224,
+        "z": 11008
+      },
+      "width": 36864,
+      "height": 768,
+      "depth": 5632,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x6",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000007",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Apron, side, west",
+      "anchor": {
+        "x": 1536,
+        "y": 3072,
+        "z": 11008
+      },
+      "width": 768,
+      "height": 16384,
+      "depth": 5632,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x6",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000008",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Apron, side, east",
+      "anchor": {
+        "x": 40704,
+        "y": 3072,
+        "z": 11008
+      },
+      "width": 768,
+      "height": 16384,
+      "depth": 5632,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x6",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000009",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Front rail",
+      "anchor": {
+        "x": 3072,
+        "y": 1536,
+        "z": 15104
+      },
+      "width": 36864,
+      "height": 768,
+      "depth": 1536,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000010",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Web",
+      "anchor": {
+        "x": 21120,
+        "y": 2304,
+        "z": 11008
+      },
+      "width": 768,
+      "height": 17920,
+      "depth": 5632,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x6",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000011",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Slide cleat, west",
+      "anchor": {
+        "x": 2304,
+        "y": 3072,
+        "z": 12288
+      },
+      "width": 768,
+      "height": 16384,
+      "depth": 1536,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000012",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Slide cleat, east",
+      "anchor": {
+        "x": 39936,
+        "y": 3072,
+        "z": 12288
+      },
+      "width": 768,
+      "height": 16384,
+      "depth": 1536,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000013",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer side, left, A",
+      "anchor": {
+        "x": 3584,
+        "y": 1536,
+        "z": 11264
+      },
+      "width": 512,
+      "height": 16384,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1/2 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000014",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer side, right, A",
+      "anchor": {
+        "x": 20096,
+        "y": 1536,
+        "z": 11264
+      },
+      "width": 512,
+      "height": 16384,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1/2 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000015",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer box front, A",
+      "anchor": {
+        "x": 4096,
+        "y": 1536,
+        "z": 11264
+      },
+      "width": 16000,
+      "height": 512,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1/2 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        },
+        "hardware": [
+          {
+            "name": "16 in side-mount drawer slide, pair",
+            "quantity": 1
+          }
+        ]
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000016",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer box back, A",
+      "anchor": {
+        "x": 4096,
+        "y": 17408,
+        "z": 11264
+      },
+      "width": 16000,
+      "height": 512,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1/2 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000017",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer bottom, A",
+      "anchor": {
+        "x": 4096,
+        "y": 2048,
+        "z": 11776
+      },
+      "width": 16000,
+      "height": 15360,
+      "depth": 256,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1/4 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000018",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer front, A",
+      "anchor": {
+        "x": 3200,
+        "y": 768,
+        "z": 11008
+      },
+      "width": 18176,
+      "height": 768,
+      "depth": 5632,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x6",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        },
+        "hardware": [
+          {
+            "name": "Drawer pull",
+            "quantity": 1
+          }
+        ]
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000019",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer side, left, B",
+      "anchor": {
+        "x": 22400,
+        "y": 1536,
+        "z": 11264
+      },
+      "width": 512,
+      "height": 16384,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1/2 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000020",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer side, right, B",
+      "anchor": {
+        "x": 38912,
+        "y": 1536,
+        "z": 11264
+      },
+      "width": 512,
+      "height": 16384,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1/2 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "length"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000021",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer box front, B",
+      "anchor": {
+        "x": 22912,
+        "y": 1536,
+        "z": 11264
+      },
+      "width": 16000,
+      "height": 512,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1/2 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        },
+        "hardware": [
+          {
+            "name": "16 in side-mount drawer slide, pair",
+            "quantity": 1
+          }
+        ]
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000022",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer box back, B",
+      "anchor": {
+        "x": 22912,
+        "y": 17408,
+        "z": 11264
+      },
+      "width": 16000,
+      "height": 512,
+      "depth": 3584,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1/2 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000023",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer bottom, B",
+      "anchor": {
+        "x": 22912,
+        "y": 2048,
+        "z": 11776
+      },
+      "width": 16000,
+      "height": 15360,
+      "depth": 256,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1/4 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": []
+      },
+      "cuts": []
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000024",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Drawer front, B",
+      "anchor": {
+        "x": 21632,
+        "y": 768,
+        "z": 11008
+      },
+      "width": 18176,
+      "height": 768,
+      "depth": 5632,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "1x6",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "thickness"
+        },
+        "hardware": [
+          {
+            "name": "Drawer pull",
+            "quantity": 1
+          }
+        ]
+      },
+      "cuts": []
+    }
+  ],
+  "relationships": [
+    {
+      "id": "40000000-0000-4000-8000-000000000001",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000003",
+        "faces": [
+          "east"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000006",
+        "faces": [
+          "west"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "south"
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000002",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000005",
+        "faces": [
+          "west"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000006",
+        "faces": [
+          "east"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "south"
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000003",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000002",
+        "faces": [
+          "north"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000007",
+        "faces": [
+          "south"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "east"
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000004",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000003",
+        "faces": [
+          "south"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000007",
+        "faces": [
+          "north"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "east"
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000005",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000004",
+        "faces": [
+          "north"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000008",
+        "faces": [
+          "south"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "west"
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000006",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000005",
+        "faces": [
+          "south"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000008",
+        "faces": [
+          "north"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "west"
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000007",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000002",
+        "faces": [
+          "east"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000009",
+        "faces": [
+          "west"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "north"
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000008",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000004",
+        "faces": [
+          "west"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000009",
+        "faces": [
+          "east"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "north"
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000009",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000006",
+        "faces": [
+          "south"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000010",
+        "faces": [
+          "north"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "west"
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000010",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000009",
+        "faces": [
+          "north"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000010",
+        "faces": [
+          "south"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "west"
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000011",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000007",
+        "faces": [
+          "east"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000011",
+        "faces": [
+          "west"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "screws",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000012",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000008",
+        "faces": [
+          "west"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000012",
+        "faces": [
+          "east"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "screws",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000013",
+      "kind": "joint",
+      "type": "rabbet",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000013",
+        "faces": [
+          "east"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000015",
+        "faces": [
+          "west"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "brads",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000014",
+      "kind": "joint",
+      "type": "rabbet",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000014",
+        "faces": [
+          "west"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000015",
+        "faces": [
+          "east"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "brads",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000015",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000013",
+        "faces": [
+          "east"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000016",
+        "faces": [
+          "west"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "brads",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000016",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000014",
+        "faces": [
+          "west"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000016",
+        "faces": [
+          "east"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "brads",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000017",
+      "kind": "joint",
+      "type": "groove",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000013",
+        "faces": [
+          "east"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000017",
+        "faces": [
+          "west"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "none",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000018",
+      "kind": "joint",
+      "type": "groove",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000014",
+        "faces": [
+          "west"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000017",
+        "faces": [
+          "east"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "none",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000019",
+      "kind": "joint",
+      "type": "groove",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000015",
+        "faces": [
+          "north"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000017",
+        "faces": [
+          "south"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "none",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000020",
+      "kind": "joint",
+      "type": "groove",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000016",
+        "faces": [
+          "south"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000017",
+        "faces": [
+          "north"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "none",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000021",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000018",
+        "faces": [
+          "north"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000015",
+        "faces": [
+          "south"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "screws",
+        "count": 4,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000022",
+      "kind": "joint",
+      "type": "rabbet",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000019",
+        "faces": [
+          "east"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000021",
+        "faces": [
+          "west"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "brads",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000023",
+      "kind": "joint",
+      "type": "rabbet",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000020",
+        "faces": [
+          "west"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000021",
+        "faces": [
+          "east"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "brads",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000024",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000019",
+        "faces": [
+          "east"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000022",
+        "faces": [
+          "west"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "brads",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000025",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000020",
+        "faces": [
+          "west"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000022",
+        "faces": [
+          "east"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "brads",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": true
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000026",
+      "kind": "joint",
+      "type": "groove",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000019",
+        "faces": [
+          "east"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000023",
+        "faces": [
+          "west"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "none",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000027",
+      "kind": "joint",
+      "type": "groove",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000020",
+        "faces": [
+          "west"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000023",
+        "faces": [
+          "east"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "none",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000028",
+      "kind": "joint",
+      "type": "groove",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000021",
+        "faces": [
+          "north"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000023",
+        "faces": [
+          "south"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "none",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000029",
+      "kind": "joint",
+      "type": "groove",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000022",
+        "faces": [
+          "south"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000023",
+        "faces": [
+          "north"
+        ]
+      },
+      "depth": 256,
+      "fastening": {
+        "kind": "none",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000030",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000024",
+        "faces": [
+          "north"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000021",
+        "faces": [
+          "south"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "screws",
+        "count": 4,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000031",
+      "kind": "joint",
+      "type": "tabletop",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000006",
+        "faces": [
+          "top"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "clips",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000032",
+      "kind": "joint",
+      "type": "tabletop",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000009",
+        "faces": [
+          "top"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "clips",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000033",
+      "kind": "joint",
+      "type": "tabletop",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000007",
+        "faces": [
+          "top"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "clips",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000034",
+      "kind": "joint",
+      "type": "tabletop",
+      "receiving": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "inserted": {
+        "kind": "feature",
+        "box": "10000000-0000-4000-8000-000000000008",
+        "faces": [
+          "top"
+        ]
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "clips",
+        "count": null,
+        "pocketFace": null
+      },
+      "glue": false
+    }
+  ],
+  "fastenerChoices": [
+    {
+      "kind": "pocketScrew",
+      "thickness": 768,
+      "size": "1-1/4 in coarse",
+      "packSize": 100
+    },
+    {
+      "kind": "woodScrew",
+      "thickness": 768,
+      "size": "#8 x 1-1/4",
+      "packSize": 100
+    },
+    {
+      "kind": "woodScrew",
+      "thickness": 512,
+      "size": "#8 x 1",
+      "packSize": 100
+    },
+    {
+      "kind": "brad",
+      "thickness": 512,
+      "size": "18 ga x 1",
+      "packSize": 1000
+    },
+    {
+      "kind": "tabletopClip",
+      "thickness": null,
+      "size": "figure-8, with screws",
+      "packSize": 8
+    }
+  ],
+  "supplies": [
+    {
+      "item": "Wood glue",
+      "note": ""
+    },
+    {
+      "item": "Sandpaper, 120 and 220",
+      "note": ""
+    },
+    {
+      "item": "Finish",
+      "note": ""
+    }
+  ]
+}

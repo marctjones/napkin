@@ -442,6 +442,16 @@ thickness: a 1/4″ groove in 1/4″ plywood is a slot, not a groove.
 
 ### 6.2 Sentences, and the phrasing rules
 
+*Implementation decisions taken where this note left a choice (#146):* a run of pocket-hole clauses
+from one face is ordered by count, largest first, then the low side first (west, south, bottom, east,
+north, top), so the web reads "north end and 2 in the south end"; within a face, sentences sort by
+face, then offset, then rabbet, groove, lap, pocket holes, clips; the face tabletop clips are on is the
+one of the part's two long faces flanking its top edge nearer the middle of everything drawn; lengths
+are rendered with `CutListCsv.Text`'s straight quote mark (1/4"), not the prose's ″; a joint whose
+parts no longer touch keeps its allowance (§4.3), says nothing that needs a contact and flags the row,
+whose CSV Joinery field ends with "joint not satisfied"; a depth not less than the receiving thickness
+adds no allowance; the fastener count recipes of §7.2 are `Recipes` (slice D extends it).
+
 Sentences are derived by `JointDescription.Describe(...)` beside `CutDescription`, in the
 **receiving** part's own frame as drawn, with faces and ends named the way `CutDescription`
 already names them (compass, `top`, `bottom`; an *end* is a face perpendicular to the part's

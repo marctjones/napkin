@@ -70,7 +70,30 @@ public sealed record CutListRow(
     /// answer (<c>docs/design/parts-and-cut-list.md</c> &#xA7;3.1).
     /// </remarks>
     public ImmutableArray<string> CutText
-        => CutDescription.Describe(Cuts, new FinishedSize(Length, Width, Thickness), PlanAxes);
+        => CutDescription.Describe(Cuts, Drawn ?? new FinishedSize(Length, Width, Thickness), PlanAxes);
+
+    /// <summary>
+    /// What the part's joints do to it, in structure: the allowances that are already in
+    /// <see cref="Length"/>, <see cref="Width"/> and <see cref="Thickness"/>, and each groove, rabbet,
+    /// lap, run of pocket holes and set of clips, in the first member's own frame
+    /// (<c>docs/design/joinery-and-fasteners.md</c> &#xA7;6.3, &#xA7;6.4). Empty for a part nothing is done to.
+    /// </summary>
+    public ImmutableArray<JointFact> Joinery { get; init; } = [];
+
+    /// <summary>
+    /// What to do to the blank because of its joints, in the design note's fixed sentences
+    /// (&#xA7;6.2); derived from <see cref="Joinery"/> the way <see cref="CutText"/> is from the cuts.
+    /// </summary>
+    public ImmutableArray<string> JointText => JointDescription.Describe(Joinery);
+
+    /// <summary>The size as drawn, before the joinery allowances: what <see cref="CutText"/> measures its cuts on.</summary>
+    public FinishedSize? Drawn { get; init; }
+
+    /// <summary>Whether any part on this row has a joint that no longer holds (&#xA7;6.4).</summary>
+    public bool JointsUnsatisfied { get; init; }
+
+    /// <summary>Notes on the row: currently only <see cref="JointDescription.NotSatisfied"/>.</summary>
+    public ImmutableArray<string> Flags => JointsUnsatisfied ? [JointDescription.NotSatisfied] : [];
 
     /// <summary>
     /// The species the part asks for, as typed in the properties panel, or empty when it names none.
@@ -116,6 +139,9 @@ public sealed record CutListRow(
            && string.Equals(Species, other.Species, StringComparison.Ordinal)
            && Equals(Stock, other.Stock)
            && Cuts.SequenceEqual(other.Cuts)
+           && Joinery.SequenceEqual(other.Joinery)
+           && JointsUnsatisfied == other.JointsUnsatisfied
+           && Drawn == other.Drawn
            && PlanAxes == other.PlanAxes
            && Members.SequenceEqual(other.Members);
 
@@ -138,6 +164,14 @@ public sealed record CutListRow(
         {
             hash.Add(cut);
         }
+
+        foreach (JointFact fact in Joinery)
+        {
+            hash.Add(fact);
+        }
+
+        hash.Add(JointsUnsatisfied);
+        hash.Add(Drawn);
 
         foreach (EntityId member in Members)
         {

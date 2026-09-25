@@ -29,7 +29,7 @@ public static class ShoppingList
     /// list says it (§1.3, §4 "No saw kerf").
     /// </summary>
     public const string BeforeKerfAndJoinery =
-        "Shopping list: boards needed, before saw kerf, defect and joinery allowance.";
+        "Shopping list: boards needed from finished sizes, joinery allowances included; before saw kerf and defect.";
 
     /// <summary>The note on a sheet count, which is by area and so a floor.</summary>
     public const string SheetsByArea = "sheets by area — a nesting layout may need more";

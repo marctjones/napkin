@@ -268,6 +268,114 @@ public class CutListWorkflows
         });
     });
 
+    /// <summary>
+    /// The DIY coffee table's cut list, opened with the mouse and read against the rows the joinery
+    /// note works out by hand: finished sizes with the allowances in, the sentences that say what to
+    /// cut, and two mirrored drawer sides as two rows.
+    /// </summary>
+    [GuiWorkflow("GUI-CUT-07")]
+    public void Open_the_diy_table_and_read_what_its_joints_ask_of_each_part() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        System.Text.Json.JsonElement expected;
+        using (FileStream stream = File.OpenRead(Path.Combine(RepositoryLayout.SamplesDirectory, "diy-coffee-table-drawers.expected.json")))
+        {
+            expected = System.Text.Json.JsonDocument.Parse(stream).RootElement.Clone();
+        }
+
+        System.Text.Json.JsonElement[] wantRows = [.. expected.GetProperty("cutList").EnumerateArray()];
+
+        OpenSample(app, window, "DIY coffee table with drawers");
+        app.Chord(Key.L);
+
+        app.Expect("the list is the thirteen rows the note works out, twenty-four pieces, with the finished sizes", () =>
+        {
+            CutListWindow list = window.CutList!;
+
+            Assert.Equal(13, list.Rows.Rows.Length);
+            Assert.Contains("13 rows, 24 pieces to cut", list.Headline, StringComparison.Ordinal);
+            Assert.Equal(
+                wantRows.Select(row => row.GetProperty("label").GetString()),
+                list.Rows.Sorted.Select(row => row.Label));
+
+            // 16 1/8" is the box front's drawn 15 5/8" plus a 1/4" rabbet at each end; the bottom's 16 1/8" x 15 1/2" likewise.
+            CutListRow front = Assert.Single(list.Rows.Sorted, row => row.Label == "Drawer box front");
+            Assert.Equal(16512, front.Length.Units);
+            Assert.Equal("1'-4 1/8\"", CutListCsv.Text(front.Length));
+            CutListRow bottom = Assert.Single(list.Rows.Sorted, row => row.Label == "Drawer bottom");
+            Assert.Equal(("1'-4 1/8\"", "1'-3 1/2\""), (CutListCsv.Text(bottom.Length), CutListCsv.Text(bottom.Width)));
+        });
+
+        app.Expect("what a person sees under each row is the sentences the note fixes, verbatim", () =>
+        {
+            string[] screen = [.. window.CutList!.Rows.LinesOnScreen];
+
+            foreach (System.Text.Json.JsonElement row in wantRows)
+            {
+                foreach (System.Text.Json.JsonElement sentence in row.GetProperty("joinery").EnumerateArray())
+                {
+                    Assert.Contains(sentence.GetString(), screen);
+                }
+            }
+
+            Assert.Contains("Drill 3 pocket holes in the west end and 3 in the east end, from the south face.", screen);
+            Assert.Contains("Drill 3 pocket holes in the north end and 2 in the south end, from the west face.", screen);
+            Assert.DoesNotContain(screen, line => line.Contains("joint not satisfied", StringComparison.Ordinal));
+        });
+
+        AppDriver list = AppDriver.Attach(window.CutList!, "cut-list");
+        list.SaveFrame("diy-coffee-table");
+
+        // Sort by part name with the mouse, the way a person hunts for the drawer sides.
+        list.Click(CentreOfHeader(window, "Part"));
+
+        app.Expect("sorting by name puts the mirrored drawer sides next to each other, still two rows of two", () =>
+        {
+            string[] labels = [.. window.CutList!.Rows.Sorted.Select(row => row.Label)];
+            int left = Array.IndexOf(labels, "Drawer side, left");
+
+            Assert.Equal("Drawer side, right", labels[left + 1]);
+            Assert.All(
+                window.CutList!.Rows.Sorted.Where(row => row.Label.StartsWith("Drawer side", StringComparison.Ordinal)),
+                row => Assert.Equal(2, row.Quantity));
+            Assert.Equal(24, window.CutList!.Rows.Sorted.Sum(row => row.Quantity));
+        });
+
+        app.Expect("the exported file is the expectations' own CSV, the Joinery column and the new header line included", () =>
+        {
+            // The window is now sorted by name; the CSV is in the order on screen, so compare as sets of lines.
+            string[] lines = window.CutList!.Csv.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            string[] want = [.. expected.GetProperty("cutListCsv").EnumerateArray().Select(line => line.GetString()!)];
+
+            Assert.Equal(want[0], lines[0]);
+            Assert.Equal(want[1], lines[1]);
+            Assert.EndsWith(",Cuts,Joinery", lines[1], StringComparison.Ordinal);
+            Assert.Equal(want.Skip(2).Order(StringComparer.Ordinal), lines.Skip(2).Order(StringComparer.Ordinal));
+        });
+
+        // The list follows the drawing: another sample, with no joints, takes the joinery with it, and coming
+        // back to the DIY table brings the sentences back.
+        OpenSample(app, window, "Coffee table");
+        app.Expect("a design with no joints has no joinery sentences and no Joinery text in its CSV", () =>
+        {
+            Assert.Equal(4, window.CutList!.Rows.Rows.Length);
+            Assert.All(window.CutList!.Rows.Rows, row => Assert.Empty(row.JointText));
+            Assert.All(
+                window.CutList!.Csv.Split('\n', StringSplitOptions.RemoveEmptyEntries).Skip(2),
+                line => Assert.EndsWith(",,", line, StringComparison.Ordinal));
+        });
+
+        OpenSample(app, window, "DIY coffee table with drawers");
+        app.Chord(Key.L);
+        app.Expect("the DIY table is back with all thirteen rows and their sentences", () =>
+        {
+            Assert.Equal(13, window.CutList!.Rows.Rows.Length);
+            Assert.Contains(
+                "Groove the north face: 1/4\" wide, 1/4\" deep, 1/2\" from the bottom edge, full length.",
+                window.CutList!.Rows.LinesOnScreen);
+        });
+    });
+
     /// <summary>Replaces what a field says, the way a person does: select all, then type.</summary>
     static void Fill(AppDriver app, MainWindow window, TextBox field, string text)
     {

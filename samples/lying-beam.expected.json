@@ -104,8 +104,8 @@
     }
   ],
   "cutListCsv": [
-    "Cut list: finished sizes before saw kerf and joinery allowance.",
-    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
-    "Beam,4,\"3'-0\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",,"
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery",
+    "Beam,4,\"3'-0\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",,,"
   ]
 }

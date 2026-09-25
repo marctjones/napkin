@@ -102,6 +102,10 @@ public static class SampleFiles
             "stocked-bench.scene.json",
             "Stocked bench",
             "A 4'-0\" bench of 2x4, 1x4 and 3/4 plywood — every part names its stock, for the shopping list."),
+        new(
+            "diy-coffee-table-drawers.scene.json",
+            "DIY coffee table with drawers",
+            "A 42\" × 22\" table with two drawers — 34 joints: pocket screws, rabbets, grooves and tabletop clips."),
     ];
 
     private static readonly string[] SceneSuffixes = [".scene.json", ".json"];

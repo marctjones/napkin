@@ -221,7 +221,7 @@ public sealed class CutListTable : Grid
             // What to do to the blank, under the row it belongs to: the sentences §4.4 wrote for a
             // person at a bench, beside the picture of the shape they describe. A plain rectangle
             // has none and gets no line.
-            foreach (string sentence in row.CutText)
+            foreach (string sentence in row.CutText.AddRange(row.JointText).AddRange(row.Flags))
             {
                 RowDefinitions.Add(new RowDefinition(GridLength.Auto));
                 Add(Sentence(sentence), line, 0, span: 7);

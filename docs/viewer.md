@@ -72,8 +72,10 @@ Zoom is limited at both ends — from an inch drawn at a fiftieth of a pixel, wh
 the part's name, how many, its finished length, width and thickness, and what it is cut from. It is
 not modal and it is not a snapshot — it follows the drawing, so an edit with the list open changes
 the row. Every column sorts, and sorting reorders what is shown and changes no number. The header
-line says what the list is before: **saw kerf and joinery allowance**, neither of which napkin
-knows about (`docs/design/parts-and-cut-list.md` §1.3).
+line says what the list is: finished sizes with **joinery allowances included and saw kerf not**
+(`docs/design/parts-and-cut-list.md` §1.3, `docs/design/joinery-and-fasteners.md` §6). Under a row
+are its cut sentences and its joinery sentences, and "joint not satisfied" when a joint on it no
+longer holds.
 
 A box is not a piece to cut until somebody says so, because a plan view holds two of a part's three
 dimensions and only the person drawing knows which two. Select a box and the **properties panel**

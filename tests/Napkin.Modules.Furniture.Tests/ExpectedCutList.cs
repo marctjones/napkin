@@ -46,6 +46,10 @@ internal sealed record ExpectedFixture(
     internal string Csv => string.Concat(CutListCsv.Select(line => line + "\n"));
 }
 
+/// <param name="Joinery">
+/// The sentences the row's joints read as, worked out by hand from the design note's rules and the
+/// joints the scene states. Left out of a fixture with no joints.
+/// </param>
 /// <param name="Cuts">
 /// The sentences the row's cuts read as, worked out by hand from the cuts the scene states. Left
 /// out of a fixture whose parts are plain rectangles, which is the same thing as an empty list.
@@ -63,7 +67,8 @@ internal sealed record ExpectedCutRow(
     bool Unresolved,
     IReadOnlyList<string> Members,
     string Derivation,
-    IReadOnlyList<string>? Cuts = null);
+    IReadOnlyList<string>? Cuts = null,
+    IReadOnlyList<string>? Joinery = null);
 
 /// <summary>
 /// The boundary a shaped part's blank is left with, walked by hand from

@@ -36,7 +36,7 @@ public sealed class CutListCsvTests
             CutListRow row = rows[i];
             ImmutableArray<string> line = lines[i + 2];
 
-            Assert.Equal(7, line.Length);
+            Assert.Equal(8, line.Length);
             Assert.Equal(row.Label, line[0]);
             Assert.Equal(row.Quantity, int.Parse(line[1], System.Globalization.CultureInfo.InvariantCulture));
             Assert.Equal(CutListCsv.Text(row.Length), line[2]);
@@ -44,8 +44,9 @@ public sealed class CutListCsvTests
             Assert.Equal(CutListCsv.Text(row.Thickness), line[4]);
             Assert.Equal(row.MaterialText, line[5]);
 
-            // Nothing in this design is cut, so the last column is empty on every line.
+            // Nothing in this design is cut or joined, so the last two columns are empty on every line.
             Assert.Equal(string.Empty, line[6]);
+            Assert.Equal(string.Empty, line[7]);
         }
     }
 
@@ -204,7 +205,8 @@ public sealed class CutListCsvTests
         ImmutableArray<CutListRow> rows = CutList.Of(sketch, MaterialsLibrary.Shipped);
         ImmutableArray<ImmutableArray<string>> lines = CutListCsv.Parse(CutListCsv.ToCsv(rows));
 
-        Assert.Equal("Cuts", lines[1][^1]);
+        Assert.Equal("Cuts", lines[1][^2]);
+        Assert.Equal("Joinery", lines[1][^1]);
 
         for (int i = 0; i < rows.Length; i++)
         {

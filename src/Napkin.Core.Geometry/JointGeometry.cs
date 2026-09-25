@@ -374,8 +374,11 @@ public static class JointGeometry
             FaceFacing(box, lengthWorld, positive: !nearerLow));
     }
 
-    // The local axis a part's length lies along: from its part when it has one, else its longest size (X before Y before Z).
-    private static Axis LengthAxis(Box box)
+    /// <summary>
+    /// The local axis a part's length lies along: from its part when it has one, else its longest
+    /// size (X before Y before Z). A face is an <em>end</em> when it is perpendicular to this.
+    /// </summary>
+    public static Axis LengthAxis(Box box)
     {
         if (box.Part is { } part)
         {
@@ -389,7 +392,8 @@ public static class JointGeometry
             : Axis.Z;
     }
 
-    private static Axis LocalAxisOf(BoxFace face) => face switch
+    /// <summary>The local axis a face is perpendicular to.</summary>
+    public static Axis LocalAxisOf(BoxFace face) => face switch
     {
         BoxFace.South or BoxFace.North => Axis.Y,
         BoxFace.East or BoxFace.West => Axis.X,
@@ -410,9 +414,11 @@ public static class JointGeometry
     private static BoxFace FaceFacing(Box box, Axis axis, bool positive)
         => AllFaces.Single(face => box.Orientation.Normal(face) == (axis, positive));
 
-    // The box's world extent: for the 24 orientations its six faces lie on the six planes of it.
-    private static (Point3 Low, Point3 High) Extent(Box box)
+    /// <summary>The box's world extent: for the 24 orientations its six faces lie on the six planes of it.</summary>
+    public static (Point3 Low, Point3 High) Extent(Box box)
     {
+        ArgumentNullException.ThrowIfNull(box);
+
         Point3? low = null, high = null;
         foreach (BoxCorner corner in (BoxCorner[])[BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest])
         {

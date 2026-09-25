@@ -43,7 +43,7 @@ public class SampleFileTests
         }
 
         Assert.Equal(
-            ["Coffee table", "Rounded-corner table", "Wall with window", "Bookcase", "Bench", "Lying beam", "Chain of five", "Fraction stress", "Scale extremes", "Framing at 16\" o.c.", "L-bracket", "Overlap", "Picture frame", "Stocked bench"],
+            ["Coffee table", "Rounded-corner table", "Wall with window", "Bookcase", "Bench", "Lying beam", "Chain of five", "Fraction stress", "Scale extremes", "Framing at 16\" o.c.", "L-bracket", "Overlap", "Picture frame", "Stocked bench", "DIY coffee table with drawers"],
             SampleFiles.All.Select(sample => sample.Name));
     }
 

@@ -93,9 +93,9 @@ rather than dropping it.
 
 ### 1.3 What a part is *not*
 
-- **Not a joinery model.** A tenon, a dado and a mitre change finished length, and napkin does not
-  know about them. The cut list lists the stored size; #8 adds no joinery allowance and does not
-  pretend to one.
+- **Not a joinery model** (as of #8; superseded for joints by [`joinery-and-fasteners.md`](./joinery-and-fasteners.md)
+  §6, #146). A groove or rabbet a part is inserted into now lengthens its listed size by the joint's
+  depth and adds a sentence; a tenon and a mitre still change a finished length that napkin does not know.
 - **Not a solid, as designed here.** `part.outOfPlane` was a number on a plan-view box, not a Z
   extent with a position; [`assembly-model.md`](./assembly-model.md) (signed off 2026-09-22) gives
   every box a real position and orientation in space and moves this value to `Box.Depth`. The cut
@@ -230,8 +230,8 @@ then by label, ordinal. Deterministic, and largest-part-first, which is the orde
 | `Unresolved` | bool |
 | `Members` | the entity ids, so clicking a row selects the parts |
 
-CSV: a header line saying the list is before saw kerf and joinery allowance (§1.3), then
-`Label,Quantity,Length,Width,Thickness,Material`. Lengths render with `LengthFormat.Default`
+CSV: a header line saying the sizes are finished, joinery allowances included, and before saw kerf
+(§1.3, and #146), then `Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery`. Lengths render with `LengthFormat.Default`
 (feet-inches at 1/16″) and are quoted, because `4'-0"` carries a quote. A length that is not exact
 at 1/16″ carries the same `≈` marker the canvas uses (geometry model §1.4), so the CSV never claims
 more than the screen does.
@@ -481,6 +481,6 @@ CLAUDE.md's "core functionality first" asks for.
    green 2x4 is 1 9/16″ × 3 9/16″, and someone building an outdoor structure from green lumber
    would want that. Adding it is a second pair of lengths on every lumber row plus a choice in the
    UI; it is not in this branch.
-5. **No saw kerf and no joinery allowance** (§1.3, §4). Both are real and both are absent. The cut
-   list and the shopping list say so on the table and in the CSV header rather than being quietly
+5. **No saw kerf** (§1.3, §4), and since #146 joinery allowances *are* in the finished sizes. Kerf is
+   real and absent. The cut list and the shopping list say so on the table and in the CSV header rather than being quietly
    optimistic.

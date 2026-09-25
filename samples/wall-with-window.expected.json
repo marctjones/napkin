@@ -67,8 +67,8 @@
   "cutListOrder": "Empty by construction: a wall and an opening are boxes that nobody cuts, so both carry \"part\": null in the scene and the cut list collects nothing. That is the case the cut list must not treat as an error.",
 
   "cutListCsv": [
-    "Cut list: finished sizes before saw kerf and joinery allowance.",
-    "Label,Quantity,Length,Width,Thickness,Material,Cuts"
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery"
   ],
 
   "notes": [

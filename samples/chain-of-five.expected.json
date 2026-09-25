@@ -180,12 +180,12 @@
     }
   ],
   "cutListCsv": [
-    "Cut list: finished sizes before saw kerf and joinery allowance.",
-    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
-    "Slat 3,1,\"1'-0\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,",
-    "Slat 1,1,\"10\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,",
-    "Slat 5,1,\"9 1/4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,",
-    "Slat 2,1,\"8 1/2\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,",
-    "Slat 4,1,\"6 3/4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,"
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery",
+    "Slat 3,1,\"1'-0\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,",
+    "Slat 1,1,\"10\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,",
+    "Slat 5,1,\"9 1/4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,",
+    "Slat 2,1,\"8 1/2\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,",
+    "Slat 4,1,\"6 3/4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,"
   ]
 }

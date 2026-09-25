@@ -999,6 +999,51 @@
       "milestone": "M3",
       "issue": 145,
       "kind": "unit"
+    },
+    {
+      "id": "CUT-007",
+      "area": "furniture",
+      "title": "Joinery allowances and the fixed joint sentences are in the cut list",
+      "acceptance": "A part inserted into a groove or rabbet lists its drawn size plus the depth at each grooved edge or rabbeted end (drawer box front 16000 -> 16512, bottom 16000 x 15360 -> 16512 x 15872); each groove, dado, rabbet, half-lap, run of pocket holes and set of tabletop clips reads as the note 6.2 sentence, in the part's own frame.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-008",
+      "area": "furniture",
+      "title": "Joinery is in the group key, up to a half-turn of the part",
+      "acceptance": "Four legs and the two side aprons (pocket holes from opposite faces at opposite ends) are one row each; left and right drawer sides are two rows; two parts equal but for a groove depth are two rows.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-009",
+      "area": "furniture",
+      "title": "An unsatisfied joint keeps its allowance and flags the row",
+      "acceptance": "A joint whose parts moved apart still lengthens the inserted part and says nothing that needs a contact; the row says joint not satisfied; a depth not less than the receiving thickness adds no allowance.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-010",
+      "area": "furniture",
+      "title": "The CSV has a Joinery column and the new header line",
+      "acceptance": "The first line reads finished sizes: joinery allowances included; before saw kerf (#138); the header ends Cuts,Joinery; the Joinery column parses back to the rows' sentences, followed by joint not satisfied on a flagged row.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-011",
+      "area": "furniture",
+      "title": "Fastener recipes give the counts the sentences read",
+      "acceptance": "Pocket screws max(2, ceil(L/2)), screws 6, brads 1.5, nails 4, dowels 4, biscuits max(1, ceil(L/8)), clips max(2, ceil(L/12)); a typed count overrides.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "unit"
     }
   ]
 }

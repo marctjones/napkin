@@ -22,17 +22,22 @@ namespace Napkin.Modules.Furniture;
 /// the file never claims more precision than the screen does.
 /// </para>
 /// <para>
-/// <strong>A trailing <c>Cuts</c> column</strong> holds what to do to the blank, one sentence per
+/// <strong>A <c>Cuts</c> column</strong> holds what to do to the blank, one sentence per
 /// cut joined by <see cref="BetweenCuts"/>, and is empty for a plain rectangle
 /// (<c>docs/design/shaped-parts-model.md</c> &#xA7;4.5). The header line's statement — finished
-/// sizes before saw kerf and joinery allowance — is as true of a shaped part as of a rectangle:
-/// the sizes are the blank's.
+/// sizes, joinery allowances included, before saw kerf — is as true of a shaped part as of a
+/// rectangle: the sizes are the blank's.
+/// </para>
+/// <para>
+/// <strong>A trailing <c>Joinery</c> column</strong> holds what to do because of the part's joints,
+/// sentences joined the same way (<c>docs/design/joinery-and-fasteners.md</c> &#xA7;6.4), followed by
+/// "joint not satisfied" when a joint on the row no longer holds; empty for a part nothing is done to.
 /// </para>
 /// </remarks>
 public static class CutListCsv
 {
     /// <summary>The column names, in the order they are written.</summary>
-    public const string Header = "Label,Quantity,Length,Width,Thickness,Material,Cuts";
+    public const string Header = "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery";
 
     /// <summary>What separates one cut's sentence from the next in the <c>Cuts</c> column.</summary>
     public const string BetweenCuts = "; ";
@@ -58,7 +63,8 @@ public static class CutListCsv
                .Append(Quoted(Text(row.Width))).Append(',')
                .Append(Quoted(Text(row.Thickness))).Append(',')
                .Append(Field(row.MaterialText)).Append(',')
-               .Append(Field(string.Join(BetweenCuts, row.CutText)))
+               .Append(Field(string.Join(BetweenCuts, row.CutText))).Append(',')
+               .Append(Field(string.Join(BetweenCuts, row.JointText.AddRange(row.Flags))))
                .Append('\n');
         }
 

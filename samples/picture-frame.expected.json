@@ -127,9 +127,9 @@
     }
   ],
   "cutListCsv": [
-    "Cut list: finished sizes before saw kerf and joinery allowance.",
-    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
-    "Stile,2,\"1'-1\"\"\",\"1 1/2\"\"\",\"3/4\"\"\",,\"Mitre the south end: from 1 1/2\"\" in along the east edge to the south-west corner (45° off square).; Mitre the north end: from 1 1/2\"\" in along the east edge to the north-west corner (45° off square).\"",
-    "Rail,2,\"11\"\"\",\"1 1/2\"\"\",\"3/4\"\"\",,\"Mitre the east end: from 1 1/2\"\" in along the north edge to the south-east corner (45° off square).; Mitre the west end: from 1 1/2\"\" in along the north edge to the south-west corner (45° off square).\""
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery",
+    "Stile,2,\"1'-1\"\"\",\"1 1/2\"\"\",\"3/4\"\"\",,\"Mitre the south end: from 1 1/2\"\" in along the east edge to the south-west corner (45° off square).; Mitre the north end: from 1 1/2\"\" in along the east edge to the north-west corner (45° off square).\",",
+    "Rail,2,\"11\"\"\",\"1 1/2\"\"\",\"3/4\"\"\",,\"Mitre the east end: from 1 1/2\"\" in along the north edge to the south-east corner (45° off square).; Mitre the west end: from 1 1/2\"\" in along the north edge to the south-west corner (45° off square).\","
   ]
 }
