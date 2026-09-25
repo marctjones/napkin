@@ -35,6 +35,30 @@ public class GroupCopyTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-001")]
+    public void A_duplicated_wall_carries_what_it_supports_and_its_stud_spacing()
+    {
+        Box wall = new(EditingBuilder.Id(9), LayerId.Default, Point3.Inches(0, 0, 0), Length.Inches(144), Length.Inches(3, 1, 2), Length.Inches(96), BoxFace.Top, Angle.Zero)
+        {
+            WallInputs = new WallInputs("zz-roof", Length.Inches(24)),
+        };
+        DesignEditor editor = new();
+        editor.Open(new Design("Wall", Sketch.Empty.WithEntity(wall), ImmutableDictionary<EntityId, string>.Empty.Add(wall.Id, "Wall 1")));
+        editor.SelectAll([wall.Id]);
+
+        SelectionCommands.Duplicate(editor, gridStepInches: 1);
+
+        Box copy = Assert.Single(editor.Selection.Select(editor.Sketch.Find<Box>).OfType<Box>());
+        Assert.NotEqual(wall.Id, copy.Id);
+        Assert.Equal(new WallInputs("zz-roof", Length.Inches(24)), copy.WallInputs);
+
+        // Undo takes the copy away and leaves the original's inputs as they were.
+        Assert.True(editor.Undo());
+        Assert.Equal(wall.WallInputs, editor.Sketch.Find<Box>(wall.Id)!.WallInputs);
+        Assert.Null(editor.Sketch.Find<Box>(copy.Id));
+    }
+
+    [Fact]
     public void Duplicating_two_parts_brings_the_relationship_between_them_and_nothing_else()
     {
         DesignEditor editor = Table();
