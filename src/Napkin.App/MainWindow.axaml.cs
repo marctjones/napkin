@@ -15,6 +15,7 @@ using Napkin.App.Settings;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Modules.Building;
 using Napkin.Modules.Furniture;
 
 namespace Napkin.App;
@@ -260,6 +261,9 @@ public partial class MainWindow : Window
     /// <summary>The rectangle tool's button.</summary>
     public ToggleButton RectangleToolControl => RectangleToolButton;
 
+    /// <summary>The wall tool's button (#18).</summary>
+    public ToggleButton WallToolControl => WallToolButton;
+
     /// <summary>The select tool's button.</summary>
     public ToggleButton SelectToolControl => SelectToolButton;
 
@@ -283,6 +287,7 @@ public partial class MainWindow : Window
     [
         SelectToolButton,
         RectangleToolButton,
+        WallToolButton,
         ShapeToolButton,
         DuplicateToolButton,
         PinToolButton,
@@ -472,7 +477,7 @@ public partial class MainWindow : Window
     {
         if (_cutList is null)
         {
-            _cutList = new CutListWindow { ApplyRequest = (request, what) => Editor.Apply(request, what) };
+            _cutList = new CutListWindow { ApplyRequest = (request, what) => Editor.Apply(request, what), Framing = _framing };
             _cutList.Closed += (_, _) => _cutList = null;
         }
 
@@ -1218,6 +1223,10 @@ public partial class MainWindow : Window
         // The cut list follows the drawing: widen a part with the list open and the row changes,
         // because both are readings of one design rather than a drawing and a snapshot of it.
         _cutList?.ShowDesign(CurrentDesign);
+        if (PropertiesPanel.IsVisible && Editor.OnlySelectedBox is { } selected)
+        {
+            ShowFraming(selected);
+        }
     }
 
     void OnSelectionChanged()
@@ -1326,6 +1335,7 @@ public partial class MainWindow : Window
 
             UpdateOutOfPlaneCaption();
             UpdateStockReadout();
+            ShowFraming(box);
         }
         finally
         {
@@ -2439,12 +2449,14 @@ public partial class MainWindow : Window
         {
             SelectToolButton.IsChecked = !ModelDrawing.Placement.IsArmed;
             RectangleToolButton.IsChecked = ModelDrawing.Placement.PlainBoard;
+            WallToolButton.IsChecked = false;
             StockToolboxPanel.ShowArmed(ModelDrawing.Placement.Stock, inModel: true);
             return;
         }
 
         SelectToolButton.IsChecked = DrawingCanvas.Tool == EditTool.Select;
         RectangleToolButton.IsChecked = DrawingCanvas.Tool == EditTool.Rectangle;
+        WallToolButton.IsChecked = DrawingCanvas.Tool == EditTool.Wall;
         StockToolboxPanel.ShowArmed(DrawingCanvas.ArmedStock);
     }
 
@@ -2742,6 +2754,7 @@ public partial class MainWindow : Window
         ZoomOutMenuItem.InputGesture = new KeyGesture(Key.OemMinus);
         SelectToolMenuItem.InputGesture = new KeyGesture(Key.S);
         RectangleToolMenuItem.InputGesture = new KeyGesture(Key.R);
+        WallToolMenuItem.InputGesture = new KeyGesture(Key.W);
         ShapeMenuItem.InputGesture = new KeyGesture(Key.C);
         DuplicateMenuItem.InputGesture = new KeyGesture(Key.D);
         JoinMenuItem.InputGesture = new KeyGesture(Key.J);
@@ -2919,6 +2932,164 @@ public partial class MainWindow : Window
     {
         DrawingCanvas.Tool = EditTool.Select;
         ModelDrawing.Disarm();
+        UpdateToolButtons();
+        FocusDrawing();
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Walls and openings (#18): drawn in the plan, framed by FramingList
+    // ---------------------------------------------------------------------------------------
+
+    FramingOptions _framing = new();
+    bool _fillingSpacing;
+
+    /// <summary>
+    /// How walls are framed in this session: the stud spacing picked in the panel. Not saved with the
+    /// design (part 1 of #18 changes no file format).
+    /// </summary>
+    public FramingOptions Framing => _framing;
+
+    /// <summary>The panel's line naming the selected wall or opening, empty when neither is selected.</summary>
+    public string FramingHeadlineText => FramingFields.IsVisible ? FramingHeadline.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The panel's framing summary for the selected wall, or the wall the selected opening is in.</summary>
+    public string FramingText => FramingFields.IsVisible ? FramingReadout.Text ?? string.Empty : string.Empty;
+
+    /// <summary>What the panel says could not be framed, empty when nothing.</summary>
+    public string FramingProblemsText => FramingProblems.IsVisible ? FramingProblems.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The panel's notes on the framing: the spacing and the placeholder jacks.</summary>
+    public string FramingNotesText => FramingFields.IsVisible ? FramingNotes.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The stud spacing picker.</summary>
+    public ComboBox StudSpacingControl => StudSpacingBox;
+
+    static readonly Length[] SpacingChoices =
+    [
+        .. MaterialsLibrary.Shipped.SpacingsFor("Wall").Select(spacing => spacing.Spacing)
+            .Append(FramingOptions.DefaultSpacing)
+            .Distinct()
+            .Order(),
+    ];
+
+    static readonly string SpacingTip =
+        "Spacings the library carries for walls: "
+        + string.Join(", ", MaterialsLibrary.Shipped.SpacingsFor("Wall").Select(spacing => $"{spacing.Name} ({spacing.Source.ShortForm})"))
+        + ". Your choice for this session, not saved with the design; 16\" is napkin's design default, not a code requirement.";
+
+    static string SpacingText(Length spacing) => $"{spacing.Format(new InchesOnlyFormat(16)).Text} on centre";
+
+    /// <summary>Fills the panel's framing part for a wall or an opening, or hides it for anything else.</summary>
+    void ShowFraming(Box box)
+    {
+        WallFraming? framing = FramingList.For(Editor.Sketch, box.Id, MaterialsLibrary.Shipped, _framing);
+        FramingFields.IsVisible = framing is not null;
+        if (framing is null)
+        {
+            return;
+        }
+
+        string Text(Length length) => length.Format(Editor.LabelFormat).Text;
+        Wall wall = framing.Wall;
+        OpeningFraming? opening = framing.Openings.FirstOrDefault(candidate => candidate.Opening.Id == box.Id);
+
+        FramingHeadline.Text = opening is { } o
+            ? $"{o.Opening.Name}: a {(o.Opening.Kind == OpeningKind.Door ? "door" : "window")} in {wall.Name}, "
+              + $"{Text(o.Opening.Width)} × {Text(o.Opening.Height)} rough opening, sill {Text(o.Opening.Sill)}, "
+              + $"{Text(o.Opening.Offset)} along. Header {Text(o.HeaderLength)} long in {Text(o.HeaderRoom)} of room: not yet sized."
+            : $"{wall.Name}: a wall of {framing.Stock?.Name ?? "no library"} studs, {Text(wall.Length)} long, "
+              + $"{Text(wall.Thickness)} thick, {Text(wall.Height)} tall.";
+
+        List<string> lines = [$"Framing of {wall.Name}: {framing.Summary}."];
+        foreach (OpeningFraming each in framing.Openings)
+        {
+            lines.Add($"{each.Opening.Name}: {(each.Opening.Kind == OpeningKind.Door ? "door" : "window")}, "
+                      + $"{Text(each.Opening.Width)} × {Text(each.Opening.Height)}, sill {Text(each.Opening.Sill)}, {Text(each.Opening.Offset)} along");
+        }
+
+        FramingReadout.Text = string.Join("\n", lines);
+        FramingProblems.IsVisible = !framing.Problems.IsEmpty && !framing.Pieces.IsEmpty;
+        FramingProblems.Text = string.Join("\n", framing.Problems);
+        FramingNotes.Text = string.Join("\n", framing.Notes);
+
+        _fillingSpacing = true;
+        try
+        {
+            StudSpacingBox.ItemsSource = SpacingChoices.Select(SpacingText).ToArray();
+            StudSpacingBox.SelectedIndex = Array.IndexOf(SpacingChoices, _framing.Spacing);
+            ToolTip.SetTip(StudSpacingBox, SpacingTip);
+        }
+        finally
+        {
+            _fillingSpacing = false;
+        }
+    }
+
+    void OnStudSpacingChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_fillingSpacing || StudSpacingBox.SelectedIndex < 0 || StudSpacingBox.SelectedIndex >= SpacingChoices.Length)
+        {
+            return;
+        }
+
+        SetStudSpacing(SpacingChoices[StudSpacingBox.SelectedIndex]);
+    }
+
+    /// <summary>Frames every wall at this spacing from now on in this session.</summary>
+    public void SetStudSpacing(Length spacing)
+    {
+        _framing = _framing with { Spacing = spacing };
+        if (_cutList is not null)
+        {
+            _cutList.Framing = _framing;
+            _cutList.ShowDesign(CurrentDesign);
+        }
+
+        if (Editor.OnlySelectedBox is { } box)
+        {
+            ShowFraming(box);
+        }
+    }
+
+    void OnWallToolClicked(object? sender, RoutedEventArgs e) => ArmWall(null);
+
+    void OnWall2x4Clicked(object? sender, RoutedEventArgs e) => ArmWall("2x4");
+
+    void OnWall2x6Clicked(object? sender, RoutedEventArgs e) => ArmWall("2x6");
+
+    void OnWindowToolClicked(object? sender, RoutedEventArgs e) => ArmOpening(OpeningKind.Window);
+
+    void OnDoorToolClicked(object? sender, RoutedEventArgs e) => ArmOpening(OpeningKind.Door);
+
+    /// <summary>
+    /// Picks up the wall tool with a member ("2x4", "2x6") or, with null, the one it last had. Walls
+    /// are drawn in the plan, so the plan comes forward if the 3D view was showing.
+    /// </summary>
+    public void ArmWall(string? member)
+    {
+        if (IsShowingModel)
+        {
+            ShowPlanView();
+        }
+
+        LumberStock? stock = member is not null
+                             && MaterialsLibrary.Shipped.TryFind(StockCategory.DimensionalLumber, member, out StockItem found)
+            ? found as LumberStock
+            : null;
+        DrawingCanvas.ArmWall(stock);
+        UpdateToolButtons();
+        FocusDrawing();
+    }
+
+    /// <summary>Picks up the opening tool: the next click on a wall in the plan puts a window or door in it.</summary>
+    public void ArmOpening(OpeningKind kind)
+    {
+        if (IsShowingModel)
+        {
+            ShowPlanView();
+        }
+
+        DrawingCanvas.ArmOpening(kind);
         UpdateToolButtons();
         FocusDrawing();
     }

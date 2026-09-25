@@ -9,6 +9,7 @@ using Design = Napkin.App.Designs.Design;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Modules.Building;
 using Napkin.Modules.Furniture;
 
 namespace Napkin.App;
@@ -279,6 +280,21 @@ public partial class CutListWindow : Window
     /// <summary>The shopping list as a CSV file would carry it, in the order it is on screen.</summary>
     public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted);
 
+    /// <summary>How walls are framed: the main window's session choice (#18).</summary>
+    public FramingOptions Framing { get; set; } = new();
+
+    /// <summary>The framing section's table: the walls' studs, plates and the rest, as boards to buy.</summary>
+    public ShoppingListTable FramingRows => FramingTable;
+
+    /// <summary>Whether the framing section is showing (it is when the design has a wall).</summary>
+    public bool IsShowingFraming => FramingSection.IsVisible;
+
+    /// <summary>The line over the framing section.</summary>
+    public string FramingNoteText => FramingNote.Text ?? string.Empty;
+
+    /// <summary>The framing section as a CSV file would carry it, in the order on screen.</summary>
+    public string FramingCsv => ShoppingListCsv.ToCsv(FramingTable.Sorted);
+
     /// <summary>The tab that shows the shopping list, for the GUI suite to click.</summary>
     public TabItem ShoppingListTabItem => ShoppingListTab;
 
@@ -305,6 +321,17 @@ public partial class CutListWindow : Window
         // so the two tabs cannot disagree about what is being built (§4).
         ShoppingTable.Rows = ShoppingList.Of(rows);
         ExtrasGrid.Rows = SuppliesList.Of(sketch);
+
+        // The walls' frame is bought through the very aggregation the parts are, from rows
+        // FramingList derives; kept in a section of its own so a wall's studs read as a wall's.
+        ImmutableArray<WallFraming> walls = FramingList.Of(sketch, MaterialsLibrary.Shipped, Framing);
+        FramingTable.Rows = ShoppingList.Of(FramingList.CutRows(walls));
+        FramingSection.IsVisible = !walls.IsEmpty;
+        FramingNote.Text = walls.IsEmpty
+            ? string.Empty
+            : $"From {string.Join(", ", walls.Select(wall => $"{wall.Wall.Name} ({wall.Summary})"))}. "
+              + string.Join(" ", walls.SelectMany(wall => wall.Notes).Distinct().Select(note => char.ToUpperInvariant(note[0]) + note[1..] + "."))
+              + (walls.Any(wall => !wall.Problems.IsEmpty && !wall.Pieces.IsEmpty) ? " Some openings could not be framed; the drawing's panel says why." : string.Empty);
         BuildSizes(sketch);
         string supplies = SuppliesText(sketch);
         if (supplies != _suppliesBuiltFrom)
@@ -325,7 +352,8 @@ public partial class CutListWindow : Window
         EmptyText.Text = anyBoxes
             ? "Nothing in this design is a part yet. A box becomes a part when it is given a "
               + "thickness and told which of its three dimensions the drawing is showing; a wall "
-              + "and an opening are boxes nobody cuts, and they stay off this list."
+              + "and an opening are boxes nobody cuts, and they stay off this list; a wall's framing is on the "
+              + "shopping list's tab."
             : "This design has nothing in it to cut.";
     }
 

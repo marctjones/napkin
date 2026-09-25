@@ -59,6 +59,9 @@ public sealed class DirectUpdater : IGeometryUpdater
             RemoveRelationship remove => ApplyRemoveRelationship(sketch, remove),
             SetLayer setLayer => ApplySetLayer(sketch, setLayer),
             SetName setName => ApplySetName(sketch, setName),
+            AddLayer addLayer => sketch.Layers.Any(layer => layer.Id == addLayer.Layer.Id)
+                ? new Rejected(RejectionReason.DuplicateEntity)
+                : new Solved(sketch.WithLayer(addLayer.Layer), ChangeSet.Empty),
             SetPart setPart => ApplySetPart(sketch, setPart),
             SetFastenerChoices choices => new Solved(sketch with { FastenerChoices = choices.Choices }, ChangeSet.Empty),
             SetSupplies supplies => new Solved(sketch with { Supplies = supplies.Supplies }, ChangeSet.Empty),

@@ -16,6 +16,12 @@ public enum EditTool
     /// Drag out a part already cut from a stock item picked in the toolbox (<see cref="StockTool"/>).
     /// </summary>
     Stock,
+
+    /// <summary>Drag out a wall (<see cref="WallTool"/>, #18).</summary>
+    Wall,
+
+    /// <summary>Click on a wall to put a window or a door in it (#18).</summary>
+    Opening,
 }
 
 /// <summary>
