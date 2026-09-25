@@ -174,6 +174,11 @@ meaning.** Every part gained `"rough": false` — no sample is rough — by `sam
 also rewrote each scene through the real `SceneWriter`; every `*.expected.json` changed only its
 `formatVersion`.
 
+**Format version 10 (renovation, `docs/design/renovation-sketches.md` §7) changed no sample's
+meaning.** Every entity gained `"phase": "new"`, every box `"room": null`, and every wall that has
+inputs `"side": null, "bearing": null, "header": null`, by `samples restamp`; every
+`*.expected.json` changed only its `formatVersion`.
+
 **A purely additive bump — a null field or an empty list, no sample's meaning changed, as every
 bump from version 5 on has been — no longer needs 15 scenes and 15 expectations rewritten by hand
 (#181).** Run

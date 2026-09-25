@@ -19,21 +19,21 @@ public class JointFormatTests
     // face and the apron's west face are the plane x = 2, and they share a 2 in by 4 in rectangle.
     private const string Joined = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Leg",
+              "name": "Leg", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 2048, "height": 2048, "depth": 16384, "faceUp": "top", "rotation": 0,
               "part": { "stock": "2x2", "species": null, "quantity": 1,
-                        "planAxes": { "x": "width", "y": "thickness" }, "hardware": [], "rough": false }, "wall": null, "cuts": [] },
+                        "planAxes": { "x": "width", "y": "thickness" }, "hardware": [], "rough": false }, "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Apron",
+              "name": "Apron", "phase": "new",
               "anchor": { "x": 2048, "y": 0, "z": 10240 }, "width": 10240, "height": 2048, "depth": 4096, "faceUp": "top", "rotation": 0,
               "part": { "stock": "1x6", "species": null, "quantity": 1,
                         "planAxes": { "x": "length", "y": "thickness" },
-                        "hardware": [ { "name": "16 in side-mount drawer slide, pair", "quantity": 1 } ], "rough": false }, "wall": null, "cuts": [] }
+                        "hardware": [ { "name": "16 in side-mount drawer slide, pair", "quantity": 1 } ], "rough": false }, "wall": null, "room": null, "cuts": [] }
           ],
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "joint", "type": "butt",
@@ -235,10 +235,10 @@ public class JointFormatTests
     public void A_version_4_file_is_refused_with_the_unsupported_version_message_and_no_converter()
     {
         LoadProblem problem = Scenes.RefuseWith(
-            Variant(("\"formatVersion\": 9", "\"formatVersion\": 4")),
+            Variant(("\"formatVersion\": 10", "\"formatVersion\": 4")),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 4",
-            "format version 9");
+            "format version 10");
 
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }

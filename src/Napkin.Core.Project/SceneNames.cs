@@ -55,6 +55,85 @@ internal static class SceneNames
     internal const string BracingTo = "to";
     internal const string BracingMethod = "method";
 
+    // Renovation (format version 10, docs/design/renovation-sketches.md §7).
+    internal const string Phase = "phase";
+    internal const string WallSide = "side";
+    internal const string WallBearing = "bearing";
+    internal const string WallHeader = "header";
+    internal const string HeaderPlies = "plies";
+    internal const string HeaderLumber = "lumber";
+    internal const string Room = "room";
+    internal const string RoomDrywall = "drywall";
+    internal const string RoomSheet = "sheet";
+    internal const string SheetWidth = "width";
+    internal const string SheetLength = "length";
+    internal const string RoomInsulation = "insulation";
+    internal const string RoomInsulationBy = "insulationBy";
+    internal const string RoomInsulationCoverage = "insulationCoverage";
+    internal const string RoomPaint = "paint";
+    internal const string RoomPaintCoats = "paintCoats";
+    internal const string RoomPaintCoverage = "paintCoverage";
+    internal const string RoomFlooring = "flooring";
+    internal const string RoomFlooringWaste = "flooringWaste";
+    internal const string RoomFlooringBox = "flooringBox";
+    internal const string RoomBaseboard = "baseboard";
+    internal const string RoomBaseboardStick = "baseboardStick";
+    internal const string RoomMeasured = "measured";
+    internal const string MeasuredDiagonal1 = "diagonal1";
+    internal const string MeasuredDiagonal2 = "diagonal2";
+    internal const string NoteType = "note";
+    internal const string NoteText = "text";
+    internal const string NoteSymbol = "symbol";
+
+    /// <summary>The phases' spellings, in the order a message lists them.</summary>
+    internal static readonly (Geometry.Phase Value, string Text)[] Phases =
+        [(Geometry.Phase.Existing, "existing"), (Geometry.Phase.New, "new"), (Geometry.Phase.Demolish, "demolish")];
+
+    /// <summary>A wall's sides.</summary>
+    internal static readonly (Geometry.WallSide Value, string Text)[] WallSides =
+        [(Geometry.WallSide.Exterior, "exterior"), (Geometry.WallSide.Interior, "interior")];
+
+    /// <summary>Which surfaces drywall and paint go on.</summary>
+    internal static readonly (RoomSurfaces Value, string Text)[] Surfaces =
+        [(RoomSurfaces.WallsAndCeiling, "walls-and-ceiling"), (RoomSurfaces.Walls, "walls"), (RoomSurfaces.None, "none")];
+
+    /// <summary>Which walls are insulated.</summary>
+    internal static readonly (InsulatedWalls Value, string Text)[] Insulated =
+        [(InsulatedWalls.Exterior, "exterior"), (InsulatedWalls.All, "all"), (InsulatedWalls.None, "none")];
+
+    /// <summary>How insulation is taken off.</summary>
+    internal static readonly (Geometry.InsulationBy Value, string Text)[] InsulationWays =
+        [(Geometry.InsulationBy.Area, "area"), (Geometry.InsulationBy.Bays, "bays")];
+
+    /// <summary>A note's symbols.</summary>
+    internal static readonly (Geometry.NoteSymbol Value, string Text)[] NoteSymbols =
+    [
+        (Geometry.NoteSymbol.None, "none"), (Geometry.NoteSymbol.Outlet, "outlet"), (Geometry.NoteSymbol.Switch, "switch"),
+        (Geometry.NoteSymbol.Light, "light"), (Geometry.NoteSymbol.Supply, "supply"), (Geometry.NoteSymbol.Drain, "drain"),
+    ];
+
+    /// <summary>The spelling of a value in one of the tables above.</summary>
+    internal static string Spell<T>((T Value, string Text)[] table, T value)
+        where T : struct, Enum
+        => table.First(entry => EqualityComparer<T>.Default.Equals(entry.Value, value)).Text;
+
+    /// <summary>The value a spelling names in one of the tables above.</summary>
+    internal static bool TryRead<T>((T Value, string Text)[] table, string text, out T value)
+        where T : struct, Enum
+    {
+        foreach ((T candidate, string spelled) in table)
+        {
+            if (spelled == text)
+            {
+                value = candidate;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
+
     // Shared.
     internal const string Id = "id";
     internal const string Name = "name";
@@ -199,7 +278,7 @@ internal static class SceneNames
     internal const string Angle = "angle";
 
     /// <summary>Every entity type the format spells out, for a message that lists them.</summary>
-    internal static readonly string[] EntityTypes = [Box, Dimension, Node, Segment];
+    internal static readonly string[] EntityTypes = [Box, Dimension, Node, NoteType, Segment];
 
     /// <summary>The three names a part's plan axis can carry, for a message that lists them.</summary>
     internal static readonly string[] PartDimensions = [PartLength, PartWidth, PartThickness];

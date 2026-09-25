@@ -290,6 +290,9 @@ internal sealed class SceneBinder
             // conflict message, and an empty string is a legal "unnamed" (format version 2).
             string? name = ReadText(fields, SceneNames.Name);
 
+            // Every entity carries its phase (format version 10, renovation-sketches §7).
+            Phase? phase = ReadEnum(fields, SceneNames.Phase, SceneNames.Phases, "phase");
+
             if (id is not { } entityId || type is null || layer is not { } layerId)
             {
                 RejectUnknownFields(fields);
@@ -302,17 +305,18 @@ internal sealed class SceneBinder
                 SceneNames.Segment => ReadSegment(fields, new EntityId(entityId), new LayerId(layerId)),
                 SceneNames.Box => ReadBox(fields, new EntityId(entityId), new LayerId(layerId)),
                 SceneNames.Dimension => ReadDimension(fields, new EntityId(entityId), new LayerId(layerId)),
+                SceneNames.NoteType => ReadNote(fields, new EntityId(entityId), new LayerId(layerId)),
                 _ => UnknownType(fields, type),
             };
 
             RejectUnknownFields(fields);
 
-            if (entity is null || name is null)
+            if (entity is null || name is null || phase is not { } entityPhase)
             {
                 continue;
             }
 
-            entity = entity with { Name = name };
+            entity = entity with { Name = name, Phase = entityPhase };
 
             if (!entities.TryAdd(entity.Id, entity))
             {
@@ -336,6 +340,46 @@ internal sealed class SceneBinder
         return position is { } value ? new Node(id, layer, value) : null;
     }
 
+    /// <summary>
+    /// A note (format version 10): a position, its words and a symbol. The words may be empty only
+    /// when there is a symbol to draw.
+    /// </summary>
+    private Entity? ReadNote(JsonFields fields, EntityId id, LayerId layer)
+    {
+        Point2? position = ReadPoint(fields, SceneNames.Position);
+        string? text = ReadText(fields, SceneNames.NoteText);
+        NoteSymbol? symbol = ReadEnum(fields, SceneNames.NoteSymbol, SceneNames.NoteSymbols, "note symbol");
+        if (text is { Length: 0 } && symbol == NoteSymbol.None)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.NoteText}", "A note with no symbol must say something; this one's text is empty.");
+            return null;
+        }
+
+        return position is { } at && text is not null && symbol is { } drawn ? new Note(id, layer, at, text, drawn) : null;
+    }
+
+    /// <summary>One of the spelled-out values of a table in <see cref="SceneNames"/>, refused naming the others.</summary>
+    private T? ReadEnum<T>(JsonFields fields, string name, (T Value, string Text)[] table, string what)
+        where T : struct, Enum
+    {
+        string? text = ReadText(fields, name);
+        if (text is null)
+        {
+            return null;
+        }
+
+        if (!SceneNames.TryRead(table, text, out T value))
+        {
+            Add(
+                LoadProblemKind.UnknownValue,
+                $"{fields.Path}/{name}",
+                $"\"{text}\" is not a {what}. The {what}s are: {SceneNames.List([.. table.Select(entry => entry.Text)])}.");
+            return null;
+        }
+
+        return value;
+    }
+
     private Entity? ReadSegment(JsonFields fields, EntityId id, LayerId layer)
     {
         EntityId? start = ReadEntityReference(fields, SceneNames.Start, typeof(Node));
@@ -353,7 +397,17 @@ internal sealed class SceneBinder
         long? rotation = ReadInteger(fields, SceneNames.Rotation);
         (bool partRead, Part? part) = ReadPart(fields);
         (bool wallRead, WallInputs? wall) = ReadWallInputs(fields);
+        (bool roomRead, RoomInputs? room) = ReadRoom(fields);
         (bool cutsRead, ImmutableList<Cut> cuts) = ReadCuts(fields);
+
+        if (room is not null && (part is not null || wall is not null))
+        {
+            Add(
+                LoadProblemKind.InvalidValue,
+                $"{fields.Path}/{SceneNames.Room}",
+                "A box that is a room is not also a part or a wall: its \"part\" and \"wall\" must be null.");
+            roomRead = false;
+        }
 
         width = RefuseNonPositive(fields, SceneNames.Width, width);
         height = RefuseNonPositive(fields, SceneNames.Height, height);
@@ -371,11 +425,12 @@ internal sealed class SceneBinder
         }
 
         return anchor is { } corner && width is { } wide && height is { } tall && depth is { } deep
-            && faceUp is { } up && rotation is { } turn && partRead && wallRead && cutsRead
+            && faceUp is { } up && rotation is { } turn && partRead && wallRead && roomRead && cutsRead
             ? new Box(id, layer, corner, new Length(wide), new Length(tall), new Length(deep), up, new Angle(turn))
             {
                 Part = part,
                 WallInputs = wall,
+                Room = room,
                 Cuts = cuts,
             }
             : null;
@@ -951,8 +1006,11 @@ internal sealed class SceneBinder
         (bool supportsRead, string? supports) = ReadTextOrNull(fields, SceneNames.WallSupports);
         (bool spacingRead, long? spacing) = ReadIntegerOrNull(fields, SceneNames.WallStudSpacing);
         (bool bracingRead, ImmutableArray<BracingAssignment> bracing) = ReadBracing(fields);
+        (bool sideRead, WallSide? side) = ReadEnumOrNull(fields, SceneNames.WallSide, SceneNames.WallSides, "wall side");
+        (bool bearingRead, bool? bearing) = ReadBooleanOrNull(fields, SceneNames.WallBearing);
+        (bool headerRead, TypedHeader? header) = ReadTypedHeader(fields);
         RejectUnknownFields(fields);
-        if (problems.Count > before || !supportsRead || !spacingRead || !bracingRead)
+        if (problems.Count > before || !supportsRead || !spacingRead || !bracingRead || !sideRead || !bearingRead || !headerRead)
         {
             return (false, null);
         }
@@ -969,13 +1027,188 @@ internal sealed class SceneBinder
             return (false, null);
         }
 
-        if (supports is null && spacing is null && bracing.IsEmpty)
+        if (supports is null && spacing is null && bracing.IsEmpty && side is null && bearing is null && header is null)
         {
             Add(LoadProblemKind.InvalidValue, fields.Path, "A wall with nothing entered is written \"wall\": null, not an object of nulls.");
             return (false, null);
         }
 
-        return (true, new WallInputs(supports, spacing is { } s ? new Length(s) : null, bracing));
+        return (true, new WallInputs(supports, spacing is { } s ? new Length(s) : null, bracing) { Side = side, Bearing = bearing, Header = header });
+    }
+
+    /// <summary>A spelled-out value or <c>null</c>: whether it was read without a problem, and the value.</summary>
+    private (bool Read, T? Value) ReadEnumOrNull<T>(JsonFields fields, string name, (T Value, string Text)[] table, string what)
+        where T : struct, Enum
+    {
+        if (fields.IsNull(name))
+        {
+            fields.Take(name);
+            return (true, null);
+        }
+
+        int before = problems.Count;
+        T? value = ReadEnum(fields, name, table, what);
+        return (problems.Count == before && value is not null, value);
+    }
+
+    /// <summary><c>true</c>, <c>false</c> or <c>null</c>: whether it was read without a problem, and the value.</summary>
+    private (bool Read, bool? Value) ReadBooleanOrNull(JsonFields fields, string name)
+    {
+        if (fields.IsNull(name))
+        {
+            fields.Take(name);
+            return (true, null);
+        }
+
+        int before = problems.Count;
+        bool? value = ReadBoolean(fields, name);
+        return (problems.Count == before && value is not null, value);
+    }
+
+    /// <summary>A not-bearing wall's typed header (format version 10): <c>null</c>, or plies 1–3 of a named lumber.</summary>
+    private (bool Read, TypedHeader? Header) ReadTypedHeader(JsonFields wall)
+    {
+        if (wall.IsNull(SceneNames.WallHeader))
+        {
+            wall.Take(SceneNames.WallHeader);
+            return (true, null);
+        }
+
+        JsonFields? fields = ReadObject(wall, SceneNames.WallHeader);
+        if (fields is null)
+        {
+            return (false, null);
+        }
+
+        int before = problems.Count;
+        long? plies = ReadInteger(fields, SceneNames.HeaderPlies);
+        string? lumber = ReadText(fields, SceneNames.HeaderLumber);
+        RejectUnknownFields(fields);
+        if (plies is { } p && (p < 1 || p > 3))
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.HeaderPlies}", $"A header has 1 to 3 plies; this one has {p.ToString(CultureInfo.InvariantCulture)}.");
+        }
+
+        if (lumber is { Length: 0 })
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.HeaderLumber}", "A header's lumber is named, e.g. \"2x6\"; this one is empty.");
+        }
+
+        return problems.Count == before && plies is { } n && lumber is not null ? (true, new TypedHeader((int)n, lumber)) : (false, null);
+    }
+
+    /// <summary>A room's finishes and measurements (format version 10), or <c>"room": null</c>.</summary>
+    private (bool Read, RoomInputs? Room) ReadRoom(JsonFields box)
+    {
+        JsonElement? element = Take(box, SceneNames.Room);
+        if (element is not { } value)
+        {
+            return (false, null);
+        }
+
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return (true, null);
+        }
+
+        JsonFields? fields = ReadFields(value, $"{box.Path}/{SceneNames.Room}", $"\"{SceneNames.Room}\"");
+        if (fields is null)
+        {
+            return (false, null);
+        }
+
+        int before = problems.Count;
+        RoomSurfaces? drywall = ReadEnum(fields, SceneNames.RoomDrywall, SceneNames.Surfaces, "drywall choice");
+        (bool sheetRead, SheetSize? sheet) = ReadSheet(fields);
+        InsulatedWalls? insulation = ReadEnum(fields, SceneNames.RoomInsulation, SceneNames.Insulated, "insulation choice");
+        InsulationBy? by = ReadEnum(fields, SceneNames.RoomInsulationBy, SceneNames.InsulationWays, "way to take off insulation");
+        long? insulationCoverage = ReadPositiveOrNull(fields, SceneNames.RoomInsulationCoverage, "A coverage is more than zero square feet, or null when not typed.");
+        RoomSurfaces? paint = ReadEnum(fields, SceneNames.RoomPaint, SceneNames.Surfaces, "paint choice");
+        long? coats = ReadPositiveOrNull(fields, SceneNames.RoomPaintCoats, "Paint takes at least one coat, or null when not typed.");
+        long? paintCoverage = ReadPositiveOrNull(fields, SceneNames.RoomPaintCoverage, "A coverage is more than zero square feet, or null when not typed.");
+        bool? flooring = ReadBoolean(fields, SceneNames.RoomFlooring);
+        long? waste = ReadInteger(fields, SceneNames.RoomFlooringWaste);
+        long? box2 = ReadPositiveOrNull(fields, SceneNames.RoomFlooringBox, "A coverage is more than zero square feet, or null when not typed.");
+        bool? baseboard = ReadBoolean(fields, SceneNames.RoomBaseboard);
+        long? stick = ReadPositiveOrNull(fields, SceneNames.RoomBaseboardStick, "A baseboard stick is longer than zero, or null when not typed.");
+        MeasuredRoom? measured = ReadMeasured(fields);
+        RejectUnknownFields(fields);
+
+        if (waste is < 0)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.RoomFlooringWaste}", "A waste allowance is a whole percent, zero or more.");
+        }
+
+        if (problems.Count > before || !sheetRead || drywall is not { } d || insulation is not { } i || by is not { } b || paint is not { } pt
+            || flooring is not { } f || waste is not { } w || baseboard is not { } bb || measured is null)
+        {
+            return (false, null);
+        }
+
+        return (true, new RoomInputs(
+            d, sheet, i, b, (int?)insulationCoverage, pt, (int?)coats, (int?)paintCoverage, f, (int)w, (int?)box2, bb,
+            stick is { } l ? new Length(l) : null, measured));
+    }
+
+    /// <summary>A whole number greater than zero, or <c>null</c>; a problem naming <paramref name="rule"/> otherwise.</summary>
+    private long? ReadPositiveOrNull(JsonFields fields, string name, string rule)
+    {
+        (bool read, long? number) = ReadIntegerOrNull(fields, name);
+        if (read && number is <= 0)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", rule);
+            return null;
+        }
+
+        return number;
+    }
+
+    private (bool Read, SheetSize? Sheet) ReadSheet(JsonFields room)
+    {
+        if (room.IsNull(SceneNames.RoomSheet))
+        {
+            room.Take(SceneNames.RoomSheet);
+            return (true, null);
+        }
+
+        JsonFields? fields = ReadObject(room, SceneNames.RoomSheet);
+        if (fields is null)
+        {
+            return (false, null);
+        }
+
+        long? width = ReadInteger(fields, SceneNames.SheetWidth);
+        long? length = ReadInteger(fields, SceneNames.SheetLength);
+        RejectUnknownFields(fields);
+        foreach ((string name, long? size) in new[] { (SceneNames.SheetWidth, width), (SceneNames.SheetLength, length) })
+        {
+            if (size is <= 0)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", "A sheet's side is longer than zero.");
+                return (false, null);
+            }
+        }
+
+        return width is { } w && length is { } l ? (true, new SheetSize(new Length(w), new Length(l))) : (false, null);
+    }
+
+    private MeasuredRoom? ReadMeasured(JsonFields room)
+    {
+        JsonFields? fields = ReadObject(room, SceneNames.RoomMeasured);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        int before = problems.Count;
+        Length? Read(string name)
+            => ReadPositiveOrNull(fields, name, "A measured length is longer than zero, or null when not measured.") is { } units ? new Length(units) : null;
+
+        MeasuredRoom measured = new(
+            Read(SceneNames.South), Read(SceneNames.North), Read(SceneNames.East), Read(SceneNames.West),
+            Read(SceneNames.MeasuredDiagonal1), Read(SceneNames.MeasuredDiagonal2));
+        RejectUnknownFields(fields);
+        return problems.Count == before ? measured : null;
     }
 
     /// <summary>

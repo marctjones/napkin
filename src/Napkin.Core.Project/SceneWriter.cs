@@ -221,6 +221,81 @@ public static class SceneWriter
             writer.WriteEndArray();
         }
 
+        if (inputs.Side is { } side)
+        {
+            writer.WriteString(SceneNames.WallSide, SceneNames.Spell(SceneNames.WallSides, side));
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.WallSide);
+        }
+
+        if (inputs.Bearing is { } bearing)
+        {
+            writer.WriteBoolean(SceneNames.WallBearing, bearing);
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.WallBearing);
+        }
+
+        if (inputs.Header is { } header)
+        {
+            writer.WriteStartObject(SceneNames.WallHeader);
+            writer.WriteNumber(SceneNames.HeaderPlies, header.Plies);
+            writer.WriteString(SceneNames.HeaderLumber, header.Lumber);
+            writer.WriteEndObject();
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.WallHeader);
+        }
+
+        writer.WriteEndObject();
+    }
+
+    /// <summary>A room's finishes and measurements (format version 10), or <c>"room": null</c>.</summary>
+    private static void WriteRoom(Utf8JsonWriter writer, RoomInputs? room)
+    {
+        if (room is null)
+        {
+            writer.WriteNull(SceneNames.Room);
+            return;
+        }
+
+        writer.WriteStartObject(SceneNames.Room);
+        writer.WriteString(SceneNames.RoomDrywall, SceneNames.Spell(SceneNames.Surfaces, room.Drywall));
+        if (room.Sheet is { } sheet)
+        {
+            writer.WriteStartObject(SceneNames.RoomSheet);
+            writer.WriteNumber(SceneNames.SheetWidth, sheet.Width.Units);
+            writer.WriteNumber(SceneNames.SheetLength, sheet.Length.Units);
+            writer.WriteEndObject();
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.RoomSheet);
+        }
+
+        writer.WriteString(SceneNames.RoomInsulation, SceneNames.Spell(SceneNames.Insulated, room.Insulation));
+        writer.WriteString(SceneNames.RoomInsulationBy, SceneNames.Spell(SceneNames.InsulationWays, room.InsulationBy));
+        WriteOptionalNumber(writer, SceneNames.RoomInsulationCoverage, room.InsulationCoverage);
+        writer.WriteString(SceneNames.RoomPaint, SceneNames.Spell(SceneNames.Surfaces, room.Paint));
+        WriteOptionalNumber(writer, SceneNames.RoomPaintCoats, room.PaintCoats);
+        WriteOptionalNumber(writer, SceneNames.RoomPaintCoverage, room.PaintCoverage);
+        writer.WriteBoolean(SceneNames.RoomFlooring, room.Flooring);
+        writer.WriteNumber(SceneNames.RoomFlooringWaste, room.FlooringWaste);
+        WriteOptionalNumber(writer, SceneNames.RoomFlooringBox, room.FlooringBox);
+        writer.WriteBoolean(SceneNames.RoomBaseboard, room.Baseboard);
+        WriteOptionalNumber(writer, SceneNames.RoomBaseboardStick, room.BaseboardStick?.Units);
+        writer.WriteStartObject(SceneNames.RoomMeasured);
+        WriteOptionalNumber(writer, SceneNames.South, room.Measured.South?.Units);
+        WriteOptionalNumber(writer, SceneNames.North, room.Measured.North?.Units);
+        WriteOptionalNumber(writer, SceneNames.East, room.Measured.East?.Units);
+        WriteOptionalNumber(writer, SceneNames.West, room.Measured.West?.Units);
+        WriteOptionalNumber(writer, SceneNames.MeasuredDiagonal1, room.Measured.Diagonal1?.Units);
+        WriteOptionalNumber(writer, SceneNames.MeasuredDiagonal2, room.Measured.Diagonal2?.Units);
+        writer.WriteEndObject();
         writer.WriteEndObject();
     }
 
@@ -262,9 +337,16 @@ public static class SceneWriter
         writer.WriteString(SceneNames.Type, TypeOf(entity));
         WriteId(writer, SceneNames.Layer, entity.Layer.Value);
         writer.WriteString(SceneNames.Name, entity.Name);
+        writer.WriteString(SceneNames.Phase, SceneNames.Spell(SceneNames.Phases, entity.Phase));
 
         switch (entity)
         {
+            case Note note:
+                WritePoint(writer, SceneNames.Position, note.Position);
+                writer.WriteString(SceneNames.NoteText, note.Text);
+                writer.WriteString(SceneNames.NoteSymbol, SceneNames.Spell(SceneNames.NoteSymbols, note.Symbol));
+                break;
+
             case Node node:
                 WritePoint(writer, SceneNames.Position, node.Position);
                 break;
@@ -283,6 +365,7 @@ public static class SceneWriter
                 writer.WriteNumber(SceneNames.Rotation, box.Rotation.Arcseconds);
                 WritePart(writer, box.Part);
                 WriteWallInputs(writer, box.WallInputs);
+                WriteRoom(writer, box.Room);
                 WriteCuts(writer, box.Cuts);
                 break;
 
@@ -425,6 +508,7 @@ public static class SceneWriter
         Segment => SceneNames.Segment,
         Box => SceneNames.Box,
         Dimension => SceneNames.Dimension,
+        Note => SceneNames.NoteType,
         _ => throw Unwritable(entity),
     };
 

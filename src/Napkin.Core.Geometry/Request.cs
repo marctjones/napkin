@@ -113,6 +113,25 @@ public sealed record SetSite(SiteValues Site) : Request;
 public sealed record SetWallInputs(EntityId Box, WallInputs? Inputs) : Request;
 
 /// <summary>
+/// Says whether an entity is already there, going in or coming out (renovation-sketches §6.1).
+/// Exact, moves nothing; a wall's openings keep their own phase.
+/// </summary>
+/// <param name="Id">The entity.</param>
+/// <param name="Phase">Its phase.</param>
+public sealed record SetPhase(EntityId Id, Phase Phase) : Request;
+
+/// <summary>Sets a room's finishes and measurements. Exact, moves nothing.</summary>
+/// <param name="Box">The room's box.</param>
+/// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>
+public sealed record SetRoomInputs(EntityId Box, RoomInputs? Inputs) : Request;
+
+/// <summary>Sets what a note says and the symbol it is drawn with. Exact, moves nothing.</summary>
+/// <param name="Id">The note.</param>
+/// <param name="Text">Its words.</param>
+/// <param name="Symbol">Its symbol.</param>
+public sealed record SetNote(EntityId Id, string Text, NoteSymbol Symbol) : Request;
+
+/// <summary>
 /// Sets the number a driving relationship owns — what editing a driving dimension is. Exact.
 /// </summary>
 /// <param name="Driving">The <see cref="ParamValue"/> or <see cref="AxisDistance"/> that owns the number.</param>

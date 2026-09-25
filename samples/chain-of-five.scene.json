@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -16,6 +16,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Slat 1",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -38,6 +39,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -45,6 +47,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Slat 2",
+      "phase": "new",
       "anchor": {
         "x": 10240,
         "y": 0,
@@ -67,6 +70,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -74,6 +78,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Slat 3",
+      "phase": "new",
       "anchor": {
         "x": 18944,
         "y": 0,
@@ -96,6 +101,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -103,6 +109,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Slat 4",
+      "phase": "new",
       "anchor": {
         "x": 31232,
         "y": 0,
@@ -125,6 +132,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -132,6 +140,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Slat 5",
+      "phase": "new",
       "anchor": {
         "x": 38144,
         "y": 0,
@@ -154,6 +163,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     }
   ],

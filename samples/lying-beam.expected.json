@@ -3,7 +3,7 @@
   "scene": "lying-beam.scene.json",
   "design": "lying-beam.design.md",
   "derivedBy": "hand, from the stated dimensions in lying-beam.design.md; never regenerated from napkin's output",
-  "formatVersion": 9,
+  "formatVersion": 10,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 4,

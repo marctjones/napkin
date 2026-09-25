@@ -130,25 +130,25 @@ public sealed class SceneReaderTests
     /// </summary>
     private const string AllReferenceShapes = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "West square",
+              "name": "West square", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": { "stock": null, "species": "white oak", "quantity": 2,
-                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false }, "wall": null, "cuts": [] },
+                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false }, "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "East square",
+              "name": "East square", "phase": "new",
               "anchor": { "x": 8192, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0,
-              "part": null, "wall": null, "cuts": [] },
+              "part": null, "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000c", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Meeting point", "position": { "x": 8192, "y": 0 } },
+              "name": "Meeting point", "phase": "new", "position": { "x": 8192, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000d", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "", "position": { "x": 8192, "y": 16384 } },
+              "name": "", "phase": "new", "position": { "x": 8192, "y": 16384 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000e", "type": "segment", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Joint line",
+              "name": "Joint line", "phase": "new",
               "start": "0192f1a0-0000-4000-8000-00000000000c", "end": "0192f1a0-0000-4000-8000-00000000000d" }
           ],
           "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },

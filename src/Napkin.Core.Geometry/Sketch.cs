@@ -150,6 +150,53 @@ public sealed record Sketch(
         return this with { Entities = Entities.SetItem(entity.Id, entity) };
     }
 
+    /// <summary>
+    /// The building as it will be: every entity whose phase is Existing or New (renovation-sketches
+    /// §6.1). Derived, never stored; every check runs on it.
+    /// </summary>
+    /// <remarks>
+    /// A view drops what names a dropped entity — the relationships, and the segments and
+    /// dimensions that would dangle — and a dimension driven by a dropped relationship becomes a
+    /// reference dimension, exactly as removing the entity would. The file keeps all of it.
+    /// </remarks>
+    public Sketch After() => Without(Phase.Demolish);
+
+    /// <summary>The building as it is: every entity whose phase is Existing or Demolish (§6.1).</summary>
+    public Sketch Before() => Without(Phase.New);
+
+    private Sketch Without(Phase phase)
+    {
+        HashSet<EntityId> dropped = [.. Entities.Values.Where(entity => entity.Phase == phase).Select(entity => entity.Id)];
+        if (dropped.Count == 0)
+        {
+            return this;
+        }
+
+        for (bool grew = true; grew;)
+        {
+            grew = false;
+            foreach (Entity entity in Entities.Values)
+            {
+                bool dangles = !dropped.Contains(entity.Id) && entity switch
+                {
+                    Segment segment => dropped.Contains(segment.Start) || dropped.Contains(segment.End),
+                    Dimension dimension => DirectUpdater.MeasurandEntities(dimension.Measures).Any(dropped.Contains),
+                    _ => false,
+                };
+
+                if (dangles)
+                {
+                    dropped.Add(entity.Id);
+                    grew = true;
+                }
+            }
+        }
+
+        HashSet<RelationshipId> gone = [.. Relationships.Values.Where(relationship => relationship.References.Any(dropped.Contains)).Select(relationship => relationship.Id)];
+        Sketch view = this with { Entities = Entities.RemoveRange(dropped), Relationships = Relationships.RemoveRange(gone) };
+        return DirectUpdater.DemoteDimensions(view, gone.Contains, out _);
+    }
+
     /// <summary>This sketch without an entity. Does not cascade; see the direct updater.</summary>
     public Sketch WithoutEntity(EntityId id) => this with { Entities = Entities.Remove(id) };
 
@@ -429,6 +476,10 @@ public sealed record Sketch(
                         errors.Add(error);
                     }
 
+                    break;
+
+                case Note:
+                    // A note has no size and names nothing: nothing to check (renovation §7).
                     break;
 
                 case Segment segment:

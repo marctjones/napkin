@@ -267,6 +267,36 @@ public static class SamplesCommand
 
                 break;
 
+            case 10:
+                // Renovation (docs/design/renovation-sketches.md §7): every entity is New, every box
+                // is no room, and a wall that has inputs has said nothing about side, bearing or header.
+                foreach (JsonNode? entity in Entities(root))
+                {
+                    if (entity is not JsonObject each)
+                    {
+                        continue;
+                    }
+
+                    if (!each.ContainsKey("phase"))
+                    {
+                        each["phase"] = "new";
+                    }
+
+                    if (each["type"]?.GetValue<string>() == "box")
+                    {
+                        EnsureNull(each, "room");
+                    }
+
+                    if (each["wall"] is JsonObject wall)
+                    {
+                        EnsureNull(wall, "side");
+                        EnsureNull(wall, "bearing");
+                        EnsureNull(wall, "header");
+                    }
+                }
+
+                break;
+
             default:
                 throw new InvalidOperationException($"samples restamp does not know what format version {version} added.");
         }

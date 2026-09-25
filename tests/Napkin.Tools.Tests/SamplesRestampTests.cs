@@ -11,7 +11,7 @@ namespace Napkin.Tools.Tests;
 /// </summary>
 public class SamplesRestampTests
 {
-    private const int CurrentVersion = 9;
+    private const int CurrentVersion = 10;
 
     [Fact]
     public void RunningItOnCurrentSamplesIsANoOpWithNoDiff()
@@ -29,7 +29,7 @@ public class SamplesRestampTests
         var (code, output, _) = Run("samples", "restamp", "--root", scratch.Path);
 
         Assert.Equal(ExitCode.Ok, code);
-        Assert.Contains("0 scene(s) restamped, 1 already at version 9", output, StringComparison.Ordinal);
+        Assert.Contains("0 scene(s) restamped, 1 already at version 10", output, StringComparison.Ordinal);
         Assert.Contains("0 expectation file(s) restamped, 1 already current", output, StringComparison.Ordinal);
         Assert.Equal(sceneBefore, File.ReadAllText(scenePath));
         Assert.Equal(expectedBefore, File.ReadAllText(expectedPath));
@@ -51,7 +51,7 @@ public class SamplesRestampTests
 
         Assert.Equal(ExitCode.Ok, code);
         Assert.Equal(string.Empty, error);
-        Assert.Contains("restamped samples/coffee-table.scene.json to format version 9", output, StringComparison.Ordinal);
+        Assert.Contains("restamped samples/coffee-table.scene.json to format version 10", output, StringComparison.Ordinal);
 
         JsonNode restamped = JsonNode.Parse(File.ReadAllText(scenePath))!;
         Assert.True(JsonNode.DeepEquals(original, restamped), $"restamped:\n{restamped.ToJsonString()}\n\noriginal:\n{original.ToJsonString()}");
@@ -107,7 +107,7 @@ public class SamplesRestampTests
         Assert.Equal(beforeText, File.ReadAllText(scenePath));
     }
 
-    /// <summary>Undoes, by hand, exactly what versions 5-9 added — the mirror of `ApplyVersion`.</summary>
+    /// <summary>Undoes, by hand, exactly what versions 5-10 added — the mirror of `ApplyVersion`.</summary>
     private static JsonNode StripToVersion4(JsonNode original)
     {
         JsonNode stripped = original.DeepClone();
@@ -122,12 +122,14 @@ public class SamplesRestampTests
         foreach (JsonNode? entity in root["entities"]!.AsArray())
         {
             JsonObject box = entity!.AsObject();
+            box.Remove("phase");
             if (box["type"]!.GetValue<string>() != "box")
             {
                 continue;
             }
 
             box.Remove("wall");
+            box.Remove("room");
             if (box["part"] is JsonObject part)
             {
                 part.Remove("hardware");

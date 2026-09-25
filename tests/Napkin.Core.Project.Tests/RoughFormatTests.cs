@@ -76,10 +76,10 @@ public class RoughFormatTests
     public void AVersionEightFileIsRefusedWithTheUnsupportedVersionMessage()
     {
         string version8 = Scenes.OneBox
-            .With("\"formatVersion\": 9", "\"formatVersion\": 8")
+            .With("\"formatVersion\": 10", "\"formatVersion\": 8")
             .With(", \"rough\": false", string.Empty);
 
-        Scenes.RefuseWith(version8, LoadProblemKind.UnsupportedFormatVersion, "format version 8", "format version 9");
+        Scenes.RefuseWith(version8, LoadProblemKind.UnsupportedFormatVersion, "format version 8", "format version 10");
     }
 
     [Fact]

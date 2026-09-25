@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -16,6 +16,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -28,6 +29,7 @@
       "rotation": 0,
       "part": null,
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -35,6 +37,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Opening",
+      "phase": "new",
       "anchor": {
         "x": 55296,
         "y": 0,
@@ -47,6 +50,7 @@
       "rotation": 0,
       "part": null,
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -54,6 +58,7 @@
       "type": "dimension",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall length",
+      "phase": "new",
       "measures": {
         "kind": "boxWidth",
         "box": "30000000-0000-4000-8000-000000000001"
@@ -69,6 +74,7 @@
       "type": "dimension",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall thickness",
+      "phase": "new",
       "measures": {
         "kind": "boxHeight",
         "box": "30000000-0000-4000-8000-000000000001"
@@ -84,6 +90,7 @@
       "type": "dimension",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Opening width",
+      "phase": "new",
       "measures": {
         "kind": "boxWidth",
         "box": "30000000-0000-4000-8000-000000000002"
@@ -99,6 +106,7 @@
       "type": "dimension",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall west end to opening",
+      "phase": "new",
       "measures": {
         "kind": "axis",
         "from": {
@@ -130,6 +138,7 @@
       "type": "dimension",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Opening to wall east end",
+      "phase": "new",
       "measures": {
         "kind": "axis",
         "from": {

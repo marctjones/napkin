@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -16,6 +16,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Top",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -38,6 +39,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -45,6 +47,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, south-west",
+      "phase": "new",
       "anchor": {
         "x": 1024,
         "y": 1024,
@@ -67,6 +70,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -74,6 +78,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, south-east",
+      "phase": "new",
       "anchor": {
         "x": 46592,
         "y": 1024,
@@ -96,6 +101,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -103,6 +109,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, north-west",
+      "phase": "new",
       "anchor": {
         "x": 1024,
         "y": 11776,
@@ -125,6 +132,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -132,6 +140,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, north-east",
+      "phase": "new",
       "anchor": {
         "x": 46592,
         "y": 11776,
@@ -154,6 +163,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -161,6 +171,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Apron, south",
+      "phase": "new",
       "anchor": {
         "x": 1024,
         "y": 256,
@@ -183,6 +194,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -190,6 +202,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Apron, north",
+      "phase": "new",
       "anchor": {
         "x": 1024,
         "y": 15360,
@@ -212,6 +225,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -219,6 +233,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "End rail, west",
+      "phase": "new",
       "anchor": {
         "x": 256,
         "y": 1024,
@@ -241,6 +256,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -248,6 +264,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "End rail, east",
+      "phase": "new",
       "anchor": {
         "x": 48128,
         "y": 1024,
@@ -270,6 +287,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -277,6 +295,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stretcher, south",
+      "phase": "new",
       "anchor": {
         "x": 2560,
         "y": 1024,
@@ -299,6 +318,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -306,6 +326,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stretcher, north",
+      "phase": "new",
       "anchor": {
         "x": 2560,
         "y": 11776,
@@ -328,6 +349,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     }
   ],
