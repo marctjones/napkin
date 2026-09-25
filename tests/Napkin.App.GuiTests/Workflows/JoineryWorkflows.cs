@@ -52,7 +52,7 @@ public class JoineryWorkflows
         app.Expect("one part selected: J says what it needs and opens nothing", () =>
         {
             Assert.False(window.IsJoining);
-            Assert.Equal("Select the two parts to join first, then press J.", window.Editor.LastMessage!.Text);
+            Assert.Equal(JointDescription.SelectTwoPartsPrompt, window.Editor.LastMessage!.Text);
         });
 
         app.Press(Key.R);

@@ -32,6 +32,13 @@ public static class CutList
     public const string BeforeKerfAndJoinery = "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).";
 
     /// <summary>
+    /// What the cut list window says in place of the table when a design has nothing to cut at all
+    /// (#179) — distinct from the window's "nothing is a part yet" note, which is for a design
+    /// that has boxes but none of them are parts.
+    /// </summary>
+    public const string NothingToCut = "This design has nothing in it to cut.";
+
+    /// <summary>
     /// The cut list for a design.
     /// </summary>
     /// <param name="sketch">The design. Boxes whose <see cref="Box.Part"/> is null are not pieces anybody cuts.</param>

@@ -136,7 +136,7 @@ public class CutListWorkflows
         {
             Assert.NotNull(window.CutList);
             Assert.Empty(window.CutList!.Rows.Rows);
-            Assert.Equal("This design has nothing in it to cut.", window.CutList!.EmptyMessage);
+            Assert.Equal(CutList.NothingToCut, window.CutList!.EmptyMessage);
         });
 
         // Back to the drawing — the cut list took the focus when its header was clicked — and draw
