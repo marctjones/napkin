@@ -19,25 +19,27 @@ public sealed class SampleShoppingListTests
 {
     private const string Fixture = "stocked-bench";
 
-    private static ImmutableArray<CutListRow> CutRows()
+    private static ImmutableArray<CutListRow> CutRows(string fixture = Fixture)
     {
-        LoadResult result = SceneReader.ReadFile(ExpectedFixture.ScenePath(Fixture));
+        LoadResult result = SceneReader.ReadFile(ExpectedFixture.ScenePath(fixture));
         return CutList.Of(Assert.IsType<Loaded>(result).Sketch, MaterialsLibrary.Shipped);
     }
 
-    private static JsonElement Expected()
+    private static JsonElement Expected(string fixture = Fixture)
     {
-        using FileStream stream = File.OpenRead(Path.Combine(ExpectedFixture.Directory, $"{Fixture}.expected.json"));
+        using FileStream stream = File.OpenRead(Path.Combine(ExpectedFixture.Directory, $"{fixture}.expected.json"));
         return JsonDocument.Parse(stream).RootElement.Clone();
     }
 
-    [Fact]
+    [Theory]
+    [InlineData("stocked-bench")]
+    [InlineData("diy-coffee-table-drawers")]
     [Trait("Feature", "CUT-005")]
     [Trait("Feature", "CUT-006")]
-    public void The_stocked_benchs_shopping_list_is_the_one_worked_out_by_hand()
+    public void A_samples_shopping_list_is_the_one_worked_out_by_hand(string fixture)
     {
-        ImmutableArray<ShoppingListRow> rows = ShoppingList.Of(CutRows());
-        JsonElement[] want = [.. Expected().GetProperty("shoppingList").EnumerateArray()];
+        ImmutableArray<ShoppingListRow> rows = ShoppingList.Of(CutRows(fixture));
+        JsonElement[] want = [.. Expected(fixture).GetProperty("shoppingList").EnumerateArray()];
 
         Assert.Equal(want.Length, rows.Length);
 
@@ -88,12 +90,14 @@ public sealed class SampleShoppingListTests
         Assert.Equal(3, shop.Length);
     }
 
-    [Fact]
+    [Theory]
+    [InlineData("stocked-bench")]
+    [InlineData("diy-coffee-table-drawers")]
     [Trait("Feature", "CUT-005")]
-    public void The_stocked_benchs_csv_is_the_one_worked_out_by_hand()
+    public void A_samples_shopping_csv_is_the_one_worked_out_by_hand(string fixture)
     {
-        string[] want = [.. Expected().GetProperty("shoppingListCsv").EnumerateArray().Select(line => line.GetString()!)];
+        string[] want = [.. Expected(fixture).GetProperty("shoppingListCsv").EnumerateArray().Select(line => line.GetString()!)];
 
-        Assert.Equal(string.Join("\n", want) + "\n", ShoppingListCsv.ToCsv(ShoppingList.Of(CutRows())));
+        Assert.Equal(string.Join("\n", want) + "\n", ShoppingListCsv.ToCsv(ShoppingList.Of(CutRows(fixture))));
     }
 }

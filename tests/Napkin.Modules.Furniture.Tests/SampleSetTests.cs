@@ -20,7 +20,7 @@ namespace Napkin.Modules.Furniture.Tests;
 /// </remarks>
 public sealed class SampleSetTests
 {
-    public static IEnumerable<object[]> Samples => [["bookcase"], ["bench"], ["lying-beam"], ["chain-of-five"], ["fraction-stress"], ["scale-extremes"], ["framing-16-oc"], ["l-bracket"], ["overlap"], ["picture-frame"], ["stocked-bench"]];
+    public static IEnumerable<object[]> Samples => [["bookcase"], ["bench"], ["lying-beam"], ["chain-of-five"], ["fraction-stress"], ["scale-extremes"], ["framing-16-oc"], ["l-bracket"], ["overlap"], ["picture-frame"], ["stocked-bench"], ["diy-coffee-table-drawers"]];
 
     private static Sketch Read(string fixture)
     {
@@ -135,5 +135,27 @@ public sealed class SampleSetTests
         Assert.Equal("Beam", beam.Label);
         Assert.Equal(4, beam.Quantity);
         Assert.Equal(4, beam.Members.Length);
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-007")]
+    public void The_diy_tables_thirty_four_joints_are_all_satisfied_and_are_the_ones_the_note_lists()
+    {
+        Sketch sketch = Read("diy-coffee-table-drawers");
+        Joint[] joints = [.. sketch.RelationshipsInOrder.OfType<Joint>()];
+
+        // Note 2.3: J1-J2 6 + J3 2 + J4-J5 2 + J6 2 + J7 4 + J8 4 + J9 8 + J10 2 + J11 4 = 34; J1-J8 (20) are glued.
+        Assert.Equal(34, joints.Length);
+        Assert.Equal(34, sketch.Relationships.Count);
+        Assert.All(joints, joint => Assert.True(RelationshipChecker.IsSatisfied(sketch, joint), $"{joint.Id} does not touch."));
+        Assert.Equal(20, joints.Count(joint => joint.Glue));
+        Assert.Equal(
+            new Dictionary<JointType, int> { [JointType.Butt] = 18, [JointType.Rabbet] = 4, [JointType.Groove] = 8, [JointType.Tabletop] = 4 }.OrderBy(pair => pair.Key),
+            joints.GroupBy(joint => joint.Type).ToDictionary(group => group.Key, group => group.Count()).OrderBy(pair => pair.Key));
+
+        // Fastener texts are the builder's, kept as typed; hardware and supplies come through the file.
+        Assert.Equal(5, sketch.FastenerChoices.Count);
+        Assert.Equal(3, sketch.Supplies.Count);
+        Assert.Equal(4, sketch.Entities.Values.OfType<Box>().Count(box => box.Part!.Hardware.Count == 1));
     }
 }

@@ -180,6 +180,7 @@ public sealed class SampleFixtureTests
     [InlineData("overlap")]
     [InlineData("picture-frame")]
     [InlineData("stocked-bench")]
+    [InlineData("diy-coffee-table-drawers")]
     [Trait("Feature", "PRJ-003")]
     public void A_sample_satisfies_its_own_relationships_and_validates(string fixture)
     {
@@ -204,6 +205,7 @@ public sealed class SampleFixtureTests
     [InlineData("overlap")]
     [InlineData("picture-frame")]
     [InlineData("stocked-bench")]
+    [InlineData("diy-coffee-table-drawers")]
     [Trait("Feature", "PRJ-001")]
     public void Reading_a_sample_twice_gives_the_same_value(string fixture)
     {
