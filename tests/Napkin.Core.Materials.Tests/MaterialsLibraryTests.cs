@@ -189,7 +189,7 @@ public sealed class MaterialsLibraryTests
         {
             Assert.StartsWith($"{item.Name} — actual ", item.HoverText, StringComparison.Ordinal);
             Assert.EndsWith($", {item.Source.Designation}", item.HoverText, StringComparison.Ordinal);
-            Assert.Contains("retrieved 2026-09-21", item.Source.ToString(), StringComparison.Ordinal);
+            Assert.Matches("retrieved 2026-09-(21|24)", item.Source.ToString());
         }
     }
 
@@ -200,7 +200,7 @@ public sealed class MaterialsLibraryTests
     {
         MaterialsLoaded loaded = Assert.IsType<MaterialsLoaded>(MaterialsLibrary.LoadShipped());
 
-        Assert.Equal(6, loaded.Library.Tables.Length);
+        Assert.Equal(8, loaded.Library.Tables.Length);
         Assert.Equal(Library.Items.Length, loaded.Library.Items.Length);
         Assert.All(loaded.Library.Tables, table => Assert.EndsWith(".json", table.File, StringComparison.Ordinal));
     }

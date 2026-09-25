@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
@@ -692,6 +693,14 @@ public class JoineryWorkflows
 
         lists.Click(CentreOf(list, list.SizesTabItem));
         Assert.Equal(5, list.SizeEditorRows.Children.Count);
+
+        // Brads (and nails) offer the cited table's sizes as a suggestion the builder can pick; pocket screws have no cited table and offer nothing.
+        // Offering changes nothing: the size boxes still hold what the sample's builder typed.
+        string[] offered = [.. list.SizeEditorRows.Children.OfType<StackPanel>()
+            .Where(row => row.Children.OfType<Button>().Any(button => AutomationProperties.GetName(button)?.StartsWith("Cited sizes for ", StringComparison.Ordinal) == true))
+            .Select(row => ((TextBlock)row.Children[0]).Text!.Split(" (")[0])];
+        Assert.Equal(["Brad, 1/2\" stock"], offered);
+        Assert.Equal("18 ga x 1", list.SizeBox(3).Text);
 
         // Empty the tabletop clip's size (a clip is the last row); a size not chosen goes to the top of the editor.
         lists.Click(CentreOf(list, list.SizeBox(4)));

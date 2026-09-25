@@ -37,7 +37,9 @@ public sealed class GoldenCoverageTests
         IEnumerable<string> golden = Names(SoftwoodLumberGoldenTests.Rows)
             .Concat(Names(SheetGoodsGoldenTests.Rows))
             .Concat(Names(HardwoodAndFastenerGoldenTests.HardwoodRows))
-            .Concat(Names(HardwoodAndFastenerGoldenTests.NailRows));
+            .Concat(Names(HardwoodAndFastenerGoldenTests.NailRows))
+            .Concat(Names(HardwoodAndFastenerGoldenTests.FinishNailRows))
+            .Concat(Names(HardwoodAndFastenerGoldenTests.BradRows));
 
         HashSet<string> checkedItems = [];
         foreach (string name in golden)

@@ -630,7 +630,14 @@ public static class MaterialsReader
 
         private StockItem? ReadFastener(JsonFields fields, string path, Common common)
         {
-            string pennySize = TakeText(fields, "pennySize") ?? string.Empty;
+            // A brad row is named by length and wire; only some carry a penny-size trade designation, and the others leave the field out.
+            string pennySize = fields.Take("pennySize") is null ? string.Empty : TakeText(fields, "pennySize") ?? string.Empty;
+            string family = TakeText(fields, "family") ?? string.Empty;
+            if (family.Length > 0 && family is not ("nail" or "brad"))
+            {
+                Add(MaterialsProblemKind.UnknownValue, path + ".family", $"A fastener's family is \"nail\" or \"brad\", not \"{family}\".");
+            }
+
             Length length = TakeLength(fields, path, "length");
             double shankDiameter = TakeDecimalInches(fields, path, "shankDiameterInches");
 
@@ -647,6 +654,7 @@ public static class MaterialsReader
                 Source = common.Source,
                 Derivation = common.Derivation,
                 PennySize = pennySize,
+                Family = family,
                 FastenerLength = length,
                 ShankDiameterInches = shankDiameter,
             };
