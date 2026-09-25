@@ -42,7 +42,8 @@ public sealed class SuppliesListTests
             Part(1, "Door", 2, new HardwareItem("Hinge", 2)),
             Part(2, "Cabinet", 1, new HardwareItem("Hinge", 3), new HardwareItem("Shelf pin", 4)),
             Part(3, "Other", 1, new HardwareItem("hinge", 1)),
-            Part(4, "Plain", 1));
+            Part(4, "Plain", 1),
+            Part(5, "Opening", 1) with { Part = null });   // a box nobody cuts carries nothing
 
         ImmutableArray<HardwareRow> rows = HardwareList.Of(sketch);
 
