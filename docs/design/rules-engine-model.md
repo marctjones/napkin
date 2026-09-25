@@ -1,9 +1,9 @@
 # Rules engine: adopted-code packs, amendment overlays and code locking
 
-Status: DRAFT — awaiting Marc's sign-off. Implementation of #13-#19 is not authorized until signed
-off. **Implementation of #13 began 2026-09-25 at Marc's direction ("Implement M4"); sign-off of
-this document is still pending.** What was built, and where it departs from the text below, is in
-"Scope of the first implementation" just after the milestones paragraph.
+Status: **Implemented through M4 (0.97.0-beta) and M5 (0.101.0-beta), 2026-09-25.** #13-#19 shipped
+at Marc's direction ("Implement M4"); #12, tracking this document's own sign-off, is still open.
+What was built, and where it departs from the text below, is in "Scope of the first
+implementation" just after the milestones paragraph.
 
 Design document for issue #12, written by Fable per [`PLAN.md`](../../PLAN.md). It decides what
 #13 (evaluator, out-of-scope results, citations), #14-#17 (the four adopted-code packs), #19 (the

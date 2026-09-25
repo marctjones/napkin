@@ -1,6 +1,6 @@
 # Lengths, the geometry model and the update interface
 
-Status: DRAFT — implementation of #5 authorized by Marc on 2026-09-21 ("start implementing the
+Status: **Implemented, since M1.** Authorized by Marc on 2026-09-21 ("start implementing the
 plan"). He did not answer the four decisions in §9 individually, so their recommendations are the
 working choices; he can override any of them, and beta policy makes changing course cheap.
 
