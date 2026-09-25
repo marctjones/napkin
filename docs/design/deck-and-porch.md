@@ -231,10 +231,12 @@ per table with `use`:
               { "name": "member",   "type": "lumber", "band": "exact" },
               { "name": "spacing",  "type": "length", "band": "exact" } ],
   "outputs": [ { "name": "span", "type": "length" } ],
-  "footnotes": [ … ], "rows": [ { "id": "r.fir.2x8.16", "supports": "zz-deck", "species": "zz-fir", "member": "2x8", "spacing": "16in", "span": "11ft 10in", "location": "…" }, … ] }
+  "footnotes": [ … ], "rows": [ { "id": "r.fir.2x8.16", "supports": "zz-deck", "species": "zz-fir", "member": "2x8", "spacing": "16in", "span": "11ft 1in", "location": "…" }, … ] }
 ```
 
-(The numbers are the synthetic fixture's, made up.) A `deck-beam` table's inputs are `species`,
+(The numbers are the synthetic fixture's, made up and chosen **not** to coincide with any
+published span; the fixture's README says so, as the bracing fixture's does.) A `deck-beam`
+table's inputs are `species`,
 `member` (plies and nominal, as a header row's) and `joistSpan` (`upper-bound`: the joists the beam
 carries); a `rafter` table's add `groundSnowLoad` (`upper-bound`) and may add `roofLiveLoad` and
 `deadLoad` if the adopted text bands on them — declared by the pack, asked of the person only when
@@ -245,10 +247,10 @@ declared, exactly as headers ask for a roof live load only when a footnote needs
 rafters' horizontal run from the ledger face to the outer face of the plate (§5.3). **The result**
 (`SpanResult`, shaped like `BracingResult`):
 
-- **Passes**: "Joists 2x8 at 16" o.c., zz-fir, span 9'-9": allowed up to 11'-10" (ZZ-DECK-JOIST
+- **Passes**: "Joists 2x8 at 16" o.c., zz-fir, span 9'-9": allowed up to 11'-1" (ZZ-DECK-JOIST
   row r.fir.2x8.16, p. …)." with the citation line and the row's footnotes.
-- **Short**: "Joists 2x8 … span 12'-6": allowed up to 11'-10", **over by 8"** (row …). Use a deeper
-  joist, closer spacing or another beam." Never a member suggestion beyond that sentence.
+- **Short**: "Joists 2x8 … span 12'-3": allowed up to 11'-1", **over by 1'-2"** (row …). Use a
+  deeper joist, closer spacing or another beam." Never a member suggestion beyond that sentence.
 - **Out of scope**: a Supports or species value the table has no row for ("this table has no row
   for a deck carrying a roof-bearing wall: get it engineered"), a spacing not in the table, a limit
   declared by the table.
@@ -266,8 +268,8 @@ Inputs the table declares — typically `joistSpan` (`upper-bound`) and the ledg
 (`exact`); outputs `fastener` (text as printed) and `spacing` (length), with the rows' footnotes
 (flashing, prohibited attachments, the band-joist material the row assumes) shown `not-encoded`
 with the result — the existing footnote mechanism, nothing new. **Sized**: "Ledger to the house:
-1/2" through-bolts, staggered, 16" on centre (ZZ-DECK-LEDGER row …); 10 fasteners for a 12'-0"
-ledger (⌈144 ÷ 16⌉ + 1, napkin's count)." The count rule is napkin's, said. **Out of scope** on a
+zz-bolts, staggered, 17" on centre (ZZ-DECK-LEDGER row …); 10 fasteners for a 12'-0" ledger
+(⌈144 ÷ 17⌉ + 1, napkin's count)." (Synthetic fastener and spacing.) The count rule is napkin's, said. **Out of scope** on a
 span past the last band, citing it; **No data** and **Input missing** as above. What the ledger
 attaches to (the house's band joist, its material) is **not modelled** and rides as the row's
 footnote text: napkin does not know what is behind the siding.
@@ -278,7 +280,7 @@ Inputs: `tributaryArea` (`upper-bound`, square feet, whole) and `soilBearing` �
 `lower-bound`**: the largest column bound *at most* the site's value (a stronger soil is never
 rounded up to a column it does not reach; a site value below the smallest column is
 **Out of scope**, "below the table's lowest bearing value"). Output: `footing` (text as printed:
-"14 in square" or "16 in round" — the pack's words). **Tributary area** is derived: for an interior
+"zz 15 in square" in the synthetic pack — always the pack's words). **Tributary area** is derived: for an interior
 post, half the beam span each side × (half the joist span + the cantilever); for an end post, its
 one side; the check runs for the **largest**, and says which post. The band kind, its load checks
 (a `lower-bound` column's bands must ascend and be gap-free like any other) and its golden cases
@@ -306,13 +308,14 @@ A provision file, shaped like bracing's `limits`, each item cited:
 
 ```json
 { "schemaVersion": 1, "kind": "deck-guard-stair", "section": "ZZ-GUARD.1", "source": "…", "location": "…",
-  "guard": { "triggerHeight": "30in", "minimumHeight": "36in", "maximumOpening": "4in", "location": "…" },
-  "stair": { "maximumRiser": "7-3/4in", "minimumTread": "10in", "maximumRiserDifference": "3/8in",
-             "handrailWhenRisersAtLeast": 4, "minimumWidth": "36in", "location": "…" },
+  "guard": { "triggerHeight": "28in", "minimumHeight": "34in", "maximumOpening": "5in", "location": "…" },
+  "stair": { "maximumRiser": "8-1/4in", "minimumTread": "9in", "maximumRiserDifference": "1/2in",
+             "handrailWhenRisersAtLeast": 3, "minimumWidth": "32in", "location": "…" },
   "footnotes": [ … ] }
 ```
 
-(Synthetic numbers.) Results, one line each in the deck panel under **Guard** and **Stair**:
+(Synthetic numbers, made up and chosen not to coincide with any adopted text's; nothing here was
+read from a code.) Results, one line each in the deck panel under **Guard** and **Stair**:
 *guard required* when the deck's height is above `triggerHeight` (cited) and the deck has an open
 edge (§4.4); *guard height passes/short* against the typed height; *baluster gap passes/over*
 against the typed gap and the derived bottom clearance; *riser height passes/over*, *tread run
@@ -344,7 +347,8 @@ run** (an open edge, less any stair opening on it, §4.4):
 
 ### 4.2 Stair, stated exactly
 
-Ticked on the deck with **edge** (south, east, west — never the ledger edge), **at** (its offset
+Ticked on the deck with **edge** (a compass name; the ledger edge is refused at check time, "the
+stair cannot be on the house side"), **at** (its offset
 along that edge), **width** `w`, **tread run** `u` (typed), **riser count** (typed, or `null` to
 take the fewest the pack allows), **stringers** (count, typed; napkin's design default 3) and their
 lumber (2x12), and **tread boards** per tread (count, typed; the decking board). Total rise
@@ -427,9 +431,11 @@ opening" (§13.5).
 A **roof is a box on the layer Roof**: its plan `width` is the roof's width along the house; its
 plan `height` is the **run** — the horizontal distance from the house wall's face to the outer face
 of the low support (the front wall's top plate, or the beam); its `depth` is the **rise** over that
-run; its `anchor.z` is the top of the low support (the front wall's top plates); its `anchor` lies on
-the deck's ledger edge. **Draw → Porch roof** clicks a deck and takes all of that from the deck and
-the front wall; the person then types the pitch. The 3D view draws a sloped slab within the box — a
+run; its `anchor.z` is the top of the low support (the front wall's top plates); in plan the roof box
+covers the deck's outline and shares its `anchor.x` and `.y` (a box's anchor is its south-west
+corner). Its **high edge** is the deck's ledger edge, derived the same way. **Draw → Porch roof**
+clicks a deck and takes all of that from the deck and the front wall; the person then types the
+pitch. The 3D view draws a sloped slab within the box — a
 stand-in, like an opening.
 
 **Pitch is derived from the box, not stored**: pitch = `rise ÷ run`, shown as "5 in 12" when
@@ -547,7 +553,7 @@ optional fields: every field below is written every time.
           "hardware": [ { "name": <text>, "quantity": <int ≥ 1> } ],
           "guard": null | { "height": <length>, "postSpacing": <length>, "balusterGap": <length>,
                             "bottomClearance": <length>, "post": "4x4", "rail": "2x4", "cap": "2x6", "baluster": "2x2" },
-          "stair": null | { "edge": "south" | "east" | "west", "at": <length>, "width": <length>,
+          "stair": null | { "edge": "north" | "south" | "east" | "west", "at": <length>, "width": <length>,
                             "run": <length>, "risers": <int ≥ 2> | null, "stringers": <int ≥ 2>,
                             "stringer": "2x12", "treadBoards": <int ≥ 1> } }
 ```
@@ -559,7 +565,7 @@ optional fields: every field below is written every time.
 | `joist`, `beam.lumber`, `post`, `decking`, `stringer`, `guard.*` lumber | empty (not checked against the library, as a part's stock is not) |
 | `beam.plies` | outside 1–3 |
 | `postCount` | below 2 |
-| `edge` | the ledger edge is not judged at load (it is geometry); `north` is refused only if it names the ledger edge at check time, in the panel |
+| `edge` | not one of the four compass names. Which edge is the ledger's is geometry, not judged at load: a stair on the ledger edge is refused at check time, in the panel |
 | `hardware` | as a part's |
 
 ```json
@@ -648,7 +654,7 @@ depth 42", snow 30 psf, wind 115 mph, SDC B, roof live load 20 psf.
 - **Decking**: n with 5 1/2 n + 1/8 (n − 1) ≥ 120 → 5 5/8 n ≥ 120 1/8 → n ≥ 21.36 → **22 boards
   × 144"**, the 22nd covering 120 − 118 − 1/8 = **1 7/8"** ("adjust the gaps or the overhang").
   Listed as 22 boards 12'-0", no stock length read (#155).
-- **Ledger fasteners** (synthetic row: 1/2" through-bolts staggered at 16"): ⌈144 ÷ 16⌉ + 1 = **10**.
+- **Ledger fasteners** (synthetic row: zz-bolts staggered at 17"): ⌈144 ÷ 17⌉ + 1 = **10**.
 - **Tributary area**, middle post: 66 3/4" × (117 ÷ 2 = 58 1/2") = 3904.875 sq in = **27.1 sq ft**
   (shown to one decimal; the table's band reads the exact value).
 
@@ -662,8 +668,8 @@ implementer**; one hand pass): 2x8: each 144" alone on a 12' (nothing else fits 
 
 **Checks** (synthetic): joists 2x8 at 16", zz-fir, span 9'-9": passes (row); beam (2) 2x10 span
 5'-6 3/4" for a joist span of 9'-9": passes; ledger as above; footing at 27.1 sq ft and 2000 psf:
-"14 in square" (row); frost 42" of 42": passes; guard: 36" is above the synthetic 30" trigger and
-three edges are open → required.
+"zz 15 in square" (row); frost 42" of 42": passes; guard: 36" is above the synthetic 28" trigger
+and three edges are open → required.
 
 ### 9.3 Guard and stair on the open deck
 
@@ -680,8 +686,8 @@ from the pack, 3 stringers 2x12, 2 tread boards.
   **3 3/16"**; south ⌈63 1/4 ÷ 5⌉ = 13, gap (66 3/4 − 19 1/2) ÷ 14 = **3 3/8"**; east ⌈31 1/2 ÷ 5⌉
   = 7, gap (35 − 10 1/2) ÷ 8 = **3 1/16"**. Total 2·11 + 2·13 + 2·7 = **62 balusters 2x2 ×
   24"** (36 − 1 1/2 − 3 1/2 − 3 1/2 − 3 1/2). Every gap ≤ 3 1/2": the gap check passes (synthetic
-  4" limit).
-- Stair: synthetic maximum riser 7 3/4" → N = ⌈36 ÷ 7 3/4⌉ = **5 risers of 7 1/5"** (36 ÷ 5; shown
+  5" limit); height 36" passes the synthetic 34" minimum.
+- Stair: synthetic maximum riser 8 1/4" → N = ⌈36 ÷ 8 1/4⌉ = **5 risers of 7 1/5"** (36 ÷ 5; shown
   7 3/16" ≈), **4 treads**, total run 40". Diagonal √(36² + 40²) = √2896 = 53.814… → **53 7/8"**
   rounded up; board = 53 7/8 + 10 = 63 7/8" → **3 × 6' 2x12**. Treads **8 × 36"** 5/4x6.
 
@@ -702,8 +708,9 @@ gone; the stair stays, under the screen door.
 **Front wall frame** (`FramingList`, studs 91 1/2"): layout 0 … 128 (nine) + end 142 1/2 = 10;
 excluded bodies [6, 48), [51, 93), [96, 138) take out 16, 32, 64, 80, 96, 112, 128: **3 studs**
 (0, 48, 142 1/2); **6 kings** 91 1/2"; **6 jacks** 82 1/2" (24 + 60 − 1 1/2); **3 headers 39"**,
-sized **(2) 2x6** by the synthetic pack (the `reno` pack's zz-roof row covers a 3'-0" span at 30
-psf); room 96 − 3 − 84 = 9", cripples above 3 1/2" at 16, 32; 64, 80; 112, 128: **6**; rough sills
+sized **(2) 2x6** by `us-zz-deck` — a project has one adopted code, so the synthetic deck pack
+also carries an exterior-bearing header row, copied from ZZ-RENO-HEADER, answering (2) 2x6 with 1
+jack and 1 king for zz-roof at 30 psf and a 3'-0" span; room 96 − 3 − 84 = 9", cripples above 3 1/2" at 16, 32; 64, 80; 112, 128: **6**; rough sills
 **3 × 36"**; cripples below 21" (24 − 3) at the same six positions: **6**. Plates **3 × 144"**.
 **West wall**: layout 0 … 112 (eight) + end 115 = 9; excluded [11, 53) and [63 1/2, 105 1/2)
 take out 16, 32, 48, 64, 80, 96: **3 studs**, 4 kings, 4 jacks 82 1/2", 2 headers 39" (typed (2)
@@ -814,7 +821,7 @@ Building (`Napkin.Modules.Building.Tests`):
    identical to the same wall at `z` = 0.
 6. `DECK-001` ledger: sized with the count 10; out of scope past the last band, at the band and
    1/1024" over; the flashing footnote rides with the result; No data under CT.
-7. `DECK-002` joists and beam: passes, short by 8" (a 12'-6" deck), out of scope for Supports
+7. `DECK-002` joists and beam: passes, over by 1'-2" (a 12'-6" deck: joists 12'-3"), out of scope for Supports
    `zz-deck-and-roof` when the table lacks the row, input missing for species; the rafter use
    with snow 30 and with snow not entered.
 8. `DECK-003` footing: 27.1 sq ft at 2000 psf → the row; 1999 psf takes the lower column; below the
