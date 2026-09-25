@@ -14,12 +14,12 @@
       "branch": 86.51
     },
     "Napkin.Core.RulesEngine": {
-      "line": 94.49,
-      "branch": 87.73
+      "line": 95.78,
+      "branch": 89.3
     },
     "Napkin.Modules.Building": {
       "line": 100,
-      "branch": 99.35
+      "branch": 99.51
     },
     "Napkin.Modules.Furniture": {
       "line": 100,
@@ -27,7 +27,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 68,
+    "workflowsPassed": 71,
     "workflowIds": [
       "CVS-011",
       "GUI-ASSEM-01",
@@ -46,7 +46,10 @@
       "GUI-ASSEM-14",
       "GUI-ASSEM-15",
       "GUI-ASSEM-16",
+      "GUI-BRACE-01",
       "GUI-BRACE-02",
+      "GUI-BRACE-03",
+      "GUI-BRACE-04",
       "GUI-CHECK-01",
       "GUI-CHECK-02",
       "GUI-CHECK-03",
