@@ -21,6 +21,11 @@ fi
 
 mkdir -p artifacts
 
+if ! git diff --quiet -- "$f"; then
+  echo "refusing: $f has uncommitted changes — commit them first, or the final 'git checkout' would discard them, not just the mutation." >&2
+  exit 5
+fi
+
 python3 - "$f" "$old" "$new" <<'PY'
 import sys
 p, o, n = sys.argv[1:4]
