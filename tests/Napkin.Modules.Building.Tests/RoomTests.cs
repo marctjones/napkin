@@ -215,6 +215,85 @@ public class RoomTests
     public void An_area_alone_rounds_once_to_one_decimal(long units, string text)
         => Assert.Equal(text, AreaTakeoff.SquareFeet(units));
 
+    [Fact]
+    public void Every_finish_has_its_word_and_a_line_with_no_note_has_no_brackets()
+    {
+        Assert.Equal(
+            ["Surfaces", "Drywall", "Insulation", "Insulation by stud bays", "Paint", "Flooring", "Baseboard"],
+            Enum.GetValues<Finish>().Select(AreaTakeoff.Word));
+        Assert.Equal("Surfaces: x", new TakeoffLine("Room", Finish.Surfaces, 0, null, "x", string.Empty).Text);
+    }
+
+    [Fact]
+    public void A_room_with_nothing_entered_takes_off_its_surfaces_alone_and_one_coat_is_a_coat()
+    {
+        (Sketch sketch, _) = Sample();
+        Room room = TheRoom(sketch);
+        Assert.Equal(room.Box.Id, room.Id);
+
+        Sketch plain = sketch.WithEntity(room.Box with { Room = null });
+        TakeoffLine surfaces = Assert.Single(Takeoff(plain));
+        Assert.Equal(string.Empty, surfaces.Note);
+        Assert.Empty(OutOfSquare.Of(TheRoom(plain)));
+
+        Sketch oneCoat = sketch.WithEntity(room.Box with { Room = room.Box.Room! with { PaintCoats = 1 } });
+        Assert.Equal("1 coat; coverage typed from the can", Takeoff(oneCoat)[4].Note);
+    }
+
+    [Fact]
+    public void Walls_napkin_does_not_frame_have_no_bays_and_are_named()
+    {
+        (Sketch sketch, _) = Sample();
+        Box east = Wall.All(sketch).Single(wall => wall.Name == "Wall, east").Box;
+        Box west = Wall.All(sketch).Single(wall => wall.Name == "Wall, west").Box;
+        Box room = TheRoom(sketch).Box;
+
+        // Both short walls 5" thick, thickened outward: two walls napkin does not frame.
+        Sketch two = sketch
+            .WithEntity(east with { Height = In(5), Anchor = east.Anchor with { X = In(176, 1, 2) } })
+            .WithEntity(west with { Height = In(5), Anchor = west.Anchor with { X = In(3, 1, 2) } });
+        Assert.Contains("Wall, west, Wall, east are not framed by napkin, so they have no bays here", Takeoff(two)[3].Note, StringComparison.Ordinal);
+
+        // Insulate only the exterior walls and make those the two unframed ones: no bays, no height.
+        Sketch none = two;
+        foreach (Box wall in Wall.All(two).Select(w => w.Box).Where(box => box.Id != east.Id && box.Id != west.Id))
+        {
+            none = none.WithEntity(wall with { WallInputs = wall.WallInputs! with { Side = WallSide.Interior } });
+        }
+
+        Assert.Equal("for reference, exterior walls, 0 bays, at 16\" on centre", Takeoff(none)[3].Shown);
+        Assert.NotNull(room);
+    }
+
+    [Fact]
+    public void A_room_or_a_wall_not_lying_square_in_the_plan_is_not_read()
+    {
+        (Sketch sketch, _) = Sample();
+        Room room = TheRoom(sketch);
+
+        // Tipped on its side, or turned 30 degrees: no plan, its own sizes, no bounds, no openings.
+        foreach (Box odd in new[] { room.Box with { FaceUp = BoxFace.North }, room.Box with { Rotation = Angle.FromDegrees(30, Rounding.HalfToEven) } })
+        {
+            Room r = new(odd);
+            Assert.Null(r.Plan);
+            Assert.Equal((odd.Width, odd.Height), (r.Length, r.Width));
+            Sketch s2 = sketch.WithEntity(odd);
+            Assert.Empty(RoomBounds.Of(s2, r));
+            Assert.Empty(RoomBounds.Openings(s2, r));
+            Assert.Empty(RoomBounds.NearMisses(s2, r));
+        }
+
+        // A wall tipped over or turned 30 degrees has no faces, bounds nothing and is no near miss.
+        Box south = Wall.All(sketch).Single(wall => wall.Name == "Wall, south").Box;
+        foreach (Box odd in new[] { south with { FaceUp = BoxFace.North }, south with { Rotation = Angle.FromDegrees(30, Rounding.HalfToEven) } })
+        {
+            Assert.Empty(RoomBounds.FacesOf(new Wall(odd)));
+            Sketch s2 = sketch.WithEntity(odd);
+            Assert.DoesNotContain(RoomBounds.Of(s2, TheRoom(s2)), b => b.Wall.Id == south.Id);
+            Assert.Empty(RoomBounds.NearMisses(s2, TheRoom(s2)));
+        }
+    }
+
     // ---- Test 8: out of square ----------------------------------------------------------------
 
     static Room Measured(long length, long width, MeasuredRoom measured)

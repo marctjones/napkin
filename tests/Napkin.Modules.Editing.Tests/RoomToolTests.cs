@@ -76,3 +76,16 @@ public class RoomToolTests
         Assert.Equal(2, Assert.IsType<Batch>(RoomTool.Request(layer, add, id, "Room 1", Point2.Origin, In(1), In(1))).Requests.Count);
     }
 }
+
+/// <summary>A room is styled by the Room layer's look whatever layer it is on.</summary>
+public class RoomStyleTests
+{
+    [Fact]
+    public void A_room_called_room_is_styled_as_a_room()
+    {
+        Box box = Box.AsDrawn(EntityId.New(), LayerId.Default, Point2.Origin, Length.Inches(120), Length.Inches(96), Length.Inches(96), Angle.Zero) with { Name = "Room" };
+        Sketch sketch = Sketch.Empty.WithEntity(box);
+
+        Assert.Equal(DesignLayers.Room, DesignLayers.StyleName(sketch, box, new Dictionary<LayerId, string> { [LayerId.Default] = "Default" }));
+    }
+}

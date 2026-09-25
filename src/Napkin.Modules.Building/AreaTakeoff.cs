@@ -231,13 +231,13 @@ public static class AreaTakeoff
     };
 
     /// <summary>
-    /// An area in square feet, rounded once to one decimal place (half away from zero), the ".0"
-    /// dropped: 558, 17.4, 184.8.
+    /// An area in square feet — never negative — rounded once to one decimal place (half up), the
+    /// ".0" dropped: 558, 17.4, 184.8.
     /// </summary>
     public static string SquareFeet(Int128 units)
     {
-        Int128 tenths = (units * 10 + (units >= 0 ? SquareFoot / 2 : -(SquareFoot / 2))) / SquareFoot;
-        Int128 whole = tenths / 10, part = Int128.Abs(tenths % 10);
+        Int128 tenths = ((units * 10) + (SquareFoot / 2)) / SquareFoot;
+        Int128 whole = tenths / 10, part = tenths % 10;
         return part == 0 ? whole.ToString(CultureInfo.InvariantCulture) : $"{whole.ToString(CultureInfo.InvariantCulture)}.{part.ToString(CultureInfo.InvariantCulture)}";
     }
 
