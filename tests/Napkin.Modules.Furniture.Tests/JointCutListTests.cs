@@ -678,4 +678,37 @@ public class JointCutListTests
             ],
             JointDescription.Describe(facts));
     }
+
+    [Trait("Feature", "CUT-009")]
+    [Fact]
+    public void A_row_is_flagged_when_any_part_on_it_has_a_joint_that_no_longer_holds_not_only_its_first()
+    {
+        Scene frame = Frame(withTop: false);
+        Box back = frame.Sketch.Entities.Values.OfType<Box>().Single(box => box.Name == "Apron, back");
+
+        // The back apron slid 1 in east: its ends no longer meet the north legs (x 3 and 39 are now x 4 and 40).
+        frame.Sketch = frame.Sketch.WithEntity(back with { Anchor = back.Anchor + new Vector3(Length.Inches(1), Length.Zero, Length.Zero) });
+
+        // The four legs are still one row (nothing is cut into a leg); the first member (south-west) is untouched,
+        // but the two north legs' joints are not satisfied, and the row says so.
+        CutListRow legs = Assert.Single(frame.Rows(), row => row.Label == "Leg");
+        Assert.Equal(4, legs.Quantity);
+        Assert.True(legs.JointsUnsatisfied);
+        Assert.Equal(["joint not satisfied"], legs.Flags);
+    }
+
+    [Trait("Feature", "CUT-008")]
+    [Fact]
+    public void Rows_that_differ_only_in_their_joinery_or_their_flag_are_not_equal_and_equal_rows_hash_alike()
+    {
+        CutListRow row = Drawer().Rows()[0];
+        CutListRow same = Drawer().Rows()[0];
+
+        Assert.Equal(row, same);
+        Assert.Equal(row.GetHashCode(), same.GetHashCode());
+        Assert.NotEqual(row, row with { Joinery = [] });
+        Assert.NotEqual(row, row with { JointsUnsatisfied = true });
+        Assert.NotEqual(row, row with { Drawn = null });
+        Assert.NotEqual(row.GetHashCode(), (row with { Joinery = [] }).GetHashCode());
+    }
 }
