@@ -1,0 +1,31 @@
+# Normalize line endings. Text files are checked out with LF on every platform (Utf8JsonWriter
+# and every text writer in this repo emit LF, not Environment.NewLine, so a Windows CRLF checkout
+# would break byte-identity comparisons such as the samples save/reopen test). *.sln is the one
+# exception: Visual Studio expects CRLF.
+
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.cs text eol=lf
+*.csproj text eol=lf
+*.props text eol=lf
+*.axaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.xml text eol=lf
+*.runsettings text eol=lf
+*.manifest text eol=lf
+*.gitignore text eol=lf
+LICENSE text eol=lf
+
+*.sln text eol=crlf
+
+# Binaries: never touched by line-ending normalization.
+*.png binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.trx binary
