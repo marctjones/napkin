@@ -1,8 +1,8 @@
 # Joinery, fasteners and hardware: sticking pieces of stock together
 
-Status: **DRAFT, awaiting Marc's sign-off.** Implementation began 2026-09-25 at Marc's direction ("Finish implementing joinery") with sign-off still pending. Written for issues #136 (joinery) and #137
+Status: **slices A to G are implemented** (each cited slice = issue, version): A joint relationship and scene v5 (#144, 0.84.0-beta); B joint geometry (#145, 0.85.0-beta); C joinery in the cut list (#146, 0.86.0-beta); D fastener recipes and list (#147, 0.87.0-beta); E hardware, supplies and fastener sizes (#148, 0.88.0-beta); F the join tool (#149, 0.89.0-beta); G cited fastener tables (#150, 0.91.0-beta), of which only brads and finish nails (FF-N-105B) could be fetched and read: wood screws, pocket screws, clips, dowels and biscuits stay user-typed. The DIY scenario GUI-DIY-01 builds and joins the table with mouse and keyboard (0.90.0-beta). Written for issues #136 (joinery) and #137
 (fasteners, glue and hardware) together, because a fastener is what a joint is held with and
-neither can be designed alone. §11 lists the slices, which land one at a time against their issues
+neither can be designed alone. §11 lists the slices, which landed one at a time against their issues
 (#144 onward).
 
 Design document written by Fable per [`PLAN.md`](../../PLAN.md). It decides how a joint between
@@ -32,6 +32,18 @@ no default for it. The count rules in §7 ("two pocket screws per joint, plus on
 **napkin's own design defaults**, not sourced facts; each is labelled and user-editable.
 
 ---
+
+## How to use it
+
+- **Join two parts:** select both (click, Shift+click) and press **J**. The popover proposes a type (butt, groove, rabbet, half-lap, tabletop), which part receives, a fastening, glue and, for pocket screws, the face the holes go in from. Type a depth for a groove or rabbet, or a count to override the recipe, then **Enter**. Two parts already joined open the joint for editing.
+- **Join many at once:** select the parts and press **Shift+J** (or Edit, Join all touching...). Every touching pair is listed; choosing a type ticks the pairs that suit it, and the ticks come last (changing a field re-ticks). With exactly two parts Shift+J repeats the last joint without asking.
+- **See and change joints:** each joint has a marker (B butt, G groove, R rabbet, T tabletop) in plan and 3D; hover for the sentence, click to select, **Delete** to remove, and the Part panel lists a part's joints. Undo takes back a whole gesture.
+- **Cut list (Ctrl+L):** finished sizes include the allowances, and each row carries the joinery sentences; the CSV has a Joinery column.
+- **Shopping list (Ctrl+Shift+L):** below the boards are the fasteners counted from the joints, hardware, and supplies, ending with the glue line. **Fastener sizes and supplies** tab: type the size and pack you will buy (brads and nails offer a 'Cited sizes...' list from FF-N-105B; picking one only fills the box), and your supplies, one per line.
+- **Hardware:** typed in the Part panel's hardware box on the part it is fixed to, one line per item, like `Drawer pull x 1`.
+
+---
+
 
 ## 1. Simplicity rules — what napkin will not model
 
@@ -775,7 +787,7 @@ Cut list: the thirteen rows of §6.5, exactly, in that order, with `lengthUnits`
 
 Shopping list, boards and sheets, by parts-and-cut-list §4's first-fit decreasing over the
 library's stocked lengths (6′ … 16′), to be re-derived by the implementer with its derivation:
-2x2 — four 16 1/4″ pieces = 65″ in one **6′**; 1x6 — 36, 17 3/4, 17 3/4, 17 1/2, 16, 16 = 121 1/4″
+2x2 — four 16 1/4″ pieces = 65″ in one **6′**; 1x6 — 36, 17 3/4, 17 3/4, 17 1/2, 16, 16 = 121″
 → **2 × 6′** (36 + 17 3/4 + 17 3/4 = 71 1/2 in the first; 17 1/2 + 16 + 16 = 49 1/2 in the
 second); 1x2 — 36 + 16 + 16 = 68″ → **1 × 6′**; 3/4 plywood — 924 sq in → **1 sheet**; 1/2
 plywood — 4 × 56 + 2 × 56 7/16 + 2 × 54 11/16 = 446 1/4 sq in → **1 sheet**; 1/4 plywood — 2 ×
