@@ -3,7 +3,7 @@
   "scene": "bookcase.scene.json",
   "design": "bookcase.design.md",
   "derivedBy": "hand, from the stated dimensions in bookcase.design.md; never regenerated from napkin's output",
-  "formatVersion": 8,
+  "formatVersion": 9,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 7,

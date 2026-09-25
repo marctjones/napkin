@@ -936,6 +936,9 @@
 
                             <TextBox Name="StockBox" FontSize="12" PlaceholderText="Stock, e.g. 2x4" />
                             <TextBlock Name="StockReadout" FontSize="10" Opacity="0.8" TextWrapping="Wrap" />
+                            <CheckBox Name="RoughCheck" Content="Rough" FontSize="12"
+                                      AutomationProperties.Name="Rough"
+                                      ToolTip.Tip="Rough: its sizes are as drawn and its stock not yet chosen. Untick it for a part that is fine as drawn; Firm up clears it too." />
                             <TextBox Name="SpeciesBox" FontSize="12" PlaceholderText="Species" />
                             <TextBlock Name="PartJoints" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
                                        AutomationProperties.Name="Joints of this part" />

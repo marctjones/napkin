@@ -61,6 +61,9 @@ public partial class MainWindow
     /// <summary>The field a species is typed into.</summary>
     public TextBox SpeciesField => SpeciesBox;
 
+    /// <summary>The Rough tick-box under the stock field (docs/design/sketch-mode.md &#xA7;4.2).</summary>
+    public CheckBox RoughField => RoughCheck;
+
     /// <summary>Which of the three dimensions the box's width is.</summary>
     public ComboBox PlanAcross => PlanXBox;
 
@@ -195,6 +198,7 @@ public partial class MainWindow
         QuantityBox.Text = part.Quantity.ToString(CultureInfo.InvariantCulture);
         StockBox.Text = part.Stock ?? string.Empty;
         SpeciesBox.Text = part.Species ?? string.Empty;
+        RoughCheck.IsChecked = part.Rough;
         HardwareBox.Text = string.Join("\n", part.Hardware.Select(item => $"{item.Name} \u00d7 {item.Quantity}"));
     }
 
@@ -334,6 +338,7 @@ public partial class MainWindow
                 planAxes)
             {
                 Hardware = hardware,
+                Rough = RoughCheck.IsChecked == true,
             };
         }
 
@@ -366,12 +371,31 @@ public partial class MainWindow
 
         Editor.Apply(
             Batch.Of([.. requests]),
-            part is null ? "make it a plain box" : "set what this part is");
+            UndoName(box, part, name, requests.Count));
 
         ShowProperties();
         return true;
 
         static string? Blank(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+    }
+
+    /// <summary>
+    /// What the undo step is called: "mark rough" or "mark firm" when the Rough tick is the only
+    /// thing the panel changed (docs/design/sketch-mode.md &#xA7;4.2), otherwise what it always was.
+    /// </summary>
+    static string UndoName(Box box, Part? part, string name, int requestCount)
+    {
+        if (part is null)
+        {
+            return "make it a plain box";
+        }
+
+        bool onlyRoughChanged = requestCount == 2
+            && name == box.Name
+            && box.Part is { } before
+            && before.Rough != part.Rough
+            && before with { Rough = part.Rough } == part;
+        return onlyRoughChanged ? (part.Rough ? "mark rough" : "mark firm") : "set what this part is";
     }
 
     /// <summary>

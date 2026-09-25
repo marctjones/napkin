@@ -176,6 +176,9 @@ internal static class SceneNames
     internal const string PocketFace = "pocketFace";
     internal const string Glue = "glue";
     internal const string Hardware = "hardware";
+
+    // A part's rough mark (format version 9, docs/design/sketch-mode.md §4.1).
+    internal const string Rough = "rough";
     internal const string Thickness = "thickness";
     internal const string Size = "size";
     internal const string PackSize = "packSize";

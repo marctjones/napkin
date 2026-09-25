@@ -1,5 +1,5 @@
 {
-  "formatVersion": 8,
+  "formatVersion": 9,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -34,9 +34,11 @@
           "x": "width",
           "y": "length"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": [
+      "wall": null,
+      "cuts": [
         {
           "kind": "cornerCut",
           "corner": "southEast",
@@ -74,9 +76,11 @@
           "x": "width",
           "y": "length"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": [
+      "wall": null,
+      "cuts": [
         {
           "kind": "cornerCut",
           "corner": "southEast",
@@ -114,9 +118,11 @@
           "x": "length",
           "y": "width"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": [
+      "wall": null,
+      "cuts": [
         {
           "kind": "cornerCut",
           "corner": "northEast",
@@ -154,9 +160,11 @@
           "x": "length",
           "y": "width"
         },
-        "hardware": []
+        "hardware": [],
+        "rough": false
       },
-      "wall": null, "cuts": [
+      "wall": null,
+      "cuts": [
         {
           "kind": "cornerCut",
           "corner": "northEast",
@@ -176,5 +184,13 @@
   "fastenerChoices": [],
   "supplies": [],
   "code": null,
-  "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null }
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
 }

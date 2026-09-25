@@ -3,7 +3,7 @@
   "scene": "coffee-table.scene.json",
   "design": "coffee-table.design.md",
   "derivedBy": "hand, from the stated dimensions in coffee-table.design.md; never regenerated from napkin's output",
-  "formatVersion": 8,
+  "formatVersion": 9,
   "unitsPerInch": 1024,
 
   "counts": { "layers": 1, "entities": 15, "boxes": 9, "dimensions": 6, "relationships": 33 },

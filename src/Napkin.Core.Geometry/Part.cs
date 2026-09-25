@@ -111,6 +111,17 @@ public sealed record Part(
     /// <summary>Counted hardware typed onto this part: slides, pulls, hinges (joinery note &#xA7;7.5). In the order typed.</summary>
     public ImmutableList<HardwareItem> Hardware { get; init; } = [];
 
+    /// <summary>
+    /// Whether this part was entered roughly — drawn in Rough mode, its sizes as drawn and its stock
+    /// not yet chosen (<c>docs/design/sketch-mode.md</c> &#xA7;4.1).
+    /// </summary>
+    /// <remarks>
+    /// Stored, not derived: a rectangle dragged in Precise mode has no stated size either, so
+    /// nothing in a part's geometry can tell a rough plank from a precise one. Nothing in the kernel
+    /// reads it; the cut list tags it and the pencil draws it lighter.
+    /// </remarks>
+    public bool Rough { get; init; }
+
     /// <summary>Equality by value, with the hardware compared as a sequence (an <see cref="ImmutableList{T}"/> compares by reference).</summary>
     public bool Equals(Part? other)
         => other is not null
@@ -118,6 +129,7 @@ public sealed record Part(
            && Species == other.Species
            && Quantity == other.Quantity
            && PlanAxes == other.PlanAxes
+           && Rough == other.Rough
            && Hardware.SequenceEqual(other.Hardware);
 
     /// <inheritdoc/>
@@ -128,6 +140,7 @@ public sealed record Part(
         hash.Add(Species);
         hash.Add(Quantity);
         hash.Add(PlanAxes);
+        hash.Add(Rough);
         foreach (HardwareItem item in Hardware)
         {
             hash.Add(item);

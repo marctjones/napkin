@@ -19,7 +19,7 @@ public class BuildingFormatTests
 
     private const string Filled = $$"""
         {
-          "formatVersion": 8,
+          "formatVersion": 9,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -119,10 +119,10 @@ public class BuildingFormatTests
     {
         // A version-5 file had no code, site or wall fields; it is refused for its version alone.
         string version5 = Scenes.OneBox
-            .With("\"formatVersion\": 8", "\"formatVersion\": 5")
+            .With("\"formatVersion\": 9", "\"formatVersion\": 5")
             .With("\"wall\": null, ", string.Empty);
 
-        LoadProblem problem = Scenes.RefuseWith(version5, LoadProblemKind.UnsupportedFormatVersion, "format version 5", "format version 8");
+        LoadProblem problem = Scenes.RefuseWith(version5, LoadProblemKind.UnsupportedFormatVersion, "format version 5", "format version 9");
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }
 
@@ -131,9 +131,9 @@ public class BuildingFormatTests
     public void A_version_7_file_is_refused_with_the_unsupported_version_message()
     {
         // A version-7 file had no bracing on a wall; it is refused for its version alone, no converter.
-        string version7 = Scenes.OneBox.With("\"formatVersion\": 8", "\"formatVersion\": 7");
+        string version7 = Scenes.OneBox.With("\"formatVersion\": 9", "\"formatVersion\": 7");
 
-        LoadProblem problem = Scenes.RefuseWith(version7, LoadProblemKind.UnsupportedFormatVersion, "format version 7", "format version 8");
+        LoadProblem problem = Scenes.RefuseWith(version7, LoadProblemKind.UnsupportedFormatVersion, "format version 7", "format version 9");
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }
 

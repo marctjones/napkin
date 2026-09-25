@@ -130,7 +130,7 @@ public sealed class SceneReaderTests
     /// </summary>
     private const string AllReferenceShapes = """
         {
-          "formatVersion": 8,
+          "formatVersion": 9,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -138,7 +138,7 @@ public sealed class SceneReaderTests
               "name": "West square",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": { "stock": null, "species": "white oak", "quantity": 2,
-                        "planAxes": { "x": "length", "y": "width" }, "hardware": [] }, "wall": null, "cuts": [] },
+                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false }, "wall": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "East square",
               "anchor": { "x": 8192, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0,

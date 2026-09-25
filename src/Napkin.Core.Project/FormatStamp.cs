@@ -72,8 +72,13 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
     /// Version 8 added <c>bracing</c> to a wall's inputs (issue #39): the bracing method assigned to
     /// each of its segments, or null when none is. Every version-7 file is refused.
     /// </para>
+    /// <para>
+    /// Version 9 added <c>rough</c> to every part (<c>docs/design/sketch-mode.md</c> &#xA7;4.1):
+    /// whether the part was entered roughly, its sizes as drawn and its stock not yet chosen.
+    /// Required, true or false. Every version-8 file is refused.
+    /// </para>
     /// </remarks>
-    public const int CurrentVersion = 8;
+    public const int CurrentVersion = 9;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);
