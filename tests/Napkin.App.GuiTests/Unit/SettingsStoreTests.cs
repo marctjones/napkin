@@ -38,6 +38,18 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void The_saw_kerf_defaults_to_an_eighth_and_is_kept_exactly_including_zero()
+    {
+        Assert.Equal(Napkin.Core.Geometry.Length.Inches(0, 1, 8), new SettingsStore(FilePath).Current.SawKerf);
+
+        new SettingsStore(FilePath).Update(s => s with { SawKerf = Napkin.Core.Geometry.Length.Inches(0, 3, 32) });
+        Assert.Equal(Napkin.Core.Geometry.Length.Inches(0, 3, 32), new SettingsStore(FilePath).Current.SawKerf);
+
+        new SettingsStore(FilePath).Update(s => s with { SawKerf = Napkin.Core.Geometry.Length.Zero });
+        Assert.Equal(Napkin.Core.Geometry.Length.Zero, new SettingsStore(FilePath).Current.SawKerf);
+    }
+
+    [Fact]
     public void The_clean_screen_look_stays_selectable_and_is_remembered()
     {
         new SettingsStore(FilePath).Update(s => s with { SketchPaper = Napkin.App.Viewing.SketchPaper.Screen, SketchLine = Napkin.App.Viewing.SketchLine.Clean });

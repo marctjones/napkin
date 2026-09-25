@@ -1161,6 +1161,33 @@
       "milestone": "M3",
       "issue": 149,
       "kind": "workflow"
+    },
+    {
+      "id": "CUT-015",
+      "area": "furniture",
+      "title": "The cut layout puts each lumber piece on a board with the saw kerf",
+      "acceptance": "Per stock and species the pieces go longest first onto boards opened at the longest stocked length, then each board shrinks to the smallest stocked length that holds it; a board takes n cuts when an offcut remains and n-1 when the pieces and kerfs exactly fill it; a piece longer than any stocked length is refused by name; sheet goods are reported as counted by sheets, not nested. 36 + 24 + 20 in on a 96 in board with a 1/8 in kerf is 80 3/8 in used and a 15 5/8 in offcut.",
+      "milestone": "M3",
+      "issue": 138,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-016",
+      "area": "furniture",
+      "title": "The shopping list's boards are the cut layout's boards",
+      "acceptance": "The shopping list takes its board counts from the cut layout with the kerf given, so the two never disagree; the stocked bench needs one 12 ft 1x4 and one 14 ft 2x4 at a 1/8 in kerf.",
+      "milestone": "M3",
+      "issue": 138,
+      "kind": "unit"
+    },
+    {
+      "id": "GUI-CUT-08",
+      "area": "ui",
+      "title": "Read the cut layout and change the saw kerf",
+      "acceptance": "Open a sample, open the cut list, turn to the Cut layout tab, see a line and a drawn bar per board, change the saw kerf and see the boards change, and the exported file equals the lines on screen.",
+      "milestone": "M3",
+      "issue": 138,
+      "kind": "workflow"
     }
   ]
 }

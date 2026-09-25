@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
 using System.Text;
 
+using Napkin.Core.Geometry;
+
 namespace Napkin.Modules.Furniture;
 
 /// <summary>
@@ -28,12 +30,13 @@ public static class ShoppingListCsv
 
     /// <summary>The shopping list as CSV text.</summary>
     /// <param name="rows">The rows, in the order they are on screen. Written in that order.</param>
-    public static string ToCsv(IEnumerable<ShoppingListRow> rows)
+    /// <param name="kerf">The kerf the list was planned with; the napkin default when omitted.</param>
+    public static string ToCsv(IEnumerable<ShoppingListRow> rows, Length? kerf = null)
     {
         ArgumentNullException.ThrowIfNull(rows);
 
         StringBuilder csv = new();
-        csv.Append(CutListCsv.Field(ShoppingList.BeforeKerfAndJoinery)).Append('\n');
+        csv.Append(CutListCsv.Field(ShoppingList.Statement(kerf ?? CutLayout.DefaultKerf))).Append('\n');
         csv.Append(Header).Append('\n');
 
         foreach (ShoppingListRow row in rows)

@@ -712,7 +712,7 @@
       "boardFeetUsed": "0.9",
       "waste": "0.1",
       "note": "",
-      "derivation": "Pieces, longest first: 36, 16, 16 (inches). First-fit decreasing over 6', 8' ... 16': each piece goes in the first board with room, else a new board of the shortest stocked length that holds it. Boards bought (length, left over) = [['72', '4']]. So 1 × 6'-0\". Board feet, nominal 1\" x 2\": bought 1.0, used 0.9, waste 0.1, each rounded once at the end. Finished sizes are used: the drawer parts are already lengthened by their joinery allowances."
+      "derivation": "Pieces, longest first: 36, 16, 16 (inches). Kerf rule (napkin's default 1/8 in per cut): a board with n pieces takes n cuts when an offcut remains, n-1 when the pieces and kerfs exactly fill it; used length = pieces + kerf x cuts. First-fit decreasing puts each piece on the first open board with room, opening new boards of the longest stocked length (192 in), then each board shrinks to the smallest stocked length (72, 96, 120, 144, 168, 192 in) that holds it. All three go on one board: 36 + 16 + 16 = 68 in; with 3 cuts of 1/8 in that is 68 3/8 in; 72 in (6') holds it (not an exact fill: 68 1/4 is not 72), offcut 72 - 68 3/8 = 3 5/8 in. So 1 × 6'-0\". Board feet, nominal 1\" x 2\": bought 1.0, used 0.9, waste 0.1, each rounded once at the end. Finished sizes are used: the drawer parts are already lengthened by their joinery allowances."
     },
     {
       "material": "1x6",
@@ -721,20 +721,20 @@
       "for": "Apron, back × 1, Drawer front × 2, Web × 1, Apron, side × 2",
       "boards": [
         {
-          "lengthUnits": 73728,
-          "count": 2
+          "lengthUnits": 147456,
+          "count": 1
         }
       ],
       "sheets": 0,
-      "count": 2,
+      "count": 1,
       "boughtCubicUnits": 927712935936,
       "usedCubicUnits": 779536564224,
-      "buy": "2 × 6'-0\"",
+      "buy": "1 × 12'-0\"",
       "boardFeetBought": "6.0",
       "boardFeetUsed": "5.0",
       "waste": "1.0",
       "note": "",
-      "derivation": "Pieces, longest first: 36, 71/4, 71/4, 35/2, 16, 16 (inches). First-fit decreasing over 6', 8' ... 16': each piece goes in the first board with room, else a new board of the shortest stocked length that holds it. Boards bought (length, left over) = [['72', '1/2'], ['72', '45/2']]. So 2 × 6'-0\". Board feet, nominal 1\" x 6\": bought 6.0, used 5.0, waste 1.0, each rounded once at the end. Finished sizes are used: the drawer parts are already lengthened by their joinery allowances."
+      "derivation": "Pieces, longest first: 36, 17 3/4, 17 3/4, 17 1/2, 16, 16 (inches). Kerf rule (napkin's default 1/8 in per cut): a board with n pieces takes n cuts when an offcut remains, n-1 when the pieces and kerfs exactly fill it; used length = pieces + kerf x cuts. First-fit decreasing puts each piece on the first open board with room, opening new boards of the longest stocked length (192 in), then each board shrinks to the smallest stocked length (72, 96, 120, 144, 168, 192 in) that holds it. All six go on one board: 36 + 17 3/4 + 17 3/4 + 17 1/2 + 16 + 16 = 121 in; with 6 cuts of 1/8 in = 3/4 in that is 121 3/4 in. 10' (120 in) is too short; 12' (144 in) holds it, offcut 144 - 121 3/4 = 22 1/4 in. So 1 × 12'-0\". Board feet, nominal 1\" x 6\": bought 6 x 144 = 864 in³ / 144 = 6.0; used 6 x 121 = 726 in³ / 144 = 5.041... -> 5.0; waste 864 - 726 = 138 in³ / 144 = 0.958... -> 1.0. Finished sizes are used: the drawer parts are already lengthened by their joinery allowances."
     },
     {
       "material": "2x2",
@@ -756,7 +756,7 @@
       "boardFeetUsed": "1.8",
       "waste": "0.2",
       "note": "",
-      "derivation": "Pieces, longest first: 65/4, 65/4, 65/4, 65/4 (inches). First-fit decreasing over 6', 8' ... 16': each piece goes in the first board with room, else a new board of the shortest stocked length that holds it. Boards bought (length, left over) = [['72', '7']]. So 1 × 6'-0\". Board feet, nominal 2\" x 2\": bought 2.0, used 1.8, waste 0.2, each rounded once at the end. Finished sizes are used: the drawer parts are already lengthened by their joinery allowances."
+      "derivation": "Pieces, longest first: 16 1/4 x 4 (inches). Kerf rule (napkin's default 1/8 in per cut): a board with n pieces takes n cuts when an offcut remains, n-1 when the pieces and kerfs exactly fill it; used length = pieces + kerf x cuts. First-fit decreasing puts each piece on the first open board with room, opening new boards of the longest stocked length (192 in), then each board shrinks to the smallest stocked length (72, 96, 120, 144, 168, 192 in) that holds it. All four go on one board: 4 x 16 1/4 = 65 in; with 4 cuts of 1/8 in that is 65 1/2 in; 72 in (6') holds it, offcut 72 - 65 1/2 = 6 1/2 in. So 1 × 6'-0\". Board feet, nominal 2\" x 2\": bought 2.0, used 1.8, waste 0.2, each rounded once at the end. Finished sizes are used: the drawer parts are already lengthened by their joinery allowances."
     },
     {
       "material": "3/4 plywood",
@@ -777,12 +777,12 @@
     }
   ],
   "shoppingListCsv": [
-    "\"Shopping list: boards needed from finished sizes, joinery allowances included; before saw kerf and defect.\"",
+    "\"Shopping list: boards needed from finished sizes, joinery allowances included; includes a 1/8 in saw kerf per cut (set it in the Saw kerf box on the Cut layout tab); before defect.\"",
     "Material,Species,Buy,For,Board feet bought,Board feet used,Waste,Note",
     "1/2 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",\"Drawer box front × 2, Drawer side, left × 2, Drawer side, right × 2, Drawer box back × 2\",,,,sheets by area — a nesting layout may need more",
     "1/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Drawer bottom × 2,,,,sheets by area — a nesting layout may need more",
     "1x2,,\"1 × 6'-0\"\"\",\"Front rail × 1, Slide cleat × 2\",1.0,0.9,0.1,",
-    "1x6,,\"2 × 6'-0\"\"\",\"Apron, back × 1, Drawer front × 2, Web × 1, Apron, side × 2\",6.0,5.0,1.0,",
+    "1x6,,\"1 × 12'-0\"\"\",\"Apron, back × 1, Drawer front × 2, Web × 1, Apron, side × 2\",6.0,5.0,1.0,",
     "2x2,,\"1 × 6'-0\"\"\",Leg × 4,2.0,1.8,0.2,",
     "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets by area — a nesting layout may need more"
   ],

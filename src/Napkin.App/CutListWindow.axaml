@@ -91,6 +91,43 @@
                 </DockPanel>
             </TabItem>
 
+            <!-- Which piece from which board (issue #138): the boards the shopping list buys, with the pieces
+                 in cutting order, the saw kerf and the offcut. The kerf is the person's own setting. -->
+            <TabItem Name="CutLayoutTab" Header="Cut layout" FontSize="14">
+                <DockPanel>
+                    <TextBlock Name="LayoutNote"
+                               DockPanel.Dock="Top"
+                               Margin="0,4,0,6"
+                               FontSize="11"
+                               Opacity="0.75"
+                               TextWrapping="Wrap" />
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,2">
+                        <TextBlock Text="Saw kerf" VerticalAlignment="Center" FontSize="12" />
+                        <TextBox Name="KerfBox" Width="90" FontSize="12" AutomationProperties.Name="Saw kerf" />
+                        <Button Name="SetKerfButton" Content="Set" FontSize="12" AutomationProperties.Name="Set saw kerf" />
+                        <TextBlock Name="KerfHint" VerticalAlignment="Center" FontSize="11" Opacity="0.75"
+                                   Text="practice default: set your blade's actual kerf (0 is allowed)" />
+                    </StackPanel>
+                    <TextBlock Name="KerfError"
+                               DockPanel.Dock="Top"
+                               FontSize="11"
+                               IsVisible="False"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource SystemErrorTextColor}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="4">
+                            <viewing:CutLayoutView Name="LayoutView" />
+                            <TextBlock Name="LayoutSummary" Margin="0,10,0,0" FontSize="12" TextWrapping="Wrap" />
+                            <StackPanel Name="FramingLayoutSection" Spacing="4" IsVisible="False">
+                                <TextBlock Text="Framing" Margin="0,14,0,0" FontSize="12" FontWeight="SemiBold" />
+                                <viewing:CutLayoutView Name="FramingLayoutView" />
+                                <TextBlock Name="FramingLayoutSummary" Margin="0,10,0,0" FontSize="12" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+
             <!-- What only the builder can say: a size for each kind of fastener in each thickness, and
                  the shopping list's checklist. Typed text, never napkin's data (joinery note §7.3, §8). -->
             <TabItem Name="SizesTab" Header="Fastener sizes and supplies" FontSize="14">
