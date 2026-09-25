@@ -1,3 +1,5 @@
+using Napkin.Core.Geometry;
+
 namespace Napkin.Core.RulesEngine;
 
 /// <summary>
@@ -27,8 +29,52 @@ public sealed record BandMatch(string Column, string Input, string Band)
     public override string ToString() => $"{Column} {Input} → {Band}";
 }
 
-/// <summary>A footnote shown with a result.</summary>
-public sealed record FootnoteRef(string Id, string Text, FootnoteEncoding EncodedAs);
+/// <summary>A footnote shown with a result: its id, verbatim text, encoding and where it was read.</summary>
+public sealed record FootnoteRef(string Id, string Text, FootnoteEncoding EncodedAs, SourceRef Source);
+
+/// <summary>
+/// How an interpolated span was computed (design §4.4, decided 2026-09-25): both rows used, the
+/// exact weight, the exact span and the span shown, and the footnote that permits it.
+/// </summary>
+/// <param name="Column">The interpolated column ("groundSnowLoad").</param>
+/// <param name="Input">The request's value in that column.</param>
+/// <param name="Lower">The lower declared column.</param>
+/// <param name="Upper">The upper declared column.</param>
+/// <param name="LowerRowId">The row used at the lower column.</param>
+/// <param name="UpperRowId">The row used at the upper column.</param>
+/// <param name="LowerSpan">The lower row's span.</param>
+/// <param name="UpperSpan">The upper row's span.</param>
+/// <param name="Weight">(input − lower) / (upper − lower), exact.</param>
+/// <param name="SpanUnits">The interpolated span in 1/1024″ units, exact; the opening is compared to this.</param>
+/// <param name="SpanShown">The interpolated span rounded down to a whole 1/16″, for display only.</param>
+/// <param name="Footnote">The footnote that permits the interpolation.</param>
+public sealed record InterpolationTrace(
+    string Column,
+    CellValue Input,
+    CellValue Lower,
+    CellValue Upper,
+    string LowerRowId,
+    string UpperRowId,
+    Length LowerSpan,
+    Length UpperSpan,
+    ExactFraction Weight,
+    ExactFraction SpanUnits,
+    Length SpanShown,
+    FootnoteRef Footnote)
+{
+    /// <summary>The one-line summary a person reads under the result.</summary>
+    public string Summary(AdoptedCodeRef code)
+        => $"Interpolated between the {Lower} row ({LowerRowId}) and the {Upper} row ({UpperRowId}) ({code.ShortName} footnote {Footnote.Id}, {Footnote.Source.Location})";
+
+    /// <summary>The full working: both rows, the weight as an exact fraction, the exact and shown span, the footnote verbatim and its source.</summary>
+    public override string ToString()
+        => $"{Column} {Input} is between the {Lower} and {Upper} columns: row {LowerRowId} ({Show(LowerSpan)}) and row {UpperRowId} ({Show(UpperSpan)}), "
+           + $"weight ({Input.Magnitude} − {Lower.Magnitude}) / ({Upper.Magnitude} − {Lower.Magnitude}) = {Weight}; "
+           + $"span {Show(LowerSpan)} + ({Show(UpperSpan)} − {Show(LowerSpan)}) × {Weight} = {SpanUnits} × 1/1024\", shown rounded down to {Show(SpanShown)}; "
+           + $"footnote {Footnote.Id}: \"{Footnote.Text}\" — {Footnote.Source.Title}, {Footnote.Source.Location}";
+
+    private static string Show(Length length) => CellValue.Of(length).ToString();
+}
 
 /// <summary>
 /// Everything needed to find a result's row in the paper source without the app (design §2).
@@ -53,7 +99,8 @@ public sealed record Citation(
     CitationLayer Layer,
     SourceRef Source,
     ValueList<FootnoteRef> Footnotes,
-    ValueList<BandMatch> Trace)
+    ValueList<BandMatch> Trace,
+    InterpolationTrace? Interpolation = null)
 {
     /// <summary>"IRC 2021 Table X row Y, as adopted by CT 2022 — source, location".</summary>
     public override string ToString()

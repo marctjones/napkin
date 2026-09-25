@@ -14,12 +14,12 @@
       "branch": 86.51
     },
     "Napkin.Core.RulesEngine": {
-      "line": 94.36,
-      "branch": 87.28
+      "line": 94.49,
+      "branch": 87.73
     },
     "Napkin.Modules.Building": {
       "line": 100,
-      "branch": 99.27
+      "branch": 99.35
     },
     "Napkin.Modules.Furniture": {
       "line": 100,
@@ -51,6 +51,7 @@
       "GUI-CHECK-02",
       "GUI-CHECK-03",
       "GUI-CHECK-04",
+      "GUI-CHECK-05",
       "GUI-CUT-02",
       "GUI-CUT-03",
       "GUI-CUT-04",

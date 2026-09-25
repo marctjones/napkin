@@ -164,7 +164,7 @@ public static class SceneWriter
         writer.WriteEndObject();
     }
 
-    /// <summary>The site values (format version 6): every field written, null when not entered.</summary>
+    /// <summary>The site values (format version 7): every field written, null when not entered.</summary>
     private static void WriteSite(Utf8JsonWriter writer, SiteValues site)
     {
         writer.WriteStartObject(SceneNames.Site);
@@ -173,6 +173,7 @@ public static class SceneWriter
         WriteOptionalText(writer, SceneNames.SiteSeismicDesignCategory, site.SeismicDesignCategory);
         WriteOptionalNumber(writer, SceneNames.SiteFrostDepth, site.FrostDepth?.Units);
         WriteOptionalNumber(writer, SceneNames.SiteBuildingWidth, site.BuildingWidth?.Units);
+        WriteOptionalNumber(writer, SceneNames.SiteRoofLiveLoad, site.RoofLiveLoadPsf);
         if (site.Source is { } source)
         {
             writer.WriteStartObject(SceneNames.SiteSource);

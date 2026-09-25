@@ -26,6 +26,7 @@ public class CodeCheckWorkflows
 {
     static readonly string One = Path.Combine(AppContext.BaseDirectory, "CodePacks", "one");
     static readonly string Two = Path.Combine(AppContext.BaseDirectory, "CodePacks", "two");
+    static readonly string Three = Path.Combine(AppContext.BaseDirectory, "CodePacks", "three");
     static readonly string Shipped = Path.Combine(AppContext.BaseDirectory, "packs");
 
     [GuiWorkflow("GUI-CHECK-01")]
@@ -252,6 +253,64 @@ public class CodeCheckWorkflows
         app.SaveFrame("no-data");
     }, packRoots: [Shipped]);
 
+    [GuiWorkflow("GUI-CHECK-05")]
+    public void A_snow_load_between_two_columns_interpolates_and_below_30_the_roof_live_load_decides() => GuiWorkflow.Run(app =>
+    {
+        // CodePacks/three (SYNTHETIC, NOT CODE VALUES): ZZ-INTERP-HEADER, zz-roof, (1) 2x8 spans 6'-0" at 30 psf,
+        // 4'-0" at 50 psf; its overlay's footnote e interpolates between 30 and 50 and takes snow below 30 as 30
+        // when the roof live load is at most 20. At 40 psf: (6'-0" + 4'-0") / 2 = 5'-0".
+        MainWindow window = (MainWindow)app.Target;
+        DrawWall(app, window);
+        CodeWindow code = OpenCode(app, window);
+        AppDriver site = AppDriver.Attach(code, "check-05-code");
+        PickPack(site, code, "ZZ INTERP");
+        TypeSnow(site, code, "40");
+        Replace(site, code, code.RoofLiveLoadField, "20");
+        site.SaveFrame("snow-40-roof-live-20");
+        app.Expect("the snow load is 40 psf and the roof live load 20 psf, typed in the dialog", () =>
+            Assert.Equal(SiteValues.NotEntered with { GroundSnowLoadPsf = 40, RoofLiveLoadPsf = 20 }, window.CurrentDesign!.Sketch.Site));
+
+        window.Activate();
+        ChooseSupports(app, window);
+        EntityId opening = PlaceWindow(app, window);
+        TypeWidth(app, window, opening, "4' 6\"");
+        app.Expect("a 4'-6\" opening at 40 psf takes the (1) 2x8, whose interpolated span is 5'-0\", and the check says it was interpolated", () =>
+        {
+            // The plain 50 psf column would allow only 4'-0" for the 2x8; interpolation between 6'-0" and 4'-0" gives 5'-0".
+            Assert.Equal("Header (1) 2x8, 1 jack stud and 1 king stud each side.", window.CodeCheckText);
+            Assert.Equal(
+                "Interpolated between the 30 psf row (i.s30.a) and the 50 psf row (i.s50.a) (ZZ INTERP footnote e, p. 9)",
+                window.CodeCheckInterpolationText);
+            Assert.Contains("row i.s50.a", window.CodeCheckCitationText, StringComparison.Ordinal);
+            Assert.Contains("weight (40 − 30) / (50 − 30) = 1/2", window.CodeCheckWorkingText, StringComparison.Ordinal);
+        });
+        app.SaveFrame("interpolated");
+
+        code = OpenCode(app, window);
+        site = AppDriver.Attach(code, "check-05-code-30");
+        Replace(site, code, code.SnowField, "30");
+        app.Expect("at exactly 30 psf the plain 30 psf row is used and the interpolation line is gone", () =>
+        {
+            Assert.Equal("Header (1) 2x8, 1 jack stud and 1 king stud each side.", window.CodeCheckText);
+            Assert.Equal(string.Empty, window.CodeCheckInterpolationText);
+            Assert.Contains("row i.s30.a", window.CodeCheckCitationText, StringComparison.Ordinal);
+        });
+
+        Replace(site, code, code.SnowField, "25");
+        Replace(site, code, code.RoofLiveLoadField, "25");
+        site.SaveFrame("snow-25-roof-live-25");
+        app.Expect("below 30 psf with a 25 psf roof live load the footnote does not apply: out of scope, citing footnote e", () =>
+        {
+            Assert.StartsWith("This opening is beyond what Table ZZ-INTERP-HEADER covers: Footnote e of table ZZ-INTERP-HEADER lets groundSnowLoad below 30 psf be taken as 30 psf only when roofLiveLoad is at most 20 psf", window.CodeCheckText, StringComparison.Ordinal);
+            Assert.DoesNotContain("2x", window.CodeCheckText, StringComparison.Ordinal);
+            Assert.StartsWith("Limit: IRC 2099 Table ZZ-INTERP-HEADER, as adopted by ZZ INTERP (footnote e)", window.CodeCheckCitationText, StringComparison.Ordinal);
+            Assert.Equal(string.Empty, window.CodeCheckInterpolationText);
+        });
+
+        window.Activate();
+        app.SaveFrame("out-of-scope-by-footnote");
+    }, packRoots: [Three]);
+
     // ---- Steps ---------------------------------------------------------------------------
 
     /// <summary>A new sheet, zoomed out, and a 16 ft 2x4 wall dragged west to east with the W tool.</summary>
@@ -298,6 +357,15 @@ public class CodeCheckWorkflows
     {
         driver.Click(CentreOf(code, code.SnowField));
         driver.Type(psf);
+        driver.Press(Key.Enter);
+    }
+
+    /// <summary>Clicks a site field, selects what is there, types the new value and presses Enter.</summary>
+    static void Replace(AppDriver driver, CodeWindow code, TextBox field, string text)
+    {
+        driver.Click(CentreOf(code, field));
+        driver.Chord(Key.A);
+        driver.Type(text);
         driver.Press(Key.Enter);
     }
 

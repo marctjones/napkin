@@ -330,61 +330,89 @@ internal static class TableReader
         for (int i = 0; i < items.Count; i++)
         {
             string path = o.Child($"footnotes[{i}]");
-            JsonObj? f = JsonObj.Create(items[i], path, o.Where, problems);
-            if (f is null)
+            Footnote? footnote = ReadFootnote(items[i], path, o.Where, inputs, problems);
+            if (footnote is null)
             {
                 continue;
             }
 
-            int before = problems.Count;
-            string? id = f.String("id");
-            string? text = f.String("text");
-            FootnoteEncoding? encoding = null;
-            if (!f.Has("encodedAs"))
+            if (footnotes.Any(x => x.Id == footnote.Id))
             {
-                f.MarkUsed("encodedAs");
-                problems.Add(
-                    o.Where with { Row = id is null ? null : $"footnote {id}" },
-                    $"{path}: footnote is not classified. Set encodedAs to 'not-encoded', 'as-rows' or 'as-limit'; a table with an unclassified footnote is invalid (design §1.4).");
-            }
-            else
-            {
-                encoding = f.Enum("encodedAs", Vocabulary.Encodings);
-            }
-
-            FootnoteScope? scope = f.Enum("appliesTo", Vocabulary.Scopes);
-            FootnoteLimit? limit = null;
-            if (encoding == FootnoteEncoding.AsLimit)
-            {
-                JsonObj? l = f.Obj("limit");
-                if (l is not null)
-                {
-                    limit = ReadLimit(l, $"{path}.limit", inputs, problems);
-                    l.Done();
-                }
-            }
-            else if (f.Has("limit"))
-            {
-                f.MarkUsed("limit");
-                problems.Add(o.Where, $"{path}.limit: only an 'as-limit' footnote has a limit.");
-            }
-
-            f.Done();
-            if (problems.Count > before || id is null || text is null || encoding is null || scope is null)
-            {
+                problems.Add(o.Where, $"{path}.id: footnote '{footnote.Id}' is listed twice.");
                 continue;
             }
 
-            if (footnotes.Any(x => x.Id == id))
-            {
-                problems.Add(o.Where, $"{path}.id: footnote '{id}' is listed twice.");
-                continue;
-            }
-
-            footnotes.Add(new Footnote(id, text, encoding.Value, scope.Value, limit));
+            footnotes.Add(footnote);
         }
 
         return footnotes;
+    }
+
+    /// <summary>
+    /// Reads one footnote object: in a table's <c>footnotes</c>, or carried by an overlay's
+    /// <c>amend-footnote</c> operation (where the table's columns are not known yet, so
+    /// <paramref name="inputs"/> is empty and column checks run after composition).
+    /// </summary>
+    public static Footnote? ReadFootnote(JsonElement element, string path, Where where, List<InputColumn> inputs, ProblemList problems)
+    {
+        JsonObj? f = JsonObj.Create(element, path, where, problems);
+        if (f is null)
+        {
+            return null;
+        }
+
+        int before = problems.Count;
+        string? id = f.String("id");
+        string? text = f.String("text");
+        FootnoteEncoding? encoding = null;
+        if (!f.Has("encodedAs"))
+        {
+            f.MarkUsed("encodedAs");
+            problems.Add(
+                where with { Row = id is null ? null : $"footnote {id}" },
+                $"{path}: footnote is not classified. Set encodedAs to 'not-encoded', 'as-rows', 'as-limit' or 'as-operations'; a table with an unclassified footnote is invalid (design §1.4).");
+        }
+        else
+        {
+            encoding = f.Enum("encodedAs", Vocabulary.Encodings);
+        }
+
+        FootnoteScope? scope = f.Enum("appliesTo", Vocabulary.Scopes);
+        FootnoteLimit? limit = null;
+        if (encoding == FootnoteEncoding.AsLimit)
+        {
+            JsonObj? l = f.Obj("limit");
+            if (l is not null)
+            {
+                limit = ReadLimit(l, $"{path}.limit", inputs, problems);
+                l.Done();
+            }
+        }
+        else if (f.Has("limit"))
+        {
+            f.MarkUsed("limit");
+            problems.Add(where, $"{path}.limit: only an 'as-limit' footnote has a limit.");
+        }
+
+        List<FootnoteOperation> operations = [];
+        if (encoding == FootnoteEncoding.AsOperations)
+        {
+            operations = FootnoteOperationReader.Read(f, path, problems);
+            if (scope == FootnoteScope.Rows)
+            {
+                problems.Add(where, $"{path}.appliesTo: an 'as-operations' footnote applies to the whole table.");
+            }
+        }
+        else if (f.Has("operations"))
+        {
+            f.MarkUsed("operations");
+            problems.Add(where, $"{path}.operations: only an 'as-operations' footnote has operations.");
+        }
+
+        f.Done();
+        return problems.Count > before || id is null || text is null || encoding is null || scope is null
+            ? null
+            : new Footnote(id, text, encoding.Value, scope.Value, limit, operations.ToValueList(), null);
     }
 
     private static FootnoteLimit? ReadLimit(JsonObj l, string path, List<InputColumn> inputs, ProblemList problems)

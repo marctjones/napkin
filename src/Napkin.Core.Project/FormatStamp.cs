@@ -64,8 +64,12 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
     /// Version 6 added the building inputs (issues #18, #19): the project's adopted <c>code</c> and
     /// <c>site</c> values, and a <c>wall</c> on every box — what a wall supports and its stud spacing.
     /// </para>
+    /// <para>
+    /// Version 7 added <c>roofLiveLoad</c> to the site values (psf, null when not entered), which a
+    /// header table's footnote may ask for (docs/rules-engine.md). Every version-6 file is refused.
+    /// </para>
     /// </remarks>
-    public const int CurrentVersion = 6;
+    public const int CurrentVersion = 7;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);

@@ -35,6 +35,7 @@ internal static class SceneNames
     internal const string CodeFollowing = "following";
     internal const string Site = "site";
     internal const string SiteGroundSnowLoad = "groundSnowLoad";
+    internal const string SiteRoofLiveLoad = "roofLiveLoad";
     internal const string SiteUltimateWindSpeed = "ultimateWindSpeed";
     internal const string SiteSeismicDesignCategory = "seismicDesignCategory";
     internal const string SiteFrostDepth = "frostDepth";

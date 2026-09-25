@@ -57,18 +57,18 @@ internal static class OverlayReader
         int before = problems.Count;
         OpKind? op = o.Enum("op", Vocabulary.Operations);
         SourceDocument? doc = TableReader.ResolveSource(o.String("source"), sources, $"{path}.source", where, problems);
-        o.String("location");
+        string? location = o.String("location");
         RawOperation? result = null;
         switch (op)
         {
             case OpKind.Add or OpKind.Amend:
                 JsonElement? row = o.Get("row");
                 RawRow? raw = row is null ? null : TableReader.ReadRawRow(row.Value, $"{path}.row", file, where, layer, doc, problems);
-                result = raw is null ? null : new RawOperation(op.Value, index, raw.Id, raw, null, null);
+                result = raw is null ? null : new RawOperation(op.Value, index, raw.Id, raw, null, null, null);
                 break;
             case OpKind.Delete:
                 string? rowId = o.String("rowId");
-                result = rowId is null ? null : new RawOperation(op.Value, index, rowId, null, null, null);
+                result = rowId is null ? null : new RawOperation(op.Value, index, rowId, null, null, null, null);
                 break;
             case OpKind.AddTable or OpKind.AmendTable:
                 JsonObj? t = o.Obj("table");
@@ -77,12 +77,19 @@ internal static class OverlayReader
                     TableMeta? meta = TableReader.ReadMeta(t, doc, layer, file, problems);
                     List<RawRow>? rows = op == OpKind.AddTable ? TableReader.ReadRows(t, file, layer, doc, problems) : null;
                     t.Done();
-                    result = meta is null || (op == OpKind.AddTable && rows is null) ? null : new RawOperation(op.Value, index, null, null, meta, rows);
+                    result = meta is null || (op == OpKind.AddTable && rows is null) ? null : new RawOperation(op.Value, index, null, null, meta, rows, null);
                 }
 
                 break;
             case OpKind.DeleteTable:
-                result = new RawOperation(op.Value, index, null, null, null, null);
+                result = new RawOperation(op.Value, index, null, null, null, null, null);
+                break;
+            case OpKind.AmendFootnote:
+                JsonElement? note = o.Get("footnote");
+                Footnote? footnote = note is null ? null : TableReader.ReadFootnote(note.Value, $"{path}.footnote", where, [], problems);
+                result = footnote is null || doc is null || location is null
+                    ? null
+                    : new RawOperation(op.Value, index, null, null, null, null, footnote with { Source = TableTyper.SourceOf(doc, location) });
                 break;
         }
 
@@ -97,10 +104,11 @@ internal static class OverlayReader
 /// </summary>
 internal static class Composer
 {
-    public static void Apply(RawOverlay overlay, Dictionary<string, RawTable> tables, ProblemList problems)
+    public static void Apply(RawOverlay overlay, Dictionary<string, RawTable> tables, List<PendingAmendment> pending, ProblemList problems)
     {
         Where where = new(overlay.File, overlay.Table);
         List<RawOperation> tableOps = [.. overlay.Operations.Where(o => o.Op is OpKind.AddTable or OpKind.AmendTable or OpKind.DeleteTable)];
+        List<RawOperation> footnoteOps = [.. overlay.Operations.Where(o => o.Op is OpKind.AmendFootnote)];
         List<RawOperation> rowOps = [.. overlay.Operations.Where(o => o.Op is OpKind.Add or OpKind.Amend or OpKind.Delete)];
 
         foreach (RawOperation extra in tableOps.Skip(1))
@@ -136,6 +144,8 @@ internal static class Composer
                     break;
             }
         }
+
+        ApplyFootnotes(overlay, footnoteOps, tables, pending, problems);
 
         if (rowOps.Count == 0)
         {
@@ -183,6 +193,46 @@ internal static class Composer
                     table.Rows.RemoveAt(index);
                     break;
             }
+        }
+    }
+
+    /// <summary>
+    /// amend-footnote: replaces one footnote of the table below, by id, keeping its rows and the
+    /// rest of its metadata. On a table the layer below does not have — a base layer not filled in
+    /// yet — the amendment is kept as pending (listed on the loaded pack), not an error: an
+    /// incomplete pack, not a broken one. It takes effect the moment the base table is added.
+    /// </summary>
+    private static void ApplyFootnotes(
+        RawOverlay overlay, List<RawOperation> footnoteOps, Dictionary<string, RawTable> tables, List<PendingAmendment> pending, ProblemList problems)
+    {
+        Where where = new(overlay.File, overlay.Table);
+        HashSet<string> targeted = new(StringComparer.Ordinal);
+        foreach (RawOperation op in footnoteOps)
+        {
+            Footnote footnote = op.Footnote!;
+            Where opWhere = where with { Row = $"operation {op.Index}: footnote {footnote.Id}" };
+            if (!targeted.Add(footnote.Id))
+            {
+                problems.Add(opWhere, $"two operations in one overlay amend footnote '{footnote.Id}'.");
+                continue;
+            }
+
+            if (!tables.TryGetValue(overlay.Table, out RawTable? table))
+            {
+                pending.Add(new PendingAmendment(overlay.Table, footnote.Id, overlay.File, footnote.Source!));
+                continue;
+            }
+
+            int index = table.Meta.Footnotes.ToList().FindIndex(f => f.Id == footnote.Id);
+            if (index < 0)
+            {
+                problems.Add(opWhere, $"amend-footnote: table '{overlay.Table}' has no footnote '{footnote.Id}' in the layer below.");
+                continue;
+            }
+
+            List<Footnote> footnotes = [.. table.Meta.Footnotes];
+            footnotes[index] = footnote;
+            table.Meta = table.Meta with { Footnotes = footnotes.ToValueList() };
         }
     }
 }

@@ -122,6 +122,7 @@ public static class CodeCheck
             site.SeismicDesignCategory,
             site.FrostDepth,
             site.BuildingWidth,
+            site.RoofLiveLoadPsf,
             site.Source is { } source ? new InputProvenance(source.Text, source.On) : null);
     }
 
@@ -216,15 +217,18 @@ public static class CodeCheck
                 $"Header {s.Header}, {Count(s.JackStuds, "jack stud")} and {Count(s.KingStuds, "king stud")} each side."
                 + (library.TryFindLumber(s.Header.Nominal, out _) ? string.Empty : $" {s.Header.Nominal} is not in the materials library, so the header is not on the shopping list."),
                 s.Citation.ToString(),
-                Details(s.Citation)),
+                Details(s.Citation),
+                s.Citation.Interpolation?.Summary(s.Citation.Code) ?? string.Empty),
             HeaderResult.OutOfScope o => new CheckWords(
                 $"This opening is beyond what Table {o.Limit.Table} covers: {Limit(o.Explanation)} napkin stops here: get this header engineered.",
                 $"Limit: {o.Limit}",
-                Details(o.Limit)),
+                Details(o.Limit),
+                o.Limit.Interpolation?.Summary(o.Limit.Code) ?? string.Empty),
             HeaderResult.InputMissing m => new CheckWords(
                 $"Not checked: {Named(m.Inputs)} {(m.Inputs.Count == 1 ? "is" : "are")} not entered, and napkin never assumes a value. "
                 + Where(m.Inputs),
                 $"Table {m.Table}, {m.Code}",
+                string.Empty,
                 string.Empty),
             _ => NoDataWords((HeaderResult.NoData)result),
         };
@@ -232,8 +236,8 @@ public static class CodeCheck
 
     private static CheckWords NoDataWords(HeaderResult.NoData n)
         => n.Code is { } code
-            ? new CheckWords($"{n.Explanation} {WhereToAddTables}", code.ToString(), string.Empty)
-            : new CheckWords(n.Explanation, string.Empty, string.Empty);
+            ? new CheckWords($"{n.Explanation} {WhereToAddTables}", code.ToString(), string.Empty, string.Empty)
+            : new CheckWords(n.Explanation, string.Empty, string.Empty, string.Empty);
 
     /// <summary>A short form of a result for a list or the message bar: "(2) 2x10 (Table T row R)".</summary>
     public static string Short(HeaderResult result) => result switch
@@ -304,6 +308,7 @@ public static class CodeCheck
         => string.Join(
             "\n",
             citation.Trace.Select(match => $"How it was found: {match}")
+                .Concat(citation.Interpolation is { } working ? [$"Interpolation: {working}"] : [])
                 .Concat(citation.Footnotes.Select(note => $"Footnote {note.Id}: {note.Text}"))
                 .Append($"Source: {citation.Source.Title}, {citation.Source.Location} ({citation.Source.Url}, retrieved {citation.Source.RetrievedOn:yyyy-MM-dd})"));
 
@@ -350,6 +355,7 @@ public static class CodeCheck
         "seismicDesignCategory" => "the seismic design category",
         "frostDepth" => "the frost depth",
         "buildingWidth" => "the building width",
+        "roofLiveLoad" => "the roof live load",
         _ => name,
     };
 
@@ -360,4 +366,8 @@ public static class CodeCheck
 /// <param name="Headline">What it means, in a sentence or two.</param>
 /// <param name="Citation">The citation line, as the engine gives it (empty when there is none).</param>
 /// <param name="Details">The band trace, footnotes and source, one per line (empty when there is none).</param>
-public sealed record CheckWords(string Headline, string Citation, string Details);
+/// <param name="Interpolation">
+/// For a span interpolated by a footnote: "Interpolated between the 30 psf row (…) and the 50 psf row (…)
+/// (CT 2022 footnote e, p. 145)"; empty otherwise.
+/// </param>
+public sealed record CheckWords(string Headline, string Citation, string Details, string Interpolation);

@@ -16,7 +16,7 @@ public class BuildingFormatTests
     // 42 in (43008), building width 24 ft (294912 = 288 x 1024).
     private const string Filled = """
         {
-          "formatVersion": 6,
+          "formatVersion": 7,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -30,7 +30,7 @@ public class BuildingFormatTests
           "supplies": [],
           "code": { "pack": "us-zz-test", "revision": 2, "mode": "locked", "lockedOn": "2026-09-25" },
           "site": { "groundSnowLoad": 30, "ultimateWindSpeed": 115, "seismicDesignCategory": "B", "frostDepth": 43008,
-                    "buildingWidth": 294912, "source": { "text": "Town office, by phone", "on": "2026-09-24" } }
+                    "buildingWidth": 294912, "roofLiveLoad": 20, "source": { "text": "Town office, by phone", "on": "2026-09-24" } }
         }
         """;
 
@@ -44,7 +44,7 @@ public class BuildingFormatTests
 
         Assert.Equal(new CodeChoice("us-zz-test", 2, CodeMode.Locked, new DateOnly(2026, 9, 25)), sketch.Code);
         Assert.Equal(
-            new SiteValues(30, 115, "B", new Length(43008), new Length(294912), new SiteSource("Town office, by phone", new DateOnly(2026, 9, 24))),
+            new SiteValues(30, 115, "B", new Length(43008), new Length(294912), 20, new SiteSource("Town office, by phone", new DateOnly(2026, 9, 24))),
             sketch.Site);
         Assert.Equal(new WallInputs("test-roof", new Length(24576)), TheWall(sketch).WallInputs);
     }
@@ -97,10 +97,23 @@ public class BuildingFormatTests
     {
         // A version-5 file had no code, site or wall fields; it is refused for its version alone.
         string version5 = Scenes.OneBox
-            .With("\"formatVersion\": 6", "\"formatVersion\": 5")
+            .With("\"formatVersion\": 7", "\"formatVersion\": 5")
             .With("\"wall\": null, ", string.Empty);
 
-        LoadProblem problem = Scenes.RefuseWith(version5, LoadProblemKind.UnsupportedFormatVersion, "format version 5", "format version 6");
+        LoadProblem problem = Scenes.RefuseWith(version5, LoadProblemKind.UnsupportedFormatVersion, "format version 5", "format version 7");
+        Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "PRJ-004")]
+    public void A_version_6_file_is_refused_with_the_unsupported_version_message()
+    {
+        // A version-6 file had no roofLiveLoad in its site; it is refused for its version alone, no converter.
+        string version6 = Scenes.OneBox
+            .With("\"formatVersion\": 7", "\"formatVersion\": 6")
+            .With("\"roofLiveLoad\": null, ", string.Empty);
+
+        LoadProblem problem = Scenes.RefuseWith(version6, LoadProblemKind.UnsupportedFormatVersion, "format version 6", "format version 7");
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }
 
@@ -116,6 +129,7 @@ public class BuildingFormatTests
     [InlineData("\"seismicDesignCategory\": \"B\"", "\"seismicDesignCategory\": \"\"", LoadProblemKind.InvalidValue, "seismicDesignCategory")]
     [InlineData("\"frostDepth\": 43008", "\"frostDepth\": -1", LoadProblemKind.InvalidValue, "frostDepth")]
     [InlineData("\"buildingWidth\": 294912", "\"buildingWidth\": 0", LoadProblemKind.InvalidValue, "buildingWidth")]
+    [InlineData("\"roofLiveLoad\": 20", "\"roofLiveLoad\": -1", LoadProblemKind.InvalidValue, "roofLiveLoad")]
     [InlineData("\"supports\": \"test-roof\", \"studSpacing\": 24576", "\"supports\": null, \"studSpacing\": null", LoadProblemKind.InvalidValue, "wall")]
     [InlineData("\"studSpacing\": 24576", "\"studSpacing\": 0", LoadProblemKind.InvalidValue, "studSpacing")]
     [InlineData("\"supports\": \"test-roof\"", "\"supports\": \"\"", LoadProblemKind.InvalidValue, "supports")]

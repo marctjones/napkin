@@ -835,7 +835,7 @@ internal sealed class SceneBinder
         return (true, new CodeChoice(pack, (int)revision, how, lockedOn));
     }
 
-    /// <summary>The site values (format version 6): every field present, each a value or null for "not entered".</summary>
+    /// <summary>The site values (format version 7): every field present, each a value or null for "not entered".</summary>
     private SiteValues? ReadSite(JsonFields document)
     {
         JsonFields? fields = ReadObject(document, SceneNames.Site);
@@ -850,9 +850,10 @@ internal sealed class SceneBinder
         (bool sdcRead, string? sdc) = ReadTextOrNull(fields, SceneNames.SiteSeismicDesignCategory);
         (bool frostRead, long? frost) = ReadIntegerOrNull(fields, SceneNames.SiteFrostDepth);
         (bool widthRead, long? width) = ReadIntegerOrNull(fields, SceneNames.SiteBuildingWidth);
+        (bool liveRead, long? live) = ReadIntegerOrNull(fields, SceneNames.SiteRoofLiveLoad);
         (bool sourceRead, SiteSource? source) = ReadSiteSource(fields);
         RejectUnknownFields(fields);
-        if (problems.Count > before || !snowRead || !windRead || !sdcRead || !frostRead || !widthRead || !sourceRead)
+        if (problems.Count > before || !snowRead || !windRead || !sdcRead || !frostRead || !widthRead || !liveRead || !sourceRead)
         {
             return null;
         }
@@ -873,6 +874,11 @@ internal sealed class SceneBinder
             Refuse(SceneNames.SiteSeismicDesignCategory, "A seismic design category is text, or null when not entered; this one is empty.");
         }
 
+        if (live is < 0 or > int.MaxValue)
+        {
+            Refuse(SceneNames.SiteRoofLiveLoad, "A roof live load is a whole number of psf, not negative, or null when not entered.");
+        }
+
         if (frost is < 0)
         {
             Refuse(SceneNames.SiteFrostDepth, "A frost depth is not negative, or null when not entered.");
@@ -891,6 +897,7 @@ internal sealed class SceneBinder
                 sdc,
                 frost is { } f ? new Length(f) : null,
                 width is { } w ? new Length(w) : null,
+                (int?)live,
                 source);
     }
 
