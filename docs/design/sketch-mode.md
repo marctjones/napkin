@@ -1,6 +1,8 @@
 # Rough sketching: get it down fast, firm it up later
 
 Status: **DRAFT, awaiting Marc's sign-off.** Written by Fable for issue #159 (the umbrella; the
+
+> **Format-version coordination (2026-09-25):** this note and `renovation-sketches.md` each ask for one scene-format bump (8 to 9). Whichever is built first takes 9; the other takes the next number. Neither should assume 9.
 slices are #170, #172, #174, #176, #178 and #180 — §8 — in milestone **M7 Sketch mode**). Nothing here is implemented, and no slice
 starts until Marc has answered §10 or said "use the recommended defaults".
 

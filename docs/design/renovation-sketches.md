@@ -1,6 +1,8 @@
 # Renovation sketches: existing, new and demolished, rooms, and the area takeoff
 
 Status: **DRAFT — awaiting Marc's sign-off.** Implementation of the slices in §11 (#160–#164) is not
+
+> **Format-version coordination (2026-09-25):** this note and `sketch-mode.md` each ask for one scene-format bump (8 to 9). Whichever is built first takes 9; the other takes the next number. Neither should assume 9.
 authorized until signed off. Milestone **M8 Renovation**.
 
 Design note written by Fable per [`PLAN.md`](../../PLAN.md), for Marc's ask (2026-09-25): napkin
