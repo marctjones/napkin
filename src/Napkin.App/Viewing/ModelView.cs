@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Napkin.App.Editing;
+using Napkin.App.Settings;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
 
@@ -97,6 +98,9 @@ public sealed class ModelView : Control
 
     Camera _camera = Camera.Isometric() with { Projection = DefaultProjection };
     CameraProjection _projection = DefaultProjection;
+    StandardView? _locked;
+    Camera _freeCamera = Camera.Isometric() with { Projection = DefaultProjection };
+    readonly Dictionary<StandardView, Camera> _viewCameras = [];
     bool _fitPending = true;
     DesignEditor? _editor;
     ModelScene? _scene;
@@ -138,8 +142,14 @@ public sealed class ModelView : Control
     /// <summary>Raised when what the view holds to place changes: picked up, put down (#74).</summary>
     public event EventHandler? PlacementChanged;
 
-    /// <summary>Raised when a person asks to go back to the plan.</summary>
-    public event EventHandler? PlanRequested;
+    /// <summary>
+    /// Raised by <c>V</c>: from the 3D view, back to the 2D view last shown; from a standard view, to 3D.
+    /// The window owns the views and decides.
+    /// </summary>
+    public event EventHandler? OtherViewRequested;
+
+    /// <summary>Raised by an unmodified number key 1–7 (docs/design/standard-views.md §4.2): show that view.</summary>
+    public event EventHandler<DesignView>? ViewRequested;
 
     /// <summary>
     /// Raised for a keystroke that acts on the selection the same way in both views — the window
@@ -205,7 +215,71 @@ public sealed class ModelView : Control
         set
         {
             _projection = value;
-            Camera = _camera with { Projection = value };
+            if (_locked is null)
+            {
+                Camera = _camera with { Projection = value };
+            }
+            else
+            {
+                // A standard view is orthographic, always: the choice waits for the 3D view.
+                _freeCamera = _freeCamera with { Projection = value };
+            }
+        }
+    }
+
+    /// <summary>
+    /// The standard view the camera is locked to (docs/design/standard-views.md §2.1), or null for the
+    /// free 3D view. Locked, the camera looks along the view, orthographic; it pans and zooms but does
+    /// not orbit, and no gesture changes the model — the gestures are gated, not removed (§6), so
+    /// that editing in an elevation is ungating them. Selection and hover work as in 3D. Each view
+    /// keeps its own centre and scale until another design is opened; the first visit fits (§5.1),
+    /// and the 3D view's camera is where it was left when the lock comes off.
+    /// </summary>
+    public StandardView? Locked
+    {
+        get => _locked;
+        set
+        {
+            if (_locked == value)
+            {
+                return;
+            }
+
+            if (_locked is { } was)
+            {
+                _viewCameras[was] = _camera;
+            }
+            else
+            {
+                _freeCamera = _camera;
+            }
+
+            _locked = value;
+            _gesture = Gesture.None;
+            _pressedOnPart = null;
+            _snap = null;
+            _typeable = null;
+            _typed.Clear();
+            Disarm();
+
+            if (value is { } view)
+            {
+                if (_viewCameras.TryGetValue(view, out Camera kept))
+                {
+                    Camera = kept.WithViewport(_camera.Viewport);
+                }
+                else
+                {
+                    Camera = StandardViews.CameraFor(view, _camera);
+                    ZoomToFit();
+                }
+            }
+            else
+            {
+                Camera = _freeCamera.WithViewport(_camera.Viewport) with { Projection = _projection };
+            }
+
+            InvalidateVisual();
         }
     }
 
@@ -328,6 +402,11 @@ public sealed class ModelView : Control
     /// <returns><see langword="false"/> when it cannot be placed — a fastener.</returns>
     public bool Arm(StockItem? item)
     {
+        if (_locked is not null && item is not null)
+        {
+            return false;
+        }
+
         bool armed = _placement.Arm(item);
         AfterPlacementChange();
         return armed;
@@ -336,6 +415,11 @@ public sealed class ModelView : Control
     /// <summary>Picks up a plain board to place: the rectangle tool, in the 3D view.</summary>
     public void ArmPlainBoard()
     {
+        if (_locked is not null)
+        {
+            return;
+        }
+
         _placement.ArmPlainBoard();
         AfterPlacementChange();
     }
@@ -416,7 +500,7 @@ public sealed class ModelView : Control
     /// several parts — arrows from the middle of them all, which move them together (#87).
     /// </summary>
     public IReadOnlyList<ModelHandle> Handles =>
-        _editor is not { } editor ? []
+        _editor is not { } editor || _locked is not null ? []
         : editor.OnlySelectedBox is { } box ? ModelHandles.Of(box, _camera)
         : GroupOf(editor) is { } group ? ModelHandles.Arrows(group, _camera)
         : [];
@@ -459,6 +543,11 @@ public sealed class ModelView : Control
     /// </summary>
     public void LookAlong(Axis axis)
     {
+        if (_locked is not null)
+        {
+            return;
+        }
+
         Camera = ViewSnap.LookAlong(_camera, axis);
         ZoomToFit();
     }
@@ -471,6 +560,11 @@ public sealed class ModelView : Control
     /// </summary>
     public void NextSurface()
     {
+        if (_locked is not null)
+        {
+            return;
+        }
+
         Box[] boxes = _editor is { } editor ? SelectionCommands.SelectedBoxes(editor) : [];
         EntityId[] ids = [.. boxes.Select(selected => selected.Id)];
         if (!ids.SequenceEqual(_surfaceSelection))
@@ -534,6 +628,12 @@ public sealed class ModelView : Control
     /// <summary>Back to the isometric view, framing the drawing.</summary>
     public void ResetView()
     {
+        if (_locked is not null)
+        {
+            ZoomToFit();
+            return;
+        }
+
         Camera = Camera.Isometric(_camera.Viewport) with { Projection = _projection };
         ZoomToFit();
     }
@@ -545,8 +645,17 @@ public sealed class ModelView : Control
     public void ZoomOut() => Camera = _camera.ZoomAtCenter(1 / ZoomPerKeyPress);
 
     /// <summary>Turns the view by some degrees of azimuth and elevation, as the arrow keys do.</summary>
-    public void OrbitBy(double azimuthDegrees, double elevationDegrees) =>
-        Camera = _camera.OrbitBy(azimuthDegrees, elevationDegrees);
+    public void OrbitBy(double azimuthDegrees, double elevationDegrees)
+    {
+        if (_locked is null)
+        {
+            Camera = _camera.OrbitBy(azimuthDegrees, elevationDegrees);
+        }
+    }
+
+    /// <summary>Pans by a fraction of the view, as the plan's arrow keys do: positive is right and up.</summary>
+    public void PanByFraction(double fractionX, double fractionY) =>
+        Camera = _camera.Pan(new Vector(-fractionX * _camera.Viewport.Width, fractionY * _camera.Viewport.Height));
 
     /// <summary>
     /// Applies a view keystroke, wherever it was received.
@@ -556,6 +665,27 @@ public sealed class ModelView : Control
     {
         bool command = modifiers.HasFlag(KeyModifiers.Control) || modifiers.HasFlag(KeyModifiers.Meta);
         double step = OrbitDegreesPerKeyPress * (modifiers.HasFlag(KeyModifiers.Shift) ? 3 : 1);
+
+        // A number key picks a view (§4.2) — unless a length is being typed, which it is part of.
+        if (StandardViews.ForKey(key, modifiers) is { } asked)
+        {
+            if (_typeable is not null || _typed.Length > 0)
+            {
+                return false;
+            }
+
+            ViewRequested?.Invoke(this, asked);
+            return true;
+        }
+
+        if (_locked is not null && !command && key is Key.Left or Key.Right or Key.Up or Key.Down)
+        {
+            double fraction = modifiers.HasFlag(KeyModifiers.Shift) ? CanvasView.FastPanFractionPerKeyPress : CanvasView.PanFractionPerKeyPress;
+            PanByFraction(
+                key switch { Key.Left => -fraction, Key.Right => fraction, _ => 0 },
+                key switch { Key.Up => fraction, Key.Down => -fraction, _ => 0 });
+            return true;
+        }
 
         switch (key)
         {
@@ -568,7 +698,12 @@ public sealed class ModelView : Control
                 return true;
 
             case Key.O when !command:
-                Projection = _projection == CameraProjection.Perspective ? CameraProjection.Orthographic : CameraProjection.Perspective;
+                // Inert in a standard view, which is orthographic by definition (§2.1).
+                if (_locked is null)
+                {
+                    Projection = _projection == CameraProjection.Perspective ? CameraProjection.Orthographic : CameraProjection.Perspective;
+                }
+
                 return true;
 
             case Key.Left:
@@ -687,6 +822,14 @@ public sealed class ModelView : Control
 
         if (!properties.IsLeftButtonPressed || _editor is not { } editor)
         {
+            return;
+        }
+
+        // A standard view is read-only (§5.4): a drag anywhere pans, and a click — a press that did
+        // not move — picks, as the release of a pan always has. The edits below are gated, not gone.
+        if (_locked is not null)
+        {
+            Begin(e.Pointer, Gesture.Pan);
             return;
         }
 
@@ -1063,7 +1206,7 @@ public sealed class ModelView : Control
                 return true;
 
             case Key.V:
-                PlanRequested?.Invoke(this, EventArgs.Empty);
+                OtherViewRequested?.Invoke(this, EventArgs.Empty);
                 return true;
 
             case Key.G:
@@ -1102,7 +1245,7 @@ public sealed class ModelView : Control
                 SelectionCommandRequested?.Invoke(this, modifiers.HasFlag(KeyModifiers.Shift) ? SelectionCommand.MirrorNorthSouth : SelectionCommand.MirrorEastWest);
                 return true;
 
-            case Key.C:
+            case Key.C when _locked is null:
                 SelectionCommandRequested?.Invoke(this, SelectionCommand.Shape);
                 return true;
 
@@ -1591,7 +1734,9 @@ public sealed class ModelView : Control
     void OnEditorDesignOpened(object? sender, EventArgs e)
     {
         // A new design is seen from the default direction, framed, the next time there is room to.
-        _camera = Camera.Isometric(_camera.Viewport) with { Projection = _projection };
+        _freeCamera = Camera.Isometric(_camera.Viewport) with { Projection = _projection };
+        _viewCameras.Clear();
+        _camera = _locked is { } view ? StandardViews.CameraFor(view, _freeCamera) : _freeCamera;
         _fitPending = true;
         if (IsVisible)
         {
@@ -1651,7 +1796,8 @@ public sealed class ModelView : Control
         }
 
         Sketch sketch = editor.Sketch;
-        if (_showGrid)
+        // The ground grid is edge-on in an elevation; a standard view's own grid is the rulers' slice.
+        if (_showGrid && _locked is null)
         {
             DrawFloor(context, palette, sketch);
         }
@@ -1763,7 +1909,7 @@ public sealed class ModelView : Control
             figure.EndFigure(isClosed: true);
         }
 
-        context.DrawGeometry(new SolidColorBrush(Tone(palette, style, polygon.Normal)), null, face);
+        context.DrawGeometry(new SolidColorBrush(_locked is null ? Tone(palette, style, polygon.Normal) : Flat(palette, style)), null, face);
 
         Pen pen = new(new SolidColorBrush(style.Stroke), Math.Min(style.StrokeThickness, 1.2))
         {
@@ -1795,6 +1941,23 @@ public sealed class ModelView : Control
                 context.DrawLine(pen, _camera.Project(polygon.Points[i]), _camera.Project(polygon.Points[(i + 1) % count]));
             }
         }
+    }
+
+    /// <summary>
+    /// A standard view's fill (§2.2): the layer's fill at its own alpha over the background, as the plan
+    /// lays it, made opaque so the painter's order hides what is behind — no lift, no shade, since
+    /// every face drawn in an axis view faces the eye.
+    /// </summary>
+    internal static Color Flat(CanvasPalette palette, EntityStyle style)
+    {
+        double alpha = style.Fill.A / 255.0;
+        Color background = palette.Background;
+        return Color.FromRgb(
+            Channel((style.Fill.R * alpha) + (background.R * (1 - alpha))),
+            Channel((style.Fill.G * alpha) + (background.G * (1 - alpha))),
+            Channel((style.Fill.B * alpha) + (background.B * (1 - alpha))));
+
+        static byte Channel(double value) => (byte)Math.Clamp(Math.Round(value), 0, 255);
     }
 
     /// <summary>

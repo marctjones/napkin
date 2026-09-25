@@ -188,16 +188,50 @@
             <MenuItem Name="SamplesMenu" Header="Sa_mples" />
 
             <MenuItem Name="ViewMenu" Header="_View">
-                <!-- The two views of one drawing: the plan, and the 3D view (assembly-model §8.1).
-                     Same document, same selection, same undo; V switches between them. -->
-                <MenuItem Name="PlanViewMenuItem"
-                          Header="_Plan"
-                          Click="OnPlanViewClicked"
-                          ToolTip.Tip="The drawing from above, where parts are drawn, placed from stock and shaped." />
-                <MenuItem Name="ModelViewMenuItem"
-                          Header="_3D"
-                          Click="OnModelViewClicked"
-                          ToolTip.Tip="The drawing in three dimensions: turn parts, and move and resize them along any axis." />
+                <!-- The views of one drawing (docs/design/standard-views.md §4.2): the six standard
+                     views and 3D, on the keys 1-7. Top is the plan, where parts are drawn; the other
+                     five are read-only for now. Same document, same selection, same undo; V goes
+                     from a 2D view to 3D and back to the 2D view last shown. -->
+                <!-- In a submenu, as CAD programs keep their standard views: the View menu is already
+                     as tall as a small window. The keys are the quick way in. -->
+                <MenuItem Name="StandardViewsMenu" Header="Standard _views">
+                    <MenuItem Name="TopViewMenuItem"
+                              Header="_Top (plan)"
+                              Click="OnViewMenuClicked"
+                              ToolTip.Tip="The drawing from above, where parts are drawn, placed from stock and shaped (1)." />
+                    <MenuItem Name="BottomViewMenuItem"
+                              Header="_Bottom"
+                              IsEnabled="False"
+                              Click="OnViewMenuClicked"
+                              ToolTip.ShowOnDisabled="True"
+                              ToolTip.Tip="The drawing from below, south up (2). Not built yet." />
+                    <MenuItem Name="FrontViewMenuItem"
+                              Header="_Front"
+                              Click="OnViewMenuClicked"
+                              ToolTip.Tip="The drawing from the south, flat and to scale: read-only for now (3)." />
+                    <MenuItem Name="BackViewMenuItem"
+                              Header="B_ack"
+                              IsEnabled="False"
+                              Click="OnViewMenuClicked"
+                              ToolTip.ShowOnDisabled="True"
+                              ToolTip.Tip="The drawing from the north (4). Not built yet." />
+                    <MenuItem Name="LeftViewMenuItem"
+                              Header="_Left"
+                              IsEnabled="False"
+                              Click="OnViewMenuClicked"
+                              ToolTip.ShowOnDisabled="True"
+                              ToolTip.Tip="The drawing from the west (5). Not built yet." />
+                    <MenuItem Name="RightViewMenuItem"
+                              Header="R_ight"
+                              IsEnabled="False"
+                              Click="OnViewMenuClicked"
+                              ToolTip.ShowOnDisabled="True"
+                              ToolTip.Tip="The drawing from the east (6). Not built yet." />
+                    <MenuItem Name="ModelViewMenuItem"
+                              Header="_3D"
+                              Click="OnViewMenuClicked"
+                              ToolTip.Tip="The drawing in three dimensions: turn parts, and move and resize them along any axis (7)." />
+                </MenuItem>
                 <Separator />
                 <MenuItem Name="LookXMenuItem" Header="Look along _X" Click="OnLookXClicked"
                           ToolTip.Tip="3D view: from the east; again for the west." />
@@ -320,15 +354,64 @@
                     </Grid>
                 </Border>
 
-                <Grid ColumnDefinitions="*,Auto,Auto" Margin="12,5">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="12,5">
                     <TextBlock Name="DesignText"
                                Grid.Column="0"
                                FontSize="12"
                                FontFamily="{DynamicResource SeFontMono}"
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
+                    <!-- The view switcher (standard-views §4.2): seven chips, one pressed, each with its
+                         key. In the status bar, beside the view's name, rather than floating over the
+                         drawing: the corners of the drawing are the toolbar's, the side panels' and the
+                         3D view's snap bar and axes, and a chip over the paper takes clicks meant for
+                         it. Not focusable: a click leaves the keyboard with the drawing. -->
+                    <Border Name="ViewChips"
+                            Grid.Column="1"
+                            Margin="16,0,0,0"
+                            Padding="1"
+                            CornerRadius="3"
+                            BorderThickness="1"
+                            VerticalAlignment="Center">
+                        <Border.Styles>
+                            <Style Selector="ToggleButton">
+                                <Setter Property="Focusable" Value="False" />
+                                <Setter Property="Padding" Value="5,0" />
+                                <Setter Property="FontSize" Value="10" />
+                                <Setter Property="MinWidth" Value="0" />
+                                <Setter Property="MinHeight" Value="0" />
+                                <Setter Property="Height" Value="16" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="ToolTip.ShowOnDisabled" Value="True" />
+                            </Style>
+                        </Border.Styles>
+                        <StackPanel Orientation="Horizontal" Spacing="1">
+                            <ToggleButton Name="TopViewChip" Content="Top" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Top" ToolTip.Tip="Top: the plan, where parts are drawn (1)" />
+                            <ToggleButton Name="BottomViewChip" Content="Bottom" Click="OnViewChipClicked" IsEnabled="False"
+                                          AutomationProperties.Name="View: Bottom" ToolTip.Tip="Bottom: from below, south up (2). Not built yet." />
+                            <ToggleButton Name="FrontViewChip" Content="Front" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Front" ToolTip.Tip="Front: from the south, read-only for now (3)" />
+                            <ToggleButton Name="BackViewChip" Content="Back" Click="OnViewChipClicked" IsEnabled="False"
+                                          AutomationProperties.Name="View: Back" ToolTip.Tip="Back: from the north (4). Not built yet." />
+                            <ToggleButton Name="LeftViewChip" Content="Left" Click="OnViewChipClicked" IsEnabled="False"
+                                          AutomationProperties.Name="View: Left" ToolTip.Tip="Left: from the west (5). Not built yet." />
+                            <ToggleButton Name="RightViewChip" Content="Right" Click="OnViewChipClicked" IsEnabled="False"
+                                          AutomationProperties.Name="View: Right" ToolTip.Tip="Right: from the east (6). Not built yet." />
+                            <ToggleButton Name="ModelViewChip" Content="3D" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: 3D" ToolTip.Tip="3D: turn, move and resize parts along any axis (7)" />
+                        </StackPanel>
+                    </Border>
+                    <!-- Which view is showing (standard-views §4.2): Top, Front, 3D, "3D, perspective". -->
+                    <TextBlock Name="ViewText"
+                               Grid.Column="2"
+                               FontSize="12"
+                               FontFamily="{DynamicResource SeFontMono}"
+                               Margin="16,0,0,0"
+                               VerticalAlignment="Center"
+                               AutomationProperties.Name="View" />
                     <TextBlock Name="CursorText"
-                               Grid.Column="1"
+                               Grid.Column="3"
                                FontSize="12"
                                FontFamily="{DynamicResource SeFontMono}"
                                Margin="16,0"
@@ -336,7 +419,7 @@
                                TextAlignment="Right"
                                VerticalAlignment="Center" />
                     <TextBlock Name="ZoomText"
-                               Grid.Column="2"
+                               Grid.Column="4"
                                FontSize="12"
                                FontFamily="{DynamicResource SeFontMono}"
                                MinWidth="86"
@@ -608,6 +691,7 @@
                     </ToggleButton>
                     <ToggleButton Name="RectangleToolButton"
                                   Padding="5"
+                                  ToolTip.ShowOnDisabled="True"
                                   Click="OnRectangleToolClicked"
                                   AutomationProperties.Name="Rectangle"
                                   ToolTip.Tip="Rectangle: drag out a new part (R)">
@@ -778,10 +862,6 @@
                   Margin="10"
                   RowDefinitions="Auto,*">
 
-                <!-- What the drawing says about itself, in words. On demand (#62): a small count
-                     badge until a part that has relationships is selected or under the pointer,
-                     and only then the sentences themselves — each with a button that removes it,
-                     and resting the pointer on one outlines the parts it holds (#77). -->
                 <Border Name="RelationshipsPanel"
                         Grid.Row="0"
                         IsVisible="False"

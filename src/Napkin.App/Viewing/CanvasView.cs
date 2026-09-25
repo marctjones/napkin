@@ -81,10 +81,10 @@ public sealed class CanvasView : Control
     const double PanPixelsPerWheelNotch = 60;
 
     /// <summary>How much of the viewport an arrow key pans across.</summary>
-    const double PanFractionPerKeyPress = 0.1;
+    internal const double PanFractionPerKeyPress = 0.1;
 
     /// <summary>How much of the viewport an arrow key pans across with Shift held.</summary>
-    const double FastPanFractionPerKeyPress = 0.5;
+    internal const double FastPanFractionPerKeyPress = 0.5;
 
     /// <summary>Text size for dimension labels and part names, in pixels.</summary>
     const double LabelTextSize = 12;
@@ -183,6 +183,9 @@ public sealed class CanvasView : Control
     /// back. The window owns both views and decides which one is showing (assembly-model &#xA7;8.1).
     /// </summary>
     public event EventHandler? ModelViewRequested;
+
+    /// <summary>Raised by an unmodified number key 1–7 (docs/design/standard-views.md §4.2): show that view.</summary>
+    public event EventHandler<Napkin.App.Settings.DesignView>? ViewRequested;
 
     /// <summary>
     /// Raised when the set of parts on the canvas changes — one drawn, one deleted, a different
@@ -559,9 +562,20 @@ public sealed class CanvasView : Control
             ? FastPanFractionPerKeyPress
             : PanFractionPerKeyPress;
 
+        if (StandardViews.ForKey(key, modifiers) is { } asked)
+        {
+            ViewRequested?.Invoke(this, asked);
+            return true;
+        }
+
         switch (key)
         {
             case Key.D0 or Key.NumPad0 when command:
+                ZoomToFit();
+                return true;
+
+            // Home fits in every view (standard-views §4.2), as it does in the 3D view.
+            case Key.Home when !command:
                 ZoomToFit();
                 return true;
 

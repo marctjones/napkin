@@ -85,7 +85,7 @@ public sealed class SettingsStoreTests : IDisposable
     [InlineData("{ not json")]
     [InlineData("")]
     [InlineData("null")]
-    [InlineData("{\"Version\":1,\"Projection\":\"Sideways\"}")]
+    [InlineData("{\"Version\":2,\"Projection\":\"Sideways\"}")]
     [InlineData("{\"Version\":99,\"ShowRulers\":true}")]
     public void A_corrupt_or_unknown_version_file_gives_the_defaults_and_a_notice(string content)
     {
@@ -135,11 +135,12 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Theory]
-    [InlineData(OpenDesignsIn.Plan, DesignView.Model, DesignView.Plan)]
-    [InlineData(OpenDesignsIn.Plan, DesignView.Plan, DesignView.Plan)]
-    [InlineData(OpenDesignsIn.Model, DesignView.Plan, DesignView.Model)]
-    [InlineData(OpenDesignsIn.Model, DesignView.Model, DesignView.Model)]
-    [InlineData(OpenDesignsIn.LastUsed, DesignView.Plan, DesignView.Plan)]
+    [InlineData(OpenDesignsIn.Plan, DesignView.Model, DesignView.Top)]
+    [InlineData(OpenDesignsIn.Plan, DesignView.Front, DesignView.Top)]
+    [InlineData(OpenDesignsIn.Model, DesignView.Top, DesignView.Model)]
+    [InlineData(OpenDesignsIn.Model, DesignView.Left, DesignView.Model)]
+    [InlineData(OpenDesignsIn.LastUsed, DesignView.Top, DesignView.Top)]
+    [InlineData(OpenDesignsIn.LastUsed, DesignView.Front, DesignView.Front)]
     [InlineData(OpenDesignsIn.LastUsed, DesignView.Model, DesignView.Model)]
     public void A_new_design_opens_in_the_chosen_view_or_the_last_one_used(OpenDesignsIn choice, DesignView last, DesignView expected)
     {
@@ -152,16 +153,42 @@ public sealed class SettingsStoreTests : IDisposable
     {
         var defaults = new UserSettings();
         Assert.Equal(OpenDesignsIn.LastUsed, defaults.OpenIn);
-        Assert.Equal(DesignView.Plan, defaults.ViewForNewDesign());
+        Assert.Equal(DesignView.Top, defaults.ViewForNewDesign());
+    }
+
+    [Theory]
+    [Trait("Feature", "VIEW-004")]
+    [InlineData(DesignView.Top)]
+    [InlineData(DesignView.Bottom)]
+    [InlineData(DesignView.Front)]
+    [InlineData(DesignView.Back)]
+    [InlineData(DesignView.Left)]
+    [InlineData(DesignView.Right)]
+    [InlineData(DesignView.Model)]
+    public void Every_view_is_kept_as_the_last_view(DesignView view)
+    {
+        new SettingsStore(FilePath).Update(s => s with { OpenIn = OpenDesignsIn.Model, LastView = view });
+
+        var again = new SettingsStore(FilePath);
+        Assert.Null(again.Notice);
+        Assert.Equal(2, again.Current.Version);
+        Assert.Equal(OpenDesignsIn.Model, again.Current.OpenIn);
+        Assert.Equal(view, again.Current.LastView);
+        Assert.Contains($"\"LastView\": \"{view}\"", File.ReadAllText(FilePath), StringComparison.Ordinal);
     }
 
     [Fact]
-    public void The_view_choices_and_the_last_view_are_kept()
+    [Trait("Feature", "VIEW-004")]
+    public void A_version_1_file_from_before_the_standard_views_is_refused_and_the_defaults_apply()
     {
-        new SettingsStore(FilePath).Update(s => s with { OpenIn = OpenDesignsIn.Model, LastView = DesignView.Model });
+        // Exactly what a version-1 napkin wrote: the two-valued view, "Plan".
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(FilePath, "{\"Version\":1,\"ShowRulers\":true,\"OpenIn\":\"Model\",\"LastView\":\"Plan\"}");
 
-        var again = new SettingsStore(FilePath);
-        Assert.Equal(OpenDesignsIn.Model, again.Current.OpenIn);
-        Assert.Equal(DesignView.Model, again.Current.LastView);
+        var store = new SettingsStore(FilePath);
+
+        Assert.Equal(new UserSettings(), store.Current);
+        Assert.Equal(DesignView.Top, store.Current.LastView);
+        Assert.Contains("version 1", store.Notice, StringComparison.Ordinal);
     }
 }

@@ -80,7 +80,22 @@ public sealed class SettingsStore
 
         try
         {
-            UserSettings? read = JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(_path), Options);
+            string text = File.ReadAllText(_path);
+
+            // The version is looked at before anything else: an older file may hold values this
+            // napkin no longer has (version 1's "Plan" view), and it should be told it is old, not broken.
+            using (JsonDocument document = JsonDocument.Parse(text))
+            {
+                if (document.RootElement.ValueKind == JsonValueKind.Object
+                    && document.RootElement.TryGetProperty(nameof(UserSettings.Version), out JsonElement version)
+                    && version.TryGetInt32(out int number) && number != UserSettings.CurrentVersion)
+                {
+                    notice = $"Settings file is version {number}, which this napkin does not read; using defaults.";
+                    return new UserSettings();
+                }
+            }
+
+            UserSettings? read = JsonSerializer.Deserialize<UserSettings>(text, Options);
             if (read is null)
             {
                 notice = "Settings file was empty; using defaults.";

@@ -110,12 +110,12 @@ public sealed class SketchStrokeTests : IDisposable
         Directory.CreateDirectory(_dir);
         string file = Path.Combine(_dir, SettingsStore.FileName);
 
-        File.WriteAllText(file, "{\"Version\":1,\"ShowRulers\":true}");
+        File.WriteAllText(file, "{\"Version\":2,\"ShowRulers\":true}");
         SettingsStore old = new(file);
         Assert.True(old.Current.ShowRulers);
         Assert.Equal(new SketchLook(SketchPaper.Napkin, SketchLine.Carpenter), new SketchLook(old.Current.SketchPaper, old.Current.SketchLine));
 
-        File.WriteAllText(file, "{\"Version\":1,\"SketchPaper\":\"Parchment\"}");
+        File.WriteAllText(file, "{\"Version\":2,\"SketchPaper\":\"Parchment\"}");
         SettingsStore unknown = new(file);
         Assert.Equal(SketchPaper.Napkin, unknown.Current.SketchPaper);
         Assert.NotNull(unknown.Notice);

@@ -1188,6 +1188,78 @@
       "milestone": "M3",
       "issue": 138,
       "kind": "workflow"
+    },
+    {
+      "id": "VIEW-001",
+      "area": "ui",
+      "title": "The six standard views look along exact axes",
+      "acceptance": "StandardViews.Axes gives standard-views §1.1's table exactly for Top, Bottom, Front, Back, Left and Right, right-handed (Right x Up = TowardViewer); CameraFor's camera has exactly those vectors (no 1e-16 from cos 90), is orthographic, keeps centre and scale, and looks the same way as the matching 3D view-snap direction.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-002",
+      "area": "ui",
+      "title": "Front of the l-bracket and the coffee table, measured",
+      "acceptance": "In Front the l-bracket spans 7 1/2 x 6; the lug is left of the boss, 4 1/2 in from its left edge and 3 1/4 in higher; the nub is leftmost and the tab rightmost. The coffee table spans 48 x 17 and each of its four legs is exactly 16 1/4 tall.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-003",
+      "area": "ui",
+      "title": "Keys 1-7 name the views; modified digits do not",
+      "acceptance": "Unmodified 1-7 on the top row or the number pad give Top, Bottom, Front, Back, Left, Right and 3D; Cmd/Ctrl/Shift+digit, 0, 8 and other keys give none; standard views and design views map one to one by name.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "unit"
+    },
+    {
+      "id": "VIEW-004",
+      "area": "ui",
+      "title": "Settings version 2 keeps every view; version 1 is refused",
+      "acceptance": "Every one of the seven DesignView values round-trips as LastView through settings.json version 2; a version-1 file (LastView \"Plan\") is refused with a notice naming its version and the defaults apply (Top).",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "unit"
+    },
+    {
+      "id": "GUI-VIEW-08",
+      "area": "ui",
+      "title": "Switch between Top, Front and 3D by key, chip and menu",
+      "acceptance": "Open the l-bracket; 3 shows Front (orthographic, lug up-left of the boss), 7 shows 3D, V returns to Front and V twice lands back; the Top, 3D and Front chips and View > Standard views > Front do the same; after each the status text, the pressed chip and the menu tick agree; 4 (not built yet) and O leave Front as it is.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-09",
+      "area": "ui",
+      "title": "Front is read-only: pan, zoom and select",
+      "acceptance": "In Front the rectangle tool is disabled with a tooltip and the turn and snap buttons are hidden; a click selects the lug with no handles; a drag on it pans and changes nothing; the left arrow pans; Home fits; Delete removes the selected lug and Undo brings it back, still in Front.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-10",
+      "area": "ui",
+      "title": "A digit typed as a length is not a view",
+      "acceptance": "After dragging an arrow in 3D, 3 goes into the typed length (the view stays 3D) and Enter moves the part exactly 3 in; with no length pending, 3 shows Front.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SET-07",
+      "area": "ui",
+      "title": "The last view is remembered; 2D plan opens Top",
+      "acceptance": "With Open designs in > Last used, press 3; the next design opens in Front, and so does a new window on the same settings; choose Open designs in > 2D plan and the next design opens on Top.",
+      "milestone": "M2",
+      "issue": 107,
+      "kind": "workflow"
     }
   ]
 }

@@ -118,7 +118,7 @@ public partial class MainWindow : Window
         ApplySettings();
 
         // The window opens on the plan; View says so the way Samples marks the open sample.
-        PlanViewMenuItem.Icon = new TextBlock { Text = "✓" };
+        ShowViewChrome();
 
         DrawingCanvas.ViewChanged += (_, _) =>
         {
@@ -132,7 +132,8 @@ public partial class MainWindow : Window
             OpenDimensionEditor(request.Box, request.Axis);
         DrawingCanvas.ShapeRequested += (_, box) => OpenWorkshop(box);
         WireJoinery();
-        DrawingCanvas.ModelViewRequested += (_, _) => ShowModelView();
+        DrawingCanvas.ModelViewRequested += (_, _) => ShowView(DesignView.Model);
+        DrawingCanvas.ViewRequested += (_, view) => ShowView(view);
 
         // The 3D view: the same editor, so the same drawing, selection and undo (assembly-model
         // §8.1). What it asks of the selection is done by the plan canvas's own commands, so there
@@ -141,7 +142,8 @@ public partial class MainWindow : Window
         ModelDrawing.ViewChanged += (_, _) => UpdateZoomReadout();
         ModelDrawing.HoveredPartChanged += (_, _) => UpdateRelationships();
         ModelDrawing.PointerModelPositionChanged += (_, point) => UpdateCursorReadout(point);
-        ModelDrawing.PlanRequested += (_, _) => ShowPlanView();
+        ModelDrawing.OtherViewRequested += (_, _) => ShowView(CurrentView == DesignView.Model ? _last2DView : DesignView.Model);
+        ModelDrawing.ViewRequested += (_, view) => ShowView(view);
         ModelDrawing.ToggleGridRequested += (_, _) => ToggleGrid();
         DrawingCanvas.ToggleGridRequested += (_, _) => ToggleGrid();
         ModelDrawing.PlacementChanged += (_, _) => UpdateToolButtons();
@@ -440,14 +442,7 @@ public partial class MainWindow : Window
         }
 
         // The new design starts in the view the person chose for new designs (or was last in).
-        if (Settings.Current.ViewForNewDesign() == DesignView.Model)
-        {
-            ShowModelView();
-        }
-        else
-        {
-            ShowPlanView();
-        }
+        ShowView(Settings.Current.ViewForNewDesign());
 
         return true;
     }
@@ -828,14 +823,50 @@ public partial class MainWindow : Window
     /// <summary>The 3D view.</summary>
     public ModelView Model => ModelDrawing;
 
-    /// <summary>Whether the window is showing the 3D view rather than the plan.</summary>
+    /// <summary>
+    /// Whether the 3D view's control is on screen rather than the plan: in the free 3D view or in a
+    /// locked standard view (Bottom–Right), which is the same control with its camera locked.
+    /// </summary>
     public bool IsShowingModel => ModelDrawing.IsVisible;
 
-    /// <summary>The <em>View &#x2192; Plan</em> item.</summary>
-    public MenuItem PlanViewMenuEntry => PlanViewMenuItem;
+    DesignView _view = DesignView.Top;
+    DesignView _last2DView = DesignView.Top;
 
-    /// <summary>The <em>View &#x2192; 3D</em> item.</summary>
-    public MenuItem ModelViewMenuEntry => ModelViewMenuItem;
+    /// <summary>The view on screen (docs/design/standard-views.md §4.1): one of the six, or 3D.</summary>
+    public DesignView CurrentView => _view;
+
+    /// <summary>Whether a read-only standard view is showing: Bottom, Front, Back, Left or Right.</summary>
+    public bool IsShowingStandardView => ModelDrawing.Locked is not null && IsShowingModel;
+
+    /// <summary>The views this build offers (slice A of standard-views §8): Top, Front and 3D.</summary>
+    public static bool IsViewOffered(DesignView view) => view is DesignView.Top or DesignView.Front or DesignView.Model;
+
+    /// <summary>The <em>View</em> menu's item for a view.</summary>
+    public MenuItem ViewMenuEntry(DesignView view) => view switch
+    {
+        DesignView.Top => TopViewMenuItem,
+        DesignView.Bottom => BottomViewMenuItem,
+        DesignView.Front => FrontViewMenuItem,
+        DesignView.Back => BackViewMenuItem,
+        DesignView.Left => LeftViewMenuItem,
+        DesignView.Right => RightViewMenuItem,
+        _ => ModelViewMenuItem,
+    };
+
+    /// <summary>The view switcher's chip for a view (automation name "View: Front").</summary>
+    public ToggleButton ViewChip(DesignView view) => view switch
+    {
+        DesignView.Top => TopViewChip,
+        DesignView.Bottom => BottomViewChip,
+        DesignView.Front => FrontViewChip,
+        DesignView.Back => BackViewChip,
+        DesignView.Left => LeftViewChip,
+        DesignView.Right => RightViewChip,
+        _ => ModelViewChip,
+    };
+
+    /// <summary>What the status bar says the view is: "Top", "Front", "3D" or "3D, perspective".</summary>
+    public string ViewReadout => ViewText.Text ?? string.Empty;
 
     /// <summary>The three turn buttons, about X, Y and Z, shown on the toolbar in the 3D view.</summary>
     public IReadOnlyList<Button> TurnButtons => [TurnXToolButton, TurnYToolButton, TurnZToolButton];
@@ -844,102 +875,162 @@ public partial class MainWindow : Window
     public IReadOnlyList<Button> ViewSnapButtons => [LookXToolButton, LookYToolButton, LookZToolButton, NextSurfaceToolButton];
 
     /// <summary>
-    /// Shows the 3D view in the plan canvas's place: a mode the window is in, over the same
-    /// document, selection, editor and undo stack (&#xA7;8.1, &#xA7;11 decision 13).
+    /// Shows a view of the drawing (standard-views §4.1): the one entry point for the View menu, the
+    /// keys 1–7, the chips, <c>V</c> and the open-in setting, and the one place that brings the rest
+    /// of the window along — the menu ticks, the pressed chip, the status text, the remembered view
+    /// and the toolbar.
     /// </summary>
     /// <remarks>
-    /// Nothing about the drawing changes, and the plan's view is where it was when it comes back.
-    /// The plan's drawing tools are put down on the way in — the pointer goes back to Select and any
-    /// stock held is dropped — because drawing a rectangle or placing stock is the plan's (&#xA7;6),
-    /// and asking for either from the 3D view brings the plan back.
+    /// Top is the plan canvas; 3D and the other five are the 3D view's control, free or locked to a
+    /// direction. Nothing about the drawing changes, and each view is where it was left. Between the
+    /// plan and 3D what the tools hold comes along (#74, assembly-model §6 as amended); a read-only
+    /// view puts it down, goes back to Select and closes the dimension editor (§5.4). A view this
+    /// build does not offer yet is refused with a word, not shown.
     /// </remarks>
-    public void ShowModelView()
+    public void ShowView(DesignView view)
     {
-        if (IsShowingModel)
+        if (!IsViewOffered(view))
         {
+            Editor.Say(EditSeverity.Hint, $"The {StandardViews.Name(view)} view is not built yet: 1 for the plan, 3 for Front, 7 for 3D.");
             return;
         }
 
-        CloseWorkshop();
+        DesignView from = _view;
+        bool showing = view == DesignView.Top ? !IsShowingModel : IsShowingModel && ModelDrawing.Locked == StandardViews.Of(view);
+        if (view == from && showing)
+        {
+            FocusDrawing();
+            return;
+        }
+
         CloseDimensionEditor(focusCanvas: false);
-
-        // What the plan's tools were holding comes along: the 3D view places it on the face under
-        // the pointer (#74, assembly-model §6 as amended).
-        if (DrawingCanvas.ArmedStock is { } held)
+        if (view == DesignView.Top)
         {
-            ModelDrawing.Arm(held);
+            CloseWorkshop();
+
+            // What the 3D view was holding goes back to the plan's tools.
+            if (ModelDrawing.Placement.Stock is { } held)
+            {
+                DrawingCanvas.ArmStock(held);
+            }
+            else if (ModelDrawing.Placement.PlainBoard)
+            {
+                DrawingCanvas.Tool = EditTool.Rectangle;
+            }
+
+            ModelDrawing.Disarm();
+            ModelDrawing.IsVisible = false;
+            DrawingCanvas.IsVisible = true;
         }
-        else if (DrawingCanvas.Tool == EditTool.Rectangle)
+        else
         {
-            ModelDrawing.ArmPlainBoard();
+            CloseWorkshop();
+
+            // What the plan's tools were holding comes along into 3D: the 3D view places it on the face
+            // under the pointer (#74). A read-only view takes nothing (§5.4).
+            if (view == DesignView.Model && !IsShowingModel)
+            {
+                if (DrawingCanvas.ArmedStock is { } held)
+                {
+                    ModelDrawing.Arm(held);
+                }
+                else if (DrawingCanvas.Tool == EditTool.Rectangle)
+                {
+                    ModelDrawing.ArmPlainBoard();
+                }
+            }
+
+            DrawingCanvas.ArmStock(null);
+            DrawingCanvas.Tool = EditTool.Select;
+            ModelDrawing.Locked = StandardViews.Of(view);
+            DrawingCanvas.IsVisible = false;
+            ModelDrawing.IsVisible = true;
         }
 
-        DrawingCanvas.ArmStock(null);
-        DrawingCanvas.Tool = EditTool.Select;
-
-        DrawingCanvas.IsVisible = false;
-        ModelDrawing.IsVisible = true;
-        ShowViewChrome();
-        Editor.Say(
-            EditSeverity.Hint,
-            ModelDrawing.Placement.IsArmed
-                ? $"3D view: holding {ModelDrawing.Placement.Holding} — click or drag on a face, or the floor, to place it; Escape puts it down."
-                : "3D view: drag a part to slide it, or empty space to orbit; on a selected part drag an arrow "
-                  + "to move it along that axis or a square to resize it; X, Y and Z turn it. V goes back to the plan.");
-    }
-
-    /// <summary>Shows the plan canvas again, as it was left.</summary>
-    public void ShowPlanView()
-    {
-        if (!IsShowingModel)
+        _view = view;
+        if (view != DesignView.Model)
         {
-            return;
+            _last2DView = view;
         }
 
-        // What the 3D view was holding goes back to the plan's tools.
-        if (ModelDrawing.Placement.Stock is { } held)
+        if (Settings.Current.LastView != view)
         {
-            DrawingCanvas.ArmStock(held);
-        }
-        else if (ModelDrawing.Placement.PlainBoard)
-        {
-            DrawingCanvas.Tool = EditTool.Rectangle;
+            Settings.Update(s => s with { LastView = view });
         }
 
-        ModelDrawing.Disarm();
-        ModelDrawing.IsVisible = false;
-        DrawingCanvas.IsVisible = true;
         ShowViewChrome();
         UpdateToolButtons();
+        if (view == DesignView.Model)
+        {
+            Editor.Say(
+                EditSeverity.Hint,
+                ModelDrawing.Placement.IsArmed
+                    ? $"3D view: holding {ModelDrawing.Placement.Holding} — click or drag on a face, or the floor, to place it; Escape puts it down."
+                    : "3D view: drag a part to slide it, or empty space to orbit; on a selected part drag an arrow "
+                      + "to move it along that axis or a square to resize it; X, Y and Z turn it. V goes back to the plan.");
+        }
+        else if (view != DesignView.Top)
+        {
+            string name = StandardViews.Name(view);
+            Editor.Say(EditSeverity.Hint, $"{name} view: read-only for now — pan, zoom and select; 1 for the plan or 7 for 3D to edit.");
+        }
     }
 
-    /// <summary>The chrome that differs between the two views: the turn buttons, the menu's tick, the readouts.</summary>
+    static readonly DesignView[] AllViews =
+        [DesignView.Top, DesignView.Bottom, DesignView.Front, DesignView.Back, DesignView.Left, DesignView.Right, DesignView.Model];
+
+    readonly Dictionary<Control, object?> _toolTipsOutsideViews = [];
+
+    /// <summary>
+    /// The chrome that differs between the views: the turn and snap buttons (free 3D only), the menu
+    /// ticks and the pressed chip, the status text, the tools a read-only view cannot use (§5.4), the
+    /// remembered view, the readouts.
+    /// </summary>
     void ShowViewChrome()
     {
-        bool model = IsShowingModel;
+        bool free3D = _view == DesignView.Model;
+        bool readOnly = IsShowingStandardView;
         foreach (Button button in TurnButtons)
         {
-            button.IsVisible = model;
+            button.IsVisible = free3D;
         }
 
-        ViewSnapBar.IsVisible = model;
+        ViewSnapBar.IsVisible = free3D;
         foreach (MenuItem item in (MenuItem[])[LookXMenuItem, LookYMenuItem, LookZMenuItem, NextSurfaceMenuItem])
         {
-            item.IsEnabled = model;
+            item.IsEnabled = free3D;
         }
 
-        PlanViewMenuItem.Icon = model ? null : new TextBlock { Text = "✓" };
-        ModelViewMenuItem.Icon = model ? new TextBlock { Text = "✓" } : null;
-
-        DesignView shown = model ? DesignView.Model : DesignView.Plan;
-        if (Settings.Current.LastView != shown)
+        foreach (DesignView view in AllViews)
         {
-            Settings.Update(s => s with { LastView = shown });
+            ViewMenuEntry(view).Icon = view == _view ? new TextBlock { Text = "✓" } : null;
+            ViewChip(view).IsChecked = view == _view;
+        }
+
+        // A read-only view cannot draw, place or shape: those tools say so rather than vanish, and
+        // come back with their own tooltips in the plan and 3D.
+        string refusal = $"Not in a {StandardViews.Name(_view)} view yet — 1 for the plan or 7 for 3D";
+        foreach (Control tool in (Control[])[RectangleToolButton, RectangleToolMenuItem, StockToolboxPanel.CategoryRow])
+        {
+            if (!_toolTipsOutsideViews.ContainsKey(tool))
+            {
+                _toolTipsOutsideViews[tool] = ToolTip.GetTip(tool);
+            }
+
+            tool.IsEnabled = !readOnly;
+            ToolTip.SetTip(tool, readOnly ? refusal : _toolTipsOutsideViews[tool]);
+            ToolTip.SetShowOnDisabled(tool, true);
+        }
+
+        if (readOnly && StockToolboxPanel.Category is not null)
+        {
+            StockToolboxPanel.ShowCategory(null);
+            UpdateToolbox();
         }
 
         UpdateRulerLayout();
         UpdateZoomReadout();
-        if (model)
+        if (IsShowingModel)
         {
             UpdateCursorReadout((Vector3d?)null);
         }
@@ -951,6 +1042,28 @@ public partial class MainWindow : Window
         UpdateRelationships();
         UpdateMenuEnablement();
         FocusDrawing();
+    }
+
+    void OnViewMenuClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem item && AllViews.Where(view => ReferenceEquals(ViewMenuEntry(view), item)).Cast<DesignView?>().FirstOrDefault() is { } view)
+        {
+            ShowView(view);
+        }
+    }
+
+    void OnViewChipClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleButton chip && AllViews.Where(view => ReferenceEquals(ViewChip(view), chip)).Cast<DesignView?>().FirstOrDefault() is { } view)
+        {
+            ShowView(view);
+        }
+
+        // The chip shows the view on screen, whatever the click did to its own state.
+        foreach (DesignView each in AllViews)
+        {
+            ViewChip(each).IsChecked = each == _view;
+        }
     }
 
     /// <summary>Gives the keyboard to whichever view of the drawing is showing.</summary>
@@ -2265,7 +2378,7 @@ public partial class MainWindow : Window
     void UpdateMenuEnablement()
     {
         bool anything = Editor.Selection.Count > 0;
-        bool shapeable = Editor.OnlySelected is not null && !IsShapingPart;
+        bool shapeable = Editor.OnlySelected is not null && !IsShapingPart && !IsShowingStandardView;
         DeleteMenuItem.IsEnabled = DeleteToolButton.IsEnabled = anything;
         PinMenuItem.IsEnabled = PinToolButton.IsEnabled = anything;
         MirrorEastWestMenuItem.IsEnabled = MirrorNorthSouthMenuItem.IsEnabled = anything;
@@ -2278,7 +2391,7 @@ public partial class MainWindow : Window
 
         // The shape workshop covers the paper and takes the toolbar's stock icons with it, so the
         // menu's way in to the same stock goes too: there is no paper to drag it onto.
-        StockMenu.IsEnabled = !IsShapingPart;
+        StockMenu.IsEnabled = !IsShapingPart && !IsShowingStandardView;
 
         // Undo and redo name what they would do, and grey out when there is nothing to. An
         // underscore in a part's name is doubled so the menu shows it rather than taking it as
@@ -2686,6 +2799,8 @@ public partial class MainWindow : Window
         ToolBar.Background = paper;
         ViewSnapBar.Background = paper;
         ViewSnapBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
+        ViewChips.Background = paper;
+        ViewChips.BorderBrush = new SolidColorBrush(palette.GridMajor);
         ToolBar.BorderBrush = new SolidColorBrush(palette.GridMajor);
         ToolRowDivider.Background = new SolidColorBrush(palette.GridMajor);
         ToolRowActionsDivider.Background = new SolidColorBrush(palette.GridMajor);
@@ -2789,9 +2904,15 @@ public partial class MainWindow : Window
         TurnXMenuItem.InputGesture = new KeyGesture(Key.X);
         TurnYMenuItem.InputGesture = new KeyGesture(Key.Y);
         TurnZMenuItem.InputGesture = new KeyGesture(Key.Z);
-        PlanViewMenuItem.InputGesture = new KeyGesture(Key.V);
         GridMenuItem.InputGesture = new KeyGesture(Key.G);
-        ModelViewMenuItem.InputGesture = new KeyGesture(Key.V);
+
+        // The views on 1-7 (standard-views §4.2). Display only, as every gesture here is: the keys are
+        // handled in the drawing's own key path, where they yield to a length being typed.
+        foreach (DesignView view in AllViews)
+        {
+            ViewMenuEntry(view).InputGesture = new KeyGesture(Key.D0 + (int)view);
+        }
+
         UpdateMenuEnablement();
     }
 
@@ -2923,6 +3044,12 @@ public partial class MainWindow : Window
             return;
         }
 
+        // A digit typed into any field is text, never a view (standard-views §4.2).
+        if (StandardViews.ForKey(e.Key, e.KeyModifiers) is not null && FocusManager?.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+
         // A key typed into a field is text, not a view command: the properties panel gets the same
         // guard the dimension editor has had from the start, so that "-" and "+" in 1'-4 1/4"
         // cannot reach HandleViewKey and zoom the drawing. Whether Avalonia's own TextBox already
@@ -2977,7 +3104,7 @@ public partial class MainWindow : Window
     {
         if (IsShowingModel)
         {
-            ShowPlanView();
+            ShowView(DesignView.Top);
         }
 
         LumberStock? stock = member is not null
@@ -2994,7 +3121,7 @@ public partial class MainWindow : Window
     {
         if (IsShowingModel)
         {
-            ShowPlanView();
+            ShowView(DesignView.Top);
         }
 
         DrawingCanvas.ArmOpening(kind);
@@ -3004,8 +3131,13 @@ public partial class MainWindow : Window
 
     void OnRectangleToolClicked(object? sender, RoutedEventArgs e)
     {
-        // In the 3D view the rectangle tool is a plain board to place on a face (#74).
-        if (IsShowingModel)
+        // In the 3D view the rectangle tool is a plain board to place on a face (#74); a read-only
+        // view has none (§5.4).
+        if (IsShowingStandardView)
+        {
+            Editor.Say(EditSeverity.Hint, $"Not in a {StandardViews.Name(_view)} view yet — 1 for the plan or 7 for 3D.");
+        }
+        else if (IsShowingModel)
         {
             ModelDrawing.ArmPlainBoard();
             Editor.Say(
@@ -3075,10 +3207,6 @@ public partial class MainWindow : Window
             DrawingCanvas.ZoomOut();
         }
     }
-
-    void OnPlanViewClicked(object? sender, RoutedEventArgs e) => ShowPlanView();
-
-    void OnModelViewClicked(object? sender, RoutedEventArgs e) => ShowModelView();
 
     void OnTurnXClicked(object? sender, RoutedEventArgs e) => SelectionTurn.Turn(Editor, Axis.X, 1);
 
@@ -3311,14 +3439,17 @@ public partial class MainWindow : Window
             Settings.Update(s => s with { Projection = ModelDrawing.Projection });
         }
 
-        ZoomText.Text = IsShowingModel
+        // A standard view is orthographic by definition and nothing in it snaps: its zoom is all it says.
+        ZoomText.Text = IsShowingStandardView
+            ? string.Create(CultureInfo.InvariantCulture, $"Zoom {ModelDrawing.Camera.ZoomPercent:0.#}%")
+            : IsShowingModel
             ? string.Create(
                 CultureInfo.InvariantCulture,
                 $"{(ModelDrawing.Projection == CameraProjection.Perspective ? "Perspective" : "Orthographic")} · Zoom {ModelDrawing.Camera.ZoomPercent:0.#}%")
             : string.Create(CultureInfo.InvariantCulture, $"Zoom {DrawingCanvas.View.ZoomPercent:0.#}%");
 
         // While snapping is on, the step a drag lands on: it changes with the zoom, as the grid does.
-        if (Settings.Current.SnapToGrid)
+        if (Settings.Current.SnapToGrid && !IsShowingStandardView)
         {
             double step = IsShowingModel ? ModelDrawing.GridStepInches : DrawingCanvas.GridStepInches;
             ZoomText.Text += " · Snap " + Show(new Length(SnapGrid.UnitsPerStep(step)));
@@ -3326,7 +3457,8 @@ public partial class MainWindow : Window
 
         // The projection belongs to the 3D view: the plan has none to choose.
         bool perspective = ModelDrawing.Projection == CameraProjection.Perspective;
-        OrthographicMenuItem.IsEnabled = PerspectiveMenuItem.IsEnabled = IsShowingModel;
+        OrthographicMenuItem.IsEnabled = PerspectiveMenuItem.IsEnabled = _view == DesignView.Model;
+        ViewText.Text = _view == DesignView.Model && perspective ? "3D, perspective" : StandardViews.Name(_view);
         OrthographicMenuItem.Icon = perspective ? null : new TextBlock { Text = "✓" };
         PerspectiveMenuItem.Icon = perspective ? new TextBlock { Text = "✓" } : null;
     }

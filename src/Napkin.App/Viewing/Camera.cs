@@ -226,8 +226,8 @@ public readonly record struct Camera(
     {
         get
         {
-            double azimuth = Radians(AzimuthDegrees);
-            return new Vector3d(Math.Cos(azimuth), Math.Sin(azimuth), 0);
+            (double sinAz, double cosAz) = SinCos(AzimuthDegrees);
+            return new Vector3d(cosAz, sinAz, 0);
         }
     }
 
@@ -236,12 +236,9 @@ public readonly record struct Camera(
     {
         get
         {
-            double azimuth = Radians(AzimuthDegrees);
-            double elevation = Radians(ElevationDegrees);
-            return new Vector3d(
-                -Math.Sin(azimuth) * Math.Sin(elevation),
-                Math.Cos(azimuth) * Math.Sin(elevation),
-                Math.Cos(elevation));
+            (double sinAz, double cosAz) = SinCos(AzimuthDegrees);
+            (double sinEl, double cosEl) = SinCos(ElevationDegrees);
+            return new Vector3d(-sinAz * sinEl, cosAz * sinEl, cosEl);
         }
     }
 
@@ -250,12 +247,9 @@ public readonly record struct Camera(
     {
         get
         {
-            double azimuth = Radians(AzimuthDegrees);
-            double elevation = Radians(ElevationDegrees);
-            return new Vector3d(
-                Math.Sin(azimuth) * Math.Cos(elevation),
-                -Math.Cos(azimuth) * Math.Cos(elevation),
-                Math.Sin(elevation));
+            (double sinAz, double cosAz) = SinCos(AzimuthDegrees);
+            (double sinEl, double cosEl) = SinCos(ElevationDegrees);
+            return new Vector3d(sinAz * cosEl, -cosAz * cosEl, sinEl);
         }
     }
 
@@ -522,6 +516,29 @@ public readonly record struct Camera(
     }
 
     static double Radians(double degrees) => degrees * Math.PI / 180.0;
+
+    /// <summary>
+    /// The sine and cosine of an angle in degrees, exact at every multiple of 90: cos 90° is ~6e-17 in
+    /// <see langword="double"/>, and a standard view must look exactly along its axis
+    /// (docs/design/standard-views.md §4.1's trig trap).
+    /// </summary>
+    static (double Sin, double Cos) SinCos(double degrees)
+    {
+        double quarters = degrees / 90.0;
+        if (quarters == Math.Round(quarters))
+        {
+            return (((long)Math.Round(quarters) % 4 + 4) % 4) switch
+            {
+                0 => (0, 1),
+                1 => (1, 0),
+                2 => (0, -1),
+                _ => (-1, 0),
+            };
+        }
+
+        double radians = Radians(degrees);
+        return (Math.Sin(radians), Math.Cos(radians));
+    }
 
     static double NormalizeAzimuth(double degrees)
     {
