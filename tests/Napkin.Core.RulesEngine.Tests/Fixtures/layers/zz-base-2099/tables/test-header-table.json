@@ -1,0 +1,381 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "kind": "header-sizing",
+  "table": "TEST-HEADER-TABLE",
+  "title": "SYNTHETIC TEST TABLE - NOT CODE VALUES",
+  "wallKind": "exterior-bearing",
+  "source": "zz-synthetic-base",
+  "location": "synthetic p. 1",
+  "inputs": [
+    {
+      "name": "supports",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "test-roof",
+        "test-roof-floor"
+      ]
+    },
+    {
+      "name": "groundSnowLoad",
+      "type": "psf",
+      "band": "upper-bound",
+      "domain": {
+        "min": 0,
+        "max": 99
+      }
+    },
+    {
+      "name": "buildingWidth",
+      "type": "length",
+      "band": "upper-bound",
+      "domain": {
+        "min": "0in",
+        "max": "44ft 0in"
+      }
+    },
+    {
+      "name": "headerSpan",
+      "type": "length",
+      "band": "capacity",
+      "domain": {
+        "min": "0in",
+        "max": "19ft 7in"
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "name": "header",
+      "type": "member"
+    },
+    {
+      "name": "jackStuds",
+      "type": "count"
+    },
+    {
+      "name": "kingStuds",
+      "type": "count"
+    }
+  ],
+  "footnotes": [
+    {
+      "id": "a",
+      "text": "SYNTHETIC footnote a: shown with results, not encoded.",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    },
+    {
+      "id": "b",
+      "text": "SYNTHETIC footnote b: its effect is in the rows.",
+      "encodedAs": "as-rows",
+      "appliesTo": "table"
+    },
+    {
+      "id": "c",
+      "text": "SYNTHETIC footnote c: not for wind above 199 mph.",
+      "encodedAs": "as-limit",
+      "appliesTo": "table",
+      "limit": {
+        "input": "ultimateWindSpeed",
+        "above": 199
+      }
+    },
+    {
+      "id": "d",
+      "text": "SYNTHETIC footnote d: this row only for widths up to 40 ft.",
+      "encodedAs": "as-limit",
+      "appliesTo": "rows",
+      "limit": {
+        "input": "buildingWidth",
+        "above": "40ft 0in"
+      }
+    }
+  ],
+  "rows": [
+    {
+      "id": "roof.s33.w22.m1",
+      "supports": "test-roof",
+      "groundSnowLoad": 33,
+      "buildingWidth": "22ft 0in",
+      "headerSpan": "7ft 7in",
+      "header": {
+        "plies": 1,
+        "nominal": "2x7"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, row 1"
+    },
+    {
+      "id": "roof.s33.w22.m2",
+      "supports": "test-roof",
+      "groundSnowLoad": 33,
+      "buildingWidth": "22ft 0in",
+      "headerSpan": "12ft 7in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x9"
+      },
+      "jackStuds": 1,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 2"
+    },
+    {
+      "id": "roof.s33.w22.m3",
+      "supports": "test-roof",
+      "groundSnowLoad": 33,
+      "buildingWidth": "22ft 0in",
+      "headerSpan": "17ft 7in",
+      "header": {
+        "plies": 3,
+        "nominal": "2x11"
+      },
+      "jackStuds": 2,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 3"
+    },
+    {
+      "id": "roof.s33.w44.m1",
+      "supports": "test-roof",
+      "groundSnowLoad": 33,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "7ft 1in",
+      "header": {
+        "plies": 1,
+        "nominal": "2x7"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, row 4"
+    },
+    {
+      "id": "roof.s33.w44.m2",
+      "supports": "test-roof",
+      "groundSnowLoad": 33,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "12ft 1in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x9"
+      },
+      "jackStuds": 1,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 5"
+    },
+    {
+      "id": "roof.s33.w44.m3",
+      "supports": "test-roof",
+      "groundSnowLoad": 33,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "17ft 1in",
+      "header": {
+        "plies": 3,
+        "nominal": "2x11"
+      },
+      "jackStuds": 2,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 6"
+    },
+    {
+      "id": "roof.s66.w22.m1",
+      "supports": "test-roof",
+      "groundSnowLoad": 66,
+      "buildingWidth": "22ft 0in",
+      "headerSpan": "6ft 7in",
+      "header": {
+        "plies": 1,
+        "nominal": "2x7"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, row 7"
+    },
+    {
+      "id": "roof.s66.w22.m2",
+      "supports": "test-roof",
+      "groundSnowLoad": 66,
+      "buildingWidth": "22ft 0in",
+      "headerSpan": "11ft 7in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x9"
+      },
+      "jackStuds": 1,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 8"
+    },
+    {
+      "id": "roof.s66.w22.m3",
+      "supports": "test-roof",
+      "groundSnowLoad": 66,
+      "buildingWidth": "22ft 0in",
+      "headerSpan": "16ft 7in",
+      "header": {
+        "plies": 3,
+        "nominal": "2x11"
+      },
+      "jackStuds": 2,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 9"
+    },
+    {
+      "id": "roof.s66.w44.m1",
+      "supports": "test-roof",
+      "groundSnowLoad": 66,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "6ft 1in",
+      "header": {
+        "plies": 1,
+        "nominal": "2x7"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, row 10"
+    },
+    {
+      "id": "roof.s66.w44.m2",
+      "supports": "test-roof",
+      "groundSnowLoad": 66,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "11ft 1in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x9"
+      },
+      "jackStuds": 1,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 11"
+    },
+    {
+      "id": "roof.s66.w44.m3",
+      "supports": "test-roof",
+      "groundSnowLoad": 66,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "16ft 1in",
+      "header": {
+        "plies": 3,
+        "nominal": "2x11"
+      },
+      "jackStuds": 2,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 12"
+    },
+    {
+      "id": "roof.s99.w22.m1",
+      "supports": "test-roof",
+      "groundSnowLoad": 99,
+      "buildingWidth": "22ft 0in",
+      "headerSpan": "5ft 7in",
+      "header": {
+        "plies": 1,
+        "nominal": "2x7"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, row 13"
+    },
+    {
+      "id": "roof.s99.w22.m2",
+      "supports": "test-roof",
+      "groundSnowLoad": 99,
+      "buildingWidth": "22ft 0in",
+      "headerSpan": "10ft 7in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x9"
+      },
+      "jackStuds": 1,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 14"
+    },
+    {
+      "id": "roof.s99.w22.m3",
+      "supports": "test-roof",
+      "groundSnowLoad": 99,
+      "buildingWidth": "22ft 0in",
+      "headerSpan": "15ft 7in",
+      "header": {
+        "plies": 3,
+        "nominal": "2x11"
+      },
+      "jackStuds": 2,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 15"
+    },
+    {
+      "id": "roof.s99.w44.m1",
+      "supports": "test-roof",
+      "groundSnowLoad": 99,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "5ft 1in",
+      "header": {
+        "plies": 1,
+        "nominal": "2x7"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, row 16"
+    },
+    {
+      "id": "roof.s99.w44.m2",
+      "supports": "test-roof",
+      "groundSnowLoad": 99,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "10ft 1in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x9"
+      },
+      "jackStuds": 1,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 17"
+    },
+    {
+      "id": "roof.s99.w44.m3",
+      "supports": "test-roof",
+      "groundSnowLoad": 99,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "15ft 1in",
+      "header": {
+        "plies": 3,
+        "nominal": "2x11"
+      },
+      "jackStuds": 2,
+      "kingStuds": 2,
+      "location": "synthetic p. 1, row 18",
+      "footnotes": [
+        "d"
+      ]
+    },
+    {
+      "id": "floor.s99.w44.m1",
+      "supports": "test-roof-floor",
+      "groundSnowLoad": 99,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "5ft 5in",
+      "header": {
+        "plies": 1,
+        "nominal": "2x7"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 2, row 1"
+    },
+    {
+      "id": "floor.s99.w44.m2",
+      "supports": "test-roof-floor",
+      "groundSnowLoad": 99,
+      "buildingWidth": "44ft 0in",
+      "headerSpan": "9ft 9in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x9"
+      },
+      "jackStuds": 2,
+      "kingStuds": 2,
+      "location": "synthetic p. 2, row 2"
+    }
+  ]
+}

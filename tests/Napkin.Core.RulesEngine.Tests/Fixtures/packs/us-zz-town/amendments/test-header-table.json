@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "table": "TEST-HEADER-TABLE",
+  "source": "zz-synthetic-town",
+  "location": "synthetic town ordinance, item 1",
+  "operations": [
+    {
+      "op": "amend",
+      "source": "zz-synthetic-town",
+      "location": "synthetic town ordinance 1.1",
+      "row": {
+        "id": "roof.s66.w22.m2",
+        "supports": "test-roof",
+        "groundSnowLoad": 66,
+        "buildingWidth": "22ft 0in",
+        "headerSpan": "11ft 7in",
+        "header": {
+          "plies": 2,
+          "nominal": "2x10"
+        },
+        "jackStuds": 2,
+        "kingStuds": 2,
+        "location": "synthetic town p. 1, amended row"
+      }
+    }
+  ]
+}

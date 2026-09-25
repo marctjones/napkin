@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "id": "us-zz-town",
+  "revision": 1,
+  "jurisdiction": {
+    "country": "US",
+    "state": "ZZ",
+    "municipality": "Testville (synthetic)"
+  },
+  "adoption": {
+    "name": "SYNTHETIC TEST ADOPTION ZZ TOWN TEST - NOT A CODE",
+    "shortName": "ZZ TOWN TEST",
+    "adoptedBy": "nobody (synthetic)",
+    "inForce": {
+      "from": "2099-01-01",
+      "to": null
+    },
+    "appliesTo": "permit-application-date",
+    "transitionNotes": null
+  },
+  "baseCode": {
+    "publisher": "ICC",
+    "code": "IRC",
+    "year": 2099
+  },
+  "layers": [
+    "zz-base-2099",
+    "us-zz-state/amendments",
+    "amendments"
+  ],
+  "sources": [
+    {
+      "id": "zz-synthetic-town",
+      "title": "SYNTHETIC TEST SOURCE (town) - NOT A CODE",
+      "publisher": "nobody (synthetic)",
+      "url": "https://example.invalid/synthetic",
+      "printing": "synthetic printing, no errata",
+      "retrievedOn": "2026-09-25",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "review": {
+    "status": "unreviewed",
+    "checklist": null
+  }
+}

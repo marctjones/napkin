@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "table": "TEST-HEADER-TABLE",
+  "source": "zz-synthetic-state",
+  "location": "synthetic amendment list, item 1",
+  "operations": [
+    {
+      "op": "amend-table",
+      "source": "zz-synthetic-state",
+      "location": "synthetic amendment 1.1",
+      "table": {
+        "kind": "header-sizing",
+        "title": "SYNTHETIC TEST TABLE (state amended) - NOT CODE VALUES",
+        "wallKind": "exterior-bearing",
+        "location": "synthetic state p. 1",
+        "inputs": [
+          {
+            "name": "supports",
+            "type": "enum",
+            "band": "exact",
+            "values": [
+              "test-roof",
+              "test-roof-floor"
+            ]
+          },
+          {
+            "name": "groundSnowLoad",
+            "type": "psf",
+            "band": "upper-bound",
+            "domain": {
+              "min": 0,
+              "max": 99
+            }
+          },
+          {
+            "name": "buildingWidth",
+            "type": "length",
+            "band": "upper-bound",
+            "domain": {
+              "min": "11ft 0in",
+              "max": "44ft 0in"
+            }
+          },
+          {
+            "name": "headerSpan",
+            "type": "length",
+            "band": "capacity",
+            "domain": {
+              "min": "0in",
+              "max": "19ft 7in"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "name": "header",
+            "type": "member"
+          },
+          {
+            "name": "jackStuds",
+            "type": "count"
+          },
+          {
+            "name": "kingStuds",
+            "type": "count"
+          }
+        ],
+        "footnotes": [
+          {
+            "id": "a",
+            "text": "SYNTHETIC footnote a: shown with results, not encoded.",
+            "encodedAs": "not-encoded",
+            "appliesTo": "table"
+          },
+          {
+            "id": "b",
+            "text": "SYNTHETIC footnote b: its effect is in the rows.",
+            "encodedAs": "as-rows",
+            "appliesTo": "table"
+          },
+          {
+            "id": "c",
+            "text": "SYNTHETIC footnote c: not for wind above 199 mph.",
+            "encodedAs": "as-limit",
+            "appliesTo": "table",
+            "limit": {
+              "input": "ultimateWindSpeed",
+              "above": 199
+            }
+          },
+          {
+            "id": "d",
+            "text": "SYNTHETIC footnote d: this row only for widths up to 40 ft.",
+            "encodedAs": "as-limit",
+            "appliesTo": "rows",
+            "limit": {
+              "input": "buildingWidth",
+              "above": "40ft 0in"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "op": "add",
+      "source": "zz-synthetic-state",
+      "location": "synthetic amendment 1.2",
+      "row": {
+        "id": "roof.s99.w44.m4",
+        "supports": "test-roof",
+        "groundSnowLoad": 99,
+        "buildingWidth": "44ft 0in",
+        "headerSpan": "19ft 7in",
+        "header": {
+          "plies": 4,
+          "nominal": "2x13"
+        },
+        "jackStuds": 3,
+        "kingStuds": 2,
+        "location": "synthetic state p. 1, added row"
+      }
+    },
+    {
+      "op": "amend",
+      "source": "zz-synthetic-state",
+      "location": "synthetic amendment 1.3",
+      "row": {
+        "id": "roof.s33.w22.m1",
+        "supports": "test-roof",
+        "groundSnowLoad": 33,
+        "buildingWidth": "22ft 0in",
+        "headerSpan": "7ft 7in",
+        "header": {
+          "plies": 1,
+          "nominal": "2x8"
+        },
+        "jackStuds": 1,
+        "kingStuds": 1,
+        "location": "synthetic state p. 1, amended row"
+      }
+    },
+    {
+      "op": "delete",
+      "source": "zz-synthetic-state",
+      "location": "synthetic amendment 1.4",
+      "rowId": "floor.s99.w44.m2"
+    }
+  ]
+}
