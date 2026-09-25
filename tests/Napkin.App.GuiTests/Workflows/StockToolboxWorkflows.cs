@@ -351,6 +351,41 @@ public class StockToolboxWorkflows
     });
 
     /// <summary>
+    /// Regression for #184: picking a size from <em>Draw &#x2192; Stock</em> arms it and opens the
+    /// drawer right under the pointer's resting position (Draw is short now, #169), which used to
+    /// make Avalonia's re-hit-test on layout raise <c>PointerEntered</c> on whatever drawer item
+    /// landed there — so the readout showed that item's hover text instead of what was just armed,
+    /// until the pointer actually moved. No <c>MoveTo</c> follows the click here, unlike
+    /// <see cref="Pick_stock_from_the_draw_menu_and_drag_it_onto_the_paper"/>: the whole point is to
+    /// check the readout with the pointer exactly where the click left it.
+    /// </summary>
+    /// <remarks>
+    /// Claims <c>GUI-CUT-09</c>, an orphan the same way <c>GUI-CUT-06</c> is: the catalog has
+    /// nothing that names this specific readout behaviour.
+    /// </remarks>
+    [GuiWorkflow("GUI-CUT-09")]
+    public void The_drawer_readout_shows_what_is_held_right_after_picking_from_the_menu_not_the_hovered_item() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        MaterialsLibrary library = MaterialsLibrary.Shipped;
+        Assert.True(library.TryFindLumber("2x4", out LumberStock twoByFour));
+
+        app.Chord(Key.N);
+
+        MenuItem twoByFourItem = OpenStockMenuTo(app, window, StockCategory.DimensionalLumber, twoByFour);
+        app.Click(CentreOf(window, twoByFourItem));
+
+        app.Expect("armed and the drawer open, right after the click — before the pointer moves again", () =>
+        {
+            Assert.Same(twoByFour, window.Canvas.ArmedStock);
+            Assert.True(window.IsShowingStockSizes, "the lumber drawer did not open.");
+        });
+
+        app.Expect("the readout says what is held, not the hover text of whatever the drawer opened under", () =>
+            Assert.Contains("Holding 2x4", window.Toolbox.ReadoutText, StringComparison.Ordinal));
+    });
+
+    /// <summary>
     /// Opens <em>Draw &#x2192; Stock &#x2192; category</em> with the mouse, one click per level,
     /// and returns the item for a size in it.
     /// </summary>
