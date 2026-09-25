@@ -181,7 +181,11 @@ public readonly record struct ViewTransform(
     /// How many pixels at the right of the viewport something else covers — the window's side
     /// panels (#90) — so the drawing is framed in what is left.
     /// </param>
-    public ViewTransform FitTo(WorldBounds bounds, Size viewport, double marginFraction = FitMarginFraction, double coveredRight = 0)
+    /// <param name="coveredTop">
+    /// How many pixels at the top of the viewport something else covers — the floating toolbar
+    /// (#186) — so the drawing is framed below it.
+    /// </param>
+    public ViewTransform FitTo(WorldBounds bounds, Size viewport, double marginFraction = FitMarginFraction, double coveredRight = 0, double coveredTop = 0)
     {
         if (bounds.IsEmpty || viewport.Width <= 0 || viewport.Height <= 0)
         {
@@ -189,8 +193,9 @@ public readonly record struct ViewTransform(
         }
 
         double covered = Math.Clamp(coveredRight, 0, viewport.Width / 2);
+        double coveredAbove = Math.Clamp(coveredTop, 0, viewport.Height / 2);
         double usableWidth = Math.Max((viewport.Width - covered) * (1 - (2 * marginFraction)), 1);
-        double usableHeight = Math.Max(viewport.Height * (1 - (2 * marginFraction)), 1);
+        double usableHeight = Math.Max((viewport.Height - coveredAbove) * (1 - (2 * marginFraction)), 1);
         double width = bounds.WidthInches;
         double height = bounds.HeightInches;
 
@@ -205,8 +210,13 @@ public readonly record struct ViewTransform(
         }
 
         // The drawing's middle goes to the middle of the uncovered part: the view's own middle is
-        // half the covered strip further right, in the drawing.
-        return new ViewTransform(bounds.CenterXInches + (covered / 2 / ClampScale(scale)), bounds.CenterYInches, scale, viewport);
+        // half the covered strip further right, and half the covered top strip further north, in
+        // the drawing.
+        return new ViewTransform(
+            bounds.CenterXInches + (covered / 2 / ClampScale(scale)),
+            bounds.CenterYInches + (coveredAbove / 2 / ClampScale(scale)),
+            scale,
+            viewport);
     }
 
     /// <summary>The scale limits, applied wherever a scale is set.</summary>

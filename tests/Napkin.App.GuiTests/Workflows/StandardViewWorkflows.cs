@@ -280,6 +280,18 @@ public class StandardViewWorkflows
             StandardViewEdges edges = window.Model.StandardEdges!;
             Assert.Contains(edges.Edges.Hidden, segment => edges.Polygons[segment.Face].Box == rib);
         });
+        app.Expect("Front's fit keeps the whole bracket below the floating toolbar (#186)", () =>
+        {
+            // The frames of 0.128.0 showed the upright's top, z 6, under the toolbar: the fit then
+            // reserved the side panels but nothing at the top.
+            double toolbarBottom = window.ToolControl.TranslatePoint(new Point(0, window.ToolControl.Bounds.Height), window.Model)!.Value.Y;
+            Assert.True(window.Model.FitReserveTop >= toolbarBottom, $"the reserve, {window.Model.FitReserveTop}, is shorter than the toolbar, {toolbarBottom}.");
+            Camera camera = window.Model.Camera;
+            foreach (Vector3d corner in Bounds3.Of(window.Editor.Sketch).CornersInInches())
+            {
+                Assert.True(camera.Project(corner).Y > toolbarBottom, $"a corner is drawn at y {camera.Project(corner).Y}, under the toolbar.");
+            }
+        });
         (List<Avalonia.Media.Color> with, int width, _) = WholeDrawing(app, window);
         app.SaveFrame("front-hidden-edges-on");
 

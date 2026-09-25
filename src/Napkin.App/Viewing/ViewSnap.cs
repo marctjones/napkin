@@ -110,7 +110,7 @@ public static class ViewSnap
     };
 
     /// <summary>The camera looking square-on at a face from outside, framed on the face, which is at the middle of the view (so the part is centred on it).</summary>
-    public static Camera FaceOn(Camera camera, Box box, BoxFace face, double coveredRight = 0)
+    public static Camera FaceOn(Camera camera, Box box, BoxFace face, double coveredRight = 0, double coveredTop = 0)
     {
         Camera facing = Facing(camera, OutwardNormal(box, face));
         // Frame the face itself, which lies flat to the view: the part's depth would put a near end
@@ -121,7 +121,7 @@ public static class ViewSnap
             bounds = bounds.Including(corner);
         }
 
-        return facing.FitTo(bounds, camera.Viewport, coveredRight: coveredRight);
+        return facing.FitTo(bounds, camera.Viewport, coveredRight: coveredRight, coveredTop: coveredTop);
     }
 
     /// <summary>The face at a step of the cycle, wrapping.</summary>

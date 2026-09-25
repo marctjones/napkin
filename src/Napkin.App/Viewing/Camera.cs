@@ -413,7 +413,11 @@ public readonly record struct Camera(
     /// How many pixels at the right of the viewport something else covers — the window's side
     /// panels (#90) — so the drawing is framed in what is left.
     /// </param>
-    public Camera FitTo(Bounds3 bounds, Size viewport, double marginFraction = ViewTransform.FitMarginFraction, double coveredRight = 0)
+    /// <param name="coveredTop">
+    /// How many pixels at the top of the viewport something else covers — the floating toolbar
+    /// (#186) — so the drawing is framed below it.
+    /// </param>
+    public Camera FitTo(Bounds3 bounds, Size viewport, double marginFraction = ViewTransform.FitMarginFraction, double coveredRight = 0, double coveredTop = 0)
     {
         if (bounds.IsEmpty || viewport.Width <= 0 || viewport.Height <= 0)
         {
@@ -435,8 +439,9 @@ public readonly record struct Camera(
         }
 
         double covered = Math.Clamp(coveredRight, 0, viewport.Width / 2);
+        double coveredAbove = Math.Clamp(coveredTop, 0, viewport.Height / 2);
         double usableWidth = Math.Max((viewport.Width - covered) * (1 - (2 * marginFraction)), 1);
-        double usableHeight = Math.Max(viewport.Height * (1 - (2 * marginFraction)), 1);
+        double usableHeight = Math.Max((viewport.Height - coveredAbove) * (1 - (2 * marginFraction)), 1);
         double width = maxRight - minRight;
         double height = maxUp - minUp;
 
@@ -451,10 +456,11 @@ public readonly record struct Camera(
         }
 
         // The drawing's middle goes to the middle of the uncovered part: the view's own middle is
-        // half the covered strip further right, in the drawing.
+        // half the covered strip further right, and half the covered top strip further up, in the
+        // drawing.
         Vector3d toward = TowardViewer;
         Vector3d center = (right * (((minRight + maxRight) / 2) + (covered / 2 / ClampScale(scale))))
-                          + (up * ((minUp + maxUp) / 2))
+                          + (up * (((minUp + maxUp) / 2) + (coveredAbove / 2 / ClampScale(scale))))
                           + (toward * Vector3d.Dot(bounds.CenterInInches, toward));
 
         Camera fitted = this with

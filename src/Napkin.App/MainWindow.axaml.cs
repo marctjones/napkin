@@ -57,6 +57,14 @@ public partial class MainWindow : Window
     /// <summary>How much of the drawing's right side the side column can cover, in pixels (#90).</summary>
     const double SidePanelsReserve = 280;
 
+    /// <summary>
+    /// How much of the drawing's top the floating toolbar covers, in pixels (#186): its one row of
+    /// buttons sits 10 px down, about 40 px tall, and a fit leaves a little air below it. A constant,
+    /// as the side column's is, so the very first fit — before the toolbar has been laid out — is
+    /// the same as every later one; a test holds it to the toolbar's real height.
+    /// </summary>
+    const double ToolBarReserve = 56;
+
     readonly List<MenuItem> _sampleItems = [];
     ISceneFilePicker _filePicker;
     CutListWindow? _cutList;
@@ -91,6 +99,8 @@ public partial class MainWindow : Window
         // drawing beside it rather than under it (#90).
         DrawingCanvas.FitReserveRight = SidePanelsReserve;
         ModelDrawing.FitReserveRight = SidePanelsReserve;
+        DrawingCanvas.FitReserveTop = ToolBarReserve;
+        ModelDrawing.FitReserveTop = ToolBarReserve;
         Editor.MessageChanged += (_, _) =>
         {
             // A change of a header result is said with the edit that caused it (#18, design §7.3).

@@ -267,6 +267,27 @@ public class CameraTests
     }
 
     [Fact]
+    public void Fitting_below_the_covered_toolbar_frames_every_corner_under_it()
+    {
+        // #186: the floating toolbar covers the top 56 px, so no corner may be drawn there, and the
+        // drawing is centred in the 544 px below it.
+        Bounds3 bounds = Bounds3.Of(Point3.Inches(0, 0, 0)).Including(Point3.Inches(8, 5, 6));
+        Camera front = ViewSnap.Facing(Camera.Isometric(), new Vector3d(0, -1, 0)) with { Projection = CameraProjection.Orthographic };
+        Camera fitted = front.FitTo(bounds, Viewport, coveredRight: 280, coveredTop: 56);
+
+        double minY = double.PositiveInfinity, maxY = double.NegativeInfinity;
+        foreach (Vector3d corner in bounds.CornersInInches())
+        {
+            Point at = fitted.Project(corner);
+            minY = Math.Min(minY, at.Y);
+            maxY = Math.Max(maxY, at.Y);
+        }
+
+        Assert.True(minY >= 56 - 1e-6, $"a corner is at {minY}, under the toolbar.");
+        Assert.Equal(56 + 272, (minY + maxY) / 2, 6);
+    }
+
+    [Fact]
     public void Fitting_frames_every_corner_inside_the_margin()
     {
         Bounds3 bounds = Bounds3.Of(Point3.Inches(0, 0, 0)).Including(Point3.Inches(48, 24, 17));

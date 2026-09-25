@@ -444,6 +444,12 @@ public sealed class ModelView : Control
     public double FitReserveRight { get; set; }
 
     /// <summary>
+    /// How many pixels at the top of this view the floating toolbar covers (#186): zoom to fit
+    /// frames the drawing below it, and a part under it counts as out of view.
+    /// </summary>
+    public double FitReserveTop { get; set; }
+
+    /// <summary>
     /// Parts to draw attention to, their edges in the problem colour: the ones a conflict or a
     /// refused turn names (#72), or the ones a relationship row under the pointer holds (#77).
     /// </summary>
@@ -566,7 +572,7 @@ public sealed class ModelView : Control
         _surfaceStep = (_surfaceStep + 1) % 6;
         if (boxes.Length > 0 && _camera.HasViewport)
         {
-            Camera = ViewSnap.FaceOn(_camera, boxes[0], ViewSnap.FaceAt(_surfaceStep), FitReserveRight);
+            Camera = ViewSnap.FaceOn(_camera, boxes[0], ViewSnap.FaceAt(_surfaceStep), FitReserveRight, FitReserveTop);
             return;
         }
 
@@ -587,7 +593,7 @@ public sealed class ModelView : Control
         Bounds3 bounds = _editor is { } editor ? Bounds3.Of(editor.Sketch) : Bounds3.Empty;
         Camera = bounds.IsEmpty
             ? _camera with { CenterX = 0, CenterY = 0, CenterZ = 0, PixelsPerInch = CanvasView.BlankSheetPixelsPerInch }
-            : _camera.FitTo(bounds, _camera.Viewport, coveredRight: FitReserveRight);
+            : _camera.FitTo(bounds, _camera.Viewport, coveredRight: FitReserveRight, coveredTop: FitReserveTop);
     }
 
     /// <summary>
@@ -601,7 +607,7 @@ public sealed class ModelView : Control
             return;
         }
 
-        Rect visible = new(0, 0, Math.Max(Bounds.Width - FitReserveRight, 1), Bounds.Height);
+        Rect visible = new(0, FitReserveTop, Math.Max(Bounds.Width - FitReserveRight, 1), Math.Max(Bounds.Height - FitReserveTop, 1));
         foreach (BoxCorner corner in (BoxCorner[])[BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest])
         {
             foreach (BoxLevel level in (BoxLevel[])[BoxLevel.Bottom, BoxLevel.Top])

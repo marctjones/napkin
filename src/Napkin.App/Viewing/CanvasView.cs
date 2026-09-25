@@ -288,6 +288,12 @@ public sealed class CanvasView : Control
     public double FitReserveRight { get; set; }
 
     /// <summary>
+    /// How many pixels at the top of this view the floating toolbar covers (#186): zoom to fit
+    /// frames the drawing below it, and a part under it counts as out of view.
+    /// </summary>
+    public double FitReserveTop { get; set; }
+
+    /// <summary>
     /// Parts to draw attention to, outlined in the problem colour: the ones a conflict or a refused
     /// turn names (#72), or the ones a relationship row under the pointer holds (#77).
     /// </summary>
@@ -542,7 +548,7 @@ public sealed class CanvasView : Control
         }
 
         (Point3 low, Point3 high) = SpaceSnapResolver.Extent(box);
-        Rect visible = new(0, 0, Math.Max(Bounds.Width - FitReserveRight, 1), Bounds.Height);
+        Rect visible = new(0, FitReserveTop, Math.Max(Bounds.Width - FitReserveRight, 1), Math.Max(Bounds.Height - FitReserveTop, 1));
         foreach (Point2 corner in (Point2[])[new(low.X, low.Y), new(high.X, low.Y), new(high.X, high.Y), new(low.X, high.Y)])
         {
             if (!visible.Contains(_view.ToScreen(corner)))
@@ -575,7 +581,7 @@ public sealed class CanvasView : Control
         }
 
         _fitPending = false;
-        View = _view.FitTo(extents, _view.Viewport, coveredRight: FitReserveRight);
+        View = _view.FitTo(extents, _view.Viewport, coveredRight: FitReserveRight, coveredTop: FitReserveTop);
     }
 
     /// <summary>Zooms in one step, about the centre of the viewport.</summary>
