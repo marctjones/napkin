@@ -120,5 +120,4 @@ public class OpeningPlacementTests
             FramingList.Of(sketch, MaterialsLibrary.Shipped)[0].Summary,
             FramingList.Of(read, MaterialsLibrary.Shipped)[0].Summary);
     }
-
 }
