@@ -104,6 +104,13 @@ public static class JointDescription
                           && !JointGeometry.IsSatisfied(sketch, joint));
     }
 
+    /// <summary>
+    /// Whether two parts have the same joinery: the same entries, or the same entries under a
+    /// half-turn of the part about any of its own axes (<c>docs/design/joinery-and-fasteners.md</c> &#xA7;6.3).
+    /// </summary>
+    public static bool SameJoinery(ImmutableArray<JointFact> a, ImmutableArray<JointFact> b)
+        => JointSequence.AreEqual(a, b);
+
     /// <summary>What a part's joinery adds to one of its three dimensions: the sum of its allowances.</summary>
     public static Length AllowanceOn(ImmutableArray<JointFact> facts, PartDimension dimension)
         => facts.Where(fact => fact.Kind == JointFactKind.Allowance && fact.Dimension == dimension)
@@ -307,7 +314,7 @@ public static class JointDescription
     // Consecutive holes from one face read as one sentence: the biggest run first, then the lower end.
     private static string PocketSentence(IEnumerable<JointFact> holes)
     {
-        JointFact[] ordered = [.. holes.OrderByDescending(fact => fact.Count).ThenBy(fact => (int)fact.End!.Value)];
+        JointFact[] ordered = [.. holes.OrderByDescending(fact => fact.Count).ThenBy(fact => LowFirst(fact.End!.Value))];
         string from = Word(ordered[0].Face!.Value);
         if (ordered.Length == 1)
         {
@@ -321,6 +328,17 @@ public static class JointDescription
             : $"{string.Join(", ", clauses.Take(clauses.Count - 1))} and {clauses[^1]}";
         return $"Drill {joined}, from the {from} face.";
     }
+
+    // The order of two ends of one part when nothing else separates them: the low side first (west, south, bottom, then east, north, top).
+    private static int LowFirst(BoxFace face) => face switch
+    {
+        BoxFace.West => 0,
+        BoxFace.South => 1,
+        BoxFace.Bottom => 2,
+        BoxFace.East => 3,
+        BoxFace.North => 4,
+        _ => 5,
+    };
 
     // "Length includes 1/4" into a rabbet at each end; width includes 1/4" into a groove at each edge."
     private static string? AllowanceSentence(ImmutableArray<JointFact> facts)
