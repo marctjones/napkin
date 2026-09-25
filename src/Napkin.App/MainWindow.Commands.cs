@@ -123,6 +123,10 @@ public partial class MainWindow
 
     void OnCutLayoutClicked(object? sender, RoutedEventArgs e) => OpenCutLayout();
 
+    void OnFastenerSizesClicked(object? sender, RoutedEventArgs e) => OpenFastenerSizes();
+
+    void OnSawKerfClicked(object? sender, RoutedEventArgs e) => OpenSawKerf();
+
     void OnZoomToFitClicked(object? sender, RoutedEventArgs e)
     {
         if (IsShowingModel)

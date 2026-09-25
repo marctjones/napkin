@@ -147,6 +147,8 @@ public class WallWorkflows
     {
         MainWindow window = (MainWindow)app.Target;
 
+        app.Click(CentreOf(window, window.FileMenuItem));
+
         app.Click(CentreOf(window, window.SamplesMenuItem));
         MenuItem item = window.GetVisualDescendants().OfType<MenuItem>().Single(candidate => (candidate.Header as string) == "Wall with window");
         app.Click(CentreOf(window, item));

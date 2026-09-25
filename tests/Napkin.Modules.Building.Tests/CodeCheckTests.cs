@@ -174,7 +174,7 @@ public class CodeCheckTests
 
         CheckWords words = CodeCheck.Words(missing, Library);
         Assert.Equal(
-            "Not checked: the ground snow load is not entered, and napkin never assumes a value. Enter the site values under Edit → Adopted code and site.",
+            "Not checked: the ground snow load is not entered, and napkin never assumes a value. Enter the site values under Project → Adopted code and site.",
             words.Headline);
     }
 
@@ -195,7 +195,7 @@ public class CodeCheckTests
         (Sketch sketch, _) = Design(In(36));
         HeaderResult.NoData none = Assert.IsType<HeaderResult.NoData>(Check(sketch with { Code = null }));
         Assert.Equal(NoDataReason.NoPackSelected, none.Reason);
-        Assert.Equal("No code selected: choose one under Edit → Adopted code and site.", CodeCheck.Words(none, Library).Headline);
+        Assert.Equal("No code selected: choose one under Project → Adopted code and site.", CodeCheck.Words(none, Library).Headline);
 
         // The shipped Connecticut pack: its IRC base tables are not loaded (docs/rules-engine.md).
         CodePacks shipped = CodePacks.Discover([RealPacks]);
@@ -409,7 +409,7 @@ public class CodeCheckTests
         HeaderResult.InputMissing both = new(new ValueList<string>(["groundSnowLoad", "supports"]), "ZZ-HEADER", sized.Citation.Code, "SYNTHETIC");
         Assert.Equal(
             "Not checked: the ground snow load, what the wall supports are not entered, and napkin never assumes a value. "
-            + "Choose what the wall supports under Supports in the wall's panel. Enter the site values under Edit → Adopted code and site.",
+            + "Choose what the wall supports under Supports in the wall's panel. Enter the site values under Project → Adopted code and site.",
             CodeCheck.Words(both, Library).Headline);
         Assert.Equal("not checked: the ground snow load, what the wall supports not entered", CodeCheck.Short(both));
 

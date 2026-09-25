@@ -14,9 +14,9 @@ when it is itself called "Wall" (`samples/wall-with-window` predates the layer).
 | plan height | thickness: the depth of its studs |
 | depth | height, bottom of the bottom plate to the top of the top plates |
 
-Draw one with **Draw → Wall** or **W**, then drag its length. It is as thick as its studs are deep
+Draw one with **Draw → Walls → Wall** or **W**, then drag its length. It is as thick as its studs are deep
 (a 2x4 is 3 1/2", a 2x6 5 1/2", as the materials library carries PS 20-25 Table 3) and starts
-8'-0" tall, a starting value to type over in the panel's Depth. **Draw → Wall, 2x6 studs** picks
+8'-0" tall, a starting value to type over in the panel's Depth. **Draw → Walls → Wall, 2x6 studs** picks
 the other member. A drag mostly north–south makes the wall turned a quarter, so its length is
 always its width. The studs are the library lumber whose dressed width is the wall's thickness; a
 wall of any other thickness is not framed, and the panel says so.
@@ -69,7 +69,7 @@ anything changes; nothing is stored. The question is:
 
 | Input | From |
 |---|---|
-| the code | the project's adopted code (**Edit → Adopted code and site…**): a pack napkin found, locked to one revision or following the newest installed one |
+| the code | the project's adopted code (**Project → Adopted code and site…**): a pack napkin found, locked to one revision or following the newest installed one |
 | which table | the pack's header table for exterior bearing walls, the only walls napkin draws yet |
 | what the wall supports | the wall's **Supports** in the part panel: one of the values the table itself declares (dashes read as spaces), never assumed |
 | header span | the opening's rough width |
@@ -84,11 +84,11 @@ says for a selected opening, under **Code check**:
 - **Out of scope**: "This opening is beyond what Table … covers: *the limit, with its row*. napkin
   stops here: get this header engineered." No size is shown or bought.
 - **Input missing**: which input is not entered and where to enter it (the wall's Supports, or
-  Edit → Adopted code and site).
+  Project → Adopted code and site).
 - **No data**: the engine's message, "Where to add tables: docs/rules-engine.md". With the shipped
   Connecticut pack this is every opening: its IRC base tables are not loaded
   ([rules-engine.md](rules-engine.md)). With no code chosen: "No code selected: choose one under
-  Edit → Adopted code and site."
+  Project → Adopted code and site."
 
 Changing anything the answer depends on — resizing the opening, the wall's Supports, a site
 value, the code or its lock — recomputes every opening, and the message bar says each result that
@@ -149,7 +149,7 @@ choice is one undo step and is saved with the wall (format 8, `wall.bracing`, [f
   what to add; the section is the one applied.
 - **Out of scope**: "This wall line is beyond what Section … covers: *the limit*. napkin stops here:
   get the bracing engineered." Never a length.
-- **Input missing**: which site value is not entered and where to enter it (Edit → Adopted code and
+- **Input missing**: which site value is not entered and where to enter it (Project → Adopted code and
   site).
 - **No data**: with no code chosen, or a pack without bracing provisions. With the shipped
   Connecticut pack: "The loaded pack CT 2022 has no wall-bracing provisions, so napkin cannot check
@@ -166,7 +166,7 @@ with their methods, and the project's site values. The arithmetic is entirely th
 required (ZZ-BRACE.1)." On the plan, a braced segment is a thin tinted strip down the wall with the
 method's id beside it, and short ticks mark every segment's ends; unbraced walls are not marked.
 
-**Switching the code** (Edit → Adopted code and site…, or a following project taking a newer
+**Switching the code** (Project → Adopted code and site…, or a following project taking a newer
 revision) recomputes every header and every wall line under the new pack, and the message bar
 leads with a summary: "Now checking against ZZ BRACE B (IRC 2099, pack us-zz-brace-b rev 1): every
 result recomputed; 1 changed, 1 newly flagged, none can no longer be computed." — then each result

@@ -31,11 +31,13 @@ public class ToolbarWorkflows
 
         app.Chord(Key.N);
 
-        app.Expect("every icon's tooltip names its function and key, and the Draw menu has the same function under the same name and key", () =>
+        app.Expect("every icon's tooltip names its function and key, and the Draw or Edit menu has the same function under the same name and key", () =>
         {
-            Dictionary<string, MenuItem> menu = window.DrawMenuItem.Items
-                .OfType<MenuItem>()
-                .Where(item => item.Header is string)
+            // The tools are on Draw, the actions on the selection on Edit (#169); a tool can sit in
+            // a submenu (Draw → Walls → Wall).
+            Dictionary<string, MenuItem> menu = Flatten(window.DrawMenuItem.Items)
+                .Concat(Flatten(window.EditMenuItem.Items))
+                .Where(item => item.Header is string && item.ItemCount == 0)
                 .ToDictionary(item => Plain((string)item.Header!));
 
             foreach (Button button in window.ToolButtons)
@@ -45,9 +47,9 @@ public class ToolbarWorkflows
                 string tip = Assert.IsType<string>(ToolTip.GetTip(button));
                 Assert.StartsWith(name + ":", tip, StringComparison.Ordinal);
 
-                Assert.True(menu.TryGetValue(name, out MenuItem? item), $"the Draw menu has no {name}.");
+                Assert.True(menu.TryGetValue(name, out MenuItem? item), $"neither Draw nor Edit has {name}.");
                 KeyGesture gesture = item!.InputGesture
-                    ?? throw new InvalidOperationException($"Draw → {name} shows no key.");
+                    ?? throw new InvalidOperationException($"the menu's {name} shows no key.");
                 Assert.EndsWith($"({gesture.Key})", tip, StringComparison.Ordinal);
             }
         });
@@ -58,7 +60,7 @@ public class ToolbarWorkflows
             Assert.False(window.PinToolControl.IsEnabled);
             Assert.False(window.DeleteToolControl.IsEnabled);
             Assert.All(
-                window.DrawMenuItem.Items.OfType<MenuItem>().Where(item => item.Name is "ShapeMenuItem" or "PinMenuItem" or "DeleteMenuItem"),
+                window.EditMenuItem.Items.OfType<MenuItem>().Where(item => item.Name is "ShapeMenuItem" or "PinMenuItem" or "DeleteMenuItem" or "DuplicateMenuItem"),
                 item => Assert.False(item.IsEnabled));
         });
 
@@ -179,4 +181,7 @@ public class ToolbarWorkflows
         Size size = control.Bounds.Size;
         return topLeft + new Point(size.Width / 2, size.Height / 2);
     }
+
+    static IEnumerable<MenuItem> Flatten(IEnumerable<object?> items) =>
+        items.OfType<MenuItem>().SelectMany(item => (IEnumerable<MenuItem>)[item, .. Flatten(item.Items)]);
 }

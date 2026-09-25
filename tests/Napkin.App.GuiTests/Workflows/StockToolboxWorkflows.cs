@@ -271,6 +271,11 @@ public class StockToolboxWorkflows
 
         app.Click(CentreOf(window, twoByFourItem));
 
+        // Since Draw holds only the tools (#169) the menu is short, and the lumber submenu sits over
+        // where the drawer opens: the pointer goes to the paper, where the 2x4 is to be put down,
+        // rather than resting on a drawer item whose own size the readout would then show.
+        app.MoveTo(At(window, Point2.Inches(-2, -10)));
+
         app.Expect("the pointer holds the 2x4, the menu is closed, and the drawer shows what is held", () =>
         {
             Assert.Same(twoByFour, window.Canvas.ArmedStock);

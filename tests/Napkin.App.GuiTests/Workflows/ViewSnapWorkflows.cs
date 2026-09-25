@@ -80,11 +80,13 @@ public class ViewSnapWorkflows
 
         // Dark theme frame of a snapped view.
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("AppearanceMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeMenuItem")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeDarkMenuItem")!));
         app.Click(CentreOf(window, x));
         app.SaveFrame("3d-snap-dark");
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("AppearanceMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeMenuItem")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeLightMenuItem")!));
 

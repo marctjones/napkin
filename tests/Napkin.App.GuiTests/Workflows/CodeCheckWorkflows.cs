@@ -43,7 +43,7 @@ public class CodeCheckWorkflows
             Assert.Contains(code.PackRows, row => row.StartsWith("ZZ FRAME — IRC 2099, in force Jan 1, 2099 (pack us-zz-frame rev 1)", StringComparison.Ordinal));
             Assert.Contains(code.PackRows, row => row.StartsWith("ZZ OTHER — IRC 2099", StringComparison.Ordinal));
             Assert.All(code.PackRows.Skip(1), row => Assert.EndsWith("(UNREVIEWED)", row, StringComparison.Ordinal));
-            Assert.Equal("No code selected: choose one under Edit → Adopted code and site.", code.StatusText);
+            Assert.Equal("No code selected: choose one under Project → Adopted code and site.", code.StatusText);
         });
 
         PickPack(site, code, "ZZ FRAME");
@@ -158,7 +158,7 @@ public class CodeCheckWorkflows
         {
             Assert.Null(window.CurrentDesign!.Sketch.Site.GroundSnowLoadPsf);
             Assert.Equal(
-                "Not checked: the ground snow load is not entered, and napkin never assumes a value. Enter the site values under Edit → Adopted code and site.",
+                "Not checked: the ground snow load is not entered, and napkin never assumes a value. Enter the site values under Project → Adopted code and site.",
                 window.CodeCheckText);
             Assert.Contains("Header for Window 1 can no longer be checked", window.MessageOnScreen, StringComparison.Ordinal);
         });
@@ -335,10 +335,10 @@ public class CodeCheckWorkflows
         });
     }
 
-    /// <summary>Edit → Adopted code and site…, with the pointer.</summary>
+    /// <summary>Project → Adopted code and site…, with the pointer.</summary>
     static CodeWindow OpenCode(AppDriver app, MainWindow window)
     {
-        app.Click(CentreOf(window, window.EditMenuItem));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ProjectMenu")!));
         app.Click(CentreOf(window, window.CodeMenuEntry));
         return window.CodeSite ?? throw new InvalidOperationException("The code window did not open.");
     }

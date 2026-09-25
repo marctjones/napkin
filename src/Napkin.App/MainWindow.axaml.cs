@@ -502,6 +502,24 @@ public partial class MainWindow : Window
         return window;
     }
 
+    /// <summary>Opens the cut layout with the saw kerf field ready to type into (Project &#x2192; Saw kerf…).</summary>
+    /// <returns>The window.</returns>
+    public CutListWindow OpenSawKerf()
+    {
+        CutListWindow window = OpenCutList();
+        window.EditKerf();
+        return window;
+    }
+
+    /// <summary>Opens the cut-list window on its fastener sizes and supplies tab.</summary>
+    /// <returns>The window.</returns>
+    public CutListWindow OpenFastenerSizes()
+    {
+        CutListWindow window = OpenCutList();
+        window.ShowSizes();
+        return window;
+    }
+
     /// <summary>
     /// Asks for a file and opens it. Cancelling changes nothing at all.
     /// </summary>

@@ -34,7 +34,7 @@ public class CutLayoutWorkflows
         // Turn to the cut layout from the View menu, with the mouse. The menu is long, and a headless
         // popup cannot leave the window, so the window is made tall enough to hold it.
         app.ResizeWindow(900, 900);
-        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ListsMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("CutLayoutMenuItem")!));
 
         app.Expect("the cut layout is showing: one 12 ft 1x4 and one 14 ft 2x4 with the default kerf", () =>
@@ -124,16 +124,18 @@ public class CutLayoutWorkflows
 
         // The dark theme, for the frame the bars' legibility is judged on.
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("AppearanceMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeMenuItem")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeDarkMenuItem")!));
         AppDriver.Attach(window.CutList!, "cut-layout-dark").SaveFrame("cut-layout-dark");
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("AppearanceMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeMenuItem")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeSystemMenuItem")!));
 
         // Close it and open it again: the kerf comes back from the person's settings.
         window.CutList!.Close();
-        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ListsMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("CutLayoutMenuItem")!));
 
         app.Expect("the kerf the person set is still there when the window comes back", () =>
@@ -145,6 +147,7 @@ public class CutLayoutWorkflows
 
     static void OpenSample(AppDriver app, MainWindow window, string sample)
     {
+        app.Click(CentreOf(window, window.FileMenuItem));
         app.Click(CentreOf(window, window.SamplesMenuItem));
 
         MenuItem item = window.GetVisualDescendants()

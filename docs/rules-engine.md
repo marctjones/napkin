@@ -34,7 +34,7 @@ the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application
 
 ## In the app
 
-**Edit → Adopted code and site…** lists every pack found in those folders as "<shortName> —
+**Project → Adopted code and site…** lists every pack found in those folders as "<shortName> —
 <baseCode>, in force <from>" with its id, revision, status and review state, for example "CT 2022
 — IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 1): base tables not loaded (UNREVIEWED)".
 A pack that fails to load is shown with its problems, not hidden. napkin never picks one: the
@@ -133,7 +133,7 @@ Connecticut's footnote e, as encoded:
   is above `atMost` the request is `OutOfScope` (`NarrowedByFootnote`) citing the footnote; when
   it is not entered, `InputMissing` names it. It is asked for only then: a snow load of 30 psf or
   more never needs a roof live load. `use` may not be below `below`. The condition inputs are the
-  numeric header inputs plus `roofLiveLoad` (a site value, whole psf, entered in *Edit → Adopted
+  numeric header inputs plus `roofLiveLoad` (a site value, whole psf, entered in *Project → Adopted
   code and site*).
 - **`interpolate`**: only for an input **strictly between** the two declared columns, which must
   be adjacent bands of an upper-bound column present for every group of rows. Rows at the two

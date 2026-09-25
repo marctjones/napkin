@@ -84,6 +84,7 @@ public class NapkinLookWorkflows
     static void PickTheme(AppDriver app, MainWindow window, string itemName)
     {
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("AppearanceMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ThemeMenuItem")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>(itemName)!));
     }
@@ -91,6 +92,7 @@ public class NapkinLookWorkflows
     static void Pick(AppDriver app, MainWindow window, string itemName)
     {
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("AppearanceMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("SketchMenuItem")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>(itemName)!));
     }
