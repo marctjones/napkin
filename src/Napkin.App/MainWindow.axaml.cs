@@ -119,7 +119,15 @@ public partial class MainWindow : Window
             UpdateZoomReadout();
             PlaceDimensionEditor();
         };
-        DrawingCanvas.PointerWorldPositionChanged += (_, point) => UpdateCursorReadout(point);
+        // Only the view on screen speaks for the pointer: the plan, hidden as another view shows, says the
+        // pointer left it, and must not overwrite that view's readout.
+        DrawingCanvas.PointerWorldPositionChanged += (_, point) =>
+        {
+            if (!IsShowingModel)
+            {
+                UpdateCursorReadout(point);
+            }
+        };
         DrawingCanvas.ToolChanged += (_, _) => UpdateToolButtons();
         DrawingCanvas.HoveredPartChanged += (_, _) => UpdateRelationships();
         DrawingCanvas.DimensionEditRequested += (_, request) =>
@@ -135,7 +143,13 @@ public partial class MainWindow : Window
         ModelDrawing.Editor = Editor;
         ModelDrawing.ViewChanged += (_, _) => UpdateZoomReadout();
         ModelDrawing.HoveredPartChanged += (_, _) => UpdateRelationships();
-        ModelDrawing.PointerModelPositionChanged += (_, point) => UpdateCursorReadout(point);
+        ModelDrawing.PointerModelPositionChanged += (_, point) =>
+        {
+            if (IsShowingModel)
+            {
+                UpdateCursorReadout(point);
+            }
+        };
         ModelDrawing.ViewRequested += (_, view) => ShowView(view);
         ModelDrawing.PlacementChanged += (_, _) => UpdateToolButtons();
         StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
