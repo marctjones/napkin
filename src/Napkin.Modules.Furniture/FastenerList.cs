@@ -57,13 +57,16 @@ public sealed record FastenerRow(
         }
     }
 
-    /// <summary>"Apron, back &#x2192; Leg &#xD7; 2, ...": the part pairs, first seen first, with how many joints.</summary>
+    /// <summary>
+    /// Which parts: "Apron, back &#x2192; Leg, north-west + Leg, north-east; Front rail &#x2192; ..." &#x2014; each inserted part
+    /// once, first seen first, with the parts it is fastened to (&#xD7; n when there are several joints between the same two).
+    /// </summary>
     public string For => string.Join(
-        ", ",
-        Sources.GroupBy(source => (source.Inserted, source.Receiving))
-            .Select(group => group.Count() == 1
-                ? $"{group.Key.Inserted} → {group.Key.Receiving}"
-                : $"{group.Key.Inserted} → {group.Key.Receiving} × {group.Count()}"));
+        "; ",
+        Sources.GroupBy(source => source.Inserted).Select(group =>
+            group.Key + " \u2192 " + string.Join(
+                " + ",
+                group.GroupBy(source => source.Receiving).Select(to => to.Count() == 1 ? to.Key : $"{to.Key} \u00d7 {to.Count()}"))));
 
     /// <summary>The sum written out: "3 + 3 + 2 = 8".</summary>
     public string Derivation => string.Join(" + ", Sources.Select(source => source.Copies == 1 ? $"{source.Each}" : $"{source.Each}×{source.Copies}")) + $" = {Count}";

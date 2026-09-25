@@ -794,7 +794,8 @@
       "packSize": 100,
       "count": 27,
       "packs": 1,
-      "derivation": "Pocket holes per joint, one per 2 in of joint length, at least 2 (recipe): J1 5 1/2 in -> ceil(2.75)=3, x2 = 6; J2 5 1/2 in -> 3, x4 = 12; J3 1 1/2 in -> ceil(.75)=1, least 2, x2 = 4; J4 5 1/2 in -> 3; J5 1 1/2 in -> 2. 6 + 12 + 4 + 3 + 2 = 27. Packs: ceil(27/100) = 1."
+      "derivation": "Pocket holes per joint, one per 2 in of joint length, at least 2 (recipe): J1 5 1/2 in -> ceil(2.75)=3, x2 = 6; J2 5 1/2 in -> 3, x4 = 12; J3 1 1/2 in -> ceil(.75)=1, least 2, x2 = 4; J4 5 1/2 in -> 3; J5 1 1/2 in -> 2. 6 + 12 + 4 + 3 + 2 = 27. Packs: ceil(27/100) = 1.",
+      "for": "Apron, back → Leg, north-west + Leg, north-east; Apron, side, west → Leg, south-west + Leg, north-west; Apron, side, east → Leg, south-east + Leg, north-east; Front rail → Leg, south-west + Leg, south-east; Web → Apron, back + Front rail"
     },
     {
       "kind": "WoodScrew",
@@ -803,7 +804,8 @@
       "packSize": 100,
       "count": 6,
       "packs": 1,
-      "derivation": "J6 slide cleats, 16 in long, one per 6 in: ceil(2.67)=3, x2 joints = 6; thickness 3/4 in (the cleat). Packs: ceil(6/100) = 1."
+      "derivation": "J6 slide cleats, 16 in long, one per 6 in: ceil(2.67)=3, x2 joints = 6; thickness 3/4 in (the cleat). Packs: ceil(6/100) = 1.",
+      "for": "Slide cleat, west → Apron, side, west; Slide cleat, east → Apron, side, east"
     },
     {
       "kind": "WoodScrew",
@@ -812,7 +814,8 @@
       "packSize": 100,
       "count": 8,
       "packs": 1,
-      "derivation": "J10 drawer fronts, recipe ceil(15 5/8 / 6) = 3, typed over as 4 on each of 2 joints = 8; through the 1/2 in drawer box front. Packs: ceil(8/100) = 1."
+      "derivation": "J10 drawer fronts, recipe ceil(15 5/8 / 6) = 3, typed over as 4 on each of 2 joints = 8; through the 1/2 in drawer box front. Packs: ceil(8/100) = 1.",
+      "for": "Drawer box front, A → Drawer front, A; Drawer box front, B → Drawer front, B"
     },
     {
       "kind": "Brad",
@@ -821,7 +824,8 @@
       "packSize": 1000,
       "count": 24,
       "packs": 1,
-      "derivation": "J7 (4) and J8 (4): each joint 3 1/2 in, one per 1 1/2 in: ceil(2.33)=3; 8 joints x 3 = 24, 1/2 in plywood parts. Packs: ceil(24/1000) = 1."
+      "derivation": "J7 (4) and J8 (4): each joint 3 1/2 in, one per 1 1/2 in: ceil(2.33)=3; 8 joints x 3 = 24, 1/2 in plywood parts. Packs: ceil(24/1000) = 1.",
+      "for": "Drawer box front, A → Drawer side, left, A + Drawer side, right, A; Drawer box back, A → Drawer side, left, A + Drawer side, right, A; Drawer box front, B → Drawer side, left, B + Drawer side, right, B; Drawer box back, B → Drawer side, left, B + Drawer side, right, B"
     },
     {
       "kind": "TabletopClip",
@@ -830,8 +834,60 @@
       "packSize": 8,
       "count": 10,
       "packs": 2,
-      "derivation": "J11: aprons 36, 16, 16, 36 in, one per 12 in, least 2, one joint each: 3 + 2 + 2 + 3 = 10. Packs: ceil(10/8) = 2."
+      "derivation": "J11: aprons 36, 16, 16, 36 in, one per 12 in, least 2, one joint each: 3 + 2 + 2 + 3 = 10. Packs: ceil(10/8) = 2.",
+      "for": "Apron, back → Top; Front rail → Top; Apron, side, west → Top; Apron, side, east → Top"
     }
+  ],
+  "hardware": [
+    {
+      "name": "16 in side-mount drawer slide, pair",
+      "count": 2,
+      "for": "Drawer box front, A, Drawer box front, B",
+      "derivation": "One pair on each drawer box front (A and B), quantity 1 x part quantity 1 each: 1 + 1 = 2."
+    },
+    {
+      "name": "Drawer pull",
+      "count": 2,
+      "for": "Drawer front, A, Drawer front, B",
+      "derivation": "One pull on each drawer front (A and B): 1 + 1 = 2."
+    }
+  ],
+  "supplies": [
+    {
+      "item": "Wood glue",
+      "note": "",
+      "derivation": "Typed line."
+    },
+    {
+      "item": "Sandpaper, 120 and 220",
+      "note": "",
+      "derivation": "Typed line."
+    },
+    {
+      "item": "Finish",
+      "note": "",
+      "derivation": "Typed line."
+    },
+    {
+      "item": "Glue: 20 of 34 joints",
+      "note": "",
+      "derivation": "Glued joints: the pocket-screw joints 1-10 (10), the cleat joints 11-12 (2), the drawer box brad joints 13-16 and 22-25 (8) = 20 of the 34 joints; drawer bottoms in grooves, drawer fronts and tabletop clips are not glued."
+    }
+  ],
+  "suppliesCsv": [
+    "\"Fasteners, hardware and supplies: counted from the joints and parts; sizes and packs are the builder's own typed text.\"",
+    "Section,Item,Size,Count,Pack,Packs,For",
+    "Fasteners,\"Pocket screw, 3/4\"\" stock\",1-1/4 in coarse,27,100,1,\"Apron, back → Leg, north-west + Leg, north-east; Apron, side, west → Leg, south-west + Leg, north-west; Apron, side, east → Leg, south-east + Leg, north-east; Front rail → Leg, south-west + Leg, south-east; Web → Apron, back + Front rail\"",
+    "Fasteners,\"Wood screw, 3/4\"\" stock\",#8 x 1-1/4,6,100,1,\"Slide cleat, west → Apron, side, west; Slide cleat, east → Apron, side, east\"",
+    "Fasteners,\"Wood screw, 1/2\"\" stock\",#8 x 1,8,100,1,\"Drawer box front, A → Drawer front, A; Drawer box front, B → Drawer front, B\"",
+    "Fasteners,\"Brad, 1/2\"\" stock\",18 ga x 1,24,1000,1,\"Drawer box front, A → Drawer side, left, A + Drawer side, right, A; Drawer box back, A → Drawer side, left, A + Drawer side, right, A; Drawer box front, B → Drawer side, left, B + Drawer side, right, B; Drawer box back, B → Drawer side, left, B + Drawer side, right, B\"",
+    "Fasteners,Tabletop clip,\"figure-8, with screws\",10,8,2,\"Apron, back → Top; Front rail → Top; Apron, side, west → Top; Apron, side, east → Top\"",
+    "Hardware,\"16 in side-mount drawer slide, pair\",,2,,,\"Drawer box front, A, Drawer box front, B\"",
+    "Hardware,Drawer pull,,2,,,\"Drawer front, A, Drawer front, B\"",
+    "Supplies,Wood glue,,,,,",
+    "Supplies,\"Sandpaper, 120 and 220\",,,,,",
+    "Supplies,Finish,,,,,",
+    "Supplies,Glue: 20 of 34 joints,,,,,"
   ],
   "notes": [
     "totalVolumeCubicUnits is the sum of quantity x length x width x thickness of the FINISHED rows, so it is larger than the boxes' volume by the joinery allowances (a drawer box front is 512 units longer than drawn, a drawer bottom 512 in each direction).",
