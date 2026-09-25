@@ -259,6 +259,10 @@ public partial class MainWindow
                 RunOnSelection(command);
                 return true;
 
+            case EditCommand.ToggleRough:
+                SetEntryMode(Editor.EntryMode == EntryMode.Rough ? EntryMode.Precise : EntryMode.Rough);
+                return true;
+
             case EditCommand.Join or EditCommand.JoinAll:
                 BeginJoin(command == EditCommand.JoinAll);
                 return true;

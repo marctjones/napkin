@@ -202,6 +202,7 @@ public sealed class CanvasView : Control
                 _editor.DesignChanged -= OnEditorDesignChanged;
                 _editor.DesignOpened -= OnEditorDesignOpened;
                 _editor.SelectionChanged -= OnEditorDesignChanged;
+                _editor.EntryModeChanged -= OnEditorDesignChanged;
             }
 
             _editor = value;
@@ -211,6 +212,7 @@ public sealed class CanvasView : Control
                 _editor.DesignChanged += OnEditorDesignChanged;
                 _editor.DesignOpened += OnEditorDesignOpened;
                 _editor.SelectionChanged += OnEditorDesignChanged;
+                _editor.EntryModeChanged += OnEditorDesignChanged;
             }
 
             OnEditorDesignOpened(this, EventArgs.Empty);
@@ -386,7 +388,59 @@ public sealed class CanvasView : Control
     public bool SnapToGrid { get; set; } = true;
 
     /// <summary>The step a drag or a tool snaps to: the grid's, or, with snapping off, the finest length there is (no rounding).</summary>
-    public double SnapStepInches => SnapToGrid ? GridStepInches : 1.0 / Length.UnitsPerInch;
+    /// <remarks>In Rough mode the rough step, one rung coarser and never below an inch (docs/design/sketch-mode.md §2.1).</remarks>
+    public double SnapStepInches => SnapGrid.SnapStepInches(SnapToGrid, Mode, _view.PixelsPerInch);
+
+    /// <summary>The editor's entry mode, Precise when there is no editor.</summary>
+    EntryMode Mode => _editor?.EntryMode ?? EntryMode.Precise;
+
+    /// <summary>What the last drag caught when it was dropped, for the GUI suite: the indicator a person saw.</summary>
+    public SnapPlan? LastSnap { get; private set; }
+
+    /// <summary>Where the pointer is over the canvas, or null when it is not over it.</summary>
+    Point? _pointer;
+
+    bool _keepSelectionLabels;
+
+    /// <summary>Whether a selected part's size is open for typing, which keeps its labels shown in Rough mode.</summary>
+    public bool KeepSelectionLabels
+    {
+        get => _keepSelectionLabels;
+        set
+        {
+            if (_keepSelectionLabels != value)
+            {
+                _keepSelectionLabels = value;
+                InvalidateVisual();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Whether the selected part's width and height labels are drawn (docs/design/sketch-mode.md
+    /// §2.4): always in Precise; in Rough only while the pointer is over the part or its labels, or
+    /// its size is open for typing — quiet rather than gone, so a click on one still types it.
+    /// </summary>
+    public bool SelectionLabelsShown => Mode == EntryMode.Precise || _keepSelectionLabels || PointerNearSelection();
+
+    bool PointerNearSelection()
+    {
+        if (_pointer is not { } at || _editor?.OnlySelectedBox is not { } only || PartRectangle(only.Id) is not { } drawn)
+        {
+            return false;
+        }
+
+        if (drawn.Inflate(SelectionDimensionOffsetPixels + 14).Contains(at))
+        {
+            return true;
+        }
+
+        return ClickedDimension(only, _view.ToWorld(at)) is not null;
+    }
+
+    /// <summary>The size a drawing tool would make now, while one is dragging, for the status bar; null otherwise.</summary>
+    public (Length Width, Length Height)? LiveDrawSize =>
+        TryPreview(out _, out Length width, out Length height, out _) ? (width, height) : null;
 
     /// <summary>Whether a part is being drawn or dragged right now.</summary>
     public bool IsEditing => _gesture != Gesture.None || _rectangle.IsDrawing || _stock.IsDrawing || _wall.IsDrawing;
@@ -707,6 +761,12 @@ public sealed class CanvasView : Control
     {
         base.OnPointerMoved(e);
         Point position = e.GetPosition(this);
+        bool labelsWereShown = SelectionLabelsShown;
+        _pointer = position;
+        if (SelectionLabelsShown != labelsWereShown)
+        {
+            InvalidateVisual();
+        }
         if (_showRulers)
         {
             _pointerOnRulers = position;
@@ -861,6 +921,12 @@ public sealed class CanvasView : Control
     protected override void OnPointerExited(PointerEventArgs e)
     {
         base.OnPointerExited(e);
+        bool labelsWereShown = SelectionLabelsShown;
+        _pointer = null;
+        if (SelectionLabelsShown != labelsWereShown)
+        {
+            InvalidateVisual();
+        }
         if (_pointerOnRulers is not null)
         {
             _pointerOnRulers = null;
@@ -1099,6 +1165,7 @@ public sealed class CanvasView : Control
 
         Gesture gesture = _gesture;
         SnapPlan? plan = _snap;
+        LastSnap = plan;
         Box? atPress = _gestureBoxAtPress;
         UpdateResult? refusal = _gestureRefusal;
         _gesture = Gesture.None;
@@ -1141,7 +1208,8 @@ public sealed class CanvasView : Control
         List<Request> statements = [];
         if (reached)
         {
-            foreach (Relationship candidate in plan!.Relationships)
+            // In Rough mode the drop keeps the catch and states nothing (docs/design/sketch-mode.md §2.2).
+            foreach (Relationship candidate in RoughEntry.Stated(editor.EntryMode, plan!.Relationships))
             {
                 if (editor.CanHold(candidate) && !editor.AlreadyStates(candidate))
                 {
@@ -1186,15 +1254,16 @@ public sealed class CanvasView : Control
         }
 
         EntityId id = EntityId.New();
-        if (!_rectangle.TryComplete(editor.LayerForNewParts(), id, editor.NextPartName(), out Request? request))
+        if (!_rectangle.TryComplete(editor.LayerForNewParts(), id, editor.NextPartName(), out Request? request, editor.EntryMode))
         {
             InvalidateVisual();
             editor.Say(EditSeverity.Hint, "Drag to draw a part — a click on its own makes nothing.");
             return;
         }
 
-        editor.BeginGesture("Drew a part");
-        UpdateResult result = editor.Apply(request, "Drew a part");
+        string drew = editor.EntryMode == EntryMode.Rough ? "Drew a plank" : "Drew a part";
+        editor.BeginGesture(drew);
+        UpdateResult result = editor.Apply(request, drew);
         if (result is Succeeded)
         {
             editor.Select(id);
@@ -1224,7 +1293,7 @@ public sealed class CanvasView : Control
         }
 
         EntityId id = EntityId.New();
-        if (!_stock.TryComplete(editor.Sketch, editor.LayerForNewParts(), id, editor.NextPartName(), out Request? request))
+        if (!_stock.TryComplete(editor.Sketch, editor.LayerForNewParts(), id, editor.NextPartName(), out Request? request, editor.EntryMode))
         {
             InvalidateVisual();
             editor.Say(
@@ -1921,8 +1990,8 @@ public sealed class CanvasView : Control
 
         // The width and height a selected part shows, as dimension graphics: the same lines,
         // arrowheads and text a stored dimension draws, in the selection's colour. Clicking one
-        // opens it for typing.
-        foreach (SizeAxis axis in (SizeAxis[])[SizeAxis.Width, SizeAxis.Height])
+        // opens it for typing. In Rough mode they wait for the pointer (sketch-mode §2.4).
+        foreach (SizeAxis axis in SelectionLabelsShown ? (SizeAxis[])[SizeAxis.Width, SizeAxis.Height] : [])
         {
             if (SelectionDimensions.TryFor(
                     sketch,
@@ -2170,6 +2239,12 @@ public sealed class CanvasView : Control
             DashStyle = new DashStyle([4, 3], 0),
         };
         context.DrawRectangle(new SolidColorBrush(palette.PreviewFill), pen, rectangle);
+
+        // In Rough mode the sheet reads like a napkin: the size is in the status bar, not on the paper (sketch-mode §2.4).
+        if (Mode == EntryMode.Rough)
+        {
+            return;
+        }
 
         // The size while the part is still being dragged out: read from the two corners, the same
         // way the part's dimensions will read it a moment later (CVS-007).

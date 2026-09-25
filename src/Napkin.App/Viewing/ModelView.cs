@@ -298,7 +298,8 @@ public sealed class ModelView : Control
     public bool SnapToGrid { get; set; } = true;
 
     /// <summary>The step a drag or a tool snaps to: the grid's, or, with snapping off, the finest length there is (no rounding).</summary>
-    public double SnapStepInches => SnapToGrid ? GridStepInches : 1.0 / Length.UnitsPerInch;
+    /// <remarks>In Rough mode the rough step (docs/design/sketch-mode.md §2.1, §6.4).</remarks>
+    public double SnapStepInches => SnapGrid.SnapStepInches(SnapToGrid, _editor?.EntryMode ?? EntryMode.Precise, _camera.PixelsPerInch);
 
     /// <summary>What the drag in progress has caught, or null when nothing is being dragged.</summary>
     public SpaceSnapPlan? ActiveSnap => _snap;
@@ -1427,7 +1428,8 @@ public sealed class ModelView : Control
         List<Request> statements = [];
         if (plan is not null && reached)
         {
-            foreach (Relationship candidate in plan.Relationships)
+            // In Rough mode the drop keeps the catch and states nothing (docs/design/sketch-mode.md §2.2).
+            foreach (Relationship candidate in RoughEntry.Stated(editor.EntryMode, plan.Relationships))
             {
                 if (editor.CanHold(candidate) && !editor.AlreadyStates(candidate))
                 {
@@ -1594,7 +1596,7 @@ public sealed class ModelView : Control
             ? $"{editor.NameOf(target)}'s {WorldWords.Feature(editor.Sketch.Find<Box>(target), BoxFeature.Face(targetFace))}"
             : "the floor";
         string what = $"Placed {_placement.Holding} on {where}";
-        (Request add, System.Collections.Immutable.ImmutableList<Relationship> holds) = PlacementTool.Requests(editor.Sketch, preview);
+        (Request add, System.Collections.Immutable.ImmutableList<Relationship> holds) = PlacementTool.Requests(editor.Sketch, preview, editor.EntryMode);
 
         editor.BeginGesture(what);
         if (editor.Apply(add, what) is Succeeded)

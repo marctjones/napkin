@@ -102,7 +102,8 @@ public sealed class RectangleTool
         LayerId layer,
         EntityId id,
         string name,
-        [NotNullWhen(true)] out Request? request)
+        [NotNullWhen(true)] out Request? request,
+        EntryMode mode = EntryMode.Precise)
     {
         request = null;
         bool wasDrawing = IsDrawing;
@@ -116,7 +117,13 @@ public sealed class RectangleTool
 
         // A bare rectangle lies as drawn at the plan datum, and every box now has a depth: the
         // visible, editable 3/4" default of docs/design/assembly-model.md §11 decision 7.
-        request = new AddEntity(Box.AsDrawn(id, layer, anchor, width, height, Box.DefaultDepth, Angle.Zero) with { Name = name });
+        // In Rough mode the rectangle is a plank: a part with no stock, marked rough, so it is on
+        // the cut list from the start (docs/design/sketch-mode.md §2.3).
+        request = new AddEntity(Box.AsDrawn(id, layer, anchor, width, height, Box.DefaultDepth, Angle.Zero) with
+        {
+            Name = name,
+            Part = mode == EntryMode.Rough ? RoughEntry.Plank(width, height) : null,
+        });
         return true;
     }
 }

@@ -334,15 +334,28 @@ public sealed class PlacementTool
     /// the relationships that hold it — the flush against the face it rests on, and its snaps —
     /// each to be put to the updater as a snap's is.
     /// </summary>
-    public static (Request Add, ImmutableList<Relationship> Holds) Requests(Sketch sketch, PlacementPreview preview)
+    /// <remarks>
+    /// In Rough mode (<c>docs/design/sketch-mode.md</c> &#xA7;2.2, &#xA7;6.4) the part is marked rough
+    /// — a plain board becomes a plank, a part with no stock — and nothing holds it: the flush and
+    /// the snaps are dropped, so the part lands where they put it and nothing is stated.
+    /// </remarks>
+    public static (Request Add, ImmutableList<Relationship> Holds) Requests(Sketch sketch, PlacementPreview preview, EntryMode mode = EntryMode.Precise)
     {
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(preview);
 
-        Box box = preview.Box;
+        bool rough = mode == EntryMode.Rough;
+        Box box = rough && preview.Part is null
+            ? preview.Box with { Part = RoughEntry.Plank(preview.Box.Width, preview.Box.Height) }
+            : preview.Box;
         Request add = preview.Stock is { } stock && preview.Part is { } part
-            ? Batch.Of(new AddEntity(box), StockAssignment.RequestsFor(sketch, box, part, stock))
+            ? Batch.Of(new AddEntity(box), StockAssignment.RequestsFor(sketch, box, part with { Rough = rough }, stock))
             : new AddEntity(box);
+
+        if (rough)
+        {
+            return (add, []);
+        }
 
         ImmutableList<Relationship>.Builder holds = ImmutableList.CreateBuilder<Relationship>();
         if (preview.Face is { Target: { } target, TargetFace: { } targetFace })

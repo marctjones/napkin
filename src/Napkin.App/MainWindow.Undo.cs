@@ -98,6 +98,7 @@ public partial class MainWindow
         DimensionEntryBox.Text = current.Format(Editor.LabelFormat).Text;
         DimensionEditorError.IsVisible = false;
         DimensionEditor.IsVisible = true;
+        DrawingCanvas.KeepSelectionLabels = true;
 
         PlaceDimensionEditor();
         DimensionEntryBox.Focus();
@@ -161,6 +162,7 @@ public partial class MainWindow
 
         DimensionEditor.IsVisible = false;
         DimensionEditorError.IsVisible = false;
+        DrawingCanvas.KeepSelectionLabels = false;
         _editingBox = null;
 
         if (focusCanvas)
