@@ -4,6 +4,7 @@ using Avalonia.Input;
 
 using Napkin.App.GuiTests.Harness;
 using Napkin.Core.Geometry;
+using Napkin.Core.RulesEngine;
 using Napkin.Modules.Building;
 
 using Xunit;
@@ -144,7 +145,7 @@ public class BracingWorkflows
             Assert.Equal(BracingCheck.FailsText(Length.Zero, Length.Feet(6), Length.Feet(6), "ZZ-BRACE-B.7"), window.BracingText);
             Assert.Equal(BracingCheck.NotInThisCode("zz-board"), window.BracingPickers[1].SelectedItem);
             Assert.Equal("ZZ panel B (synthetic)", window.BracingPickers[0].SelectedItem);
-            Assert.Contains("method 'zz-board' is not one of ZZ BRACE B's methods", window.BracingWorkingText, StringComparison.Ordinal);
+            Assert.Contains(SegmentContribution.UnknownMethodWhy("zz-board", "ZZ BRACE B"), window.BracingWorkingText, StringComparison.Ordinal);
         });
 
         app.SaveFrame("re-flagged");
@@ -174,7 +175,7 @@ public class BracingWorkflows
             Assert.Equal(2, window.BracingPickers.Count);
             Assert.All(window.BracingPickers, picker => Assert.False(picker.IsEnabled));
             Assert.Equal(BracingCheck.NoProvisionsTip("CT 2022"), ToolTip.GetTip(window.BracingPickers[0]) as string);
-            Assert.StartsWith("The loaded pack CT 2022 has no wall-bracing provisions, so napkin cannot check this wall line's bracing.", window.BracingText, StringComparison.Ordinal);
+            Assert.StartsWith(BracingResult.NoData.NoProvisionsExplanation("CT 2022"), window.BracingText, StringComparison.Ordinal);
             Assert.EndsWith(CodeCheck.WhereToAddTables, window.BracingText, StringComparison.Ordinal);
             Assert.DoesNotContain("SHORT", window.BracingText, StringComparison.Ordinal);
             Assert.DoesNotContain("passes", window.BracingText, StringComparison.Ordinal);

@@ -207,6 +207,14 @@ public static class SelectionCommands
         return [.. editor.Selection.OrderBy(id => id).Select(editor.Sketch.Find<Box>).OfType<Box>()];
     }
 
+    /// <summary>What a move of a pinned part says: "Moved Top did not happen: Top is pinned where it is."</summary>
+    /// <param name="what">What was attempted: "Moved Top".</param>
+    /// <param name="name">The pinned part's name.</param>
+    public static string PinnedRefusal(string what, string name) => $"{what} did not happen: {name} is pinned where it is.";
+
+    /// <summary>The offer beside <see cref="PinnedRefusal"/>: unpinning the part, as one undo step.</summary>
+    public const string UnpinOffer = "Unpin it";
+
     /// <summary>
     /// What a move or a resize that left the part exactly where it was says at the drop: that it
     /// stayed put, and — when a pin is why — the way out, unpinning it, as one undo step. Nothing is
@@ -224,9 +232,9 @@ public static class SelectionCommands
         {
             editor.Show(new EditMessage(
                 EditSeverity.Problem,
-                $"{what} did not happen: {name} is pinned where it is.",
+                PinnedRefusal(what, name),
                 [pin.Id],
-                new EditOffer("Unpin it", new RemoveRelationship(pin.Id), $"Unpinned {name}")));
+                new EditOffer(UnpinOffer, new RemoveRelationship(pin.Id), $"Unpinned {name}")));
             return;
         }
 

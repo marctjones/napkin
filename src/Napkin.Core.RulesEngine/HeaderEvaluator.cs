@@ -16,13 +16,11 @@ internal static class HeaderEvaluator
         HeaderSizingTable? table = pack.Tables.FirstOrDefault(t => t.WallKind == request.Kind);
         if (table is null)
         {
-            string kind = Vocabulary.WallKindName(request.Kind);
             return new HeaderResult.NoData(
                 NoDataReason.NoTableForWallKind,
                 code,
                 request.Kind,
-                $"The loaded pack {code.ShortName} has no header table for {kind} walls, so napkin cannot size this header. "
-                + "Nothing is guessed: add the table to the pack directory from your copy of the code (docs/rules-engine.md).");
+                HeaderResult.NoData.NoTableExplanation(code.ShortName, request.Kind));
         }
 
         Dictionary<string, CellValue?> values = new(StringComparer.Ordinal)

@@ -247,7 +247,7 @@ public class CodeCheckWorkflows
         PlaceWindow(app, window);
         app.Expect("the window's check is the engine's honest no-data text and where to add tables, never a size", () =>
         {
-            Assert.StartsWith("The loaded pack CT 2022 has no header table for exterior-bearing walls, so napkin cannot size this header.", window.CodeCheckText, StringComparison.Ordinal);
+            Assert.StartsWith(HeaderResult.NoData.NoTableExplanation("CT 2022", WallKind.ExteriorBearing), window.CodeCheckText, StringComparison.Ordinal);
             Assert.EndsWith(CodeCheck.WhereToAddTables, window.CodeCheckText, StringComparison.Ordinal);
             Assert.DoesNotContain("2x", window.CodeCheckText, StringComparison.Ordinal);
             Assert.Contains(FramingList.HeaderPieces(1, null), window.FramingText, StringComparison.Ordinal);

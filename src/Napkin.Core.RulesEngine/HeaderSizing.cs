@@ -194,6 +194,13 @@ public abstract record HeaderResult
     /// </summary>
     public sealed record NoData(NoDataReason Reason, AdoptedCodeRef? Code, WallKind Kind, string Explanation) : HeaderResult
     {
+        /// <summary>The explanation when the loaded pack has no table for the wall's kind: "The loaded pack CT 2022 has no header table for exterior-bearing walls, …".</summary>
+        /// <param name="shortName">The code's short name.</param>
+        /// <param name="kind">The wall's kind.</param>
+        public static string NoTableExplanation(string shortName, WallKind kind)
+            => $"The loaded pack {shortName} has no header table for {Vocabulary.WallKindName(kind)} walls, so napkin cannot size this header. "
+               + "Nothing is guessed: add the table to the pack directory from your copy of the code (docs/rules-engine.md).";
+
         /// <inheritdoc/>
         public override string ToString() => Explanation;
     }
