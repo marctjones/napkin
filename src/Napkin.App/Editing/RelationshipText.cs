@@ -65,6 +65,8 @@ public static class RelationshipText
 
             Vertical vertical => $"{Place(sketch, vertical.Edge, nameOf)} is plumb.",
 
+            Joint joint => Napkin.Modules.Furniture.JointTooltip.Of(sketch, joint, nameOf),
+
             // The kinds reserved for the solver (§3.2, table 2). A file can carry one; this build
             // cannot hold it, and saying which one is better than saying nothing.
             _ => $"{Kind(relationship)}, which this build cannot hold yet.",

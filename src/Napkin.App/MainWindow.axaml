@@ -87,6 +87,15 @@
             <MenuItem Name="EditMenu" Header="_Edit">
                 <MenuItem Name="UndoMenuItem" Header="_Undo" Click="OnUndoClicked" />
                 <MenuItem Name="RedoMenuItem" Header="_Redo" Click="OnRedoClicked" />
+                <Separator />
+                <MenuItem Name="JoinMenuItem"
+                          Header="_Join…"
+                          Click="OnJoinClicked"
+                          ToolTip.Tip="Join the two selected parts: say what kind of joint, what holds it, and whether it is glued." />
+                <MenuItem Name="JoinAllMenuItem"
+                          Header="Join all _touching…"
+                          Click="OnJoinAllClicked"
+                          ToolTip.Tip="Join every touching pair among the selected parts in one go; with two selected, repeat the last joint." />
             </MenuItem>
 
             <!-- The Draw menu is the toolbar, in the toolbar's order: the tools, the actions on the
@@ -863,6 +872,8 @@
                             <TextBox Name="StockBox" FontSize="12" PlaceholderText="Stock, e.g. 2x4" />
                             <TextBlock Name="StockReadout" FontSize="10" Opacity="0.8" TextWrapping="Wrap" />
                             <TextBox Name="SpeciesBox" FontSize="12" PlaceholderText="Species" />
+                            <TextBlock Name="PartJoints" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Joints of this part" />
                             <TextBox Name="HardwareBox" FontSize="12" AcceptsReturn="True" MinHeight="54"
                                      PlaceholderText="Hardware, one per line: Drawer pull × 1"
                                      AutomationProperties.Name="Hardware"
@@ -873,6 +884,64 @@
                 </Border>
                 </ScrollViewer>
             </Grid>
+
+            <!-- The join popover (joinery note §5.1): a sheet over the paper at the contact, like the refusal
+                 panel, not a window. Enter joins, Escape cancels; the fields are the whole of a joint. -->
+            <Border Name="JoinPanel"
+                    IsVisible="False"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Width="430"
+                    Padding="12,10"
+                    CornerRadius="4"
+                    BorderThickness="1"
+                    AutomationProperties.Name="Join">
+                <StackPanel Spacing="7">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Name="JoinTitle" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                        <Button Name="JoinSwapButton" Grid.Column="1" Focusable="False" Content="&#x21C4; swap" FontSize="11" Padding="6,1"
+                                AutomationProperties.Name="Swap which part receives"
+                                ToolTip.Tip="Swap which part receives and which is inserted." />
+                    </Grid>
+
+                    <ScrollViewer MaxHeight="170" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Name="JoinPairs" Spacing="3" IsVisible="False" />
+                    </ScrollViewer>
+
+                    <WrapPanel Name="JoinTypes" Orientation="Horizontal" />
+
+                    <Grid ColumnDefinitions="Auto,*,Auto,90" RowDefinitions="Auto,Auto,Auto" >
+                        <TextBlock Text="Fastening" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <ComboBox Name="JoinFasteningBox" Grid.Column="1" FontSize="12" HorizontalAlignment="Stretch"
+                                  AutomationProperties.Name="Fastening" />
+                        <TextBlock Text="Count" FontSize="11" Grid.Column="2" VerticalAlignment="Center" Margin="10,0,8,0" />
+                        <TextBox Name="JoinCountBox" Grid.Column="3" FontSize="12"
+                                 AutomationProperties.Name="Fastener count"
+                                 ToolTip.Tip="Leave blank for the recipe's number; type a number to say how many this joint takes." />
+
+                        <TextBlock Name="JoinPocketCaption" Grid.Row="1" Text="Pocket holes from" FontSize="11"
+                                   VerticalAlignment="Center" Margin="0,4,8,0" />
+                        <ComboBox Name="JoinPocketBox" Grid.Row="1" Grid.Column="1" FontSize="12" HorizontalAlignment="Stretch"
+                                  Margin="0,4,0,0" AutomationProperties.Name="Pocket holes from" />
+
+                        <TextBlock Name="JoinDepthCaption" Grid.Row="2" Text="Depth" FontSize="11" VerticalAlignment="Center"
+                                   Margin="0,4,8,0" />
+                        <TextBox Name="JoinDepthBox" Grid.Row="2" Grid.Column="1" FontSize="12" Margin="0,4,0,0"
+                                 PlaceholderText="e.g. 1/4&quot;" AutomationProperties.Name="Depth" />
+                    </Grid>
+
+                    <CheckBox Name="JoinGlueCheck" Content="Glue" FontSize="12" AutomationProperties.Name="Glue" />
+                    <TextBlock Name="JoinMessage" FontSize="11" IsVisible="False" TextWrapping="Wrap" />
+
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBlock Text="Enter to join · Esc to cancel" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                        <Button Name="JoinCancelButton" Grid.Column="1" Content="Cancel" FontSize="12" Padding="10,3" Margin="0,0,6,0" />
+                        <Button Name="JoinOkButton" Grid.Column="2" Content="Join" FontSize="12" Padding="10,3"
+                                AutomationProperties.Name="Join the parts" />
+                    </Grid>
+                </StackPanel>
+            </Border>
 
             <!-- Its colours come from the canvas palette in the code-behind, not from a theme
                  resource: the panel sits on the drawing, so it should be lit the same way, and a

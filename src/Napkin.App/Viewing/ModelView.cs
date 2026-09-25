@@ -621,6 +621,20 @@ public sealed class ModelView : Control
     // Pointer and keys
     // -------------------------------------------------------------------------------------
 
+    readonly JointMarkerLayer _joints = new();
+
+    /// <summary>The joint markers as last drawn, for the GUI suite to find one on the screen.</summary>
+    public JointMarkerLayer JointMarkerLayer => _joints;
+
+    /// <summary>Raised when a joint's marker is double-pressed: open it for editing.</summary>
+    public event EventHandler<RelationshipId>? JointActivated;
+
+    /// <summary>Raised by J (false) and Shift+J (true): join the selected parts.</summary>
+    public event EventHandler<bool>? JoinRequested;
+
+    /// <summary>Raised by Enter and Delete while a joint is selected.</summary>
+    public event EventHandler<JointCommand>? JointCommandRequested;
+
     /// <inheritdoc/>
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
@@ -632,6 +646,20 @@ public sealed class ModelView : Control
         _typeable = null;
         _typed.Clear();
         Focus();
+
+        // A marker sits over the parts it joins: a press on it picks the joint, a double press opens it.
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed && !_placement.IsArmed
+            && _editor is { } jointEditor && _joints.At(position) is { } marker)
+        {
+            jointEditor.SelectJoint(marker.Marker.Id);
+            if (e.ClickCount == 2)
+            {
+                JointActivated?.Invoke(this, marker.Marker.Id);
+            }
+
+            e.Handled = true;
+            return;
+        }
 
         // Holding something to place: a press on a face — or on the floor — starts placing it.
         if (_placement.IsArmed && properties.IsLeftButtonPressed && !e.KeyModifiers.HasFlag(KeyModifiers.Shift)
@@ -709,6 +737,11 @@ public sealed class ModelView : Control
     {
         base.OnPointerMoved(e);
         Point position = e.GetPosition(this);
+        if (_gesture == Gesture.None)
+        {
+            _joints.ShowTip(this, _editor is { } tipEditor ? _joints.TipAt(position, tipEditor.Sketch, tipEditor.NameOf) : null);
+        }
+
         Vector step = position - _lastPointer;
         _lastPointer = position;
 
@@ -1037,8 +1070,20 @@ public sealed class ModelView : Control
                 ToggleGridRequested?.Invoke(this, EventArgs.Empty);
                 return true;
 
-            case Key.Escape when editor.Selection.Count > 0:
+            case Key.Escape when editor.Selection.Count > 0 || editor.SelectedJoint is not null:
                 editor.ClearSelection();
+                return true;
+
+            case Key.Delete or Key.Back when editor.SelectedJoint is not null:
+                JointCommandRequested?.Invoke(this, JointCommand.Delete);
+                return true;
+
+            case Key.Enter when editor.SelectedJoint is not null:
+                JointCommandRequested?.Invoke(this, JointCommand.Edit);
+                return true;
+
+            case Key.J:
+                JoinRequested?.Invoke(this, modifiers.HasFlag(KeyModifiers.Shift));
                 return true;
 
             case Key.Delete or Key.Back when editor.Selection.Count > 0:
@@ -1621,6 +1666,8 @@ public sealed class ModelView : Control
         }
 
         DrawAttention(context, palette);
+        _joints.Update(sketch, _camera.Project, editor.SelectedJoint);
+        JointMarkers.Draw(context, _joints.Placed, palette.Dimension, palette.Background, palette.Selection, editor.SelectedJoint);
         DrawSelection(context, palette, editor);
         DrawVirtualFeatures(context, sketch, sketch.RelationshipsInOrder, palette.Dimension);
         if (_snap is { } plan)

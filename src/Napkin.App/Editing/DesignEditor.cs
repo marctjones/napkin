@@ -321,6 +321,30 @@ public sealed class DesignEditor
         return false;
     }
 
+    RelationshipId? _selectedJoint;
+
+    /// <summary>
+    /// The joint whose marker was picked, or null: a joint is selected instead of any part, never with
+    /// one, and only while it exists (undo can take it away).
+    /// </summary>
+    public RelationshipId? SelectedJoint =>
+        _selectedJoint is { } id && _design.Sketch.Relationships.ContainsKey(id) ? id : null;
+
+    /// <summary>Selects one joint and, since it is one thing that is selected, no part.</summary>
+    /// <param name="id">The joint.</param>
+    public void SelectJoint(RelationshipId? id)
+    {
+        RelationshipId? wanted = id is { } one && _design.Sketch.Relationships.GetValueOrDefault(one) is Joint ? id : null;
+        if (wanted == SelectedJoint && _selection.IsEmpty)
+        {
+            return;
+        }
+
+        _selectedJoint = wanted;
+        _selection = [];
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     /// <summary>Selects one entity, or nothing.</summary>
     public void Select(EntityId? id) =>
         ReplaceSelection(id is { } one && _design.Sketch.Find(one) is not null ? [one] : []);
@@ -337,7 +361,17 @@ public sealed class DesignEditor
         ReplaceSelection(_selection.Contains(id) ? _selection.Remove(id) : _selection.Add(id));
 
     /// <summary>Selects nothing.</summary>
-    public void ClearSelection() => ReplaceSelection([]);
+    public void ClearSelection()
+    {
+        if (_selectedJoint is not null)
+        {
+            SelectJoint(null);
+        }
+        else
+        {
+            ReplaceSelection([]);
+        }
+    }
 
     /// <summary>
     /// Starts a gesture. Everything applied until <see cref="EndGesture"/> is one thing a person
@@ -527,6 +561,11 @@ public sealed class DesignEditor
         }
 
         _selection = selection;
+        if (!selection.IsEmpty)
+        {
+            _selectedJoint = null;
+        }
+
         SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 

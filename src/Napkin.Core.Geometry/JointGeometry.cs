@@ -292,11 +292,6 @@ public static class JointGeometry
     // The overlap of the two boxes' world extents, or null unless it has volume: what a half-lap is.
     private static (Point3 Low, Point3 High)? Overlap(Box first, Box second)
     {
-        if (!first.Orientation.IsExact || !second.Orientation.IsExact)
-        {
-            return null;
-        }
-
         (Point3 lowA, Point3 highA) = Extent(first);
         (Point3 lowB, Point3 highB) = Extent(second);
         Point3 low = new(Length.Max(lowA.X, lowB.X), Length.Max(lowA.Y, lowB.Y), Length.Max(lowA.Z, lowB.Z));
@@ -413,6 +408,39 @@ public static class JointGeometry
     // The face of the box that faces along a world axis, the given way.
     private static BoxFace FaceFacing(Box box, Axis axis, bool positive)
         => AllFaces.Single(face => box.Orientation.Normal(face) == (axis, positive));
+
+    /// <summary>
+    /// The centre of everything drawn: the middle of the extent of all the sketch's boxes and this
+    /// one (&#xA7;6.2). Which of a part's two long faces is its inside is the one nearer it.
+    /// </summary>
+    public static Point3 CentreOfEverything(Sketch sketch, Box box)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(box);
+
+        (Point3 low, Point3 high) = Extent(box);
+        foreach (Box other in sketch.Entities.Values.OfType<Box>().Where(other => other.Orientation.IsExact))
+        {
+            (Point3 l, Point3 h) = Extent(other);
+            low = new Point3(Length.Min(low.X, l.X), Length.Min(low.Y, l.Y), Length.Min(low.Z, l.Z));
+            high = new Point3(Length.Max(high.X, h.X), Length.Max(high.Y, h.Y), Length.Max(high.Z, h.Z));
+        }
+
+        return new Point3(
+            RelationshipChecker.Midpoint(low.X, high.X),
+            RelationshipChecker.Midpoint(low.Y, high.Y),
+            RelationshipChecker.Midpoint(low.Z, high.Z));
+    }
+
+    /// <summary>How far a face's plane is from a point, measured along the face's own normal.</summary>
+    public static Length DistanceFromPoint(Box box, BoxFace face, Point3 point)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+
+        (Point3 low, Point3 high) = Extent(box);
+        (Axis axis, bool positive) = box.Orientation.Normal(face);
+        return Length.Abs((positive ? high.Component(axis) : low.Component(axis)) - point.Component(axis));
+    }
 
     /// <summary>The box's world extent: for the 24 orientations its six faces lie on the six planes of it.</summary>
     public static (Point3 Low, Point3 High) Extent(Box box)
