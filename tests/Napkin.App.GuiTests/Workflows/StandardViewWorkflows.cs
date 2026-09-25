@@ -344,6 +344,63 @@ public class StandardViewWorkflows
         });
     }, defaultLook: true);
 
+    /// <summary>The names coffee-table.expected.json gives the dimensions a view drew.</summary>
+    static string[] DimensionNames(MainWindow window) =>
+        [.. window.Model.ViewDimensions
+            .Select(d => SampleExpectations.For("coffee-table").DimensionLabels.Single(label => label.EntityId == d.Measurement.Dimension.Id).Name)
+            .Order()];
+
+    [GuiWorkflow("GUI-VIEW-14")]
+    public void Each_view_of_the_coffee_table_draws_the_dimensions_along_its_axes_and_follows_an_edit() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "Coffee table");
+
+        // standard-views §3.1's table, by hand: X ones in Front and Back, Y ones in Left and Right, all six below.
+        string[] alongX = ["Leg inset from the top's west edge", "Leg width", "Long apron length", "Top width"];
+        string[] alongY = ["Short apron length", "Top depth"];
+
+        app.Press(Key.D3);
+        app.Expect("Front draws the four dimensions along X, the top's width 4\" below its underside", () =>
+        {
+            Assert.Equal(alongX, DimensionNames(window));
+            EntityId topWidth = SampleExpectations.For("coffee-table").Label("Top width").EntityId;
+            ViewDimension width = window.Model.ViewDimensions.Single(d => d.Measurement.Dimension.Id == topWidth);
+            Assert.Equal("4'-0\"", width.Label(new FeetInchesFormat(16)));
+            Assert.Equal(12.25, width.LineFrom.Across, 9);
+            Point line = window.Model.Camera.Project(width.InWorld(width.LineFrom));
+            Assert.True(line.Y > window.Model.Camera.Project(new Vector3d(0, 0, 16.25)).Y, "the top's width is not drawn below the top");
+        });
+        app.SaveFrame("front-coffee-table-dimensions");
+
+        app.Press(Key.D5);
+        app.Expect("Left draws the two along Y", () => Assert.Equal(alongY, DimensionNames(window)));
+        app.SaveFrame("left-coffee-table-dimensions");
+
+        app.Click(CentreOf(window, window.ViewChip(DesignView.Bottom)));
+        app.Expect("Bottom draws all six", () => Assert.Equal([.. alongX.Concat(alongY).Order()], DimensionNames(window)));
+
+        // An edit in the plan is seen in the elevation's dimension: widen the top by typing in the Part panel.
+        app.Click(CentreOf(window, window.ViewChip(DesignView.Top)));
+        Box top = BoxNamed(window, "Top");
+        app.Click(OnPlan(window, new Point2(top.Anchor.X + Length.Inches(10), top.Anchor.Y + Length.Inches(12))));
+        app.Expect("the top is selected in the plan", () => Assert.Equal([top.Id], window.Editor.Selection.Order()));
+        app.Press(Key.Tab);
+        app.Type("50");
+        app.Press(Key.Enter);
+        app.Expect("Tab, 50, Enter makes the top 50\" wide", () => Assert.Equal(Length.Inches(50), window.CurrentDesign!.Sketch.Find<Box>(top.Id)!.Width));
+        app.Press(Key.D4);
+        app.Expect("Back shows the top's width as 4'-2\" at once", () =>
+        {
+            Assert.Equal(DesignView.Back, window.CurrentView);
+            Assert.Contains(window.Model.ViewDimensions, d => d.Label(new FeetInchesFormat(16)) == "4'-2\"");
+        });
+        app.SaveFrame("back-coffee-table-wider");
+
+        app.Press(Key.D7);
+        app.Expect("the free 3D view draws no view dimensions", () => Assert.Empty(window.Model.ViewDimensions));
+    }, defaultLook: true);
+
     [GuiWorkflow("GUI-VIEW-09")]
     public void Front_is_read_only_pan_zoom_and_select_and_the_selection_commands_still_work() => GuiWorkflow.Run(app =>
     {

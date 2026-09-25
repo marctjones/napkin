@@ -1271,6 +1271,15 @@
       "kind": "unit"
     },
     {
+      "id": "VIEW-010",
+      "area": "ui",
+      "title": "Dimensions per standard view, laid out in its plane",
+      "acceptance": "A view shows a dimension along its screen-right or screen-up axis (X,Y in Top/Bottom; X in Front/Back; Y in Left/Right); South/West low, North/East high with the plan's fallback. Coffee table: 6, 6, 4, 4, 2, 2 by name; every label is Top's; Top is the plan's layout; Front's top width lies at z 12 1/4 (4 below the top); Back runs right to left; Bottom's South line is on the screen-up side; the inset (North, 1) lies at z 18; a short apron (West, 2) at z 10 3/4.",
+      "milestone": "M2",
+      "issue": 130,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-VIEW-08",
       "area": "ui",
       "title": "Switch between Top, Front and 3D by key, chip and menu",
@@ -1322,6 +1331,15 @@
       "acceptance": "Open the l-bracket; in the plan the item is disabled and H says where hidden edges are drawn; 3 shows Front with them ticked and the rib dashed; View > Hidden edges turns them off and only pixels on the rib's dash change; H turns them back on to the same picture; off again, a new window on the same settings has them off.",
       "milestone": "M2",
       "issue": 129,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-14",
+      "area": "ui",
+      "title": "Each view of the coffee table draws its dimensions and follows an edit",
+      "acceptance": "Open the coffee table; 3 draws the four X dimensions, the top's width below the top; 5 the two Y ones; the Bottom chip all six; in Top, Tab 50 Enter widens the top; 4 shows 4'-2\" at once; 7 draws none.",
+      "milestone": "M2",
+      "issue": 130,
       "kind": "workflow"
     },
     {

@@ -82,4 +82,26 @@ public static class StandardViewFrame
         (SignedAxis right, SignedAxis up, _) = Axes(view);
         return (right.Axis, up.Axis);
     }
+
+    /// <summary>
+    /// Whether a view shows a dimension along a world axis, and if so which world axis its line is
+    /// offset along (standard-views §3.1): a dimension shows when what it measures runs along screen
+    /// right or screen up, sign ignored — X and Y in Top and Bottom, X in Front and Back, Y in Left and
+    /// Right — and is offset along the other of the two. Null when the view cannot show it.
+    /// </summary>
+    public static Axis? AcrossFor(StandardView view, Axis measured)
+    {
+        (SignedAxis right, SignedAxis up, _) = Axes(view);
+        return measured == right.Axis ? up.Axis : measured == up.Axis ? right.Axis : null;
+    }
+
+    /// <summary>
+    /// Whether a dimension's line sits on the low side of what it measures — the side with the lower
+    /// world coordinate across it — rather than the high one (§3.2). South and West are low, North and
+    /// East high; a side parallel to the measurement falls back as the plan always has: an X dimension
+    /// is low only when placed South, a Y dimension only when placed West. In an elevation "low" is
+    /// below; in Bottom, where south is up the screen, a South dimension is honestly above the part.
+    /// </summary>
+    public static bool OnLowSide(Axis measured, DimensionSide side) =>
+        measured == Axis.X ? side == DimensionSide.South : side == DimensionSide.West;
 }

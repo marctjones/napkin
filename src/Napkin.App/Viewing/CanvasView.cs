@@ -2376,11 +2376,32 @@ public sealed class CanvasView : Control
         DimensionMeasurement measurement,
         Color ink)
     {
-        Point from = _view.ToScreen(measurement.From);
-        Point to = _view.ToScreen(measurement.To);
-        Point lineFrom = _view.ToScreen(measurement.LineFrom);
-        Point lineTo = _view.ToScreen(measurement.LineTo);
+        DrawDimensionAt(
+            context,
+            palette,
+            (_view.ToScreen(measurement.From), _view.ToScreen(measurement.To)),
+            (_view.ToScreen(measurement.LineFrom), _view.ToScreen(measurement.LineTo)),
+            measurement.Label(LabelFormat),
+            ink,
+            SeedOf(measurement.LineFrom, measurement.LineTo));
+    }
 
+    /// <summary>
+    /// A dimension drawn on the screen: extension lines out from what is measured, the dimension
+    /// line in the table's thin weight with its arrowheads, and the label on a chip that breaks the
+    /// line. The plan and the standard views both draw with this, so a dimension looks one way.
+    /// </summary>
+    internal static void DrawDimensionAt(
+        DrawingContext context,
+        CanvasPalette palette,
+        (Point From, Point To) measured,
+        (Point From, Point To) line,
+        string label,
+        Color ink,
+        int seed)
+    {
+        (Point from, Point to) = measured;
+        (Point lineFrom, Point lineTo) = line;
         Vector along = lineTo - lineFrom;
         double length = along.Length;
         if (length < 2)
@@ -2398,7 +2419,6 @@ public sealed class CanvasView : Control
 
         // A dimension in its own ink is sketched; one shown in the selection's colour stays clean and readable.
         bool sketched = palette.Look.Line != SketchLine.Clean && ink == palette.Dimension;
-        int seed = SeedOf(measurement.LineFrom, measurement.LineTo);
         void Draw(Point p, Point q)
         {
             if (sketched)
@@ -2429,7 +2449,7 @@ public sealed class CanvasView : Control
         DrawArrowhead(context, brush, lineFrom, tight ? direction : -direction);
         DrawArrowhead(context, brush, lineTo, tight ? -direction : direction);
 
-        FormattedText text = Text(measurement.Label(LabelFormat), ink);
+        FormattedText text = Text(label, ink);
         Point centre = new(
             (lineFrom.X + lineTo.X) / 2,
             (lineFrom.Y + lineTo.Y) / 2);

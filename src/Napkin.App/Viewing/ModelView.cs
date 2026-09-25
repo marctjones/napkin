@@ -1741,10 +1741,12 @@ public sealed class ModelView : Control
         if (_locked is { } view)
         {
             DrawStandardView(context, palette, view, LayerOf);
+            DrawViewDimensions(context, palette, sketch, view, editor.LabelFormat);
         }
         else
         {
             StandardEdges = null;
+            ViewDimensions = [];
             List<ScenePolygon> openings = [];
             foreach (ScenePolygon polygon in Scene.BackToFront(_camera))
             {
@@ -1847,6 +1849,9 @@ public sealed class ModelView : Control
         DrawEdges(context, pen, polygon, palette.Look.Line, style);
     }
 
+    /// <summary>The dimensions the last standard view drew; empty outside one.</summary>
+    public IReadOnlyList<ViewDimension> ViewDimensions { get; private set; } = [];
+
     /// <summary>The edges the last standard view drew, split visible and hidden; null outside one.</summary>
     public StandardViewEdges? StandardEdges { get; private set; }
 
@@ -1910,6 +1915,27 @@ public sealed class ModelView : Control
                 };
                 context.DrawLine(pen, _camera.Project(p), _camera.Project(q));
             }
+        }
+    }
+
+    /// <summary>
+    /// The dimensions a standard view shows (§3), in the plan's look, over the parts: the ones along
+    /// the view's screen-right or screen-up axis, laid out in its plane.
+    /// </summary>
+    void DrawViewDimensions(DrawingContext context, CanvasPalette palette, Sketch sketch, StandardView view, LengthFormat format)
+    {
+        ViewDimensions = [.. DimensionLayout.Measure(sketch, view)];
+        foreach (ViewDimension dimension in ViewDimensions)
+        {
+            Point Screen(ViewPoint point) => _camera.Project(dimension.InWorld(point));
+            CanvasView.DrawDimensionAt(
+                context,
+                palette,
+                (Screen(dimension.From), Screen(dimension.To)),
+                (Screen(dimension.LineFrom), Screen(dimension.LineTo)),
+                dimension.Label(format),
+                palette.Dimension,
+                SketchStroke.SeedOf(dimension.LineFrom.Along, dimension.LineFrom.Across, dimension.LineTo.Along, dimension.LineTo.Across));
         }
     }
 
