@@ -50,6 +50,19 @@ public sealed class RoughCutListTests
 
     [Fact]
     [Trait("Feature", "CUT-018")]
+    public void The_row_is_rough_when_a_later_member_is_rough_too()
+    {
+        // The firm leg has the lower id, so it is the row's first member; the rough one still marks the row.
+        Part firm = new(null, null, 1, LengthWidth);
+        Sketch sketch = Of(
+            Part("Leg 1", Length.Inches(16), Length.Inches(4), Length.Inches(0, 3, 4), firm),
+            Part("Leg 2", Length.Inches(16), Length.Inches(4), Length.Inches(0, 3, 4), firm with { Rough = true }));
+
+        Assert.True(Assert.Single(CutList.Of(sketch, MaterialsLibrary.Shipped)).Rough);
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-018")]
     public void Firm_rows_are_not_rough_and_have_no_footer()
     {
         Part firm = new(null, null, 1, LengthWidth);
