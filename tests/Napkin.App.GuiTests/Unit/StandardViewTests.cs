@@ -382,6 +382,12 @@ public class StandardViewTests
         Assert.Equal(acrossRises ? across.Order() : across.OrderDescending(), across);
         Assert.Equal(downwardRises ? downward.Order() : downward.OrderDescending(), downward);
         Assert.Equal(across.Length, across.Distinct().Count());
+
+        // The marks cover the screen edge to edge, half an inch (15 px) apart, and none is off it.
+        Assert.All(rulers.Top, placed => Assert.InRange(placed.Screen, 0, Viewport.Width));
+        Assert.All(rulers.Left, placed => Assert.InRange(placed.Screen, 0, Viewport.Height));
+        Assert.True(rulers.Top[0].Screen < 15 && rulers.Top[^1].Screen > Viewport.Width - 15);
+        Assert.True(rulers.Left[0].Screen < 15 && rulers.Left[^1].Screen > Viewport.Height - 15);
     }
 
     [Fact]
