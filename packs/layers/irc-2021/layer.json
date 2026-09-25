@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "notes": "No tables loaded. Fill layers/irc-2021/tables from your own copy of the 2021 IRC; see README.md here and docs/rules-engine.md. The listed source is the Connecticut amendments document (the only document read for this pack), not the IRC.",
+  "id": "irc-2021",
+  "baseCode": {
+    "publisher": "ICC",
+    "code": "IRC",
+    "year": 2021
+  },
+  "sources": [
+    {
+      "id": "ct-csbc-2022",
+      "title": "2022 Connecticut State Building Code (w/ Errata #1), ED: October 1, 2022 - Amendments to the 2021 International Residential Code, pp. 119-160",
+      "publisher": "State of Connecticut, Office of the State Building Inspector",
+      "url": "https://portal.ct.gov/-/media/DAS/Office-of-State-Building-Inspector/2022-State-Codes/2022-CSBC-Final.pdf",
+      "printing": "w/ Errata #1, ED: October 1, 2022",
+      "retrievedOn": "2026-09-25",
+      "sha256": "1325ee87f4bc5a0adbe6013dd6ef2def79229bcd189ea59388d1e03899618947"
+    }
+  ]
+}

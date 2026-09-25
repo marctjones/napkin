@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "notes": "Connecticut 2022 State Building Code. Only Connecticut's own amendments document was read; the IRC 2021 base tables are NOT loaded (see layers/irc-2021/README.md).",
+  "id": "us-ct-2022",
+  "revision": 1,
+  "jurisdiction": {
+    "country": "US",
+    "state": "CT",
+    "municipality": null
+  },
+  "adoption": {
+    "name": "Connecticut State Building Code 2022",
+    "shortName": "CT 2022",
+    "adoptedBy": "State of Connecticut, pursuant to section 29-252 of the Connecticut General Statutes (Office of the State Building Inspector, Dept. of Administrative Services)",
+    "inForce": {
+      "from": "2022-10-01",
+      "to": null
+    },
+    "appliesTo": "permit-application-date",
+    "transitionNotes": null
+  },
+  "baseCode": {
+    "publisher": "ICC",
+    "code": "IRC",
+    "year": 2021
+  },
+  "layers": [
+    "irc-2021",
+    "amendments"
+  ],
+  "sources": [
+    {
+      "id": "ct-csbc-2022",
+      "title": "2022 Connecticut State Building Code (w/ Errata #1), ED: October 1, 2022 - Amendments to the 2021 International Residential Code, pp. 119-160",
+      "publisher": "State of Connecticut, Office of the State Building Inspector",
+      "url": "https://portal.ct.gov/-/media/DAS/Office-of-State-Building-Inspector/2022-State-Codes/2022-CSBC-Final.pdf",
+      "printing": "w/ Errata #1, ED: October 1, 2022",
+      "retrievedOn": "2026-09-25",
+      "sha256": "1325ee87f4bc5a0adbe6013dd6ef2def79229bcd189ea59388d1e03899618947"
+    }
+  ],
+  "review": {
+    "status": "unreviewed",
+    "checklist": null
+  }
+}

@@ -48,4 +48,13 @@
              CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- The code packs ship beside the executable (packs/layers, packs/packs), like the samples. The
+       app looks there and in the per-user <config>/napkin/packs (docs/rules-engine.md). -->
+  <ItemGroup>
+    <Content Include="..\..\packs\**\*"
+             Link="packs\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

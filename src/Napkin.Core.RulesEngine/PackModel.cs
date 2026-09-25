@@ -250,6 +250,15 @@ public sealed record HeaderSizingTable(
 /// <summary>A pack that loaded, validated and composed. The only way pack data enters memory (design §9.1).</summary>
 public sealed record LoadedPack(PackManifest Manifest, ValueList<HeaderSizingTable> Tables)
 {
+    /// <summary>The status label shown in the pack picker when no header table is loaded (the base layer is unfilled).</summary>
+    public const string BaseTablesNotLoaded = "base tables not loaded";
+
+    /// <summary>Whether this pack can size any header at all.</summary>
+    public bool HasHeaderTables => Tables.Count > 0;
+
+    /// <summary>A short status for the UI: empty when the pack is usable, else <see cref="BaseTablesNotLoaded"/>.</summary>
+    public string StatusLabel => HasHeaderTables ? string.Empty : BaseTablesNotLoaded;
+
     /// <summary>The identity a citation prints.</summary>
     public AdoptedCodeRef Code => new(
         Manifest.Id,

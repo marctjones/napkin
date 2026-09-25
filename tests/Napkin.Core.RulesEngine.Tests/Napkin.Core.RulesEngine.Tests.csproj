@@ -25,6 +25,8 @@
   <ItemGroup>
     <Content Include="Fixtures/**/*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Golden/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The real shipped packs (packs/ at the repo root), copied so tests read them from disk. -->
+    <Content Include="..\..\packs\**\*" Link="RealPacks\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
