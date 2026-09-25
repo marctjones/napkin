@@ -19,7 +19,7 @@
     },
     "Napkin.Modules.Building": {
       "line": 100,
-      "branch": 99.51
+      "branch": 99.82
     },
     "Napkin.Modules.Editing": {
       "line": 98.04,
@@ -31,7 +31,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 87,
+    "workflowsPassed": 88,
     "workflowIds": [
       "CVS-011",
       "GUI-ASSEM-01",
@@ -85,6 +85,7 @@
       "GUI-JOIN-05",
       "GUI-JOIN-06",
       "GUI-JOIN-07",
+      "GUI-RENO-01",
       "GUI-RENO-05",
       "GUI-SET-01",
       "GUI-SET-02",
