@@ -203,6 +203,23 @@ public static partial class PackLoader
     private static partial Regex OverlayEntryPattern();
 }
 
+/// <summary>
+/// Every pack under a packs root, loaded or invalid (design §9.3): the picker lists the loaded
+/// ones; the invalid ones are reported, never silently dropped.
+/// </summary>
+public static class PackCatalog
+{
+    /// <summary>Loads every directory under <c>packs/</c>, in id order.</summary>
+    public static ValueList<PackLoadResult> Discover(IPackSource source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return source.ListDirectories("packs").Select(id => PackLoader.Load(source, id)).ToValueList();
+    }
+
+    /// <summary>Loads every pack under a packs root on disk.</summary>
+    public static ValueList<PackLoadResult> Discover(string packsRoot) => Discover(new DirectoryPackSource(packsRoot));
+}
+
 /// <summary>A base layer's <c>layer.json</c>: which model code it transcribes and from which documents.</summary>
 internal sealed record LayerManifest(string Id, BaseCode Code, ValueList<SourceDocument> Sources);
 

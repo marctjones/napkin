@@ -135,5 +135,5 @@ public sealed class InMemoryPackSource : IPackSource
 
     /// <inheritdoc/>
     public bool DirectoryExists(string directory)
-        => files.Keys.Any(k => k.StartsWith(directory + "/", StringComparison.Ordinal));
+        => directory.Length == 0 ? files.Count > 0 : files.Keys.Any(k => k.StartsWith(directory + "/", StringComparison.Ordinal));
 }

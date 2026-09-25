@@ -65,15 +65,20 @@ internal static class TableReader
         WallKind? wallKind = o.Enum("wallKind", Vocabulary.WallKinds);
         string? location = o.String("location");
         List<InputColumn> inputs = ReadInputs(o, problems);
+        bool structural = problems.Count == before && title is not null && wallKind is not null && location is not null && doc is not null;
+
+        // Outputs and footnotes do not change how rows are read, so a problem in them is recorded
+        // and the rows are still checked: the transcriber sees every problem in one pass (§9.2).
+        // The pack is refused either way, because the problem list is not empty.
         ReadOutputs(o, problems);
         List<Footnote> footnotes = ReadFootnotes(o, inputs, problems);
 
-        if (problems.Count > before || title is null || wallKind is null || location is null || doc is null)
+        if (!structural)
         {
             return null;
         }
 
-        return new TableMeta(title, wallKind.Value, inputs.ToValueList(), footnotes.ToValueList(), layer, doc, location, file);
+        return new TableMeta(title!, wallKind!.Value, inputs.ToValueList(), footnotes.ToValueList(), layer, doc!, location!, file);
     }
 
     public static List<RawRow>? ReadRows(JsonObj o, string file, CitationLayer layer, SourceDocument? doc, ProblemList problems)
