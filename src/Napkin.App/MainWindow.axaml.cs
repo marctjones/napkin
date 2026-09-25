@@ -101,6 +101,10 @@ public partial class MainWindow : Window
         ModelDrawing.FitReserveRight = SidePanelsReserve;
         DrawingCanvas.FitReserveTop = ToolBarReserve;
         ModelDrawing.FitReserveTop = ToolBarReserve;
+
+        // The sheet sits clear of the toolbar strip and the side column, so none of its panes is
+        // under chrome and none needs a reserve of its own (standard-views §11.2).
+        SheetDrawing.Margin = new Thickness(0, ToolBarReserve, SidePanelsReserve, 0);
         Editor.MessageChanged += (_, _) =>
         {
             // A change of a header result is said with the edit that caused it (#18, design §7.3).
@@ -160,13 +164,44 @@ public partial class MainWindow : Window
         ModelDrawing.HoveredPartChanged += (_, _) => UpdateRelationships();
         ModelDrawing.PointerModelPositionChanged += (_, point) =>
         {
-            if (IsShowingModel)
+            if (ModelDrawing.IsVisible)
             {
                 UpdateCursorReadout(point);
             }
         };
         ModelDrawing.ViewRequested += (_, view) => ShowView(view);
         ModelDrawing.PlacementChanged += (_, _) => UpdateToolButtons();
+
+        // The sheet's panes (standard-views §11.5): the same editor; each asks for commands and views
+        // as the 3D view does, and the one under the pointer is the one the readouts speak for.
+        SheetDrawing.Editor = Editor;
+        SheetDrawing.ActiveChanged += (_, _) =>
+        {
+            UpdateZoomReadout();
+            UpdateToolButtons();
+        };
+        foreach (ModelView pane in SheetDrawing.Panes)
+        {
+            ModelView each = pane;
+            each.CommandRequested += (_, request) => request.Handled = Run(request.Command);
+            each.ViewChanged += (_, _) =>
+            {
+                if (IsShowingSheet && ReferenceEquals(each, SheetDrawing.Active))
+                {
+                    UpdateZoomReadout();
+                }
+            };
+            each.HoveredPartChanged += (_, _) => UpdateRelationships();
+            each.PointerModelPositionChanged += (_, point) =>
+            {
+                if (IsShowingSheet && ReferenceEquals(each, SheetDrawing.Active))
+                {
+                    UpdateCursorReadout(point);
+                }
+            };
+            each.ViewRequested += (_, view) => ShowView(view);
+            each.PlacementChanged += (_, _) => UpdateToolButtons();
+        }
         StockToolboxPanel.ItemPicked += (_, item) => PickStock(item);
         StockToolboxPanel.CategoryChanged += (_, _) => OnStockCategoryChanged();
 
@@ -462,8 +497,17 @@ public partial class MainWindow : Window
                 : null;
         }
 
-        // The new design starts in the view the person chose for new designs (or was last in).
-        ShowView(Settings.Current.ViewForNewDesign());
+        // The new design starts in the view the person chose for new designs (or was last in) — or,
+        // when the person was on the sheet, on the sheet, which refits itself for it (§11.1).
+        if (!IsShowingSheet)
+        {
+            ShowView(Settings.Current.ViewForNewDesign());
+        }
+
+        if (Settings.Current.ShowSheet && !IsShowingSheet)
+        {
+            ShowSheet(true);
+        }
 
         return true;
     }

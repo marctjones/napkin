@@ -33,7 +33,7 @@ public sealed class SheetView : Panel
         _right = AddPane(StandardView.Right, "Right");
         _note = new TextBlock
         {
-            Text = "Third-angle projection",
+            Text = StandardViewWords.ThirdAngle,
             FontSize = 11,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             Foreground = Brushes.Gainsboro,
@@ -56,6 +56,9 @@ public sealed class SheetView : Panel
 
     /// <summary>The pane commands act on (§11.5): the one the pointer was last over, else Front.</summary>
     public ModelView Active => _pointed ?? _front;
+
+    /// <summary>Raised when the pointer moves onto another pane, which becomes the active one.</summary>
+    public event EventHandler? ActiveChanged;
 
     /// <summary>What the pane captions say, pane by pane, for the GUI suite.</summary>
     public string CaptionOf(ModelView pane) => _captions[pane].Text ?? string.Empty;
@@ -153,7 +156,14 @@ public sealed class SheetView : Panel
             pane.Locked = locked;
         }
 
-        pane.PointerEntered += (_, _) => _pointed = pane;
+        pane.PointerEntered += (_, _) =>
+        {
+            if (!ReferenceEquals(_pointed, pane))
+            {
+                _pointed = pane;
+                ActiveChanged?.Invoke(this, EventArgs.Empty);
+            }
+        };
         Children.Add(pane);
         TextBlock caption = new() { Text = name, FontSize = 11, IsHitTestVisible = false };
         _captions[pane] = caption;

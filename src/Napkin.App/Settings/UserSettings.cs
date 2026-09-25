@@ -83,6 +83,9 @@ public sealed record UserSettings
     /// <summary>Which view a design opens in when it is opened (not the one on screen).</summary>
     public OpenDesignsIn OpenIn { get; init; } = OpenDesignsIn.LastUsed;
 
+    /// <summary>Whether the sheet — Top, Front, Right and 3D at once — was showing (standard-views §11.1).</summary>
+    public bool ShowSheet { get; init; }
+
     /// <summary>The view the person was last in; what <see cref="OpenDesignsIn.LastUsed"/> means.</summary>
     public DesignView LastView { get; init; } = DesignView.Top;
 

@@ -9,6 +9,7 @@ public class SheetLayoutTests
     static SheetPane Pane(IReadOnlyList<SheetPane> panes, StandardView? view) => Assert.Single(panes, pane => pane.View == view);
 
     [Fact]
+    [Trait("Feature", "VIEW-013")]
     public void Top_is_above_Front_and_Right_beside_Front_with_3D_in_the_spare_corner()
     {
         // 608 × 408 with an 8 px gutter: four 300 × 200 panes.
@@ -22,6 +23,7 @@ public class SheetLayoutTests
     }
 
     [Fact]
+    [Trait("Feature", "VIEW-013")]
     public void Top_and_Front_share_their_columns_and_Front_and_Right_their_rows_and_nothing_overlaps()
     {
         IReadOnlyList<SheetPane> panes = SheetLayout.Panes(901, 577);
@@ -36,6 +38,7 @@ public class SheetLayoutTests
     }
 
     [Fact]
+    [Trait("Feature", "VIEW-013")]
     public void A_sheet_smaller_than_its_gutters_has_empty_panes_rather_than_negative_ones()
     {
         Assert.All(SheetLayout.Panes(4, 4), pane => Assert.Equal((0.0, 0.0), (pane.Width, pane.Height)));
@@ -45,6 +48,7 @@ public class SheetLayoutTests
     }
 
     [Fact]
+    [Trait("Feature", "VIEW-013")]
     public void The_shared_scale_is_the_one_the_tightest_drawing_fits_at()
     {
         // Panes 300 × 200 with a 10 % margin leave 240 × 160. The coffee table's 48 × 24 top in Top
@@ -63,6 +67,7 @@ public class SheetLayoutTests
     }
 
     [Fact]
+    [Trait("Feature", "VIEW-013")]
     public void A_drawing_with_no_extent_one_way_is_fitted_the_other_way_and_nothing_to_fit_has_no_scale()
     {
         SheetPane pane = new(StandardView.Front, 0, 0, 300, 200);

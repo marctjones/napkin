@@ -29,7 +29,11 @@ public partial class MainWindow
     void SelectTool()
     {
         DrawingCanvas.Tool = EditTool.Select;
-        ModelDrawing.Disarm();
+        foreach (ModelView view in ModelViews)
+        {
+            view.Disarm();
+        }
+
         UpdateToolButtons();
         FocusDrawing();
     }
@@ -113,7 +117,11 @@ public partial class MainWindow
     {
         // In the 3D view the rectangle tool is a plain board to place on a face (#74); a read-only
         // view has none (§5.4).
-        if (IsShowingStandardView)
+        if (IsShowingSheet)
+        {
+            Editor.Say(EditSeverity.Hint, StandardViewWords.NotOnSheet);
+        }
+        else if (IsShowingStandardView)
         {
             Editor.Say(EditSeverity.Hint, StandardViewWords.NotInView(StandardViews.Of(_view)!.Value));
         }
@@ -159,7 +167,12 @@ public partial class MainWindow
 
     void OnZoomToFitClicked(object? sender, RoutedEventArgs e)
     {
-        if (IsShowingModel)
+        if (IsShowingSheet)
+        {
+            // Fit on the sheet is the sheet's: the three drawings at their one scale again (§11.4).
+            SheetDrawing.RequestFit();
+        }
+        else if (IsShowingModel)
         {
             ModelDrawing.ZoomToFit();
         }
@@ -171,14 +184,14 @@ public partial class MainWindow
 
     void OnResetViewClicked(object? sender, RoutedEventArgs e)
     {
-        _ = IsShowingModel ? ModelDrawing.Apply(ViewCommand.ResetView) : DrawingCanvas.Apply(ViewCommand.ResetView);
+        _ = IsShowingModel ? ActiveModel.Apply(ViewCommand.ResetView) : DrawingCanvas.Apply(ViewCommand.ResetView);
     }
 
     void OnZoomInClicked(object? sender, RoutedEventArgs e)
     {
         if (IsShowingModel)
         {
-            ModelDrawing.ZoomIn();
+            ActiveModel.ZoomIn();
         }
         else
         {
@@ -190,7 +203,7 @@ public partial class MainWindow
     {
         if (IsShowingModel)
         {
-            ModelDrawing.ZoomOut();
+            ActiveModel.ZoomOut();
         }
         else
         {
@@ -355,7 +368,7 @@ public partial class MainWindow
                 break;
 
             case EditCommand.Duplicate:
-                BringIntoView(SelectionCommands.Duplicate(Editor, IsShowingModel ? ModelDrawing.GridStepInches : DrawingCanvas.GridStepInches));
+                BringIntoView(SelectionCommands.Duplicate(Editor, IsShowingModel ? ActiveModel.GridStepInches : DrawingCanvas.GridStepInches));
                 break;
 
             default:
@@ -373,7 +386,7 @@ public partial class MainWindow
 
         if (IsShowingModel)
         {
-            ModelDrawing.BringIntoView(id);
+            ActiveModel.BringIntoView(id);
         }
         else
         {
