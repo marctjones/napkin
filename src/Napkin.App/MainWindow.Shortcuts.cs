@@ -21,7 +21,6 @@ public partial class MainWindow
 {
     void BuildSamplesMenu()
     {
-        KeyModifiers command = CommandModifier;
         for (int i = 0; i < Samples.Count; i++)
         {
             IDesignSource source = Samples[i];
@@ -35,7 +34,7 @@ public partial class MainWindow
             // in, because there is no tenth digit to give.
             if (i < 9)
             {
-                item.InputGesture = new KeyGesture(Key.D1 + i, command);
+                item.InputGesture = Gesture(ShellCommand.Sample1 + i);
             }
 
             item.Click += (_, _) => OpenSampleCommand(source);
@@ -43,74 +42,88 @@ public partial class MainWindow
         }
 
         SamplesMenu.ItemsSource = _sampleItems;
-        NewMenuItem.InputGesture = new KeyGesture(Key.N, command);
-        OpenMenuItem.InputGesture = new KeyGesture(Key.O, command);
-        SaveMenuItem.InputGesture = new KeyGesture(Key.S, command);
-        SaveAsMenuItem.InputGesture = new KeyGesture(Key.S, command | KeyModifiers.Shift);
-        UndoMenuItem.InputGesture = UndoGestures[0];
-        RedoMenuItem.InputGesture = RedoGestures[0];
-        ZoomToFitMenuItem.InputGesture = new KeyGesture(Key.D0, command);
-        ZoomInMenuItem.InputGesture = new KeyGesture(Key.OemPlus);
-        ZoomOutMenuItem.InputGesture = new KeyGesture(Key.OemMinus);
-        SelectToolMenuItem.InputGesture = new KeyGesture(Key.S);
-        RectangleToolMenuItem.InputGesture = new KeyGesture(Key.R);
-        WallToolMenuItem.InputGesture = new KeyGesture(Key.W);
-        ShapeMenuItem.InputGesture = new KeyGesture(Key.C);
-        DuplicateMenuItem.InputGesture = new KeyGesture(Key.D);
-        JoinMenuItem.InputGesture = new KeyGesture(Key.J);
-        JoinAllMenuItem.InputGesture = new KeyGesture(Key.J, KeyModifiers.Shift);
-        MirrorEastWestMenuItem.InputGesture = new KeyGesture(Key.M);
-        MirrorNorthSouthMenuItem.InputGesture = new KeyGesture(Key.M, KeyModifiers.Shift);
-        PinMenuItem.InputGesture = new KeyGesture(Key.P);
-        DeleteMenuItem.InputGesture = new KeyGesture(Key.Delete);
-        TurnXMenuItem.InputGesture = new KeyGesture(Key.X);
-        TurnYMenuItem.InputGesture = new KeyGesture(Key.Y);
-        TurnZMenuItem.InputGesture = new KeyGesture(Key.Z);
-        GridMenuItem.InputGesture = new KeyGesture(Key.G);
-
-        // The views on 1-7 (standard-views §4.2). Display only, as every gesture here is: the keys are
-        // handled in the drawing's own key path, where they yield to a length being typed.
-        foreach (DesignView view in AllViews)
-        {
-            ViewMenuEntry(view).InputGesture = new KeyGesture(Key.D0 + (int)view);
-        }
-
+        ShowGestures();
         UpdateMenuEnablement();
     }
 
+    /// <summary>
+    /// Puts every menu item's shortcut on it from <see cref="KeyMaps"/>, the one table the keys are
+    /// handled from. Display only, as every gesture here is: the window's shortcuts are key
+    /// bindings, and the drawing's keys are handled in the views, where they yield to typing.
+    /// </summary>
+    void ShowGestures()
+    {
+        NewMenuItem.InputGesture = Gesture(ShellCommand.New);
+        OpenMenuItem.InputGesture = Gesture(ShellCommand.Open);
+        SaveMenuItem.InputGesture = Gesture(ShellCommand.Save);
+        SaveAsMenuItem.InputGesture = Gesture(ShellCommand.SaveAs);
+        UndoMenuItem.InputGesture = UndoGestures[0];
+        RedoMenuItem.InputGesture = RedoGestures[0];
+        CutListMenuItem.InputGesture = Gesture(ShellCommand.CutList);
+        ShoppingListMenuItem.InputGesture = Gesture(ShellCommand.ShoppingList);
+
+        foreach ((MenuItem item, EditCommand command) in (ReadOnlySpan<(MenuItem, EditCommand)>)
+        [
+            (SelectToolMenuItem, EditCommand.SelectTool),
+            (RectangleToolMenuItem, EditCommand.RectangleTool),
+            (WallToolMenuItem, EditCommand.WallTool),
+            (ShapeMenuItem, EditCommand.Shape),
+            (DuplicateMenuItem, EditCommand.Duplicate),
+            (JoinMenuItem, EditCommand.Join),
+            (JoinAllMenuItem, EditCommand.JoinAll),
+            (MirrorEastWestMenuItem, EditCommand.MirrorEastWest),
+            (MirrorNorthSouthMenuItem, EditCommand.MirrorNorthSouth),
+            (PinMenuItem, EditCommand.Pin),
+            (DeleteMenuItem, EditCommand.Delete),
+            (TurnXMenuItem, EditCommand.TurnX),
+            (TurnYMenuItem, EditCommand.TurnY),
+            (TurnZMenuItem, EditCommand.TurnZ),
+            (GridMenuItem, EditCommand.ToggleGrid),
+        ])
+        {
+            item.InputGesture = Gesture(command);
+        }
+
+        ZoomToFitMenuItem.InputGesture = Gesture(ViewCommand.ZoomToFit);
+        ResetViewMenuItem.InputGesture = Gesture(ViewCommand.ResetView);
+        ZoomInMenuItem.InputGesture = Gesture(ViewCommand.ZoomIn);
+        ZoomOutMenuItem.InputGesture = Gesture(ViewCommand.ZoomOut);
+
+        // The views on 1-7 (standard-views §4.2); they yield to a length being typed.
+        foreach (DesignView view in AllViews)
+        {
+            ViewMenuEntry(view).InputGesture = Gesture(KeyInput.CommandFor(view));
+        }
+    }
+
+    /// <summary>The gesture a menu shows for a command: its first key in the map, with the platform's command key.</summary>
+    static KeyGesture Gesture(ShellCommand command) => KeyInput.Gesture(KeyMaps.Shell.KeysFor(command)[0], CommandModifier);
+
+    static KeyGesture Gesture(EditCommand command) => KeyInput.Gesture(KeyMaps.Edit.KeysFor(command)[0], CommandModifier);
+
+    static KeyGesture Gesture(ViewCommand command) => KeyInput.Gesture(KeyMaps.View.KeysFor(command)[0], CommandModifier);
+
+    /// <summary>
+    /// The window's own shortcuts (<see cref="KeyMaps.Shell"/>), bound wherever the keyboard is.
+    /// Undo and redo are bound to the platform's own keys, which the map lists the usual ones of.
+    /// </summary>
     void BuildKeyBindings()
     {
-        KeyModifiers command = CommandModifier;
-        KeyBindings.Add(new KeyBinding
+        foreach (Shortcut<ShellCommand> shortcut in KeyMaps.Shell.Shortcuts)
         {
-            Gesture = new KeyGesture(Key.N, command),
-            Command = new RelayCommand(NewSheetCommand),
-        });
-        KeyBindings.Add(new KeyBinding
-        {
-            Gesture = new KeyGesture(Key.O, command),
-            Command = new RelayCommand(() => _ = OpenFileAsync()),
-        });
-        KeyBindings.Add(new KeyBinding
-        {
-            Gesture = new KeyGesture(Key.L, command),
-            Command = new RelayCommand(() => OpenCutList()),
-        });
-        KeyBindings.Add(new KeyBinding
-        {
-            Gesture = new KeyGesture(Key.L, command | KeyModifiers.Shift),
-            Command = new RelayCommand(() => OpenShoppingList()),
-        });
-        KeyBindings.Add(new KeyBinding
-        {
-            Gesture = new KeyGesture(Key.S, command),
-            Command = new RelayCommand(() => _ = SaveAsync()),
-        });
-        KeyBindings.Add(new KeyBinding
-        {
-            Gesture = new KeyGesture(Key.S, command | KeyModifiers.Shift),
-            Command = new RelayCommand(() => _ = SaveAsAsync()),
-        });
+            if (shortcut.Command is ShellCommand.Undo or ShellCommand.Redo
+                || (shortcut.Command >= ShellCommand.Sample1 && shortcut.Command - ShellCommand.Sample1 >= Samples.Count))
+            {
+                continue;
+            }
+
+            ShellCommand command = shortcut.Command;
+            KeyBindings.Add(new KeyBinding
+            {
+                Gesture = KeyInput.Gesture(shortcut.Keystroke, CommandModifier),
+                Command = new RelayCommand(() => Run(command)),
+            });
+        }
 
         foreach (KeyGesture gesture in UndoGestures)
         {
@@ -121,15 +134,48 @@ public partial class MainWindow
         {
             KeyBindings.Add(new KeyBinding { Gesture = gesture, Command = new RelayCommand(() => RedoCommand()) });
         }
+    }
 
-        for (int i = 0; i < Samples.Count && i < 9; i++)
+    /// <summary>Runs a window shortcut.</summary>
+    void Run(ShellCommand command)
+    {
+        switch (command)
         {
-            IDesignSource source = Samples[i];
-            KeyBindings.Add(new KeyBinding
-            {
-                Gesture = new KeyGesture(Key.D1 + i, command),
-                Command = new RelayCommand(() => OpenSampleCommand(source)),
-            });
+            case ShellCommand.New:
+                NewSheetCommand();
+                break;
+
+            case ShellCommand.Open:
+                _ = OpenFileAsync();
+                break;
+
+            case ShellCommand.Save:
+                _ = SaveAsync();
+                break;
+
+            case ShellCommand.SaveAs:
+                _ = SaveAsAsync();
+                break;
+
+            case ShellCommand.Undo:
+                UndoCommand();
+                break;
+
+            case ShellCommand.Redo:
+                RedoCommand();
+                break;
+
+            case ShellCommand.CutList:
+                OpenCutList();
+                break;
+
+            case ShellCommand.ShoppingList:
+                OpenShoppingList();
+                break;
+
+            default:
+                OpenSampleCommand(Samples[command - ShellCommand.Sample1]);
+                break;
         }
     }
 

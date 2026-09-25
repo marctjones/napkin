@@ -137,7 +137,7 @@
                           ToolTip.Tip="Click on a wall to put a door in it." />
                 <Separator />
                 <MenuItem Name="ShapeMenuItem"
-                          Header="S_hape…"
+                          Header="_Cut to shape…"
                           Click="OnShapeClicked"
                           ToolTip.Tip="Open the selected part in the shape workshop: pick its stock and cut its corners and edges." />
                 <MenuItem Name="DuplicateMenuItem"
@@ -303,6 +303,10 @@
                 </MenuItem>
                 <Separator />
                 <MenuItem Name="ZoomToFitMenuItem" Header="Zoom to _Fit" Click="OnZoomToFitClicked" />
+                <MenuItem Name="ResetViewMenuItem"
+                          Header="R_eset view"
+                          Click="OnResetViewClicked"
+                          ToolTip.Tip="The plan fits the drawing; the 3D view goes back to its first angle." />
                 <MenuItem Name="ZoomInMenuItem" Header="Zoom _In" Click="OnZoomInClicked" />
                 <MenuItem Name="ZoomOutMenuItem" Header="Zoom _Out" Click="OnZoomOutClicked" />
                 <Separator />
@@ -578,9 +582,9 @@
                     <Button Name="ShapeToolButton"
                             Padding="5"
                             Click="OnShapeClicked"
-                            AutomationProperties.Name="Shape"
+                            AutomationProperties.Name="Cut to shape"
                             ToolTip.ShowOnDisabled="True"
-                            ToolTip.Tip="Shape: open the selected part in the shape workshop to pick its stock and cut its corners and edges (C)">
+                            ToolTip.Tip="Cut to shape: open the selected part in the shape workshop to pick its stock and cut its corners and edges (C)">
                         <!-- A blank with one corner cut off, and the offcut beside it. -->
                         <Path Classes="toolGlyph"
                               Data="M1,5 L10,5 L15,10 L15,17 L1,17 Z M12,2 L17,2 L17,7 Z" />

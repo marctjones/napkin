@@ -318,6 +318,10 @@ public partial class MainWindow
         ViewText.Text = _view == DesignView.Model && perspective ? "3D, perspective" : StandardViews.Name(_view);
         OrthographicMenuItem.Icon = perspective ? null : new TextBlock { Text = "✓" };
         PerspectiveMenuItem.Icon = perspective ? new TextBlock { Text = "✓" } : null;
+
+        // O switches, so it shows on the one it would switch to.
+        OrthographicMenuItem.InputGesture = perspective ? Gesture(ViewCommand.Projection) : null;
+        PerspectiveMenuItem.InputGesture = perspective ? null : Gesture(ViewCommand.Projection);
     }
 
     bool _showRulers;

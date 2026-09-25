@@ -135,6 +135,11 @@ public partial class MainWindow
         }
     }
 
+    void OnResetViewClicked(object? sender, RoutedEventArgs e)
+    {
+        _ = IsShowingModel ? ModelDrawing.Apply(ViewCommand.ResetView) : DrawingCanvas.Apply(ViewCommand.ResetView);
+    }
+
     void OnZoomInClicked(object? sender, RoutedEventArgs e)
     {
         if (IsShowingModel)
