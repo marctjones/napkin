@@ -111,6 +111,16 @@ public sealed class RenovationListTests
     }
 
     [Fact]
+    public void A_new_post_against_existing_rails_buys_every_joints_fasteners()
+    {
+        // The post is new, the rails already there: each of the three joints has a New part, 3 × 3 = 9.
+        (Sketch sketch, _, _, _) = Bench(Phase.New, Phase.Existing, Phase.Existing, Phase.Existing, Phase.Existing);
+
+        Assert.Equal(9, Assert.Single(FastenerList.Of(sketch)).Count);
+        Assert.Contains(SuppliesList.Of(sketch), row => row.Item == "Glue: 3 of 3 joints");
+    }
+
+    [Fact]
     public void A_demolished_part_is_counted_under_demolition_by_name_and_quantity()
     {
         (Sketch sketch, _, Box[] rails, Box shelf) = Bench(Phase.Existing, Phase.Demolish, Phase.Demolish, Phase.New, Phase.Demolish);
