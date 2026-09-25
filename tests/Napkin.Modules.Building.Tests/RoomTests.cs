@@ -35,6 +35,7 @@ public class RoomTests
     // ---- Test 4: bounding walls and the room's openings ---------------------------------------
 
     [Fact]
+    [Trait("Feature", "BLD-007")]
     public void Example_1s_four_walls_bound_the_room_by_their_inside_faces_and_both_openings_are_its()
     {
         (Sketch sketch, _) = Sample();
@@ -52,6 +53,7 @@ public class RoomTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-007")]
     public void An_opening_straddling_the_edges_end_is_not_the_rooms_and_a_room_short_of_a_wall_is_told_to_snap()
     {
         (Sketch sketch, _) = Sample();
@@ -74,6 +76,7 @@ public class RoomTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-007")]
     public void A_room_with_no_bounding_wall_takes_off_its_own_perimeter_and_says_so()
     {
         LayerId roomLayer = LayerId.New();
@@ -96,6 +99,7 @@ public class RoomTests
     // ---- Test 7: every line of §10.2, exactly -------------------------------------------------
 
     [Fact]
+    [Trait("Feature", "BLD-010")]
     public void Example_1s_takeoff_is_the_expectations_line_for_line()
     {
         (Sketch sketch, JsonElement expected) = Sample();
@@ -119,6 +123,7 @@ public class RoomTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-010")]
     public void Two_drywall_pools_would_buy_one_more_sheet_and_napkin_counts_one()
     {
         // Walls 390 / 32 = 12.19 → 13 and ceiling 168 / 32 = 5.25 → 6 would be 19; one pool of 558 is 18.
@@ -127,6 +132,7 @@ public class RoomTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-010")]
     public void Nothing_typed_shows_the_area_alone_and_says_what_to_type()
     {
         (Sketch sketch, _) = Sample();
@@ -151,6 +157,7 @@ public class RoomTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-012")]
     public void Insulation_on_all_walls_by_bays_only_and_on_no_wall_with_a_wall_not_framed()
     {
         (Sketch sketch, _) = Sample();
@@ -181,6 +188,7 @@ public class RoomTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-010")]
     public void Only_a_new_room_is_taken_off()
     {
         (Sketch sketch, _) = Sample();
@@ -212,6 +220,7 @@ public class RoomTests
     [InlineData(150994944L * 17 + 75497472, "17.5")]
     [InlineData(150994944L / 20 - 1, "0")]
     [InlineData((150994944L / 20) + 1, "0.1")]
+    [Trait("Feature", "BLD-010")]
     public void An_area_alone_rounds_once_to_one_decimal(long units, string text)
         => Assert.Equal(text, AreaTakeoff.SquareFeet(units));
 
@@ -303,6 +312,7 @@ public class RoomTests
         });
 
     [Fact]
+    [Trait("Feature", "BLD-011")]
     public void Unequal_opposite_sides_and_unequal_diagonals_are_out_of_square()
     {
         Room sides = Measured(168, 144, MeasuredRoom.None with { South = In(168), North = In(169), West = In(144), East = In(144) });
@@ -319,6 +329,7 @@ public class RoomTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-011")]
     public void One_diagonal_is_compared_by_its_square_and_a_true_3_4_5_room_is_not_flagged()
     {
         // 12 × 16 ft, diagonal 20 ft: 144² + 192² = 20736 + 36864 = 57600 = 240². Square.
@@ -339,6 +350,7 @@ public class RoomTests
     // ---- Test 9 and 10: bays, and the frame bought ---------------------------------------------
 
     [Fact]
+    [Trait("Feature", "BLD-012")]
     public void Example_1s_bays_are_37()
         => Assert.Equal(37, Takeoff(Sample().Sketch).Single(line => line.Finish == Finish.InsulationBays).Count);
 

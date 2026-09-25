@@ -30,6 +30,7 @@ public class WallJoinTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-006")]
     public void Example_1s_walls_join_at_all_four_corners_where_the_short_walls_butt_between()
     {
         // South and north run full, 175 in (x 0..175); west and east are 144 in between them,
@@ -61,6 +62,7 @@ public class WallJoinTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-006")]
     public void Offset_by_one_unit_they_do_not_join()
     {
         Box south = WallBox("South", In(0), In(0), In(175));
@@ -71,6 +73,7 @@ public class WallJoinTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-006")]
     public void Two_ends_meeting_in_a_line_join_and_two_walls_overlapping_at_a_corner_join()
     {
         // End to end: 0..96 and 96..192 on one line.
@@ -118,6 +121,7 @@ public class WallJoinTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-006")]
     public void An_opening_reaching_a_join_is_refused_naming_the_other_wall()
     {
         // A partition butts the 175 in south wall's north face at x 100..103 1/2 (a T). A 36 in
@@ -137,6 +141,7 @@ public class WallJoinTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-006")]
     public void The_plan_strokes_an_edge_less_its_seams()
     {
         Point2 from = Point2.Inches(0, 0), to = Point2.Inches(10, 0);

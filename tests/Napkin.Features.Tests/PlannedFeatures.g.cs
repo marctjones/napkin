@@ -102,6 +102,12 @@ public class PlannedFeatures
     {
     }
 
+    [Fact(Skip = "planned: GUI-RENO-04 — Finish a basement room end to end")]
+    [Trait("Feature", "GUI-RENO-04")]
+    public void GUI_RENO_04()
+    {
+    }
+
     [Fact(Skip = "planned: IOP-001 — Exported DXF opens in another CAD tool")]
     [Trait("Feature", "IOP-001")]
     public void IOP_001()
