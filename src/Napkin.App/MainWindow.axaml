@@ -215,6 +215,11 @@
                           Header="D_oor"
                           Click="OnDoorToolClicked"
                           ToolTip.Tip="Click on a wall to put a door in it." />
+                <!-- Renovation (renovation-sketches §8): a room carries the finishes; a note the rough-in. -->
+                <MenuItem Name="RoomToolMenuItem"
+                          Header="Roo_m"
+                          Click="OnRoomToolClicked"
+                          ToolTip.Tip="Drag out a room, or click inside four walls to take their inside faces; tick its finishes in the panel for the Area takeoff." />
                 <Separator />
                 <!-- The toolbar's stock icons, by menu: one submenu per category, one item per
                      size, built in the code-behind from the same library the toolbox lists. -->
@@ -1021,6 +1026,78 @@
                                                AutomationProperties.Name="Bracing working" />
                                 </Expander>
                             </StackPanel>
+                        </StackPanel>
+
+                        <!-- A room's finishes and what was measured (renovation-sketches §5): ticks and the
+                             values typed from the packages, none defaulted but napkin's own 10 % flooring
+                             allowance. The Area takeoff is on the shopping list; its lines are here too. -->
+                        <StackPanel Name="RoomFields" Spacing="4" IsVisible="False">
+                            <TextBlock Name="RoomHeadline" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Room" />
+                            <TextBlock Name="RoomBoundsText" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Bounding walls" />
+                            <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Text="Drywall" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <ComboBox Name="DrywallBox" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,0,2"
+                                          AutomationProperties.Name="Drywall" SelectionChanged="OnRoomChoiceChanged" />
+                                <TextBlock Grid.Row="1" Text="Sheet" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="SheetBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2"
+                                         PlaceholderText="the size you buy, e.g. 4' x 8'" AutomationProperties.Name="Drywall sheet size"
+                                         ToolTip.Tip="Type the sheet size from the package: width x length. napkin carries no sheet size." />
+                                <TextBlock Grid.Row="2" Text="Insulation" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <ComboBox Name="InsulationBox" Grid.Row="2" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,4,2"
+                                          AutomationProperties.Name="Insulation" SelectionChanged="OnRoomChoiceChanged" />
+                                <ComboBox Name="InsulationByBox" Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,0,2"
+                                          AutomationProperties.Name="Insulation by" SelectionChanged="OnRoomChoiceChanged" />
+                                <TextBlock Grid.Row="3" Text="Bag covers" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="InsulationCoverageBox" Grid.Row="3" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,4,2"
+                                         PlaceholderText="sq ft" AutomationProperties.Name="Insulation coverage"
+                                         ToolTip.Tip="Square feet a bag covers, from the package. Whole square feet." />
+                                <TextBlock Grid.Row="4" Text="Paint" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <ComboBox Name="PaintBox" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" Margin="0,0,0,2"
+                                          AutomationProperties.Name="Paint" SelectionChanged="OnRoomChoiceChanged" />
+                                <TextBlock Grid.Row="5" Text="Coats" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="PaintCoatsBox" Grid.Row="5" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,4,2"
+                                         PlaceholderText="coats" AutomationProperties.Name="Paint coats" />
+                                <TextBlock Grid.Row="5" Grid.Column="2" Text="gallon" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                <TextBox Name="PaintCoverageBox" Grid.Row="5" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2"
+                                         PlaceholderText="sq ft" AutomationProperties.Name="Paint coverage"
+                                         ToolTip.Tip="Square feet a gallon covers, from the can." />
+                                <CheckBox Name="FlooringCheck" Grid.Row="6" Content="Floor" FontSize="11" Margin="0,0,6,2"
+                                          AutomationProperties.Name="Flooring" IsCheckedChanged="OnRoomTicked" />
+                                <TextBox Name="FlooringWasteBox" Grid.Row="6" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,4,2"
+                                         PlaceholderText="waste %" AutomationProperties.Name="Flooring waste"
+                                         ToolTip.Tip="The waste allowance, a whole percent: napkin's allowance of 10 % to start, not a fact about your floor. Type any other, 0 included." />
+                                <TextBlock Grid.Row="6" Grid.Column="2" Text="box" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                <TextBox Name="FlooringBoxBox" Grid.Row="6" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2"
+                                         PlaceholderText="sq ft" AutomationProperties.Name="Flooring box coverage"
+                                         ToolTip.Tip="Square feet a box covers, from the box." />
+                                <CheckBox Name="BaseboardCheck" Grid.Row="7" Content="Base" FontSize="11" Margin="0,0,6,2"
+                                          AutomationProperties.Name="Baseboard" IsCheckedChanged="OnRoomTicked" />
+                                <TextBox Name="BaseboardStickBox" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2"
+                                         PlaceholderText="the stick you buy, e.g. 8'" AutomationProperties.Name="Baseboard stick length"
+                                         ToolTip.Tip="The length of stick you will buy. napkin has read no stock-length list for trim." />
+                            </Grid>
+                            <Expander Name="MeasuredExpander" Header="Measured" FontSize="10" Padding="4,2" HorizontalAlignment="Stretch">
+                                <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto">
+                                    <TextBlock Text="S" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredSouthBox" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Measured south" />
+                                    <TextBlock Grid.Column="2" Text="N" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredNorthBox" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2" AutomationProperties.Name="Measured north" />
+                                    <TextBlock Grid.Row="1" Text="W" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredWestBox" Grid.Row="1" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Measured west" />
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="E" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredEastBox" Grid.Row="1" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2" AutomationProperties.Name="Measured east" />
+                                    <TextBlock Grid.Row="2" Text="D1" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredDiagonal1Box" Grid.Row="2" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Measured diagonal 1" />
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="D2" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2" />
+                                    <TextBox Name="MeasuredDiagonal2Box" Grid.Row="2" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,0,2" AutomationProperties.Name="Measured diagonal 2" />
+                                </Grid>
+                            </Expander>
+                            <TextBlock Name="RoomNotesText" FontSize="10" TextWrapping="Wrap" IsVisible="False"
+                                       AutomationProperties.Name="Room notes" />
+                            <TextBlock Name="RoomTakeoffText" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Area takeoff" />
                         </StackPanel>
 
                         <CheckBox Name="IsPartCheck"

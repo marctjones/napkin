@@ -22,6 +22,9 @@ public enum EditTool
 
     /// <summary>Click on a wall to put a window or a door in it (#18).</summary>
     Opening,
+
+    /// <summary>Drag out a room, or click inside walls for their inside faces (renovation-sketches §8).</summary>
+    Room,
 }
 
 /// <summary>

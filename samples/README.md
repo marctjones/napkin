@@ -18,6 +18,7 @@ Three hand-crafted designs, in the scene format documented in
 | An L-bracket, a distinct feature on every side (#101) | `l-bracket.design.md`, `l-bracket.scene.json`, `l-bracket.expected.json` |
 | Two boards in the same place and a peg through both (#101) | `overlap.design.md`, `overlap.scene.json`, `overlap.expected.json` |
 | A new 3 ft window in an existing 12 ft exterior wall — renovation example 2 (#161) | `window-in-existing-wall.design.md`, `window-in-existing-wall.scene.json`, `window-in-existing-wall.expected.json` |
+| Finishing a 12 × 14 ft basement room — renovation example 1 (#162) | `basement-room.design.md`, `basement-room.scene.json`, `basement-room.expected.json` |
 | A picture frame, four 45° mitres cut to the long point (#101, #97) | `picture-frame.design.md`, `picture-frame.scene.json`, `picture-frame.expected.json` |
 | A bench whose every part names its stock, for the shopping list (#9) | `stocked-bench.design.md`, `stocked-bench.scene.json`, `stocked-bench.expected.json` |
 

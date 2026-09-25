@@ -44,6 +44,21 @@ public partial class MainWindow
 
     void OnDoorToolClicked(object? sender, RoutedEventArgs e) => ArmOpening(OpeningKind.Door);
 
+    void OnRoomToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.RoomTool);
+
+    /// <summary>Picks up the room tool (renovation-sketches §8); rooms are drawn in the plan, so the plan comes forward.</summary>
+    public void ArmRoom()
+    {
+        if (IsShowingModel)
+        {
+            ShowView(DesignView.Top);
+        }
+
+        DrawingCanvas.ArmRoom();
+        UpdateToolButtons();
+        FocusDrawing();
+    }
+
     /// <summary>
     /// Picks up the wall tool with a member ("2x4", "2x6") or, with null, the one it last had. Walls
     /// are drawn in the plan, so the plan comes forward if the 3D view was showing.
@@ -232,6 +247,10 @@ public partial class MainWindow
 
             case EditCommand.WallTool:
                 ArmWall(null);
+                return true;
+
+            case EditCommand.RoomTool:
+                ArmRoom();
                 return true;
 
             case EditCommand.Shape when IsShowingStandardView:

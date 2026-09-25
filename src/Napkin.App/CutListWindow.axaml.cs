@@ -386,6 +386,15 @@ public partial class CutListWindow : Window
     /// <summary>The shopping list as a CSV file would carry it, in the order it is on screen.</summary>
     public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted, _kerf);
 
+    /// <summary>The Area takeoff section's lines, in the order on screen.</summary>
+    public ImmutableArray<TakeoffLine> TakeoffLines { get; private set; } = [];
+
+    /// <summary>Whether the Area takeoff section is showing (it is when a New room is drawn).</summary>
+    public bool IsShowingAreaTakeoff => AreaTakeoffSection.IsVisible;
+
+    /// <summary>The Area takeoff section as a CSV file carries it, under its own header.</summary>
+    public string AreaTakeoffCsv => AreaTakeoff.ToCsv(TakeoffLines);
+
     /// <summary>The Demolition section's lines, in the order on screen.</summary>
     public ImmutableArray<DemolitionLine> DemolitionLines { get; private set; } = [];
 
@@ -450,6 +459,12 @@ public partial class CutListWindow : Window
         // The walls' framing diff (renovation-sketches §6.3): new material is bought, what comes out
         // is counted under Demolition with the demolished boxes.
         ImmutableArray<WallDiff> diffs = FramingDiff.Of(sketch, MaterialsLibrary.Shipped, Packs);
+
+        // The rooms' finishes by area (renovation-sketches §5).
+        ImmutableArray<TakeoffLine> takeoff = AreaTakeoff.All(sketch, MaterialsLibrary.Shipped, Packs);
+        TakeoffLines = takeoff;
+        AreaTakeoffList.ItemsSource = takeoff.Select(line => (takeoff.Select(each => each.Room).Distinct().Count() > 1 ? $"{line.Room} — " : string.Empty) + line.Text).ToArray();
+        AreaTakeoffSection.IsVisible = !takeoff.IsEmpty;
 
         // What comes out, and the line that says only New is bought (renovation-sketches §6.2).
         ImmutableArray<DemolitionLine> demolition = [.. Demolition.Boxes(sketch), .. FramingDiff.Demolition(diffs)];

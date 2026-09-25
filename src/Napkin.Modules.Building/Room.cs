@@ -73,6 +73,13 @@ public sealed record Room(Box Box)
     public Length Perimeter => 2 * (Length + Width);
 }
 
+/// <summary>A wall's long face in the plan: a vertical line at X = <see cref="At"/>, or a horizontal one at Y, from <see cref="Lo"/> to <see cref="Hi"/>.</summary>
+/// <param name="Vertical">Whether the face runs north–south.</param>
+/// <param name="At">Its X when vertical, its Y otherwise.</param>
+/// <param name="Lo">Where it starts along its line.</param>
+/// <param name="Hi">Where it ends.</param>
+public readonly record struct WallFace(bool Vertical, Length At, Length Lo, Length Hi);
+
 /// <summary>A wall that bounds a room: one of its long faces lies on a room edge, overlapping it.</summary>
 /// <param name="Wall">The wall.</param>
 /// <param name="Side">Which edge of the room it lies on.</param>
@@ -208,7 +215,13 @@ public static class RoomBounds
         (RoomSide.West, true, r.X0, r.Y0, r.Y1),
     ];
 
-    /// <summary>A wall's two long faces in the plan, or null for a wall not standing as drawn at a right angle.</summary>
+    /// <summary>A wall's two long faces in the plan; none for a wall not standing as drawn at a right angle.</summary>
+    public static ImmutableArray<WallFace> FacesOf(Wall wall)
+    {
+        ArgumentNullException.ThrowIfNull(wall);
+        return Faces(wall) is { } faces ? [.. faces.Select(face => new WallFace(face.Vertical, face.At, face.Lo, face.Hi))] : [];
+    }
+
     static (bool Vertical, Length At, Length Lo, Length Hi)[]? Faces(Wall wall)
     {
         Box box = wall.Box;

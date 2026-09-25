@@ -104,6 +104,14 @@
                                 <TextBlock Name="FramingNote" FontSize="11" Opacity="0.75" TextWrapping="Wrap" />
                                 <viewing:ShoppingListTable Name="FramingTable" />
                             </StackPanel>
+                            <!-- A room's finishes by area (renovation-sketches §5): each line rounds once, and says
+                                 the typed values it used. -->
+                            <StackPanel Name="AreaTakeoffSection" Spacing="2" IsVisible="False">
+                                <TextBlock Text="Area takeoff" Margin="0,14,0,0" FontSize="12" FontWeight="SemiBold" />
+                                <TextBlock Name="AreaTakeoffNote" FontSize="11" Opacity="0.75" TextWrapping="Wrap"
+                                           Text="By area from the drawn room, each line rounded once at its end; the sizes and coverages are the ones you typed from the packages." />
+                                <ItemsControl Name="AreaTakeoffList" FontSize="12" AutomationProperties.Name="Area takeoff" />
+                            </StackPanel>
                             <TextBlock Name="ExtrasNote"
                                        Margin="0,14,0,4"
                                        FontSize="11"
