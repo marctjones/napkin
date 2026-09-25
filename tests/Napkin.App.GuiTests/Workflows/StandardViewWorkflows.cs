@@ -56,7 +56,7 @@ public class StandardViewWorkflows
             Assert.Equal(CameraProjection.Orthographic, camera.Projection);
             Assert.Equal(new Vector3d(1, 0, 0), camera.Right);
             Assert.Equal(new Vector3d(0, 0, 1), camera.Up);
-            Assert.StartsWith("Front view: read-only for now", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Equal(StandardViewWords.ReadOnlyHint(StandardView.Front), window.MessageOnScreen);
         });
 
         // Hand-derived from the sample: in Front the lug (x ½–1, z 4–5) is left of and above the boss
@@ -103,7 +103,7 @@ public class StandardViewWorkflows
         app.Expect("4 shows Back, and says it is read-only", () =>
         {
             AssertShowing(window, DesignView.Back, "Back");
-            Assert.StartsWith("Back view: read-only for now", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Equal(StandardViewWords.ReadOnlyHint(StandardView.Back), window.MessageOnScreen);
         });
 
         app.Press(Key.O);
@@ -264,7 +264,7 @@ public class StandardViewWorkflows
         app.Press(Key.H);
         app.Expect("H in the plan says where hidden edges are drawn and changes nothing", () =>
         {
-            Assert.Equal(MainWindow.HiddenEdgesElsewhere, window.MessageOnScreen);
+            Assert.Equal(StandardViewWords.HiddenEdgesElsewhere, window.MessageOnScreen);
             Assert.True(window.Settings.Current.ShowHiddenEdges);
         });
 
@@ -322,7 +322,7 @@ public class StandardViewWorkflows
         {
             Assert.True(window.Model.ShowHiddenEdges);
             Assert.True(window.Settings.Current.ShowHiddenEdges);
-            Assert.Equal("Hidden edges: shown as light dashes.", window.MessageOnScreen);
+            Assert.Equal(StandardViewWords.HiddenEdgesShown, window.MessageOnScreen);
             Assert.True(with.SequenceEqual(WholeDrawing(app, window).Pixels));
         });
 
@@ -479,7 +479,7 @@ public class StandardViewWorkflows
         app.Expect("in Front the drawing tools are put down and say why", () =>
         {
             Assert.False(window.FindControl<ToggleButton>("RectangleToolButton")!.IsEnabled);
-            Assert.StartsWith("Not in a Front view yet", ToolTip.GetTip(window.FindControl<ToggleButton>("RectangleToolButton")!) as string, StringComparison.Ordinal);
+            Assert.Equal(StandardViewWords.NotInView(StandardView.Front), ToolTip.GetTip(window.FindControl<ToggleButton>("RectangleToolButton")!) as string);
             Assert.All(window.TurnButtons, button => Assert.False(button.IsVisible));
             Assert.All(window.ViewSnapButtons, button => Assert.False(button.IsEffectivelyVisible));
         });

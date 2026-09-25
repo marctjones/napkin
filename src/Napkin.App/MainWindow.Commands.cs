@@ -85,7 +85,7 @@ public partial class MainWindow
         // view has none (§5.4).
         if (IsShowingStandardView)
         {
-            Editor.Say(EditSeverity.Hint, $"Not in a {StandardViews.Name(_view)} view yet — 1 for the plan or 7 for 3D.");
+            Editor.Say(EditSeverity.Hint, StandardViewWords.NotInView(StandardViews.Of(_view)!.Value));
         }
         else if (IsShowingModel)
         {
@@ -235,7 +235,7 @@ public partial class MainWindow
                 return true;
 
             case EditCommand.Shape when IsShowingStandardView:
-                Editor.Say(EditSeverity.Hint, $"Not in a {StandardViews.Name(_view)} view yet — 1 for the plan or 7 for 3D.");
+                Editor.Say(EditSeverity.Hint, StandardViewWords.NotInView(StandardViews.Of(_view)!.Value));
                 return true;
 
             case EditCommand.Shape:

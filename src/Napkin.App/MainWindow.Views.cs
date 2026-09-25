@@ -165,8 +165,7 @@ public partial class MainWindow
         }
         else if (view != DesignView.Top)
         {
-            string name = StandardViews.Name(view);
-            Editor.Say(EditSeverity.Hint, $"{name} view: read-only for now — pan, zoom and select; 1 for the plan or 7 for 3D to edit.");
+            Editor.Say(EditSeverity.Hint, StandardViewWords.ReadOnlyHint(StandardViews.Of(view)!.Value));
         }
     }
 
@@ -205,7 +204,7 @@ public partial class MainWindow
 
         // A read-only view cannot draw, place or shape: those tools say so rather than vanish, and
         // come back with their own tooltips in the plan and 3D.
-        string refusal = $"Not in a {StandardViews.Name(_view)} view yet — 1 for the plan or 7 for 3D";
+        string? refusal = StandardViews.Of(_view) is { } shown ? StandardViewWords.NotInView(shown) : null;
         foreach (Control tool in (Control[])[RectangleToolButton, RectangleToolMenuItem, StockToolboxPanel.CategoryRow])
         {
             if (!_toolTipsOutsideViews.ContainsKey(tool))

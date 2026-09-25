@@ -1289,6 +1289,15 @@
       "kind": "unit"
     },
     {
+      "id": "VIEW-012",
+      "area": "ui",
+      "title": "The standard views' sentences come from one Module type",
+      "acceptance": "StandardViewWords: the read-only hint and the not-in-this-view refusal name the view; the three hidden-edge sentences are fixed. GUI tests compare against these, not copies.",
+      "milestone": "M2",
+      "issue": 185,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-VIEW-08",
       "area": "ui",
       "title": "Switch between Top, Front and 3D by key, chip and menu",
