@@ -409,6 +409,11 @@ public static class FramingList
             return "it reaches into the top plates";
         }
 
+        if (room == Length.Zero)
+        {
+            return "it leaves no room for a header under the top plates";
+        }
+
         if (depth is { } d && d > room)
         {
             return $"a {Text(d)} header does not fit the {Text(room)} above it";

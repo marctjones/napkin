@@ -393,6 +393,99 @@ public class FramingListTests
         => Assert.Throws<ArgumentOutOfRangeException>(() => FramingList.Label((FramingRole)99, 1));
 
     [Fact]
+    public void ALayoutStudOnTheOpeningsSideIsACripple()
+    {
+        // A 32 in window at 48: cripple positions wholly inside [48, 80) are 48 (its body 48–49 1/2)
+        // and 64; 80's body starts at the far side. 2 cripples.
+        Box wall = WallBox(In(144), In(3, 1, 2), In(96));
+        WallFraming framing = Frame(Empty().WithEntity(wall).WithEntity(OpeningBox(wall, In(48), In(32), In(36), In(42))));
+        Assert.Equal(2, framing.Count(FramingRole.CrippleBelow));
+    }
+
+    [Fact]
+    public void AnOpeningWhoseStudsJustFitAtTheEndIsFramed()
+    {
+        // At 105, 36 wide: its zone ends at 105 + 36 + 3 = 144, the wall's end exactly.
+        Box wall = WallBox(In(144), In(3, 1, 2), In(96));
+        WallFraming framing = Frame(Empty().WithEntity(wall).WithEntity(OpeningBox(wall, In(105), In(36), In(36), In(42))));
+        Assert.Empty(framing.Problems);
+        Assert.Equal(2, framing.Count(FramingRole.KingStud));
+    }
+
+    [Fact]
+    public void OpeningsWhoseStudsJustTouchAreBothFramed()
+    {
+        // Zones [17, 47) and [47, 77): they meet but do not overlap.
+        Box wall = WallBox(In(144), In(3, 1, 2), In(96));
+        Sketch sketch = Empty()
+            .WithEntity(wall)
+            .WithEntity(OpeningBox(wall, In(20), In(24), In(36), In(42)))
+            .WithEntity(OpeningBox(wall, In(50), In(24), In(36), In(42), "Window 2"));
+        Assert.Empty(Frame(sketch).Problems);
+        Assert.Equal(4, Frame(sketch).Count(FramingRole.KingStud));
+    }
+
+    [Fact]
+    public void AnOpeningUpToThePlatesLeavesNoRoomForAHeader()
+    {
+        // Top 36 + 57 = 93 = 96 − 3: no room at all.
+        Box wall = WallBox(In(144), In(3, 1, 2), In(96));
+        WallFraming framing = Frame(Empty().WithEntity(wall).WithEntity(OpeningBox(wall, In(54), In(36), In(36), In(57))));
+        Assert.Equal(["Window 1: it leaves no room for a header under the top plates"], framing.Problems);
+    }
+
+    [Fact]
+    public void ASillOnTheBottomPlateHasNoCripples()
+    {
+        // Sill 3 = 2 × 1 1/2: the rough sill lies on the bottom plate, and no cripple fits under it.
+        Box wall = WallBox(In(144), In(3, 1, 2), In(96));
+        WallFraming framing = Frame(Empty().WithEntity(wall).WithEntity(OpeningBox(wall, In(54), In(36), In(3), In(42))));
+        Assert.Empty(framing.Problems);
+        Assert.Equal(1, framing.Count(FramingRole.RoughSill));
+        Assert.Equal(0, framing.Count(FramingRole.CrippleBelow));
+    }
+
+    [Fact]
+    public void ALayoutStudEndingOnTheFarSideIsACripple()
+    {
+        // A 31 1/2 in window at 50: inside [50, 81 1/2) are 64 and 80 (its body 80–81 1/2). 2.
+        Box wall = WallBox(In(144), In(3, 1, 2), In(96));
+        WallFraming framing = Frame(Empty().WithEntity(wall).WithEntity(OpeningBox(wall, In(50), In(31, 1, 2), In(36), In(42))));
+        Assert.Equal(2, framing.Count(FramingRole.CrippleBelow));
+    }
+
+    [Fact]
+    public void AnOpeningWhoseStudsJustFitAtTheStartIsFramed()
+    {
+        // At 3: its king and jack stand at 0 to 3, the wall's start exactly.
+        Box wall = WallBox(In(144), In(3, 1, 2), In(96));
+        Assert.Empty(Frame(Empty().WithEntity(wall).WithEntity(OpeningBox(wall, In(3), In(36), In(36), In(42)))).Problems);
+    }
+
+    [Fact]
+    public void AHeaderFillingTheRoomLeavesNoCripplesAbove()
+    {
+        Box wall = WallBox(In(144), In(5, 1, 2), In(96));
+        Sketch sketch = Empty().WithEntity(wall).WithEntity(OpeningBox(wall, In(54), In(36), In(36), In(42)));
+        WallFraming framing = Frame(sketch, new FramingOptions { HeaderDepth = _ => In(15) });
+        Assert.Empty(framing.Problems);
+        Assert.Equal(0, framing.Count(FramingRole.CrippleAbove));
+    }
+
+    [Fact]
+    public void CripplesAboveStandOverTheWholeHeader()
+    {
+        // A 30 1/2 in window at 49 1/2 with one jack: the header runs 48 to 81 1/2. Layout positions
+        // wholly over it are 48, 64 and 80 (its body ends at 81 1/2 exactly): 3 above. Below, inside
+        // [49 1/2, 80), only 64: 1.
+        Box wall = WallBox(In(144), In(3, 1, 2), In(96));
+        Sketch sketch = Empty().WithEntity(wall).WithEntity(OpeningBox(wall, In(49, 1, 2), In(30, 1, 2), In(36), In(42)));
+        WallFraming framing = Frame(sketch, new FramingOptions { HeaderDepth = _ => In(9) });
+        Assert.Equal(3, framing.Count(FramingRole.CrippleAbove));
+        Assert.Equal(1, framing.Count(FramingRole.CrippleBelow));
+    }
+
+    [Fact]
     public void TheFrameBuysBoardsThroughTheShoppingList()
     {
         // The sample's 2x6 pieces, longest first, first fit over 6'…16' (ShoppingList §4 step 2):
