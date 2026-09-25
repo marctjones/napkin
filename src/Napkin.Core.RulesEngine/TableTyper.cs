@@ -44,7 +44,7 @@ internal static class TableTyper
 
         if (problems.Count == before)
         {
-            BandValidator.Validate(tableWhere, meta.Inputs, rows, problems);
+            BandValidator.Validate(tableWhere, meta.Inputs, [.. rows.Select(r => new BandRow(r.Id, r.Inputs))], problems);
         }
 
         if (problems.Count == before)
@@ -173,7 +173,12 @@ internal static class TableTyper
 /// </summary>
 internal static class BandValidator
 {
-    public static void Validate(Where where, IReadOnlyList<InputColumn> inputs, IReadOnlyList<HeaderRow> rows, ProblemList problems)
+    /// <summary>
+    /// Validates the rows' bands: every declared category covered, every upper-bound column reaching
+    /// its domain's max, every combination of bands present, and no two rows for one cell (for a
+    /// table with a capacity column: no two rows with the same capacity in one cell).
+    /// </summary>
+    public static void Validate(Where where, IReadOnlyList<InputColumn> inputs, IReadOnlyList<BandRow> rows, ProblemList problems)
     {
         if (rows.Count == 0)
         {
@@ -183,7 +188,7 @@ internal static class BandValidator
 
         List<InputColumn> exact = [.. inputs.Where(c => c.Band == BandKind.Exact)];
         List<InputColumn> bounds = [.. inputs.Where(c => c.Band == BandKind.UpperBound)];
-        InputColumn capacity = inputs.Single(c => c.Band == BandKind.Capacity);
+        InputColumn? capacity = inputs.SingleOrDefault(c => c.Band == BandKind.Capacity);
 
         foreach (InputColumn column in exact)
         {
@@ -193,7 +198,7 @@ internal static class BandValidator
             }
         }
 
-        foreach (IGrouping<string, HeaderRow> group in rows.GroupBy(r => Key(r, exact)).OrderBy(g => g.Key, StringComparer.Ordinal))
+        foreach (IGrouping<string, BandRow> group in rows.GroupBy(r => Key(r, exact)).OrderBy(g => g.Key, StringComparer.Ordinal))
         {
             string label = group.Key.Length == 0 ? "the table" : $"rows with {group.Key}";
 
@@ -221,9 +226,19 @@ internal static class BandValidator
                 }
             }
 
-            foreach (IGrouping<string, HeaderRow> cell in group.GroupBy(r => Key(r, bounds)))
+            foreach (IGrouping<string, BandRow> cell in group.GroupBy(r => Key(r, bounds)))
             {
-                foreach (IGrouping<long, HeaderRow> same in cell.GroupBy(r => r.Inputs[capacity.Name].Magnitude).Where(g => g.Count() > 1))
+                if (capacity is null)
+                {
+                    if (cell.Count() > 1)
+                    {
+                        problems.Add(where, $"overlap: rows {string.Join(", ", cell.Select(r => $"'{r.Id}'").Order(StringComparer.Ordinal))} have the same inputs.");
+                    }
+
+                    continue;
+                }
+
+                foreach (IGrouping<long, BandRow> same in cell.GroupBy(r => r.Inputs[capacity.Name].Magnitude).Where(g => g.Count() > 1))
                 {
                     problems.Add(
                         where,
@@ -233,7 +248,7 @@ internal static class BandValidator
         }
     }
 
-    private static string Key(HeaderRow row, IEnumerable<InputColumn> columns)
+    private static string Key(BandRow row, IEnumerable<InputColumn> columns)
         => string.Join("; ", columns.Select(c => $"{c.Name}={row.Inputs[c.Name]}"));
 
     private static string Show(InputColumn column, long magnitude) => new CellValue(column.Type, null, magnitude).ToString();
@@ -249,3 +264,6 @@ internal static class BandValidator
         return result;
     }
 }
+
+/// <summary>A row as the band validator sees it: its id and its value in each input column.</summary>
+internal sealed record BandRow(string Id, ImmutableSortedDictionary<string, CellValue> Inputs);

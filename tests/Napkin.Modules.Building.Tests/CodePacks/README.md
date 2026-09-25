@@ -12,3 +12,9 @@ packs/ or samples/.
 
 The member names (2x8, 2x10, 2x12) are lumber names the materials library carries, so a sized
 header can be bought; the spans, loads and stud counts beside them are not from any code.
+- `brace/`: two wall-bracing packs (#39), `us-zz-brace-a` ("ZZ BRACE A", section ZZ-BRACE.1: 2" step,
+  4'-0" per 10'-0" of line up to 99 mph and 5'-0" up to 199 mph, × 5/4 above 150 mph, + 1'-0" for walls
+  over 9'-0", out of scope over 12'-0"; methods zz-panel (minimum 2'-0" up to 8'-0" walls, 2'-6" up to
+  12'-0", cap 6'-0") and zz-board (minimum 4'-0", no cap)) and `us-zz-brace-b` ("ZZ BRACE B", ZZ-BRACE-B.7:
+  1" step, 3'-0" per 8'-0", out of scope over 10'-0"; only zz-panel, minimum 3'-0", no cap). No header
+  tables. Golden files under `brace/golden/`.

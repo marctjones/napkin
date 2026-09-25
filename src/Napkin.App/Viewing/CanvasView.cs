@@ -1882,6 +1882,8 @@ public sealed class CanvasView : Control
             }
         }
 
+        DrawBracing(context, palette, sketch);
+
         // Dimensions last, so a dimension line is never hidden under a part.
         foreach (DimensionMeasurement measurement in DimensionLayout.Measure(sketch))
         {
@@ -1902,6 +1904,74 @@ public sealed class CanvasView : Control
     /// A north arrow in the corner (#81): the relationship list and the Part panel name sides by the
     /// compass, and the plan is drawn north up, so the page says which way that is.
     /// </summary>
+    /// <summary>
+    /// A wall's braced segments (#39): a thin tinted strip down the middle of each segment that has a
+    /// method, a short tick across the wall at every segment's ends, and the method's id beside the
+    /// strip. Only walls with a method assigned are marked; the check itself is in the panel.
+    /// </summary>
+    void DrawBracing(DrawingContext context, CanvasPalette palette, Sketch sketch)
+    {
+        IBrush strip = new SolidColorBrush(palette.Selection, 0.55);
+        Pen tick = new(new SolidColorBrush(palette.Selection), 1.2);
+        foreach (WallLine line in WallLine.All(sketch).Where(line => line.Segments.Any(segment => segment.Method is not null)))
+        {
+            Box box = line.Wall.Box;
+            if (!box.Orientation.IsExact)
+            {
+                continue;
+            }
+
+            Point At(Length along, Length across)
+            {
+                Point3 world = box.Anchor + box.Orientation.Apply(new Vector3(along, across, Length.Zero));
+                return _view.ToScreen(new Point2(world.X, world.Y));
+            }
+
+            Length thickness = line.Wall.Thickness;
+            foreach (WallSegment segment in line.Segments)
+            {
+                context.DrawLine(tick, At(segment.Start, Length.Zero), At(segment.Start, thickness));
+                context.DrawLine(tick, At(segment.End, Length.Zero), At(segment.End, thickness));
+                if (segment.Method is not { } method)
+                {
+                    continue;
+                }
+
+                Length third = new(thickness.Units / 3);
+                Point a = At(segment.Start, third);
+                Point b = At(segment.End, third);
+                Point c = At(segment.End, third * 2);
+                Point d = At(segment.Start, third * 2);
+                StreamGeometry band = new();
+                using (StreamGeometryContext g = band.Open())
+                {
+                    g.BeginFigure(a, isFilled: true);
+                    g.LineTo(b);
+                    g.LineTo(c);
+                    g.LineTo(d);
+                    g.EndFigure(isClosed: true);
+                }
+
+                context.DrawGeometry(strip, null, band);
+                // The method's id just outside the wall's near face (the one lower on screen, or the
+                // right one for a wall running up the page), when it fits along the segment.
+                FormattedText label = Text(method, palette.Selection);
+                Length half = segment.Start + new Length(segment.Length.Units / 2);
+                Point face = At(half, Length.Zero);
+                Point back = At(half, thickness);
+                Vector outward = face - back;
+                double length = Math.Sqrt((outward.X * outward.X) + (outward.Y * outward.Y));
+                bool across = Math.Abs(b.X - a.X) >= Math.Abs(b.Y - a.Y);
+                if (length > 0 && (across ? label.Width : label.Height) < Math.Abs(b.X - a.X) + Math.Abs(b.Y - a.Y))
+                {
+                    Vector unit = outward / length;
+                    Point centre = face + (unit * ((across ? label.Height : label.Width) / 2 + 2));
+                    context.DrawText(label, new Point(centre.X - (label.Width / 2), centre.Y - (label.Height / 2)));
+                }
+            }
+        }
+    }
+
     void DrawNorth(DrawingContext context, CanvasPalette palette)
     {
         Point foot = new(24, Bounds.Height - 18);

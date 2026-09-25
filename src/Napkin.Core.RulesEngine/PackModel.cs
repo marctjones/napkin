@@ -303,7 +303,12 @@ public sealed record PendingAmendment(string Table, string FootnoteId, string Fi
 /// <param name="Manifest">The pack's manifest.</param>
 /// <param name="Tables">The composed header tables.</param>
 /// <param name="Pending">Footnote amendments waiting for a base table that is not loaded.</param>
-public sealed record LoadedPack(PackManifest Manifest, ValueList<HeaderSizingTable> Tables, ValueList<PendingAmendment> Pending)
+/// <param name="Bracing">The base layer's wall-bracing provisions, or null when it has none (docs/rules-engine.md).</param>
+public sealed record LoadedPack(
+    PackManifest Manifest,
+    ValueList<HeaderSizingTable> Tables,
+    ValueList<PendingAmendment> Pending,
+    BracingProvisions? Bracing = null)
 {
     /// <summary>The status label shown in the pack picker when no header table is loaded (the base layer is unfilled).</summary>
     public const string BaseTablesNotLoaded = "base tables not loaded";
@@ -311,8 +316,8 @@ public sealed record LoadedPack(PackManifest Manifest, ValueList<HeaderSizingTab
     /// <summary>Whether this pack can size any header at all.</summary>
     public bool HasHeaderTables => Tables.Count > 0;
 
-    /// <summary>A short status for the UI: empty when the pack is usable, else <see cref="BaseTablesNotLoaded"/>.</summary>
-    public string StatusLabel => HasHeaderTables ? string.Empty : BaseTablesNotLoaded;
+    /// <summary>A short status for the UI: empty when the pack has any data, else <see cref="BaseTablesNotLoaded"/>.</summary>
+    public string StatusLabel => HasHeaderTables || Bracing is not null ? string.Empty : BaseTablesNotLoaded;
 
     /// <summary>The identity a citation prints.</summary>
     public AdoptedCodeRef Code => new(

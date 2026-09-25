@@ -163,6 +163,11 @@ gained the version number, `"wall": null` on every box, and `"code": null` with 
 `"site"` at the root (nothing entered), and nothing else; every `*.expected.json` changed only its
 `formatVersion`.
 
+**Format version 8 (wall bracing, #39) changed no sample's meaning.** A wall's inputs gained
+`"bracing"`; no sample has a wall with inputs (every box says `"wall": null`), so every scene and
+every `*.expected.json` changed only its `formatVersion`. Format version 7 (`site.roofLiveLoad`)
+likewise added only the null field and the version.
+
 **Layers are named "Default".** The viewer styles a part by the name of the layer it is on — a
 part on "Parts" is drawn as furniture, one on "Wall" as a wall, one on "Opening" as a dashed hole —
 so everything in these two fixtures draws in the neutral style. Giving the coffee table's layer the

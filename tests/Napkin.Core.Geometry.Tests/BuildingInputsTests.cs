@@ -31,6 +31,33 @@ public class BuildingInputsTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-005")]
+    public void A_walls_bracing_assignments_compare_by_value_in_order_and_ride_on_its_box()
+    {
+        EntityId opening = EntityId.New();
+        BracingAssignment first = new(null, opening, "zz-panel");
+        BracingAssignment second = new(opening, null, "zz-board");
+        WallInputs one = new(null, null, [first, second]);
+        WallInputs same = new(null, null, [first, second]);
+        WallInputs swapped = new(null, null, [second, first]);
+
+        Assert.Equal(one, same);
+        Assert.Equal(one.GetHashCode(), same.GetHashCode());
+        Assert.NotEqual(one, swapped);
+        Assert.NotEqual(one, new WallInputs(null, null));
+        Assert.False(one.Equals(null));
+        Assert.Same(one, one.OrNull());
+        Assert.Null(new WallInputs(null, null).OrNull());
+        Assert.Empty(new WallInputs("zz-roof", null, default).Bracing);
+
+        SketchBuilder builder = new();
+        EntityId id = builder.AddBox(0, 0, 144, 4);
+        Solved set = Assert.IsType<Solved>(new DirectUpdater().Apply(builder.Sketch, new SetWallInputs(id, one)));
+        Assert.Equal(one, set.Sketch.Find<Box>(id)!.WallInputs);
+        Assert.NotEqual(builder.Sketch, set.Sketch);
+    }
+
+    [Fact]
     [Trait("Feature", "BLD-001")]
     public void A_walls_inputs_ride_on_its_box_and_nothing_entered_is_null()
     {

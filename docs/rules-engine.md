@@ -1,7 +1,7 @@
 # The rules engine: packs, results and your own tables
 
-`Napkin.Core.RulesEngine` sizes a wall-opening header from an **adopted-code pack** and cites the
-edition, table and row every answer came from. Design: [`design/rules-engine-model.md`](design/rules-engine-model.md).
+`Napkin.Core.RulesEngine` sizes a wall-opening header and checks a wall line's bracing from an
+**adopted-code pack**, and cites the edition, table or section and row every answer came from. Design: [`design/rules-engine-model.md`](design/rules-engine-model.md).
 
 ## Data status: no real tables ship
 
@@ -40,7 +40,9 @@ the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application
 A pack that fails to load is shown with its problems, not hidden. napkin never picks one: the
 choice is stored with the design (format 6), locked to a revision (with the date) or following
 the newest installed revision. The same window takes the site values; empty means not entered.
-Each wall says what it supports in its panel, from the values the pack's table declares.
+Each wall says what it supports in its panel, from the values the pack's table declares, and
+which bracing method is already on each of its solid segments, from the pack's methods
+([building.md](building.md#wall-bracing)).
 
 Every opening's header is then checked ([building.md](building.md)): **Sized** with the citation,
 **Out of scope** citing the limit, **Input missing** naming the input and where to type it, or
@@ -152,12 +154,104 @@ Connecticut's footnote e, as encoded:
   interpolated column, or operations on a footnote not encoded `as-operations` make the pack
   invalid.
 
+## Wall bracing
+
+Issue #39 (M5), decided 2026-09-25: the bracing check is a **mechanism**, proven only on
+SYNTHETIC packs (`tests/Napkin.Modules.Building.Tests/CodePacks/brace`, NOT CODE VALUES). No real
+bracing tables ship: the shipped Connecticut pack has none, and napkin says so (**No data**).
+Transcribing them from a primary source is a Backlog issue. The engine builds in **no** code's
+arithmetic: everything below is data the pack declares.
+
+A base layer may carry one file `layers/<layer>/bracing/<name>.json`:
+
+```json
+{ "schemaVersion": 1, "kind": "wall-bracing", "section": "ZZ-BRACE.1", "title": "…",
+  "source": "<source id>", "location": "p. …",
+  "step": "2in", "unitLength": "10ft 0in",
+  "inputs":   [ { "name": "ultimateWindSpeed", "type": "mph", "band": "upper-bound", "domain": { "min": 1, "max": 199 } } ],
+  "required": [ { "id": "q.w99", "ultimateWindSpeed": 99, "length": "4ft 0in", "location": "…" }, … ],
+  "factors":  [ { "id": "f.wind", "section": "…", "location": "…", "when": { "input": "ultimateWindSpeed", "above": 150 }, "multiply": "5/4" },
+                { "id": "f.tall", "section": "…", "location": "…", "when": { "input": "wallHeight", "above": "9ft 0in" }, "add": "1ft 0in" } ],
+  "limits":   [ { "id": "l.tall", "section": "…", "location": "…", "when": { "input": "wallHeight", "above": "12ft 0in" }, "text": "…" } ],
+  "methods":  [ { "id": "zz-panel", "name": "ZZ panel (synthetic)", "section": "…", "location": "…", "cap": "6ft 0in",
+                  "minimumPanel": { "wallHeightDomain": { "min": "0in", "max": "12ft 0in" },
+                                    "rows": [ { "id": "m.h8", "wallHeight": "8ft 0in", "length": "2ft 0in", "location": "…" }, … ] } } ],
+  "footnotes": [ { "id": "a", "text": "…", "encodedAs": "not-encoded", "appliesTo": "table" } ] }
+```
+
+(The numbers are the synthetic fixture's, made up.)
+
+**Semantics**, for one wall line (a wall's solid segments, [building.md](building.md#wall-bracing)):
+
+1. **Inputs** a column or a condition may name: `ultimateWindSpeed` (mph), `groundSnowLoad` (psf),
+   `seismicDesignCategory` (category), `buildingWidth` (length) — the project's site values — and
+   `wallHeight`, the wall's own. A site value any column or condition names and the project has not
+   entered is **InputMissing**; nothing is defaulted.
+2. **Limits**, in order: the first whose condition holds makes the line **OutOfScope**
+   (`NotPrescriptive`), citing the limit's section and id.
+3. **Base row**: category columns select by equality, upper-bound columns by the smallest bound at
+   least the input, exactly as header tables do. A category with no rows, or an input below the
+   column's domain or above its largest band, is **OutOfScope** citing the row or table that stopped it.
+4. **Required** = base length × (line length / `unitLength`) × every applicable `multiply` factor,
+   then + every applicable `add` length, in the file's order; computed as an exact fraction of
+   1/1024″ and **rounded UP** to `step` once. A factor applies when its `when` holds: `above` (strictly
+   greater, a number or length) or `equals` (a category). Multipliers are exact fractions written
+   `"n"` or `"n/d"`, never decimals.
+5. **Provided** = the sum of each segment's contribution. A segment with no method contributes
+   nothing ("not braced"); so does one whose method this pack does not have. Otherwise the method's
+   minimum panel length is looked up by wall height (smallest `wallHeight` bound at least the wall's);
+   a wall outside `wallHeightDomain` is **OutOfScope** citing the method's row; a segment shorter than
+   the minimum contributes nothing; a longer one contributes min(its length, `cap`) (`cap: null` for
+   none) **rounded DOWN** to `step`.
+6. **Passes** when provided ≥ required, else **Fails** with the shortfall; both cite the section and
+   base row and carry the whole working (`BracingWorking`: base row, each factor with its condition,
+   section and location, the exact and rounded required length, each segment's contribution and why).
+   With no pack, or a pack with no bracing file, **NoData**.
+
+**Load checks** (the pack is `Invalid` with every problem listed): unknown fields; `kind` other
+than `wall-bracing`; a non-positive `step`, `unitLength`, `cap` or minimum panel; an input napkin
+cannot supply or of the wrong type; a category column not `exact`, any other not `upper-bound`;
+gaps (bands stopping short of the domain's max, a combination of bands without a row) and overlaps
+(two rows for one cell, two minimum-panel rows for one height) in any band; a factor or limit
+without a non-blank `section` and `location` (every factor is cited); a factor with both or neither
+of `multiply`/`add`, or a multiplier that is not a positive whole fraction; a condition with both or
+neither of `above`/`equals`; duplicate ids; an unclassified footnote, and any footnote not
+`not-encoded`/`as-rows` or not applying to the whole section (limits and factors are declared as
+such, not as footnotes); more than one bracing file in a layer.
+
+**Golden files** for bracing use `"section"` instead of `"table"`. Each case gives `inputs`
+(`lineLength`, `wallHeight`, `segments: [{ length, method }]` and the site values) and expects
+`passes { required, provided, factors }`, `fails { required, provided, shortfall, factors }`
+(`factors`: the ids applied, in order), `outOfScope { reason, limitRow }`, `inputMissing { inputs }`
+or `noData { reason }`. Every base row and every factor needs a hand-authored case.
+
+**Recompute**: `Recompute.Bracing(pack, lines)` and `Recompute.DiffBracing(before, after)` —
+`PassToFail` and `ToFail` (newly short), `ToOutOfScope`, `ToNoAnswer` (no longer computable),
+`FailChanged`, `PassChanged`, `FailToPass`, `ToPass`, and the rest; `NewlyFlagged` and
+`NoLongerComputable` for a summary. The app uses them on every edit and on a code switch.
+
+**Not yet expressible**, and deliberately so: which of these a real adopted text needs is unknown
+until its bracing provisions are read from a primary source, so none is guessed at here. The schema
+cannot yet say: a line made of several walls, the spacing between lines, or a storey; a condition on
+more than one input at once, or a range; a factor that depends on the line's own length, on where a
+segment sits along the line, or on its method; a contribution that is not min(length, cap) — one that
+scales with the segment's length or height, or that differs at the line's ends; a minimum panel that
+depends on anything but wall height; rules for mixing methods on one line; interpolation of any kind;
+overlays amending the bracing file (a pack with other provisions uses another base layer); inputs
+beyond the five above. When the tables are read, whatever they need that is missing is added to the
+schema then, with its own load checks and golden cases.
+
 ## Using it from code
 
 ```csharp
 PackLoadResult r = PackLoader.Load(packsRoot, "us-ct-2022");      // or PackCatalog.Discover(packsRoot)
 HeaderRequest request = new(supports, WallKind.ExteriorBearing, span, site); // site: SiteInputs, null = not entered
 HeaderResult h = RulesEngine.SizeHeader((r as PackLoadResult.Loaded)?.Pack, request); // no pack → NoData
+```
+
+```csharp
+BracingRequest bracing = new(new BracedWallLine(lineLength, wallHeight, segments), site); // segments: BracedSegment(label, length, method or null)
+BracingResult b = RulesEngine.CheckBracing(pack, bracing); // Passes, Fails, OutOfScope, InputMissing or NoData
 ```
 
 `HeaderResult` is exactly one of `Sized` (member, jack and king studs, `Citation` with the row,

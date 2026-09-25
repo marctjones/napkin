@@ -25,6 +25,9 @@
   <ItemGroup>
     <Content Include="Fixtures/**/*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Golden/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The wall-bracing packs A and B and their golden files (SYNTHETIC TEST DATA - NOT CODE VALUES),
+         shared with the building module's and the GUI suite's tests. -->
+    <Content Include="..\Napkin.Modules.Building.Tests\CodePacks\brace\**\*" Link="BracePacks\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- The real shipped packs (packs/ at the repo root), copied so tests read them from disk. -->
     <Content Include="..\..\packs\**\*" Link="RealPacks\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

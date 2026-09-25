@@ -43,6 +43,11 @@ public class GoldenTests
             yield return (Fx.Root, file);
         }
 
+        foreach (string file in Directory.GetFiles(Path.Combine(Fx.BraceRoot, "golden"), "*.golden.json", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+        {
+            yield return (Fx.BraceRoot, file);
+        }
+
         string? own = Environment.GetEnvironmentVariable("NAPKIN_PACKS_ROOT");
         string? ownGolden = own is null ? null : Path.Combine(own, "golden");
         if (ownGolden is not null && Directory.Exists(ownGolden))

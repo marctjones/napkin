@@ -12,12 +12,6 @@ namespace Napkin.Features.Tests;
 
 public class PlannedFeatures
 {
-    [Fact(Skip = "planned: BLD-005 — Enlarging an opening rechecks the wall line's bracing")]
-    [Trait("Feature", "BLD-005")]
-    public void BLD_005()
-    {
-    }
-
     [Fact(Skip = "planned: CODE-001 — Connecticut 2026 header and fastener tables")]
     [Trait("Feature", "CODE-001")]
     public void CODE_001()
@@ -102,18 +96,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: GUI-BRACE-01 — Enlarge an opening until the bracing check flags it")]
-    [Trait("Feature", "GUI-BRACE-01")]
-    public void GUI_BRACE_01()
-    {
-    }
-
-    [Fact(Skip = "planned: GUI-BRACE-03 — A result that no longer holds is re-flagged, not carried over")]
-    [Trait("Feature", "GUI-BRACE-03")]
-    public void GUI_BRACE_03()
-    {
-    }
-
     [Fact(Skip = "planned: GUI-CUT-01 — Build the coffee table end to end")]
     [Trait("Feature", "GUI-CUT-01")]
     public void GUI_CUT_01()
@@ -165,12 +147,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: REL-003 — The arm64 macOS artifact carries its ad-hoc signature only")]
     [Trait("Feature", "REL-003")]
     public void REL_003()
-    {
-    }
-
-    [Fact(Skip = "planned: RUL-005 — The bracing evaluator runs over a whole wall line")]
-    [Trait("Feature", "RUL-005")]
-    public void RUL_005()
     {
     }
 

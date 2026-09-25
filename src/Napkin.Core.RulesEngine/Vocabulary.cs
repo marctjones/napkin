@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace Napkin.Core.RulesEngine;
 
 /// <summary>
@@ -5,9 +7,32 @@ namespace Napkin.Core.RulesEngine;
 /// a model code's column names or table numbers: which table serves which wall is the table
 /// file's <c>wallKind</c>, and which inputs a table needs is its <c>inputs</c> declaration.
 /// </summary>
-internal static class Vocabulary
+internal static partial class Vocabulary
 {
     public const string HeaderSizingKind = "header-sizing";
+
+    /// <summary>The kind of a base layer's <c>bracing/</c> file.</summary>
+    public const string WallBracingKind = "wall-bracing";
+
+    /// <summary>The wall height, which the wall supplies to a bracing check (never a site value).</summary>
+    public const string WallHeight = "wallHeight";
+
+    /// <summary>
+    /// The inputs a bracing column or condition may name, with the one type each has: site values
+    /// the project already asks for, and the wall's own height.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, ColumnType> BracingInputs = new Dictionary<string, ColumnType>(StringComparer.Ordinal)
+    {
+        ["seismicDesignCategory"] = ColumnType.Enum,
+        ["groundSnowLoad"] = ColumnType.Psf,
+        ["ultimateWindSpeed"] = ColumnType.Mph,
+        ["buildingWidth"] = ColumnType.Length,
+        [WallHeight] = ColumnType.Length,
+    };
+
+    /// <summary>A bracing method's id, as a project stores it for an assignment.</summary>
+    [GeneratedRegex("^[a-z0-9][a-z0-9-]*$")]
+    public static partial Regex MethodIdPattern();
 
     public const string HeaderSpan = "headerSpan";
 

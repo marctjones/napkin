@@ -949,8 +949,9 @@ internal sealed class SceneBinder
         int before = problems.Count;
         (bool supportsRead, string? supports) = ReadTextOrNull(fields, SceneNames.WallSupports);
         (bool spacingRead, long? spacing) = ReadIntegerOrNull(fields, SceneNames.WallStudSpacing);
+        (bool bracingRead, ImmutableArray<BracingAssignment> bracing) = ReadBracing(fields);
         RejectUnknownFields(fields);
-        if (problems.Count > before || !supportsRead || !spacingRead)
+        if (problems.Count > before || !supportsRead || !spacingRead || !bracingRead)
         {
             return (false, null);
         }
@@ -967,13 +968,108 @@ internal sealed class SceneBinder
             return (false, null);
         }
 
-        if (supports is null && spacing is null)
+        if (supports is null && spacing is null && bracing.IsEmpty)
         {
             Add(LoadProblemKind.InvalidValue, fields.Path, "A wall with nothing entered is written \"wall\": null, not an object of nulls.");
             return (false, null);
         }
 
-        return (true, new WallInputs(supports, spacing is { } s ? new Length(s) : null));
+        return (true, new WallInputs(supports, spacing is { } s ? new Length(s) : null, bracing));
+    }
+
+    /// <summary>
+    /// A wall's bracing assignments (format version 8): <c>null</c>, or a non-empty array of
+    /// <c>{ "from": id or null, "to": id or null, "method": text }</c>, each segment once. The ids
+    /// name the openings bounding a segment and are not references: one that names no opening is
+    /// kept (docs/building.md says why).
+    /// </summary>
+    private (bool Read, ImmutableArray<BracingAssignment> Bracing) ReadBracing(JsonFields wall)
+    {
+        JsonElement? element = Take(wall, SceneNames.WallBracing);
+        string path = $"{wall.Path}/{SceneNames.WallBracing}";
+        if (element is not { } value)
+        {
+            return (false, []);
+        }
+
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return (true, []);
+        }
+
+        if (value.ValueKind != JsonValueKind.Array)
+        {
+            Add(LoadProblemKind.Malformed, path, $"Expected \"{SceneNames.WallBracing}\" to be an array or null, and found {Describe(value)}.");
+            return (false, []);
+        }
+
+        if (value.GetArrayLength() == 0)
+        {
+            Add(LoadProblemKind.InvalidValue, path, "A wall with no bracing assigned is written \"bracing\": null, not an empty array.");
+            return (false, []);
+        }
+
+        int before = problems.Count;
+        List<BracingAssignment> read = [];
+        int index = 0;
+        foreach (JsonElement item in value.EnumerateArray())
+        {
+            string itemPath = $"{path}/{index.ToString(CultureInfo.InvariantCulture)}";
+            index++;
+            JsonFields? fields = ReadFields(item, itemPath, "a bracing assignment");
+            if (fields is null)
+            {
+                continue;
+            }
+
+            (bool fromRead, EntityId? from) = ReadOptionalId(fields, SceneNames.BracingFrom);
+            (bool toRead, EntityId? to) = ReadOptionalId(fields, SceneNames.BracingTo);
+            (bool methodRead, string? method) = ReadTextOrNull(fields, SceneNames.BracingMethod);
+            RejectUnknownFields(fields);
+            if (!fromRead || !toRead || !methodRead)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(method))
+            {
+                Add(LoadProblemKind.InvalidValue, $"{itemPath}/{SceneNames.BracingMethod}", "A bracing assignment names its method; an unassigned segment is not written.");
+                continue;
+            }
+
+            if (from is not null && from == to)
+            {
+                Add(LoadProblemKind.InvalidValue, itemPath, "A segment starts after one opening and ends before another; \"from\" and \"to\" are the same.");
+                continue;
+            }
+
+            if (read.Any(a => a.From == from && a.To == to))
+            {
+                Add(LoadProblemKind.InvalidValue, itemPath, "This segment already has a bracing method assigned earlier in the list; each segment is written once.");
+                continue;
+            }
+
+            read.Add(new BracingAssignment(from, to, method));
+        }
+
+        return problems.Count > before ? (false, []) : (true, [.. read]);
+    }
+
+    /// <summary>An id, or null; not a reference, so it is not required to name an entity in the file.</summary>
+    private (bool Read, EntityId? Id) ReadOptionalId(JsonFields fields, string name)
+    {
+        JsonElement? element = Take(fields, name);
+        if (element is not { } value)
+        {
+            return (false, null);
+        }
+
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return (true, null);
+        }
+
+        return AsId(value, $"{fields.Path}/{name}", name) is { } id ? (true, new EntityId(id)) : (false, null);
     }
 
     /// <summary>A date written <c>yyyy-MM-dd</c>, or null.</summary>

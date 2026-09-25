@@ -49,6 +49,12 @@ internal static class SceneNames
     internal const string WallSupports = "supports";
     internal const string WallStudSpacing = "studSpacing";
 
+    // A wall's bracing assignments (format version 8).
+    internal const string WallBracing = "bracing";
+    internal const string BracingFrom = "from";
+    internal const string BracingTo = "to";
+    internal const string BracingMethod = "method";
+
     // Shared.
     internal const string Id = "id";
     internal const string Name = "name";

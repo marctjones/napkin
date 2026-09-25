@@ -35,6 +35,49 @@ public class GroupCopyTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-005")]
+    public void A_copied_wall_carries_its_bracing_onto_the_copied_openings_and_a_mirror_turns_it_end_for_end()
+    {
+        // A 12 ft wall on the Wall layer with a window 12"-48" along it: two segments, the first
+        // assigned "zz-panel" and the second "zz-board" (SYNTHETIC method ids).
+        LayerId walls = LayerId.New();
+        LayerId openings = LayerId.New();
+        Box wall = new(EditingBuilder.Id(20), walls, Point3.Inches(0, 0, 0), Length.Inches(144), Length.Inches(3, 1, 2), Length.Inches(96), BoxFace.Top, Angle.Zero)
+        {
+            Name = "Wall 1",
+            WallInputs = new WallInputs(null, null, [new BracingAssignment(null, EditingBuilder.Id(21), "zz-panel"), new BracingAssignment(EditingBuilder.Id(21), null, "zz-board")]),
+        };
+        Box window = new(EditingBuilder.Id(21), openings, new Point3(Length.Inches(12), Length.Zero, Length.Inches(36)), Length.Inches(36), Length.Inches(3, 1, 2), Length.Inches(42), BoxFace.Top, Angle.Zero) { Name = "Window 1" };
+        Sketch sketch = Sketch.Empty
+            .WithLayer(new Layer(walls, Napkin.Modules.Building.BuildingLayers.Wall))
+            .WithLayer(new Layer(openings, Napkin.Modules.Building.BuildingLayers.Opening))
+            .WithEntity(wall)
+            .WithEntity(window);
+
+        (ImmutableList<Request> copied, ImmutableDictionary<EntityId, EntityId> copies) = GroupCopy.Duplicate(sketch, [wall, window], Vector3.Along(Axis.Y, Length.Inches(48)));
+        Sketch withCopy = copied.OfType<AddEntity>().Aggregate(sketch, (s, add) => s.WithEntity(add.Entity));
+        Napkin.Modules.Building.WallLine copyLine = Napkin.Modules.Building.WallLine.Of(withCopy, new Napkin.Modules.Building.Wall(withCopy.Find<Box>(copies[wall.Id])!));
+        Assert.Equal(["zz-panel", "zz-board"], copyLine.Segments.Select(s => s.Method));
+        Assert.Equal(copies[window.Id], copyLine.Segments[0].To);
+
+        // Mirrored across a plane perpendicular to the wall's length: the window lands 96"-132" along
+        // the copy, so the short segment is now at the end, and it keeps "zz-panel".
+        var mirrored = GroupCopy.Mirror(sketch, [wall, window], Axis.X, Length.Inches(200), out Box? refused);
+        Assert.Null(refused);
+        Sketch withMirror = mirrored!.Value.Requests.OfType<AddEntity>().Aggregate(sketch, (s, add) => s.WithEntity(add.Entity));
+        Napkin.Modules.Building.WallLine mirrorLine = Napkin.Modules.Building.WallLine.Of(withMirror, new Napkin.Modules.Building.Wall(withMirror.Find<Box>(mirrored.Value.Copies[wall.Id])!));
+        Assert.Equal([Length.Inches(96), Length.Inches(12)], mirrorLine.Segments.Select(s => s.Length));
+        Assert.Equal(["zz-board", "zz-panel"], mirrorLine.Segments.Select(s => s.Method));
+
+        // The wall copied alone has no window: its one segment merges the two, whose methods differ,
+        // so it is not braced (never inferred).
+        (ImmutableList<Request> alone, ImmutableDictionary<EntityId, EntityId> only) = GroupCopy.Duplicate(sketch, [wall], Vector3.Along(Axis.Y, Length.Inches(48)));
+        Sketch withAlone = alone.OfType<AddEntity>().Aggregate(sketch, (s, add) => s.WithEntity(add.Entity));
+        Napkin.Modules.Building.WallSegment whole = Assert.Single(Napkin.Modules.Building.WallLine.Of(withAlone, new Napkin.Modules.Building.Wall(withAlone.Find<Box>(only[wall.Id])!)).Segments);
+        Assert.Equal(Napkin.Modules.Building.AssignmentOrigin.MergedConflict, whole.Origin);
+    }
+
+    [Fact]
     [Trait("Feature", "BLD-001")]
     public void A_duplicated_wall_carries_what_it_supports_and_its_stud_spacing()
     {

@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Napkin.Core.Geometry;
 
 /// <summary>Whether a project's adopted code is locked to one revision of its pack or follows the pack's newer ones.</summary>
@@ -52,14 +54,53 @@ public sealed record SiteValues(
 }
 
 /// <summary>
+/// A bracing method a person assigned to one solid segment of a wall line (issue #39,
+/// docs/building.md): the segment is named by what bounds it, the opening it starts after and the
+/// opening it ends before, where null is the wall's start or end. The method is a pack's method id;
+/// it is not checked against any pack here.
+/// </summary>
+/// <param name="From">The opening the segment starts after, or null for the wall's start.</param>
+/// <param name="To">The opening the segment ends before, or null for the wall's end.</param>
+/// <param name="Method">The method id, e.g. as the adopted code's bracing provisions name it.</param>
+public sealed record BracingAssignment(EntityId? From, EntityId? To, string Method);
+
+/// <summary>
 /// What a person entered for a box that is a wall: what it supports (one of the values the adopted
-/// code's header table declares) and its stud spacing. Either may be null; a box with neither holds
-/// no <see cref="WallInputs"/> at all.
+/// code's header table declares), its stud spacing, and the bracing methods assigned to its
+/// segments. Any may be absent; a box with none holds no <see cref="WallInputs"/> at all.
 /// </summary>
 /// <param name="Supports">What the wall carries, as the pack's table names it; null when not chosen.</param>
 /// <param name="StudSpacing">The stud spacing on centre; null for the default.</param>
-public sealed record WallInputs(string? Supports, Length? StudSpacing)
+/// <param name="Bracing">The bracing assignments, in the order written; empty when none (never defaulted).</param>
+public sealed record WallInputs(string? Supports, Length? StudSpacing, ImmutableArray<BracingAssignment> Bracing)
 {
-    /// <summary>These inputs, or null when neither is set — the one spelling of "nothing entered".</summary>
-    public WallInputs? OrNull() => Supports is null && StudSpacing is null ? null : this;
+    /// <summary>Inputs with no bracing assigned.</summary>
+    public WallInputs(string? supports, Length? studSpacing)
+        : this(supports, studSpacing, [])
+    {
+    }
+
+    /// <summary>The bracing assignments; empty, never default.</summary>
+    public ImmutableArray<BracingAssignment> Bracing { get; init; } = Bracing.IsDefault ? [] : Bracing;
+
+    /// <summary>These inputs, or null when nothing is set — the one spelling of "nothing entered".</summary>
+    public WallInputs? OrNull() => Supports is null && StudSpacing is null && Bracing.IsEmpty ? null : this;
+
+    /// <summary>Equal when every field is, the assignments in order.</summary>
+    public bool Equals(WallInputs? other)
+        => other is not null && Supports == other.Supports && StudSpacing == other.StudSpacing && Bracing.SequenceEqual(other.Bracing);
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        HashCode hash = new();
+        hash.Add(Supports);
+        hash.Add(StudSpacing);
+        foreach (BracingAssignment assignment in Bracing)
+        {
+            hash.Add(assignment);
+        }
+
+        return hash.ToHashCode();
+    }
 }

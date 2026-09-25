@@ -561,6 +561,14 @@ public abstract record BracingResult
 }
 ```
 
+**Implemented 2026-09-25 (#39), as a mechanism proven on synthetic packs** — the schema,
+semantics and limits are in [`../rules-engine.md`](../rules-engine.md#wall-bracing). Deviations
+from the sketch above: `BracedWallLine` is one wall (its length, height and solid segments, each
+with the method a person assigned or none); `Passes` and `Fails` also carry the whole working
+(`BracingWorking`); the engine's `InputMissing` and `NoData` are members too; a pack's own limit is
+`OutOfScope(NotPrescriptive)`; `CheckBracing` is on `IRulesEngine` and on the static `RulesEngine`
+(for a project with no pack); the diff is `Recompute.DiffBracing` with its own `BracingChangeKind`.
+
 `Fails` is a third member, and it is not silent: it is the result DESIGN.md §5.3 calls "the check
 most DIY openings miss". The rule is not "two states"; it is "every state is a named, cited,
 expected answer, and there is no catch-all".

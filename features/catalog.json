@@ -419,7 +419,7 @@
       "id": "RUL-005",
       "area": "rules-engine",
       "title": "The bracing evaluator runs over a whole wall line",
-      "acceptance": "Given a wall line's bracing inputs and all its openings, the evaluator reports whether the required braced length is met, cites the section it applied, and re-runs whenever an opening on that line changes.",
+      "acceptance": "Given a wall line's solid segments (from its openings), the bracing method a person assigned to each, and the site, the evaluator reports whether the pack's required braced length is met, cites the section it applied, and re-runs whenever an opening on that line changes.",
       "milestone": "M5",
       "issue": 39,
       "kind": "unit"
@@ -554,7 +554,7 @@
       "id": "BLD-005",
       "area": "building",
       "title": "Enlarging an opening rechecks the wall line's bracing",
-      "acceptance": "With the wall line's existing sheathing type and braced length entered by the user, enlarging an opening past what the line can carry flags the wall, naming the section applied and the shortfall.",
+      "acceptance": "With the bracing method already on each of the wall line's segments entered by the user, enlarging an opening past what the line can carry flags the wall, naming the section applied and the shortfall.",
       "milestone": "M5",
       "issue": 39,
       "kind": "unit"
@@ -932,7 +932,7 @@
       "id": "GUI-BRACE-01",
       "area": "ui",
       "title": "Enlarge an opening until the bracing check flags it",
-      "acceptance": "With the wall line's existing sheathing and braced length entered, widen the opening step by step until the wall line is flagged, and the flag names the section applied and the shortfall.",
+      "acceptance": "With the bracing method already on each of the wall line's segments entered, widen the opening step by step until the wall line is flagged, and the flag names the section applied and the shortfall.",
       "milestone": "M5",
       "issue": 39,
       "kind": "workflow"
@@ -950,9 +950,18 @@
       "id": "GUI-BRACE-03",
       "area": "ui",
       "title": "A result that no longer holds is re-flagged, not carried over",
-      "acceptance": "After the code change, an opening the previous pack sized but the new pack does not cover shows as out of scope rather than keeping the number the old pack produced.",
+      "acceptance": "After the code change, a result that no longer holds under the new pack (an opening it does not cover, or a wall line whose bracing now runs short or uses a method the new pack does not have) is re-flagged rather than keeping what the old pack produced, and the message bar says how many results changed, became flagged or can no longer be computed.",
       "milestone": "M5",
       "issue": 19,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-BRACE-04",
+      "area": "ui",
+      "title": "With the shipped pack, the bracing check says there is no data",
+      "acceptance": "Choose the shipped Connecticut pack, which has no wall-bracing provisions; a wall's Bracing block lists its segments with disabled method pickers that say why, and its check says there is no data and where to add it, never a length.",
+      "milestone": "M5",
+      "issue": 39,
       "kind": "workflow"
     },
     {

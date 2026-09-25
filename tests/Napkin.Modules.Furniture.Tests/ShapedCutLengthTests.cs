@@ -302,7 +302,7 @@ public sealed class ShapedCutLengthTests
         // refuses a file containing such a box (§5), so the cut list never sees it.
         const string scene = """
             {
-              "formatVersion": 7,
+              "formatVersion": 8,
               "units": { "length": "inch/1024", "angle": "arcsecond" },
               "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
               "entities": [

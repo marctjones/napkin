@@ -91,6 +91,8 @@ public sealed record InterpolationTrace(
 /// <param name="Source">Which document, where in it, which printing, retrieved when.</param>
 /// <param name="Footnotes">The footnotes that apply to the row.</param>
 /// <param name="Trace">How each input landed in its band.</param>
+/// <param name="Interpolation">How an interpolated span was computed; null for a plain lookup.</param>
+/// <param name="IsSection">Whether <paramref name="Table"/> names a section (a bracing method) rather than a table.</param>
 public sealed record Citation(
     AdoptedCodeRef Code,
     string Table,
@@ -100,16 +102,18 @@ public sealed record Citation(
     SourceRef Source,
     ValueList<FootnoteRef> Footnotes,
     ValueList<BandMatch> Trace,
-    InterpolationTrace? Interpolation = null)
+    InterpolationTrace? Interpolation = null,
+    bool IsSection = false)
 {
     /// <summary>"IRC 2021 Table X row Y, as adopted by CT 2022 — source, location".</summary>
     public override string ToString()
     {
+        string what = IsSection ? "Section" : "Table";
         string layer = Layer switch
         {
-            CitationLayer.ModelCode => $"{Code.BaseCode} Table {Table}, as adopted by {Code.ShortName}",
-            CitationLayer.StateAmendment => $"{Code.ShortName} state amendment to Table {Table}",
-            _ => $"{Code.ShortName} municipal amendment to Table {Table}",
+            CitationLayer.ModelCode => $"{Code.BaseCode} {what} {Table}, as adopted by {Code.ShortName}",
+            CitationLayer.StateAmendment => $"{Code.ShortName} state amendment to {what} {Table}",
+            _ => $"{Code.ShortName} municipal amendment to {what} {Table}",
         };
         string row = RowId is null ? string.Empty : $" row {RowId}";
         return $"{layer}{row} ({RowLabel}); {Source.Title}, {Source.Printing}, {Source.Location}";

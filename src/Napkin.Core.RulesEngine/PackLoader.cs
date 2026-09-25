@@ -46,7 +46,7 @@ public static partial class PackLoader
         }
 
         Dictionary<string, RawTable> tables = new(StringComparer.Ordinal);
-        LoadBaseLayer(source, manifest, manifestFile, tables, problems);
+        BracingProvisions? bracing = LoadBaseLayer(source, manifest, manifestFile, tables, problems);
 
         List<PendingAmendment> pending = [];
         foreach (string entry in manifest.Layers.Skip(1))
@@ -73,33 +73,34 @@ public static partial class PackLoader
 
         return problems.Count > 0
             ? Invalid(packId, problems)
-            : new PackLoadResult.Loaded(new LoadedPack(manifest, typed.ToValueList(), pending.ToValueList()));
+            : new PackLoadResult.Loaded(new LoadedPack(manifest, typed.ToValueList(), pending.ToValueList(), bracing));
     }
 
     private static PackLoadResult.Invalid Invalid(string packId, ProblemList problems)
         => new(packId, problems.Items.ToValueList());
 
-    private static void LoadBaseLayer(
+    /// <summary>Loads the base layer's tables into <paramref name="tables"/>, and returns its wall-bracing provisions, if any.</summary>
+    private static BracingProvisions? LoadBaseLayer(
         IPackSource source, PackManifest manifest, string manifestFile, Dictionary<string, RawTable> tables, ProblemList problems)
     {
         string layerId = manifest.Layers[0];
         if (!LayerIdPattern().IsMatch(layerId))
         {
             problems.Add(new Where(manifestFile), $"layers[0]: '{layerId}' is not a base layer id (lower case letters, digits, '.', '-').");
-            return;
+            return null;
         }
 
         string layerFile = $"layers/{layerId}/layer.json";
         if (!source.DirectoryExists($"layers/{layerId}"))
         {
             problems.Add(new Where(manifestFile), $"layers[0]: base layer '{layerId}' does not resolve (no directory layers/{layerId}).");
-            return;
+            return null;
         }
 
         LayerManifest? layer = ManifestReader.ReadLayer(source, layerFile, problems);
         if (layer is null)
         {
-            return;
+            return null;
         }
 
         if (layer.Id != layerId)
@@ -128,6 +129,18 @@ public static partial class PackLoader
                 problems.Add(new Where(file, table.Designation), $"table '{table.Designation}' is also defined in {tables[table.Designation].Meta.File}.");
             }
         }
+
+        // Wall bracing (docs/rules-engine.md): at most one provisions file per base layer. Overlays
+        // cannot amend it yet; a pack with other provisions uses another base layer.
+        string bracingDir = $"layers/{layerId}/bracing";
+        List<string> bracingFiles = [.. source.ListFiles(bracingDir).Where(IsJson)];
+        if (bracingFiles.Count > 1)
+        {
+            problems.Add(new Where(bracingDir), $"{bracingFiles.Count} files under bracing/; a base layer has at most one set of wall-bracing provisions.");
+            return null;
+        }
+
+        return bracingFiles.Count == 1 ? BracingReader.Read(source, $"{bracingDir}/{bracingFiles[0]}", sources, problems) : null;
     }
 
     private static void ApplyOverlayLayer(

@@ -18,6 +18,9 @@ internal static class Fx
 
     public static string GoldenRoot => Path.Combine(AppContext.BaseDirectory, "Golden");
 
+    /// <summary>The wall-bracing packs root: us-zz-brace-a and us-zz-brace-b (SYNTHETIC, NOT CODE VALUES).</summary>
+    public static string BraceRoot => Path.Combine(AppContext.BaseDirectory, "BracePacks");
+
     public static InMemoryPackSource Source() => InMemoryPackSource.FromDirectory(Root);
 
     public static LoadedPack Load(string id) => Loaded(PackLoader.Load(Root, id));
