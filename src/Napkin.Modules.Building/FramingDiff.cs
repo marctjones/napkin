@@ -120,7 +120,9 @@ public static class FramingDiff
             .OrderBy(piece => piece.Role)
             .ThenByDescending(piece => piece.Length);
 
-        bool existing = before is not null && either.Wall.Box.Phase != Phase.New;
+        // A wall in the before view is already there (existing, or to be demolished): what comes out of
+        // it is a guess about a real wall (§4.4). A new wall has no before.
+        bool existing = before is not null;
         return new WallDiff(either.Wall, [.. Pieces(q => q)], [.. Pieces(q => -q)], existing, either.Spacing);
     }
 

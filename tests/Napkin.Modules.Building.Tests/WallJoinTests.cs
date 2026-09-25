@@ -79,6 +79,8 @@ public class WallJoinTests
         WallJoin line = WallJoins.Between(new Wall(a), new Wall(b))!;
         Assert.Equal(WallJoinKind.EndToEnd, line.Kind);
         Assert.Equal((In(96), In(96)), (line.From, line.To));
+        Assert.Equal(WallJoinKind.EndToEnd, WallJoins.Between(new Wall(b), new Wall(a))!.Kind);
+        Assert.Equal((Length.Zero, Length.Zero), (WallJoins.Between(new Wall(b), new Wall(a))!.From, WallJoins.Between(new Wall(b), new Wall(a))!.To));
 
         // An L drawn with both walls running into the corner square: x 0..3 1/2, y 0..3 1/2 shared.
         Box c = WallBox("C", In(3, 1, 2), In(0), In(96), quarterTurns: 1);
@@ -90,6 +92,12 @@ public class WallJoinTests
         // A wall crossing the middle of another reaches neither's end: not a join.
         Box crossing = WallBox("X", In(50), In(-20), In(40), quarterTurns: 1);
         Assert.Null(WallJoins.Between(new Wall(a), new Wall(crossing)));
+
+        // A partition running into the middle of a wall's thickness reaches its own end but not the
+        // wall's: an overlap, not a corner, so not a join (its end is not on the wall's face).
+        Box into = WallBox("T", In(43, 1, 2), In(0), In(50), quarterTurns: 1);
+        Assert.Null(WallJoins.Between(new Wall(a), new Wall(into)));
+        Assert.Null(WallJoins.Between(new Wall(into), new Wall(a)));
 
         // Two walls face to face, side by side, are not joined either.
         Box beside = WallBox("Beside", In(0), In(3, 1, 2), In(96));
@@ -130,6 +138,8 @@ public class WallJoinTests
             WallJoins.Strokes(from, to, [(Point2.Inches(2, 0), Point2.Inches(5, 0))]));
         Assert.Empty(WallJoins.Strokes(from, to, [(Point2.Inches(-1, 0), Point2.Inches(11, 0))]));
         Assert.Equal([(from, Point2.Inches(9, 0))], WallJoins.Strokes(from, to, [(Point2.Inches(9, 0), Point2.Inches(12, 0))]));
+        Assert.Equal([(Point2.Inches(2, 0), to)], WallJoins.Strokes(from, to, [(from, Point2.Inches(2, 0))]));
+        Assert.Equal([(from, Point2.Inches(8, 0))], WallJoins.Strokes(from, to, [(Point2.Inches(8, 0), to)]));
 
         // A seam on another line, or across the edge, leaves it whole.
         Assert.Equal([(from, to)], WallJoins.Strokes(from, to, [(Point2.Inches(2, 1), Point2.Inches(5, 1)), (Point2.Inches(3, -1), Point2.Inches(3, 1))]));
