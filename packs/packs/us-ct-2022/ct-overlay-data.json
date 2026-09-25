@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "notes": "Connecticut's own amendments, recorded from Connecticut's document only. Not read by PackLoader (the engine has no base table to apply them to yet); tests read this file. Values are verbatim from the source.",
+  "source": "ct-csbc-2022",
+  "retrievedOn": "2026-09-25",
+  "siteCriteria": {
+    "table": "TABLE R301.2 CLIMATIC AND GEOGRAPHIC DESIGN CRITERIA (Amd), as printed by Connecticut (the IRC designation is Table R301.2(1))",
+    "location": "p. 131 (document footer 'Page - 131'), Amendments to the 2021 IRC",
+    "entries": {
+      "seismicDesignCategory": { "value": "B", "printed": "B" },
+      "frostLineDepth": { "value": "3ft 6in", "printed": "42\"" },
+      "groundSnowLoad": { "value": null, "printed": "As set forth in Appendix AY.", "pointer": "appendix-ay" },
+      "ultimateWindSpeed": { "value": null, "printed": "As set forth in Appendix AY.", "pointer": "appendix-ay" }
+    }
+  },
+  "appendixAy": {
+    "title": "(Add) APPENDIX AY - WIND SPEEDS, SEISMIC DESIGN CATEGORIES and GROUND SNOW LOADS",
+    "location": "pp. 157-160 (footers 'Page - 157' through 'Page - 160')",
+    "contents": "A per-municipality table: Ultimate Design Wind Speed Vult (mph), Nominal Design Wind Speed Vasd (mph), Ground Snow Load pg (psf), Hurricane-Prone Region (Yes or -). It has no seismic design category column despite its title.",
+    "valuesTranscribed": false,
+    "why": "Per-town values are not transcribed: left as a gap, to be entered per project by the person from Connecticut's document. Site inputs (snow, wind) are entered by the user."
+  },
+  "amendments": [
+    {
+      "id": "ct-r602.7-1-footnote-e",
+      "amends": "Table R602.7(1), Footnote e",
+      "op": "amd",
+      "location": "p. 145 (document footer 'Page - 145'), Chapter 6 Wall Construction",
+      "text": "Use 30 psf ground snow load for cases in which ground snow load is less than 30 psf and the roof live load is equal to or less than 20 psf. For ground snow loads between 30 and 50 psf, linear interpolation is permitted.",
+      "classification": "not-encoded",
+      "why": "The engine has no operation that substitutes an input (30 psf for a lower snow load) and has no interpolation (design Decision 3). Also no base table exists to amend."
+    },
+    {
+      "id": "ct-r602.7-3-footnote-b",
+      "amends": "Table R602.7(3), Footnote b",
+      "op": "amd",
+      "location": "p. 145 (document footer 'Page - 145'), Chapter 6 Wall Construction",
+      "text": "Tabulated values assume #2 grade lumber, wet service and incising for refractory species. Use 30 psf ground snow load for cases in which ground snow load is less than 30 psf and the roof live load is equal to or less than 20 psf. For ground snow loads between 30 and 50 psf, linear interpolation is permitted.",
+      "classification": "not-encoded",
+      "why": "Same as ct-r602.7-1-footnote-e."
+    }
+  ]
+}

@@ -7,10 +7,29 @@ edition, table and row every answer came from. Design: [`design/rules-engine-mod
 
 napkin contains **no building-code table values**. Whether transcribed IRC/state tables may be
 shipped is Marc's decision (DESIGN.md, design Decision 7) and is not made. The engine is tested
-on synthetic fixtures only (`tests/Napkin.Core.RulesEngine.Tests/Fixtures`, `Golden/`, marked
-`SYNTHETIC TEST DATA - NOT CODE VALUES`). The first real pack is **Connecticut 2022** (2021 IRC as
-amended); CT 2026 is not in force yet. With no pack, or a pack without a table, the answer is
-`NoData` — napkin never guesses.
+on synthetic fixtures (`tests/Napkin.Core.RulesEngine.Tests/Fixtures`, `Golden/`, marked
+`SYNTHETIC TEST DATA - NOT CODE VALUES`) and on the shipped Connecticut pack described below. With
+no pack, or a pack without a table, the answer is `NoData` - napkin never guesses.
+
+**`packs/` (repo root, shipped beside the executable)** holds the first real pack, **Connecticut
+2022** (`packs/packs/us-ct-2022`, on the 2021 IRC as amended; CT 2026 is not in force yet). It was
+read from Connecticut's own document (2022 CSBC w/ Errata #1, ED October 1, 2022; sha256 and URL in
+`pack.json`, retrieved 2026-09-25):
+
+- Loaded and cited (`ct-overlay-data.json`): Table R301.2 seismic design category B and frost line
+  depth 42" (p. 131), snow and wind "as set forth in Appendix AY" (p. 131), and the verbatim R602.7
+  amendments, Table R602.7(1) footnote e and Table R602.7(3) footnote b (p. 145), both classified
+  **not-encoded** (the engine cannot substitute an input, and there is no interpolation).
+- Appendix AY (pp. 157-160) is a per-municipality table of wind speeds and ground snow loads. It
+  is **not transcribed**; enter your town's values as project site inputs.
+- The base layer `irc-2021` is **empty** ("base tables not loaded"): fill it from your own copy of
+  the IRC (Tables R602.7(1)-(3), R602.3, R602.10.3 ...). Until then `SizeHeader` returns `NoData`,
+  and `LoadedPack.StatusLabel` is `base tables not loaded` for a picker to show.
+
+**Where the app looks for packs roots** (`PackLocations.All()`): `packs/` beside the executable, then
+the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application Support/napkin`, or
+`$XDG_CONFIG_HOME/napkin`) for your own. Each is a packs root as described below. The picker UI is
+issue #19.
 
 ## Author a pack from your own copy of the code
 
