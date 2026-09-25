@@ -15,19 +15,21 @@ namespace Napkin.Modules.Furniture;
 /// list of rows (<c>docs/design/parts-and-cut-list.md</c> §3).
 /// </para>
 /// <para>
-/// <strong>No saw kerf and no joinery allowance.</strong> A kerf is a real 1/8&#x2033; per cut and
-/// napkin does not know the blade; a tenon, a dado and a mitre change a finished length and napkin
-/// does not know about them either. The list says so on the table and in the CSV header rather
-/// than being quietly optimistic (§1.3).
+/// <strong>Finished sizes include joinery allowances and not saw kerf.</strong> A part inserted
+/// into a groove or a rabbet is that much longer than it is drawn (<c>docs/design/joinery-and-fasteners.md</c>
+/// &#xA7;6.1), so its row says the finished size; a kerf is a real 1/8&#x2033; per cut and napkin does not
+/// know the blade. The list says so on the table and in the CSV header rather than being quietly
+/// optimistic (§1.3).
 /// </para>
 /// </remarks>
 public static class CutList
 {
     /// <summary>
-    /// What a cut list is before, said on the table and in the exported file so that nobody cuts
-    /// to these numbers believing they include anything they do not.
+    /// What a cut list is, said on the table and in the exported file so that nobody cuts to these
+    /// numbers believing they include anything they do not: the finished sizes, joinery allowances
+    /// in, saw kerf not (#138).
     /// </summary>
-    public const string BeforeKerfAndJoinery = "Cut list: finished sizes before saw kerf and joinery allowance.";
+    public const string BeforeKerfAndJoinery = "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).";
 
     /// <summary>
     /// The cut list for a design.
@@ -52,8 +54,15 @@ public static class CutList
                 continue;
             }
 
-            // Steps 2 and 3 — name the three dimensions from planAxes, and resolve the stock.
-            FinishedSize size = part.SizeOn(box);
+            // Steps 2 and 3 — name the three dimensions from planAxes, and resolve the stock. The
+            // drawn size is the visible, shoulder-to-shoulder one; finished adds what the part goes
+            // into a groove or a rabbet by (§6.1), and the joinery joins the key.
+            FinishedSize drawn = part.SizeOn(box);
+            ImmutableArray<JointFact> joinery = JointDescription.FactsOf(sketch, box);
+            FinishedSize size = new(
+                drawn.Length + JointDescription.AllowanceOn(joinery, PartDimension.Length),
+                drawn.Width + JointDescription.AllowanceOn(joinery, PartDimension.Width),
+                drawn.Thickness + JointDescription.AllowanceOn(joinery, PartDimension.Thickness));
             StockItem? stock = part.Stock is not null && library.TryFind(part.Stock, out StockItem item)
                 ? item
                 : null;
@@ -73,11 +82,15 @@ public static class CutList
                     size.Thickness,
                     NominalName.Normalize(part.Stock),
                     part.Species ?? string.Empty,
-                    cuts),
+                    cuts,
+                    joinery),
                 Material: stock?.Name ?? part.Stock ?? string.Empty,
                 Unresolved: part.Stock is not null && stock is null,
                 Stock: stock,
-                PlanAxes: part.PlanAxes));
+                PlanAxes: part.PlanAxes,
+                Drawn: drawn,
+                Joinery: joinery,
+                Unsatisfied: JointDescription.Unsatisfied(sketch, box)));
         }
 
         // Step 4 — group. Exact integer equality on all three dimensions, with no tolerance: two
@@ -102,6 +115,9 @@ public static class CutList
                 [.. members.Select(member => member.Id)])
             {
                 Species = group.Key.Species,
+                Drawn = members[0].Drawn,
+                Joinery = members[0].Joinery,
+                JointsUnsatisfied = members.Any(member => member.Unsatisfied),
             });
         }
 
@@ -118,7 +134,8 @@ public static class CutList
                 .ThenBy(row => row.Label, StringComparer.Ordinal)
                 .ThenBy(row => row.Material, StringComparer.Ordinal)
                 .ThenBy(row => row.Species, StringComparer.Ordinal)
-                .ThenBy(row => row.Cuts, CutSequence.Order),
+                .ThenBy(row => row.Cuts, CutSequence.Order)
+                .ThenBy(row => row.Joinery, JointSequence.Order),
         ];
     }
 
@@ -192,18 +209,23 @@ public static class CutList
         string Material,
         bool Unresolved,
         StockItem? Stock,
-        PlanAxes PlanAxes);
+        PlanAxes PlanAxes,
+        FinishedSize Drawn,
+        ImmutableArray<JointFact> Joinery,
+        bool Unsatisfied);
 
     /// <summary>
     /// What makes two parts one row: the same three finished dimensions out of the same stock in
-    /// the same species, with the same cuts at the same sites. The name is not in it — four boxes
-    /// called "Leg, south-west" through "Leg, north-east" are one row of four.
+    /// the same species, with the same cuts at the same sites and the same joinery. The name is not
+    /// in it — four boxes called "Leg, south-west" through "Leg, north-east" are one row of four.
     /// </summary>
     /// <remarks>
     /// Four legs chamfered on the same corner are one row of four; two legs chamfered on
     /// mirror-image corners are two rows, each saying which corner, because they are not the same
     /// piece (§4.3). A rectangle and the same rectangle with a cut are two rows for the same
-    /// reason.
+    /// reason. Joinery is compared up to a half-turn of the part about any of its axes
+    /// (<see cref="JointSequence"/>): two side aprons drilled from opposite faces at opposite ends
+    /// are one row, and a left drawer side and a right one are two.
     /// </remarks>
     internal readonly record struct GroupKey(
         Length Length,
@@ -211,7 +233,8 @@ public static class CutList
         Length Thickness,
         string Stock,
         string Species,
-        ImmutableArray<Cut> Cuts)
+        ImmutableArray<Cut> Cuts,
+        ImmutableArray<JointFact> Joinery)
     {
         /// <summary>
         /// Equality by value, with the cuts compared as a sequence.
@@ -235,7 +258,8 @@ public static class CutList
                & Thickness == other.Thickness
                & string.Equals(Stock, other.Stock, StringComparison.Ordinal)
                & string.Equals(Species, other.Species, StringComparison.Ordinal)
-               & CutSequence.AreEqual(Cuts, other.Cuts);
+               & CutSequence.AreEqual(Cuts, other.Cuts)
+               & JointSequence.AreEqual(Joinery, other.Joinery);
 
         /// <inheritdoc/>
         public override int GetHashCode()
@@ -245,6 +269,7 @@ public static class CutList
                 Thickness,
                 StringComparer.Ordinal.GetHashCode(Stock),
                 StringComparer.Ordinal.GetHashCode(Species),
-                CutSequence.HashOf(Cuts));
+                CutSequence.HashOf(Cuts),
+                JointSequence.HashOf(Joinery));
     }
 }

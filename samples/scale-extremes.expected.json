@@ -102,9 +102,9 @@
     }
   ],
   "cutListCsv": [
-    "Cut list: finished sizes before saw kerf and joinery allowance.",
-    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
-    "Plate,1,\"40'-0\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",,",
-    "Shim,1,\"6\"\"\",\"3 1/2\"\"\",\"≈1/16\"\"\",,"
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery",
+    "Plate,1,\"40'-0\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",,,",
+    "Shim,1,\"6\"\"\",\"3 1/2\"\"\",\"≈1/16\"\"\",,,"
   ]
 }

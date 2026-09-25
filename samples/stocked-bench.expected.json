@@ -276,13 +276,13 @@
     }
   ],
   "cutListCsv": [
-    "Cut list: finished sizes before saw kerf and joinery allowance.",
-    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
-    "Top,1,\"4'-0\"\"\",\"1'-4\"\"\",\"3/4\"\"\",3/4 plywood,",
-    "Apron,2,\"3'-10\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",1x4,",
-    "Stretcher,2,\"3'-7\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",2x4,",
-    "Leg,4,\"1'-4 1/2\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",2x4,",
-    "End rail,2,\"1'-2\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",1x4,"
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery",
+    "Top,1,\"4'-0\"\"\",\"1'-4\"\"\",\"3/4\"\"\",3/4 plywood,,",
+    "Apron,2,\"3'-10\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",1x4,,",
+    "Stretcher,2,\"3'-7\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",2x4,,",
+    "Leg,4,\"1'-4 1/2\"\"\",\"3 1/2\"\"\",\"1 1/2\"\"\",2x4,,",
+    "End rail,2,\"1'-2\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",1x4,,"
   ],
   "shoppingList": [
     {
@@ -348,7 +348,7 @@
     }
   ],
   "shoppingListCsv": [
-    "\"Shopping list: boards needed, before saw kerf, defect and joinery allowance.\"",
+    "\"Shopping list: boards needed from finished sizes, joinery allowances included; before saw kerf and defect.\"",
     "Material,Species,Buy,For,Board feet bought,Board feet used,Waste,Note",
     "1x4,,\"2 × 6'-0\"\"\",\"Apron × 2, End rail × 2\",4.0,3.3,0.7,",
     "2x4,,\"3 × 6'-0\"\"\",\"Stretcher × 2, Leg × 4\",12.0,8.4,3.6,",

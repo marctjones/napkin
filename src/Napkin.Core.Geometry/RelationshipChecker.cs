@@ -277,7 +277,7 @@ public static class RelationshipChecker
     /// <summary>
     /// The midpoint of a span, rounded half to even. What the propagator puts a middle point at.
     /// </summary>
-    internal static Length Midpoint(Length a, Length b) => (a + b).Divide(2, Rounding.HalfToEven);
+    public static Length Midpoint(Length a, Length b) => (a + b).Divide(2, Rounding.HalfToEven);
 
     /// <summary>
     /// How far a middle point is from the nearest position that centres it.

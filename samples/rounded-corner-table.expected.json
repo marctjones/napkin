@@ -129,12 +129,12 @@
   "cutListOrder": "Descending by length: 49152 > 40960 > 16640 > 16384, which is 48\" > 40\" > 16 1/4\" > 16\". No two rows tie on length, so neither the width and thickness tie-breaks nor the label, material and cut-sequence ones are exercised by this fixture.",
 
   "cutListCsv": [
-    "Cut list: finished sizes before saw kerf and joinery allowance.",
-    "Label,Quantity,Length,Width,Thickness,Material,Cuts",
-    "Top,1,\"4'-0\"\"\",\"2'-0\"\"\",\"3/4\"\"\",,\"Round all four corners to a 1\"\" radius.\"",
-    "\"Apron, long\",2,\"3'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,",
-    "Leg,4,\"1'-4 1/4\"\"\",\"2 1/2\"\"\",\"2 1/2\"\"\",,",
-    "\"Apron, short\",2,\"1'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,"
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Cuts,Joinery",
+    "Top,1,\"4'-0\"\"\",\"2'-0\"\"\",\"3/4\"\"\",,\"Round all four corners to a 1\"\" radius.\",",
+    "\"Apron, long\",2,\"3'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,",
+    "Leg,4,\"1'-4 1/4\"\"\",\"2 1/2\"\"\",\"2 1/2\"\"\",,,",
+    "\"Apron, short\",2,\"1'-4\"\"\",\"3 1/2\"\"\",\"3/4\"\"\",,,"
   ],
 
   "statedNotInScene": [
