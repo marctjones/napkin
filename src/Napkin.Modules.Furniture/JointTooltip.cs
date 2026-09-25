@@ -36,15 +36,17 @@ public static class JointTooltip
     /// <summary>The joint as a sentence.</summary>
     /// <param name="sketch">The design.</param>
     /// <param name="joint">The joint.</param>
-    public static string Of(Sketch sketch, Joint joint)
+    /// <param name="nameOf">What to call a part, or null for its own name.</param>
+    public static string Of(Sketch sketch, Joint joint, Func<EntityId, string>? nameOf = null)
     {
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(joint);
 
         JointShape? shape = JointGeometry.Of(sketch, joint);
         bool satisfied = JointGeometry.IsSatisfied(sketch, joint);
-        string receiving = NameOf(sketch, joint.Receiving.Box);
-        string inserted = NameOf(sketch, joint.Inserted.Box);
+        nameOf ??= id => NameOf(sketch, id);
+        string receiving = nameOf(joint.Receiving.Box);
+        string inserted = nameOf(joint.Inserted.Box);
 
         StringBuilder text = new();
         text.Append(TypeName(joint.Type)).Append(satisfied ? string.Empty : " (parts no longer touch)")

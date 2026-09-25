@@ -123,6 +123,7 @@ public partial class MainWindow : Window
         DrawingCanvas.DimensionEditRequested += (_, request) =>
             OpenDimensionEditor(request.Box, request.Axis);
         DrawingCanvas.ShapeRequested += (_, box) => OpenWorkshop(box);
+        WireJoinery();
         DrawingCanvas.ModelViewRequested += (_, _) => ShowModelView();
 
         // The 3D view: the same editor, so the same drawing, selection and undo (assembly-model
@@ -1211,6 +1212,7 @@ public partial class MainWindow : Window
         PlaceDimensionEditor();
         UpdateWorkshop();
         FollowDesignInProperties();
+        UpdatePartJoints();
         UpdateAttention();
 
         // The cut list follows the drawing: widen a part with the list open and the row changes,
@@ -2636,6 +2638,9 @@ public partial class MainWindow : Window
 
         RefusalPanel.Background = paper;
         RefusalPanel.BorderBrush = edge;
+        JoinPanel.Background = paper;
+        JoinPanel.BorderBrush = edge;
+        JoinMessage.Foreground = edge;
         UnsavedPanel.Background = paper;
         UnsavedPanel.BorderBrush = edge;
         UnsavedHeadline.Foreground = edge;
@@ -2739,6 +2744,8 @@ public partial class MainWindow : Window
         RectangleToolMenuItem.InputGesture = new KeyGesture(Key.R);
         ShapeMenuItem.InputGesture = new KeyGesture(Key.C);
         DuplicateMenuItem.InputGesture = new KeyGesture(Key.D);
+        JoinMenuItem.InputGesture = new KeyGesture(Key.J);
+        JoinAllMenuItem.InputGesture = new KeyGesture(Key.J, KeyModifiers.Shift);
         MirrorEastWestMenuItem.InputGesture = new KeyGesture(Key.M);
         MirrorNorthSouthMenuItem.InputGesture = new KeyGesture(Key.M, KeyModifiers.Shift);
         PinMenuItem.InputGesture = new KeyGesture(Key.P);

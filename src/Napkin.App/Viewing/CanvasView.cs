@@ -618,6 +618,20 @@ public sealed class CanvasView : Control
         _pressedAt = position;
         Focus();
 
+        // A joint's marker sits over the parts it joins: a press on it picks the joint, a double press opens it.
+        if (properties.IsLeftButtonPressed && _tool is not (EditTool.Rectangle or EditTool.Stock)
+            && _editor is { } jointEditor && _joints.At(position) is { } marker)
+        {
+            jointEditor.SelectJoint(marker.Marker.Id);
+            if (e.ClickCount == 2)
+            {
+                JointActivated?.Invoke(this, marker.Marker.Id);
+            }
+
+            e.Handled = true;
+            return;
+        }
+
         if (properties.IsMiddleButtonPressed)
         {
             BeginPan(e.Pointer, position);
@@ -731,10 +745,25 @@ public sealed class CanvasView : Control
         else
         {
             Hover(PickAt(_view.ToWorld(position)));
+            ToolTip.SetTip(this, _editor is { } tipEditor ? _joints.TipAt(position, tipEditor.Sketch, tipEditor.NameOf) : null);
         }
 
         PointerWorldPositionChanged?.Invoke(this, _view.ToWorld(position));
     }
+
+    readonly JointMarkerLayer _joints = new();
+
+    /// <summary>The joint markers as last drawn, for the GUI suite to find one on the screen.</summary>
+    public JointMarkerLayer JointMarkerLayer => _joints;
+
+    /// <summary>Raised when a joint's marker is double-pressed: open it for editing.</summary>
+    public event EventHandler<RelationshipId>? JointActivated;
+
+    /// <summary>Raised by J (false) and Shift+J (true): join the selected parts.</summary>
+    public event EventHandler<bool>? JoinRequested;
+
+    /// <summary>Raised by Enter and Delete while a joint is selected.</summary>
+    public event EventHandler<JointCommand>? JointCommandRequested;
 
     void Hover(EntityId? part)
     {
@@ -899,6 +928,10 @@ public sealed class CanvasView : Control
                 Tool = EditTool.Select;
                 return true;
 
+            case Key.Escape when editor.SelectedJoint is not null:
+                editor.ClearSelection();
+                return true;
+
             case Key.Escape:
                 if (_rectangle.IsDrawing || _stock.IsDrawing)
                 {
@@ -921,6 +954,18 @@ public sealed class CanvasView : Control
                 }
 
                 return false;
+
+            case Key.Delete or Key.Back when editor.SelectedJoint is not null:
+                JointCommandRequested?.Invoke(this, JointCommand.Delete);
+                return true;
+
+            case Key.Enter when editor.SelectedJoint is not null:
+                JointCommandRequested?.Invoke(this, JointCommand.Edit);
+                return true;
+
+            case Key.J:
+                JoinRequested?.Invoke(this, modifiers.HasFlag(KeyModifiers.Shift));
+                return true;
 
             case Key.Delete or Key.Back:
                 if (editor.Selection.Count == 0)
@@ -1691,6 +1736,8 @@ public sealed class CanvasView : Control
 
         DrawBlankHints(context, palette, sketch);
         DrawAttention(context, palette, sketch);
+        _joints.Update(sketch, world => _view.ToScreen(new Point2(world.X, world.Y)), _editor?.SelectedJoint);
+        JointMarkers.Draw(context, _joints.Placed, palette.Dimension, palette.Background, palette.Selection, _editor?.SelectedJoint);
         DrawSelection(context, palette, sketch);
         DrawSnapIndicator(context, palette);
         DrawRectanglePreview(context, palette);
