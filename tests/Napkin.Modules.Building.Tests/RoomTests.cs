@@ -62,6 +62,11 @@ public class RoomTests
         Sketch small = sketch.WithEntity(room.Box with { Width = In(58) });
         Assert.Equal(["Window 1"], RoomBounds.Openings(small, TheRoom(small)).Select(opening => opening.Name));
 
+        // Start the room at x 70 instead: its south edge runs 70..171 1/2 and the door at 60..96
+        // straddles its start — not this room's either (and the west wall no longer bounds it).
+        Sketch east = sketch.WithEntity(room.Box with { Anchor = room.Box.Anchor with { X = In(70) }, Width = In(101, 1, 2) });
+        Assert.Empty(RoomBounds.Openings(east, TheRoom(east)));
+
         // Move the room up one unit: the south wall no longer bounds it, and the room is told so.
         Sketch off = sketch.WithEntity(room.Box with { Anchor = room.Box.Anchor with { Y = room.Box.Anchor.Y + new Length(1) } });
         Assert.DoesNotContain(RoomBounds.Of(off, TheRoom(off)), b => b.Wall.Name == "Wall, south");
@@ -163,6 +168,10 @@ public class RoomTests
         ImmutableArray<TakeoffLine> lines = Takeoff(interior);
         Assert.Equal(("exterior walls, 278 sq ft; 7 bags at 40 sq ft", 7L), (lines[2].Shown, lines[2].Count));
         Assert.Equal(26, lines[3].Count);
+
+        // A wall whose side is not said is not an exterior wall either.
+        Sketch unsaid = sketch.WithEntity(north with { WallInputs = north.WallInputs! with { Side = null } });
+        Assert.Equal("exterior walls, 278 sq ft; 7 bags at 40 sq ft", Takeoff(unsaid)[2].Shown);
 
         // A wall napkin does not frame (a 5" thickness no library lumber has) has no bays and says so.
         Box east = Wall.All(sketch).Single(wall => wall.Name == "Wall, east").Box;
