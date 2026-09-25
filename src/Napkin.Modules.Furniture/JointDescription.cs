@@ -35,22 +35,20 @@ public static class JointDescription
     public const string NotSatisfied = "joint not satisfied";
 
     /// <summary>
-    /// The centre of everything drawn: the middle of the extent of all the sketch's boxes. Which of
-    /// an apron's two long faces is its inside is the one nearer it (&#xA7;6.2).
+    /// The centre of everything drawn: the middle of the extent of all the sketch's boxes and this
+    /// one. Which of an apron's two long faces is its inside is the one nearer it (&#xA7;6.2).
     /// </summary>
-    internal static (Length X, Length Y, Length Z)? CentreOf(Sketch sketch)
+    private static (Length X, Length Y, Length Z) CentreOf(Sketch sketch, Box box)
     {
-        Point3? low = null, high = null;
-        foreach (Box box in sketch.Entities.Values.OfType<Box>().Where(box => box.Orientation.IsExact))
+        (Point3 low, Point3 high) = JointGeometry.Extent(box);
+        foreach (Box other in sketch.Entities.Values.OfType<Box>().Where(other => other.Orientation.IsExact))
         {
-            (Point3 l, Point3 h) = JointGeometry.Extent(box);
-            low = low is { } a ? new Point3(Length.Min(a.X, l.X), Length.Min(a.Y, l.Y), Length.Min(a.Z, l.Z)) : l;
-            high = high is { } b ? new Point3(Length.Max(b.X, h.X), Length.Max(b.Y, h.Y), Length.Max(b.Z, h.Z)) : h;
+            (Point3 l, Point3 h) = JointGeometry.Extent(other);
+            low = new Point3(Length.Min(low.X, l.X), Length.Min(low.Y, l.Y), Length.Min(low.Z, l.Z));
+            high = new Point3(Length.Max(high.X, h.X), Length.Max(high.Y, h.Y), Length.Max(high.Z, h.Z));
         }
 
-        return low is { } lo && high is { } hi
-            ? (RelationshipChecker.Midpoint(lo.X, hi.X), RelationshipChecker.Midpoint(lo.Y, hi.Y), RelationshipChecker.Midpoint(lo.Z, hi.Z))
-            : null;
+        return (RelationshipChecker.Midpoint(low.X, high.X), RelationshipChecker.Midpoint(low.Y, high.Y), RelationshipChecker.Midpoint(low.Z, high.Z));
     }
 
     /// <summary>
@@ -76,7 +74,7 @@ public static class JointDescription
             return [];
         }
 
-        (Length X, Length Y, Length Z)? centre = CentreOf(sketch);
+        (Length X, Length Y, Length Z) centre = CentreOf(sketch, box);
         List<JointFact> facts = [];
         foreach (Joint joint in sketch.RelationshipsInOrder.OfType<Joint>())
         {
@@ -116,7 +114,7 @@ public static class JointDescription
         => facts.Where(fact => fact.Kind == JointFactKind.Allowance && fact.Dimension == dimension)
             .Aggregate(Length.Zero, (total, fact) => total + fact.Depth);
 
-    private static void AddInserted(Sketch sketch, Box box, Part part, Joint joint, (Length X, Length Y, Length Z)? centre, List<JointFact> facts)
+    private static void AddInserted(Sketch sketch, Box box, Part part, Joint joint, (Length X, Length Y, Length Z) centre, List<JointFact> facts)
     {
         BoxFace face = joint.Inserted.Feature.Faces[0];
         Box? receiving = sketch.Find<Box>(joint.Receiving.Box);
@@ -148,7 +146,7 @@ public static class JointDescription
                 facts.Add(new JointFact(JointFactKind.PocketHoles, Face: from, End: end, Count: Recipes.Count(joint, shape.JointLength)));
                 break;
 
-            case JointType.Tabletop when InsideFace(box, face, shape, centre) is { } inside:
+            case JointType.Tabletop when InsideFace(box, face, centre) is { } inside:
                 facts.Add(new JointFact(JointFactKind.TabletopClips, Face: inside, Count: Recipes.Count(joint, shape.JointLength)));
                 break;
 
@@ -202,13 +200,8 @@ public static class JointDescription
 
     // The face tabletop clips are on: of the two long faces flanking the part's top edge, the one nearer the middle
     // of everything drawn (§6.2) — the inside of an apron. A tie takes the lower face.
-    private static BoxFace? InsideFace(Box box, BoxFace contact, JointShape shape, (Length X, Length Y, Length Z)? centre)
+    private static BoxFace? InsideFace(Box box, BoxFace contact, (Length X, Length Y, Length Z) middle)
     {
-        if (centre is not { } middle)
-        {
-            return null;
-        }
-
         Axis contactAxis = JointGeometry.LocalAxisOf(contact);
         Axis lengthAxis = JointGeometry.LengthAxis(box);
         Axis[] remaining = [.. new[] { Axis.X, Axis.Y, Axis.Z }.Where(axis => axis != contactAxis && axis != lengthAxis)];

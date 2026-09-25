@@ -711,4 +711,124 @@ public class JointCutListTests
         Assert.NotEqual(row, row with { Drawn = null });
         Assert.NotEqual(row.GetHashCode(), (row with { Joinery = [] }).GetHashCode());
     }
+
+    // ------------------------------------------------------------------------------------------------
+    // The remaining joints and edges of the rules.
+    // ------------------------------------------------------------------------------------------------
+
+    [Trait("Feature", "CUT-007")]
+    [Fact]
+    public void Crossing_rails_half_lap_and_each_says_where_and_how_deep()
+    {
+        // Rail A along x: x 0..24, y 10..11.5, z 0..0.75; rail B along y: x 11..12.5, y 0..24. Overlap 1 1/2 square, 3/8 deep
+        // (half of 3/4): on A it is 11 from the west end, on B 10 from the south end.
+        Scene scene = new();
+        Box a = scene.Add("Rail A", (0, 10, 0), (24, 11.5, 0.75), LengthWidth);
+        Box b = scene.Add("Rail B", (11, 0, 0), (12.5, 24, 0.75), new PlanAxes(PartDimension.Width, PartDimension.Length));
+        scene.Join(a, BoxFace.Top, b, BoxFace.Top, JointType.HalfLap);
+
+        ImmutableArray<CutListRow> rows = scene.Rows();
+
+        Assert.Equal(
+            ["Half-lap the top face 11\" from the west end: 1 1/2\" long, 3/8\" deep, across the width."],
+            Assert.Single(rows, row => row.Label == "Rail A").JointText);
+        Assert.Equal(
+            ["Half-lap the top face 10\" from the south end: 1 1/2\" long, 3/8\" deep, across the width."],
+            Assert.Single(rows, row => row.Label == "Rail B").JointText);
+    }
+
+    [Trait("Feature", "CUT-007")]
+    [Fact]
+    public void A_panel_standing_on_a_rail_grows_along_its_own_height_and_says_which_edge()
+    {
+        // A rail x 0..20, y 0..16, z 0..1; a panel 1/4 thick standing on it, x 9.75..10, y 0..16, z 1..5: its bottom face is in the
+        // contact, so a 1/8 groove in the rail's top adds 1/8 to the panel's size along z. The panel's plan axes say x is its
+        // thickness and y its length, so z is its width: 4 + 1/8 = 4 1/8 = 4224 units.
+        Scene scene = new();
+        Box rail = scene.Add("Rail", (0, 0, 0), (20, 16, 1), LengthWidth);
+        Box panel = scene.Add("Panel", (9.75, 0, 1), (10, 16, 5), ThicknessLength);
+        scene.Join(rail, BoxFace.Top, panel, BoxFace.Bottom, JointType.Groove, 0.125);
+
+        CutListRow row = Assert.Single(scene.Rows(), r => r.Label == "Panel");
+
+        Assert.Equal(4224, row.Width.Units);
+        Assert.Equal(["Width includes 1/8\" into a groove at the bottom edge."], row.JointText);
+    }
+
+    [Trait("Feature", "CUT-007")]
+    [Fact]
+    public void Clips_on_a_part_with_no_long_face_to_choose_between_go_on_the_lower_of_the_two_that_flank_it()
+    {
+        // A panel x 0..10, y 0..16, z 0..1 and a rail on its east edge: x 10..10.75 (thickness), y 0..16 (length), z 0..1.5.
+        // The contact is the rail's west face, so its length is y, its contact axis x, and the faces to choose between are bottom and top:
+        // the middle of everything is z = 0.75, both are 3/4 from it, and a tie goes to the lower.
+        Scene scene = new();
+        Box panel = scene.Add("Panel", (0, 0, 0), (10, 16, 1), LengthWidth);
+        Box rail = scene.Add("Rail", (10, 0, 0), (10.75, 16, 1.5), ThicknessLength);
+        scene.Join(panel, BoxFace.East, rail, BoxFace.West, JointType.Tabletop, null, new Fastening(FasteningKind.Clips, 2, null));
+
+        Assert.Equal(
+            ["Fit 2 tabletop clips along the top edge on the bottom face (slot or recess per the clip's instructions)."],
+            Assert.Single(scene.Rows(), r => r.Label == "Rail").JointText);
+    }
+
+    [Trait("Feature", "CUT-007")]
+    [Fact]
+    public void Nothing_is_said_where_there_is_nothing_to_say_and_a_part_that_is_not_a_part_has_no_joinery()
+    {
+        // Clips on an end face: the part's length is x, the joint's face is its west end, so it has no single inside face.
+        Scene ends = new();
+        Box top = ends.Add("Top", (0, 0, 0), (10, 4, 1), LengthWidth);
+        Box strip = ends.Add("Strip", (10, 0, 0), (21, 4, 1), LengthWidth);
+        ends.Join(top, BoxFace.East, strip, BoxFace.West, JointType.Tabletop, null, new Fastening(FasteningKind.Clips, 2, null));
+        Assert.Empty(Assert.Single(ends.Rows(), r => r.Label == "Strip").JointText);
+
+        // Pocket screws with no face typed: the holes cannot be placed, so none is described.
+        Scene pockets = new();
+        Box leg = pockets.Add("Leg", (0, 0, 0), (1.5, 1.5, 16), WidthThickness);
+        Box endOn = pockets.Add("End on", (1.5, 0, 10), (1.5 + 10, 0.75, 15.5), LengthThickness);
+        pockets.Join(leg, BoxFace.East, endOn, BoxFace.West, JointType.Butt, null, new Fastening(FasteningKind.PocketScrews, null, null));
+        Assert.Empty(Assert.Single(pockets.Rows(), r => r.Label == "End on").JointText);
+
+        // A rabbet into an end face has no end to be at: the allowance stays, no sentence is made.
+        Scene stub = new();
+        Box post = stub.Add("Post", (0, 0, 0), (1.5, 1.5, 30), WidthThickness);
+        Box cap = stub.Add("Cap", (0, 0, 30), (1.5, 1.5, 30.75), WidthThickness);
+        stub.Join(post, BoxFace.Top, cap, BoxFace.Bottom, JointType.Rabbet, 0.25);
+        CutListRow capRow = Assert.Single(stub.Rows(), r => r.Label == "Cap");
+        Assert.Equal(["Length includes 1/4\" into a rabbet at the bottom end."], capRow.JointText);   // and nothing on the post to cut
+        Assert.Empty(Assert.Single(stub.Rows(), r => r.Label == "Post").JointText);
+        Assert.Equal(768 + 256, capRow.Length.Units);           // the cap's z is its length here (plan axes: width, thickness): 3/4 + 1/4 = 1
+    }
+
+    [Trait("Feature", "CUT-007")]
+    [Fact]
+    public void A_box_that_is_not_a_part_or_is_off_the_quarter_turns_has_no_joinery()
+    {
+        Scene scene = Drawer();
+        Box left = scene.Sketch.Entities.Values.OfType<Box>().Single(box => box.Name == "Drawer side, left");
+
+        Assert.Empty(JointDescription.FactsOf(scene.Sketch, left with { Part = null }));
+        Assert.Empty(JointDescription.FactsOf(scene.Sketch, left with { Rotation = Angle.Degrees(30) }));
+        Assert.NotEmpty(JointDescription.FactsOf(scene.Sketch, left));
+    }
+
+    [Trait("Feature", "CUT-007")]
+    [Fact]
+    public void Holes_from_one_face_in_all_six_ends_read_biggest_first_then_west_south_bottom_east_north_top()
+    {
+        ImmutableArray<JointFact> facts =
+        [
+            Pocket(BoxFace.Top, BoxFace.Top, 1),
+            Pocket(BoxFace.Top, BoxFace.North, 1),
+            Pocket(BoxFace.Top, BoxFace.East, 1),
+            Pocket(BoxFace.Top, BoxFace.Bottom, 1),
+            Pocket(BoxFace.Top, BoxFace.South, 1),
+            Pocket(BoxFace.Top, BoxFace.West, 1),
+        ];
+
+        Assert.Equal(
+            ["Drill 1 pocket hole in the west end, 1 in the south end, 1 in the bottom end, 1 in the east end, 1 in the north end and 1 in the top end, from the top face."],
+            JointDescription.Describe(facts));
+    }
 }
