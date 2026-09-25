@@ -43,7 +43,7 @@
             <TextBlock Text="Site" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
             <TextBlock FontSize="11" Opacity="0.8" TextWrapping="Wrap"
                        Text="Type the values for this site from your building department or the adopted code's own maps. Leave a field empty until you know it: napkin never fills one in." />
-            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" >
+            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" >
                 <TextBlock Grid.Row="0" Text="Ground snow load" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
                 <TextBox Grid.Row="0" Grid.Column="1" Name="SnowBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Ground snow load" />
                 <TextBlock Grid.Row="0" Grid.Column="2" Text="psf" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,4" />
@@ -64,8 +64,12 @@
                 <TextBox Grid.Row="4" Grid.Column="1" Name="WidthBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Building width" />
                 <TextBlock Grid.Row="4" Grid.Column="2" Text="ft-in" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,4" />
 
-                <TextBlock Grid.Row="5" Text="Where they came from" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
-                <TextBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Name="SourceBox" FontSize="12" Margin="0,0,0,4"
+                <TextBlock Grid.Row="5" Text="Roof live load (psf)" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
+                <TextBox Grid.Row="5" Grid.Column="1" Name="RoofLiveBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Roof live load (psf)" />
+                <TextBlock Grid.Row="5" Grid.Column="2" Text="if a footnote asks" FontSize="11" Opacity="0.75" VerticalAlignment="Center" Margin="6,0,0,4" />
+
+                <TextBlock Grid.Row="6" Text="Where they came from" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
+                <TextBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Name="SourceBox" FontSize="12" Margin="0,0,0,4"
                          PlaceholderText="Town building department, by phone"
                          AutomationProperties.Name="Where the site values came from" />
             </Grid>

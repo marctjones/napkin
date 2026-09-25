@@ -37,8 +37,8 @@ internal static class Fx
 
     public static Length Ft(long feet, long inches = 0) => Length.FeetInches(feet, inches);
 
-    public static SiteInputs Site(int? snow = 50, Length? width = null, int? wind = 150)
-        => new(snow, wind, null, null, width ?? Ft(30), null);
+    public static SiteInputs Site(int? snow = 50, Length? width = null, int? wind = 150, int? roofLive = null)
+        => new(snow, wind, null, null, width ?? Ft(30), roofLive, null);
 
     public static HeaderRequest Roof(Length span, int? snow = 50, Length? width = null, int? wind = 150, string supports = "test-roof")
         => new(supports, WallKind.ExteriorBearing, span, Site(snow, width, wind));

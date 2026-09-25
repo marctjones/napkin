@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "kind": "header-sizing",
+  "table": "ZZ-INTERP-HEADER",
+  "title": "SYNTHETIC HEADER TABLE (interpolation) - NOT CODE VALUES",
+  "wallKind": "exterior-bearing",
+  "source": "zz-synth-interp-base",
+  "location": "synthetic p. 1",
+  "inputs": [
+    {
+      "name": "supports",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "zz-roof"
+      ]
+    },
+    {
+      "name": "groundSnowLoad",
+      "type": "psf",
+      "band": "upper-bound",
+      "domain": {
+        "min": 0,
+        "max": 70
+      }
+    },
+    {
+      "name": "headerSpan",
+      "type": "length",
+      "band": "capacity",
+      "domain": {
+        "min": "0in",
+        "max": "12ft 0in"
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "name": "header",
+      "type": "member"
+    },
+    {
+      "name": "jackStuds",
+      "type": "count"
+    },
+    {
+      "name": "kingStuds",
+      "type": "count"
+    }
+  ],
+  "footnotes": [
+    {
+      "id": "e",
+      "text": "SYNTHETIC footnote e (base text): replaced by the synthetic overlay.",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ],
+  "rows": [
+    {
+      "id": "i.s30.a",
+      "supports": "zz-roof",
+      "groundSnowLoad": 30,
+      "headerSpan": "6ft 0in",
+      "header": {
+        "plies": 1,
+        "nominal": "2x8"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, snow 30, row a"
+    },
+    {
+      "id": "i.s30.b",
+      "supports": "zz-roof",
+      "groundSnowLoad": 30,
+      "headerSpan": "9ft 0in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x10"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, snow 30, row b"
+    },
+    {
+      "id": "i.s30.c",
+      "supports": "zz-roof",
+      "groundSnowLoad": 30,
+      "headerSpan": "12ft 0in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x12"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, snow 30, row c"
+    },
+    {
+      "id": "i.s50.a",
+      "supports": "zz-roof",
+      "groundSnowLoad": 50,
+      "headerSpan": "4ft 0in",
+      "header": {
+        "plies": 1,
+        "nominal": "2x8"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, snow 50, row a"
+    },
+    {
+      "id": "i.s50.b",
+      "supports": "zz-roof",
+      "groundSnowLoad": 50,
+      "headerSpan": "7ft 0in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x10"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, snow 50, row b"
+    },
+    {
+      "id": "i.s50.c",
+      "supports": "zz-roof",
+      "groundSnowLoad": 50,
+      "headerSpan": "10ft 0in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x12"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, snow 50, row c"
+    },
+    {
+      "id": "i.s70.a",
+      "supports": "zz-roof",
+      "groundSnowLoad": 70,
+      "headerSpan": "3ft 0in",
+      "header": {
+        "plies": 1,
+        "nominal": "2x8"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, snow 70, row a"
+    },
+    {
+      "id": "i.s70.b",
+      "supports": "zz-roof",
+      "groundSnowLoad": 70,
+      "headerSpan": "5ft 0in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x10"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, snow 70, row b"
+    },
+    {
+      "id": "i.s70.c",
+      "supports": "zz-roof",
+      "groundSnowLoad": 70,
+      "headerSpan": "8ft 0in",
+      "header": {
+        "plies": 2,
+        "nominal": "2x12"
+      },
+      "jackStuds": 1,
+      "kingStuds": 1,
+      "location": "synthetic p. 1, snow 70, row c"
+    }
+  ]
+}

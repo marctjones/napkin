@@ -227,7 +227,7 @@ public static class GoldenRunner
         Dictionary<string, CellValue> values = new(StringComparer.Ordinal);
         foreach (string name in inputs.Names.ToList())
         {
-            if (!Vocabulary.HeaderInputs.TryGetValue(name, out ColumnType type))
+            if (!Vocabulary.HeaderInputs.TryGetValue(name, out ColumnType type) && !Vocabulary.ConditionInputs.TryGetValue(name, out type))
             {
                 continue; // reported as an unknown field by Done()
             }
@@ -258,7 +258,8 @@ public static class GoldenRunner
         int? Whole(string name) => values.TryGetValue(name, out CellValue v) ? (int)v.Magnitude : null;
         string? Symbol(string name) => values.TryGetValue(name, out CellValue v) ? v.Symbol : null;
 
-        SiteInputs site = new(Whole("groundSnowLoad"), Whole("ultimateWindSpeed"), Symbol("seismicDesignCategory"), Len("frostDepth"), Len("buildingWidth"), null);
+        SiteInputs site = new(
+            Whole("groundSnowLoad"), Whole("ultimateWindSpeed"), Symbol("seismicDesignCategory"), Len("frostDepth"), Len("buildingWidth"), Whole(Vocabulary.RoofLiveLoad), null);
         return new HeaderRequest(Symbol("supports") ?? string.Empty, wallKind!.Value, Len(Vocabulary.HeaderSpan)!.Value, site);
     }
 

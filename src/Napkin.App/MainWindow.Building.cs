@@ -86,6 +86,10 @@ public partial class MainWindow
     /// <summary>The code check's citation line for the selected opening.</summary>
     public string CodeCheckCitationText => FramingFields.IsVisible && CodeCheckFields.IsVisible ? CodeCheckCitation.Text ?? string.Empty : string.Empty;
 
+    /// <summary>The code check's interpolation line for the selected opening, empty unless its span was interpolated by a footnote.</summary>
+    public string CodeCheckInterpolationText
+        => FramingFields.IsVisible && CodeCheckFields.IsVisible && CodeCheckInterpolation.IsVisible ? CodeCheckInterpolation.Text ?? string.Empty : string.Empty;
+
     /// <summary>The code check's working: band trace, footnotes, source.</summary>
     public string CodeCheckWorkingText => CodeCheckDetails.Text ?? string.Empty;
 
@@ -239,6 +243,8 @@ public partial class MainWindow
         CodeCheckHeadline.Text = words.Headline;
         CodeCheckCitation.Text = words.Citation;
         CodeCheckCitation.IsVisible = words.Citation.Length > 0;
+        CodeCheckInterpolation.Text = words.Interpolation;
+        CodeCheckInterpolation.IsVisible = words.Interpolation.Length > 0;
         CodeCheckDetails.Text = words.Details;
         CodeCheckWorking.IsVisible = words.Details.Length > 0;
         ToolTip.SetTip(CodeCheckCitation, words.Details.Length > 0 ? words.Details : null);

@@ -17,14 +17,14 @@ public class FixtureTests
     {
         ValueList<PackLoadResult> all = PackCatalog.Discover(Fx.Root);
         Assert.Equal(
-            ["us-zz-base", "us-zz-empty", "us-zz-state", "us-zz-town"],
+            ["us-zz-base", "us-zz-empty", "us-zz-interp", "us-zz-pending", "us-zz-state", "us-zz-town"],
             all.Select(r => r is PackLoadResult.Loaded l ? l.Pack.Manifest.Id : "invalid"));
 
         InMemoryPackSource broken = Fx.Source().With("packs/us-zz-broken/pack.json", "{}");
         ValueList<PackLoadResult> withBroken = PackCatalog.Discover(broken);
         PackLoadResult.Invalid invalid = Assert.Single(withBroken.OfType<PackLoadResult.Invalid>());
         Assert.Equal("us-zz-broken", invalid.PackId);
-        Assert.Equal(4, withBroken.OfType<PackLoadResult.Loaded>().Count());
+        Assert.Equal(6, withBroken.OfType<PackLoadResult.Loaded>().Count());
     }
 
     [Fact]

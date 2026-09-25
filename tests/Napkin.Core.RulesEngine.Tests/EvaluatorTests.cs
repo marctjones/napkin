@@ -199,7 +199,7 @@ public class EvaluatorTests
         Assert.Equal("us-zz-base", m.Code.PackId);
         Assert.Contains("never assumes a value", m.ToString(), StringComparison.Ordinal);
 
-        SiteInputs nothing = new(null, null, null, null, null, null);
+        SiteInputs nothing = new(null, null, null, null, null, null, null);
         HeaderResult.InputMissing all = Assert.IsType<HeaderResult.InputMissing>(
             Fx.Size(Base, new HeaderRequest("test-roof", WallKind.ExteriorBearing, Fx.Ft(4), nothing)));
         Assert.Equal(["groundSnowLoad", "buildingWidth", "ultimateWindSpeed"], all.Inputs);
@@ -275,14 +275,15 @@ public class EvaluatorTests
     public void Invalid_requests_are_caller_bugs_not_results()
     {
         Assert.Throws<ArgumentException>(() => Fx.Roof(Length.Zero));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SiteInputs(-1, null, null, null, null, null));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SiteInputs(null, -1, null, null, null, null));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SiteInputs(null, null, null, -Fx.Ft(1), null, null));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SiteInputs(null, null, null, null, Length.Zero, null));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SiteInputs(-1, null, null, null, null, null, null));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SiteInputs(null, -1, null, null, null, null, null));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SiteInputs(null, null, null, -Fx.Ft(1), null, null, null));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SiteInputs(null, null, null, null, Length.Zero, null, null));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SiteInputs(null, null, null, null, null, -1, null));
         Assert.Throws<ArgumentNullException>(() => RulesEngine.For(null!));
         Assert.Throws<ArgumentNullException>(() => RulesEngine.SizeHeader(null, null!));
         Assert.Throws<ArgumentNullException>(() => RulesEngine.For(Fx.Load(Base)).SizeHeader(null!));
-        SiteInputs site = new(10, 20, "test-sdc", Fx.Ft(3), Fx.Ft(20), new InputProvenance("synthetic", new DateOnly(2026, 9, 25)));
+        SiteInputs site = new(10, 20, "test-sdc", Fx.Ft(3), Fx.Ft(20), 20, new InputProvenance("synthetic", new DateOnly(2026, 9, 25)));
         Assert.Equal("test-sdc", site.SeismicDesignCategory);
         Assert.Equal(Fx.Ft(3), site.FrostDepth);
         Assert.Equal("synthetic", site.Provenance!.Text);

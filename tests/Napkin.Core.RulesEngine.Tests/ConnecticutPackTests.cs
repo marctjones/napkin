@@ -73,13 +73,13 @@ public class ConnecticutPackTests
     }
 
     [Fact]
-    public void The_R602_7_amendments_are_verbatim_cited_and_not_encoded()
+    public void The_R602_7_amendments_are_verbatim_cited_and_encoded_as_operations()
     {
         JsonElement amendments = OverlayData().GetProperty("amendments");
         Assert.Equal(2, amendments.GetArrayLength());
         foreach (JsonElement a in amendments.EnumerateArray())
         {
-            Assert.Equal("not-encoded", a.GetProperty("classification").GetString());
+            Assert.Equal("as-operations", a.GetProperty("classification").GetString());
             Assert.Contains("p. 145", a.GetProperty("location").GetString(), StringComparison.Ordinal);
             Assert.Contains(
                 "Use 30 psf ground snow load for cases in which ground snow load is less than 30 psf and the roof live load is equal to or less than 20 psf. For ground snow loads between 30 and 50 psf, linear interpolation is permitted.",
@@ -90,6 +90,54 @@ public class ConnecticutPackTests
         Assert.Equal("Table R602.7(1), Footnote e", amendments[0].GetProperty("amends").GetString());
         Assert.Equal("Table R602.7(3), Footnote b", amendments[1].GetProperty("amends").GetString());
         Assert.StartsWith("Tabulated values assume #2 grade lumber, wet service and incising for refractory species.", amendments[1].GetProperty("text").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "RUL-006")]
+    public void The_footnote_amendments_are_pending_until_the_base_tables_load_and_match_the_recorded_text()
+    {
+        LoadedPack pack = Pack();
+        Assert.Equal(
+            [("R602.7(1)", "e"), ("R602.7(3)", "b")],
+            pack.Pending.Select(p => (p.Table, p.FootnoteId)).OrderBy(p => p.Table, StringComparer.Ordinal));
+        Assert.All(pack.Pending, p => Assert.Equal(("ct-csbc-2022", "p. 145"), (p.Source.SourceId, p.Source.Location)));
+
+        // The encoded footnote text is the text recorded verbatim from p. 145.
+        JsonElement amendments = OverlayData().GetProperty("amendments");
+        foreach (JsonElement a in amendments.EnumerateArray())
+        {
+            string file = Path.Combine(Root, "packs", "us-ct-2022", a.GetProperty("encodedIn").GetString()!.Replace('/', Path.DirectorySeparatorChar));
+            JsonElement footnote = JsonDocument.Parse(File.ReadAllText(file)).RootElement.GetProperty("operations")[0].GetProperty("footnote");
+            Assert.Equal(a.GetProperty("text").GetString(), footnote.GetProperty("text").GetString());
+        }
+    }
+
+    [Fact]
+    [Trait("Feature", "RUL-006")]
+    public void Once_a_base_table_is_added_connecticuts_footnote_e_interpolates_it()
+    {
+        // A SYNTHETIC base table (the interpolation fixture's rows, SYNTHETIC TEST DATA - NOT CODE VALUES) named
+        // R602.7(1), dropped into the real pack's empty base layer, in memory only. Connecticut's own overlay then applies.
+        InMemoryPackSource fixtures = Fx.Source();
+        string synthetic = fixtures.Text("layers/zz-interp-2099/tables/test-header-table.json")
+            .Replace("\"TEST-HEADER-TABLE\"", "\"R602.7(1)\"", StringComparison.Ordinal)
+            .Replace("\"zz-synthetic-interp-base\"", "\"ct-csbc-2022\"", StringComparison.Ordinal);
+        InMemoryPackSource source = InMemoryPackSource.FromDirectory(Root).With("layers/irc-2021/tables/r602.7-1.json", synthetic);
+        LoadedPack pack = Fx.Loaded(PackLoader.Load(source, "us-ct-2022"));
+        Assert.Equal(("R602.7(3)", "b"), (Assert.Single(pack.Pending).Table, pack.Pending[0].FootnoteId));
+
+        HeaderRequest request = new("test-roof", WallKind.ExteriorBearing, Fx.Ft(5), Fx.Site(40, Fx.Ft(20), wind: null));
+        HeaderResult.Sized s = Fx.Sized(RulesEngine.SizeHeader(pack, request));
+        InterpolationTrace i = s.Citation.Interpolation!;
+        Assert.Equal(new ExactFraction(1, 2), i.Weight);
+        Assert.Equal("p. 145", i.Footnote.Source.Location);
+        Assert.Equal(OverlayData().GetProperty("amendments")[0].GetProperty("text").GetString(), i.Footnote.Text);
+        Assert.Equal(
+            "Interpolated between the 30 psf row (roof.s30.w20.m1) and the 50 psf row (roof.s50.w20.m1) (CT 2022 footnote e, p. 145)",
+            i.Summary(s.Citation.Code));
+
+        HeaderRequest light = new("test-roof", WallKind.ExteriorBearing, Fx.Ft(5), Fx.Site(25, Fx.Ft(20), wind: null, roofLive: 25));
+        Assert.Equal(OutOfScopeReason.NarrowedByFootnote, Fx.OutOfScope(RulesEngine.SizeHeader(pack, light)).Reason);
     }
 
     [Fact]

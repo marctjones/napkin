@@ -66,7 +66,25 @@ internal static class Vocabulary
         ["not-encoded"] = FootnoteEncoding.NotEncoded,
         ["as-rows"] = FootnoteEncoding.AsRows,
         ["as-limit"] = FootnoteEncoding.AsLimit,
+        ["as-operations"] = FootnoteEncoding.AsOperations,
     };
+
+    /// <summary>The operations an <c>as-operations</c> footnote may declare (design §4.4).</summary>
+    public const string SubstituteInputOp = "substitute-input";
+
+    /// <summary>Linear interpolation between two declared columns.</summary>
+    public const string InterpolateOp = "interpolate";
+
+    /// <summary>A site input that is never a table column, only a footnote condition: roof live load, whole psf.</summary>
+    public const string RoofLiveLoad = "roofLiveLoad";
+
+    /// <summary>
+    /// The inputs a footnote operation's condition may test: every numeric header input, plus
+    /// inputs that only footnotes ask for. Each is required only when a condition is reached.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, ColumnType> ConditionInputs =
+        HeaderInputs.Where(p => p.Value != ColumnType.Enum).Append(KeyValuePair.Create(RoofLiveLoad, ColumnType.Psf))
+            .ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
 
     public static readonly IReadOnlyDictionary<string, FootnoteScope> Scopes = new Dictionary<string, FootnoteScope>(StringComparer.Ordinal)
     {
@@ -82,6 +100,7 @@ internal static class Vocabulary
         ["add-table"] = OpKind.AddTable,
         ["amend-table"] = OpKind.AmendTable,
         ["delete-table"] = OpKind.DeleteTable,
+        ["amend-footnote"] = OpKind.AmendFootnote,
     };
 
     public static string OpName(OpKind op) => Operations.First(p => p.Value == op).Key;
@@ -102,4 +121,5 @@ internal enum OpKind
     AddTable,
     AmendTable,
     DeleteTable,
+    AmendFootnote,
 }

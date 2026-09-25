@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "notes": "Connecticut's amendment to Table R602.7(3) footnote b, verbatim from Connecticut's document (p. 145 (document footer 'Page - 145'), Chapter 6 Wall Construction); the same text is recorded in ../ct-overlay-data.json. The operations encode that text exactly: below 30 psf ground snow load with roof live load at most 20 psf, use 30 psf; strictly between 30 and 50 psf, interpolate the span linearly. The IRC base table is not loaded, so this amendment is pending until it is (docs/rules-engine.md).",
+  "table": "R602.7(3)",
+  "source": "ct-csbc-2022",
+  "location": "p. 145",
+  "operations": [
+    {
+      "op": "amend-footnote",
+      "source": "ct-csbc-2022",
+      "location": "p. 145",
+      "footnote": {
+        "id": "b",
+        "text": "Tabulated values assume #2 grade lumber, wet service and incising for refractory species. Use 30 psf ground snow load for cases in which ground snow load is less than 30 psf and the roof live load is equal to or less than 20 psf. For ground snow loads between 30 and 50 psf, linear interpolation is permitted.",
+        "encodedAs": "as-operations",
+        "appliesTo": "table",
+        "operations": [
+          {
+            "op": "substitute-input",
+            "input": "groundSnowLoad",
+            "below": 30,
+            "use": 30,
+            "when": {
+              "input": "roofLiveLoad",
+              "atMost": 20
+            }
+          },
+          {
+            "op": "interpolate",
+            "input": "groundSnowLoad",
+            "between": [
+              30,
+              50
+            ],
+            "quantity": "headerSpan"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -33,9 +33,23 @@ internal static class TableTyper
             }
         }
 
+        foreach (Footnote footnote in meta.Footnotes.Where(f => f.Limit?.EqualTo is not null))
+        {
+            InputColumn? column = meta.Inputs.FirstOrDefault(c => c.Name == footnote.Limit!.Input);
+            if (column is not null && !column.Values.Contains(footnote.Limit!.EqualTo!, StringComparer.Ordinal))
+            {
+                problems.Add(tableWhere, $"footnote '{footnote.Id}': limit equals '{footnote.Limit.EqualTo}', which is not one of the column's values.");
+            }
+        }
+
         if (problems.Count == before)
         {
             BandValidator.Validate(tableWhere, meta.Inputs, rows, problems);
+        }
+
+        if (problems.Count == before)
+        {
+            FootnoteOperationValidator.Validate(tableWhere, meta, rows, problems);
         }
 
         if (problems.Count > before)

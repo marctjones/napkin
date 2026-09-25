@@ -36,6 +36,7 @@ public sealed record SiteSource(string Text, DateOnly? On);
 /// <param name="SeismicDesignCategory">Seismic design category, as the pack's tables name it.</param>
 /// <param name="FrostDepth">Frost depth.</param>
 /// <param name="BuildingWidth">Building width, as the code text defines it.</param>
+/// <param name="RoofLiveLoadPsf">Roof live load, whole psf; asked for only when a table's footnote needs it.</param>
 /// <param name="Source">Where the values came from, or null.</param>
 public sealed record SiteValues(
     int? GroundSnowLoadPsf,
@@ -43,10 +44,11 @@ public sealed record SiteValues(
     string? SeismicDesignCategory,
     Length? FrostDepth,
     Length? BuildingWidth,
+    int? RoofLiveLoadPsf,
     SiteSource? Source)
 {
     /// <summary>Nothing entered yet: a new design's site.</summary>
-    public static readonly SiteValues NotEntered = new(null, null, null, null, null, null);
+    public static readonly SiteValues NotEntered = new(null, null, null, null, null, null, null);
 }
 
 /// <summary>
