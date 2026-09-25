@@ -24,7 +24,9 @@ public partial class MainWindow
 
     void OnOpenClicked(object? sender, RoutedEventArgs e) => _ = OpenFileAsync();
 
-    void OnSelectToolClicked(object? sender, RoutedEventArgs e)
+    void OnSelectToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.SelectTool);
+
+    void SelectTool()
     {
         DrawingCanvas.Tool = EditTool.Select;
         ModelDrawing.Disarm();
@@ -75,7 +77,9 @@ public partial class MainWindow
         FocusDrawing();
     }
 
-    void OnRectangleToolClicked(object? sender, RoutedEventArgs e)
+    void OnRectangleToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.RectangleTool);
+
+    void RectangleTool()
     {
         // In the 3D view the rectangle tool is a plain board to place on a face (#74); a read-only
         // view has none (§5.4).
@@ -94,21 +98,22 @@ public partial class MainWindow
         else
         {
             DrawingCanvas.Tool = EditTool.Rectangle;
+            Editor.Say(EditSeverity.Hint, "Rectangle tool: drag on the paper to draw a part.");
         }
 
         UpdateToolButtons();
         FocusDrawing();
     }
 
-    void OnDuplicateClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Duplicate);
+    void OnDuplicateClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.Duplicate);
 
-    void OnMirrorEastWestClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.MirrorEastWest);
+    void OnMirrorEastWestClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.MirrorEastWest);
 
-    void OnMirrorNorthSouthClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.MirrorNorthSouth);
+    void OnMirrorNorthSouthClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.MirrorNorthSouth);
 
-    void OnPinClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Pin);
+    void OnPinClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.Pin);
 
-    void OnDeleteClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Delete);
+    void OnDeleteClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.Delete);
 
     void OnMessageOfferClicked(object? sender, RoutedEventArgs e) => TakeOffer();
 
@@ -128,6 +133,11 @@ public partial class MainWindow
         {
             DrawingCanvas.ZoomToFit();
         }
+    }
+
+    void OnResetViewClicked(object? sender, RoutedEventArgs e)
+    {
+        _ = IsShowingModel ? ModelDrawing.Apply(ViewCommand.ResetView) : DrawingCanvas.Apply(ViewCommand.ResetView);
     }
 
     void OnZoomInClicked(object? sender, RoutedEventArgs e)
@@ -154,11 +164,11 @@ public partial class MainWindow
         }
     }
 
-    void OnTurnXClicked(object? sender, RoutedEventArgs e) => SelectionTurn.Turn(Editor, Axis.X, 1);
+    void OnTurnXClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.TurnX);
 
-    void OnTurnYClicked(object? sender, RoutedEventArgs e) => SelectionTurn.Turn(Editor, Axis.Y, 1);
+    void OnTurnYClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.TurnY);
 
-    void OnTurnZClicked(object? sender, RoutedEventArgs e) => SelectionTurn.Turn(Editor, Axis.Z, 1);
+    void OnTurnZClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.TurnZ);
 
     void OnLookXClicked(object? sender, RoutedEventArgs e)
     {
@@ -199,4 +209,121 @@ public partial class MainWindow
     void OnUnsavedDiscardClicked(object? sender, RoutedEventArgs e) => _ = DiscardThenCarryOnAsync();
 
     void OnUnsavedCancelClicked(object? sender, RoutedEventArgs e) => KeepEditing();
+
+    /// <summary>
+    /// Runs an editing command — from a key in either view, or from a menu — the one way it is run.
+    /// </summary>
+    /// <returns>Whether it did anything; a key that did nothing goes on to the view keys.</returns>
+    public bool Run(EditCommand command)
+    {
+        switch (command)
+        {
+            case EditCommand.SelectTool:
+                SelectTool();
+                return true;
+
+            case EditCommand.RectangleTool:
+                RectangleTool();
+                return true;
+
+            case EditCommand.WallTool:
+                ArmWall(null);
+                return true;
+
+            case EditCommand.Shape when IsShowingStandardView:
+                Editor.Say(EditSeverity.Hint, $"Not in a {StandardViews.Name(_view)} view yet — 1 for the plan or 7 for 3D.");
+                return true;
+
+            case EditCommand.Shape:
+                if (SelectionCommands.PartToShape(Editor) is { } part)
+                {
+                    OpenWorkshop(part);
+                }
+
+                return true;
+
+            case EditCommand.Delete or EditCommand.Confirm when Editor.SelectedJoint is not null:
+                RunJointCommand(command == EditCommand.Delete ? JointCommand.Delete : JointCommand.Edit);
+                return true;
+
+            case EditCommand.Delete or EditCommand.Pin or EditCommand.Duplicate or EditCommand.MirrorEastWest or EditCommand.MirrorNorthSouth:
+                if (Editor.Selection.Count == 0)
+                {
+                    return false;
+                }
+
+                RunOnSelection(command);
+                return true;
+
+            case EditCommand.Join or EditCommand.JoinAll:
+                BeginJoin(command == EditCommand.JoinAll);
+                return true;
+
+            case >= EditCommand.TurnX and <= EditCommand.TurnZBack:
+                SelectionTurn.Turn(
+                    Editor,
+                    command switch { EditCommand.TurnX or EditCommand.TurnXBack => Axis.X, EditCommand.TurnY or EditCommand.TurnYBack => Axis.Y, _ => Axis.Z },
+                    command is EditCommand.TurnXBack or EditCommand.TurnYBack or EditCommand.TurnZBack ? -1 : 1);
+                return true;
+
+            case EditCommand.OtherView:
+                ShowView(CurrentView == DesignView.Model ? _last2DView : DesignView.Model);
+                return true;
+
+            case EditCommand.ToggleGrid:
+                ToggleGrid();
+                return true;
+
+            case EditCommand.Cancel when Editor.Selection.Count > 0 || Editor.SelectedJoint is not null:
+                Editor.ClearSelection();
+                return true;
+
+            case EditCommand.EditWidth when !IsShowingModel && Editor.OnlySelectedBox is { } forWidth:
+                OpenDimensionEditor(forWidth.Id, SizeAxis.Width);
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>Delete, pin, duplicate or mirror the selection, and bring a copy into view.</summary>
+    void RunOnSelection(EditCommand command)
+    {
+        switch (command)
+        {
+            case EditCommand.Delete:
+                SelectionCommands.Delete(Editor);
+                break;
+
+            case EditCommand.Pin:
+                SelectionCommands.Pin(Editor);
+                break;
+
+            case EditCommand.Duplicate:
+                BringIntoView(SelectionCommands.Duplicate(Editor, IsShowingModel ? ModelDrawing.GridStepInches : DrawingCanvas.GridStepInches));
+                break;
+
+            default:
+                BringIntoView(SelectionCommands.Mirror(Editor, command == EditCommand.MirrorEastWest ? Axis.X : Axis.Y));
+                break;
+        }
+    }
+
+    void BringIntoView(EntityId? copy)
+    {
+        if (copy is not { } id)
+        {
+            return;
+        }
+
+        if (IsShowingModel)
+        {
+            ModelDrawing.BringIntoView(id);
+        }
+        else
+        {
+            DrawingCanvas.BringIntoView(id);
+        }
+    }
 }

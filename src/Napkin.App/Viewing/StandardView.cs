@@ -1,5 +1,7 @@
 using Avalonia.Input;
+using Napkin.App.Editing;
 using Napkin.App.Settings;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.Viewing;
 
@@ -79,19 +81,8 @@ public static class StandardViews
     /// the top row or the number pad. Null for any other key, or any digit with a modifier held —
     /// Cmd/Ctrl+1…9 belong to the Samples menu.
     /// </summary>
-    public static DesignView? ForKey(Key key, KeyModifiers modifiers)
-    {
-        if (modifiers != KeyModifiers.None)
-        {
-            return null;
-        }
-
-        int digit = key switch
-        {
-            >= Key.D1 and <= Key.D7 => key - Key.D1 + 1,
-            >= Key.NumPad1 and <= Key.NumPad7 => key - Key.NumPad1 + 1,
-            _ => 0,
-        };
-        return digit == 0 ? null : (DesignView)digit;
-    }
+    public static DesignView? ForKey(Key key, KeyModifiers modifiers) =>
+        KeyInput.From(key, modifiers) is { } keystroke && KeyMaps.View.Find(keystroke) is { } command
+            ? KeyInput.ViewFor(command)
+            : null;
 }

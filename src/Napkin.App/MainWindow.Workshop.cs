@@ -151,5 +151,5 @@ public partial class MainWindow
         }
     }
 
-    void OnShapeClicked(object? sender, RoutedEventArgs e) => RunSelectionCommand(SelectionCommand.Shape);
+    void OnShapeClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.Shape);
 }

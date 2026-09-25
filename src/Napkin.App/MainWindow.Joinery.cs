@@ -144,12 +144,8 @@ public partial class MainWindow
         // panels and the drawing; an open drop-down list takes its own Enter and Escape first.
         AddHandler(KeyDownEvent, OnJoinKeyDown, RoutingStrategies.Tunnel);
 
-        DrawingCanvas.JoinRequested += (_, all) => BeginJoin(all);
-        ModelDrawing.JoinRequested += (_, all) => BeginJoin(all);
         DrawingCanvas.JointActivated += (_, id) => EditJoint(id);
         ModelDrawing.JointActivated += (_, id) => EditJoint(id);
-        DrawingCanvas.JointCommandRequested += (_, command) => RunJointCommand(command);
-        ModelDrawing.JointCommandRequested += (_, command) => RunJointCommand(command);
     }
 
     void OnJoinKeyDown(object? sender, KeyEventArgs e)

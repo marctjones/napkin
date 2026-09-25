@@ -247,7 +247,7 @@ public class CanvasAutomationTests
 
             Assert.Equal("Select", Named(root, "SelectToolButton"));
             Assert.Equal("Rectangle", Named(root, "RectangleToolButton"));
-            Assert.Equal("Shape", Named(root, "ShapeToolButton"));
+            Assert.Equal("Cut to shape", Named(root, "ShapeToolButton"));
             Assert.Equal("Duplicate", Named(root, "DuplicateToolButton"));
             Assert.Equal("Pin in place", Named(root, "PinToolButton"));
             Assert.Equal("Delete", Named(root, "DeleteToolButton"));

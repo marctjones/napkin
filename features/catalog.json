@@ -1253,6 +1253,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-VIEW-11",
+      "area": "ui",
+      "title": "The tool keys work in 3D and say why not in a standard view",
+      "acceptance": "Open the coffee table, select the south apron and press 7: R holds a plain board to place, S puts it down and is the select tool, still in 3D; 3 then C says the workshop is not in Front yet and opens nothing; W brings the plan forward with the wall tool.",
+      "milestone": "M2",
+      "issue": 168,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-SET-07",
       "area": "ui",
       "title": "The last view is remembered; 2D plan opens Top",
