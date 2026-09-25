@@ -222,7 +222,12 @@ public sealed class StockToolbox : Border
             AutomationProperties.SetName(button, item.Name);
             AutomationProperties.SetHelpText(button, item.HoverText);
 
-            button.PointerEntered += (_, _) =>
+            // Not PointerEntered: Avalonia raises that when a drawer opens under a stationary
+            // pointer too (re-hit-testing on layout), which made the readout show the item under
+            // the cursor instead of what was just armed (#184). PointerMoved only fires for an
+            // actual pointer move, so a drawer opening under a resting pointer does not count as a
+            // hover.
+            button.PointerMoved += (_, _) =>
             {
                 _hovered = item;
                 UpdateReadout();
