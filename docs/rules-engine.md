@@ -18,8 +18,10 @@ read from Connecticut's own document (2022 CSBC w/ Errata #1, ED October 1, 2022
 
 - Loaded and cited (`ct-overlay-data.json`): Table R301.2 seismic design category B and frost line
   depth 42" (p. 131), snow and wind "as set forth in Appendix AY" (p. 131), and the verbatim R602.7
-  amendments, Table R602.7(1) footnote e and Table R602.7(3) footnote b (p. 145), both classified
-  **not-encoded** (the engine cannot substitute an input, and there is no interpolation).
+  amendments, Table R602.7(1) footnote e and Table R602.7(3) footnote b (p. 145). Both are also
+  **encoded** in `amendments/` as `amend-footnote` operations (the 30 psf substitution and the
+  30-50 psf interpolation, below); they are pending until the IRC base tables are loaded, then
+  apply automatically.
 - Appendix AY (pp. 157-160) is a per-municipality table of wind speeds and ground snow loads. It
   is **not transcribed**; enter your town's values as project site inputs.
 - The base layer `irc-2021` is **empty** ("base tables not loaded"): fill it from your own copy of
@@ -80,13 +82,19 @@ my-packs/
    - Numbers are whole (`30`, never `30.0`); lengths are exact text (`"6ft 0in"`, `"3-1/2in"`).
    - **Footnotes**: transcribe the text, set `appliesTo` (`table` or `rows`) and classify each:
      `not-encoded` (shown with results), `as-rows` (already in the rows), `as-limit` with `limit:
-     {input, above}` or `{input, equals}`. An unclassified footnote makes the table invalid.
+     {input, above}` or `{input, equals}`, or `as-operations` with `operations` (below). An
+     unclassified footnote makes the table invalid.
    - **Rows**: a stable `id`, one value per input, `header: {plies, nominal}`, `jackStuds`,
      `kingStuds`, `location` (page and row as printed), optional `footnotes: [ids]`.
 4. **Amendments**: one file per table with `table`, `source`, `location` (where you checked the
    amendment list) and `operations`. Empty means "not amended" — and saying so is required. Ops:
    `add`/`amend` (with `row`), `delete` (with `rowId`), `add-table`/`amend-table` (with `table`),
    `delete-table`; each with its own `source` and `location`. They mirror the state's Add/Amd/Del.
+   `amend-footnote` (with `footnote`: a whole footnote object, same id) replaces one footnote of
+   the table below and keeps its rows. On a table the base layer does not have yet, it is
+   **pending**: the pack still loads, `LoadedPack.Pending` lists it, and it applies the moment
+   the table is added. Connecticut's R602.7(1) footnote e and R602.7(3) footnote b ship this way
+   in `packs/packs/us-ct-2022/amendments/`.
 5. **Golden cases** (design §8.2), written **from the source, never copied from your pack**:
    `pack`, `table`, `source`, `transcriber {who, on}`, `cases`: each has `row`, `inputs`,
    `location`, and `expect` = `sized {header, jackStuds, kingStuds}`, `outOfScope {reason,
@@ -103,6 +111,47 @@ Each case is its own test named `pack/table/row/index`. A pack that fails to loa
 problem (file, table, row, message) at once. Then have someone else check every row against the
 source (design §8.3) before setting `review.status` to `signed-off` with its checklist path.
 
+## Footnote operations: substitution and interpolation
+
+Decided 2026-09-25 (Marc, #157): where the adopted text says so, napkin applies it automatically.
+The engine does these two things **only** where a table's footnote declares them
+(`encodedAs: "as-operations"`, `appliesTo: "table"`); nothing else in the engine interpolates.
+Connecticut's footnote e, as encoded:
+
+```json
+{ "id": "e", "text": "Use 30 psf ground snow load for cases in which …", "encodedAs": "as-operations", "appliesTo": "table",
+  "operations": [
+    { "op": "substitute-input", "input": "groundSnowLoad", "below": 30, "use": 30,
+      "when": { "input": "roofLiveLoad", "atMost": 20 } },
+    { "op": "interpolate", "input": "groundSnowLoad", "between": [30, 50], "quantity": "headerSpan" } ] }
+```
+
+- **`substitute-input`**: an input strictly below `below` is taken as `use` when the `when`
+  input is at most `atMost`, and the trace says so, citing the footnote. When the `when` input
+  is above `atMost` the request is `OutOfScope` (`NarrowedByFootnote`) citing the footnote; when
+  it is not entered, `InputMissing` names it. It is asked for only then: a snow load of 30 psf or
+  more never needs a roof live load. `use` may not be below `below`. The condition inputs are the
+  numeric header inputs plus `roofLiveLoad` (a site value, whole psf, entered in *Edit → Adopted
+  code and site*).
+- **`interpolate`**: only for an input **strictly between** the two declared columns, which must
+  be adjacent bands of an upper-bound column present for every group of rows. Rows at the two
+  columns are paired by member; each member's span is `lowerSpan + (upperSpan − lowerSpan) ×
+  (input − lower) / (upper − lower)`, kept as an exact fraction of 1/1024″ units (no floating
+  point) and compared exactly to the opening; the smallest member whose span covers the opening
+  is chosen. The span is **shown** rounded **down** to 1/16″. Stud counts are never interpolated:
+  the larger of the two rows is used, and the trace says so. A member with a row at only one of
+  the two columns is not offered. `quantity` is always `headerSpan`.
+- **At a column exactly** the plain row is used; **outside** the pair nothing is interpolated
+  (between 50 and 70 psf the 70 psf column applies, as for any table).
+- The result's citation names the upper column's row and carries `Interpolation`: both rows and
+  spans, the weight as an exact fraction, the exact and shown span, and the footnote verbatim
+  with its source and page. The app shows "Interpolated between the 30 psf row (…) and the 50 psf
+  row (…) (CT 2022 footnote e, p. 145)" under the header.
+- Load checks: an unknown operation, a bound that is not a band, bands between the two bounds,
+  two interpolations or substitutions of one input, a member twice in one cell of an
+  interpolated column, or operations on a footnote not encoded `as-operations` make the pack
+  invalid.
+
 ## Using it from code
 
 ```csharp
@@ -117,8 +166,9 @@ engineer"), `InputMissing` (which site values to enter) or `NoData`.
 
 ## What the engine refuses to do
 
-- Guess: no interpolation, extrapolation, rounding of inputs or epsilon; a request no row covers
-  is `OutOfScope` citing the limit that stopped it.
+- Guess: no extrapolation, rounding of inputs or epsilon, and no interpolation except where a
+  footnote declares it (above); a request no row covers is `OutOfScope` citing the limit that
+  stopped it.
 - Default a hazard: an unset snow load, wind speed or width is `InputMissing`, never 0.
 - Load a doubtful pack: unknown fields, duplicate keys, `6.0`, off-grid lengths, unknown enums,
   gaps or overlaps between bands, an unclassified footnote, a dangling source, a conflicting
