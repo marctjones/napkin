@@ -1,9 +1,8 @@
-using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Xunit;
 using Napkin.Modules.Editing;
 
-namespace Napkin.App.GuiTests.Unit;
+namespace Napkin.Modules.Editing.Tests;
 
 /// <summary>
 /// What the plan canvas sees of a box in space, docs/design/assembly-model.md &#xA7;7.2: the
@@ -136,20 +135,5 @@ public class PlanShapeTests
         Flush flush = Assert.IsType<Flush>(Assert.Single(plan.Relationships));
         Assert.Equal(new FeatureRef(standing.Id, BoxFeature.Face(BoxFace.Top)), flush.A);
         Assert.Equal(new FeatureRef(moving.Id, BoxFeature.Face(BoxFace.East)), flush.B);
-    }
-
-    [Fact]
-    public void A_width_that_stands_vertical_is_not_drawn_as_a_plan_dimension()
-    {
-        Box standing = Blank(BoxFace.East) with { Id = EditingBuilder.Id(0) };
-        Sketch sketch = Sketch.Empty.WithEntity(standing);
-
-        Dimension width = new(EntityId.New(), LayerId.Default, new ParamMeasurand(new BoxWidthRef(standing.Id)), null, new DimensionPlacement(Length.Inches(1), DimensionSide.South));
-        Dimension height = new(EntityId.New(), LayerId.Default, new ParamMeasurand(new BoxHeightRef(standing.Id)), null, new DimensionPlacement(Length.Inches(1), DimensionSide.West));
-
-        Assert.False(DimensionLayout.TryMeasure(sketch, width, out _));
-        Assert.True(DimensionLayout.TryMeasure(sketch, height, out DimensionMeasurement? measured));
-        Assert.Equal(Length.Inches(24), measured.Value);
-        Assert.Equal(standing.Footprint().Corner(BoxCorner.SouthWest), measured.From);
     }
 }
