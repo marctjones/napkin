@@ -33,4 +33,11 @@
              CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- Synthetic packs roots (SYNTHETIC TEST DATA - NOT CODE VALUES) and the real shipped packs, read
+       from disk by the loader path the app uses. -->
+  <ItemGroup>
+    <Content Include="CodePacks/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\packs\**\*" Link="RealPacks\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

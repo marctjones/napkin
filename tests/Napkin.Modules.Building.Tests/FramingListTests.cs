@@ -511,7 +511,7 @@ public class FramingListTests
         Assert.Equal(
             [
                 "studs 16\" on centre: design default, not a code requirement",
-                "1 jack each side: a placeholder until the code check (M4 part 2)",
+                "1 jack and 1 king stud each side: a placeholder until the code check sizes the header",
             ],
             framing.Notes);
 

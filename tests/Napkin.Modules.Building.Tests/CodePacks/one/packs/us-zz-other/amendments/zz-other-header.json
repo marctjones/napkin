@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "table": "ZZ-OTHER-HEADER",
+  "source": "zz-synth-state",
+  "location": "synthetic amendment list: this table is not amended",
+  "operations": []
+}
