@@ -37,6 +37,24 @@ public readonly record struct FixedDimension(PartDimension Dimension, Length Val
 public static class StockAssignment
 {
     /// <summary>
+    /// What a stock field says back about what was typed into it: the library item it names, that
+    /// nothing was chosen, or that the library does not carry it — never a guess.
+    /// </summary>
+    public static string Readout(string? typed, MaterialsLibrary library)
+    {
+        string name = (typed ?? string.Empty).Trim();
+        if (name.Length == 0)
+        {
+            return "No stock chosen. The cut list shows the size you typed.";
+        }
+
+        return library.TryFind(name, out StockItem item)
+            ? item.HoverText
+            : $"\"{name}\" is not in this build's materials library. "
+              + "The cut list will say so rather than guess.";
+    }
+
+    /// <summary>
     /// Which of the three finished dimensions this stock item fixes, and at what.
     /// </summary>
     /// <remarks>

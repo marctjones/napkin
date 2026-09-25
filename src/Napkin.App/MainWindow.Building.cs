@@ -135,8 +135,6 @@ public partial class MainWindow
         + string.Join(", ", MaterialsLibrary.Shipped.SpacingsFor("Wall").Select(spacing => $"{spacing.Name} ({spacing.Source.ShortForm})"))
         + ". Saved with the wall; 16\" is napkin's design default, not a code requirement.";
 
-    static string SpacingText(Length spacing) => $"{spacing.Format(new InchesOnlyFormat(16)).Text} on centre";
-
     /// <summary>What a table's value for "supports" reads as in the picker: its words, dashes as spaces.</summary>
     public static string SupportsText(string value) => value.Replace('-', ' ');
 
@@ -191,7 +189,7 @@ public partial class MainWindow
         // many changed, how many became flagged and how many can no longer be computed (#19, #39).
         if (code != _codeShown)
         {
-            changes.Add(SwitchSummary(code, CodeCheck.Report(_checksShown, now), BracingCheck.Report(_bracingShown, bracing)));
+            changes.Add(CodeCheck.SwitchSummary(code, CodeCheck.Report(_checksShown, now), BracingCheck.Report(_bracingShown, bracing)));
         }
 
         changes.AddRange(BracingCheck.Changes(_bracingShown, bracing));
@@ -220,21 +218,6 @@ public partial class MainWindow
         }
 
         return true;
-    }
-
-    /// <summary>"Now checking against ZZ BRACE B (…): every result recomputed; 2 changed, 1 newly flagged, none can no longer be computed."</summary>
-    static string SwitchSummary(AdoptedCodeRef? code, RecomputeReport headers, BracingRecomputeReport bracing)
-    {
-        // A result that had no answer and still has none (only the pack named in it differs) is not counted as changed.
-        int changed = headers.Changes.Count(change => change.Kind is not (ChangeKind.CitationOnly or ChangeKind.NoAnswerChanged))
-                      + bracing.Changes.Count(change => change.Kind is not (BracingChangeKind.CitationOnly or BracingChangeKind.NoAnswerChanged));
-        int flagged = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope) + bracing.NewlyFlagged.Count();
-        int lost = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToNoAnswer or ChangeKind.OutOfScopeToNoAnswer) + bracing.NoLongerComputable.Count();
-        string under = code is null ? "No code resolves now" : $"Now checking against {code.ShortName} ({code.BaseCode}, pack {code.PackId} rev {code.Revision})";
-        return $"{under}: every result recomputed; {Count(changed, "changed", "changed")}, {Count(flagged, "newly flagged", "newly flagged")}, "
-               + $"{Count(lost, "can no longer be computed", "can no longer be computed")}.";
-
-        static string Count(int n, string one, string many) => n == 0 ? $"none {many}" : $"{n} {(n == 1 ? one : many)}";
     }
 
     /// <summary>Fills the panel's framing part for a wall or an opening, or hides it for anything else.</summary>
@@ -280,7 +263,7 @@ public partial class MainWindow
         _fillingSpacing = true;
         try
         {
-            StudSpacingBox.ItemsSource = SpacingChoices.Select(SpacingText).ToArray();
+            StudSpacingBox.ItemsSource = SpacingChoices.Select(FramingList.SpacingWords).ToArray();
             StudSpacingBox.SelectedIndex = Array.IndexOf(SpacingChoices, framing.Spacing);
             ToolTip.SetTip(StudSpacingBox, SpacingTip);
         }
@@ -550,6 +533,6 @@ public partial class MainWindow
         }
 
         WallInputs inputs = (wall.Box.WallInputs ?? new WallInputs(null, null)) with { StudSpacing = spacing };
-        Editor.Apply(new SetWallInputs(wall.Id, inputs), $"Set {wall.Name}'s studs at {SpacingText(spacing)}");
+        Editor.Apply(new SetWallInputs(wall.Id, inputs), $"Set {wall.Name}'s studs at {FramingList.SpacingWords(spacing)}");
     }
 }

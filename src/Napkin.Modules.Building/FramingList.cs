@@ -190,6 +190,9 @@ public sealed record FramingOptions
 /// </remarks>
 public static class FramingList
 {
+    /// <summary>A stud spacing as the spacing picker writes it, e.g. <c>16" on centre</c>.</summary>
+    public static string SpacingWords(Length spacing) => $"{spacing.Format(new InchesOnlyFormat(16)).Text} on centre";
+
     /// <summary>The frame of every wall in a sketch, in id order.</summary>
     public static ImmutableArray<WallFraming> Of(Sketch sketch, MaterialsLibrary library, FramingOptions? options = null)
     {
