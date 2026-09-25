@@ -241,6 +241,40 @@ public class FirmUpProposalsTests
 
     [Trait("Feature", "GEO-019")]
     [Fact]
+    public void Alongside_faces_are_ordered_by_the_first_parts_face_when_the_second_is_turned()
+    {
+        // Base 6 x 6 x 1 on the floor, unturned. Block 6 x 6 x 1 turned a quarter turn anticlockwise
+        // about its anchor (6, 0, 1): local +x runs world +y, local +y runs world -x, so its extent is
+        // x 0..6, y 0..6, z 1..2, exactly over the base. Its faces now face: South east, East north,
+        // North west, West south.
+        // Against: Base top against Block bottom. Alongside, X first: Base east with Block south, Base
+        // west with Block north; then Y by the base's face South before North: Base south with Block
+        // west, Base north with Block east — not Block's own face order, which would put east first.
+        Box floor = Plank("Base", 0, 0, 6, 6, depth: 1);
+        EntityId id = new(new Guid(++next, 0, 0, new byte[8]));
+        Box block = new(id, LayerId.Default, new Point3(In(6), In(0), In(1)), In(6), In(6), In(1), BoxFace.Top, Angle.Zero.Rotate90(1))
+        {
+            Name = "Block",
+            Part = new Part(null, null, 1, new PlanAxes(PartDimension.Length, PartDimension.Width)),
+        };
+        Assert.Equal((new Point3(In(0), In(0), In(1)), new Point3(In(6), In(6), In(2))), JointGeometry.Extent(block));
+
+        ImmutableArray<FirmUpProposal> proposals = FirmUpProposals.For(Sketched(floor, block), Ids(floor, block));
+
+        Assert.Equal(
+            [
+                (floor.Id, BoxFace.Top, block.Id, BoxFace.Bottom),
+                (floor.Id, BoxFace.East, block.Id, BoxFace.South),
+                (floor.Id, BoxFace.West, block.Id, BoxFace.North),
+                (floor.Id, BoxFace.South, block.Id, BoxFace.West),
+                (floor.Id, BoxFace.North, block.Id, BoxFace.East),
+            ],
+            proposals.Select(Of).ToArray());
+        Assert.Equal("Base's south face flush with Block's south face", proposals[3].Sentence);
+    }
+
+    [Trait("Feature", "GEO-019")]
+    [Fact]
     public void A_part_with_no_name_is_called_a_part()
     {
         Box first = Plank("", 0, 0, 48, 6);
