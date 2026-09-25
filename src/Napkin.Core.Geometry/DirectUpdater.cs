@@ -68,6 +68,16 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetCode code => new Solved(sketch with { Code = code.Code }, ChangeSet.Empty),
             SetSite site => new Solved(sketch with { Site = site.Site }, ChangeSet.Empty),
             SetWallInputs wall => ApplySetWallInputs(sketch, wall),
+            SetPhase phase => sketch.Find(phase.Id) is { } phased
+                ? new Solved(sketch.WithEntity(phased with { Phase = phase.Phase }), ChangeSet.Empty with { Modified = [phase.Id] })
+                : new Rejected(RejectionReason.UnknownEntity),
+            SetRoomInputs room => ApplySetRoomInputs(sketch, room),
+            SetNote note => sketch.Find(note.Id) switch
+            {
+                Note found => new Solved(sketch.WithEntity(found with { Text = note.Text, Symbol = note.Symbol }), ChangeSet.Empty with { Modified = [note.Id] }),
+                null => new Rejected(RejectionReason.UnknownEntity),
+                _ => new Rejected(RejectionReason.DanglingReference),
+            },
 
             // A cut is in the blank's local frame and moves with it, so setting or removing one
             // moves no geometry and disturbs no relationship: structural, like a rename
@@ -296,6 +306,26 @@ public sealed class DirectUpdater : IGeometryUpdater
         return new Solved(sketch.WithEntity(changed), ChangeSet.Empty with { Modified = [box.Id] });
     }
 
+    private static UpdateResult ApplySetRoomInputs(Sketch sketch, SetRoomInputs request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        if (request.Inputs is { } room && RoomRules.Refusal(room) is not null)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        return new Solved(sketch.WithEntity(box with { Room = request.Inputs }), ChangeSet.Empty with { Modified = [box.Id] });
+    }
+
     private static UpdateResult ApplySetPart(Sketch sketch, SetPart request)
     {
         if (sketch.Find(request.Box) is not { } entity)
@@ -516,6 +546,15 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.UnknownEntity);
         }
 
+        if (entity is Note placed)
+        {
+            // A note has no relationships and no Z: it goes where it is put (renovation §7).
+            Point2 at = new(request.Anchor.X, request.Anchor.Y);
+            return at == placed.Position
+                ? new Solved(sketch, ChangeSet.Empty)
+                : new Solved(sketch.WithEntity(placed with { Position = at }), ChangeSet.Empty with { Moved = [placed.Id] });
+        }
+
         if (entity is not (Box or Node))
         {
             // Only a box or a node carries coordinates of its own. This is a reference of the
@@ -626,6 +665,15 @@ public sealed class DirectUpdater : IGeometryUpdater
         if (sketch.Find(request.Id) is not { } entity)
         {
             return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is Note note)
+        {
+            // A note has no relationships to carry and no Z: it moves by the drag's plan part alone.
+            Vector2 plan = new(request.Delta.Dx, request.Delta.Dy);
+            return plan == Vector2.Zero
+                ? new Solved(sketch, ChangeSet.Empty)
+                : new Solved(sketch.WithEntity(note with { Position = note.Position + plan }), ChangeSet.Empty with { Moved = [note.Id] });
         }
 
         HashSet<EntityId> seed = entity switch
@@ -1104,7 +1152,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         _ => sketch,
     };
 
-    private static Sketch DemoteDimensions(
+    internal static Sketch DemoteDimensions(
         Sketch sketch,
         Func<RelationshipId, bool> wasRemoved,
         out ImmutableHashSet<EntityId> demoted)
@@ -1125,7 +1173,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         return result;
     }
 
-    private static IEnumerable<EntityId> MeasurandEntities(Measurand measurand) => measurand switch
+    internal static IEnumerable<EntityId> MeasurandEntities(Measurand measurand) => measurand switch
     {
         ParamMeasurand param => [param.Param.Owner],
         AxisMeasurand axis => [axis.From.Owner, axis.To.Owner],

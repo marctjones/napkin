@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -16,6 +16,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Top",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -38,6 +39,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": [
         {
           "kind": "roundedCorner",
@@ -66,6 +68,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, south-west",
+      "phase": "new",
       "anchor": {
         "x": 1536,
         "y": 1536,
@@ -88,6 +91,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -95,6 +99,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, south-east",
+      "phase": "new",
       "anchor": {
         "x": 45056,
         "y": 1536,
@@ -117,6 +122,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -124,6 +130,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, north-west",
+      "phase": "new",
       "anchor": {
         "x": 1536,
         "y": 20480,
@@ -146,6 +153,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -153,6 +161,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, north-east",
+      "phase": "new",
       "anchor": {
         "x": 45056,
         "y": 20480,
@@ -175,6 +184,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -182,6 +192,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Apron, long, south",
+      "phase": "new",
       "anchor": {
         "x": 4096,
         "y": 1536,
@@ -204,6 +215,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -211,6 +223,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Apron, long, north",
+      "phase": "new",
       "anchor": {
         "x": 4096,
         "y": 22272,
@@ -233,6 +246,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -240,6 +254,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Apron, short, west",
+      "phase": "new",
       "anchor": {
         "x": 1536,
         "y": 4096,
@@ -262,6 +277,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -269,6 +285,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Apron, short, east",
+      "phase": "new",
       "anchor": {
         "x": 46848,
         "y": 4096,
@@ -291,6 +308,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -298,6 +316,7 @@
       "type": "dimension",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Top width",
+      "phase": "new",
       "measures": {
         "kind": "boxWidth",
         "box": "50000000-0000-4000-8000-000000000001"
@@ -313,6 +332,7 @@
       "type": "dimension",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Top depth",
+      "phase": "new",
       "measures": {
         "kind": "boxHeight",
         "box": "50000000-0000-4000-8000-000000000001"

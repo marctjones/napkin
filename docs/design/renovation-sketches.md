@@ -1,9 +1,8 @@
 # Renovation sketches: existing, new and demolished, rooms, and the area takeoff
 
-Status: **DRAFT — awaiting Marc's sign-off.** Implementation of the slices in §11 (#160–#164) is not
+Status: **Signed off by Marc 2026-09-25 with the recommended decisions (#164).** Milestone **M8 Renovation**.
 
-> **Format-version coordination (2026-09-25):** this note and `sketch-mode.md` each ask for one scene-format bump (8 to 9). Whichever is built first takes 9; the other takes the next number. Neither should assume 9.
-authorized until signed off. Milestone **M8 Renovation**.
+> **Format-version coordination (2026-09-25):** this note and `sketch-mode.md` each asked for one scene-format bump. Sketch mode was built first and took 9 (#170); this note takes **10**, and the sections below say so.
 
 Design note written by Fable per [`PLAN.md`](../../PLAN.md), for Marc's ask (2026-09-25): napkin
 sketches of additions and renovations, "like adding in a window or finishing an unfinished room",
@@ -318,9 +317,9 @@ The status bar's entity line ends with the phase: "Wall 1, existing". No legend.
 
 ---
 
-## 7. The file format: one bump, 8 → 9
+## 7. The file format: one bump, 9 → 10
 
-Every version-8 file is refused, with no converter; every committed sample is rewritten in the same
+Every version-9 file is refused, with no converter; every committed sample is rewritten in the same
 change (slice A). The format keeps having no optional fields: every field below is written every
 time.
 
@@ -418,7 +417,7 @@ file carries 1024ths (91 1/2" = 93696, 175" = 179200, 144" = 147456, 78 1/2" = 8
 
 ### 10.1 The samples
 
-`samples/basement-room.{design.md,scene.json,expected.json}` — §2 exactly, formatVersion 9.
+`samples/basement-room.{design.md,scene.json,expected.json}` — §2 exactly, formatVersion 10.
 `samples/window-in-existing-wall.{…}` — §3; its code check is exercised under the synthetic header
 pack the building tests already use (`tests/Napkin.Modules.Building.Tests/CodePacks`, NOT CODE
 VALUES), whose exterior-bearing row for this request is arranged to answer **(2) 2x6, 1 jack and 1
@@ -499,8 +498,8 @@ said: "Say whether Wall 1 is bearing".
 ### 10.4 Golden cases (unit)
 
 Project (`Napkin.Core.Project.Tests`):
-1. Format 9 round-trips `phase`, `wall.side/bearing/header`, `room`, `note`; each refusal of §7
-   is hit by one malformed file naming the field; a version-8 file is refused naming both versions.
+1. Format 10 round-trips `phase`, `wall.side/bearing/header`, `room`, `note`; each refusal of §7
+   is hit by one malformed file naming the field; a version-9 file is refused naming both versions.
 
 Geometry (`Napkin.Core.Geometry.Tests`):
 2. `Sketch.After()` / `Before()` drop the right entities and the relationships that name them; the
@@ -547,7 +546,7 @@ disjoint between slices except the recurring collision points (`napkin.sln`,
 
 | Slice | What | Model | Files | Depends on |
 |---|---|---|---|---|
-| **A** (#160) | `Phase` on `Entity`; `Note` entity; `WallInputs` side/bearing/header; `RoomInputs`; `formatVersion` 9 with every refusal of §7; `Sketch.After()`/`Before()`; the `note` arms in every switch; **Edit → Phase**, the panel's Phase row, the three drawing styles in plan and 3D; cut list New-only; the Demolition section for parts; bump every sample; `docs/file-format.md`; tests 1, 2, 11 | Sonnet | `Napkin.Core.Geometry/Entity.cs`, `Sketch.cs`, new `Note.cs`, `Propagator.cs`, `DirectUpdater.cs`, `RelationshipChecker.cs`; `Napkin.Core.Project/*`; `Napkin.Modules.Furniture/CutList.cs`; `Napkin.App` (Edit menu, panel row, `CanvasPalette`, `CanvasView`, `ModelView`, shopping-list window's Demolition section); `samples/*.json`; `docs/file-format.md` | — |
+| **A** (#160) | `Phase` on `Entity`; `Note` entity; `WallInputs` side/bearing/header; `RoomInputs`; `formatVersion` 10 with every refusal of §7; `Sketch.After()`/`Before()`; the `note` arms in every switch; **Edit → Phase**, the panel's Phase row, the three drawing styles in plan and 3D; cut list New-only; the Demolition section for parts; bump every sample; `docs/file-format.md`; tests 1, 2, 11 | Sonnet | `Napkin.Core.Geometry/Entity.cs`, `Sketch.cs`, new `Note.cs`, `Propagator.cs`, `DirectUpdater.cs`, `RelationshipChecker.cs`; `Napkin.Core.Project/*`; `Napkin.Modules.Furniture/CutList.cs`; `Napkin.App` (Edit menu, panel row, `CanvasPalette`, `CanvasView`, `ModelView`, shopping-list window's Demolition section); `samples/*.json`; `docs/file-format.md` | — |
 | **B** (#161) | Corners (§4.1) and the seamless join in plan; code-check routing (§4.3) and the typed header in `FramingOptions`; the framing diff (§6.3) and its Demolition rows; §4.4's note; the message-bar sentence; `samples/window-in-existing-wall`; the panel's Side/Bearing/Header; tests 3, 5, 6, 10 (example 2) | **Opus** (three modules' switches meet here and the diff is easy to get subtly wrong) | `Napkin.Modules.Building/Wall.cs`, `FramingList.cs`, `CodeCheck.cs`, new `WallJoin.cs`, new `FramingDiff.cs`; `Napkin.App/MainWindow.Building.cs`, `CutListWindow`; `docs/building.md` | A |
 | **C** (#162) | `Room` reading, bounding walls (§4.2), `AreaTakeoff.Of` (§5), out-of-square (§5.6), bays; **Draw → Room** and the room panel block; the Area takeoff section and CSV; `samples/basement-room`; tests 4, 7, 8, 9, 10 (example 1) | Sonnet | new `Napkin.Modules.Building/Room.cs`, `AreaTakeoff.cs`, `TakeoffLine.cs`; `Napkin.Modules.Editing/RoomTool.cs`, `MainWindow.Building.cs`, `CutListWindow`; `docs/building.md` | A |
 | **D** (#163) | **Draw → Note**, the six glyphs, hit-testing, the note panel, the Notes line and CSV | Sonnet | `Napkin.Modules.Editing/NoteTool.cs`, `Viewing/*`, `CutListWindow` | A |

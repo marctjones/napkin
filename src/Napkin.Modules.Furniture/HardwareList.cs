@@ -32,7 +32,8 @@ public static class HardwareList
         List<(string Name, List<(string Part, int Adds)> Parts)> lines = [];
         foreach (Box box in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
         {
-            if (box.Part is not { } part)
+            // Hardware on New parts only (renovation-sketches §6.2).
+            if (box.Part is not { } part || box.Phase != Phase.New)
             {
                 continue;
             }

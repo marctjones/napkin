@@ -72,12 +72,15 @@ public sealed record WallSegment(
 /// </remarks>
 public sealed record WallLine(Wall Wall, ImmutableArray<Opening> Openings, ImmutableArray<WallSegment> Segments)
 {
-    /// <summary>The wall line of a wall in a sketch.</summary>
+    /// <summary>
+    /// The wall line of a wall in the building as it will be (<see cref="Sketch.After"/>,
+    /// renovation-sketches §6.1): a demolished opening is not in it.
+    /// </summary>
     public static WallLine Of(Sketch sketch, Wall wall)
     {
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(wall);
-        ImmutableArray<Opening> openings = Opening.In(sketch, wall);
+        ImmutableArray<Opening> openings = Opening.In(sketch.After(), wall);
         Dictionary<EntityId, string> names = openings.ToDictionary(o => o.Id, o => o.Name);
 
         List<(EntityId? From, EntityId? To, Length Start, Length End)> spans = [];
@@ -120,11 +123,11 @@ public sealed record WallLine(Wall Wall, ImmutableArray<Opening> Openings, Immut
         return new WallLine(wall, openings, segments);
     }
 
-    /// <summary>Every wall's line in a sketch, in wall order.</summary>
+    /// <summary>Every wall's line in the building as it will be, in wall order: a demolished wall has no line.</summary>
     public static ImmutableArray<WallLine> All(Sketch sketch)
     {
         ArgumentNullException.ThrowIfNull(sketch);
-        return [.. Wall.All(sketch).Select(wall => Of(sketch, wall))];
+        return [.. Wall.All(sketch.After()).Select(wall => Of(sketch, wall))];
     }
 
     /// <summary>

@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -16,6 +16,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Plate",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -38,6 +39,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -45,6 +47,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Shim",
+      "phase": "new",
       "anchor": {
         "x": 242688,
         "y": 0,
@@ -67,6 +70,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -74,6 +78,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Wall",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -86,6 +91,7 @@
       "rotation": 0,
       "part": null,
       "wall": null,
+      "room": null,
       "cuts": []
     }
   ],

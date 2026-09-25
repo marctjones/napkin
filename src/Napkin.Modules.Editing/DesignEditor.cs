@@ -503,6 +503,7 @@ public sealed class DesignEditor
         Dimension => $"the dimension {id}",
         Segment => $"the line {id}",
         Node => $"the point {id}",
+        Note note => note.Name.Length > 0 ? note.Name : note.Text.Length > 0 ? $"the note \"{note.Text}\"" : "the note",
         _ => $"part {id}",
     };
 

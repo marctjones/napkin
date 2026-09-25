@@ -77,8 +77,14 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
     /// whether the part was entered roughly, its sizes as drawn and its stock not yet chosen.
     /// Required, true or false. Every version-8 file is refused.
     /// </para>
+    /// <para>
+    /// Version 10 added renovation (<c>docs/design/renovation-sketches.md</c> &#xA7;7): a <c>phase</c>
+    /// on every entity (existing, new, demolish); a wall's <c>side</c>, <c>bearing</c> and typed
+    /// <c>header</c>; a <c>room</c> on every box; and the <c>note</c> entity. Every version-9 file is
+    /// refused.
+    /// </para>
     /// </remarks>
-    public const int CurrentVersion = 9;
+    public const int CurrentVersion = 10;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);

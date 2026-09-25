@@ -19,24 +19,24 @@ public sealed class CutFormatTests
     /// </summary>
     private const string EveryKindOfCut = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Top",
+              "name": "Top", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 49152, "height": 24576, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": null,
-              "wall": null, "cuts": [
+              "wall": null, "room": null, "cuts": [
                 { "kind": "roundedCorner", "corner": "southWest", "radius": 1024 },
                 { "kind": "cornerCut", "corner": "southEast", "alongX": 3072, "alongY": 5120 },
                 { "kind": "curvedEdge", "edge": "north", "bow": "inward", "depth": 2048 }
               ] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Shelf front",
+              "name": "Shelf front", "phase": "new",
               "anchor": { "x": 0, "y": 40960, "z": 0 }, "width": 49152, "height": 24576, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": null,
-              "wall": null, "cuts": [
+              "wall": null, "room": null, "cuts": [
                 { "kind": "curvedEdge", "edge": "south", "bow": "outward", "depth": 2048 }
               ] }
           ],
@@ -56,7 +56,7 @@ public sealed class CutFormatTests
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Top",
+              "name": "Top", "phase": "new",
               "anchor": { "x": 0, "y": 0 }, "width": 49152, "height": 24576, "rotation": 0,
               "part": null }
           ],

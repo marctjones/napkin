@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -16,6 +16,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Plate, bottom",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -38,6 +39,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -45,6 +47,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Plate, top",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -67,6 +70,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -74,6 +78,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 1",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -96,6 +101,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -103,6 +109,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 2",
+      "phase": "new",
       "anchor": {
         "x": 16384,
         "y": 0,
@@ -125,6 +132,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -132,6 +140,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 3",
+      "phase": "new",
       "anchor": {
         "x": 32768,
         "y": 0,
@@ -154,6 +163,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -161,6 +171,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 4",
+      "phase": "new",
       "anchor": {
         "x": 49152,
         "y": 0,
@@ -183,6 +194,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -190,6 +202,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 5",
+      "phase": "new",
       "anchor": {
         "x": 65536,
         "y": 0,
@@ -212,6 +225,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -219,6 +233,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 6",
+      "phase": "new",
       "anchor": {
         "x": 81920,
         "y": 0,
@@ -241,6 +256,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -248,6 +264,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 7",
+      "phase": "new",
       "anchor": {
         "x": 98304,
         "y": 0,
@@ -270,6 +287,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -277,6 +295,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 8",
+      "phase": "new",
       "anchor": {
         "x": 114688,
         "y": 0,
@@ -299,6 +318,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -306,6 +326,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 9",
+      "phase": "new",
       "anchor": {
         "x": 131072,
         "y": 0,
@@ -328,6 +349,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -335,6 +357,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 10",
+      "phase": "new",
       "anchor": {
         "x": 147456,
         "y": 0,
@@ -357,6 +380,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -364,6 +388,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 11",
+      "phase": "new",
       "anchor": {
         "x": 163840,
         "y": 0,
@@ -386,6 +411,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -393,6 +419,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 12",
+      "phase": "new",
       "anchor": {
         "x": 180224,
         "y": 0,
@@ -415,6 +442,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -422,6 +450,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 13",
+      "phase": "new",
       "anchor": {
         "x": 196608,
         "y": 0,
@@ -444,6 +473,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -451,6 +481,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 14",
+      "phase": "new",
       "anchor": {
         "x": 212992,
         "y": 0,
@@ -473,6 +504,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -480,6 +512,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 15",
+      "phase": "new",
       "anchor": {
         "x": 229376,
         "y": 0,
@@ -502,6 +535,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -509,6 +543,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 16",
+      "phase": "new",
       "anchor": {
         "x": 245760,
         "y": 0,
@@ -531,6 +566,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -538,6 +574,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 17",
+      "phase": "new",
       "anchor": {
         "x": 262144,
         "y": 0,
@@ -560,6 +597,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -567,6 +605,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 18",
+      "phase": "new",
       "anchor": {
         "x": 278528,
         "y": 0,
@@ -589,6 +628,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -596,6 +636,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 19",
+      "phase": "new",
       "anchor": {
         "x": 294912,
         "y": 0,
@@ -618,6 +659,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -625,6 +667,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 20",
+      "phase": "new",
       "anchor": {
         "x": 311296,
         "y": 0,
@@ -647,6 +690,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -654,6 +698,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 21",
+      "phase": "new",
       "anchor": {
         "x": 327680,
         "y": 0,
@@ -676,6 +721,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -683,6 +729,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 22",
+      "phase": "new",
       "anchor": {
         "x": 344064,
         "y": 0,
@@ -705,6 +752,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -712,6 +760,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 23",
+      "phase": "new",
       "anchor": {
         "x": 360448,
         "y": 0,
@@ -734,6 +783,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -741,6 +791,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 24",
+      "phase": "new",
       "anchor": {
         "x": 376832,
         "y": 0,
@@ -763,6 +814,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -770,6 +822,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stud 25",
+      "phase": "new",
       "anchor": {
         "x": 393216,
         "y": 0,
@@ -792,6 +845,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     }
   ],

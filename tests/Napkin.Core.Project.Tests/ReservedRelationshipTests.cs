@@ -85,22 +85,22 @@ public sealed class ReservedRelationshipTests
     /// </summary>
     private const string SolverKinds = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "", "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] },
+              "name": "", "phase": "new", "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "", "anchor": { "x": 16384, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] },
+              "name": "", "phase": "new", "anchor": { "x": 16384, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000c", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "", "position": { "x": 4096, "y": 0 } },
+              "name": "", "phase": "new", "position": { "x": 4096, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000d", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "", "position": { "x": 12288, "y": 0 } },
+              "name": "", "phase": "new", "position": { "x": 12288, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000e", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "", "position": { "x": 12288, "y": 8192 } },
+              "name": "", "phase": "new", "position": { "x": 12288, "y": 8192 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000f", "type": "segment", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "",
+              "name": "", "phase": "new",
               "start": "0192f1a0-0000-4000-8000-00000000000d", "end": "0192f1a0-0000-4000-8000-00000000000e" }
           ],
           "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
@@ -133,12 +133,12 @@ public sealed class ReservedRelationshipTests
     /// <summary>A radius stated about a box, because there is no arc entity to state it about.</summary>
     private const string RadiusOfABox = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "", "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] }
+              "name": "", "phase": "new", "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "cuts": [] }
           ],
           "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
           "relationships": [

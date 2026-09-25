@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -16,6 +16,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Top",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -38,6 +39,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -45,6 +47,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, south-west",
+      "phase": "new",
       "anchor": {
         "x": 1536,
         "y": 1536,
@@ -67,6 +70,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -74,6 +78,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, north-west",
+      "phase": "new",
       "anchor": {
         "x": 1536,
         "y": 19456,
@@ -96,6 +101,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -103,6 +109,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, south-east",
+      "phase": "new",
       "anchor": {
         "x": 39936,
         "y": 1536,
@@ -125,6 +132,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -132,6 +140,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Leg, north-east",
+      "phase": "new",
       "anchor": {
         "x": 39936,
         "y": 19456,
@@ -154,6 +163,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -161,6 +171,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Apron, back",
+      "phase": "new",
       "anchor": {
         "x": 3072,
         "y": 20224,
@@ -183,6 +194,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -190,6 +202,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Apron, side, west",
+      "phase": "new",
       "anchor": {
         "x": 1536,
         "y": 3072,
@@ -212,6 +225,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -219,6 +233,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Apron, side, east",
+      "phase": "new",
       "anchor": {
         "x": 40704,
         "y": 3072,
@@ -241,6 +256,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -248,6 +264,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Front rail",
+      "phase": "new",
       "anchor": {
         "x": 3072,
         "y": 1536,
@@ -270,6 +287,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -277,6 +295,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Web",
+      "phase": "new",
       "anchor": {
         "x": 21120,
         "y": 2304,
@@ -299,6 +318,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -306,6 +326,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Slide cleat, west",
+      "phase": "new",
       "anchor": {
         "x": 2304,
         "y": 3072,
@@ -328,6 +349,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -335,6 +357,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Slide cleat, east",
+      "phase": "new",
       "anchor": {
         "x": 39936,
         "y": 3072,
@@ -357,6 +380,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -364,6 +388,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer side, left, A",
+      "phase": "new",
       "anchor": {
         "x": 3584,
         "y": 1536,
@@ -386,6 +411,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -393,6 +419,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer side, right, A",
+      "phase": "new",
       "anchor": {
         "x": 20096,
         "y": 1536,
@@ -415,6 +442,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -422,6 +450,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer box front, A",
+      "phase": "new",
       "anchor": {
         "x": 4096,
         "y": 1536,
@@ -449,6 +478,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -456,6 +486,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer box back, A",
+      "phase": "new",
       "anchor": {
         "x": 4096,
         "y": 17408,
@@ -478,6 +509,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -485,6 +517,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer bottom, A",
+      "phase": "new",
       "anchor": {
         "x": 4096,
         "y": 2048,
@@ -507,6 +540,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -514,6 +548,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer front, A",
+      "phase": "new",
       "anchor": {
         "x": 3200,
         "y": 768,
@@ -541,6 +576,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -548,6 +584,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer side, left, B",
+      "phase": "new",
       "anchor": {
         "x": 22400,
         "y": 1536,
@@ -570,6 +607,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -577,6 +615,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer side, right, B",
+      "phase": "new",
       "anchor": {
         "x": 38912,
         "y": 1536,
@@ -599,6 +638,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -606,6 +646,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer box front, B",
+      "phase": "new",
       "anchor": {
         "x": 22912,
         "y": 1536,
@@ -633,6 +674,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -640,6 +682,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer box back, B",
+      "phase": "new",
       "anchor": {
         "x": 22912,
         "y": 17408,
@@ -662,6 +705,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -669,6 +713,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer bottom, B",
+      "phase": "new",
       "anchor": {
         "x": 22912,
         "y": 2048,
@@ -691,6 +736,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -698,6 +744,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Drawer front, B",
+      "phase": "new",
       "anchor": {
         "x": 21632,
         "y": 768,
@@ -725,6 +772,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     }
   ],

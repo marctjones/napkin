@@ -23,15 +23,15 @@ internal static class Scenes
     /// <summary>A 30 inch by 4 inch box at the origin, with its width driven.</summary>
     internal const string OneBox = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Shelf",
+              "name": "Shelf", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": { "stock": "1x6", "species": null, "quantity": 1,
-                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false }, "wall": null, "cuts": [] }
+                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false }, "wall": null, "room": null, "cuts": [] }
           ],
           "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
           "relationships": [
@@ -48,17 +48,17 @@ internal static class Scenes
     /// </summary>
     internal const string TurnedBoxAndNode = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Shelf",
+              "name": "Shelf", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 324000,
               "part": { "stock": "1x6", "species": null, "quantity": 1,
-                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false }, "wall": null, "cuts": [] },
+                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false }, "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "", "position": { "x": 0, "y": 30720 } }
+              "name": "", "phase": "new", "position": { "x": 0, "y": 30720 } }
           ],
           "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
           "relationships": [
@@ -75,19 +75,19 @@ internal static class Scenes
     /// </summary>
     internal const string SegmentAndDimension = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "West end", "position": { "x": 0, "y": 0 } },
+              "name": "West end", "phase": "new", "position": { "x": 0, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000e", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "East end", "position": { "x": 30720, "y": 0 } },
+              "name": "East end", "phase": "new", "position": { "x": 30720, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000c", "type": "segment", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Centreline",
+              "name": "Centreline", "phase": "new",
               "start": "0192f1a0-0000-4000-8000-00000000000b", "end": "0192f1a0-0000-4000-8000-00000000000e" },
             { "id": "0192f1a0-0000-4000-8000-00000000000d", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Centreline length",
+              "name": "Centreline length", "phase": "new",
               "measures": { "kind": "axis",
                 "from": { "kind": "node", "node": "0192f1a0-0000-4000-8000-00000000000b" },
                 "to": { "kind": "node", "node": "0192f1a0-0000-4000-8000-00000000000e" },
@@ -108,14 +108,14 @@ internal static class Scenes
     /// <summary>The box, with a relationship kind that is reserved for the solver.</summary>
     internal const string TangentBetweenBoxEdges = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Shelf",
+              "name": "Shelf", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0,
-              "part": null, "wall": null, "cuts": [] }
+              "part": null, "wall": null, "room": null, "cuts": [] }
           ],
           "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
           "relationships": [
@@ -129,16 +129,16 @@ internal static class Scenes
     /// <summary>The same box written twice, under one id.</summary>
     internal const string TwoEntitiesUnderOneId = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Shelf",
-              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] },
+              "name": "Shelf", "phase": "new",
+              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Shelf",
-              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] }
+              "name": "Shelf", "phase": "new",
+              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "cuts": [] }
           ],
           "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
           "relationships": []
@@ -148,7 +148,7 @@ internal static class Scenes
     /// <summary>Two layers under one id.</summary>
     internal const string TwoLayersUnderOneId = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [
             { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" },
@@ -163,13 +163,13 @@ internal static class Scenes
     /// <summary>Two relationships, two ids, one statement — invariant 4 of the geometry design.</summary>
     internal const string TwoRelationshipsSayingTheSameThing = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Shelf",
-              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] }
+              "name": "Shelf", "phase": "new",
+              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "cuts": [] }
           ],
           "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
           "relationships": [
@@ -184,7 +184,7 @@ internal static class Scenes
     /// <summary>An empty design: no entities, no relationships, one layer.</summary>
     internal const string Empty = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [],

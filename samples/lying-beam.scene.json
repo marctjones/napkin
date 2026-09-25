@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -16,6 +16,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Beam, along X",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -38,6 +39,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -45,6 +47,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Beam, along Y",
+      "phase": "new",
       "anchor": {
         "x": 44544,
         "y": 0,
@@ -67,6 +70,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -74,6 +78,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Beam, upright",
+      "phase": "new",
       "anchor": {
         "x": 51200,
         "y": 0,
@@ -96,6 +101,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     },
     {
@@ -103,6 +109,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Beam, on its side",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 10240,
@@ -125,6 +132,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": []
     }
   ],

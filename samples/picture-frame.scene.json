@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -16,6 +16,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stile, left",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -38,6 +39,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": [
         {
           "kind": "cornerCut",
@@ -58,6 +60,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Stile, right",
+      "phase": "new",
       "anchor": {
         "x": 11264,
         "y": 13312,
@@ -80,6 +83,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": [
         {
           "kind": "cornerCut",
@@ -100,6 +104,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Rail, bottom",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -122,6 +127,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": [
         {
           "kind": "cornerCut",
@@ -142,6 +148,7 @@
       "type": "box",
       "layer": "00000000-0000-0000-0000-000000000001",
       "name": "Rail, top",
+      "phase": "new",
       "anchor": {
         "x": 11264,
         "y": 13312,
@@ -164,6 +171,7 @@
         "rough": false
       },
       "wall": null,
+      "room": null,
       "cuts": [
         {
           "kind": "cornerCut",

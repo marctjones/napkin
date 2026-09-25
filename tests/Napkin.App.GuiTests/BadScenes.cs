@@ -33,14 +33,14 @@ public static class BadScenes
     /// <summary>A 30&#x2033; by 4&#x2033; box with its width driven: a file that opens.</summary>
     public const string Good = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Shelf",
+              "name": "Shelf", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0,
-              "part": null, "wall": null, "cuts": [] }
+              "part": null, "wall": null, "room": null, "cuts": [] }
           ],
           "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
           "relationships": [
@@ -68,7 +68,7 @@ public static class BadScenes
 
     /// <summary>A file stamped with a format version this build does not read.</summary>
     public static string WrongVersion => Good
-        .Replace("\"formatVersion\": 9", "\"formatVersion\": 3", StringComparison.Ordinal);
+        .Replace("\"formatVersion\": 10", "\"formatVersion\": 3", StringComparison.Ordinal);
 
     /// <summary>
     /// A relationship the format defines but this build's updater cannot hold: <c>distance</c> is
@@ -81,16 +81,16 @@ public static class BadScenes
     /// </remarks>
     public const string UnsupportedRelationshipKind = """
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "West shelf",
-              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] },
+              "name": "West shelf", "phase": "new",
+              "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "East shelf",
-              "anchor": { "x": 40960, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "cuts": [] }
+              "name": "East shelf", "phase": "new",
+              "anchor": { "x": 40960, "y": 0, "z": 0 }, "width": 30720, "height": 4096, "depth": 768, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "cuts": [] }
           ],
           "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
           "relationships": [

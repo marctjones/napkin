@@ -1903,12 +1903,16 @@ public sealed class ModelView : Control
 
     void DrawPolygon(DrawingContext context, CanvasPalette palette, EntityStyle style, ScenePolygon polygon)
     {
+        // Existing is ghosted, demolish long-dashed and crossed (renovation §6.4).
+        Phase phase = _editor?.Sketch.Find(polygon.Box)?.Phase ?? Phase.New;
+        using DrawingContext.PushedState? ghost = phase == Phase.Existing ? context.PushOpacity(CanvasView.ExistingOpacity) : null;
+        bool demolish = phase == Phase.Demolish;
         FillPolygon(context, new SolidColorBrush(Tone(palette, style, polygon.Normal)), polygon);
 
         Pen pen = new(new SolidColorBrush(style.Stroke), Math.Min(style.StrokeThickness, 1.2))
         {
             LineJoin = PenLineJoin.Round,
-            DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
+            DashStyle = demolish ? new DashStyle([12, 6], 0) : style.Dashed ? new DashStyle([4, 3], 0) : null,
         };
         if (IsRough(polygon.Box))
         {
@@ -1916,7 +1920,14 @@ public sealed class ModelView : Control
             return;
         }
 
-        DrawEdges(context, pen, polygon, palette.Look.Line, style);
+        DrawEdges(context, pen, polygon, demolish ? SketchLine.Clean : palette.Look.Line, style);
+        // Crossed out on every face it shows, not only the top: a wall's top is a sliver.
+        if (demolish && polygon.Points.Length == 4)
+        {
+            Pen cross = new(new SolidColorBrush(style.Stroke), Math.Min(style.StrokeThickness, 1.2));
+            context.DrawLine(cross, _camera.Project(polygon.Points[0]), _camera.Project(polygon.Points[2]));
+            context.DrawLine(cross, _camera.Project(polygon.Points[1]), _camera.Project(polygon.Points[3]));
+        }
     }
 
     /// <summary>Whether a box is a rough part, which is drawn in the light pencil (sketch-mode §6.3).</summary>

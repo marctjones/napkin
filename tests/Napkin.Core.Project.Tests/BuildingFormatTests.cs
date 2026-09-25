@@ -19,14 +19,14 @@ public class BuildingFormatTests
 
     private const string Filled = $$"""
         {
-          "formatVersion": 9,
+          "formatVersion": 10,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
             { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
-              "name": "Wall",
+              "name": "Wall", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 147456, "height": 3584, "depth": 98304, "faceUp": "top", "rotation": 0,
-              "part": null, "wall": { "supports": "test-roof", "studSpacing": 24576, "bracing": {{Bracing}} }, "cuts": [] }
+              "part": null, "wall": { "supports": "test-roof", "studSpacing": 24576, "bracing": {{Bracing}}, "side": null, "bearing": null, "header": null }, "room": null, "cuts": [] }
           ],
           "relationships": [],
           "fastenerChoices": [],
@@ -119,10 +119,10 @@ public class BuildingFormatTests
     {
         // A version-5 file had no code, site or wall fields; it is refused for its version alone.
         string version5 = Scenes.OneBox
-            .With("\"formatVersion\": 9", "\"formatVersion\": 5")
+            .With("\"formatVersion\": 10", "\"formatVersion\": 5")
             .With("\"wall\": null, ", string.Empty);
 
-        LoadProblem problem = Scenes.RefuseWith(version5, LoadProblemKind.UnsupportedFormatVersion, "format version 5", "format version 9");
+        LoadProblem problem = Scenes.RefuseWith(version5, LoadProblemKind.UnsupportedFormatVersion, "format version 5", "format version 10");
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }
 
@@ -131,9 +131,9 @@ public class BuildingFormatTests
     public void A_version_7_file_is_refused_with_the_unsupported_version_message()
     {
         // A version-7 file had no bracing on a wall; it is refused for its version alone, no converter.
-        string version7 = Scenes.OneBox.With("\"formatVersion\": 9", "\"formatVersion\": 7");
+        string version7 = Scenes.OneBox.With("\"formatVersion\": 10", "\"formatVersion\": 7");
 
-        LoadProblem problem = Scenes.RefuseWith(version7, LoadProblemKind.UnsupportedFormatVersion, "format version 7", "format version 9");
+        LoadProblem problem = Scenes.RefuseWith(version7, LoadProblemKind.UnsupportedFormatVersion, "format version 7", "format version 10");
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }
 

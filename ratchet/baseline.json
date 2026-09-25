@@ -2,16 +2,16 @@
   "schema": 1,
   "coverage": {
     "Napkin.Core.Geometry": {
-      "line": 95.98,
-      "branch": 92.36
+      "line": 96.07,
+      "branch": 92.56
     },
     "Napkin.Core.Materials": {
       "line": 98.28,
       "branch": 90.46
     },
     "Napkin.Core.Project": {
-      "line": 93.33,
-      "branch": 87.42
+      "line": 93.56,
+      "branch": 87.81
     },
     "Napkin.Core.RulesEngine": {
       "line": 95.78,
@@ -22,8 +22,8 @@
       "branch": 99.51
     },
     "Napkin.Modules.Editing": {
-      "line": 98.01,
-      "branch": 93.33
+      "line": 98.04,
+      "branch": 93.35
     },
     "Napkin.Modules.Furniture": {
       "line": 100,
@@ -31,7 +31,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 86,
+    "workflowsPassed": 87,
     "workflowIds": [
       "CVS-011",
       "GUI-ASSEM-01",
@@ -85,6 +85,7 @@
       "GUI-JOIN-05",
       "GUI-JOIN-06",
       "GUI-JOIN-07",
+      "GUI-RENO-05",
       "GUI-SET-01",
       "GUI-SET-02",
       "GUI-SET-03",

@@ -14,19 +14,20 @@ internal static class SketchInk
         bool dashed,
         Point a,
         Point b,
-        int seed)
+        int seed,
+        bool longDash = false)
     {
         if (line == SketchLine.Carpenter)
         {
             IReadOnlyList<Point> points = SketchStroke.Wobble(a, b, seed, line);
-            Polyline(context, points, Pen(ink, 0.3, 3.6, dashed));
-            Polyline(context, points, Pen(ink, 0.92, 2.4, dashed));
+            Polyline(context, points, Pen(ink, 0.3, 3.6, dashed, longDash));
+            Polyline(context, points, Pen(ink, 0.92, 2.4, dashed, longDash));
             return;
         }
 
         // Pencil: pressed twice, the second pass not quite where the first was.
-        Polyline(context, SketchStroke.Wobble(a, b, seed, line), Pen(ink, 0.85, 0.9, dashed));
-        Polyline(context, SketchStroke.Wobble(a, b, unchecked((seed * 31) + 17), line), Pen(ink, LightOpacity, LightWidth, dashed));
+        Polyline(context, SketchStroke.Wobble(a, b, seed, line), Pen(ink, 0.85, 0.9, dashed, longDash));
+        Polyline(context, SketchStroke.Wobble(a, b, unchecked((seed * 31) + 17), line), Pen(ink, LightOpacity, LightWidth, dashed, longDash));
     }
 
     /// <summary>
@@ -43,10 +44,15 @@ internal static class SketchInk
     /// <summary>The light pencil's width in pixels: the pencil's second pass.</summary>
     public const double LightWidth = 0.7;
 
-    static Pen Pen(Color ink, double opacity, double width, bool dashed) => new(
+    /// <summary>
+    /// The pen. <paramref name="longDash"/> is a demolished thing's 12/6 dash (renovation-sketches
+    /// §6.4), three times an opening's 4/3 so the two are never mistaken for each other.
+    /// </summary>
+    static Pen Pen(Color ink, double opacity, double width, bool dashed, bool longDash = false) => new(
         new SolidColorBrush(ink, opacity),
         width,
-        dashed ? new DashStyle([4 * 1.2 / width, 3 * 1.2 / width], 0) : null,
+        longDash ? new DashStyle([12 * 1.2 / width, 6 * 1.2 / width], 0)
+        : dashed ? new DashStyle([4 * 1.2 / width, 3 * 1.2 / width], 0) : null,
         PenLineCap.Square,
         PenLineJoin.Round);
 

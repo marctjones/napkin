@@ -19,6 +19,13 @@ public abstract record Entity(EntityId Id, LayerId Layer)
     /// </remarks>
     public string Name { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Whether this is already there, going in, or coming out (format version 10,
+    /// <c>docs/design/renovation-sketches.md</c> §6.1). <see cref="Phase.New"/> unless set; a copy
+    /// carries it.
+    /// </summary>
+    public Phase Phase { get; init; } = Phase.New;
+
     /// <summary>This entity moved to another layer.</summary>
     public abstract Entity OnLayer(LayerId layer);
 }
@@ -133,6 +140,13 @@ public sealed record Box(
     /// <see cref="Part"/>, so undo, copy and delete carry it; nothing in the kernel reads it.
     /// </summary>
     public WallInputs? WallInputs { get; init; }
+
+    /// <summary>
+    /// The finishes and measurements the person entered for this box as a room, or
+    /// <see langword="null"/> when none (format version 10, renovation-sketches §7). Nothing in the
+    /// kernel reads it.
+    /// </summary>
+    public RoomInputs? Room { get; init; }
 
     /// <summary>
     /// What has been cut off the blank, in site order. Empty for a plain rectangle
@@ -292,6 +306,7 @@ public sealed record Box(
            && Rotation == other.Rotation
            && Part == other.Part
            && WallInputs == other.WallInputs
+           && Room == other.Room
            && _cuts.SequenceEqual(other._cuts);
 
     /// <inheritdoc/>
@@ -307,6 +322,7 @@ public sealed record Box(
         hash.Add(Rotation);
         hash.Add(Part);
         hash.Add(WallInputs);
+        hash.Add(Room);
         foreach (Cut cut in _cuts)
         {
             hash.Add(cut);
