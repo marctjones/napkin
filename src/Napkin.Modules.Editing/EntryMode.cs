@@ -45,6 +45,24 @@ public static class RoughEntry
             ? new PlanAxes(PartDimension.Width, PartDimension.Length)
             : new PlanAxes(PartDimension.Length, PartDimension.Width);
 
+    /// <summary>
+    /// What typing a size puts to the updater (&#xA7;3.1): the size request, and — when the box is a
+    /// rough part — the clearing of its rough mark in the same batch, so one undo restores both. Typing
+    /// a number is itself a firming: napkin has been told what this number is meant to be.
+    /// </summary>
+    /// <param name="sketch">The design.</param>
+    /// <param name="box">The box whose size was typed.</param>
+    /// <param name="sizeRequest">The request that states the size.</param>
+    public static Request Typed(Sketch sketch, EntityId box, Request sizeRequest)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(sizeRequest);
+
+        return sketch.Find<Box>(box)?.Part is { Rough: true } part
+            ? Batch.Of(sizeRequest, new SetPart(box, part with { Rough = false }))
+            : sizeRequest;
+    }
+
     /// <summary>The live size while dragging, for the status bar: "4' × 1'", in the label format.</summary>
     public static string DrawingReadout(Length width, Length height, LengthFormat format)
     {

@@ -230,6 +230,38 @@ public class RoughEntryTests
     public void Q_toggles_rough_in_the_editing_keys()
         => Assert.Equal(EditCommand.ToggleRough, KeyMaps.Edit.Find(new Keystroke(KeyName.Q, KeyMods.None)));
 
+    [Fact]
+    public void Typing_a_size_on_a_rough_part_states_it_and_clears_the_mark_in_one_undo_step()
+    {
+        DesignEditor editor = new();
+        Box plank = Drawn(EntryMode.Rough, Point2.Inches(0, 0), Point2.Inches(48, 12));
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(new AddEntity(plank), "Drew a plank"));
+        BoxWidthRef width = new(plank.Id);
+
+        Request typed = RoughEntry.Typed(editor.Sketch, plank.Id, DimensionEntry.RequestFor(editor.Sketch, width, Length.Inches(36)));
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(typed, "Set width"));
+
+        Box after = editor.Sketch.Find<Box>(plank.Id)!;
+        Assert.Equal(Length.Inches(36), after.Width);
+        Assert.False(after.Part!.Rough);
+
+        Assert.True(editor.Undo());
+        Box back = editor.Sketch.Find<Box>(plank.Id)!;
+        Assert.Equal(Length.Inches(48), back.Width);
+        Assert.True(back.Part!.Rough);
+    }
+
+    [Fact]
+    public void Typing_a_size_on_a_firm_part_or_a_plain_box_is_just_the_size()
+    {
+        Box plain = Drawn(EntryMode.Precise, Point2.Inches(0, 0), Point2.Inches(48, 12));
+        Sketch sketch = Sketch.Empty.WithEntity(plain);
+        Request size = DimensionEntry.RequestFor(sketch, new BoxWidthRef(plain.Id), Length.Inches(36));
+
+        Assert.Same(size, RoughEntry.Typed(sketch, plain.Id, size));
+        Assert.Same(size, RoughEntry.Typed(sketch, EntityId.New(), size));
+    }
+
     static Box Drawn(EntryMode mode, Point2 from, Point2 to)
     {
         RectangleTool tool = new();
