@@ -237,8 +237,9 @@ sawhorse — is a plain mitre; the same leg with `Reference = X` is compound at 
 edges of the wide face), `Bottom`/`Top` for local ∓Z (the two wide faces themselves). With `n`
 oriented along the strut (`n · d > 0`), the long point at the `From` end is the corner whose
 local-Y sign is `sign(n · y)` and whose local-Z sign is `sign(n · z)`; at the `To` end both signs
-flip. For a plain mitre `n · z = 0` and the long point is a whole edge, which is what the
-`CornerCut` sentence already names. §9's footstool with `Reference = X` pins this: long point
+flip. (Assembly-model §3a.3 step 6 states the corner-site rule with the *outward* normal; the two
+conventions agree, and §9's bench confirms it.) For a plain mitre `n · z = 0` and the long point
+is a whole edge, which is what the `CornerCut` sentence already names. §9's footstool with `Reference = X` pins this: long point
 south-bottom at the foot, north-top at the seat.
 
 ### 2.3 The sentences
@@ -306,8 +307,8 @@ value — plus stock and species (assembly-model §3a.6). Two additions:
   longer legs and a wider seat have more splay, exactly, through relationships that already exist.
 - `Height` and `Depth` are ordinary size refs (`ParamValue`, `EqualParam`, stock assignment).
   There is **no `StrutLengthRef`**: a typed length is `Distance`, tolerance class, #28's.
-- `Anchored(strut)` pins all eight scalars (now nine with `Reference`, which is discrete and never
-  a scalar — like `FaceUp`, it is a fact the propagator is handed, assembly-model §3.2).
+- `Anchored(strut)` pins all eight scalars; `Reference` is discrete and, like `FaceUp`, a fact the
+  propagator is handed, never a scalar (assembly-model §3.2).
 - The floor is not an entity; feet are held level with each other by a ring of `AxisDistance`s.
 
 ### 3.2 What is new: flush to a leaning leg's face (changes §3a.5 "a strut's body is not a place")
