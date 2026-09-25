@@ -187,18 +187,15 @@ public partial class MainWindow
     {
         if (!IsShowingStandardView)
         {
-            Editor.Say(EditSeverity.Hint, HiddenEdgesElsewhere);
+            Editor.Say(EditSeverity.Hint, StandardViewWords.HiddenEdgesElsewhere);
             return;
         }
 
         bool show = !Settings.Current.ShowHiddenEdges;
         Settings.Update(s => s with { ShowHiddenEdges = show });
         ApplyHiddenEdges(show);
-        Editor.Say(EditSeverity.Done, show ? "Hidden edges: shown as light dashes." : "Hidden edges: not shown.");
+        Editor.Say(EditSeverity.Done, show ? StandardViewWords.HiddenEdgesShown : StandardViewWords.HiddenEdgesNotShown);
     }
-
-    /// <summary>What H says outside the views that draw hidden edges.</summary>
-    public const string HiddenEdgesElsewhere = "Hidden edges are drawn in Bottom, Front, Back, Left and Right — 3 for Front.";
 
     void ApplyHiddenEdges(bool show)
     {

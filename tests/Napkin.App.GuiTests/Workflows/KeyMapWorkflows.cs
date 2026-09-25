@@ -52,7 +52,7 @@ public class KeyMapWorkflows
         {
             Assert.Equal(DesignView.Front, window.CurrentView);
             Assert.False(window.IsShapingPart);
-            Assert.StartsWith("Not in a Front view yet", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Equal(StandardViewWords.NotInView(StandardView.Front), window.MessageOnScreen);
         });
 
         app.Press(Key.W);
