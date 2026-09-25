@@ -639,7 +639,7 @@ public static class MaterialsReader
             }
 
             Length length = TakeLength(fields, path, "length");
-            double shankDiameter = TakeDecimalInches(fields, path, "shankDiameterInches");
+            decimal shankDiameter = TakeDecimalInches(fields, path, "shankDiameterInches");
 
             if (Failed || common.Source is null)
             {
@@ -792,7 +792,7 @@ public static class MaterialsReader
         /// exactly like the specification's cell — <c>".162"</c> — and so no JSON number formatting
         /// can come between the two.
         /// </summary>
-        private double TakeDecimalInches(JsonFields fields, string path, string name)
+        private decimal TakeDecimalInches(JsonFields fields, string path, string name)
         {
             string where = $"{path}/{name}";
             if (fields.Take(name) is not { } element)
@@ -812,7 +812,7 @@ public static class MaterialsReader
             }
 
             string text = element.GetString() ?? string.Empty;
-            if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+            if (!decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value))
             {
                 Add(MaterialsProblemKind.Malformed, where, $"\"{text}\" is not a decimal number.");
                 return 0;

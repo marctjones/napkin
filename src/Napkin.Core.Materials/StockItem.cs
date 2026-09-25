@@ -227,12 +227,14 @@ public sealed record FastenerStock : StockItem
     /// <c>0.162</c> for a 16d common nail.
     /// </summary>
     /// <remarks>
-    /// A <see cref="double"/> here, alone in this library, because a wire diameter genuinely is a
+    /// A <see cref="decimal"/> here, alone in this library, because a wire diameter genuinely is a
     /// decimal: the specification states <c>.162</c>, not a tape-measure fraction, and forcing it
     /// onto the 1/1024 inch grid would invent a value the source does not give. It is never a
-    /// dimension anything is cut to, so it never enters the geometry model.
+    /// dimension anything is cut to, so it never enters the geometry model. <see cref="decimal"/>
+    /// rather than <see cref="double"/> so the stored value is exactly what was parsed, with no
+    /// binary-floating-point rounding.
     /// </remarks>
-    public required double ShankDiameterInches { get; init; }
+    public required decimal ShankDiameterInches { get; init; }
 
     /// <inheritdoc/>
     public override string ActualSizeText
