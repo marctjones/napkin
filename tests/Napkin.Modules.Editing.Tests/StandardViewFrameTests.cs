@@ -81,4 +81,37 @@ public class StandardViewFrameTests
         Assert.Equal("+X", P(Axis.X).ToString());
         Assert.Equal("−Z", M(Axis.Z).ToString());
     }
+    // §3.1's table: which axis a dimension must run along to show, and which way its line is offset.
+    [Theory]
+    [Trait("Feature", "VIEW-010")]
+    [InlineData(StandardView.Top, Axis.X, Axis.Y)]
+    [InlineData(StandardView.Top, Axis.Y, Axis.X)]
+    [InlineData(StandardView.Top, Axis.Z, null)]
+    [InlineData(StandardView.Bottom, Axis.X, Axis.Y)]
+    [InlineData(StandardView.Bottom, Axis.Y, Axis.X)]
+    [InlineData(StandardView.Front, Axis.X, Axis.Z)]
+    [InlineData(StandardView.Front, Axis.Y, null)]
+    [InlineData(StandardView.Back, Axis.X, Axis.Z)]
+    [InlineData(StandardView.Back, Axis.Y, null)]
+    [InlineData(StandardView.Left, Axis.X, null)]
+    [InlineData(StandardView.Left, Axis.Y, Axis.Z)]
+    [InlineData(StandardView.Right, Axis.X, null)]
+    [InlineData(StandardView.Right, Axis.Y, Axis.Z)]
+    public void A_view_shows_a_dimension_along_its_screen_axes_offset_along_the_other(StandardView view, Axis measured, Axis? across) =>
+        Assert.Equal(across, StandardViewFrame.AcrossFor(view, measured));
+
+    // §3.2: South and West low, North and East high; a side parallel to the measurement falls back as
+    // the plan always has (an X dimension placed West or East goes high; a Y one placed North or South, high).
+    [Theory]
+    [Trait("Feature", "VIEW-010")]
+    [InlineData(Axis.X, DimensionSide.South, true)]
+    [InlineData(Axis.X, DimensionSide.North, false)]
+    [InlineData(Axis.X, DimensionSide.West, false)]
+    [InlineData(Axis.X, DimensionSide.East, false)]
+    [InlineData(Axis.Y, DimensionSide.West, true)]
+    [InlineData(Axis.Y, DimensionSide.East, false)]
+    [InlineData(Axis.Y, DimensionSide.South, false)]
+    [InlineData(Axis.Y, DimensionSide.North, false)]
+    public void South_and_West_are_the_low_side(Axis measured, DimensionSide side, bool low) =>
+        Assert.Equal(low, StandardViewFrame.OnLowSide(measured, side));
 }

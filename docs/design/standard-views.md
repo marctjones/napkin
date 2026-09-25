@@ -10,7 +10,9 @@ Slice B (#128) enabled the other four; the views' pure frame (axes, names, reada
 `StandardViewFrame` in `Napkin.Modules.Editing`, and per-view camera memory stays session state in
 `ModelView` (never scene data, docs/file-format.md rule 6; not persisted across runs). Slice C (#129,
 with #134's line table `DrawingLines`) put `HiddenEdges` in the Module too; H toggles it beside the
-menu item; a hidden piece lying along a solid edge is dropped rather than overdrawn.
+menu item; a hidden piece lying along a solid edge is dropped rather than overdrawn. Slice D (#130):
+`DimensionLayout.Measure(Sketch, StandardView)` returns `ViewDimension`s in view coordinates; the rule
+(`AcrossFor`, `OnLowSide`) is in `StandardViewFrame`; the plan and the views draw through one routine.
 
 Written for issue #106 (the design) and owed to
 #107 (the read-only implementation) and #108 (the view switcher), both in milestone Views, both
