@@ -106,6 +106,25 @@ public sealed record OpeningCheck(Opening Opening, HeaderResult Result);
 /// </remarks>
 public static class CodeCheck
 {
+    /// <summary>
+    /// What the status line says after the adopted code changes: which code now resolves, and how
+    /// many results changed, were newly flagged, or can no longer be computed. A result that had no
+    /// answer and still has none (only the pack named in it differs) is not counted as changed.
+    /// </summary>
+    /// <example>"Now checking against ZZ BRACE B (…): every result recomputed; 2 changed, 1 newly flagged, none can no longer be computed."</example>
+    public static string SwitchSummary(AdoptedCodeRef? code, RecomputeReport headers, BracingRecomputeReport bracing)
+    {
+        int changed = headers.Changes.Count(change => change.Kind is not (ChangeKind.CitationOnly or ChangeKind.NoAnswerChanged))
+                      + bracing.Changes.Count(change => change.Kind is not (BracingChangeKind.CitationOnly or BracingChangeKind.NoAnswerChanged));
+        int flagged = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope) + bracing.NewlyFlagged.Count();
+        int lost = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToNoAnswer or ChangeKind.OutOfScopeToNoAnswer) + bracing.NoLongerComputable.Count();
+        string under = code is null ? "No code resolves now" : $"Now checking against {code.ShortName} ({code.BaseCode}, pack {code.PackId} rev {code.Revision})";
+        return $"{under}: every result recomputed; {Tally(changed, "changed")}, {Tally(flagged, "newly flagged")}, "
+               + $"{Tally(lost, "can no longer be computed")}.";
+
+        static string Tally(int n, string words) => n == 0 ? $"none {words}" : $"{n} {words}";
+    }
+
     /// <summary>Where in the app the code and the site values are chosen.</summary>
     public const string WhereToChoose = "Edit → Adopted code and site";
 
