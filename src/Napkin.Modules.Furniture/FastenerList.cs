@@ -86,7 +86,7 @@ public static class FastenerList
         foreach (Joint joint in sketch.RelationshipsInOrder.OfType<Joint>())
         {
             if (Recipes.FastenerOf(joint.Fastening.Kind) is not { } kind
-                || sketch.Find<Box>(joint.Inserted.Box) is not { } inserted
+                || sketch.Find<Box>(joint.Inserted.Box) is not { Part: { } part } inserted
                 || sketch.Find<Box>(joint.Receiving.Box) is not { } receiving)
             {
                 continue;
@@ -94,10 +94,8 @@ public static class FastenerList
 
             Length? length = JointGeometry.Contact(sketch, joint)?.JointLength;
             int each = joint.Fastening.Count ?? (length is { } long_ ? Recipes.Count(joint, long_) : 0);
-            int copies = inserted.Part?.Quantity ?? 1;
-            Length? thickness = !Recipes.DependsOnThickness(kind) || inserted.Part is not { } part
-                ? null
-                : part.SizeOn(inserted).Thickness;
+            int copies = part.Quantity;
+            Length? thickness = Recipes.DependsOnThickness(kind) ? part.SizeOn(inserted).Thickness : null;
 
             (FastenerKind, long?) key = (kind, thickness?.Units);
             if (!lines.TryGetValue(key, out List<FastenerSource>? sources))

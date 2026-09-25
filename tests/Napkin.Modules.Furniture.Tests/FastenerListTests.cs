@@ -45,6 +45,18 @@ public sealed class FastenerListTests
         Assert.Equal(at36, Recipes.Recipe(kind, In(36)));
     }
 
+    [Theory]
+    [InlineData(FasteningKind.PocketScrews, FastenerKind.PocketScrew)]
+    [InlineData(FasteningKind.Screws, FastenerKind.WoodScrew)]
+    [InlineData(FasteningKind.Brads, FastenerKind.Brad)]
+    [InlineData(FasteningKind.Nails, FastenerKind.Nail)]
+    [InlineData(FasteningKind.Dowels, FastenerKind.Dowel)]
+    [InlineData(FasteningKind.Biscuits, FastenerKind.Biscuit)]
+    [InlineData(FasteningKind.Clips, FastenerKind.TabletopClip)]
+    [Trait("Feature", "CUT-011")]
+    public void Each_fastening_is_made_of_its_own_kind_of_fastener(FasteningKind fastening, FastenerKind fastener)
+        => Assert.Equal(fastener, Recipes.FastenerOf(fastening));
+
     [Fact]
     [Trait("Feature", "CUT-011")]
     public void No_fastening_takes_none_and_names_no_fastener()
@@ -178,6 +190,12 @@ public sealed class FastenerListTests
 
         Assert.Equal(7, pocket.Count);   // 2 + 5; rail 1's recipe needs a contact
         Assert.Contains("1 joint apart, not counted", pocket.Note);
+
+        Box second = sketch.Entities.Values.OfType<Box>().Single(box => box.Name == "Rail 2");
+        pocket = FastenerList.Of(sketch.WithEntity(second with { Anchor = second.Anchor with { X = In(10) } }))[0];
+
+        Assert.Equal(5, pocket.Count);   // only the typed 5
+        Assert.Contains("2 joints apart, not counted", pocket.Note);
     }
 
     [Fact]
