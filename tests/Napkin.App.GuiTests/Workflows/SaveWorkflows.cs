@@ -127,10 +127,7 @@ public class SaveWorkflows
     /// another file, or quitting — and each of its three answers.
     /// </summary>
     /// <remarks>
-    /// Claims <c>GUI-SHELL-05</c>, which no feature list defines: nothing written down yet says
-    /// "napkin asks before it loses your work", and adding an entry is not this change's call, so
-    /// the claim shows as an orphan on the scorecard — which gates nothing — until somebody writes
-    /// the feature down.
+    /// Claims <c>GUI-SHELL-05</c> (<c>features/gui-shell.json</c>): napkin asks before it loses your work.
     /// </remarks>
     [GuiWorkflow("GUI-SHELL-05")]
     public void Unsaved_changes_are_asked_about_before_they_are_lost() => GuiWorkflow.Run(app =>

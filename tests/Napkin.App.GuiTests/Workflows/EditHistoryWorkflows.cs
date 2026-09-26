@@ -174,10 +174,8 @@ public class EditHistoryWorkflows
     /// Delete, and a cut made in the shape workshop — undone and redone with the workshop open.
     /// </summary>
     /// <remarks>
-    /// Claims <c>GUI-DRAW-10</c>, which the catalog does not define: GUI-DRAW-05 is the chain of
-    /// drags and typed sizes, and nothing in the catalog says undo reaches the stock toolbox and the
-    /// shape workshop. Adding an entry is not this change's call, so the claim shows as an orphan on
-    /// the scorecard — which gates nothing — until somebody writes the feature down.
+    /// Claims <c>GUI-DRAW-10</c>: undo reaches the stock toolbox and the shape workshop, beside
+    /// GUI-DRAW-05's chain of drags and typed sizes.
     /// </remarks>
     [GuiWorkflow("GUI-DRAW-10")]
     public void Undo_reaches_stock_duplicate_pin_delete_and_the_shape_workshop() => GuiWorkflow.Run(app =>

@@ -43,10 +43,10 @@ id across files.
 |---|---|
 | `schema` | `1`. Bumped when the shape of a feature entry changes; per the beta policy there is no migration, so the tool accepts exactly the version it knows. |
 | `id` | Unique across every `features/*.json`. See the ID rules below. |
-| `area` | One of `geometry`, `project-file`, `materials`, `furniture`, `ui`, `rules-engine`, `code-packs`, `building`, `deck`, `site-plan`, `interop`, `packaging`, `release`, `solver`. Mirrors the `area/*` labels where one exists, so the scorecard can group the way the issue tracker does. |
+| `area` | One of `geometry`, `project-file`, `materials`, `furniture`, `ui`, `rules-engine`, `code-packs`, `building`, `deck`, `site-plan`, `interop`, `packaging`, `release`, `solver`, `gui-shell`. Mirrors the `area/*` labels where one exists, so the scorecard can group the way the issue tracker does. |
 | `title` | A short noun phrase. What the feature is, not how it is built. |
 | `acceptance` | **One sentence, concrete enough to become a test**: it names the inputs and the observable result. See "Writing an acceptance sentence" below. |
-| `milestone` | `M1` … `M8`, or `backlog` — the milestone by the end of which the feature is expected to pass. See `PLAN.md`. |
+| `milestone` | `M1` … `M13`, or `backlog` — the milestone by the end of which the feature is expected to pass. See `PLAN.md`. |
 | `issue` | The issue number that delivers the feature, or `null` while no issue exists for it yet. One issue may deliver many features; a feature belongs to exactly one issue. |
 | `kind` | `unit`, `golden` or `workflow`. See below. |
 
@@ -55,10 +55,10 @@ id across files.
 - **Unit and golden features: `<AREA>-<NNN>`** — two to five uppercase letters, a hyphen, and
   exactly three digits. Regular expression: `^[A-Z]{2,5}-\d{3}$`.
 - **GUI workflows: `GUI-<AREA>-<NN>`** — `GUI`, the workflow family, and exactly two digits.
-  Regular expression: `^GUI-[A-Z]{2,6}-\d{2}$`. The families here are `VIEW` (M1), `DRAW` (M2),
-  `CUT` (M3), `CHECK` (M4) and `BRACE` (M5). `SHELL` belongs to `features/gui-shell.json` and
-  `ASSEM` — parts turned and set against one another in the 3D view — to
-  `features/assembly.json`; neither is used in this file.
+  Regular expression: `^GUI-[A-Z]{2,6}-\d{2}$`. The families in `catalog.json` are `VIEW`, `DRAW`,
+  `CUT`, `CHECK`, `BRACE`, `JOIN`, `SET`, `RENO`, `SKETCH`, `PARTS`, `WALL`, `DIY` and `STRUT`.
+  `SHELL` belongs to `features/gui-shell.json` and `ASSEM` — parts turned and set against one
+  another in the 3D view — to `features/assembly.json`; neither is used in `catalog.json`.
 - The area token in an id is a stable abbreviation and does not have to equal the `area` field —
   a workflow's `area` is `ui` while its id names the workflow family.
 - **Ids are permanent.** Numbers are not renumbered when a feature is removed or two are merged,
