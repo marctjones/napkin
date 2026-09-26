@@ -1706,6 +1706,15 @@ public sealed class CanvasView : Control
         }
 
         Length tolerance = ModelLength(3);
+
+        // An angled part under the pointer wins over the box it stands on: it is the narrower target.
+        if (design.Sketch.Entities.Values.OfType<Strut>()
+                .OrderBy(strut => strut.Id)
+                .FirstOrDefault(strut => StrutSolid.PlanContains(strut, world.X.ToInches(), world.Y.ToInches(), tolerance.ToInches())) is { } leaning)
+        {
+            return leaning.Id;
+        }
+
         Box? best = null;
 
         foreach (Box box in design.Sketch.Entities.Values.OfType<Box>().OrderBy(entity => entity.Id))
@@ -1997,6 +2006,10 @@ public sealed class CanvasView : Control
                     DrawNote(context, palette, note);
                     break;
 
+                case Strut strut:
+                    DrawStrut(context, palette, strut, layerName);
+                    break;
+
                 case Segment segment
                     when sketch.Find<Node>(segment.Start) is { } start
                          && sketch.Find<Node>(segment.End) is { } end:
@@ -2158,6 +2171,18 @@ public sealed class CanvasView : Control
             if (sketch.Find<Note>(id) is { } note)
             {
                 context.DrawEllipse(null, pen, _view.ToScreen(note.Position), NotePickPixels, NotePickPixels);
+                continue;
+            }
+
+            if (sketch.Find<Strut>(id) is { } strut)
+            {
+                // Its silhouette, and its two ends as the grips they are (assembly-model §3a.7).
+                context.DrawGeometry(null, pen, StrutOutline(strut));
+                foreach (Point3 end in new[] { strut.From, strut.To })
+                {
+                    context.DrawRectangle(null, pen, new Rect(_view.ToScreen(new Point2(end.X, end.Y)) - new Vector(StrutGripPixels, StrutGripPixels), new Size(2 * StrutGripPixels, 2 * StrutGripPixels)));
+                }
+
                 continue;
             }
 
@@ -2475,6 +2500,42 @@ public sealed class CanvasView : Control
     /// rectangle is four <c>LineTo</c>s today as it was yesterday and a part with no cuts cannot
     /// be drawn differently by accident.
     /// </remarks>
+    /// <summary>Half the side of the square a selected strut's end is drawn with, in pixels.</summary>
+    const double StrutGripPixels = 4;
+
+    /// <summary>
+    /// An angled part from above: the outline of its solid seen from the plan, in <see cref="double"/>,
+    /// the way an arc is drawn (assembly-model §3a.7). A diagonal silhouette is its own glyph.
+    /// </summary>
+    StreamGeometry StrutOutline(Strut strut)
+    {
+        StreamGeometry outline = new();
+        using (StreamGeometryContext geometry = outline.Open())
+        {
+            ImmutableArray<(double X, double Y)> points = StrutSolid.PlanOutline(strut);
+            geometry.BeginFigure(_view.ToScreen(points[0].X, points[0].Y), isFilled: true);
+            foreach ((double x, double y) in points.Skip(1))
+            {
+                geometry.LineTo(_view.ToScreen(x, y));
+            }
+
+            geometry.EndFigure(isClosed: true);
+        }
+
+        return outline;
+    }
+
+    void DrawStrut(DrawingContext context, CanvasPalette palette, Strut strut, string layerName)
+    {
+        EntityStyle style = palette.StyleFor(layerName);
+        Pen pen = new(new SolidColorBrush(style.Stroke), style.StrokeThickness)
+        {
+            LineJoin = PenLineJoin.Miter,
+            DashStyle = strut.Phase == Phase.Demolish ? new DashStyle([12, 6], 0) : style.Dashed ? new DashStyle([4, 3], 0) : null,
+        };
+        context.DrawGeometry(new SolidColorBrush(style.Fill), pen, StrutOutline(strut));
+    }
+
     StreamGeometry Outline(Box box)
     {
         // A shaped part whose cap the plan sees is its cut outline, placed by the orientation; a
