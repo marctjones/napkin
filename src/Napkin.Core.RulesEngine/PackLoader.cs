@@ -46,7 +46,7 @@ public static partial class PackLoader
         }
 
         Dictionary<string, RawTable> tables = new(StringComparer.Ordinal);
-        BracingProvisions? bracing = LoadBaseLayer(source, manifest, manifestFile, tables, problems);
+        BracingProvisions? bracing = LoadBaseLayer(source, manifest, manifestFile, tables, problems, out DeckProvisions deck);
 
         List<PendingAmendment> pending = [];
         foreach (string entry in manifest.Layers.Skip(1))
@@ -77,9 +77,15 @@ public static partial class PackLoader
             ? null
             : SiteValuesReader.Read(source, siteFile, manifest.Sources.ToDictionary(s => s.Id, StringComparer.Ordinal), problems);
 
+        // A frost line depth the pack's own document prints (deck-and-porch §3.4), beside pack.json.
+        string frostFile = $"packs/{packId}/frost.json";
+        FrostProvision? frost = source.FileLength(frostFile) is null
+            ? null
+            : DeckReader.ReadFrost(source, frostFile, manifest.Sources.ToDictionary(s => s.Id, StringComparer.Ordinal), problems);
+
         return problems.Count > 0
             ? Invalid(packId, problems)
-            : new PackLoadResult.Loaded(new LoadedPack(manifest, typed.ToValueList(), pending.ToValueList(), bracing) { Site = site });
+            : new PackLoadResult.Loaded(new LoadedPack(manifest, typed.ToValueList(), pending.ToValueList(), bracing) { Site = site, Deck = deck, Frost = frost });
     }
 
     private static PackLoadResult.Invalid Invalid(string packId, ProblemList problems)
@@ -87,8 +93,9 @@ public static partial class PackLoader
 
     /// <summary>Loads the base layer's tables into <paramref name="tables"/>, and returns its wall-bracing provisions, if any.</summary>
     private static BracingProvisions? LoadBaseLayer(
-        IPackSource source, PackManifest manifest, string manifestFile, Dictionary<string, RawTable> tables, ProblemList problems)
+        IPackSource source, PackManifest manifest, string manifestFile, Dictionary<string, RawTable> tables, ProblemList problems, out DeckProvisions deck)
     {
+        deck = DeckProvisions.None;
         string layerId = manifest.Layers[0];
         if (!LayerIdPattern().IsMatch(layerId))
         {
@@ -146,6 +153,7 @@ public static partial class PackLoader
             return null;
         }
 
+        deck = DeckReader.Read(source, $"layers/{layerId}/deck", sources, problems);
         return bracingFiles.Count == 1 ? BracingReader.Read(source, $"{bracingDir}/{bracingFiles[0]}", sources, problems) : null;
     }
 

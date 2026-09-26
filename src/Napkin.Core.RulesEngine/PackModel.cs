@@ -61,6 +61,9 @@ public enum ColumnType
     /// <summary>A load in whole pounds per square foot.</summary>
     Psf,
 
+    /// <summary>An area in whole square feet (a deck post's tributary area, deck-and-porch §3.3).</summary>
+    SquareFeet,
+
     /// <summary>A wind speed in whole miles per hour.</summary>
     Mph,
 
@@ -79,6 +82,12 @@ public enum BandKind
 
     /// <summary>The row's result serves every demand up to its capacity; the smallest capacity that still serves the demand wins.</summary>
     Capacity,
+
+    /// <summary>
+    /// The row covers every input at or above its bound; the largest bound at most the input wins, and
+    /// an input below the smallest is out of scope (a soil bearing value, deck-and-porch §3.3).
+    /// </summary>
+    LowerBound,
 }
 
 /// <summary>How a footnote is encoded (design §1.4). A footnote without one makes its table invalid.</summary>
@@ -179,6 +188,7 @@ public readonly record struct CellValue(ColumnType Type, string? Symbol, long Ma
         ColumnType.Enum => Symbol ?? string.Empty,
         ColumnType.Psf => $"{Magnitude} psf",
         ColumnType.Mph => $"{Magnitude} mph",
+        ColumnType.SquareFeet => $"{Magnitude} sq ft",
         _ => new Length(Magnitude).Format(new FeetInchesFormat((int)Length.UnitsPerInch)).Text,
     };
 }
@@ -312,6 +322,12 @@ public sealed record LoadedPack(
 {
     /// <summary>The status label shown in the pack picker when no header table is loaded (the base layer is unfilled).</summary>
     public const string BaseTablesNotLoaded = "base tables not loaded";
+
+    /// <summary>The deck tables and provisions the pack's base layer carries (#198); <see cref="DeckProvisions.None"/> when none.</summary>
+    public DeckProvisions Deck { get; init; } = DeckProvisions.None;
+
+    /// <summary>The frost line depth the pack's own document prints (#198), or null.</summary>
+    public FrostProvision? Frost { get; init; }
 
     /// <summary>The per-municipality site values the pack carries (#210), or null.</summary>
     public SiteValuesTable? Site { get; init; }

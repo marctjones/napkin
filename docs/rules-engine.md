@@ -265,6 +265,33 @@ overlays amending the bracing file (a pack with other provisions uses another ba
 beyond the five above. When the tables are read, whatever they need that is missing is added to the
 schema then, with its own load checks and golden cases.
 
+## Deck tables (#198)
+
+A base layer may carry a `deck/` directory ([`deck-and-porch.md`](./design/deck-and-porch.md) §3), each
+file one of four kinds, at most one of each (and one `member-span` table per `use`):
+
+| `kind` | inputs it may declare | outputs per row |
+|---|---|---|
+| `member-span`, `use: deck-joist` | `supports`, `species`, `member` (category, exact); `spacing` (length, exact) | `span` |
+| `member-span`, `use: deck-beam` | `supports`, `species`, `member` ("(2) 2x10"); `joistSpan` (length, upper-bound) | `span` |
+| `member-span`, `use: rafter` | `species`, `member`; `spacing` (exact); `groundSnowLoad`, `roofLiveLoad` (psf, upper-bound) | `span` |
+| `deck-ledger` | `member`; `joistSpan` (upper-bound) | `fastener` (text as printed), `spacing` |
+| `deck-footing` | `tributaryArea` (`sqft`, upper-bound); `soilBearing` (psf, **`lower-bound`**) | `footing` (text as printed) |
+| `deck-guard-stair` | none: a provisions file, `guard` and `stair` objects whose items may each be `null` ("not covered by this pack") | — |
+
+A **`lower-bound`** column selects the largest bound *at most* the input — a stronger soil is never
+rounded up to a column it does not reach — and an input below the smallest bound is out of scope; its
+bands must start at the domain's `min`. Header tables refuse it. Every deck footnote is
+`not-encoded`: it is shown with the result. A pack may also carry `packs/<id>/frost.json`
+(`kind: frost`, a cited `frostLineDepth`), which the deck check offers as a suggestion, never
+applies.
+
+`DeckEvaluator.CheckSpan` answers **Passes** or **Short** (by how much), `SizeLedger` and `SizeFooting`
+**Sized** (the ledger with napkin's own fastener count, ⌈length ÷ spacing⌉ + 1), and every one of
+them **Out of scope**, **Input missing** or **No data** as the header check does. The only tables
+are synthetic (`tests/Napkin.Modules.Building.Tests/CodePacks/deck`, NOT CODE VALUES); real rows
+are M10's (#40–#43). Golden files and `Recompute` diffs for the deck kinds are not built yet.
+
 ## Using it from code
 
 ```csharp

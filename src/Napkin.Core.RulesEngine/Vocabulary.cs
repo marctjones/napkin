@@ -77,6 +77,7 @@ internal static partial class Vocabulary
         ["psf"] = ColumnType.Psf,
         ["mph"] = ColumnType.Mph,
         ["length"] = ColumnType.Length,
+        ["sqft"] = ColumnType.SquareFeet,
     };
 
     public static readonly IReadOnlyDictionary<string, BandKind> BandKinds = new Dictionary<string, BandKind>(StringComparer.Ordinal)
@@ -84,6 +85,7 @@ internal static partial class Vocabulary
         ["exact"] = BandKind.Exact,
         ["upper-bound"] = BandKind.UpperBound,
         ["capacity"] = BandKind.Capacity,
+        ["lower-bound"] = BandKind.LowerBound,
     };
 
     public static readonly IReadOnlyDictionary<string, FootnoteEncoding> Encodings = new Dictionary<string, FootnoteEncoding>(StringComparer.Ordinal)
