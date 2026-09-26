@@ -213,11 +213,14 @@ public partial class MainWindow
 
         ImmutableHashSet<EntityId> attention = [.. parts];
         DrawingCanvas.Attention = attention;
-        ModelDrawing.Attention = attention;
+        foreach (ModelView view in ModelViews)
+        {
+            view.Attention = attention;
+        }
     }
 
     /// <summary>The parts both views are drawing attention to now.</summary>
-    public IReadOnlySet<EntityId> AttentionOnScreen => IsShowingModel ? ModelDrawing.Attention : DrawingCanvas.Attention;
+    public IReadOnlySet<EntityId> AttentionOnScreen => IsShowingModel ? ActiveModel.Attention : DrawingCanvas.Attention;
 
     /// <summary>
     /// Whether a part is one the relationship list should open for: selected, or resting under the
@@ -225,16 +228,18 @@ public partial class MainWindow
     /// </summary>
     bool IsInPlay(EntityId id) =>
         Editor.Selection.Contains(id)
-        || (IsShowingModel ? ModelDrawing.HoveredPart == id : DrawingCanvas.HoveredPart == id);
+        || (IsShowingSheet
+            ? SheetDrawing.Panes.Any(pane => pane.HoveredPart == id)
+            : IsShowingModel ? ModelDrawing.HoveredPart == id : DrawingCanvas.HoveredPart == id);
 
     void UpdateToolButtons()
     {
         if (IsShowingModel)
         {
-            SelectToolButton.IsChecked = !ModelDrawing.Placement.IsArmed;
-            RectangleToolButton.IsChecked = ModelDrawing.Placement.PlainBoard;
+            SelectToolButton.IsChecked = !ActiveModel.Placement.IsArmed;
+            RectangleToolButton.IsChecked = ActiveModel.Placement.PlainBoard;
             WallToolButton.IsChecked = false;
-            StockToolboxPanel.ShowArmed(ModelDrawing.Placement.Stock, inModel: true);
+            StockToolboxPanel.ShowArmed(ActiveModel.Placement.Stock, inModel: true);
             return;
         }
 

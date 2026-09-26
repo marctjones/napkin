@@ -1041,8 +1041,8 @@
       "area": "ui",
       "title": "Relationship glyphs show their sentence on hover",
       "acceptance": "Hovering a relationship glyph on the canvas (e.g. a flush indicator) shows the same plain-language sentence as its row in the relationship list.",
-      "milestone": "M2",
-      "issue": 62,
+      "milestone": "M6",
+      "issue": 156,
       "kind": "workflow"
     },
     {
@@ -1325,12 +1325,66 @@
       "kind": "unit"
     },
     {
+      "id": "CUT-019",
+      "area": "furniture",
+      "title": "The Parts view's sheet is the cut list, one cell per row",
+      "acceptance": "For every sample, PartsSheet.Of(CutList.Of(sketch)) has one cell per row, in row order, each cell's row the row itself and its count the row's quantity; the blank a cell draws is the piece in its own frame in all 24 orientations, and the cut list's thumbnails draw the same blank.",
+      "milestone": "M6",
+      "issue": 122,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-020",
+      "area": "furniture",
+      "title": "The Parts view's counts add up to pieces, not boxes",
+      "acceptance": "For every sample the cells' counts sum to the sum of Part.Quantity over boxes with a part; the coffee table's four legs are one cell of 4 and each apron length one cell of 2.",
+      "milestone": "M6",
+      "issue": 122,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-021",
+      "area": "furniture",
+      "title": "A Parts view cell shows its piece at the sheet's one scale, or says it is not to scale",
+      "acceptance": "A piece is drawn flat, on edge, face-on (on end, no cuts: a leg, length x width) or on end (with cuts), its longer side across, captioned with the dimension it does not show; the sheet's scale is the largest at which every piece fits 224 x 100 px (the coffee table's is 100/24 px/in); a piece whose longer side would draw under 48 px is drawn at 48 px and says not to scale (scale-extremes' shim, 8 px/in); a cell says its count and at most two cuts before how many more.",
+      "milestone": "M6",
+      "issue": 123,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-022",
+      "area": "furniture",
+      "title": "The Parts sheet is a wrapped grid of equal cells, grouped under title bands, on whole pixels",
+      "acceptance": "Columns are what the width buys at the zoom and never fewer than one (1, 2, 4 at 300, 560, 1100 px at 100 %); cells fill rows in the sheet's order and never overlap; a group starts its own row under a 24 px title band; every edge is a whole pixel; a cell reads to a screen reader as its label, count, three sizes and material.",
+      "milestone": "M6",
+      "issue": 124,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-023",
+      "area": "furniture",
+      "title": "A Parts cell reads the design's one selection: all, partly or none, and how many boxes its pieces are",
+      "acceptance": "A cell is selected when every member is, partly when some are, not otherwise, whatever else is selected; a cell whose count and box count differ says 4 pieces from 1 box or 3 pieces from 2 boxes, and says nothing when they agree.",
+      "milestone": "M6",
+      "issue": 125,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-CUT-08",
       "area": "ui",
       "title": "Read the cut layout and change the saw kerf",
       "acceptance": "Open a sample, open the cut list, turn to the Cut layout tab, see a line and a drawn bar per board, change the saw kerf and see the boards change, and the exported file equals the lines on screen.",
       "milestone": "M3",
       "issue": 138,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CUT-10",
+      "area": "ui",
+      "title": "A cut-list row selects its parts in the drawing",
+      "acceptance": "Coffee table, Ctrl/Cmd+L: a click on the Leg row selects the four legs; Shift on the Top row adds the top; Ctrl/Cmd on the Leg row takes the legs out; a header click sorts and selects nothing; another row replaces the selection; in 3D it is the same selection and Escape clears it.",
+      "milestone": "M6",
+      "issue": 205,
       "kind": "workflow"
     },
     {
@@ -1511,6 +1565,60 @@
       "acceptance": "Open the l-bracket; 4 then View > Rulers: labels on both rulers, the top one descending, the toolbar stepped in, no scale bar, the floor a heavy grid line; the right arrow pans and the numbers move, still descending; a 40 px drag moves every tick 40 px; a wheel zoom out steps the ladder up; 7 shows no rulers.",
       "milestone": "M2",
       "issue": 131,
+      "kind": "workflow"
+    },
+    {
+      "id": "VIEW-013",
+      "area": "ui",
+      "title": "The sheet's arrangement and shared scale are pure",
+      "acceptance": "SheetLayout puts Top above Front and Right beside Front, 3D in the spare corner, in equal panes with a gutter; SharedScale is the scale the tightest drawing fits at. The sheet's hint, refusal and projection note come from StandardViewWords.",
+      "milestone": "M6",
+      "issue": 133,
+      "kind": "unit"
+    },
+    {
+      "id": "GUI-VIEW-16",
+      "area": "ui",
+      "title": "The sheet shows Top over Front and Right beside it, at one scale, selection shared, remembered",
+      "acceptance": "Open the l-bracket; View > Sheet: four captioned panes in third-angle order, the three drawings at one scale so x lines up in Top and Front and z in Front and Right; a click on the upright in Front draws it selected in every pane; R says not on the sheet; 3 leaves for Front alone and forgets the sheet; View > Sheet brings it back, remembered, the upright still selected.",
+      "milestone": "M6",
+      "issue": 133,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PARTS-01",
+      "area": "ui",
+      "title": "The Parts view shows the coffee table's pieces, one cell each, and walks them by keyboard and pointer",
+      "acceptance": "Open the coffee table from Samples; View > Parts: four cells, the top x1, the legs x4 and two apron cells x2, the Parts chip pressed and its hint said; Right, Right, Down move the focus cell along and down a row; a click focuses the legs' cell; R says not in the Parts view; View > Zoom in shows 125 %; 7 then V returns to Top, never to Parts; the Parts chip shows it again; 3 leaves for Front.",
+      "milestone": "M6",
+      "issue": 124,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PARTS-02",
+      "area": "ui",
+      "title": "Selection runs both ways between the Parts view and the model",
+      "acceptance": "A click on the coffee table's legs cell selects the four legs; 3D shows them selected; back in Parts the cell is selected; Escape clears; Home, Right, Right, Enter selects them from the keyboard; one leg picked in Front leaves the cell partly selected, drawn dashed.",
+      "milestone": "M6",
+      "issue": 125,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PARTS-03",
+      "area": "ui",
+      "title": "Deleting one leg from the Parts view reads x3, and undo x4, as the cut list does",
+      "acceptance": "One leg picked in Front; in the Parts view Delete takes it and the legs cell reads x3; Cmd/Ctrl+Z reads x4 again; the cut list opened afterwards says four legs.",
+      "milestone": "M6",
+      "issue": 125,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PARTS-04",
+      "area": "ui",
+      "title": "The Parts view's grouping and 3D choice are remembered, and a new window opens in them",
+      "acceptance": "Open the stocked bench in the Parts view; View > Group parts by stock: groups 3/4 plywood, 1x4, 2x4 under title bands, the keyboard walking them in screen order; View > Parts in 3D; a new window on the same settings opens in the Parts view, grouped, in 3D, both menu items ticked.",
+      "milestone": "M6",
+      "issue": 127,
       "kind": "workflow"
     },
     {

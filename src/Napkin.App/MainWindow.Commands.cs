@@ -29,7 +29,11 @@ public partial class MainWindow
     void SelectTool()
     {
         DrawingCanvas.Tool = EditTool.Select;
-        ModelDrawing.Disarm();
+        foreach (ModelView view in ModelViews)
+        {
+            view.Disarm();
+        }
+
         UpdateToolButtons();
         FocusDrawing();
     }
@@ -51,7 +55,7 @@ public partial class MainWindow
     /// <summary>Picks up the note tool (renovation-sketches §8); notes are put in the plan, so the plan comes forward.</summary>
     public void ArmNote()
     {
-        if (IsShowingModel)
+        if (!IsShowingPlan)
         {
             ShowView(DesignView.Top);
         }
@@ -64,7 +68,7 @@ public partial class MainWindow
     /// <summary>Picks up the room tool (renovation-sketches §8); rooms are drawn in the plan, so the plan comes forward.</summary>
     public void ArmRoom()
     {
-        if (IsShowingModel)
+        if (!IsShowingPlan)
         {
             ShowView(DesignView.Top);
         }
@@ -80,7 +84,7 @@ public partial class MainWindow
     /// </summary>
     public void ArmWall(string? member)
     {
-        if (IsShowingModel)
+        if (!IsShowingPlan)
         {
             ShowView(DesignView.Top);
         }
@@ -97,7 +101,7 @@ public partial class MainWindow
     /// <summary>Picks up the opening tool: the next click on a wall in the plan puts a window or door in it.</summary>
     public void ArmOpening(OpeningKind kind)
     {
-        if (IsShowingModel)
+        if (!IsShowingPlan)
         {
             ShowView(DesignView.Top);
         }
@@ -113,7 +117,15 @@ public partial class MainWindow
     {
         // In the 3D view the rectangle tool is a plain board to place on a face (#74); a read-only
         // view has none (§5.4).
-        if (IsShowingStandardView)
+        if (IsShowingSheet)
+        {
+            Editor.Say(EditSeverity.Hint, StandardViewWords.NotOnSheet);
+        }
+        else if (IsShowingParts)
+        {
+            Editor.Say(EditSeverity.Hint, StandardViewWords.NotInPartsView);
+        }
+        else if (IsShowingStandardView)
         {
             Editor.Say(EditSeverity.Hint, StandardViewWords.NotInView(StandardViews.Of(_view)!.Value));
         }
@@ -159,7 +171,16 @@ public partial class MainWindow
 
     void OnZoomToFitClicked(object? sender, RoutedEventArgs e)
     {
-        if (IsShowingModel)
+        if (IsShowingParts)
+        {
+            PartsDrawing.ZoomToFit();
+        }
+        else if (IsShowingSheet)
+        {
+            // Fit on the sheet is the sheet's: the three drawings at their one scale again (§11.4).
+            SheetDrawing.RequestFit();
+        }
+        else if (IsShowingModel)
         {
             ModelDrawing.ZoomToFit();
         }
@@ -171,14 +192,20 @@ public partial class MainWindow
 
     void OnResetViewClicked(object? sender, RoutedEventArgs e)
     {
-        _ = IsShowingModel ? ModelDrawing.Apply(ViewCommand.ResetView) : DrawingCanvas.Apply(ViewCommand.ResetView);
+        _ = IsShowingParts ? PartsDrawing.Apply(ViewCommand.ResetView)
+            : IsShowingModel ? ActiveModel.Apply(ViewCommand.ResetView)
+            : DrawingCanvas.Apply(ViewCommand.ResetView);
     }
 
     void OnZoomInClicked(object? sender, RoutedEventArgs e)
     {
-        if (IsShowingModel)
+        if (IsShowingParts)
         {
-            ModelDrawing.ZoomIn();
+            PartsDrawing.Apply(ViewCommand.ZoomIn);
+        }
+        else if (IsShowingModel)
+        {
+            ActiveModel.ZoomIn();
         }
         else
         {
@@ -188,9 +215,13 @@ public partial class MainWindow
 
     void OnZoomOutClicked(object? sender, RoutedEventArgs e)
     {
-        if (IsShowingModel)
+        if (IsShowingParts)
         {
-            ModelDrawing.ZoomOut();
+            PartsDrawing.Apply(ViewCommand.ZoomOut);
+        }
+        else if (IsShowingModel)
+        {
+            ActiveModel.ZoomOut();
         }
         else
         {
@@ -332,7 +363,7 @@ public partial class MainWindow
                 Editor.ClearSelection();
                 return true;
 
-            case EditCommand.EditWidth when !IsShowingModel && Editor.OnlySelectedBox is { } forWidth:
+            case EditCommand.EditWidth when IsShowingPlan && Editor.OnlySelectedBox is { } forWidth:
                 OpenDimensionEditor(forWidth.Id, SizeAxis.Width);
                 return true;
 
@@ -355,7 +386,7 @@ public partial class MainWindow
                 break;
 
             case EditCommand.Duplicate:
-                BringIntoView(SelectionCommands.Duplicate(Editor, IsShowingModel ? ModelDrawing.GridStepInches : DrawingCanvas.GridStepInches));
+                BringIntoView(SelectionCommands.Duplicate(Editor, IsShowingModel ? ActiveModel.GridStepInches : DrawingCanvas.GridStepInches));
                 break;
 
             default:
@@ -373,7 +404,7 @@ public partial class MainWindow
 
         if (IsShowingModel)
         {
-            ModelDrawing.BringIntoView(id);
+            ActiveModel.BringIntoView(id);
         }
         else
         {

@@ -27,11 +27,35 @@ public partial class MainWindow
     /// <summary>The 3D view.</summary>
     public ModelView Model => ModelDrawing;
 
+    /// <summary>The sheet (standard-views §11): Top, Front, Right and 3D at once.</summary>
+    public SheetView Sheet => SheetDrawing;
+
+    /// <summary>Whether the sheet is on screen, in place of the plan and the single views.</summary>
+    public bool IsShowingSheet => SheetDrawing.IsVisible;
+
+    /// <summary>The Parts view (parts-view.md).</summary>
+    public PartsView Parts => PartsDrawing;
+
+    /// <summary>Whether the Parts view is on screen.</summary>
+    public bool IsShowingParts => PartsDrawing.IsVisible;
+
+    /// <summary>Whether the plan canvas is on screen: the one view the plan's drawing tools work in.</summary>
+    public bool IsShowingPlan => DrawingCanvas.IsVisible;
+
     /// <summary>
-    /// Whether the 3D view's control is on screen rather than the plan: in the free 3D view or in a
-    /// locked standard view (Bottom–Right), which is the same control with its camera locked.
+    /// Whether 3D controls are on screen rather than the plan: the free 3D view, a locked standard view
+    /// (Bottom–Right, the same control with its camera locked), or the sheet's panes.
     /// </summary>
-    public bool IsShowingModel => ModelDrawing.IsVisible;
+    public bool IsShowingModel => ModelDrawing.IsVisible || IsShowingSheet;
+
+    /// <summary>
+    /// The 3D control the window's view commands and readouts go to: on the sheet, the pane the pointer
+    /// was last over, else Front (§11.5); otherwise the 3D view's control.
+    /// </summary>
+    ModelView ActiveModel => IsShowingSheet ? SheetDrawing.Active : ModelDrawing;
+
+    /// <summary>Every 3D control, shown or not: what a setting that changes how they draw reaches.</summary>
+    IEnumerable<ModelView> ModelViews => [ModelDrawing, .. SheetDrawing.Panes];
 
     DesignView _view = DesignView.Top;
     DesignView _last2DView = DesignView.Top;
@@ -39,8 +63,11 @@ public partial class MainWindow
     /// <summary>The view on screen (docs/design/standard-views.md §4.1): one of the six, or 3D.</summary>
     public DesignView CurrentView => _view;
 
-    /// <summary>Whether a read-only standard view is showing: Bottom, Front, Back, Left or Right.</summary>
-    public bool IsShowingStandardView => ModelDrawing.Locked is not null && IsShowingModel;
+    /// <summary>
+    /// Whether a read-only standard view is what the window speaks for: Bottom, Front, Back, Left or
+    /// Right on its own, or a locked pane of the sheet.
+    /// </summary>
+    public bool IsShowingStandardView => IsShowingModel && ActiveModel.Locked is not null;
 
     /// <summary>The <em>View</em> menu's item for a view.</summary>
     public MenuItem ViewMenuEntry(DesignView view) => view switch
@@ -51,6 +78,7 @@ public partial class MainWindow
         DesignView.Back => BackViewMenuItem,
         DesignView.Left => LeftViewMenuItem,
         DesignView.Right => RightViewMenuItem,
+        DesignView.Parts => PartsViewMenuItem,
         _ => ModelViewMenuItem,
     };
 
@@ -63,6 +91,7 @@ public partial class MainWindow
         DesignView.Back => BackViewChip,
         DesignView.Left => LeftViewChip,
         DesignView.Right => RightViewChip,
+        DesignView.Parts => PartsViewChip,
         _ => ModelViewChip,
     };
 
@@ -90,7 +119,13 @@ public partial class MainWindow
     public void ShowView(DesignView view)
     {
         DesignView from = _view;
-        bool showing = view == DesignView.Top ? !IsShowingModel : IsShowingModel && ModelDrawing.Locked == StandardViews.Of(view);
+        bool leavingSheet = IsShowingSheet;
+        bool showing = !IsShowingSheet && view switch
+        {
+            DesignView.Top => DrawingCanvas.IsVisible,
+            DesignView.Parts => PartsDrawing.IsVisible,
+            _ => ModelDrawing.IsVisible && ModelDrawing.Locked == StandardViews.Of(view),
+        };
         if (view == from && showing)
         {
             FocusDrawing();
@@ -98,7 +133,20 @@ public partial class MainWindow
         }
 
         CloseDimensionEditor(focusCanvas: false);
-        if (view == DesignView.Top)
+        PartsDrawing.IsVisible = false;
+        if (view == DesignView.Parts)
+        {
+            // The Parts view is for reading the pieces (parts-view §4): the tools go back to Select.
+            CloseWorkshop();
+            DrawingCanvas.ArmStock(null);
+            DrawingCanvas.Tool = EditTool.Select;
+            ModelDrawing.Disarm();
+            DrawingCanvas.IsVisible = false;
+            ModelDrawing.IsVisible = false;
+            SheetDrawing.IsVisible = false;
+            PartsDrawing.IsVisible = true;
+        }
+        else if (view == DesignView.Top)
         {
             CloseWorkshop();
 
@@ -114,6 +162,7 @@ public partial class MainWindow
 
             ModelDrawing.Disarm();
             ModelDrawing.IsVisible = false;
+            SheetDrawing.IsVisible = false;
             DrawingCanvas.IsVisible = true;
         }
         else
@@ -122,7 +171,7 @@ public partial class MainWindow
 
             // What the plan's tools were holding comes along into 3D: the 3D view places it on the face
             // under the pointer (#74). A read-only view takes nothing (§5.4).
-            if (view == DesignView.Model && !IsShowingModel)
+            if (view == DesignView.Model && DrawingCanvas.IsVisible)
             {
                 if (DrawingCanvas.ArmedStock is { } held)
                 {
@@ -138,18 +187,21 @@ public partial class MainWindow
             DrawingCanvas.Tool = EditTool.Select;
             ModelDrawing.Locked = StandardViews.Of(view);
             DrawingCanvas.IsVisible = false;
+            SheetDrawing.IsVisible = false;
             ModelDrawing.IsVisible = true;
         }
 
         _view = view;
-        if (view != DesignView.Model)
+
+        // V goes back to the last standard view; the Parts view has its own switch (parts-view §10.5).
+        if (StandardViews.Of(view) is not null)
         {
             _last2DView = view;
         }
 
-        if (Settings.Current.LastView != view)
+        if (Settings.Current.LastView != view || leavingSheet)
         {
-            Settings.Update(s => s with { LastView = view });
+            Settings.Update(s => s with { LastView = view, ShowSheet = s.ShowSheet && !leavingSheet });
         }
 
         ShowViewChrome();
@@ -163,14 +215,73 @@ public partial class MainWindow
                     : "3D view: drag a part to slide it, or empty space to orbit; on a selected part drag an arrow "
                       + "to move it along that axis or a square to resize it; X, Y and Z turn it. V goes back to the plan.");
         }
+        else if (view == DesignView.Parts)
+        {
+            Editor.Say(EditSeverity.Hint, StandardViewWords.PartsHint);
+        }
         else if (view != DesignView.Top)
         {
             Editor.Say(EditSeverity.Hint, StandardViewWords.ReadOnlyHint(StandardViews.Of(view)!.Value));
         }
     }
 
+    /// <summary>
+    /// The sheet on or off (standard-views §11.1), remembered. On, it takes the drawing's place with
+    /// Select as the tool; off, the single view the person was last in comes back — as any view key,
+    /// chip or menu item also does.
+    /// </summary>
+    public void ShowSheet(bool on)
+    {
+        if (on == IsShowingSheet)
+        {
+            FocusDrawing();
+            return;
+        }
+
+        if (!on)
+        {
+            ShowView(_view);
+            return;
+        }
+
+        CloseDimensionEditor(focusCanvas: false);
+        CloseWorkshop();
+        DrawingCanvas.ArmStock(null);
+        DrawingCanvas.Tool = EditTool.Select;
+        ModelDrawing.Disarm();
+        SheetDrawing.PaneFor(null).Projection = ModelDrawing.Projection;
+        DrawingCanvas.IsVisible = false;
+        ModelDrawing.IsVisible = false;
+        PartsDrawing.IsVisible = false;
+        SheetDrawing.IsVisible = true;
+        if (!Settings.Current.ShowSheet)
+        {
+            Settings.Update(s => s with { ShowSheet = true });
+        }
+
+        ShowViewChrome();
+        UpdateToolButtons();
+        Editor.Say(EditSeverity.Hint, StandardViewWords.SheetHint);
+    }
+
+    void OnSheetClicked(object? sender, RoutedEventArgs e) => ShowSheet(!IsShowingSheet);
+
+    /// <summary>The Parts view grouped by stock, or not (parts-view §4.4); remembered.</summary>
+    void OnGroupPartsByStockClicked(object? sender, RoutedEventArgs e)
+    {
+        PartsDrawing.GroupByStock = !PartsDrawing.GroupByStock;
+        FocusDrawing();
+    }
+
+    /// <summary>The Parts view's 3D option (parts-view §3), from the menu; I does the same in the view.</summary>
+    void OnPartsIn3DClicked(object? sender, RoutedEventArgs e)
+    {
+        PartsDrawing.Isometric = !PartsDrawing.Isometric;
+        FocusDrawing();
+    }
+
     static readonly DesignView[] AllViews =
-        [DesignView.Top, DesignView.Bottom, DesignView.Front, DesignView.Back, DesignView.Left, DesignView.Right, DesignView.Model];
+        [DesignView.Top, DesignView.Bottom, DesignView.Front, DesignView.Back, DesignView.Left, DesignView.Right, DesignView.Model, DesignView.Parts];
 
     readonly Dictionary<Control, object?> _toolTipsOutsideViews = [];
 
@@ -181,8 +292,11 @@ public partial class MainWindow
     /// </summary>
     void ShowViewChrome()
     {
-        bool free3D = _view == DesignView.Model;
-        bool readOnly = IsShowingStandardView;
+        bool free3D = _view == DesignView.Model && !IsShowingSheet;
+
+        // The sheet is for reading (§11.3): its tools are a read-only view's, whichever pane is active;
+        // so are the Parts view's.
+        bool readOnly = IsShowingStandardView || IsShowingSheet || IsShowingParts;
         foreach (Button button in TurnButtons)
         {
             button.IsVisible = free3D;
@@ -198,13 +312,17 @@ public partial class MainWindow
 
         foreach (DesignView view in AllViews)
         {
-            ViewMenuEntry(view).Icon = view == _view ? new TextBlock { Text = "✓" } : null;
-            ViewChip(view).IsChecked = view == _view;
+            ViewMenuEntry(view).Icon = view == _view && !IsShowingSheet ? new TextBlock { Text = "✓" } : null;
+            ViewChip(view).IsChecked = view == _view && !IsShowingSheet;
         }
 
         // A read-only view cannot draw, place or shape: those tools say so rather than vanish, and
         // come back with their own tooltips in the plan and 3D.
-        string? refusal = StandardViews.Of(_view) is { } shown ? StandardViewWords.NotInView(shown) : null;
+        SheetMenuItem.Icon = IsShowingSheet ? new TextBlock { Text = "✓" } : null;
+        PartsIn3DMenuItem.IsEnabled = IsShowingParts;
+        string? refusal = IsShowingSheet ? StandardViewWords.NotOnSheet
+            : IsShowingParts ? StandardViewWords.NotInPartsView
+            : StandardViews.Of(_view) is { } shown ? StandardViewWords.NotInView(shown) : null;
         foreach (Control tool in (Control[])[RectangleToolButton, RectangleToolMenuItem, StockToolboxPanel.CategoryRow])
         {
             if (!_toolTipsOutsideViews.ContainsKey(tool))
@@ -257,16 +375,20 @@ public partial class MainWindow
         // The chip shows the view on screen, whatever the click did to its own state.
         foreach (DesignView each in AllViews)
         {
-            ViewChip(each).IsChecked = each == _view;
+            ViewChip(each).IsChecked = each == _view && !IsShowingSheet;
         }
     }
 
     /// <summary>Gives the keyboard to whichever view of the drawing is showing.</summary>
     void FocusDrawing()
     {
-        if (IsShowingModel)
+        if (IsShowingParts)
         {
-            ModelDrawing.Focus();
+            PartsDrawing.Focus();
+        }
+        else if (IsShowingModel)
+        {
+            ActiveModel.Focus();
         }
         else
         {

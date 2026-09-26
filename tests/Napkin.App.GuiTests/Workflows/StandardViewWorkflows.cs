@@ -117,6 +117,114 @@ public class StandardViewWorkflows
         app.Expect("and 3D kept its own perspective through all that", () => AssertShowing(window, DesignView.Model, "3D, perspective"));
     });
 
+    /// <summary>A sheet pane's drawing, in window pixels, just inside its edges.</summary>
+    static List<Avalonia.Media.Color> PanePixels(AppDriver app, MainWindow window, ModelView pane)
+    {
+        Point origin = pane.TranslatePoint(new Point(0, 0), window)!.Value;
+        return FrameSampling.Patch(app, (int)origin.X + 4, (int)origin.Y + 4, (int)pane.Bounds.Width - 8, (int)pane.Bounds.Height - 8);
+    }
+
+    /// <summary>Where a point of the design is drawn in a sheet pane, in window coordinates.</summary>
+    static Point InPane(MainWindow window, ModelView pane, Vector3d world) => pane.TranslatePoint(pane.Camera.Project(world), window)!.Value;
+
+    [GuiWorkflow("GUI-VIEW-16")]
+    public void The_sheet_shows_Top_over_Front_and_Right_beside_it_at_one_scale_with_the_selection_in_every_pane() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "L-bracket");
+        SheetView sheet = window.Sheet;
+        ModelView top = sheet.PaneFor(StandardView.Top), front = sheet.PaneFor(StandardView.Front);
+        ModelView right = sheet.PaneFor(StandardView.Right), model = sheet.PaneFor(null);
+        Rect Where(ModelView pane) => new(pane.TranslatePoint(new Point(0, 0), window)!.Value, pane.Bounds.Size);
+
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("SheetMenuItem")!));
+        app.Expect("View > Sheet shows Top over Front, Right beside Front and 3D in the spare corner, each captioned", () =>
+        {
+            Assert.True(window.IsShowingSheet);
+            Assert.False(window.Model.IsVisible);
+            Assert.Equal("Sheet", window.ViewReadout);
+            Assert.Equal(StandardViewWords.SheetHint, window.MessageOnScreen);
+            Assert.All(Enum.GetValues<DesignView>(), each => Assert.False(window.ViewChip(each).IsChecked == true));
+            Assert.NotNull(window.FindControl<MenuItem>("SheetMenuItem")!.Icon);
+
+            Rect t = Where(top), f = Where(front), r = Where(right), m = Where(model);
+            Assert.Equal((t.Left, t.Width), (f.Left, f.Width));
+            Assert.True(t.Bottom < f.Top, "Top is not above Front.");
+            Assert.Equal((f.Top, f.Height), (r.Top, r.Height));
+            Assert.True(f.Right < r.Left, "Right is not to the right of Front.");
+            Assert.Equal((r.Left, t.Top), (m.Left, m.Top));
+
+            Assert.Equal(StandardView.Top, top.Locked);
+            Assert.Equal(StandardView.Front, front.Locked);
+            Assert.Equal(StandardView.Right, right.Locked);
+            Assert.Null(model.Locked);
+            Assert.Equal(["Top", "3D", "Front", "Right"], sheet.Panes.Select(sheet.CaptionOf));
+            Assert.Equal(StandardViewWords.ThirdAngle, sheet.Note);
+        });
+        app.SaveFrame("sheet-l-bracket");
+
+        // Any x draws at the same window x in Top and Front, and any z at the same window y in Front
+        // and Right: that is what one scale and one centre give (§11.4).
+        app.Expect("the three drawings share one scale, so Top lines up over Front and Right beside it", () =>
+        {
+            Assert.Equal(front.Camera.PixelsPerInch, top.Camera.PixelsPerInch, 9);
+            Assert.Equal(front.Camera.PixelsPerInch, right.Camera.PixelsPerInch, 9);
+            foreach (double x in (double[])[0, 7.5])
+            {
+                Assert.Equal(InPane(window, front, new Vector3d(x, 0, 0)).X, InPane(window, top, new Vector3d(x, 0, 0)).X, 3);
+            }
+
+            foreach (double z in (double[])[0, 6])
+            {
+                Assert.Equal(InPane(window, front, new Vector3d(0, 0, z)).Y, InPane(window, right, new Vector3d(0, 0, z)).Y, 3);
+            }
+        });
+
+        // Selecting in one pane draws the selection in all four: compare each pane before and after,
+        // with the pointer parked in the gutter so no pane is drawing a hover.
+        Point gutter = new((Where(front).Right + Where(right).Left) / 2, Where(front).Center.Y);
+        app.MoveTo(gutter);
+        List<Avalonia.Media.Color>[] before = [.. sheet.Panes.Select(pane => PanePixels(app, window, pane))];
+        app.Click(InPane(window, front, new Vector3d(0.75, 2.5, 3.375)));
+        app.MoveTo(gutter);
+        app.Expect("a click on the upright in Front selects it, and every pane draws it selected", () =>
+        {
+            Assert.Equal(BoxNamed(window, "Upright").Id, Assert.Single(window.Editor.Selection));
+            for (int i = 0; i < sheet.Panes.Count; i++)
+            {
+                List<Avalonia.Media.Color> after = PanePixels(app, window, sheet.Panes[i]);
+                int changed = before[i].Zip(after).Count(pair => pair.First != pair.Second);
+                Assert.True(changed > 20, $"{sheet.CaptionOf(sheet.Panes[i])} drew {changed} pixels differently after the selection.");
+            }
+        });
+
+        app.Press(Key.R);
+        app.Expect("R on the sheet draws nothing, and says where to go to draw", () =>
+        {
+            Assert.Equal(StandardViewWords.NotOnSheet, window.MessageOnScreen);
+            Assert.True(window.IsShowingSheet);
+        });
+
+        app.Press(Key.D3);
+        app.Expect("3 leaves the sheet for Front on its own, and the sheet is no longer the remembered choice", () =>
+        {
+            Assert.False(window.IsShowingSheet);
+            AssertShowing(window, DesignView.Front, "Front");
+            Assert.False(window.Settings.Current.ShowSheet);
+            Assert.Null(window.FindControl<MenuItem>("SheetMenuItem")!.Icon);
+        });
+
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("SheetMenuItem")!));
+        app.Expect("View > Sheet brings it back, remembered, with the upright still selected", () =>
+        {
+            Assert.True(window.IsShowingSheet);
+            Assert.True(window.Settings.Current.ShowSheet);
+            Assert.Equal(BoxNamed(window, "Upright").Id, Assert.Single(window.Editor.Selection));
+        });
+    });
+
     /// <summary>The drawing's pixels in a view: the 3D control's left part, clear of the side panels and the status bar.</summary>
     static List<Avalonia.Media.Color> DrawingPixels(AppDriver app, MainWindow window)
     {
@@ -279,6 +387,18 @@ public class StandardViewWorkflows
             Assert.True(window.Model.ShowHiddenEdges);
             StandardViewEdges edges = window.Model.StandardEdges!;
             Assert.Contains(edges.Edges.Hidden, segment => edges.Polygons[segment.Face].Box == rib);
+        });
+        app.Expect("Front's fit keeps the whole bracket below the floating toolbar (#186)", () =>
+        {
+            // The frames of 0.128.0 showed the upright's top, z 6, under the toolbar: the fit then
+            // reserved the side panels but nothing at the top.
+            double toolbarBottom = window.ToolControl.TranslatePoint(new Point(0, window.ToolControl.Bounds.Height), window.Model)!.Value.Y;
+            Assert.True(window.Model.FitReserveTop >= toolbarBottom, $"the reserve, {window.Model.FitReserveTop}, is shorter than the toolbar, {toolbarBottom}.");
+            Camera camera = window.Model.Camera;
+            foreach (Vector3d corner in Bounds3.Of(window.Editor.Sketch).CornersInInches())
+            {
+                Assert.True(camera.Project(corner).Y > toolbarBottom, $"a corner is drawn at y {camera.Project(corner).Y}, under the toolbar.");
+            }
         });
         (List<Avalonia.Media.Color> with, int width, _) = WholeDrawing(app, window);
         app.SaveFrame("front-hidden-edges-on");

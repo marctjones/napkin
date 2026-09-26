@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
@@ -125,7 +126,7 @@ public static class CodeCheck
                       + bracing.Changes.Count(change => change.Kind is not (BracingChangeKind.CitationOnly or BracingChangeKind.NoAnswerChanged));
         int flagged = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope) + bracing.NewlyFlagged.Count();
         int lost = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToNoAnswer or ChangeKind.OutOfScopeToNoAnswer) + bracing.NoLongerComputable.Count();
-        string under = code is null ? "No code resolves now" : $"Now checking against {code.ShortName} ({code.BaseCode}, pack {code.PackId} rev {code.Revision})";
+        string under = code is null ? "No code resolves now" : $"Now checking against {PackLabel(code)}";
         return $"{under}: every result recomputed; {Tally(changed, "changed")}, {Tally(flagged, "newly flagged")}, "
                + $"{Tally(lost, "can no longer be computed")}.";
 
@@ -140,6 +141,71 @@ public static class CodeCheck
 
     /// <summary>The status line's text when no code is adopted at all.</summary>
     public const string NoCodeSelectedText = "No code selected: choose one under " + WhereToChoose + ".";
+
+    /// <summary>A code named with its pack, in a sentence: "ZZ FRAME (IRC 2099, pack us-zz-frame rev 1)".</summary>
+    /// <param name="code">The code.</param>
+    public static string PackLabel(AdoptedCodeRef code)
+    {
+        ArgumentNullException.ThrowIfNull(code);
+        return $"{code.ShortName} ({code.BaseCode}, pack {code.PackId} rev {code.Revision})";
+    }
+
+    /// <summary>What the shopping list's code-check note starts with: "Code check under ZZ FRAME (…)", or "Code check" with no code.</summary>
+    /// <param name="code">The code checked against, or null when none resolves.</param>
+    public static string UnderHeading(AdoptedCodeRef? code) => code is null ? "Code check" : $"Code check under {PackLabel(code)}";
+
+    /// <summary>The code window's lock note when nothing is chosen.</summary>
+    public const string ChooseToLockNote = "Choose a code to lock it or let it follow.";
+
+    /// <summary>The code window's lock note for a locked code: "Locked on 2026-09-25 to pack us-zz-frame revision 1."</summary>
+    /// <param name="on">The day it was locked.</param>
+    /// <param name="packId">The pack.</param>
+    /// <param name="revision">The revision it is locked to.</param>
+    public static string LockedNote(DateOnly on, string packId, int revision)
+        => $"Locked on {on.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)} to pack {packId} revision {revision}.";
+
+    /// <summary>The code window's lock note for a code that follows its pack's newest revision.</summary>
+    /// <param name="packId">The pack.</param>
+    public static string FollowingNote(string packId)
+        => $"Following pack {packId}: a newer revision is used when one is installed, and napkin says what changed.";
+
+    /// <summary>What the code window adds when a pack has neither header tables nor bracing provisions.</summary>
+    public const string NoBaseTablesNote = "Its base tables are not loaded: no header can be sized until they are (docs/rules-engine.md says how to add them).";
+
+    /// <summary>What the code window adds when a pack has bracing provisions but no header table.</summary>
+    public const string NoHeaderTablesNote = "It has no header table, so headers are not sized; walls' bracing is checked.";
+
+    /// <summary>What the code window adds when a pack has header tables but no bracing provisions.</summary>
+    public const string NoBracingNote = "It has no wall-bracing provisions, so no wall's bracing is checked.";
+
+    /// <summary>The code window's status for a pack that loaded: "Checking against …." and what it cannot check.</summary>
+    /// <param name="pack">The resolved pack.</param>
+    public static string CheckingStatus(LoadedPack pack)
+    {
+        ArgumentNullException.ThrowIfNull(pack);
+        return $"Checking against {pack.Code}."
+               + (pack.HasHeaderTables ? string.Empty
+                   : pack.Bracing is null ? " " + NoBaseTablesNote
+                   : " " + NoHeaderTablesNote)
+               + (pack.HasHeaderTables && pack.Bracing is null ? " " + NoBracingNote : string.Empty);
+    }
+
+    /// <summary>The Supports picker's tooltip when the adopted code has no header table to choose from.</summary>
+    /// <param name="shortName">The code's short name ("CT 2022").</param>
+    public static string NoHeaderTableTip(string shortName)
+        => $"{shortName} has no header table loaded, so there is nothing to choose from yet (docs/rules-engine.md).";
+
+    /// <summary>A sized header's headline: "Header (1) 2x8, 1 jack stud and 1 king stud each side."</summary>
+    /// <param name="header">The header as the table gives it ("(1) 2x8").</param>
+    /// <param name="jackStuds">Jack studs each side.</param>
+    /// <param name="kingStuds">King studs each side.</param>
+    public static string HeaderText(string header, int jackStuds, int kingStuds)
+        => $"Header {header}, {Count(jackStuds, "jack stud")} and {Count(kingStuds, "king stud")} each side.";
+
+    /// <summary>The message bar's line when a header comes to be beyond its table: "Header for Window 1 is now beyond Table ZZ-HEADER: get it engineered."</summary>
+    /// <param name="opening">The opening's name.</param>
+    /// <param name="table">The table it is beyond.</param>
+    public static string NowBeyondText(string opening, string table) => $"Header for {opening} is now beyond Table {table}: get it engineered.";
 
     /// <summary>The rules engine's site inputs for the project's typed values; null stays null.</summary>
     public static SiteInputs Site(SiteValues site)
@@ -344,7 +410,7 @@ public static class CodeCheck
         return result switch
         {
             HeaderResult.Sized s => new CheckWords(
-                $"Header {s.Header}, {Count(s.JackStuds, "jack stud")} and {Count(s.KingStuds, "king stud")} each side."
+                HeaderText(s.Header.ToString(), s.JackStuds, s.KingStuds)
                 + (library.TryFindLumber(s.Header.Nominal, out _) ? string.Empty : $" {s.Header.Nominal} is not in the materials library, so the header is not on the shopping list."),
                 s.Citation.ToString(),
                 Details(s.Citation),
@@ -430,7 +496,7 @@ public static class CodeCheck
         ChangeKind.CitationOnly => $"Header for {name} is unchanged, {Cited((HeaderResult.Sized)change.After)}.",
         ChangeKind.SizedToSized => $"Header for {name} changed: {((HeaderResult.Sized)change.Before).Header} → {Short(change.After)}.",
         ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope or ChangeKind.OutOfScopeChanged =>
-            $"Header for {name} is now beyond Table {((HeaderResult.OutOfScope)change.After).Limit.Table}: get it engineered.",
+            NowBeyondText(name, ((HeaderResult.OutOfScope)change.After).Limit.Table),
         ChangeKind.OutOfScopeToSized or ChangeKind.NoAnswerToSized => $"Header for {name} is now sized: {Short(change.After)}.",
         ChangeKind.SizedToNoAnswer => $"Header for {name} is no longer sized: {Short(change.After)}.",
         ChangeKind.OutOfScopeToNoAnswer => $"Header for {name} can no longer be checked: {Short(change.After)}.",

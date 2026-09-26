@@ -180,6 +180,9 @@ public enum ViewCommand
 
     /// <summary>The 3D view.</summary>
     ShowModel,
+
+    /// <summary>In the Parts view, each piece in 3D (isometric) or flat (docs/design/parts-view.md §3).</summary>
+    PartsIsometric,
 }
 
 /// <summary>What a window-wide shortcut (always with the command key) asks for.</summary>
@@ -431,6 +434,7 @@ public static class KeyMaps
             new(K(KeyName.D5), ViewCommand.ShowLeft),
             new(K(KeyName.D6), ViewCommand.ShowRight),
             new(K(KeyName.D7), ViewCommand.ShowModel),
+            new(K(KeyName.I), ViewCommand.PartsIsometric),
         ],
         new Dictionary<ViewCommand, string>
         {
@@ -454,6 +458,7 @@ public static class KeyMaps
             [ViewCommand.ShowLeft] = "Left",
             [ViewCommand.ShowRight] = "Right",
             [ViewCommand.ShowModel] = "3D",
+            [ViewCommand.PartsIsometric] = "Parts view: each piece in 3D, or flat again",
         });
 
     /// <summary>The shortcut list, as <c>docs/shortcuts.md</c> holds it.</summary>

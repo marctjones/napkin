@@ -145,7 +145,10 @@ public partial class MainWindow
         AddHandler(KeyDownEvent, OnJoinKeyDown, RoutingStrategies.Tunnel);
 
         DrawingCanvas.JointActivated += (_, id) => EditJoint(id);
-        ModelDrawing.JointActivated += (_, id) => EditJoint(id);
+        foreach (ModelView view in ModelViews)
+        {
+            view.JointActivated += (_, id) => EditJoint(id);
+        }
     }
 
     void OnJoinKeyDown(object? sender, KeyEventArgs e)
@@ -219,7 +222,7 @@ public partial class MainWindow
             Editor.Say(
                 EditSeverity.Problem,
                 boxes.Length == 2
-                    ? $"{Editor.NameOf(boxes[0].Id)} and {Editor.NameOf(boxes[1].Id)} don't touch."
+                    ? JointTooltip.DontTouch(Editor.NameOf(boxes[0].Id), Editor.NameOf(boxes[1].Id))
                     : "None of the selected parts touch, or the ones that do are already joined.");
             return;
         }
@@ -467,7 +470,7 @@ public partial class MainWindow
             JoinCountBox.IsEnabled = fastening != FasteningKind.None;
             JoinCountBox.PlaceholderText = fastening == FasteningKind.None
                 ? string.Empty
-                : $"recipe: {Recipes.Recipe(fastening, first.Faces.Contact.JointLength)}";
+                : Recipes.Placeholder(Recipes.Recipe(fastening, first.Faces.Contact.JointLength));
 
             bool pocket = fastening == FasteningKind.PocketScrews;
             JoinPocketBox.IsVisible = pocket && !_joinAll;
@@ -568,9 +571,9 @@ public partial class MainWindow
         JointContact contact = pair.Faces.Contact;
         Point3 middle = contact.Centre;
         Point at = IsShowingModel
-            ? ModelDrawing.Camera.Project(middle)
+            ? ActiveModel.Camera.Project(middle)
             : DrawingCanvas.View.ToScreen(new Point2(middle.X, middle.Y));
-        Visual host = IsShowingModel ? ModelDrawing : DrawingCanvas;
+        Visual host = IsShowingModel ? ActiveModel : DrawingCanvas;
         Point inWindow = host.TranslatePoint(at, this) ?? new Point(200, 200);
         Point inParent = this.TranslatePoint(inWindow, (Visual)JoinPanel.Parent!) ?? inWindow;
         Size room = ((Control)JoinPanel.Parent!).Bounds.Size;
@@ -614,7 +617,7 @@ public partial class MainWindow
         {
             if (!Length.TryParse(JoinDepthBox.Text, out Length parsed, out _) || parsed <= Length.Zero)
             {
-                RefuseJoin($"A {JointTooltip.TypeName(type).ToLowerInvariant()} needs a depth greater than zero, like 1/4\".");
+                RefuseJoin(JointTooltip.DepthRefusal(type));
                 return;
             }
 
@@ -627,7 +630,7 @@ public partial class MainWindow
         {
             if (!int.TryParse(countText, NumberStyles.None, CultureInfo.InvariantCulture, out int typed) || typed < 1)
             {
-                RefuseJoin("A count is a whole number of at least 1, or blank for the recipe's.");
+                RefuseJoin(Recipes.CountRefusal);
                 return;
             }
 

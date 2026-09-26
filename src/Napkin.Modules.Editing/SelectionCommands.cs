@@ -15,6 +15,33 @@ namespace Napkin.Modules.Editing;
 /// </remarks>
 public static class SelectionCommands
 {
+    /// <summary>
+    /// Selects the parts a list names — a Parts view cell's members, a cut-list row's (parts-view
+    /// §5.1, #205) — as a click does: exactly these; with <paramref name="toggle"/> (Ctrl or Cmd), each
+    /// one in or out of the selection; with <paramref name="add"/> (Shift), these as well as what is
+    /// selected. One selection, the editor's, whichever window asked.
+    /// </summary>
+    /// <param name="editor">Whose selection.</param>
+    /// <param name="ids">The parts.</param>
+    /// <param name="toggle">Toggle each instead of selecting.</param>
+    /// <param name="add">Add to the selection instead of replacing it.</param>
+    public static void Pick(DesignEditor editor, IEnumerable<EntityId> ids, bool toggle, bool add)
+    {
+        ArgumentNullException.ThrowIfNull(editor);
+        ArgumentNullException.ThrowIfNull(ids);
+        if (toggle)
+        {
+            foreach (EntityId id in ids)
+            {
+                editor.ToggleSelected(id);
+            }
+
+            return;
+        }
+
+        editor.SelectAll(add ? editor.Selection.Concat(ids) : ids);
+    }
+
     /// <summary>Removes what is selected, through the updater, relationships and all.</summary>
     public static void Delete(DesignEditor editor)
     {
@@ -207,6 +234,14 @@ public static class SelectionCommands
         return [.. editor.Selection.OrderBy(id => id).Select(editor.Sketch.Find<Box>).OfType<Box>()];
     }
 
+    /// <summary>What a move of a pinned part says: "Moved Top did not happen: Top is pinned where it is."</summary>
+    /// <param name="what">What was attempted: "Moved Top".</param>
+    /// <param name="name">The pinned part's name.</param>
+    public static string PinnedRefusal(string what, string name) => $"{what} did not happen: {name} is pinned where it is.";
+
+    /// <summary>The offer beside <see cref="PinnedRefusal"/>: unpinning the part, as one undo step.</summary>
+    public const string UnpinOffer = "Unpin it";
+
     /// <summary>
     /// What a move or a resize that left the part exactly where it was says at the drop: that it
     /// stayed put, and — when a pin is why — the way out, unpinning it, as one undo step. Nothing is
@@ -224,9 +259,9 @@ public static class SelectionCommands
         {
             editor.Show(new EditMessage(
                 EditSeverity.Problem,
-                $"{what} did not happen: {name} is pinned where it is.",
+                PinnedRefusal(what, name),
                 [pin.Id],
-                new EditOffer("Unpin it", new RemoveRelationship(pin.Id), $"Unpinned {name}")));
+                new EditOffer(UnpinOffer, new RemoveRelationship(pin.Id), $"Unpinned {name}")));
             return;
         }
 

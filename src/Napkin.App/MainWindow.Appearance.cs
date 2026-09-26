@@ -165,15 +165,26 @@ public partial class MainWindow
     {
         // The projection first: the readout the others refresh notices a projection that differs from
         // the settings and would save it over them.
-        ModelDrawing.Projection = Settings.Current.Projection;
+        ModelDrawing.Projection = SheetDrawing.PaneFor(null).Projection = Settings.Current.Projection;
         ApplyTheme(Settings.Current.Theme);
         ApplySketch();
         ApplyOpenIn(Settings.Current.OpenIn);
         ApplyGrid(Settings.Current.ShowGrid, Settings.Current.SnapToGrid);
         ApplyHiddenEdges(Settings.Current.ShowHiddenEdges);
+
+        // The Parts view's two choices (parts-view §3, §4.4). They are put on before the view's events
+        // are wired, so the menu's ticks are set here too.
+        PartsDrawing.Isometric = Settings.Current.PartsStyle == PartsStyle.Isometric;
+        PartsDrawing.GroupByStock = Settings.Current.GroupPartsByStock;
+        PartsIn3DMenuItem.Icon = PartsDrawing.Isometric ? new TextBlock { Text = "✓" } : null;
+        GroupPartsByStockMenuItem.Icon = PartsDrawing.GroupByStock ? new TextBlock { Text = "✓" } : null;
         _showRulers = Settings.Current.ShowRulers;
         DrawingCanvas.ShowRulers = _showRulers;
-        ModelDrawing.ShowScaleBar = ModelDrawing.ShowRulers = _showRulers;
+        foreach (ModelView view in ModelViews)
+        {
+            view.ShowScaleBar = view.ShowRulers = _showRulers;
+        }
+
         UpdateRulerLayout();
 
         if (Settings.Notice is { } notice)
@@ -214,7 +225,11 @@ public partial class MainWindow
 
     void ApplyHiddenEdges(bool show)
     {
-        ModelDrawing.ShowHiddenEdges = show;
+        foreach (ModelView view in ModelViews)
+        {
+            view.ShowHiddenEdges = show;
+        }
+
         HiddenEdgesMenuItem.Icon = show ? new TextBlock { Text = "✓" } : null;
     }
 
@@ -228,8 +243,14 @@ public partial class MainWindow
     /// <summary>The grid's lines and its snapping, each on every view that has them.</summary>
     void ApplyGrid(bool show, bool snap)
     {
-        DrawingCanvas.ShowGrid = ModelDrawing.ShowGrid = show;
-        DrawingCanvas.SnapToGrid = ModelDrawing.SnapToGrid = WorkshopSheet.Drawing.SnapToGrid = snap;
+        DrawingCanvas.ShowGrid = show;
+        DrawingCanvas.SnapToGrid = WorkshopSheet.Drawing.SnapToGrid = snap;
+        foreach (ModelView view in ModelViews)
+        {
+            view.ShowGrid = show;
+            view.SnapToGrid = snap;
+        }
+
         GridMenuItem.Icon = show ? new TextBlock { Text = "✓" } : null;
         SnapToGridMenuItem.Icon = snap ? new TextBlock { Text = "✓" } : null;
         UpdateZoomReadout();
@@ -319,7 +340,12 @@ public partial class MainWindow
     {
         SketchPaper paper = Settings.Current.SketchPaper;
         SketchLine line = Settings.Current.SketchLine;
-        DrawingCanvas.Look = ModelDrawing.Look = new SketchLook(paper, line);
+        DrawingCanvas.Look = new SketchLook(paper, line);
+        foreach (ModelView view in ModelViews)
+        {
+            view.Look = DrawingCanvas.Look;
+        }
+
         TextBlock? Tick(bool on) => on ? new TextBlock { Text = "✓" } : null;
         PaperScreenMenuItem.Icon = Tick(paper == SketchPaper.Screen);
         PaperGraphMenuItem.Icon = Tick(paper == SketchPaper.Graph);
@@ -338,27 +364,30 @@ public partial class MainWindow
             Settings.Update(s => s with { Projection = ModelDrawing.Projection });
         }
 
-        // A standard view is orthographic by definition and nothing in it snaps: its zoom is all it says.
-        ZoomText.Text = IsShowingStandardView
-            ? string.Create(CultureInfo.InvariantCulture, $"Zoom {ModelDrawing.Camera.ZoomPercent:0.#}%")
+        // A standard view is orthographic by definition and nothing in it snaps: its zoom is all it says,
+        // as the Parts view's is.
+        ZoomText.Text = IsShowingParts
+            ? string.Create(CultureInfo.InvariantCulture, $"Zoom {PartsDrawing.ZoomPercent:0.#}%")
+            : IsShowingStandardView
+            ? string.Create(CultureInfo.InvariantCulture, $"Zoom {ActiveModel.Camera.ZoomPercent:0.#}%")
             : IsShowingModel
             ? string.Create(
                 CultureInfo.InvariantCulture,
-                $"{(ModelDrawing.Projection == CameraProjection.Perspective ? "Perspective" : "Orthographic")} · Zoom {ModelDrawing.Camera.ZoomPercent:0.#}%")
+                $"{(ActiveModel.Projection == CameraProjection.Perspective ? "Perspective" : "Orthographic")} · Zoom {ActiveModel.Camera.ZoomPercent:0.#}%")
             : string.Create(CultureInfo.InvariantCulture, $"Zoom {DrawingCanvas.View.ZoomPercent:0.#}%");
 
         // While snapping is on, the step a drag lands on: it changes with the zoom, as the grid does.
-        if (Settings.Current.SnapToGrid && !IsShowingStandardView)
+        if (Settings.Current.SnapToGrid && !IsShowingStandardView && !IsShowingParts)
         {
             // In Rough mode that is the rough step, not the grid's (sketch-mode §2.1).
-            double step = IsShowingModel ? ModelDrawing.SnapStepInches : DrawingCanvas.SnapStepInches;
+            double step = IsShowingModel ? ActiveModel.SnapStepInches : DrawingCanvas.SnapStepInches;
             ZoomText.Text += " · Snap " + Show(new Length(SnapGrid.UnitsPerStep(step)));
         }
 
         // The projection belongs to the 3D view: the plan has none to choose.
         bool perspective = ModelDrawing.Projection == CameraProjection.Perspective;
-        OrthographicMenuItem.IsEnabled = PerspectiveMenuItem.IsEnabled = _view == DesignView.Model;
-        ViewText.Text = _view == DesignView.Model && perspective ? "3D, perspective" : StandardViews.Name(_view);
+        OrthographicMenuItem.IsEnabled = PerspectiveMenuItem.IsEnabled = _view == DesignView.Model && !IsShowingSheet;
+        ViewText.Text = IsShowingSheet ? "Sheet" : _view == DesignView.Model && perspective ? "3D, perspective" : StandardViews.Name(_view);
         OrthographicMenuItem.Icon = perspective ? null : new TextBlock { Text = "✓" };
         PerspectiveMenuItem.Icon = perspective ? new TextBlock { Text = "✓" } : null;
 
@@ -378,7 +407,11 @@ public partial class MainWindow
     {
         _showRulers = !_showRulers;
         DrawingCanvas.ShowRulers = _showRulers;
-        ModelDrawing.ShowScaleBar = ModelDrawing.ShowRulers = _showRulers;
+        foreach (ModelView view in ModelViews)
+        {
+            view.ShowScaleBar = view.ShowRulers = _showRulers;
+        }
+
         Settings.Update(s => s with { ShowRulers = _showRulers });
         UpdateRulerLayout();
     }
@@ -391,7 +424,7 @@ public partial class MainWindow
     {
         RulersMenuItem.Icon = _showRulers ? new TextBlock { Text = "✓" } : null;
 
-        double t = _showRulers && (!IsShowingModel || IsShowingStandardView) ? CanvasView.RulerThickness : 0;
+        double t = _showRulers && !IsShowingParts && (!IsShowingModel || IsShowingStandardView) ? CanvasView.RulerThickness : 0;
         ToolBar.Margin = ToolBarMargin + new Thickness(t, t, 0, 0);
         StockToolboxPanel.Margin = ToolboxMargin + new Thickness(t, t, 0, 0);
         SidePanels.Margin = SidePanelsMargin + new Thickness(0, t, 0, 0);
@@ -408,7 +441,7 @@ public partial class MainWindow
     /// </summary>
     void UpdateCursorReadout(Vector3d? point)
     {
-        if (StandardViews.Of(_view) is { } view && IsShowingStandardView)
+        if (IsShowingStandardView && ActiveModel.Locked is { } view)
         {
             (Axis across, Axis upward) = StandardViewFrame.Readable(view);
             CursorText.Text = point is { } on

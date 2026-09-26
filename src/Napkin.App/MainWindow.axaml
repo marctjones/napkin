@@ -263,6 +263,25 @@
                               Click="OnViewMenuClicked"
                               ToolTip.Tip="The drawing in three dimensions: turn parts, and move and resize them along any axis (7)." />
                 </MenuItem>
+                <!-- The Parts view (parts-view.md): every distinct piece once, with its count. -->
+                <MenuItem Name="PartsViewMenuItem"
+                          Header="_Parts"
+                          Click="OnViewMenuClicked"
+                          ToolTip.Tip="Every distinct piece of the design drawn once, to one scale, with how many there are — the cut list, drawn." />
+                <MenuItem Name="GroupPartsByStockMenuItem"
+                          Header="Group parts by stock"
+                          Click="OnGroupPartsByStockClicked"
+                          ToolTip.Tip="In the Parts view, the pieces under their stock's name: the stock of the largest piece first, no stock last." />
+                <MenuItem Name="PartsIn3DMenuItem"
+                          Header="Parts in 3D"
+                          Click="OnPartsIn3DClicked"
+                          IsEnabled="False"
+                          ToolTip.Tip="In the Parts view, each piece in 3D — isometric, to the same one scale — rather than flat (I)." />
+                <!-- The sheet (standard-views §11): Top above Front, Right beside it, 3D in the corner. -->
+                <MenuItem Name="SheetMenuItem"
+                          Header="Sheet"
+                          Click="OnSheetClicked"
+                          ToolTip.Tip="Top above Front and Right beside it, with 3D in the corner, all at once (third-angle). 1–7 or V for one view." />
                 <!-- Look along an axis, or at the next surface of the selected part: the 3D view's
                      square-on views, which also sit on the toolbar. -->
                 <MenuItem Name="LookAlongMenu" Header="_Look along">
@@ -501,6 +520,8 @@
                                           AutomationProperties.Name="View: Right" ToolTip.Tip="Right: from the east, read-only for now (6)" />
                             <ToggleButton Name="ModelViewChip" Content="3D" Click="OnViewChipClicked"
                                           AutomationProperties.Name="View: 3D" ToolTip.Tip="3D: turn, move and resize parts along any axis (7)" />
+                            <ToggleButton Name="PartsViewChip" Content="Parts" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Parts" ToolTip.Tip="Parts: every distinct piece drawn once, with how many" />
                         </StackPanel>
                     </Border>
                     <!-- Which view is showing (standard-views §4.2): Top, Front, 3D, "3D, perspective". -->
@@ -546,6 +567,21 @@
                 plan canvas's place while it shows, and the chrome floats over it the same way.
             -->
             <viewing:ModelView Name="ModelDrawing" IsVisible="False" ClipToBounds="True" />
+
+            <!--
+                The sheet (docs/design/standard-views.md §11): Top above Front, Right beside Front, 3D
+                in the spare corner, over the same editor. It takes the drawing's place while it shows,
+                clear of the toolbar and the side column (its margin is set in the code-behind from the
+                same reserves zoom to fit uses), on the bench, so its gutters read as gaps.
+            -->
+            <!-- The Parts view (parts-view.md): every distinct piece once, with its count; clear of the
+                 toolbar and the side column like the sheet (its margin is set in the code-behind). -->
+            <viewing:PartsView Name="PartsDrawing" IsVisible="False" />
+
+            <viewing:SheetView Name="SheetDrawing"
+                               IsVisible="False"
+                               ClipToBounds="True"
+                               Background="{DynamicResource NapkinBenchBrush}" />
 
             <!--
                 The shape workshop (docs/design/shaped-parts-model.md §7.1): a sheet over the

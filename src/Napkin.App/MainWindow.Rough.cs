@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Napkin.App.Viewing;
 
 using Napkin.Core.Geometry;
 using Napkin.Modules.Editing;
@@ -68,7 +69,10 @@ public partial class MainWindow
         UpdateSizeReadout();
         UpdateZoomReadout();
         DrawingCanvas.InvalidateVisual();
-        ModelDrawing.InvalidateVisual();
+        foreach (ModelView view in ModelViews)
+        {
+            view.InvalidateVisual();
+        }
     }
 
     /// <summary>

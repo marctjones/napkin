@@ -56,6 +56,34 @@ public static class CutList
     public const string NothingToCut = "This design has nothing in it to cut.";
 
     /// <summary>
+    /// What a design with boxes but no parts says in place of a cut list — the cut-list window's note
+    /// and the Parts view's (docs/design/parts-view.md §4.5), one sentence so they cannot drift.
+    /// </summary>
+    public const string NothingIsAPartYet =
+        "Nothing in this design is a part yet. A box becomes a part when it is given a "
+        + "thickness and told which of its three dimensions the drawing is showing; a wall "
+        + "and an opening are boxes nobody cuts, and they stay off this list; a wall's framing is on the "
+        + "shopping list's tab.";
+
+    /// <summary>
+    /// Why a design's cut list is empty, in the words a person reads: it has boxes but none is a
+    /// part (<see cref="NothingIsAPartYet"/>), or it has nothing at all (<see cref="NothingToCut"/>).
+    /// </summary>
+    /// <param name="sketch">A design whose cut list is empty.</param>
+    public static string WhyEmpty(Sketch sketch)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        return sketch.Entities.Values.OfType<Box>().Any() ? NothingIsAPartYet : NothingToCut;
+    }
+
+    /// <summary>The cut list in a phrase after the design's name: "4 rows, 9 pieces to cut", or "nothing to cut".</summary>
+    /// <param name="rows">How many rows.</param>
+    /// <param name="pieces">How many pieces, over all rows.</param>
+    public static string Headline(int rows, int pieces) => rows == 0
+        ? "nothing to cut"
+        : $"{rows} {(rows == 1 ? "row" : "rows")}, {pieces} {(pieces == 1 ? "piece" : "pieces")} to cut";
+
+    /// <summary>
     /// The cut list for a design.
     /// </summary>
     /// <param name="sketch">The design. Boxes whose <see cref="Box.Part"/> is null are not pieces anybody cuts, nor are parts that are not <see cref="Phase.New"/>.</param>

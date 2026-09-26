@@ -45,8 +45,9 @@ public static class StandardViews
     /// <summary>The view's name, as the menu, the chips and the status bar say it.</summary>
     public static string Name(StandardView view) => StandardViewFrame.Name(view);
 
-    /// <summary>A design view's name: a standard view's, or "3D".</summary>
-    public static string Name(DesignView view) => Of(view) is { } standard ? Name(standard) : "3D";
+    /// <summary>A design view's name: a standard view's, "3D" or "Parts".</summary>
+    public static string Name(DesignView view) =>
+        Of(view) is { } standard ? Name(standard) : view == DesignView.Parts ? "Parts" : "3D";
 
     /// <summary>The standard view a design view is, or null for the 3D view.</summary>
     public static StandardView? Of(DesignView view) =>

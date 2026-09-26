@@ -117,6 +117,13 @@ public sealed class ModelScene
     /// <summary>Every polygon, box by box in id order, each box's faces in its solid's order.</summary>
     public ImmutableArray<ScenePolygon> Polygons { get; }
 
+    /// <summary>A scene of given polygons: a Parts view cell's one solid (parts-view §3), with no sketch built for it.</summary>
+    public static ModelScene Of(IEnumerable<ScenePolygon> polygons)
+    {
+        ArgumentNullException.ThrowIfNull(polygons);
+        return new ModelScene([.. polygons]);
+    }
+
     /// <summary>The scene of a sketch: every box's solid.</summary>
     public static ModelScene Of(Sketch sketch)
     {

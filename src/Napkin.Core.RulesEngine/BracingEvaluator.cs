@@ -18,8 +18,7 @@ internal static class BracingEvaluator
             return new BracingResult.NoData(
                 BracingNoDataReason.NoBracingProvisions,
                 code,
-                $"The loaded pack {code.ShortName} has no wall-bracing provisions, so napkin cannot check this wall line's bracing. "
-                + "Nothing is guessed: add them to the pack directory from your copy of the code (docs/rules-engine.md).");
+                BracingResult.NoData.NoProvisionsExplanation(code.ShortName));
         }
 
         SiteInputs site = request.Site;
@@ -193,7 +192,7 @@ internal static class BracingEvaluator
                     segment.Length,
                     id,
                     Length.Zero,
-                    $"method '{id}' is not one of {code.ShortName}'s methods, so it counts for nothing: assign one of this code's methods");
+                    SegmentContribution.UnknownMethodWhy(id, code.ShortName));
             }
 
             Length height = line.WallHeight;

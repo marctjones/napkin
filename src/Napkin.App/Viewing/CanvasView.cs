@@ -288,6 +288,12 @@ public sealed class CanvasView : Control
     public double FitReserveRight { get; set; }
 
     /// <summary>
+    /// How many pixels at the top of this view the floating toolbar covers (#186): zoom to fit
+    /// frames the drawing below it, and a part under it counts as out of view.
+    /// </summary>
+    public double FitReserveTop { get; set; }
+
+    /// <summary>
     /// Parts to draw attention to, outlined in the problem colour: the ones a conflict or a refused
     /// turn names (#72), or the ones a relationship row under the pointer holds (#77).
     /// </summary>
@@ -542,7 +548,7 @@ public sealed class CanvasView : Control
         }
 
         (Point3 low, Point3 high) = SpaceSnapResolver.Extent(box);
-        Rect visible = new(0, 0, Math.Max(Bounds.Width - FitReserveRight, 1), Bounds.Height);
+        Rect visible = new(0, FitReserveTop, Math.Max(Bounds.Width - FitReserveRight, 1), Math.Max(Bounds.Height - FitReserveTop, 1));
         foreach (Point2 corner in (Point2[])[new(low.X, low.Y), new(high.X, low.Y), new(high.X, high.Y), new(low.X, high.Y)])
         {
             if (!visible.Contains(_view.ToScreen(corner)))
@@ -575,7 +581,7 @@ public sealed class CanvasView : Control
         }
 
         _fitPending = false;
-        View = _view.FitTo(extents, _view.Viewport, coveredRight: FitReserveRight);
+        View = _view.FitTo(extents, _view.Viewport, coveredRight: FitReserveRight, coveredTop: FitReserveTop);
     }
 
     /// <summary>Zooms in one step, about the centre of the viewport.</summary>
@@ -836,7 +842,14 @@ public sealed class CanvasView : Control
         else
         {
             Hover(PickAt(_view.ToWorld(position)));
-            _joints.ShowTip(this, _editor is { } tipEditor ? _joints.TipAt(position, tipEditor.Sketch, tipEditor.NameOf) : null);
+
+            // One tooltip for the paper: a joint's marker, drawn over everything, speaks first; then
+            // the relationship glyph under the pointer, in its list row's words (#156).
+            _joints.ShowTip(
+                this,
+                _editor is { } tipEditor
+                    ? _joints.TipAt(position, tipEditor.Sketch, tipEditor.NameOf) ?? _glyphs.TipAt(position, tipEditor)
+                    : null);
         }
 
         PointerWorldPositionChanged?.Invoke(this, _view.ToWorld(position));
@@ -846,6 +859,11 @@ public sealed class CanvasView : Control
 
     /// <summary>The joint markers as last drawn, for the GUI suite to find one on the screen.</summary>
     public JointMarkerLayer JointMarkerLayer => _joints;
+
+    readonly RelationshipGlyphLayer _glyphs = new();
+
+    /// <summary>The relationship glyphs as last drawn (#156), for the GUI suite to find one on the screen.</summary>
+    public RelationshipGlyphLayer RelationshipGlyphLayer => _glyphs;
 
     /// <summary>Raised when a joint's marker is double-pressed: open it for editing.</summary>
     public event EventHandler<RelationshipId>? JointActivated;
@@ -961,6 +979,10 @@ public sealed class CanvasView : Control
         }
 
         Hover(null);
+
+        // Nothing is under a pointer that has left: a tooltip kept would come back, stale, the next
+        // time the pointer enters anywhere on the paper.
+        _joints.ShowTip(this, null);
         PointerWorldPositionChanged?.Invoke(this, null);
     }
 
@@ -1995,6 +2017,11 @@ public sealed class CanvasView : Control
             using DrawingContext.PushedState? ghost = measurement.Dimension.Phase == Phase.Existing ? context.PushOpacity(ExistingOpacity) : null;
             DrawDimension(context, palette, measurement, palette.Dimension);
         }
+
+        // The relationships a snap made, on the lines and corners they hold (#156): over the
+        // parts and dimensions, under the attention outline, the joints and the selection.
+        _glyphs.Update(sketch, _view.ToScreen);
+        _glyphs.Draw(context, palette.Dimension, palette.Background);
 
         DrawBlankHints(context, palette, sketch);
         DrawAttention(context, palette, sketch);

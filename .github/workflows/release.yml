@@ -204,7 +204,7 @@ jobs:
           name="napkin-$VERSION-$RID"
           rm -rf verify && mkdir verify
           unzip -q "dist/$name.zip" -d verify
-          bin="verify/$name/Napkin.App"
+          bin="verify/$name/napkin"
           test -x "$bin" || { echo "::error::$bin is missing or not executable after unzip."; exit 1; }
 
           case "$RID" in
@@ -238,15 +238,51 @@ jobs:
             echo "osx-arm64: ad-hoc signature present and valid; no Developer ID, no notarization ticket."
           fi
 
+      # Launch smoke test. CI being green proved nothing about whether the download STARTS: the
+      # first build of this pipeline was killed by macOS at launch (exit 137) because of the
+      # executable's file name (issue #56), and every other check passed. This starts the program
+      # exactly as unzipped and requires it to still be running after a few seconds. arm64 only:
+      # the runner is arm64 and the x64 build would need Rosetta.
+      - name: Launch smoke test (macOS)
+        if: runner.os == 'macOS' && matrix.rid == 'osx-arm64'
+        shell: bash
+        run: |
+          set -uo pipefail
+          name="napkin-$VERSION-$RID"
+          "verify/$name/napkin" > launch.log 2>&1 &
+          pid=$!
+          sleep 8
+          if kill -0 "$pid" 2>/dev/null; then
+            echo "napkin is still running after 8 s (pid $pid): it started."
+            kill "$pid" || true
+          else
+            wait "$pid"; code=$?
+            echo "::error::napkin exited within 8 s of launch (exit code $code)."
+            cat launch.log
+            exit 1
+          fi
+
       - name: Check archive (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $name = "napkin-$env:VERSION-$env:RID"
           Expand-Archive -Path "dist/$name.zip" -DestinationPath verify
-          $exe = Get-Item "verify/$name/Napkin.App.exe"
-          if ($exe.Length -lt 1MB) { throw "Napkin.App.exe is only $($exe.Length) bytes." }
+          $exe = Get-Item "verify/$name/napkin.exe"
+          if ($exe.Length -lt 1MB) { throw "napkin.exe is only $($exe.Length) bytes." }
           Get-ChildItem "verify/$name" | Format-Table Name, Length
+
+      # Launch smoke test: see the macOS step. The program must still be running after 8 seconds.
+      - name: Launch smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $name = "napkin-$env:VERSION-$env:RID"
+          $process = Start-Process -FilePath "verify/$name/napkin.exe" -PassThru
+          Start-Sleep -Seconds 8
+          if ($process.HasExited) { throw "napkin.exe exited within 8 s of launch (exit code $($process.ExitCode))." }
+          Write-Host "napkin.exe is still running after 8 s (pid $($process.Id)): it started."
+          Stop-Process -Id $process.Id -Force
 
       - uses: actions/upload-artifact@v4
         with:

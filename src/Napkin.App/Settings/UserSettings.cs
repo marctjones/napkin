@@ -15,6 +15,19 @@ public enum DesignView
     Left,
     Right,
     Model,
+
+    /// <summary>The Parts view (docs/design/parts-view.md): every distinct piece once, with its count.</summary>
+    Parts,
+}
+
+/// <summary>How the Parts view draws each piece (docs/design/parts-view.md §3).</summary>
+public enum PartsStyle
+{
+    /// <summary>Flat, dimensioned: the default.</summary>
+    Flat,
+
+    /// <summary>In 3D, isometric and orthographic.</summary>
+    Isometric,
 }
 
 /// <summary>Which view a design opens in.</summary>
@@ -82,6 +95,15 @@ public sealed record UserSettings
 
     /// <summary>Which view a design opens in when it is opened (not the one on screen).</summary>
     public OpenDesignsIn OpenIn { get; init; } = OpenDesignsIn.LastUsed;
+
+    /// <summary>Whether the sheet — Top, Front, Right and 3D at once — was showing (standard-views §11.1).</summary>
+    public bool ShowSheet { get; init; }
+
+    /// <summary>Whether the Parts view draws its pieces flat or in 3D (parts-view §3).</summary>
+    public PartsStyle PartsStyle { get; init; } = PartsStyle.Flat;
+
+    /// <summary>Whether the Parts view groups its pieces by stock, under title bands (parts-view §4.4).</summary>
+    public bool GroupPartsByStock { get; init; }
 
     /// <summary>The view the person was last in; what <see cref="OpenDesignsIn.LastUsed"/> means.</summary>
     public DesignView LastView { get; init; } = DesignView.Top;

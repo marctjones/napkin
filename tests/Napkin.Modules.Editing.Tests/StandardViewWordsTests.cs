@@ -23,4 +23,15 @@ public class StandardViewWordsTests
         Assert.Equal("Hidden edges: shown as light dashes.", StandardViewWords.HiddenEdgesShown);
         Assert.Equal("Hidden edges: not shown.", StandardViewWords.HiddenEdgesNotShown);
     }
+
+    [Fact]
+    [Trait("Feature", "VIEW-013")]
+    public void The_sheet_says_what_it_shows_where_to_draw_and_how_it_is_arranged()
+    {
+        Assert.Equal("Sheet: Top above Front, Right beside it, 3D in the corner — pick a part in any of them; 1–7 or V for one view.", StandardViewWords.SheetHint);
+        Assert.Equal("Not on the sheet — 1 for the plan or 7 for 3D.", StandardViewWords.NotOnSheet);
+        Assert.Equal("Third-angle projection", StandardViewWords.ThirdAngle);
+        Assert.Equal("Not in the Parts view — 1 for the plan or 7 for 3D.", StandardViewWords.NotInPartsView);
+        Assert.Equal("Parts: every distinct piece drawn once, to one scale, with how many — 1 for the plan or 7 for 3D.", StandardViewWords.PartsHint);
+    }
 }

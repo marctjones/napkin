@@ -32,9 +32,12 @@ public partial class MainWindow
         if (StockToolboxPanel.Category is null)
         {
             DrawingCanvas.ArmStock(null);
-            if (ModelDrawing.Placement.Stock is not null)
+            foreach (ModelView view in ModelViews)
             {
-                ModelDrawing.Disarm();
+                if (view.Placement.Stock is not null)
+                {
+                    view.Disarm();
+                }
             }
         }
 
@@ -72,9 +75,15 @@ public partial class MainWindow
     {
         // In the 3D view stock is placed on the face under the pointer (#74); in the plan, dragged
         // out on the paper.
+        if (IsShowingParts)
+        {
+            Editor.Say(EditSeverity.Hint, StandardViewWords.NotInPartsView);
+            return;
+        }
+
         if (IsShowingModel)
         {
-            if (ModelDrawing.Arm(item))
+            if (ActiveModel.Arm(item))
             {
                 Editor.Say(
                     EditSeverity.Hint,

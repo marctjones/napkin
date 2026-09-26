@@ -38,7 +38,7 @@ public class CutListWorkflows
         {
             CutListWindow list = window.CutList!;
             Assert.Empty(list.Rows.Rows);
-            Assert.Contains("nothing to cut", list.Headline, StringComparison.Ordinal);
+            Assert.Contains(CutList.Headline(0, 0), list.Headline, StringComparison.Ordinal);
             Assert.NotEmpty(list.EmptyMessage);
         });
 
@@ -56,7 +56,7 @@ public class CutListWorkflows
 
             // Four legs drawn as four boxes are one row of four, which is the whole point.
             Assert.Equal([1, 2, 4, 2], list.Rows.Sorted.Select(row => row.Quantity));
-            Assert.Contains("9 pieces to cut", list.Headline, StringComparison.Ordinal);
+            Assert.Contains(CutList.Headline(4, 9), list.Headline, StringComparison.Ordinal);
             Assert.Empty(list.EmptyMessage);
         });
 
@@ -293,7 +293,7 @@ public class CutListWorkflows
             CutListWindow list = window.CutList!;
 
             Assert.Equal(13, list.Rows.Rows.Length);
-            Assert.Contains("13 rows, 24 pieces to cut", list.Headline, StringComparison.Ordinal);
+            Assert.Contains(CutList.Headline(13, 24), list.Headline, StringComparison.Ordinal);
             Assert.Equal(
                 wantRows.Select(row => row.GetProperty("label").GetString()),
                 list.Rows.Sorted.Select(row => row.Label));
@@ -405,6 +405,66 @@ public class CutListWorkflows
     }
 
     /// <summary>Where a cut-list column header is, in the cut-list window's own coordinates.</summary>
+    /// <summary>Where a row's name is in the cut-list window: the first cell of its line.</summary>
+    static Point CentreOfRow(MainWindow window, string label)
+    {
+        CutListTable table = window.CutList!.Rows;
+        int line = table.LineOf(table.Rows.Single(row => row.Label == label));
+        Control name = table.Children.OfType<Control>().First(cell => Grid.GetRow(cell) == line && Grid.GetColumn(cell) == 0);
+        return CentreOf(window.CutList!, name);
+    }
+
+    [GuiWorkflow("GUI-CUT-10")]
+    public void A_row_of_the_cut_list_selects_its_parts_in_the_drawing() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "Coffee table");
+        app.Chord(Key.L);
+        AppDriver list = AppDriver.Attach(window.CutList!, "cut-list");
+        HashSet<EntityId> legs = [.. window.CutList!.Rows.Rows.Single(row => row.Label == "Leg").Members];
+        EntityId top = Assert.Single(window.CutList!.Rows.Rows.Single(row => row.Label == "Top").Members);
+
+        list.Click(CentreOfRow(window, "Leg"));
+        app.Expect("a click on the Leg row selects the four legs in the drawing", () =>
+        {
+            Assert.Equal(4, legs.Count);
+            Assert.True(legs.SetEquals(window.Editor.Selection));
+        });
+
+        list.Click(CentreOfRow(window, "Top"), modifiers: KeyModifiers.Shift);
+        app.Expect("Shift adds the top: five parts selected", () =>
+            Assert.True(legs.Append(top).ToHashSet().SetEquals(window.Editor.Selection)));
+
+        list.Click(CentreOfRow(window, "Leg"), modifiers: AppDriver.CommandModifier);
+        app.Expect("Ctrl or Cmd on the Leg row takes the legs back out: the top alone", () =>
+            Assert.Equal(top, Assert.Single(window.Editor.Selection)));
+
+        // The table still sorts from its headers: a header click is not a row.
+        list.Click(CentreOfHeader(window, "Part"));
+        app.Expect("the Part header sorts and selects nothing new", () =>
+        {
+            Assert.Equal(["Apron, long", "Apron, short", "Leg", "Top"], window.CutList!.Rows.Sorted.Select(row => row.Label));
+            Assert.Equal(top, Assert.Single(window.Editor.Selection));
+        });
+
+        list.Click(CentreOfRow(window, "Apron, short"));
+        HashSet<EntityId> aprons = [.. window.CutList!.Rows.Rows.Single(row => row.Label == "Apron, short").Members];
+        app.Expect("a click on another row replaces the selection with its parts", () =>
+            Assert.True(aprons.SetEquals(window.Editor.Selection)));
+
+        // Back in the drawing, it is the drawing's one selection: 3D shows it, Escape clears it.
+        app.Press(Key.D7);
+        app.Expect("in 3D the short aprons are the selection", () =>
+        {
+            Assert.True(window.IsShowingModel);
+            Assert.True(aprons.SetEquals(window.Editor.Selection));
+        });
+
+        app.Press(Key.Escape);
+        app.Expect("Escape in the drawing clears it", () => Assert.Empty(window.Editor.Selection));
+        window.CutList!.Close();
+    });
+
     static Point CentreOfHeader(MainWindow window, string column)
     {
         CutListTable table = window.CutList!.Rows;

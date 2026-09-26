@@ -456,8 +456,8 @@ public class AssemblyEditingWorkflows
         {
             Assert.Equal(top, window.CurrentDesign!.Sketch.Find<Box>(top.Id));
             Assert.Equal(relationships, window.CurrentDesign!.Sketch.Relationships.Count);
-            Assert.Equal("Moved Top did not happen: Top is pinned where it is.", window.MessageOnScreen);
-            Assert.Equal("Unpin it", window.OfferText);
+            Assert.Equal(SelectionCommands.PinnedRefusal("Moved Top", "Top"), window.MessageOnScreen);
+            Assert.Equal(SelectionCommands.UnpinOffer, window.OfferText);
         });
 
         app.SaveFrame("pinned-top-refused");
