@@ -433,6 +433,15 @@ public sealed class PartsView : Control
 
             PartsCellDrawn drawn = PartsCellDrawing.Build(cell, _sheetScale, new Point(0, 0));
             context.DrawGeometry(fill, outline, drawn.Outline);
+            if (!drawn.Bevels.IsEmpty)
+            {
+                Pen bevel = new(outline.Brush, outline.Thickness) { DashStyle = new DashStyle([4, 3], 0) };
+                foreach ((Point from, Point to) in drawn.Bevels)
+                {
+                    context.DrawLine(bevel, from, to);
+                }
+            }
+
             DrawDimension(context, dimension, palette.Dimension, drawn.Length, vertical: false);
             DrawDimension(context, dimension, palette.Dimension, drawn.Width, vertical: true);
             foreach (PartsText text in drawn.Texts)

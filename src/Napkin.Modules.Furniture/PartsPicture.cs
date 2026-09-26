@@ -73,6 +73,23 @@ public sealed record PartsPicture(
         return new PartsPicture(pose, cell.Outline, turn, turn ? up : across, turn ? across : up, caption);
     }
 
+    /// <summary>
+    /// Where along a strut blank's length a compound end's bevel leaves the far face: Depth·tan β in
+    /// from each such end, west ends from the start and east ends from the far end, in the blank's own
+    /// frame (<c>docs/design/angled-parts.md</c> &#xA7;4). Display only, rounded once; none for a box.
+    /// </summary>
+    /// <param name="cell">The cell.</param>
+    public static IEnumerable<Length> BevelOffsets(PartsCell cell)
+    {
+        ArgumentNullException.ThrowIfNull(cell);
+        double depth = cell.Blank.Depth.ToInches(), length = cell.Blank.Width.ToInches();
+        foreach (DerivedCompoundEnd end in cell.Row.CompoundEnds)
+        {
+            double inset = depth * Math.Tan(end.Bevel.Degrees * Math.PI / 180);
+            yield return Length.FromInches(end.End == BlankEnd.West ? inset : length - inset, Rounding.HalfToEven);
+        }
+    }
+
     static string Thick(CutListRow row) => $"{CutListCsv.Text(row.Thickness)} thick";
 
     static Length Max(Length a, Length b) => a >= b ? a : b;
