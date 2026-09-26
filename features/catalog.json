@@ -1685,6 +1685,15 @@
       "kind": "unit"
     },
     {
+      "id": "VIEW-014",
+      "area": "ui",
+      "title": "A grid that fades with zoom instead of crowding",
+      "acceptance": "GridLevels over 0.5 % to 20 000 %: every drawn level is 10-200 px apart below the ladder's top; exactly two levels (the snap step and a heavier step above it on the ladder), one at the top; zooming in never coarsens a level; the minor level fades from 0.35 at 14 px to full at 28 px and never below; the major is always full; a 3D ground line fades from full at the middle to 0.35 at the edge.",
+      "milestone": "backlog",
+      "issue": 114,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-VIEW-16",
       "area": "ui",
       "title": "The sheet shows Top over Front and Right beside it, at one scale, selection shared, remembered",
