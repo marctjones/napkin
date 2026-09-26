@@ -45,7 +45,7 @@
   ],
   "rows": [
     {
-      "id": "r.2x2x8.10ft 0in",
+      "id": "r.2-2x8.10",
       "species": "zz-fir",
       "member": "(2) 2x8",
       "joistSpan": "10ft 0in",
@@ -53,7 +53,7 @@
       "location": "synthetic p. 3"
     },
     {
-      "id": "r.2x2x8.16ft 0in",
+      "id": "r.2-2x8.16",
       "species": "zz-fir",
       "member": "(2) 2x8",
       "joistSpan": "16ft 0in",
@@ -61,7 +61,7 @@
       "location": "synthetic p. 3"
     },
     {
-      "id": "r.2x2x10.10ft 0in",
+      "id": "r.2-2x10.10",
       "species": "zz-fir",
       "member": "(2) 2x10",
       "joistSpan": "10ft 0in",
@@ -69,7 +69,7 @@
       "location": "synthetic p. 3"
     },
     {
-      "id": "r.2x2x10.16ft 0in",
+      "id": "r.2-2x10.16",
       "species": "zz-fir",
       "member": "(2) 2x10",
       "joistSpan": "16ft 0in",

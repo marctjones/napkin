@@ -292,6 +292,19 @@ with how much of the last board shows. The **beam span** between posts and a mid
 ≈ when they are not on the grid. Every piece becomes a cut-list row, so the shopping list buys
 decks as it buys walls.
 
+**The deck's code check** (`DeckCheck`, deck-and-porch §3) looks each piece up in the adopted
+code's deck tables ([rules-engine.md](rules-engine.md#deck-tables-198)): the joists' span, the
+beam's span between posts for the joists it carries, the ledger's fastening (with napkin's own
+count, ⌈length ÷ spacing⌉ + 1), and the footing under the most loaded post (a middle one with three
+or more posts, an end one with two) on the site's **soil bearing** value. Each line is exactly one
+of passes, short (by how much), sized, out of scope, input missing or no data, with its table, row
+and page. **Frost** is napkin's comparison of two typed values — the deck's footing depth and the
+site's frost depth — and the adopted code, when it prints a frost depth (Connecticut's Table
+R301.2, p. 131: 42"), is **offered** with its citation ("CT 2022 says 3'-6" … — use it?"), never
+applied until you press **Use it**. A bearing wall standing on a deck whose Supports is empty asks
+you to choose what the deck supports. Under the shipped Connecticut pack every table line is **No
+data**: its deck tables are M10's (#40–#42).
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code

@@ -625,6 +625,7 @@ public partial class CutListWindow : Window
             {
                 decks.Add((framing, deck.Name));
                 deckNotes.Add($"{deck.Name}: {Napkin.Modules.Editing.DeckTool.FrameLine(framing)}.");
+                deckNotes.AddRange(DeckCheck.For(sketch.After(), deck, Packs.Resolve(sketch.Code).Pack, MaterialsLibrary.Shipped).Lines.Select(line => line.Text));
             }
             else
             {

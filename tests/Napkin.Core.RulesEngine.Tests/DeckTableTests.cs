@@ -230,7 +230,7 @@ public class DeckLoaderTests
         Assert.Empty(ct.Deck.Spans);
         Assert.Equal((null, null, null), (ct.Deck.Ledger, ct.Deck.Footing, ct.Deck.GuardStair));
         Assert.Empty(DeckProvisions.None.Spans);
-        Assert.Null(ct.Frost);
+        Assert.NotNull(ct.Frost);
         Assert.Equal("1500 psf", CellValue.Whole(ColumnType.Psf, 1500).ToString());
         Assert.Equal("27 sq ft", CellValue.Whole(ColumnType.SquareFeet, 27).ToString());
     }
