@@ -32,6 +32,16 @@ public class RelationshipTextTests
     static FeatureRef Face(EntityId box, BoxFace face) => new(box, BoxFeature.Face(face));
 
     [Fact]
+    public void A_strut_place_names_the_strut_and_which_end_or_face()
+    {
+        Assert.Equal("Leg's first end", RelationshipText.Place(Scene, new StrutEndRef(Leg, StrutEnd.From), Name));
+        Assert.Equal("Leg's second end", RelationshipText.Place(Scene, new StrutEndRef(Leg, StrutEnd.To), Name));
+        Assert.Equal("Leg's bottom face", RelationshipText.Place(Scene, new StrutFaceRef(Leg, StrutFace.Bottom), Name));
+        Assert.Equal("Leg's second end face", RelationshipText.Place(Scene, new StrutEndFaceRef(Leg, StrutEnd.To), Name));
+        Assert.Equal("Leg's first end face", RelationshipText.Place(Scene, new StrutEndFaceRef(Leg, StrutEnd.From), Name));
+    }
+
+    [Fact]
     public void Centred_names_the_middle_both_sides_and_the_run_it_is_centred_along()
     {
         string text = Describe(new Centered(RelationshipId.New(), new CenterRef(Rail), Face(Leg, BoxFace.East), Face(Top, BoxFace.East), Axis.X));

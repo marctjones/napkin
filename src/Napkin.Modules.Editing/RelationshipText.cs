@@ -86,6 +86,9 @@ public static class RelationshipText
             CenterRef centre => $"{nameOf(centre.Box)}'s centre",
             NodeRef node => nameOf(node.Node),
             SegmentRef segment => nameOf(segment.Segment),
+            StrutEndRef end => $"{nameOf(end.Strut)}'s {(end.End == StrutEnd.From ? "first" : "second")} end",
+            StrutFaceRef face => $"{nameOf(face.Strut)}'s {face.Face.ToString().ToLowerInvariant()} face",
+            StrutEndFaceRef endFace => $"{nameOf(endFace.Strut)}'s {(endFace.End == StrutEnd.From ? "first" : "second")} end face",
             _ => "a point",
         };
     }

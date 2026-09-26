@@ -377,6 +377,104 @@ public class StrutTests
     public void AnAngleIsShownToTheNearestHalfDegreeAwayFromZero(double degrees, double shown)
         => Assert.Equal(shown, new DerivedAngle(degrees, false).Shown);
 
+    // ---- The updater and the place rules (slice A's share) ----
+
+    private static UpdateResult Add(Sketch sketch, Entity entity) => DirectUpdater.Instance.Apply(sketch, new AddEntity(entity));
+
+    [Fact]
+    public void AStrutIsAddedAndRemovedStructurally()
+    {
+        Strut leg = Leg((0, 7168, 24576), height: 1536);
+        Solved added = Assert.IsType<Solved>(Add(Sketch.Empty, leg));
+
+        Assert.Equal(leg, added.Sketch.Find<Strut>(leg.Id));
+        Solved removed = Assert.IsType<Solved>(DirectUpdater.Instance.Apply(added.Sketch, new RemoveEntity(leg.Id)));
+        Assert.Null(removed.Sketch.Find(leg.Id));
+    }
+
+    [Fact]
+    public void AStrutThatBreaksAnInvariantIsRefusedByName()
+    {
+        Assert.Equal(RejectionReason.StrutIsAxisAligned, Assert.IsType<Rejected>(Add(Sketch.Empty, Leg((0, 0, 27648)))).Reason);
+        Assert.Equal(RejectionReason.NonPositiveSize, Assert.IsType<Rejected>(Add(Sketch.Empty, Leg((0, 7168, 24576), height: 0))).Reason);
+        Assert.Equal(RejectionReason.StrutTooShortForItsCuts, Assert.IsType<Rejected>(Add(Sketch.Empty, Leg((0, 2048, 2048), EndCut.Z, EndCut.Y))).Reason);
+
+        Rejected along = Assert.IsType<Rejected>(Add(Sketch.Empty, Leg((0, 7168, 24576), EndCut.Z, EndCut.X)));
+        Assert.Equal(RejectionReason.InvalidStrut, along.Reason);
+        Assert.Equal(ValidationErrorKind.StrutCutAlongItself, along.Detail!.Kind);
+    }
+
+    [Fact]
+    public void AStrutsEndIsAPointAndItsBodyIsNotAPlace()
+    {
+        Strut leg = Leg((0, 7168, 24576), height: 1536, from: (4096, -4096, 0)) with { Name = "Leg" };
+        Sketch sketch = Sketch.Empty.WithEntity(leg);
+
+        Assert.Equal(new Place(new Length(4096), new Length(3072), new Length(24576)), sketch.PlaceOf(new StrutEndRef(leg.Id, StrutEnd.To)));
+        Assert.Equal(default, sketch.PlaceOf(new StrutFaceRef(leg.Id, StrutFace.North)));
+        Assert.Equal("Leg's from end", PlaceRules.Describe(sketch, new StrutEndRef(leg.Id, StrutEnd.From)));
+
+        Coincident onFace = new(new RelationshipId(Guid.NewGuid()), new StrutFaceRef(leg.Id, StrutFace.North), new StrutEndRef(leg.Id, StrutEnd.To));
+        ValidationError refusal = PlaceRules.Refusal(sketch, onFace)!;
+        Assert.Equal(ValidationErrorKind.PlacesNotComparable, refusal.Kind);
+        Assert.Contains("north face is part of a strut's body", refusal.Message, StringComparison.Ordinal);
+
+        Coincident onEndFace = onFace with { A = new StrutEndFaceRef(leg.Id, StrutEnd.From) };
+        Assert.Contains("from end face", PlaceRules.Refusal(sketch, onEndFace)!.Message, StringComparison.Ordinal);
+
+        // A reference to a strut that names another kind of entity is the wrong kind.
+        Box box = Box.AsDrawn(EntityId.New(), Layer.Default.Id, Point2.Inches(0, 0), Length.Inches(1), Length.Inches(1), Length.Inches(1), Angle.Zero);
+        Sketch wrong = sketch.WithEntity(box).WithRelationship(onFace with { A = new StrutEndRef(box.Id, StrutEnd.From) });
+        Assert.Contains(wrong.Validate().Errors, e => e.Kind == ValidationErrorKind.WrongEntityKind);
+    }
+
+    [Fact]
+    public void AStrutEndHeldToAPartHoldsAndChecks()
+    {
+        // The bench's seat underside at 24″, and a leg's top on it (§9.1): exact, satisfied.
+        Box seat = new(EntityId.New(), Layer.Default.Id, new Point3(Length.Zero, Length.Zero, new Length(24576)), Length.Inches(36), Length.Inches(12), new Length(768), BoxFace.Top, Angle.Zero);
+        Strut leg = Leg((0, 7168, 24576), height: 1536, from: (4096, -4096, 0));
+        AxisDistance under = new(new RelationshipId(Guid.NewGuid()), new FeatureRef(seat.Id, BoxFeature.Face(BoxFace.Bottom)), new StrutEndRef(leg.Id, StrutEnd.To), Axis.Z, Length.Zero);
+        Sketch sketch = Sketch.Empty.WithEntity(seat).WithEntity(leg).WithRelationship(under);
+
+        Assert.True(sketch.Validate().IsValid, sketch.Validate().ToString());
+        Assert.True(RelationshipChecker.Check(sketch).AllHold);
+    }
+
+    [Fact]
+    public void AGeometryRequestThatCouldReachAStrutIsNotGuessedAt()
+    {
+        Box seat = new(EntityId.New(), Layer.Default.Id, new Point3(Length.Zero, Length.Zero, new Length(24576)), Length.Inches(36), Length.Inches(12), new Length(768), BoxFace.Top, Angle.Zero);
+        Strut leg = Leg((0, 7168, 24576), height: 1536, from: (4096, -4096, 0));
+        Sketch sketch = Sketch.Empty.WithEntity(seat).WithEntity(leg);
+        AxisDistance under = new(new RelationshipId(Guid.NewGuid()), new FeatureRef(seat.Id, BoxFeature.Face(BoxFace.Bottom)), new StrutEndRef(leg.Id, StrutEnd.To), Axis.Z, Length.Zero);
+
+        Rejected Refused(Sketch on, Request request) => Assert.IsType<Rejected>(DirectUpdater.Instance.Apply(on, request));
+
+        Assert.Equal(RejectionReason.UnsupportedRequest, Refused(sketch, new AddRelationship(under)).Reason);
+        Assert.Equal(RejectionReason.UnsupportedRequest, Refused(sketch, new SetPosition(leg.Id, Point3.Origin)).Reason);
+        Assert.Equal(RejectionReason.UnsupportedRequest, Refused(sketch, new Drag(leg.Id, Vector3.Zero)).Reason);
+
+        // Once a file holds one, nothing that propagates runs on that sketch until #190.
+        Sketch held = sketch.WithRelationship(under);
+        Assert.Equal(RejectionReason.UnsupportedRequest, Refused(held, new SetPosition(seat.Id, Point3.Origin)).Reason);
+
+        // Without one, a box still moves.
+        Assert.IsType<Solved>(DirectUpdater.Instance.Apply(sketch, new SetPosition(seat.Id, Point3.Origin)));
+    }
+
+    [Fact]
+    public void AnAxisIsReadAsAnIntegerVector()
+    {
+        IntegerVector3 v = new(1, 2, 3);
+
+        Assert.Equal((Int128)2, v.Component(Axis.Y));
+        Assert.Equal(new IntegerVector3(0, 1, 0), IntegerVector3.Unit(Axis.Y));
+        Assert.Throws<ArgumentOutOfRangeException>(() => v.Component((Axis)7));
+        Assert.Throws<ArgumentOutOfRangeException>(() => IntegerVector3.Unit((Axis)7));
+        Assert.Throws<OverflowException>(() => new IntegerVector3(Int128.MaxValue, 0, 0).Dot(new IntegerVector3(2, 0, 0)));
+    }
+
     // ---- Properties (angled-parts §9.4) ----
 
     [Fact]
