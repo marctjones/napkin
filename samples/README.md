@@ -44,7 +44,10 @@ and stretchers, 1x4 aprons and end rails, a 3/4 plywood top — so its cut list'
 three lines to buy, and each 6' 1x4 carries an apron and an end rail: several parts from one
 board. Its `shoppingList` and `shoppingListCsv` are worked by hand (first-fit decreasing over the
 library's stocked lengths, board feet summed exactly and rounded once), each row with its
-`derivation`; `SampleShoppingListTests` holds them and `GUI-CUT-04` reads them on screen.
+`derivation`; `SampleShoppingListTests` holds them and `GUI-CUT-04` reads them on screen. Its
+`sheetLayout` (#26), like the one in `diy-coffee-table-drawers.expected.json`, is the plywood laid
+out on its sheets by hand, strip by strip and piece by piece, by the rules in
+`docs/design/parts-and-cut-list.md` §4.2; `CutLayoutSampleTests` holds both.
 
 **The splayed bench and the splayed footstool are the angled-part fixtures** (#191,
 `docs/design/angled-parts.md` §9.1–§9.2). Their legs are struts, stored by their two ends, so their
