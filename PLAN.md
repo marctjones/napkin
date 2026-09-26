@@ -41,7 +41,7 @@ and the stance on transcribing code tables (design §13, decision 7).
 | Closed, delivered | #4 geometry design, #33 GUI suite, #36 viewer, #38 release workflow (dormant: it runs only on a version tag or when its own file changes; nothing has been tagged) | — |
 | Closed, delivered | #3 line endings — `.gitattributes` landed 0.106.0-beta, Windows CI fix-forward 0.109.0-beta (Hardening) | — |
 | Closed, not planned | #27 installers and first-run docs; #56 and PR #57 (the macOS launch bug: an executable *file* named `*.App` is killed on macOS 26, fixed in #57); #24 SketchUp import; #26 sheet-goods nesting | Packaging resumes (#27, #56, #57); importing SketchUp becomes a real need (#24); the cut list is in use (#26) |
-| Deferred to Backlog | deck (#20, #40-#43), site plan (#21), DXF (#23), PDF sheets (#25), the MA and PA packs (#16, #17), PA municipal overlays (#22), the constraint solver (#28), the dependency-license gate (#2) | The core path is done and Marc picks one up |
+| Deferred to Backlog | DXF (#23), the MA and PA packs (#16, #17), PA municipal overlays (#22), the constraint solver (#28), the dependency-license gate (#2) | The core path is done and Marc picks one up |
 
 ## Milestones: what you can see and play with
 
@@ -61,8 +61,11 @@ architecture — that is the point of them. Every release is a tagged pre-releas
 | **M8 Renovation** | Sketch an existing structure — a room, a wall run — from measurements taken on site, as the starting point for a renovation project rather than a from-scratch design. Designed in [`docs/design/renovation-sketches.md`](./docs/design/renovation-sketches.md). | design note landed; implementation not started |
 | **M9 Shape** | Draw a splayed-leg stool: angled and compound cuts off the axes, cuts that stay related when a part resizes, a square notch (Marc decides #120), grain and show face on the cut list, and a priced shopping list. | #139, #67, #120, #140, #141, #154 |
 | **M10 Real code** | Move a window on a Connecticut wall and get a header and a bracing answer from transcribed, cited, independently reviewed IRC 2021 tables — then switch to a second real pack and watch the recompute. Blocked on someone doing the transcription (#158). | #158, #14, then #16 or #17 |
+| **M11 Deck and three-season porch** | Draw a deck on piers and footings — ledger, joists, beams, guards and stairs — then enclose it as a three-season porch: light walls with many openings and a shed roof tied to the house. No full additions (Marc, 2026-09-25). Checks run through the M4/M5 mechanism; real tables wait on M10. Designed in [`docs/design/deck-and-porch.md`](./docs/design/deck-and-porch.md) (DRAFT, awaiting sign-off). | #20, #40–#43, #187, #188, #195–#204 |
+| **M12 Print and cut** | Print the coffee table's shop set on paper: the cut list, a diagram for every board and plywood sheet showing kerf and offcuts, and a sheet of part labels — what OpenCutList does inside paid desktop SketchUp, free and offline. Built on #25's true-scale PDF. | #211, #25, #26 |
+| **M13 Permit set** | Take a window move or a deck to the building department: a site plan built from a calibrated survey underlay, plan and elevation, framing callouts, and a code page listing every structural number with its adopted code, table and row — every sheet carrying the scope disclaimer. Real numbers need M10; the deck needs M11. Designed in [`docs/design/permit-set.md`](./docs/design/permit-set.md) (DRAFT, awaiting sign-off). | #212, #21, #213, #223–#227 |
 | **Data backlog** | Cited data, no code: fastener rows, decking, gypsum; the other packs and overlays. | #155, #16, #17, #22 |
-| **Backlog** | Wanted, not scheduled: the deck in its four prescriptive pieces under an umbrella issue, the site plan, DXF, sheet-goods nesting, SketchUp import (blocked on a license decision), installers, and the solver spike. | #20–#26, #28, #40–#43, #2 parked |
+| **Backlog** | Wanted, not scheduled: DXF, SketchUp import (blocked on a license decision), installers, and the solver spike. | #23, #24, #28, #2 parked |
 
 ### Alongside the milestones, not inside them
 

@@ -27,6 +27,37 @@ member from numbers typed into it. What none does is tie a prescriptive table lo
 drawing, with the citation, a bracing check and an out-of-scope stop; that is napkin's reason to
 exist rather than being a wrapper or a fork.
 
+### DIY design and sizing tools (checked 2026-09-26)
+
+The comparison tools above are the CAD/drawing category; this table is the wider DIY landscape a
+person doing this kind of project actually runs into (design tools, cut-list/optimizer tools, and
+structural sizing calculators), each vendor page re-read the day this table was written. "Not
+confirmed today" means the cited page didn't state that fact when fetched, not that the fact is
+false.
+
+| Tool | Category | Notes |
+|---|---|---|
+| [SketchUp](https://sketchup.trimble.com/en/plans-and-pricing) | Furniture/woodworking | A Free plan is documented on [help.sketchup.com](https://help.sketchup.com/en/admin/sketchup-free) (web-only, "not for commercial use") but is no longer listed on the pricing page itself; Go $10.75/mo (web + iPad, no LayOut or extensions); Pro $33.25/mo (desktop, extensions, LayOut); Studio $71.58/mo (Windows only). Free tier's export formats not confirmed today — see DESIGN.md §5.5. |
+| [OpenCutList](https://github.com/lairdubois/lairdubois-opencutlist-sketchup-extension) | Furniture/woodworking | Free, GPLv3. Parts lists, cutting diagrams, nesting, labels, cost/weight reports. Desktop SketchUp 2017+ only — [not available for the web or iPad versions](https://docs.opencutlist.org/getting-started/installing). v7.1.0, released 2025-12-10. |
+| [Autodesk Fusion, Personal Use](https://help.autodesk.com/view/fusion360/ENU/?caas=caas%2Fsfdcarticles%2Fsfdcarticles%2FFusion-360-Free-License-Changes.html) | Furniture/woodworking | Free for home-based, non-commercial use; 10 active editable documents. No cut-list feature stated on this page. |
+| [Shapr3D](https://www.shapr3d.com/pricing) | Furniture/woodworking | Free tier: 2 projects, basic-resolution STL/3MF export only. Pro $299/yr per editor seat. |
+| [SketchList 3D](https://www.sketchlist.com/pricing) | Furniture/woodworking | $599.99/yr (or $79.99/mo), or a $999.99 one-time licence plus a maintenance plan. Has a cut list and an optimizer. |
+| [MaxCut](https://www.maxcutsoftware.com/pricing) | Furniture/woodworking | Community Edition free (limited library, basic cut list). Business $20/mo or $200/yr per device. Platform not stated on this page. |
+| [CutList Optimizer](https://cutlistoptimizer.com/) | Furniture/woodworking | Web-based panel optimizer; free plus paid Bronze/Silver/Gold tiers — exact paid prices not confirmed today. |
+| [FreeCAD](https://blog.freecad.org/2026/03/25/freecad-version-1-1-released/) + [Woodworking workbench](https://github.com/dprojects/Woodworking) | Furniture/woodworking | Free. FreeCAD 1.1 released 2026-03-25; 1.1.3 is the current release (2026-07-25). The Woodworking workbench (MIT) adds an automatic cut list exportable to CSV/JSON/HTML/Markdown. |
+| [Sweet Home 3D](https://www.sweethome3d.com/) | Home layout | Free, GPL. Version 7.5. |
+| [Chief Architect Home Designer](https://www.homedesignersoftware.com/products/home-designer-suite-architectural-pro/) | Home layout | One product line since 2026 (page confirms the consolidation). Pricing and any framing-generation or code-check claim not stated on this page today. |
+| [AWC span calculator](https://awc.org/codes-standards/calculators-software/spancalc/) | Structural sizing | Joists and rafters only, not beams or headers; NDS 2018 Supplement. Whether it's free wasn't restated on this fetch (it's publicly reachable with no login shown). |
+| [Weyerhaeuser ForteWEB](https://www.weyerhaeuser.com/woodproducts/software-learning/forte-software/) | Structural sizing | "Free to use!"; requires a registered account. Sizes joists, beams, posts/studs — engineered wood, dimension lumber and steel. |
+| [Boise Cascade BC Calc](https://www.bc.com/ewp/software/bc-calc/) | Structural sizing | Login required; the page reads "Try Free" / "Try for Free Today" rather than stating a permanent free plan, so free status is still unverified. Sizes joists, beams, columns, studs and tall walls. |
+| [AWC DCA 6](https://awc.org/collection/design-for-code-acceptance/) | Structural sizing / decks | Latest edition listed is DCA 6-2015. The IRC edition it's keyed to and whether the PDF is free were not restated on this collection page today — unverified. |
+| [Simpson Strong-Tie Deck Planner](https://www.strongtie.com/products/go/software/deckplanner) | Decks | Free, web-based. Produces "permit submittal pages" and a Bill of Materials. Sizing framing to code is not mentioned. |
+| [Trex deck designer](https://www.trex.com/build-your-deck/planyourdeck/deck-designer/) | Decks | Free. The user picks the lumber size and species themselves; the tool tells them to take the resulting blueprint to the building office to check it meets code. |
+| [CraftCut](https://craftcut.io/) | Newer / AI tools | Browser-based AI furniture design with cut optimization, in beta (Pro features free through 2026-09-30). Pro $19/mo (~$15.20/mo billed annually) after. |
+| [Woodplans.ai](https://woodplans.ai/) | Newer / AI tools | Freemium — 3 free plan credits, then paid credits. AI-generated plans with a cut list; its "engineering checks" verify fastener lengths, spans and assembly clearances (confirmed on today's fetch). |
+| [UpCodes](https://up.codes/) | Newer / AI tools | Searchable building-code, assembly and product text. An AI assistant feature is not confirmed from the homepage today. |
+| [Symbium](https://symbium.com/) | Newer / AI tools | Instant permit-compliance automation. Sold to building departments, contractors and a handful of CA/CO/MD jurisdictions today — not to homeowners directly. |
+
 ## File format landscape
 
 - **DXF** — the de facto (not ISO) standard for 2D CAD interchange, implemented (with varying
