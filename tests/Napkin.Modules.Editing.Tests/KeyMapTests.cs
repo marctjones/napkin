@@ -101,6 +101,7 @@ public class KeyMapTests
         { KeyName.D5, None, ViewCommand.ShowLeft },
         { KeyName.D6, None, ViewCommand.ShowRight },
         { KeyName.D7, None, ViewCommand.ShowModel },
+        { KeyName.I, None, ViewCommand.PartsIsometric },
     };
 
     [Theory]

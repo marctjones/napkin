@@ -93,3 +93,4 @@ text: no shortcut below except the window's fires while a field has the keyboard
 | `5` | Left |
 | `6` | Right |
 | `7` | 3D |
+| `I` | Parts view: each piece in 3D, or flat again |
