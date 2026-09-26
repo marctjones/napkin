@@ -414,7 +414,7 @@ public class CutListWorkflows
         return CentreOf(window.CutList!, name);
     }
 
-    [GuiWorkflow("GUI-CUT-09")]
+    [GuiWorkflow("GUI-CUT-10")]
     public void A_row_of_the_cut_list_selects_its_parts_in_the_drawing() => GuiWorkflow.Run(app =>
     {
         MainWindow window = (MainWindow)app.Target;

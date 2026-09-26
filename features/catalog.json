@@ -1316,7 +1316,7 @@
       "kind": "workflow"
     },
     {
-      "id": "GUI-CUT-09",
+      "id": "GUI-CUT-10",
       "area": "ui",
       "title": "A cut-list row selects its parts in the drawing",
       "acceptance": "Coffee table, Ctrl/Cmd+L: a click on the Leg row selects the four legs; Shift on the Top row adds the top; Ctrl/Cmd on the Leg row takes the legs out; a header click sorts and selects nothing; another row replaces the selection; in 3D it is the same selection and Escape clears it.",
