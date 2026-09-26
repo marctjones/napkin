@@ -135,6 +135,11 @@ public sealed record SetOpeningFill(EntityId Box, OpeningFill? Fill) : Request;
 /// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>
 public sealed record SetDeckInputs(EntityId Box, DeckInputs? Inputs) : Request;
 
+/// <summary>Sets a shed roof's inputs (deck-and-porch §5.3). Exact, moves nothing: the rise is the box's depth.</summary>
+/// <param name="Box">The roof's box.</param>
+/// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>
+public sealed record SetRoofInputs(EntityId Box, RoofInputs? Inputs) : Request;
+
 /// <summary>Sets what a note says and the symbol it is drawn with. Exact, moves nothing.</summary>
 /// <param name="Id">The note.</param>
 /// <param name="Text">Its words.</param>

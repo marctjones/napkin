@@ -74,6 +74,7 @@ public sealed class DirectUpdater : IGeometryUpdater
                 : new Rejected(RejectionReason.UnknownEntity),
             SetRoomInputs room => ApplySetRoomInputs(sketch, room),
             SetDeckInputs deck => ApplySetDeckInputs(sketch, deck),
+            SetRoofInputs roof => ApplySetRoofInputs(sketch, roof),
             SetOpeningFill fill => sketch.Find(fill.Box) switch
             {
                 Box box when box.WallInputs is null && box.Deck is null && box.Roof is null => new Solved(sketch.WithEntity(box with { Opening = fill.Fill }), ChangeSet.Empty with { Modified = [box.Id] }),
@@ -394,6 +395,26 @@ public sealed class DirectUpdater : IGeometryUpdater
         }
 
         return new Solved(sketch.WithEntity(box with { Deck = request.Inputs }), ChangeSet.Empty with { Modified = [box.Id] });
+    }
+
+    private static UpdateResult ApplySetRoofInputs(Sketch sketch, SetRoofInputs request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        if (request.Inputs is { } roof && RoofRules.Refusal(roof) is not null)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        return new Solved(sketch.WithEntity(box with { Roof = request.Inputs }), ChangeSet.Empty with { Modified = [box.Id] });
     }
 
     private static UpdateResult ApplySetPart(Sketch sketch, SetPart request)

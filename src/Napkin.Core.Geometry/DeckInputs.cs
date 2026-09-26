@@ -191,6 +191,40 @@ public sealed record BeamLowEnd(BeamSpec Beam, string Post, int PostCount) : Roo
 public sealed record RoofInputs(
     Length RafterSpacing, string Rafter, string Ledger, Length Overhang, bool Blocking, string? Sheathing, Roofing Roofing, RoofLowEnd LowEnd);
 
+/// <summary>The rules a roof's inputs keep (§7), as <see cref="DeckRules"/> keeps a deck's.</summary>
+public static class RoofRules
+{
+    /// <summary>Why these inputs are refused, in words, or null when they are fine.</summary>
+    public static string? Refusal(RoofInputs roof)
+    {
+        ArgumentNullException.ThrowIfNull(roof);
+        if (roof.RafterSpacing <= Length.Zero)
+        {
+            return "a rafter spacing is longer than zero";
+        }
+
+        if (roof.Overhang < Length.Zero)
+        {
+            return "an overhang is zero or more";
+        }
+
+        if (roof.Roofing.Waste < 0 || roof.Roofing.Coverage <= 0)
+        {
+            return "a roofing waste is zero or more and a coverage more than zero";
+        }
+
+        if (roof.LowEnd is BeamLowEnd { Beam.Plies: < 1 or > 3 } or BeamLowEnd { PostCount: < 2 })
+        {
+            return "a porch beam has 1 to 3 plies on at least 2 posts";
+        }
+
+        string[] names = roof.LowEnd is BeamLowEnd beam
+            ? [roof.Rafter, roof.Ledger, roof.Roofing.Name, beam.Beam.Lumber, beam.Post]
+            : [roof.Rafter, roof.Ledger, roof.Roofing.Name];
+        return names.Any(name => name.Trim().Length == 0) ? "every lumber and the roofing is named" : null;
+    }
+}
+
 /// <summary>What fills an opening (§5.2): glass, a screen, or a solid door.</summary>
 public enum OpeningFill
 {

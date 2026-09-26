@@ -125,6 +125,52 @@ public class SetDeckInputsTests
     }
 }
 
+/// <summary>Setting a roof's inputs through the updater (deck-and-porch §5.3): one undo step, refused when the inputs break §7's rules.</summary>
+public class SetRoofInputsTests
+{
+    static readonly IGeometryUpdater Updater = DirectUpdater.Instance;
+
+    static readonly BeamLowEnd Beam = new(new BeamSpec(2, "2x10"), "4x4", 2);
+
+    static RoofInputs Roof() => new(Length.Inches(16), "2x8", "2x8", Length.Inches(12), true, "7/16 osb", new Roofing("shingles", 33, 0), new WallLowEnd(EntityId.New()));
+
+    [Fact]
+    public void A_roofs_inputs_are_set_and_cleared_and_bad_ones_refused()
+    {
+        SketchBuilder builder = new();
+        EntityId roof = builder.AddBox(0, 0, 144, 120);
+        RoofInputs inputs = Roof();
+
+        Solved set = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new SetRoofInputs(roof, inputs)));
+        Assert.Equal(inputs, set.Sketch.Find<Box>(roof)!.Roof);
+        Assert.Null(Assert.IsType<Solved>(Updater.Apply(set.Sketch, new SetRoofInputs(roof, null))).Sketch.Find<Box>(roof)!.Roof);
+        Assert.Null(RoofRules.Refusal(inputs));
+        Assert.Null(RoofRules.Refusal(inputs with { LowEnd = Beam, Overhang = Length.Zero, Roofing = new Roofing("metal", null, 10) }));
+
+        foreach ((RoofInputs bad, string why) in new[]
+                 {
+                     (inputs with { RafterSpacing = Length.Zero }, "a rafter spacing is longer than zero"),
+                     (inputs with { Overhang = new Length(-1) }, "an overhang is zero or more"),
+                     (inputs with { Roofing = new Roofing("shingles", 33, -1) }, "a roofing waste is zero or more and a coverage more than zero"),
+                     (inputs with { Roofing = new Roofing("shingles", 0, 0) }, "a roofing waste is zero or more and a coverage more than zero"),
+                     (inputs with { LowEnd = Beam with { Beam = new BeamSpec(0, "2x10") } }, "a porch beam has 1 to 3 plies on at least 2 posts"),
+                     (inputs with { LowEnd = Beam with { Beam = new BeamSpec(4, "2x10") } }, "a porch beam has 1 to 3 plies on at least 2 posts"),
+                     (inputs with { LowEnd = Beam with { PostCount = 1 } }, "a porch beam has 1 to 3 plies on at least 2 posts"),
+                     (inputs with { Rafter = " " }, "every lumber and the roofing is named"),
+                     (inputs with { Roofing = new Roofing("", null, 0) }, "every lumber and the roofing is named"),
+                     (inputs with { LowEnd = Beam with { Post = "" } }, "every lumber and the roofing is named"),
+                 })
+        {
+            Assert.Equal(why, RoofRules.Refusal(bad));
+            Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetRoofInputs(roof, bad)));
+        }
+
+        Assert.Equal(RejectionReason.UnknownEntity, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetRoofInputs(EntityId.New(), inputs))).Reason);
+        EntityId node = builder.AddNode(0, 0);
+        Assert.Equal(RejectionReason.DanglingReference, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetRoofInputs(node, inputs))).Reason);
+    }
+}
+
 /// <summary>Setting an opening's fill (deck-and-porch §5.2): exact, one step, never on a wall, deck or roof.</summary>
 public class SetOpeningFillTests
 {
