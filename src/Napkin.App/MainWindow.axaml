@@ -268,6 +268,11 @@
                           Header="_Parts"
                           Click="OnViewMenuClicked"
                           ToolTip.Tip="Every distinct piece of the design drawn once, to one scale, with how many there are — the cut list, drawn." />
+                <MenuItem Name="PartsIn3DMenuItem"
+                          Header="Parts in 3D"
+                          Click="OnPartsIn3DClicked"
+                          IsEnabled="False"
+                          ToolTip.Tip="In the Parts view, each piece in 3D — isometric, to the same one scale — rather than flat (I)." />
                 <!-- The sheet (standard-views §11): Top above Front, Right beside it, 3D in the corner. -->
                 <MenuItem Name="SheetMenuItem"
                           Header="Sheet"

@@ -33,6 +33,8 @@ public sealed class PartsView : Control
     ImmutableArray<PartsCell> _cells = [];
     IReadOnlyList<PartsPlacement> _placed = [];
     double _sheetScale = 1;
+    double _sheetScale3D = 1;
+    bool _isometric;
     double _zoom = 1;
     double _scroll;
     int? _focused;
@@ -46,6 +48,9 @@ public sealed class PartsView : Control
 
     /// <summary>Raised when the cells change: the design changed or another one opened.</summary>
     public event EventHandler? CellsChanged;
+
+    /// <summary>Raised when the drawing switches between flat and 3D.</summary>
+    public event EventHandler? IsometricChanged;
 
     /// <summary>Raised when the zoom or the scroll changes.</summary>
     public event EventHandler? ViewChanged;
@@ -105,6 +110,26 @@ public sealed class PartsView : Control
     /// <summary>How much of a cell the design's selection holds (§5.2): the editor's, read, never stored.</summary>
     public PartsCellSelection SelectionOf(PartsCell cell) =>
         _editor is { } editor ? PartsSheet.SelectionOf(cell, editor.Selection) : PartsCellSelection.None;
+
+    /// <summary>
+    /// Whether the cells draw each piece in 3D, isometric and orthographic, rather than flat (§3). The
+    /// words are the same either way; 3D draws no dimension lines.
+    /// </summary>
+    public bool Isometric
+    {
+        get => _isometric;
+        set
+        {
+            if (_isometric == value)
+            {
+                return;
+            }
+
+            _isometric = value;
+            InvalidateVisual();
+            IsometricChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
 
     /// <summary>The zoom, 0.5 to 3; 1 is 100 %.</summary>
     public double Zoom => _zoom;
@@ -195,6 +220,9 @@ public sealed class PartsView : Control
             Key.PageDown => MoveFocus(Columns * RowsPerPage),
             Key.PageUp => MoveFocus(-Columns * RowsPerPage),
             Key.Escape => ClearSelection(),
+
+            // I for isometric (§3): O is the 3D view's projection, and the two are not to be confused.
+            Key.I => ToggleIsometric(),
             _ => false,
         };
 
@@ -345,6 +373,35 @@ public sealed class PartsView : Control
             }
 
             using DrawingContext.PushedState placed = context.PushTransform(Matrix.CreateScale(_zoom, _zoom) * Matrix.CreateTranslation(at.Left, at.Top));
+            if (_isometric)
+            {
+                PartsIsometricDrawn solid = PartsIsometric.Build(cell, _sheetScale3D, new Point(0, 0));
+                Pen edge = new(new SolidColorBrush(parts.Stroke), 0.8);
+                foreach (PartsFace face in solid.Faces)
+                {
+                    StreamGeometry shape = new();
+                    using (StreamGeometryContext path = shape.Open())
+                    {
+                        path.BeginFigure(face.Points[0], isFilled: true);
+                        foreach (Point corner in face.Points.Skip(1))
+                        {
+                            path.LineTo(corner);
+                        }
+
+                        path.EndFigure(isClosed: true);
+                    }
+
+                    context.DrawGeometry(new SolidColorBrush(ModelView.Tone(palette, parts, face.Normal)), edge, shape);
+                }
+
+                foreach (PartsText text in solid.Texts)
+                {
+                    DrawText(context, palette, cell, text);
+                }
+
+                continue;
+            }
+
             PartsCellDrawn drawn = PartsCellDrawing.Build(cell, _sheetScale, new Point(0, 0));
             context.DrawGeometry(fill, outline, drawn.Outline);
             DrawDimension(context, dimension, palette.Dimension, drawn.Length, vertical: false);
@@ -389,6 +446,12 @@ public sealed class PartsView : Control
         return true;
     }
 
+    bool ToggleIsometric()
+    {
+        Isometric = !Isometric;
+        return true;
+    }
+
     bool ClearSelection()
     {
         _editor?.ClearSelection();
@@ -408,6 +471,7 @@ public sealed class PartsView : Control
         PartsCell? focused = FocusedCell;
         _cells = _editor is { } editor ? PartsSheet.Of(CutList.Of(editor.Sketch, MaterialsLibrary.Shipped)) : [];
         _sheetScale = PartsScale.Sheet(_cells.Select(PartsPicture.Of)) ?? 1;
+        _sheetScale3D = PartsIsometric.Sheet(_cells) ?? 1;
         int kept = focused is null ? -1 : _cells.IndexOf(focused);
         _focused = kept >= 0 ? kept : null;
         Relayout();

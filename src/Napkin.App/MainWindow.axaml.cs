@@ -184,6 +184,9 @@ public partial class MainWindow : Window
         };
         PartsDrawing.ViewRequested += (_, view) => ShowView(view);
         PartsDrawing.CommandRequested += (_, request) => request.Handled = Run(request.Command);
+        PartsDrawing.IsometricChanged += (_, _) =>
+            PartsIn3DMenuItem.Icon = PartsDrawing.Isometric ? new TextBlock { Text = "✓" } : null;
+        PartsIn3DMenuItem.InputGesture = new KeyGesture(Key.I);
 
         // The sheet's panes (standard-views §11.5): the same editor; each asks for commands and views
         // as the 3D view does, and the one under the pointer is the one the readouts speak for.
