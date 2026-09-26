@@ -37,7 +37,7 @@ public class RoughFormatTests
 
         string text = SceneWriter.WriteToText(sketch);
 
-        Assert.Contains("\"hardware\": [],\n        \"rough\": true, \"grain\": null, \"showFace\": null\n", text, StringComparison.Ordinal);
+        Assert.Contains("\"hardware\": [],\n        \"rough\": true,\n        \"grain\": null,\n        \"showFace\": null\n", text, StringComparison.Ordinal);
         Sketch again = Scenes.Accept(text);
         Assert.True(Assert.Single(again.Entities.Values.OfType<Box>()).Part!.Rough);
     }
@@ -47,14 +47,14 @@ public class RoughFormatTests
     {
         string text = SceneWriter.WriteToText(Scenes.Accept(Scenes.OneBox));
 
-        Assert.Contains("\"rough\": false, \"grain\": null, \"showFace\": null", text, StringComparison.Ordinal);
+        Assert.Contains("\"rough\": false,", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void APartWithoutRoughIsRefusedAsAMissingField()
     {
         Scenes.RefuseWith(
-            Scenes.OneBox.With(FirmPart, "\"hardware\": [] }"),
+            Scenes.OneBox.With(FirmPart, "\"hardware\": [], \"grain\": null, \"showFace\": null }"),
             LoadProblemKind.MissingField,
             "rough");
     }

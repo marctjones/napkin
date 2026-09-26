@@ -116,9 +116,9 @@ public sealed class SceneReaderRejectionTests
 
         // A part's own object is read as strictly as the entity around it.
         Scenes.RefuseWith(
-            Scenes.OneBox.With("\"quantity\": 1,", "\"quantity\": 1, \"grain\": \"quartersawn\","),
+            Scenes.OneBox.With("\"quantity\": 1,", "\"quantity\": 1, \"figure\": \"quartersawn\","),
             LoadProblemKind.UnknownField,
-            "grain");
+            "figure");
     }
 
     [Fact]
