@@ -152,7 +152,9 @@ public static class CutList
                     Derived: null,
                     DerivedExact: true,
                     SetbacksExact: true,
-                    Compound: []),
+                    Compound: [],
+                    Grain: part.Grain,
+                    ShowFace: part.ShowFace),
                 Material: stock?.Name ?? part.Stock ?? string.Empty,
                 Unresolved: part.Stock is not null && stock is null,
                 Stock: stock,
@@ -197,6 +199,8 @@ public static class CutList
                 DerivedExact = group.Key.DerivedExact,
                 SetbacksExact = group.Key.SetbacksExact,
                 CompoundEnds = members[0].Compound,
+                Grain = group.Key.Grain,
+                ShowFace = group.Key.ShowFace,
             });
         }
 
@@ -250,7 +254,9 @@ public static class CutList
                 Derived: part.PlanAxes.X,
                 DerivedExact: blank.Length.Exact,
                 SetbacksExact: setbacksExact,
-                Compound: cuts.IsEmpty ? HalfTurns.Canonical(compound) : compound),
+                Compound: cuts.IsEmpty ? HalfTurns.Canonical(compound) : compound,
+                Grain: part.Grain,
+                ShowFace: part.ShowFace),
             Material: stock?.Name ?? part.Stock ?? string.Empty,
             Unresolved: part.Stock is not null && stock is null,
             Stock: stock,
@@ -363,7 +369,9 @@ public static class CutList
         PartDimension? Derived,
         bool DerivedExact,
         bool SetbacksExact,
-        ImmutableArray<DerivedCompoundEnd> Compound)
+        ImmutableArray<DerivedCompoundEnd> Compound,
+        PartDimension? Grain = null,
+        BoxFace? ShowFace = null)
     {
         /// <summary>
         /// Equality by value, with the cuts compared as a sequence.
@@ -392,7 +400,9 @@ public static class CutList
                & Derived == other.Derived
                & DerivedExact == other.DerivedExact
                & SetbacksExact == other.SetbacksExact
-               & Compound.SequenceEqual(other.Compound);
+               & Compound.SequenceEqual(other.Compound)
+               & Grain == other.Grain
+               & ShowFace == other.ShowFace;
 
         /// <inheritdoc/>
         public override int GetHashCode()
@@ -404,6 +414,6 @@ public static class CutList
                 StringComparer.Ordinal.GetHashCode(Species),
                 CutSequence.HashOf(Cuts),
                 JointSequence.HashOf(Joinery),
-                HashCode.Combine(Derived, DerivedExact, SetbacksExact, Compound.Length));
+                HashCode.Combine(Derived, DerivedExact, SetbacksExact, Compound.Length, Grain, ShowFace));
     }
 }

@@ -133,8 +133,27 @@ public sealed record CutListRow(
     /// <summary>Whether any part on this row has a joint that no longer holds (&#xA7;6.4).</summary>
     public bool JointsUnsatisfied { get; init; }
 
-    /// <summary>Notes on the row: currently only <see cref="JointDescription.NotSatisfied"/>.</summary>
-    public ImmutableArray<string> Flags => JointsUnsatisfied ? [JointDescription.NotSatisfied] : [];
+    /// <summary>Which of the three dimensions the grain runs along, when the part says (#140); null when unsaid.</summary>
+    public PartDimension? Grain { get; init; }
+
+    /// <summary>Which face of the part shows, when it says (#140); null when unsaid.</summary>
+    public BoxFace? ShowFace { get; init; }
+
+    /// <summary>
+    /// Notes on the row: <see cref="JointDescription.NotSatisfied"/>, then the grain and show face the
+    /// part states, and a warning when a board is asked to run its grain across itself (#140).
+    /// </summary>
+    public ImmutableArray<string> Flags =>
+    [
+        .. JointsUnsatisfied ? [JointDescription.NotSatisfied] : Array.Empty<string>(),
+        .. Grain is { } grain ? [$"Grain along its {Word(grain)}."] : Array.Empty<string>(),
+        .. ShowFace is { } face ? [$"Show face: {face.ToString().ToLowerInvariant()}."] : Array.Empty<string>(),
+        .. Grain is { } across && across != PartDimension.Length && Stock is LumberStock
+            ? [$"Check the grain: a board's grain runs its length, and this part asks for it along its {Word(across)}."]
+            : Array.Empty<string>(),
+    ];
+
+    static string Word(PartDimension dimension) => dimension.ToString().ToLowerInvariant();
 
     /// <summary>
     /// The species the part asks for, as typed in the properties panel, or empty when it names none.
@@ -190,6 +209,8 @@ public sealed record CutListRow(
            && Joinery.SequenceEqual(other.Joinery)
            && JointsUnsatisfied == other.JointsUnsatisfied
            && Rough == other.Rough
+           && Grain == other.Grain
+           && ShowFace == other.ShowFace
            && Drawn == other.Drawn
            && PlanAxes == other.PlanAxes
            && Derived == other.Derived
@@ -225,6 +246,8 @@ public sealed record CutListRow(
 
         hash.Add(JointsUnsatisfied);
         hash.Add(Rough);
+        hash.Add(Grain);
+        hash.Add(ShowFace);
         hash.Add(Drawn);
         hash.Add(Derived);
         hash.Add(DerivedExact);

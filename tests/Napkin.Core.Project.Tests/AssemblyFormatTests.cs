@@ -23,7 +23,7 @@ public sealed class AssemblyFormatTests
     /// </summary>
     private const string TwoBoxesInSpace = """
         {
-          "formatVersion": 11,
+          "formatVersion": 12,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -34,7 +34,7 @@ public sealed class AssemblyFormatTests
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Right", "phase": "new",
               "anchor": { "x": 10240, "y": 0, "z": 5120 }, "width": 10240, "height": 4096, "depth": 1024, "faceUp": "top", "rotation": 0,
-              "part": { "stock": null, "species": null, "quantity": 1, "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false },
+              "part": { "stock": null, "species": null, "quantity": 1, "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false, "grain": null, "showFace": null },
               "wall": null, "room": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000d", "type": "dimension", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Left width", "phase": "new",
@@ -220,10 +220,10 @@ public sealed class AssemblyFormatTests
     public void A_version_4_file_is_now_too_old_to_open()
     {
         LoadProblem problem = Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 11", "\"formatVersion\": 4"),
+            Scenes.OneBox.With("\"formatVersion\": 12", "\"formatVersion\": 4"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 4",
-            "format version 11");
+            "format version 12");
 
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }

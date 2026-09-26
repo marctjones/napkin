@@ -1,5 +1,5 @@
 {
-  "formatVersion": 11,
+  "formatVersion": 12,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -36,7 +36,9 @@
           "y": "length"
         },
         "hardware": [],
-        "rough": false
+        "rough": false,
+        "grain": null,
+        "showFace": null
       },
       "wall": null,
       "room": null,
@@ -80,7 +82,9 @@
           "y": "length"
         },
         "hardware": [],
-        "rough": false
+        "rough": false,
+        "grain": null,
+        "showFace": null
       },
       "wall": null,
       "room": null,
@@ -124,7 +128,9 @@
           "y": "width"
         },
         "hardware": [],
-        "rough": false
+        "rough": false,
+        "grain": null,
+        "showFace": null
       },
       "wall": null,
       "room": null,
@@ -168,7 +174,9 @@
           "y": "width"
         },
         "hardware": [],
-        "rough": false
+        "rough": false,
+        "grain": null,
+        "showFace": null
       },
       "wall": null,
       "room": null,

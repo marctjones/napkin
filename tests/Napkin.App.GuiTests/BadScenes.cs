@@ -33,7 +33,7 @@ public static class BadScenes
     /// <summary>A 30&#x2033; by 4&#x2033; box with its width driven: a file that opens.</summary>
     public const string Good = """
         {
-          "formatVersion": 11,
+          "formatVersion": 12,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -68,7 +68,7 @@ public static class BadScenes
 
     /// <summary>A file stamped with a format version this build does not read.</summary>
     public static string WrongVersion => Good
-        .Replace("\"formatVersion\": 11", "\"formatVersion\": 3", StringComparison.Ordinal);
+        .Replace("\"formatVersion\": 12", "\"formatVersion\": 3", StringComparison.Ordinal);
 
     /// <summary>
     /// A relationship the format defines but this build's updater cannot hold: <c>distance</c> is
@@ -81,7 +81,7 @@ public static class BadScenes
     /// </remarks>
     public const string UnsupportedRelationshipKind = """
         {
-          "formatVersion": 11,
+          "formatVersion": 12,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [

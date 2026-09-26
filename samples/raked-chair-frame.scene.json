@@ -1,5 +1,5 @@
 {
-  "formatVersion": 11,
+  "formatVersion": 12,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -11,72 +11,6 @@
     }
   ],
   "entities": [
-    {
-      "id": "e1000000-0000-4000-8000-000000000010",
-      "type": "strut",
-      "layer": "00000000-0000-0000-0000-000000000001",
-      "name": "Rear leg, left",
-      "phase": "new",
-      "from": {
-        "x": 768,
-        "y": 768,
-        "z": 0
-      },
-      "to": {
-        "x": -6400,
-        "y": 768,
-        "z": 24576
-      },
-      "fromCut": "z",
-      "toCut": "z",
-      "reference": "z",
-      "height": 1536,
-      "depth": 1536,
-      "part": {
-        "stock": "2x2",
-        "species": null,
-        "quantity": 1,
-        "planAxes": {
-          "x": "length",
-          "y": "width"
-        },
-        "hardware": [],
-        "rough": false
-      }
-    },
-    {
-      "id": "e1000000-0000-4000-8000-000000000011",
-      "type": "strut",
-      "layer": "00000000-0000-0000-0000-000000000001",
-      "name": "Rear leg, right",
-      "phase": "new",
-      "from": {
-        "x": 768,
-        "y": 15616,
-        "z": 0
-      },
-      "to": {
-        "x": -6400,
-        "y": 15616,
-        "z": 24576
-      },
-      "fromCut": "z",
-      "toCut": "z",
-      "reference": "z",
-      "height": 1536,
-      "depth": 1536,
-      "part": {
-        "stock": "2x2",
-        "species": null,
-        "quantity": 1,
-        "planAxes": {
-          "x": "length",
-          "y": "width"
-        },
-        "hardware": [],
-        "rough": false
-      }
-    },
     {
       "id": "e1000000-0000-4000-8000-000000000001",
       "type": "box",
@@ -102,7 +36,9 @@
           "y": "thickness"
         },
         "hardware": [],
-        "rough": false
+        "rough": false,
+        "grain": null,
+        "showFace": null
       },
       "wall": null,
       "room": null,
@@ -133,7 +69,9 @@
           "y": "thickness"
         },
         "hardware": [],
-        "rough": false
+        "rough": false,
+        "grain": null,
+        "showFace": null
       },
       "wall": null,
       "room": null,
@@ -164,7 +102,9 @@
           "y": "width"
         },
         "hardware": [],
-        "rough": false
+        "rough": false,
+        "grain": null,
+        "showFace": null
       },
       "wall": null,
       "room": null,
@@ -202,7 +142,9 @@
           "y": "width"
         },
         "hardware": [],
-        "rough": false
+        "rough": false,
+        "grain": null,
+        "showFace": null
       },
       "wall": null,
       "room": null,
@@ -214,6 +156,76 @@
           "alongY": 3072
         }
       ]
+    },
+    {
+      "id": "e1000000-0000-4000-8000-000000000010",
+      "type": "strut",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Rear leg, left",
+      "phase": "new",
+      "from": {
+        "x": 768,
+        "y": 768,
+        "z": 0
+      },
+      "to": {
+        "x": -6400,
+        "y": 768,
+        "z": 24576
+      },
+      "fromCut": "z",
+      "toCut": "z",
+      "reference": "z",
+      "height": 1536,
+      "depth": 1536,
+      "part": {
+        "stock": "2x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false,
+        "grain": null,
+        "showFace": null
+      }
+    },
+    {
+      "id": "e1000000-0000-4000-8000-000000000011",
+      "type": "strut",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Rear leg, right",
+      "phase": "new",
+      "from": {
+        "x": 768,
+        "y": 15616,
+        "z": 0
+      },
+      "to": {
+        "x": -6400,
+        "y": 15616,
+        "z": 24576
+      },
+      "fromCut": "z",
+      "toCut": "z",
+      "reference": "z",
+      "height": 1536,
+      "depth": 1536,
+      "part": {
+        "stock": "2x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false,
+        "grain": null,
+        "showFace": null
+      }
     }
   ],
   "relationships": [

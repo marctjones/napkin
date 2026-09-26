@@ -3,7 +3,7 @@
   "scene": "basement-room.scene.json",
   "design": "basement-room.design.md",
   "derivedBy": "hand, from the stated dimensions in basement-room.design.md and docs/design/renovation-sketches.md §10.2; never regenerated from napkin's output",
-  "formatVersion": 11,
+  "formatVersion": 12,
   "unitsPerInch": 1024,
   "counts": {
     "layers": 5,

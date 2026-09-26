@@ -173,12 +173,18 @@ public static class PartsCellText
         return "×" + cell.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
-    /// <summary>The line under the picture: the caption, the material if there is one, and "not to scale" when so.</summary>
+    /// <summary>The line under the picture: the caption, the material if there is one, the grain when said (#140), and "not to scale" when so.</summary>
     public static string Details(PartsCell cell, PartsPicture picture, bool notToScale)
     {
         ArgumentNullException.ThrowIfNull(cell);
         ArgumentNullException.ThrowIfNull(picture);
-        IEnumerable<string> parts = [picture.Caption, cell.Row.MaterialText, notToScale ? "not to scale" : string.Empty];
+        IEnumerable<string> parts =
+        [
+            picture.Caption,
+            cell.Row.MaterialText,
+            cell.Row.Grain is { } grain ? $"grain along its {grain.ToString().ToLowerInvariant()}" : string.Empty,
+            notToScale ? "not to scale" : string.Empty,
+        ];
         return string.Join(" · ", parts.Where(part => part.Length > 0));
     }
 

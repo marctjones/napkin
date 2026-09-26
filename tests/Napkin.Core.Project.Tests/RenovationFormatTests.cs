@@ -43,7 +43,7 @@ public class RenovationFormatTests
 
     private static readonly string Scene = $$"""
         {
-          "formatVersion": 11,
+          "formatVersion": 12,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "{{Layer}}", "name": "Default" } ],
           "entities": [
@@ -167,7 +167,7 @@ public class RenovationFormatTests
             "not also a part or a wall");
 
         Scenes.RefuseWith(
-            Scene.With("\"part\": null, \"wall\": null,", "\"part\": { \"stock\": null, \"species\": null, \"quantity\": 1, \"planAxes\": { \"x\": \"length\", \"y\": \"width\" }, \"hardware\": [], \"rough\": false }, \"wall\": null,"),
+            Scene.With("\"part\": null, \"wall\": null,", "\"part\": { \"stock\": null, \"species\": null, \"quantity\": 1, \"planAxes\": { \"x\": \"length\", \"y\": \"width\" }, \"hardware\": [], \"rough\": false, \"grain\": null, \"showFace\": null }, \"wall\": null,"),
             LoadProblemKind.InvalidValue,
             "room");
     }
@@ -193,9 +193,9 @@ public class RenovationFormatTests
     public void A_version_9_file_is_refused_naming_both_versions()
     {
         Scenes.RefuseWith(
-            Scene.With("\"formatVersion\": 11", "\"formatVersion\": 9"),
+            Scene.With("\"formatVersion\": 12", "\"formatVersion\": 9"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 9",
-            "format version 11");
+            "format version 12");
     }
 }

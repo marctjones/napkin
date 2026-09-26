@@ -3,7 +3,7 @@
   "scene": "splayed-footstool.scene.json",
   "design": "splayed-footstool.design.md",
   "derivedBy": "hand, from the stated dimensions in splayed-footstool.design.md and docs/design/angled-parts.md §9.2; never regenerated from napkin's output",
-  "formatVersion": 11,
+  "formatVersion": 12,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 1,

@@ -302,14 +302,14 @@ public sealed class ShapedCutLengthTests
         // refuses a file containing such a box (§5), so the cut list never sees it.
         const string scene = """
             {
-              "formatVersion": 11,
+              "formatVersion": 12,
               "units": { "length": "inch/1024", "angle": "arcsecond" },
               "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
               "entities": [
                 { "id": "0192f1a0-0000-4000-8000-00000000000a", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
                   "name": "Block", "phase": "new",
                   "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 3584, "height": 3584, "depth": 768, "faceUp": "top", "rotation": 0,
-                  "part": { "stock": null, "species": null, "quantity": 1, "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false },
+                  "part": { "stock": null, "species": null, "quantity": 1, "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false, "grain": null, "showFace": null },
                   "wall": null, "room": null, "cuts": [
                     { "kind": "cornerCut", "corner": "southWest", "alongX": 3584, "alongY": 3584 },
                     { "kind": "cornerCut", "corner": "northEast", "alongX": 3584, "alongY": 3584 }

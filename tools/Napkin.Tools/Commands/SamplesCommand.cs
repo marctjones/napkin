@@ -302,6 +302,19 @@ public static class SamplesCommand
                 // kinds only; nothing an existing entity carries changed.
                 break;
 
+            case 12:
+                // Grain and show face (#140): every part says nothing about either.
+                foreach (JsonNode? entity in Entities(root))
+                {
+                    if (entity?["part"] is JsonObject part)
+                    {
+                        EnsureNull(part, "grain");
+                        EnsureNull(part, "showFace");
+                    }
+                }
+
+                break;
+
             default:
                 throw new InvalidOperationException($"samples restamp does not know what format version {version} added.");
         }

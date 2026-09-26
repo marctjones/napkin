@@ -201,11 +201,18 @@ public partial class MainWindow
         StockBox.Text = part.Stock ?? string.Empty;
         SpeciesBox.Text = part.Species ?? string.Empty;
         RoughCheck.IsChecked = part.Rough;
+        GrainBox.SelectedIndex = part.Grain is { } grain ? 1 + (int)grain : 0;
+        ShowFaceBox.SelectedIndex = part.ShowFace is { } shows ? 1 + Array.IndexOf(ShowFaceChoices, shows) : 0;
         HardwareBox.Text = string.Join("\n", part.Hardware.Select(item => $"{item.Name} \u00d7 {item.Quantity}"));
     }
 
     /// <summary>The hardware field, for the GUI suite to type into.</summary>
     public TextBox HardwareField => HardwareBox;
+
+    static readonly BoxFace[] ShowFaceChoices = [BoxFace.Top, BoxFace.Bottom, BoxFace.North, BoxFace.South, BoxFace.East, BoxFace.West];
+
+    /// <summary>The grain and show-face pickers, for the GUI suite.</summary>
+    public (ComboBox Grain, ComboBox ShowFace) GrainFields => (GrainBox, ShowFaceBox);
 
     void FillDimensionChoices()
     {
@@ -213,6 +220,9 @@ public partial class MainWindow
         {
             return;
         }
+
+        GrainBox.ItemsSource = new[] { "unsaid", "length", "width", "thickness" };
+        ShowFaceBox.ItemsSource = new[] { "unsaid" }.Concat(ShowFaceChoices.Select(face => face.ToString().ToLowerInvariant())).ToArray();
 
         PlanXBox.ItemsSource = SceneWords.Dimensions;
         PlanYBox.ItemsSource = SceneWords.Dimensions;
@@ -341,6 +351,8 @@ public partial class MainWindow
             {
                 Hardware = hardware,
                 Rough = RoughCheck.IsChecked == true,
+                Grain = GrainBox.SelectedIndex > 0 ? (PartDimension)(GrainBox.SelectedIndex - 1) : null,
+                ShowFace = ShowFaceBox.SelectedIndex > 0 ? ShowFaceChoices[ShowFaceBox.SelectedIndex - 1] : null,
             };
         }
 

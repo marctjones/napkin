@@ -9,8 +9,8 @@ namespace Napkin.Core.Project.Tests;
 /// </summary>
 public class RoughFormatTests
 {
-    private const string FirmPart = "\"hardware\": [], \"rough\": false }";
-    private const string RoughPart = "\"hardware\": [], \"rough\": true }";
+    private const string FirmPart = "\"hardware\": [], \"rough\": false, \"grain\": null, \"showFace\": null }";
+    private const string RoughPart = "\"hardware\": [], \"rough\": true, \"grain\": null, \"showFace\": null }";
 
     [Fact]
     public void ARoughPartIsReadAsRough()
@@ -37,7 +37,7 @@ public class RoughFormatTests
 
         string text = SceneWriter.WriteToText(sketch);
 
-        Assert.Contains("\"hardware\": [],\n        \"rough\": true\n", text, StringComparison.Ordinal);
+        Assert.Contains("\"hardware\": [],\n        \"rough\": true, \"grain\": null, \"showFace\": null\n", text, StringComparison.Ordinal);
         Sketch again = Scenes.Accept(text);
         Assert.True(Assert.Single(again.Entities.Values.OfType<Box>()).Part!.Rough);
     }
@@ -47,7 +47,7 @@ public class RoughFormatTests
     {
         string text = SceneWriter.WriteToText(Scenes.Accept(Scenes.OneBox));
 
-        Assert.Contains("\"rough\": false", text, StringComparison.Ordinal);
+        Assert.Contains("\"rough\": false, \"grain\": null, \"showFace\": null", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -76,10 +76,10 @@ public class RoughFormatTests
     public void AVersionEightFileIsRefusedWithTheUnsupportedVersionMessage()
     {
         string version8 = Scenes.OneBox
-            .With("\"formatVersion\": 11", "\"formatVersion\": 8")
-            .With(", \"rough\": false", string.Empty);
+            .With("\"formatVersion\": 12", "\"formatVersion\": 8")
+            .With(", \"rough\": false, \"grain\": null, \"showFace\": null", string.Empty);
 
-        Scenes.RefuseWith(version8, LoadProblemKind.UnsupportedFormatVersion, "format version 8", "format version 11");
+        Scenes.RefuseWith(version8, LoadProblemKind.UnsupportedFormatVersion, "format version 8", "format version 12");
     }
 
     [Fact]
