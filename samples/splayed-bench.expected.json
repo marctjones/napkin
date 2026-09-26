@@ -3,7 +3,7 @@
   "scene": "splayed-bench.scene.json",
   "design": "splayed-bench.design.md",
   "derivedBy": "hand, from the stated dimensions in splayed-bench.design.md and docs/design/angled-parts.md §9.1; never regenerated from napkin's output",
-  "formatVersion": 12,
+  "formatVersion": 13,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 1,

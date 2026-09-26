@@ -17,7 +17,7 @@ public sealed class SceneReaderRejectionTests
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": 5,
           "entities": 5,
-          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
           "relationships": 5
         }
         """;
@@ -33,7 +33,8 @@ public sealed class SceneReaderRejectionTests
     [InlineData(9)]
     [InlineData(10)]
     [InlineData(11)]
-    [InlineData(13)]
+    [InlineData(12)]
+    [InlineData(14)]
     [Trait("Feature", "PRJ-004")]
     public void A_file_from_another_format_version_fails_before_the_scene_is_parsed(int version)
     {
@@ -63,7 +64,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_file_with_no_version_stamp_is_refused()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 12,", string.Empty),
+            Scenes.OneBox.With("\"formatVersion\": 13,", string.Empty),
             LoadProblemKind.MissingField,
             "formatVersion");
 
@@ -71,7 +72,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_text_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 12", "\"formatVersion\": \"4\""),
+            Scenes.OneBox.With("\"formatVersion\": 13", "\"formatVersion\": \"4\""),
             LoadProblemKind.Malformed,
             "formatVersion");
 
@@ -79,7 +80,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_a_decimal_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 12", "\"formatVersion\": 12.0"),
+            Scenes.OneBox.With("\"formatVersion\": 13", "\"formatVersion\": 13.0"),
             LoadProblemKind.NotAnInteger,
             "formatVersion");
 
@@ -110,7 +111,7 @@ public sealed class SceneReaderRejectionTests
             "colour");
 
         Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 12,", "\"formatVersion\": 12, \"author\": \"someone\","),
+            Scenes.OneBox.With("\"formatVersion\": 13,", "\"formatVersion\": 13, \"author\": \"someone\","),
             LoadProblemKind.UnknownField,
             "author");
 

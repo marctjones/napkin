@@ -315,6 +315,26 @@ public static class SamplesCommand
 
                 break;
 
+            case 13:
+                // Deck and porch (docs/design/deck-and-porch.md §7): every box says it is no deck,
+                // no roof and no opening's fill, and the site has no soil bearing value yet.
+                foreach (JsonNode? entity in Entities(root))
+                {
+                    if (entity is JsonObject box && (string?)box["type"] == "box")
+                    {
+                        EnsureNull(box, "deck");
+                        EnsureNull(box, "roof");
+                        EnsureNull(box, "opening");
+                    }
+                }
+
+                if (root["site"] is JsonObject site)
+                {
+                    EnsureNull(site, "soilBearing");
+                }
+
+                break;
+
             default:
                 throw new InvalidOperationException($"samples restamp does not know what format version {version} added.");
         }

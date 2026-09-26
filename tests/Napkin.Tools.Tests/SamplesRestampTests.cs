@@ -11,7 +11,7 @@ namespace Napkin.Tools.Tests;
 /// </summary>
 public class SamplesRestampTests
 {
-    private const int CurrentVersion = 12;
+    private const int CurrentVersion = 13;
 
     [Fact]
     public void RunningItOnCurrentSamplesIsANoOpWithNoDiff()
@@ -29,7 +29,7 @@ public class SamplesRestampTests
         var (code, output, _) = Run("samples", "restamp", "--root", scratch.Path);
 
         Assert.Equal(ExitCode.Ok, code);
-        Assert.Contains("0 scene(s) restamped, 1 already at version 12", output, StringComparison.Ordinal);
+        Assert.Contains("0 scene(s) restamped, 1 already at version 13", output, StringComparison.Ordinal);
         Assert.Contains("0 expectation file(s) restamped, 1 already current", output, StringComparison.Ordinal);
         Assert.Equal(sceneBefore, File.ReadAllText(scenePath));
         Assert.Equal(expectedBefore, File.ReadAllText(expectedPath));
@@ -51,7 +51,7 @@ public class SamplesRestampTests
 
         Assert.Equal(ExitCode.Ok, code);
         Assert.Equal(string.Empty, error);
-        Assert.Contains("restamped samples/coffee-table.scene.json to format version 12", output, StringComparison.Ordinal);
+        Assert.Contains("restamped samples/coffee-table.scene.json to format version 13", output, StringComparison.Ordinal);
 
         JsonNode restamped = JsonNode.Parse(File.ReadAllText(scenePath))!;
         Assert.True(JsonNode.DeepEquals(original, restamped), $"restamped:\n{restamped.ToJsonString()}\n\noriginal:\n{original.ToJsonString()}");
@@ -130,6 +130,9 @@ public class SamplesRestampTests
 
             box.Remove("wall");
             box.Remove("room");
+            box.Remove("deck");
+            box.Remove("roof");
+            box.Remove("opening");
             if (box["part"] is JsonObject part)
             {
                 part.Remove("hardware");

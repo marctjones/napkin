@@ -1,5 +1,5 @@
 {
-  "formatVersion": 12,
+  "formatVersion": 13,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -42,6 +42,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -75,6 +78,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -108,6 +114,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -141,6 +150,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -174,6 +186,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -207,6 +222,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -240,6 +258,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -273,6 +294,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -306,6 +330,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -339,6 +366,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -372,6 +402,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -405,6 +438,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -438,6 +474,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -471,6 +510,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -509,6 +551,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -542,6 +587,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -575,6 +623,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -613,6 +664,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -646,6 +700,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -679,6 +736,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -717,6 +777,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -750,6 +813,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -783,6 +849,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     },
     {
@@ -821,6 +890,9 @@
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": []
     }
   ],
@@ -1764,6 +1836,7 @@
     "frostDepth": null,
     "buildingWidth": null,
     "roofLiveLoad": null,
+    "soilBearing": null,
     "source": null
   }
 }

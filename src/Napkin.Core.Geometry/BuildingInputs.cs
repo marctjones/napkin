@@ -49,6 +49,9 @@ public sealed record SiteValues(
     int? RoofLiveLoadPsf,
     SiteSource? Source)
 {
+    /// <summary>The soil bearing value, whole psf (format version 13, #42); null until entered.</summary>
+    public int? SoilBearingPsf { get; init; }
+
     /// <summary>Nothing entered yet: a new design's site.</summary>
     public static readonly SiteValues NotEntered = new(null, null, null, null, null, null, null);
 }
