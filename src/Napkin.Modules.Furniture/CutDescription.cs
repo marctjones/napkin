@@ -47,7 +47,7 @@ public static class CutDescription
         ImmutableArray<Cut> cuts,
         FinishedSize size,
         PlanAxes planAxes)
-        => Describe(cuts, size, planAxes, setbacksExact: true, compound: []);
+        => cuts.IsDefaultOrEmpty ? [] : Describe(cuts, size, planAxes, setbacksExact: true, compound: []);
 
     /// <summary>
     /// The same, for a blank derived from a strut (<c>docs/design/angled-parts.md</c> &#xA7;2.2&#x2013;&#xA7;2.3):
@@ -66,7 +66,7 @@ public static class CutDescription
         bool setbacksExact,
         ImmutableArray<DerivedCompoundEnd> compound)
     {
-        if (cuts.IsDefaultOrEmpty && compound.IsDefaultOrEmpty)
+        if (cuts.IsEmpty && compound.IsEmpty)
         {
             return [];
         }
@@ -86,7 +86,7 @@ public static class CutDescription
         // Like cuts are said once: a sentence is built with a placeholder where its sites go, and
         // cuts whose sentences are otherwise identical share one.
         List<(string Template, List<string> Sites)> grouped = [];
-        foreach (Cut cut in cuts.IsDefault ? [] : cuts)
+        foreach (Cut cut in cuts)
         {
             (string template, string site) = Sentence(cut, planWidth, planHeight, through, setbacksExact);
 
@@ -106,7 +106,7 @@ public static class CutDescription
             .. grouped.Select(group => group.Template.Contains(SitesPlaceholder, StringComparison.Ordinal)
                 ? group.Template.Replace(SitesPlaceholder, Sites(group.Sites), StringComparison.Ordinal)
                 : group.Template),
-            .. Compound(compound.IsDefault ? [] : compound, through),
+            .. Compound(compound, through),
         ];
     }
 
@@ -136,14 +136,20 @@ public static class CutDescription
         }
     }
 
-    /// <summary>A long point in the blank's own compass: "south-bottom corner", or "bottom edge" when it is a whole edge.</summary>
+    /// <summary>
+    /// A long point in the blank's own compass: "south-bottom corner", or "bottom edge" when the cut
+    /// has no mitre and the long point runs the whole width. A compound end always tilts through the
+    /// depth, so it always has a bottom or a top.
+    /// </summary>
     private static string LongPoint(StrutCorner corner)
     {
-        string? across = corner.Y switch { < 0 => "south", > 0 => "north", _ => null };
-        string? through = corner.Z switch { < 0 => "bottom", > 0 => "top", _ => null };
-        return across is not null && through is not null
-            ? $"{across}-{through} corner"
-            : $"{across ?? through} edge";
+        string through = corner.Z < 0 ? "bottom" : "top";
+        return corner.Y switch
+        {
+            < 0 => $"south-{through} corner",
+            > 0 => $"north-{through} corner",
+            _ => $"{through} edge",
+        };
     }
 
     /// <summary>Where a sentence's list of sites goes, when the sentence can hold more than one.</summary>

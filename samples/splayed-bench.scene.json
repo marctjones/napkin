@@ -1,0 +1,605 @@
+{
+  "formatVersion": 11,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
+  ],
+  "entities": [
+    {
+      "id": "c1000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Seat",
+      "phase": "new",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 24576
+      },
+      "width": 36864,
+      "height": 12288,
+      "depth": 768,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "3/4 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "c1000000-0000-4000-8000-000000000010",
+      "type": "strut",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, south-west",
+      "phase": "new",
+      "from": {
+        "x": 4096,
+        "y": -4096,
+        "z": 0
+      },
+      "to": {
+        "x": 4096,
+        "y": 3072,
+        "z": 24576
+      },
+      "fromCut": "z",
+      "toCut": "z",
+      "reference": "z",
+      "height": 1536,
+      "depth": 1536,
+      "part": {
+        "stock": "2x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      }
+    },
+    {
+      "id": "c1000000-0000-4000-8000-000000000011",
+      "type": "strut",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, north-west",
+      "phase": "new",
+      "from": {
+        "x": 4096,
+        "y": 16384,
+        "z": 0
+      },
+      "to": {
+        "x": 4096,
+        "y": 9216,
+        "z": 24576
+      },
+      "fromCut": "z",
+      "toCut": "z",
+      "reference": "z",
+      "height": 1536,
+      "depth": 1536,
+      "part": {
+        "stock": "2x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      }
+    },
+    {
+      "id": "c1000000-0000-4000-8000-000000000012",
+      "type": "strut",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, south-east",
+      "phase": "new",
+      "from": {
+        "x": 32768,
+        "y": -4096,
+        "z": 0
+      },
+      "to": {
+        "x": 32768,
+        "y": 3072,
+        "z": 24576
+      },
+      "fromCut": "z",
+      "toCut": "z",
+      "reference": "z",
+      "height": 1536,
+      "depth": 1536,
+      "part": {
+        "stock": "2x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      }
+    },
+    {
+      "id": "c1000000-0000-4000-8000-000000000013",
+      "type": "strut",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Leg, north-east",
+      "phase": "new",
+      "from": {
+        "x": 32768,
+        "y": 16384,
+        "z": 0
+      },
+      "to": {
+        "x": 32768,
+        "y": 9216,
+        "z": 24576
+      },
+      "fromCut": "z",
+      "toCut": "z",
+      "reference": "z",
+      "height": 1536,
+      "depth": 1536,
+      "part": {
+        "stock": "2x2",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "length",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "c1100000-0000-4000-8000-000000000001",
+      "kind": "anchored",
+      "entity": "c1000000-0000-4000-8000-000000000001"
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000002",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000010",
+        "end": "to"
+      },
+      "axis": "z",
+      "distance": 0
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000003",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "west"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000010",
+        "end": "to"
+      },
+      "axis": "x",
+      "distance": 4096
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000004",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "south"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000010",
+        "end": "to"
+      },
+      "axis": "y",
+      "distance": 3072
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000005",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000010",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000010",
+        "end": "from"
+      },
+      "axis": "x",
+      "distance": 0
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000006",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000010",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000010",
+        "end": "from"
+      },
+      "axis": "y",
+      "distance": -7168
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000007",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000010",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000010",
+        "end": "from"
+      },
+      "axis": "z",
+      "distance": -24576
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000008",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000011",
+        "end": "to"
+      },
+      "axis": "z",
+      "distance": 0
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000009",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "west"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000011",
+        "end": "to"
+      },
+      "axis": "x",
+      "distance": 4096
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000010",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "south"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000011",
+        "end": "to"
+      },
+      "axis": "y",
+      "distance": 9216
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000011",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000011",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000011",
+        "end": "from"
+      },
+      "axis": "x",
+      "distance": 0
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000012",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000011",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000011",
+        "end": "from"
+      },
+      "axis": "y",
+      "distance": 7168
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000013",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000011",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000011",
+        "end": "from"
+      },
+      "axis": "z",
+      "distance": -24576
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000014",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000012",
+        "end": "to"
+      },
+      "axis": "z",
+      "distance": 0
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000015",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "west"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000012",
+        "end": "to"
+      },
+      "axis": "x",
+      "distance": 32768
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000016",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "south"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000012",
+        "end": "to"
+      },
+      "axis": "y",
+      "distance": 3072
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000017",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000012",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000012",
+        "end": "from"
+      },
+      "axis": "x",
+      "distance": 0
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000018",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000012",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000012",
+        "end": "from"
+      },
+      "axis": "y",
+      "distance": -7168
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000019",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000012",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000012",
+        "end": "from"
+      },
+      "axis": "z",
+      "distance": -24576
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000020",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000013",
+        "end": "to"
+      },
+      "axis": "z",
+      "distance": 0
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000021",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "west"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000013",
+        "end": "to"
+      },
+      "axis": "x",
+      "distance": 32768
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000022",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "feature",
+        "box": "c1000000-0000-4000-8000-000000000001",
+        "faces": [
+          "south"
+        ]
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000013",
+        "end": "to"
+      },
+      "axis": "y",
+      "distance": 9216
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000023",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000013",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000013",
+        "end": "from"
+      },
+      "axis": "x",
+      "distance": 0
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000024",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000013",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000013",
+        "end": "from"
+      },
+      "axis": "y",
+      "distance": 7168
+    },
+    {
+      "id": "c1100000-0000-4000-8000-000000000025",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000013",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c1000000-0000-4000-8000-000000000013",
+        "end": "from"
+      },
+      "axis": "z",
+      "distance": -24576
+    }
+  ],
+  "fastenerChoices": [],
+  "supplies": [],
+  "code": null,
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
+}

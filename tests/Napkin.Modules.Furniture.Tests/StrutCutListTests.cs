@@ -240,6 +240,72 @@ public class StrutCutListTests
         Assert.All(row.CutText, sentence => Assert.EndsWith(", for the full 2'-6\" length.", sentence, StringComparison.Ordinal));
     }
 
+    // ---- A rounded value that happens to land on a sixteenth is still marked ----
+
+    [Fact]
+    public void ARoundedLengthOnASixteenthIsStillMarked()
+    {
+        // d = (0, 1/4, 3 1/4)″: |d|² = 256² + 3328² = 11 141 120, not a square. L ≈ 3455.9 → 3456 =
+        // 3 3/8″ exactly on the tape, but not the leg's length, so it reads ≈ (assembly-model §3a.4).
+        CutListRow row = Assert.Single(Rows(Leg("Peg", At(0, 0, 0), At(0, 256, 3328))));
+
+        Assert.Equal(3456, row.Length.Units);
+        Assert.Equal("≈3 3/8\"", row.LengthText);
+        Assert.Equal("1 1/2\"", row.WidthText);
+    }
+
+    [Fact]
+    public void ARoundedSetbackOnASixteenthIsStillMarked()
+    {
+        // d = (1, 4, 9)″, a 2x2, reference Z: s = 1536 × √17 / 9 = 703.68 → 704 = 11/16″ on the tape,
+        // irrational in truth, so marked; and so is its angle.
+        CutListRow row = Assert.Single(Rows(Leg("Leg", At(0, 0, 0), At(1024, 4096, 9216))));
+
+        Assert.False(row.SetbacksExact);
+        Assert.StartsWith("Mitre the west end: from ≈11/16\" in", row.CutText[0], StringComparison.Ordinal);
+    }
+
+    // ---- Stock, species and the square-ended brace ----
+
+    [Fact]
+    public void AStrutsStockIsResolvedAsABoxsIs()
+    {
+        Strut unnamed = Leg("Brace, bare", At(0, 0, 0), At(3072, 0, 4096)) with { Part = new Part(null, null, 1, LengthWidth) };
+        Strut unknown = Leg("Brace, odd", At(0, 0, 0), At(3072, 0, 5120), stock: "2x2 unobtanium");
+        Strut oak = Leg("Brace, oak", At(0, 0, 0), At(3072, 0, 6144)) with { Part = new Part("2x2", "white oak", 1, LengthWidth) };
+
+        ImmutableArray<CutListRow> rows = Rows(unnamed, unknown, oak);
+
+        CutListRow bare = Assert.Single(rows, row => row.Label == "Brace, bare");
+        Assert.Equal((string.Empty, false), (bare.Material, bare.Unresolved));
+        CutListRow odd = Assert.Single(rows, row => row.Label == "Brace, odd");
+        Assert.Equal(("2x2 unobtanium", true), (odd.Material, odd.Unresolved));
+        Assert.Equal("white oak", Assert.Single(rows, row => row.Label == "Brace, oak").Species);
+    }
+
+    [Fact]
+    public void ASquareEndedBraceIsItsCentrelineWithNothingToSay()
+    {
+        // A 3-4-5 brace fixed by hardware at both ends: 5″ long, exact, no cuts at all.
+        Strut brace = Leg("Brace", At(0, 0, 0), At(3072, 0, 4096)) with { FromCut = EndCut.Square, ToCut = EndCut.Square };
+
+        CutListRow row = Assert.Single(Rows(brace, brace with { Id = EntityId.New() }));
+
+        Assert.Equal((2, 5120), (row.Quantity, row.Length.Units));
+        Assert.Empty(row.CutText);
+    }
+
+    [Fact]
+    public void RowsWithCompoundEndsCompareAndHashByValue()
+    {
+        CutListRow one = Assert.Single(Rows(StoolLeg("Leg", 3072, 4096, Axis.X)));
+        CutListRow two = one with { };
+
+        Assert.Equal(one, two);
+        Assert.Equal(one.GetHashCode(), two.GetHashCode());
+        Assert.NotEqual(one, one with { CompoundEnds = [] });
+    }
+
     // ---- The half-degree rule (§2.4), in its one function ----
 
     [Theory]
