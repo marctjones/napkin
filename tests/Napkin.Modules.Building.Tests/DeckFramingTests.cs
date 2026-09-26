@@ -203,6 +203,63 @@ public class DeckFramingTests
     }
 
     [Fact]
+    [Trait("Feature", "DECK-005")]
+    public void A_deck_against_a_wall_running_north_south_frames_the_same_and_opens_its_other_three_edges()
+    {
+        // The house turned a quarter: its long faces run north–south. The deck (120 across, 144 along
+        // the wall) sits against its east face, so the ledger is the deck's west edge.
+        Box house = House() with { Rotation = Angle.Right, Anchor = new Point3(Length.Zero, Length.Zero, In(36)) };
+        Length east = new[] { BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest }.Select(house.Corner).Max(point => point.X);
+        Length south = new[] { BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest }.Select(house.Corner).Min(point => point.Y);
+        Box deckBox = DeckBox() with { Anchor = new Point3(east, south + In(48), Length.Zero), Width = In(120), Height = In(144) };
+        Sketch sketch = Drawing(house, deckBox);
+
+        DeckFraming frame = Frame(sketch);
+        Assert.Equal(DeckEdge.West, frame.Ledger);
+        Assert.Equal((In(144), In(120), 10), (frame.Width, frame.Depth, frame.Joists.Length));
+        Assert.Equal([DeckEdge.North, DeckEdge.South, DeckEdge.East], Deck.All(sketch)[0].OpenEdges(sketch));
+    }
+
+    [Fact]
+    public void A_deck_on_the_houses_north_side_opens_its_north_edge()
+    {
+        // The deck north of the house: its south edge on the house's north face (y = 5 1/2).
+        Box deckBox = DeckBox() with { Anchor = new Point3(In(48), In(5, 1, 2), Length.Zero) };
+        Sketch sketch = Drawing(House(), deckBox);
+
+        Assert.Equal(DeckEdge.South, Frame(sketch).Ledger);
+        Assert.Equal([DeckEdge.North, DeckEdge.East, DeckEdge.West], Deck.All(sketch)[0].OpenEdges(sketch));
+    }
+
+    [Fact]
+    public void A_deck_not_against_a_wall_has_no_open_edges_and_a_tipped_house_wall_holds_no_ledger()
+    {
+        Sketch alone = Drawing(DeckBox());
+        Assert.Empty(Deck.All(alone)[0].OpenEdges(alone));
+
+        Sketch tipped = Drawing(House() with { FaceUp = BoxFace.South }, DeckBox());
+        Assert.Equal(DeckProblem.NotAgainstAWall, DeckFrame.Of(tipped, Deck.All(tipped)[0], MaterialsLibrary.Shipped).Refusal!.Problem);
+
+        // A deck turned by an angle that is not a quarter is not square to the plan.
+        Box skew = DeckBox() with { Rotation = new Angle(45 * 3600) };
+        Assert.Null(new Deck(skew).Outline);
+    }
+
+    [Theory]
+    [InlineData(FramingRole.Ledger, "ledgers")]
+    [InlineData(FramingRole.Joist, "joists")]
+    [InlineData(FramingRole.RimJoist, "rim joists")]
+    [InlineData(FramingRole.Blocking, "blocks")]
+    [InlineData(FramingRole.Beam, "beam plies")]
+    [InlineData(FramingRole.Post, "posts")]
+    [InlineData(FramingRole.DeckingBoard, "decking boards")]
+    public void The_deck_pieces_are_named_one_and_many(FramingRole role, string many)
+    {
+        Assert.Equal(many, FramingList.Label(role, 2));
+        Assert.Equal(many == "beam plies" ? "beam ply" : many[..^1], FramingList.Label(role, 1));
+    }
+
+    [Fact]
     public void The_deck_pieces_are_cut_rows_the_shopping_list_buys()
     {
         DeckFraming frame = Frame(Drawing(House(), DeckBox()));
