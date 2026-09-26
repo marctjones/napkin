@@ -178,6 +178,17 @@ public static class PartsCellText
         return material.Length == 0 ? $"{row.Label}, {Badge(cell)}, {sizes}" : $"{row.Label}, {Badge(cell)}, {sizes}, {material}";
     }
 
+    /// <summary>
+    /// When the badge and the selection count different things (§5.3): "4 pieces from 1 box" for one
+    /// box that stands for four, "4 pieces from 2 boxes"; null when every box is one piece.
+    /// </summary>
+    public static string? PiecesFrom(PartsCell cell)
+    {
+        ArgumentNullException.ThrowIfNull(cell);
+        int boxes = cell.Members.Length;
+        return cell.Count == boxes ? null : $"{cell.Count} pieces from {boxes} {(boxes == 1 ? "box" : "boxes")}";
+    }
+
     /// <summary>The cuts, the first two sentences, then "(+n more)" when there are more.</summary>
     public static ImmutableArray<string> Cuts(PartsCell cell)
     {

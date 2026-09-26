@@ -1298,6 +1298,15 @@
       "kind": "unit"
     },
     {
+      "id": "CUT-023",
+      "area": "furniture",
+      "title": "A Parts cell reads the design's one selection: all, partly or none, and how many boxes its pieces are",
+      "acceptance": "A cell is selected when every member is, partly when some are, not otherwise, whatever else is selected; a cell whose count and box count differ says 4 pieces from 1 box or 3 pieces from 2 boxes, and says nothing when they agree.",
+      "milestone": "M6",
+      "issue": 125,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-CUT-08",
       "area": "ui",
       "title": "Read the cut layout and change the saw kerf",
@@ -1511,6 +1520,24 @@
       "acceptance": "Open the coffee table from Samples; View > Parts: four cells, the top x1, the legs x4 and two apron cells x2, the Parts chip pressed and its hint said; Right, Right, Down move the focus cell along and down a row; a click focuses the legs' cell; R says not in the Parts view; View > Zoom in shows 125 %; 7 then V returns to Top, never to Parts; the Parts chip shows it again; 3 leaves for Front.",
       "milestone": "M6",
       "issue": 124,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PARTS-02",
+      "area": "ui",
+      "title": "Selection runs both ways between the Parts view and the model",
+      "acceptance": "A click on the coffee table's legs cell selects the four legs; 3D shows them selected; back in Parts the cell is selected; Escape clears; Home, Right, Right, Enter selects them from the keyboard; one leg picked in Front leaves the cell partly selected, drawn dashed.",
+      "milestone": "M6",
+      "issue": 125,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PARTS-03",
+      "area": "ui",
+      "title": "Deleting one leg from the Parts view reads x3, and undo x4, as the cut list does",
+      "acceptance": "One leg picked in Front; in the Parts view Delete takes it and the legs cell reads x3; Cmd/Ctrl+Z reads x4 again; the cut list opened afterwards says four legs.",
+      "milestone": "M6",
+      "issue": 125,
       "kind": "workflow"
     },
     {

@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Napkin.App.Editing;
 using Napkin.App.Settings;
+using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
 using Napkin.Modules.Editing;
 using Napkin.Modules.Furniture;
@@ -68,6 +69,7 @@ public sealed class PartsView : Control
             {
                 old.DesignChanged -= OnDesignChanged;
                 old.DesignOpened -= OnDesignOpened;
+                old.SelectionChanged -= OnSelectionChanged;
             }
 
             _editor = value;
@@ -75,6 +77,7 @@ public sealed class PartsView : Control
             {
                 now.DesignChanged += OnDesignChanged;
                 now.DesignOpened += OnDesignOpened;
+                now.SelectionChanged += OnSelectionChanged;
             }
 
             Rebuild();
@@ -98,6 +101,10 @@ public sealed class PartsView : Control
 
     /// <summary>The cell the keyboard is on, or null.</summary>
     public PartsCell? FocusedCell => _focused is { } index ? _cells[index] : null;
+
+    /// <summary>How much of a cell the design's selection holds (§5.2): the editor's, read, never stored.</summary>
+    public PartsCellSelection SelectionOf(PartsCell cell) =>
+        _editor is { } editor ? PartsSheet.SelectionOf(cell, editor.Selection) : PartsCellSelection.None;
 
     /// <summary>The zoom, 0.5 to 3; 1 is 100 %.</summary>
     public double Zoom => _zoom;
@@ -187,8 +194,16 @@ public sealed class PartsView : Control
             Key.End => FocusAt(_cells.Length - 1),
             Key.PageDown => MoveFocus(Columns * RowsPerPage),
             Key.PageUp => MoveFocus(-Columns * RowsPerPage),
+            Key.Escape => ClearSelection(),
             _ => false,
         };
+
+        // Enter or Space selects the focus cell's parts in the model, Ctrl or Cmd toggles them (§5.1).
+        if (!handled && e.Key is Key.Enter or Key.Space && FocusedCell is { } focused)
+        {
+            bool toggle = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+            handled = SelectCell(focused, toggle, add: e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+        }
         if (!handled && KeyInput.From(e.Key, e.KeyModifiers) is { } key)
         {
             if (KeyMaps.Edit.Find(key) is { } edit && edit is not (>= EditCommand.NudgeLeft and <= EditCommand.NudgeFarDown))
@@ -212,16 +227,34 @@ public sealed class PartsView : Control
     {
         base.OnPointerPressed(e);
         Focus();
-        Point at = e.GetPosition(this);
-        int index = _placed.Select((placement, i) => (placement, i))
-            .Where(pair => pair.placement.Cell is not null && new Rect(pair.placement.Left, pair.placement.Top - _scroll, pair.placement.Width, pair.placement.Height).Contains(at))
-            .Select(pair => _cells.IndexOf(pair.placement.Cell!))
-            .DefaultIfEmpty(-1)
-            .First();
-        if (index >= 0)
+
+        // A cell selects its parts in the model; Ctrl or Cmd toggles them, Shift adds them; the empty
+        // sheet clears the selection, as the empty canvas does (§5.1).
+        if (CellAt(e.GetPosition(this)) is not { } cell)
         {
-            FocusAt(index);
+            ClearSelection();
+            return;
         }
+
+        FocusAt(_cells.IndexOf(cell));
+        KeyModifiers held = e.KeyModifiers;
+        SelectCell(cell, toggle: held.HasFlag(KeyModifiers.Control) || held.HasFlag(KeyModifiers.Meta), add: held.HasFlag(KeyModifiers.Shift));
+    }
+
+    /// <inheritdoc/>
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+
+        // A cell whose badge and selection count different things says so (§5.3).
+        ToolTip.SetTip(this, CellAt(e.GetPosition(this)) is { } cell ? PartsCellText.PiecesFrom(cell) : null);
+    }
+
+    /// <inheritdoc/>
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        ToolTip.SetTip(this, null);
     }
 
     /// <inheritdoc/>
@@ -294,6 +327,18 @@ public sealed class PartsView : Control
 
             PartsCell cell = placement.Cell!;
             context.DrawRectangle(null, frame, at, 4, 4);
+
+            // Selected: a border in the selection colour; partly selected, the same border dashed (§2.2, §5.2).
+            PartsCellSelection held = SelectionOf(cell);
+            if (held != PartsCellSelection.None)
+            {
+                Pen selected = new(new SolidColorBrush(palette.Selection), 2)
+                {
+                    DashStyle = held == PartsCellSelection.Partly ? new DashStyle([4, 3], 0) : null,
+                };
+                context.DrawRectangle(null, selected, at, 4, 4);
+            }
+
             if (Equals(FocusedCell, cell))
             {
                 context.DrawRectangle(null, ring, at.Deflate(2), 4, 4);
@@ -314,6 +359,41 @@ public sealed class PartsView : Control
     int RowsPerPage => Math.Max(1, (int)Math.Floor(Bounds.Height / ((PartsSheetLayout.CellHeight + PartsSheetLayout.Gutter) * _zoom)));
 
     void OnDesignChanged(object? sender, EventArgs e) => Rebuild();
+
+    void OnSelectionChanged(object? sender, EventArgs e) => InvalidateVisual();
+
+    /// <summary>The cell under a point of the view, as scrolled; null over the gaps and the margins.</summary>
+    PartsCell? CellAt(Point at) => _placed.FirstOrDefault(placement =>
+        placement.Cell is not null && new Rect(placement.Left, placement.Top - _scroll, placement.Width, placement.Height).Contains(at))?.Cell;
+
+    /// <summary>Selects a cell's parts in the model, toggles each of them, or adds them.</summary>
+    bool SelectCell(PartsCell cell, bool toggle, bool add)
+    {
+        if (_editor is not { } editor)
+        {
+            return false;
+        }
+
+        if (toggle)
+        {
+            foreach (EntityId member in cell.Members)
+            {
+                editor.ToggleSelected(member);
+            }
+        }
+        else
+        {
+            editor.SelectAll(add ? editor.Selection.Concat(cell.Members) : cell.Members);
+        }
+
+        return true;
+    }
+
+    bool ClearSelection()
+    {
+        _editor?.ClearSelection();
+        return true;
+    }
 
     void OnDesignOpened(object? sender, EventArgs e)
     {

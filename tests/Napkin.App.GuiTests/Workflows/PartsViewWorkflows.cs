@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Settings;
 using Napkin.App.Viewing;
+using Napkin.Core.Geometry;
 using Napkin.Modules.Editing;
 using Napkin.Modules.Furniture;
 
@@ -18,6 +19,127 @@ namespace Napkin.App.GuiTests.Workflows;
 public class PartsViewWorkflows
 {
     static string Focused(MainWindow window) => window.Parts.FocusedCell?.Row.Label ?? "(none)";
+
+    /// <summary>Clicks a cell of the Parts view, where it is on the screen.</summary>
+    static void ClickCell(AppDriver app, MainWindow window, string label)
+    {
+        PartsCell cell = window.Parts.Cells.Single(each => each.Row.Label == label);
+        app.Click(window.Parts.TranslatePoint(window.Parts.CellRectangle(cell)!.Value.Center, window)!.Value);
+    }
+
+    /// <summary>A point low on the south-west leg, an inch above the floor, where Front shows it in front of everything.</summary>
+    static Point LowOnSouthWestLeg(MainWindow window)
+    {
+        Point2 middle = BoxNamed(window, "Leg, south-west").Footprint().Center;
+        return InModel(window, window.Model.Camera.Project(new Vector3d(middle.X.ToInches(), middle.Y.ToInches(), 1)));
+    }
+
+    static HashSet<EntityId> Legs(MainWindow window) =>
+    [
+        .. window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>()
+            .Where(box => box.Name is { } name && name.StartsWith("Leg", StringComparison.Ordinal))
+            .Select(box => box.Id),
+    ];
+
+    static PartsCell LegCell(MainWindow window) => window.Parts.Cells.Single(cell => cell.Row.Label == "Leg");
+
+    static void ShowParts(AppDriver app, MainWindow window)
+    {
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("PartsViewMenuItem")!));
+    }
+
+    [GuiWorkflow("GUI-PARTS-02")]
+    public void A_cell_selects_its_parts_in_the_model_and_the_models_selection_shows_on_the_cell() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "Coffee table");
+        ShowParts(app, window);
+
+        ClickCell(app, window, "Leg");
+        app.Expect("a click on the legs' cell selects the four legs in the model, and the cell is selected", () =>
+        {
+            Assert.True(Legs(window).SetEquals(window.Editor.Selection));
+            Assert.Equal(PartsCellSelection.All, window.Parts.SelectionOf(LegCell(window)));
+            Assert.Equal(PartsCellSelection.None, window.Parts.SelectionOf(window.Parts.Cells[0]));
+        });
+        app.SaveFrame("legs-selected");
+
+        app.Press(Key.D7);
+        app.Expect("in 3D the four legs are the selection", () =>
+        {
+            Assert.True(window.IsShowingModel);
+            Assert.True(Legs(window).SetEquals(window.Editor.Selection));
+        });
+
+        app.Click(CentreOf(window, window.ViewChip(DesignView.Parts)));
+        app.Expect("back in the Parts view the cell is still selected", () =>
+            Assert.Equal(PartsCellSelection.All, window.Parts.SelectionOf(LegCell(window))));
+
+        app.Press(Key.Escape);
+        app.Expect("Escape clears the selection", () => Assert.Empty(window.Editor.Selection));
+
+        // The keyboard does what the pointer did: onto the legs' cell (third in the sheet), Enter.
+        app.Press(Key.Home);
+        app.Press(Key.Right);
+        app.Press(Key.Right);
+        app.Press(Key.Enter);
+        app.Expect("Home, Right, Right, Enter: the legs are selected from the keyboard", () =>
+        {
+            Assert.Equal("Leg", window.Parts.FocusedCell?.Row.Label);
+            Assert.True(Legs(window).SetEquals(window.Editor.Selection));
+        });
+
+        // In Front, pick one leg: the cell for four is now partly selected.
+        app.Press(Key.D3);
+        app.MoveTo(LowOnSouthWestLeg(window));
+        app.Expect("in Front the pointer is on the south-west leg", () =>
+            Assert.Equal(BoxNamed(window, "Leg, south-west").Id, window.Model.HoveredPart));
+        app.Click(LowOnSouthWestLeg(window));
+        app.Click(CentreOf(window, window.ViewChip(DesignView.Parts)));
+        app.Expect("one leg of four selected: the legs' cell is partly selected", () =>
+        {
+            Assert.Equal(BoxNamed(window, "Leg, south-west").Id, Assert.Single(window.Editor.Selection));
+            Assert.Equal(PartsCellSelection.Partly, window.Parts.SelectionOf(LegCell(window)));
+        });
+        app.SaveFrame("one-leg-partly");
+    });
+
+    [GuiWorkflow("GUI-PARTS-03")]
+    public void Deleting_one_leg_from_the_Parts_view_reads_three_and_undo_reads_four_as_the_cut_list_does() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "Coffee table");
+
+        app.Press(Key.D3);
+        app.Click(LowOnSouthWestLeg(window));
+        ShowParts(app, window);
+        app.Expect("one leg selected, the legs' cell partly selected and reading ×4", () =>
+        {
+            Assert.Equal(PartsCellSelection.Partly, window.Parts.SelectionOf(LegCell(window)));
+            Assert.Contains(window.Parts.CellsOnScreen, cell => cell.StartsWith("Leg, ×4, ", StringComparison.Ordinal));
+        });
+
+        app.Press(Key.Delete);
+        app.Expect("Delete in the Parts view takes that one leg: the cell reads ×3", () =>
+        {
+            Assert.Contains(window.Parts.CellsOnScreen, cell => cell.StartsWith("Leg, ×3, ", StringComparison.Ordinal));
+            Assert.Equal(3, Legs(window).Count);
+            Assert.True(window.IsShowingParts);
+        });
+
+        app.Press(Key.Z, AppDriver.CommandModifier);
+        app.Expect("undo puts it back: ×4", () =>
+        {
+            Assert.Contains(window.Parts.CellsOnScreen, cell => cell.StartsWith("Leg, ×4, ", StringComparison.Ordinal));
+            Assert.Equal(4, Legs(window).Count);
+        });
+
+        app.Chord(Key.L);
+        app.Expect("the cut list opened now agrees: four legs", () =>
+            Assert.Equal(4, window.CutList!.Rows.Rows.Single(row => row.Label == "Leg").Quantity));
+        window.CutList!.Close();
+    });
 
     [GuiWorkflow("GUI-PARTS-01")]
     public void Open_the_coffee_table_show_its_parts_and_walk_the_cells_by_keyboard_and_pointer() => GuiWorkflow.Run(app =>
