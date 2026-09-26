@@ -305,6 +305,16 @@ applied until you press **Use it**. A bearing wall standing on a deck whose Supp
 you to choose what the deck supports. Under the shipped Connecticut pack every table line is **No
 data**: its deck tables are M10's (#40–#42).
 
+**Guard and stair** (§4, napkin's layout, not a code detail). Tick **Guard** and every open edge gets
+posts at both ends of each run and evenly between (at most the typed spacing apart, a corner post
+shared), two rails and a cap per bay, and the fewest balusters giving a gap no wider than the typed
+one — the actual gaps, exact, are what the check reads. Tick **Stair** and it is laid out on the first
+open edge: the risers typed, or the fewest the adopted code's maximum riser allows; each rise exact
+(shown with ≈ when it is between sixteenths); the diagonal by integer square root, rounded up; and
+the stringer board the diagonal plus one tread, napkin's allowance, in one sentence to lay it out by.
+The pack's guard and stair provisions — when one is required, its height, its openings, the riser,
+tread, handrail and width — are each a cited line, or "not covered by this pack", or No data.
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code

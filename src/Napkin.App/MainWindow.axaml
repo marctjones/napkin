@@ -1280,6 +1280,14 @@
                             </Grid>
                             <CheckBox Name="DeckBlockingCheck" Content="Blocking at mid-span" FontSize="11"
                                       IsCheckedChanged="OnDeckTicked" AutomationProperties.Name="Blocking" />
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <CheckBox Name="DeckGuardCheck" Content="Guard" FontSize="11" IsCheckedChanged="OnDeckTicked"
+                                          ToolTip.Tip="napkin's layout on every open edge: 3'-0&quot; high, posts at most 6'-0&quot; apart, 3 1/2&quot; gaps — starting values, not a code detail."
+                                          AutomationProperties.Name="Guard" />
+                                <CheckBox Name="DeckStairCheck" Content="Stair" FontSize="11" IsCheckedChanged="OnDeckTicked"
+                                          ToolTip.Tip="A 3'-0&quot; stair at the start of the first open edge, 10&quot; treads, risers from the adopted code — starting values to type over."
+                                          AutomationProperties.Name="Stair" />
+                            </StackPanel>
                             <TextBlock Text="Code check" FontSize="11" FontWeight="SemiBold" Margin="0,4,0,0" />
                             <TextBlock Name="DeckSupportsNote" FontSize="10" TextWrapping="Wrap" IsVisible="False"
                                        Foreground="{DynamicResource SystemErrorTextColor}" AutomationProperties.Name="Deck supports note" />

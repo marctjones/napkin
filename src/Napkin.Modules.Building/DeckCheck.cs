@@ -23,6 +23,12 @@ public enum DeckCheckKind
 
     /// <summary>The footings' depth against the frost line.</summary>
     Frost,
+
+    /// <summary>The guard: whether one is required, its height and its openings (§3.5, §4.1).</summary>
+    Guard,
+
+    /// <summary>The stair: its risers, treads, handrail and width (§3.5, §4.2).</summary>
+    Stair,
 }
 
 /// <summary>One line of a deck's code check: what it is about, the engine's result (none for frost, which is napkin's comparison), and the sentence.</summary>
@@ -119,6 +125,8 @@ public static class DeckCheck
             : Other(DeckCheckKind.Footing, footing, $"Footings ({which}, {DeckFrame.SquareFeet(area)})"));
 
         lines.Add(FrostLine(sketch, inputs, pack));
+        lines.AddRange(GuardLines(sketch, framing, pack, library));
+        lines.AddRange(StairLines(framing, pack, library));
         return new DeckChecks(deck, framing, null, [.. lines], SupportsNote(sketch, deck, inputs), frost);
     }
 
@@ -140,6 +148,129 @@ public static class DeckCheck
         return footing >= frost
             ? new DeckCheckLine(DeckCheckKind.Frost, null, $"Frost: footings {Text(footing)} below grade; frost line {Text(frost)}{source}.{notes}", true)
             : new DeckCheckLine(DeckCheckKind.Frost, null, $"Frost: footings {Text(footing)} below grade, {Text(frost - footing)} short of the frost line {Text(frost)}{source}.{notes}", false);
+    }
+
+    /// <summary>The guard's lines (§3.5): required, its height, its openings — each against the pack's provisions, cited, or not covered.</summary>
+    static IEnumerable<DeckCheckLine> GuardLines(Sketch sketch, DeckFraming framing, LoadedPack? pack, MaterialsLibrary library)
+    {
+        GuardStairProvisions? provisions = pack?.Deck.GuardStair;
+        DeckInputs inputs = framing.Deck.Box.Deck!;
+        int open = framing.Deck.OpenEdges(sketch).Length;
+        if (provisions?.Guard is not { } guard)
+        {
+            if (inputs.Guard is not null || open > 0)
+            {
+                string why = pack is null ? "no adopted code is chosen" : $"the loaded pack {pack.Manifest.Adoption.ShortName} has no guard provisions";
+                yield return new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard: {why}, so napkin cannot say whether one is required. Nothing is guessed.", false);
+            }
+
+            yield break;
+        }
+
+        string cite = $"{provisions.Section}, {guard.Source.Location}";
+        if (guard.TriggerHeight is { } trigger)
+        {
+            bool required = framing.Deck.Height > trigger && open > 0;
+            string need = required
+                ? $"Guard required: the deck is {Text(framing.Deck.Height)} above grade, over {Text(trigger)}, with {open} open {(open == 1 ? "edge" : "edges")} ({cite})"
+                : $"No guard required: {(open == 0 ? "no edge is open" : $"the deck is {Text(framing.Deck.Height)} above grade, not over {Text(trigger)}")} ({cite})";
+            yield return new DeckCheckLine(
+                DeckCheckKind.Guard,
+                null,
+                required && inputs.Guard is null ? $"{need}: add a guard in the panel." : need + ".",
+                !required || inputs.Guard is not null);
+        }
+        else
+        {
+            yield return new DeckCheckLine(DeckCheckKind.Guard, null, $"When a guard is required is not covered by this pack ({cite}).", false);
+        }
+
+        if (inputs.Guard is not { } typed)
+        {
+            yield break;
+        }
+
+        if (guard.MinimumHeight is { } minimum)
+        {
+            yield return typed.Height >= minimum
+                ? new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard height {Text(typed.Height)}: at least {Text(minimum)} ({cite}).", true)
+                : new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard height {Text(typed.Height)}: {Text(minimum - typed.Height)} short of the {Text(minimum)} required ({cite}).", false);
+        }
+
+        if (guard.MaximumOpening is { } opening && GuardFraming.Of(sketch, framing, library) is { } layout)
+        {
+            ExactFraction widest = layout.Runs.Select(run => run.Gap).Max();
+            if (ExactFraction.Whole(typed.BottomClearance.Units) > widest)
+            {
+                widest = ExactFraction.Whole(typed.BottomClearance.Units);
+            }
+
+            string gaps = string.Join(", ", layout.Runs.Select(run => GuardFraming.Words(run.Gap)).Distinct());
+            yield return widest <= ExactFraction.Whole(opening.Units)
+                ? new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard openings: baluster gaps {gaps} and {Text(typed.BottomClearance)} under the rail, none over {Text(opening)} ({cite}).", true)
+                : new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard openings: the widest is {GuardFraming.Words(widest)}, over the {Text(opening)} allowed ({cite}).", false);
+        }
+    }
+
+    /// <summary>The stair's lines (§3.5): riser, tread, handrail and width, each against the pack's provisions, cited.</summary>
+    static IEnumerable<DeckCheckLine> StairLines(DeckFraming framing, LoadedPack? pack, MaterialsLibrary library)
+    {
+        DeckInputs inputs = framing.Deck.Box.Deck!;
+        if (inputs.Stair is not { } stair)
+        {
+            yield break;
+        }
+
+        (StairLayout? layout, string? problem) = StairFraming.Of(framing, pack, library);
+        if (layout is null)
+        {
+            yield return new DeckCheckLine(DeckCheckKind.Stair, null, $"Stair: {problem}", false);
+            yield break;
+        }
+
+        yield return new DeckCheckLine(DeckCheckKind.Stair, null, $"Stair: {layout.Layout}", true);
+        if (pack?.Deck.GuardStair?.Stair is not { } rules)
+        {
+            yield return new DeckCheckLine(
+                DeckCheckKind.Stair,
+                null,
+                $"Stair: {(pack is null ? "no adopted code is chosen" : $"the loaded pack {pack.Manifest.Adoption.ShortName} has no stair provisions")}, so napkin cannot check the risers, treads or handrail. Nothing is guessed.",
+                false);
+            yield break;
+        }
+
+        string cite = $"{pack.Deck.GuardStair!.Section}, {rules.Source.Location}";
+        if (rules.MaximumRiser is { } riser)
+        {
+            yield return layout.RiseEach <= ExactFraction.Whole(riser.Units)
+                ? new DeckCheckLine(DeckCheckKind.Stair, null, $"Risers {DeckFrame.Words(layout.RiseEach)}: at most {Text(riser)} ({cite}).", true)
+                : new DeckCheckLine(DeckCheckKind.Stair, null, $"Risers {DeckFrame.Words(layout.RiseEach)}: over the {Text(riser)} allowed ({cite}).", false);
+        }
+
+        if (rules.MinimumTread is { } tread)
+        {
+            yield return stair.Run >= tread
+                ? new DeckCheckLine(DeckCheckKind.Stair, null, $"Treads {Text(stair.Run)}: at least {Text(tread)} ({cite}).", true)
+                : new DeckCheckLine(DeckCheckKind.Stair, null, $"Treads {Text(stair.Run)}: {Text(tread - stair.Run)} short of the {Text(tread)} required ({cite}).", false);
+        }
+
+        if (rules.HandrailWhenRisersAtLeast is { } handrail)
+        {
+            yield return new DeckCheckLine(
+                DeckCheckKind.Stair,
+                null,
+                layout.Risers >= handrail
+                    ? $"Handrail required: {layout.Risers} risers, at least {handrail} ({cite}); add it as hardware."
+                    : $"No handrail required: {layout.Risers} risers, fewer than {handrail} ({cite}).",
+                true);
+        }
+
+        if (rules.MinimumWidth is { } width)
+        {
+            yield return stair.Width >= width
+                ? new DeckCheckLine(DeckCheckKind.Stair, null, $"Stair width {Text(stair.Width)}: at least {Text(width)} ({cite}).", true)
+                : new DeckCheckLine(DeckCheckKind.Stair, null, $"Stair width {Text(stair.Width)}: {Text(width - stair.Width)} short of the {Text(width)} required ({cite}).", false);
+        }
     }
 
     /// <summary>§5.1: a bearing wall stands on the deck and nothing says what the deck supports.</summary>
