@@ -3,6 +3,7 @@ using System.Globalization;
 
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 
@@ -63,11 +64,27 @@ public sealed class CutListTable : Grid
     public CutListTable()
     {
         ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto,Auto");
+
+        // Transparent rather than none, so a press anywhere along a row — not only on its text — is the
+        // table's to read (#205).
+        Background = Brushes.Transparent;
         Rebuild();
     }
 
     /// <summary>Raised when a column header is clicked and the order changes.</summary>
     public event EventHandler? SortChanged;
+
+    /// <summary>
+    /// Raised when a row is pressed (#205, parts-view §5.5): its parts are to be selected in the model —
+    /// toggled with Ctrl or Cmd, added with Shift, as a Parts view cell does.
+    /// </summary>
+    public event EventHandler<CutListRowPick>? RowPicked;
+
+    /// <summary>Which row each grid line belongs to: a row's own line and the lines of its sentences.</summary>
+    readonly Dictionary<int, CutListRow> _lineRows = [];
+
+    /// <summary>The first grid line of a row, for the GUI suite to press it.</summary>
+    public int LineOf(CutListRow row) => _lineRows.Where(pair => pair.Value.Equals(row)).Min(pair => pair.Key);
 
     /// <summary>The rows this table shows, in the order <see cref="CutList.Of"/> produced them.</summary>
     public ImmutableArray<CutListRow> Rows
@@ -188,6 +205,7 @@ public sealed class CutListTable : Grid
     {
         Children.Clear();
         RowDefinitions.Clear();
+        _lineRows.Clear();
 
         AddHeader();
 
@@ -195,6 +213,7 @@ public sealed class CutListTable : Grid
         foreach (CutListRow row in Order(_rows))
         {
             RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            _lineRows[line] = row;
 
             Add(row.Rough ? RoughLabel(row.Label) : Cell(row.Label), line, 0);
             Add(Cell(row.Quantity.ToString(CultureInfo.InvariantCulture), right: true), line, 1);
@@ -227,6 +246,7 @@ public sealed class CutListTable : Grid
             foreach (string sentence in row.CutText.AddRange(row.JointText).AddRange(row.Flags))
             {
                 RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+                _lineRows[line] = row;
                 Add(Sentence(sentence), line, 0, span: 7);
                 line++;
             }
@@ -363,6 +383,35 @@ public sealed class CutListTable : Grid
         VerticalAlignment = VerticalAlignment.Center,
     };
 
+    /// <inheritdoc/>
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        if (e.Handled)
+        {
+            return;
+        }
+
+        // The line under the pointer, from the lines' heights, says the row — wherever along it the press
+        // landed. The header's buttons handle their own presses and never get here.
+        double y = e.GetPosition(this).Y, top = 0;
+        for (int line = 0; line < RowDefinitions.Count; line++)
+        {
+            top += RowDefinitions[line].ActualHeight;
+            if (y < top)
+            {
+                if (_lineRows.TryGetValue(line, out CutListRow? row))
+                {
+                    KeyModifiers held = e.KeyModifiers;
+                    RowPicked?.Invoke(this, new CutListRowPick(row, held.HasFlag(KeyModifiers.Control) || held.HasFlag(KeyModifiers.Meta), held.HasFlag(KeyModifiers.Shift)));
+                    e.Handled = true;
+                }
+
+                return;
+            }
+        }
+    }
+
     private void Add(Control control, int row, int column, int span = 1)
     {
         SetRow(control, row);
@@ -371,3 +420,9 @@ public sealed class CutListTable : Grid
         Children.Add(control);
     }
 }
+
+/// <summary>A cut-list row pressed, to select its parts (#205).</summary>
+/// <param name="Row">The row.</param>
+/// <param name="Toggle">Ctrl or Cmd was held: toggle each part.</param>
+/// <param name="Add">Shift was held: add the parts to the selection.</param>
+public sealed record CutListRowPick(CutListRow Row, bool Toggle, bool Add);

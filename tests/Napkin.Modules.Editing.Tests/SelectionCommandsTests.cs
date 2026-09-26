@@ -111,6 +111,33 @@ public class SelectionCommandsTests
         Assert.Contains("Select a part to shape it", editor.LastMessage!.Text, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Picking_parts_selects_them_toggles_them_or_adds_them_as_a_click_does()
+    {
+        // Three parts; pick the first two, as a cell or a cut-list row of two would.
+        DesignEditor editor = new();
+        editor.Open(EditingBuilder.Design(EditingBuilder.At(0, 0, 10, 10), EditingBuilder.At(20, 0, 10, 10), EditingBuilder.At(40, 0, 10, 10)));
+        EntityId third = EditingBuilder.Id(2);
+
+        SelectionCommands.Pick(editor, [First, Second], toggle: false, add: false);
+        Assert.Equal(new HashSet<EntityId> { First, Second }, editor.Selection);
+
+        // A plain pick replaces what was selected.
+        SelectionCommands.Pick(editor, [third], toggle: false, add: false);
+        Assert.Equal(new HashSet<EntityId> { third }, editor.Selection);
+
+        // Shift adds.
+        SelectionCommands.Pick(editor, [First, Second], toggle: false, add: true);
+        Assert.Equal(new HashSet<EntityId> { First, Second, third }, editor.Selection);
+
+        // Ctrl or Cmd toggles each: the two go, the third stays.
+        SelectionCommands.Pick(editor, [First, Second], toggle: true, add: false);
+        Assert.Equal(new HashSet<EntityId> { third }, editor.Selection);
+
+        Assert.Throws<ArgumentNullException>(() => SelectionCommands.Pick(null!, [First], false, false));
+        Assert.Throws<ArgumentNullException>(() => SelectionCommands.Pick(editor, null!, false, false));
+    }
+
     static DesignEditor EditorWith(Box box)
     {
         DesignEditor editor = new();
