@@ -136,6 +136,7 @@ public sealed class CanvasView : Control
     readonly WallTool _wall = new();
     readonly RectangleTool _room = new();
     OpeningKind _openingKind = OpeningKind.Window;
+    OpeningFill _openingFill = OpeningFill.Glass;
     EditTool _tool = EditTool.Select;
 
     Gesture _gesture = Gesture.None;
@@ -1602,15 +1603,16 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>Picks up the opening tool (#18): the next click on a wall puts a window or door in it.</summary>
-    public void ArmOpening(OpeningKind kind)
+    public void ArmOpening(OpeningKind kind, OpeningFill? fill = null)
     {
         _openingKind = kind;
+        _openingFill = fill ?? (kind == OpeningKind.Door ? OpeningFill.Solid : OpeningFill.Glass);
         Tool = EditTool.Opening;
         ToolChanged?.Invoke(this, EventArgs.Empty);
         _editor?.Say(EditSeverity.Hint, $"Click on a wall to put a {Word(kind)} in it.");
     }
 
-    static string Word(OpeningKind kind) => kind == OpeningKind.Door ? "door" : "window";
+    string Word(OpeningKind kind) => _openingFill == OpeningFill.Screen ? "screen" : kind == OpeningKind.Door ? "door" : "window";
 
     void CompleteWall()
     {
@@ -1677,8 +1679,8 @@ public sealed class CanvasView : Control
 
             EntityId id = EntityId.New();
             LayerId layer = editor.LayerNamed(DesignLayers.Opening, out Request? addLayer);
-            string name = editor.NextName(_openingKind == OpeningKind.Door ? "Door" : "Window");
-            Request place = OpeningPlacement.Request(wall, layer, id, name, offset, width, sill, height);
+            string name = editor.NextName(_openingFill == OpeningFill.Screen ? "Screen" : _openingKind == OpeningKind.Door ? "Door" : "Window");
+            Request place = OpeningPlacement.Request(wall, layer, id, name, offset, width, sill, height, _openingFill);
             Request request = addLayer is null ? place : Batch.Of(addLayer, place);
 
             string what = $"Put a {Word(_openingKind)} in {wall.Name}";

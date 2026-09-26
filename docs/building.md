@@ -315,6 +315,15 @@ the stringer board the diagonal plus one tread, napkin's allowance, in one sente
 The pack's guard and stair provisions — when one is required, its height, its openings, the riser,
 tread, handrail and width — are each a cited line, or "not covered by this pack", or No data.
 
+**Screens and the 40 % line** (§5.2, §5.5). Every opening has a **fill** — glass, screen or solid —
+stored on it: **Draw → Window** starts glass, **Door** solid, and **Draw → Screen** places a window
+filled with screen; the panel's **Fill** changes any of them, and the frame does not change with it.
+Under a porch roof napkin works out the glazing ratio IRC 2021 §R202's "sunroom" definition turns on
+(read via UpCodes, docs/research/porch-rules.md): the glass openings in the walls standing on the
+deck, over those walls' gross area plus the triangle above each side wall and the roof's sloped area,
+to a tenth of a percent, and says which side of the 40 % line the drawing is on. It never
+classifies; a category is yours.
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code

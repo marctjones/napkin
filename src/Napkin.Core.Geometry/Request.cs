@@ -125,6 +125,11 @@ public sealed record SetPhase(EntityId Id, Phase Phase) : Request;
 /// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>
 public sealed record SetRoomInputs(EntityId Box, RoomInputs? Inputs) : Request;
 
+/// <summary>Sets what fills an opening — glass, screen or solid (deck-and-porch §5.2). Exact, moves nothing.</summary>
+/// <param name="Box">The opening's box.</param>
+/// <param name="Fill">The fill, or <see langword="null"/> for none said.</param>
+public sealed record SetOpeningFill(EntityId Box, OpeningFill? Fill) : Request;
+
 /// <summary>Sets a deck's inputs (deck-and-porch §2.2). Exact, moves nothing.</summary>
 /// <param name="Box">The deck's box.</param>
 /// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>

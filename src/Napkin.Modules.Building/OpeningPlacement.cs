@@ -35,14 +35,15 @@ public static class OpeningPlacement
         Length offset,
         Length width,
         Length sill,
-        Length height)
+        Length height,
+        OpeningFill? fill = null)
     {
         ArgumentNullException.ThrowIfNull(wall);
         ArgumentNullException.ThrowIfNull(name);
 
         Box w = wall.Box;
         Point3 anchor = w.World(new Vector3(offset, Length.Zero, sill));
-        Box opening = new Box(id, layer, anchor, width, w.Height, height, w.FaceUp, w.Rotation) with { Name = name };
+        Box opening = new Box(id, layer, anchor, width, w.Height, height, w.FaceUp, w.Rotation) with { Name = name, Opening = fill };
 
         (Axis along, bool positive) = w.Orientation.Image(Axis.X);
         BoxFeature corner = BoxFeature.Edge(BoxFace.South, BoxFace.West);

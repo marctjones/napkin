@@ -48,6 +48,8 @@ public partial class MainWindow
 
     void OnDoorToolClicked(object? sender, RoutedEventArgs e) => ArmOpening(OpeningKind.Door);
 
+    void OnScreenToolClicked(object? sender, RoutedEventArgs e) => ArmOpening(OpeningKind.Window, OpeningFill.Screen);
+
     void OnRoomToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.RoomTool);
 
     void OnDeckToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.DeckTool);
@@ -140,14 +142,14 @@ public partial class MainWindow
     }
 
     /// <summary>Picks up the opening tool: the next click on a wall in the plan puts a window or door in it.</summary>
-    public void ArmOpening(OpeningKind kind)
+    public void ArmOpening(OpeningKind kind, OpeningFill? fill = null)
     {
         if (!IsShowingPlan)
         {
             ShowView(DesignView.Top);
         }
 
-        DrawingCanvas.ArmOpening(kind);
+        DrawingCanvas.ArmOpening(kind, fill);
         UpdateToolButtons();
         FocusDrawing();
     }

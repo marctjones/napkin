@@ -219,6 +219,10 @@
                           Header="D_oor"
                           Click="OnDoorToolClicked"
                           ToolTip.Tip="Click on a wall to put a door in it." />
+                <MenuItem Name="ScreenToolMenuItem"
+                          Header="Scree_n"
+                          Click="OnScreenToolClicked"
+                          ToolTip.Tip="Click on a wall to put a screened opening in it: placed as a window, filled with screen. The panel's Fill changes any opening between glass, screen and solid." />
                 <!-- Renovation (renovation-sketches §8): a room carries the finishes; a note the rough-in. -->
                 <MenuItem Name="RoomToolMenuItem"
                           Header="Roo_m"
@@ -1243,6 +1247,13 @@
                                        AutomationProperties.Name="Room notes" />
                             <TextBlock Name="RoomTakeoffText" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
                                        AutomationProperties.Name="Area takeoff" />
+                        </StackPanel>
+
+                        <!-- An opening's fill (deck-and-porch §5.2): glass, screen or solid; the frame is the same. -->
+                        <StackPanel Name="OpeningFillRow" Orientation="Horizontal" Spacing="6" IsVisible="False">
+                            <TextBlock Text="Fill" FontSize="11" VerticalAlignment="Center" />
+                            <ComboBox Name="OpeningFillBox" FontSize="11" MinWidth="100" SelectionChanged="OnOpeningFillChosen"
+                                      AutomationProperties.Name="Opening fill" />
                         </StackPanel>
 
                         <!-- A deck's inputs and its frame (deck-and-porch §2.2, §8): pickers and typed boxes;

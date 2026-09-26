@@ -128,6 +128,9 @@ public sealed record Opening(Box Box, Wall Wall, Length Offset, Length Sill)
     /// <summary>The top of the rough opening above the wall's bottom: where the header's underside is.</summary>
     public Length Top => Sill + Height;
 
+    /// <summary>What fills it (deck-and-porch §5.2): as stored, or — when nothing is said — glass in a window and solid in a door.</summary>
+    public OpeningFill Fill => Box.Opening ?? (Kind == OpeningKind.Door ? OpeningFill.Solid : OpeningFill.Glass);
+
     /// <summary>A door when it comes down to the wall's bottom, and a window otherwise.</summary>
     public OpeningKind Kind => Sill == Length.Zero ? OpeningKind.Door : OpeningKind.Window;
 

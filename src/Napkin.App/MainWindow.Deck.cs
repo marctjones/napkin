@@ -89,6 +89,52 @@ public partial class MainWindow
 
     Deck? SelectedDeck() => Editor.OnlySelectedBox is { } box && Deck.Is(Editor.Sketch, box) ? new Deck(box) : null;
 
+    static readonly (OpeningFill Value, string Word)[] FillWords = [(OpeningFill.Glass, "glass"), (OpeningFill.Screen, "screen"), (OpeningFill.Solid, "solid")];
+
+    bool _fillingFill;
+
+    /// <summary>The opening's Fill picker, for the GUI suite.</summary>
+    public ComboBox OpeningFillPicker => OpeningFillBox;
+
+    /// <summary>Shows an opening's Fill row, or hides it for anything else.</summary>
+    void ShowOpeningFill(Box box)
+    {
+        bool isOpening = Opening.Is(Editor.Sketch, box) && !Wall.Is(Editor.Sketch, box);
+        OpeningFillRow.IsVisible = isOpening;
+        if (!isOpening)
+        {
+            return;
+        }
+
+        // What the opening reads as in its wall: glass for a window and solid for a door when nothing is said.
+        OpeningFill fill = Wall.All(Editor.Sketch).SelectMany(wall => Opening.In(Editor.Sketch, wall)).FirstOrDefault(opening => opening.Id == box.Id)?.Fill
+                           ?? box.Opening ?? OpeningFill.Glass;
+        _fillingFill = true;
+        try
+        {
+            OpeningFillBox.ItemsSource ??= FillWords.Select(pair => pair.Word).ToArray();
+            OpeningFillBox.SelectedIndex = Array.FindIndex(FillWords, pair => pair.Value == fill);
+        }
+        finally
+        {
+            _fillingFill = false;
+        }
+    }
+
+    void OnOpeningFillChosen(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_fillingFill || !OpeningFillRow.IsVisible || Editor.OnlySelectedBox is not { } box || OpeningFillBox.SelectedIndex < 0)
+        {
+            return;
+        }
+
+        OpeningFill chosen = FillWords[OpeningFillBox.SelectedIndex].Value;
+        if (box.Opening != chosen)
+        {
+            Editor.Apply(new SetOpeningFill(box.Id, chosen), $"Set {box.Name}'s fill to {FillWords[OpeningFillBox.SelectedIndex].Word}");
+        }
+    }
+
     /// <summary>Fills the deck block for a deck, or hides it for anything else.</summary>
     void ShowDeck(Box box)
     {
