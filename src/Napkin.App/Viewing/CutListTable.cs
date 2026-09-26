@@ -270,28 +270,11 @@ public sealed class CutListTable : Grid
             return null;
         }
 
-        Box blank = Box.AsDrawn(
-            EntityId.New(),
-            LayerId.New(),
-            Point2.Origin,
-            Along(row, row.PlanAxes.X),
-            Along(row, row.PlanAxes.Y),
-            Along(row, row.PlanAxes.OutOfPlane),
-            Angle.Zero) with
-        {
-            Cuts = [.. row.Cuts],
-        };
+        // The one blank the Parts view draws too (parts-view §0): built there, read here.
+        Box blank = PartsCell.BlankFor(row);
 
         return new CutThumbnail(blank);
     }
-
-    /// <summary>Which of a row's three dimensions one of the plan axes is.</summary>
-    private static Length Along(CutListRow row, PartDimension dimension) => dimension switch
-    {
-        PartDimension.Length => row.Length,
-        PartDimension.Width => row.Width,
-        _ => row.Thickness,
-    };
 
     private void AddHeader()
     {

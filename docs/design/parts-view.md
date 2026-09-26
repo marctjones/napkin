@@ -1,7 +1,9 @@
 # The Parts view: every distinct piece, drawn once, with its count
 
-Status: **DRAFT, awaiting Marc's sign-off.** Written by Fable for issue #110; it unblocks #111
-(now split into the slices in §8). Nothing here is implemented. It belongs to the **Views**
+Status: **Signed off by Marc 2026-09-25** ("yes to all five": §10's recommendations are decided as
+written). Written by Fable for issue #110; it unblocks #111 (now split into the slices in §8).
+Slice A (#122) implements §1: `PartsSheet`, `PartsCell`, `PartsGroup` in `Napkin.Modules.Furniture`;
+its catalog rows are CUT-019 and CUT-020, not the CUT-007/008 §7.1 names, which joinery took first. It belongs to the **Views**
 milestone and sits beside the standard-views note (#106, being written concurrently — this note
 depends only on the idea both share: one canvas, one view at a time, switched by the mechanism
 #108 lands; it never cites that note's text).
