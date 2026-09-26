@@ -1,5 +1,6 @@
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
+using Napkin.Modules.Editing;
 using Xunit;
 
 namespace Napkin.App.GuiTests.Unit;
