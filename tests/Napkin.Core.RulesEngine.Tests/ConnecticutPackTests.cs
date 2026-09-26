@@ -1,3 +1,4 @@
+using Napkin.Core.Geometry;
 using System.Text.Json;
 
 namespace Napkin.Core.RulesEngine.Tests;
@@ -175,6 +176,22 @@ public class ConnecticutPackTests
         Assert.Equal($"Appendix AY, p. {page} (footer 'Page - {page}')", site.Source.Location);
         Assert.Equal("ct-csbc-2022", site.Source.SourceId);
         Assert.Equal("1325ee87f4bc5a0adbe6013dd6ef2def79229bcd189ea59388d1e03899618947", site.Source.Sha256);
+    }
+
+    /// <summary>
+    /// The frost line depth Table R301.2 prints on p. 131 (42") and R403.1.4.1's two deck exceptions,
+    /// typed here from pp. 144–145 of Connecticut's document (read 2026-09-26), not from the pack file.
+    /// </summary>
+    [Fact]
+    public void The_frost_file_offers_table_R301_2s_42_inches_with_the_deck_exceptions()
+    {
+        FrostProvision frost = Pack().Frost!;
+
+        Assert.Equal(Length.Inches(42), frost.FrostLineDepth);
+        Assert.Contains("p. 131", frost.Source.Location, StringComparison.Ordinal);
+        Assert.Equal(["R403.1.4.1 exc. 3", "R403.1.4.1 exc. 4"], frost.Footnotes.Select(note => note.Id));
+        Assert.StartsWith("Decks and ramps not supported by a dwelling need not be provided with footings that extend below the frost line.", frost.Footnotes[0].Text, StringComparison.Ordinal);
+        Assert.Contains("at least 12 inches (305 mm) below the undisturbed ground surface", frost.Footnotes[1].Text, StringComparison.Ordinal);
     }
 
     [Fact]

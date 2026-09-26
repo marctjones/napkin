@@ -1280,6 +1280,15 @@
                             </Grid>
                             <CheckBox Name="DeckBlockingCheck" Content="Blocking at mid-span" FontSize="11"
                                       IsCheckedChanged="OnDeckTicked" AutomationProperties.Name="Blocking" />
+                            <TextBlock Text="Code check" FontSize="11" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            <TextBlock Name="DeckSupportsNote" FontSize="10" TextWrapping="Wrap" IsVisible="False"
+                                       Foreground="{DynamicResource SystemErrorTextColor}" AutomationProperties.Name="Deck supports note" />
+                            <TextBlock Name="DeckCheckText" FontSize="10" TextWrapping="Wrap" AutomationProperties.Name="Deck code check" />
+                            <StackPanel Name="DeckFrostOffer" Orientation="Horizontal" Spacing="6" IsVisible="False">
+                                <TextBlock Name="DeckFrostOfferText" FontSize="10" TextWrapping="Wrap" MaxWidth="220" VerticalAlignment="Center"
+                                           AutomationProperties.Name="Frost depth offered" />
+                                <Button Name="DeckUseFrostButton" Content="Use it" FontSize="10" Click="OnUseFrostClicked" />
+                            </StackPanel>
                         </StackPanel>
 
                         <CheckBox Name="IsPartCheck"

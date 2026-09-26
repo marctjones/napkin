@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Core.RulesEngine;
 using Napkin.Modules.Building;
 using Napkin.Modules.Editing;
 
@@ -18,6 +19,35 @@ namespace Napkin.App;
 public partial class MainWindow
 {
     bool _fillingDeck;
+
+    FrostSuggestion? _frostOffered;
+
+    /// <summary>The deck's code check lines as the panel shows them.</summary>
+    public string DeckCheckLines => DeckFields.IsVisible ? DeckCheckText.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The adopted code's frost depth offered, or empty.</summary>
+    public string DeckFrostOfferLine => DeckFrostOffer.IsVisible ? DeckFrostOfferText.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The button that accepts the frost depth offered.</summary>
+    public Button DeckUseFrost => DeckUseFrostButton;
+
+    /// <summary>Accepts the offered frost depth into the site values, saying where it came from: one undo step (§3.4).</summary>
+    void OnUseFrostClicked(object? sender, RoutedEventArgs e)
+    {
+        if (_frostOffered is not { } offer || Packs.Resolve(Editor.Sketch.Code).Pack is not { } pack)
+        {
+            return;
+        }
+
+        SiteValues site = Editor.Sketch.Site with
+        {
+            FrostDepth = offer.Depth,
+            Source = new SiteSource(
+                string.Join("; ", new[] { Editor.Sketch.Site.Source?.Text, $"frost depth: {pack.Manifest.Adoption.ShortName}, {pack.Frost!.Source.Location}" }.OfType<string>()),
+                DateOnly.FromDateTime(DateTime.Today)),
+        };
+        Editor.Apply(new SetSite(site), $"Used {pack.Manifest.Adoption.ShortName}'s frost depth");
+    }
 
     /// <summary>Whether the deck block is showing (a deck is selected).</summary>
     public bool IsShowingDeck => DeckFields.IsVisible;
@@ -73,6 +103,14 @@ public partial class MainWindow
         DeckFrameText.Text = framing is not null
             ? $"Frame: {DeckTool.FrameLine(framing)}."
             : refusal!.Text;
+
+        DeckChecks checks = DeckCheck.For(Editor.Sketch.After(), deck, Packs.Resolve(Editor.Sketch.Code).Pack, MaterialsLibrary.Shipped);
+        DeckCheckText.Text = string.Join("\n", checks.Lines.Select(line => line.Text));
+        DeckSupportsNote.Text = checks.SupportsNote ?? string.Empty;
+        DeckSupportsNote.IsVisible = checks.SupportsNote is not null;
+        _frostOffered = checks.Frost;
+        DeckFrostOfferText.Text = checks.Frost?.Text ?? string.Empty;
+        DeckFrostOffer.IsVisible = checks.Frost is not null;
 
         DeckInputs inputs = box.Deck ?? DeckTool.StartingInputs;
         _fillingDeck = true;
