@@ -238,4 +238,16 @@ public class GuardStairTests
         Assert.Null(GuardFraming.Of(sketch, Deck(null, null).Framing, MaterialsLibrary.Shipped));
         Assert.Null(GuardFraming.Of(sketch, Deck(Guard with { Baluster = "2x3x" }, null).Framing, MaterialsLibrary.Shipped));
     }
+
+    [Fact]
+    public void A_run_narrower_than_the_gap_takes_no_baluster_and_a_pack_without_a_riser_rule_asks_for_the_count()
+    {
+        // The stair 10″ from the corner leaves a 10″ run: 10 − 7 = 3″ clear, under the 3 1/2″ gap.
+        (Sketch sketch, DeckFraming framing) = Deck(Guard, Stair() with { At = In(10) });
+        GuardRun narrow = Assert.Single(GuardFraming.Of(sketch, framing, MaterialsLibrary.Shipped)!.Runs, run => run.Length == In(10));
+        Assert.Equal((0, ExactFraction.Whole(In(3).Units)), (narrow.Balusters, narrow.Gap));
+
+        LoadedPack ct = Assert.Single(CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "RealPacks")]).Loaded);
+        Assert.StartsWith("Type the riser count", StairFraming.Of(Deck(null, Stair()).Framing, ct, MaterialsLibrary.Shipped).Problem, StringComparison.Ordinal);
+    }
 }

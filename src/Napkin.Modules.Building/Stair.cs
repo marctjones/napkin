@@ -42,10 +42,13 @@ public static class StairFraming
             return (null, "The stair cannot be on the house side: choose another edge.");
         }
 
-        if (!library.TryFindLumber(stair.Stringer, out LumberStock stringer) || !library.TryFindLumber(inputs.Decking, out LumberStock board))
+        if (!library.TryFindLumber(stair.Stringer, out LumberStock stringer))
         {
-            return (null, $"{(library.TryFindLumber(stair.Stringer, out _) ? inputs.Decking : stair.Stringer)} is not in the materials library, so the stair cannot be laid out.");
+            return (null, $"{stair.Stringer} is not in the materials library, so the stair cannot be laid out.");
         }
+
+        // The deck framed, so its decking is in the library.
+        library.TryFindLumber(inputs.Decking, out LumberStock board);
 
         Length rise = framing.Deck.Height;
         Length? maximum = pack?.Deck.GuardStair?.Stair?.MaximumRiser;
