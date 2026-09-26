@@ -24,6 +24,7 @@ Three hand-crafted designs, in the scene format documented in
 | A bench on four legs leaning one way — angled parts, plain mitres (#191) | `splayed-bench.design.md`, `splayed-bench.scene.json`, `splayed-bench.expected.json` |
 | A footstool on legs leaning two ways (#191) | `splayed-footstool.design.md`, `splayed-footstool.scene.json`, `splayed-footstool.expected.json` |
 | A chair frame with raked rear legs and rails flush to them (#194) | `raked-chair-frame.design.md`, `raked-chair-frame.scene.json`, `raked-chair-frame.expected.json` |
+| A 12 × 10 ft porch on a deck under a 5-in-12 shed roof — deck-and-porch §9 (#204) | `porch-12x10.design.md`, `porch-12x10.scene.json`, `porch-12x10.expected.json` |
 | A shelf tilted between two sides (#194) | `angled-shelf.design.md`, `angled-shelf.scene.json`, `angled-shelf.expected.json` |
 
 `tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts

@@ -1,5 +1,6 @@
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Core.Project;
 using Napkin.Core.RulesEngine;
 
 namespace Napkin.Modules.Building.Tests;
@@ -219,5 +220,24 @@ public class RoofTests
         Assert.True(Roof.Is(sketch, roof.Box with { Layer = LayerId.Default, Name = "Canopy" }));
         Assert.False(Roof.Is(sketch, roof.Box with { Layer = LayerId.Default, Name = "Canopy", Roof = null }));
         Assert.Null(new Roof(roof.Box with { FaceUp = BoxFace.South }).Over(sketch));
+    }
+
+    [Fact]
+    [Trait("Feature", "ROOF-001")]
+    public void The_porch_sample_frames_as_its_expectations_say()
+    {
+        // samples/porch-12x10: §9's roof on one bearing front wall with one 36 × 60 window, worked in its design file.
+        Sketch sketch = Assert.IsType<Loaded>(SceneReader.ReadFile(Path.Combine(AppContext.BaseDirectory, "samples", "porch-12x10.scene.json"))).Sketch;
+        Roof roof = Assert.Single(Roof.All(sketch));
+        RoofFraming frame = Frame(sketch, roof);
+
+        Assert.Equal("5 in 12", roof.Pitch);
+        Assert.StartsWith("10 rafters 2x8 × 11'-9 3/8\" at 16\"", frame.Line, StringComparison.Ordinal);
+        Assert.IsType<WallLowEnd>(roof.Box.Roof!.LowEnd);
+        Assert.DoesNotContain(frame.Notes, note => note.Contains("mark it bearing", StringComparison.Ordinal));
+
+        // 2160 ÷ (13824 + 20358) = 6.3 %.
+        GlazingRatio ratio = Glazing.Of(sketch, frame.Deck, roof.Box.Height, roof.Box.Depth, frame.SlopedArea)!;
+        Assert.Equal(63, ratio.TenthsOfPercent);
     }
 }
