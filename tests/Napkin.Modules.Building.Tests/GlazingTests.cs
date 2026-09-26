@@ -126,4 +126,28 @@ public class GlazingTests
 
         Assert.StartsWith("Glazing: draw the porch roof first", Glazing.NoRoof, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_tipped_deck_has_no_ratio_and_a_house_running_north_south_turns_which_walls_are_sides()
+    {
+        (Sketch sketch, Deck deck) = Porch();
+        Assert.Null(Glazing.Of(sketch, new Deck(deck.Box with { FaceUp = BoxFace.South }), In(120), In(50), SquareInches(20358)));
+
+        // The house turned (a 3 1/2″ wall here): its east face on x = 0 from y 0 to 240; the deck east of it, 120 out and 144 along.
+        Box house = WallBox("House", new Point3(-In(3, 1, 2), Length.Zero, In(36)), In(240), Angle.Right) with { Phase = Phase.Existing };
+        Box platform = new(EntityId.New(), DeckLayer, new Point3(Length.Zero, In(48), Length.Zero), In(120), In(144), In(36), BoxFace.Top, Angle.Zero)
+        {
+            Deck = deck.Box.Deck,
+        };
+
+        // One wall along the deck's north edge, running out from the house: a side wall, so it has a triangle.
+        Box north = WallBox("North", new Point3(Length.Zero, In(188, 1, 2), In(36)), In(120), Angle.Zero);
+        Sketch turned = Sketch.Empty.WithLayer(new Layer(WallLayer, BuildingLayers.Wall)).WithLayer(new Layer(DeckLayer, BuildingLayers.Deck))
+            .WithEntity(house).WithEntity(platform).WithEntity(north);
+        GlazingRatio ratio = Glazing.Of(turned, new Deck(platform), In(120), In(50), SquareInches(1))!;
+
+        // ½ × 120 × (120 × 50 ÷ 120) = 3000 sq in.
+        Assert.Equal(DeckEdge.West, new Deck(platform).Ledger(turned).Edge);
+        Assert.Equal(ExactFraction.Whole(3000L * 1024 * 1024), ratio.RakeFill);
+    }
 }
