@@ -31,7 +31,8 @@ public sealed class SceneReaderRejectionTests
     [InlineData(7)]
     [InlineData(8)]
     [InlineData(9)]
-    [InlineData(11)]
+    [InlineData(10)]
+    [InlineData(12)]
     [Trait("Feature", "PRJ-004")]
     public void A_file_from_another_format_version_fails_before_the_scene_is_parsed(int version)
     {
@@ -61,7 +62,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_file_with_no_version_stamp_is_refused()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 10,", string.Empty),
+            Scenes.OneBox.With("\"formatVersion\": 11,", string.Empty),
             LoadProblemKind.MissingField,
             "formatVersion");
 
@@ -69,7 +70,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_text_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 10", "\"formatVersion\": \"4\""),
+            Scenes.OneBox.With("\"formatVersion\": 11", "\"formatVersion\": \"4\""),
             LoadProblemKind.Malformed,
             "formatVersion");
 
@@ -77,7 +78,7 @@ public sealed class SceneReaderRejectionTests
     [Trait("Feature", "PRJ-004")]
     public void A_version_written_as_a_decimal_is_not_a_version()
         => Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 10", "\"formatVersion\": 10.0"),
+            Scenes.OneBox.With("\"formatVersion\": 11", "\"formatVersion\": 11.0"),
             LoadProblemKind.NotAnInteger,
             "formatVersion");
 
@@ -108,7 +109,7 @@ public sealed class SceneReaderRejectionTests
             "colour");
 
         Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 10,", "\"formatVersion\": 10, \"author\": \"someone\","),
+            Scenes.OneBox.With("\"formatVersion\": 11,", "\"formatVersion\": 11, \"author\": \"someone\","),
             LoadProblemKind.UnknownField,
             "author");
 

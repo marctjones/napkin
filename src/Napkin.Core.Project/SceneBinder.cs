@@ -306,6 +306,7 @@ internal sealed class SceneBinder
                 SceneNames.Box => ReadBox(fields, new EntityId(entityId), new LayerId(layerId)),
                 SceneNames.Dimension => ReadDimension(fields, new EntityId(entityId), new LayerId(layerId)),
                 SceneNames.NoteType => ReadNote(fields, new EntityId(entityId), new LayerId(layerId)),
+                SceneNames.StrutType => ReadStrut(fields, new EntityId(entityId), new LayerId(layerId)),
                 _ => UnknownType(fields, type),
             };
 
@@ -332,6 +333,30 @@ internal sealed class SceneBinder
             $"{fields.Path}/{SceneNames.Type}",
             $"\"{type}\" is not an entity type this build knows. The types are: {SceneNames.List(SceneNames.EntityTypes)}.");
         return null;
+    }
+
+    /// <summary>
+    /// A strut (format version 11, <c>docs/design/angled-parts.md</c> &#xA7;7): two exact ends, the
+    /// plane each is cut to, the reference axis and the cross-section. Every field is required; the
+    /// strut's own invariants (14&#x2013;17) are the kernel's, judged by <see cref="Sketch.Validate"/>
+    /// once the file has its shape, which derives the blank once for invariant 17. The blank is never
+    /// in the file.
+    /// </summary>
+    private Entity? ReadStrut(JsonFields fields, EntityId id, LayerId layer)
+    {
+        Point3? from = ReadPoint3(fields, SceneNames.From);
+        Point3? to = ReadPoint3(fields, SceneNames.To);
+        EndCut? fromCut = ReadEnum(fields, SceneNames.FromCut, SceneNames.EndCuts, "end cut");
+        EndCut? toCut = ReadEnum(fields, SceneNames.ToCut, SceneNames.EndCuts, "end cut");
+        Axis? reference = ReadEnum(fields, SceneNames.Reference, SceneNames.ReferenceAxes, "reference axis");
+        long? height = RefuseNonPositive(fields, SceneNames.Height, ReadInteger(fields, SceneNames.Height), "strut");
+        long? depth = RefuseNonPositive(fields, SceneNames.Depth, ReadInteger(fields, SceneNames.Depth), "strut");
+        (bool partRead, Part? part) = ReadPart(fields);
+
+        return from is { } start && to is { } end && fromCut is { } startCut && toCut is { } endCut
+            && reference is { } axis && height is { } tall && depth is { } deep && partRead
+            ? new Strut(id, layer, start, end, startCut, endCut, axis, new Length(tall), new Length(deep)) { Part = part }
+            : null;
     }
 
     private Entity? ReadNode(JsonFields fields, EntityId id, LayerId layer)
@@ -440,7 +465,7 @@ internal sealed class SceneBinder
     /// One of a box's three sizes, refused when it is zero or negative: a box has an extent along
     /// every one of its local axes (invariants 2 and 10).
     /// </summary>
-    private long? RefuseNonPositive(JsonFields fields, string name, long? size)
+    private long? RefuseNonPositive(JsonFields fields, string name, long? size, string owner = "box")
     {
         if (size is not { } units || units > 0)
         {
@@ -450,7 +475,7 @@ internal sealed class SceneBinder
         Add(
             LoadProblemKind.InvalidValue,
             $"{fields.Path}/{name}",
-            $"A box's {name} must be greater than zero; this one is {units.ToString(CultureInfo.InvariantCulture)} units.");
+            $"A {owner}'s {name} must be greater than zero; this one is {units.ToString(CultureInfo.InvariantCulture)} units.");
         return null;
     }
 
@@ -1862,6 +1887,7 @@ internal sealed class SceneBinder
                 ? new CenterRef(box)
                 : null,
             SceneNames.Feature => ReadFeatureRef(fields),
+            SceneNames.StrutEndKind or SceneNames.StrutFaceKind or SceneNames.StrutEndFaceKind => ReadStrutPlace(fields, kind),
             _ => UnknownPlaceKind(fields, kind, "a place", SceneNames.PlaceKinds),
         };
 
@@ -1893,6 +1919,26 @@ internal sealed class SceneBinder
 
         RejectUnknownFields(fields);
         return reference;
+    }
+
+    /// <summary>
+    /// A place on a strut (format version 11, angled-parts &#xA7;7): <c>strutEnd { strut, end }</c>,
+    /// <c>strutFace { strut, face }</c> or <c>strutEndFace { strut, end }</c>. Which relationships
+    /// may name one is the kernel's (<see cref="PlaceRules"/>).
+    /// </summary>
+    private PlaceRef? ReadStrutPlace(JsonFields fields, string kind)
+    {
+        EntityId? strut = ReadEntityReference(fields, SceneNames.StrutType, typeof(Strut));
+        if (kind == SceneNames.StrutFaceKind)
+        {
+            StrutFace? face = ReadEnum(fields, SceneNames.Face, SceneNames.StrutFaces, "strut face");
+            return strut is { } owner && face is { } which ? new StrutFaceRef(owner, which) : null;
+        }
+
+        StrutEnd? end = ReadEnum(fields, SceneNames.End, SceneNames.StrutEnds, "strut end");
+        return strut is not { } id || end is not { } at ? null
+            : kind == SceneNames.StrutEndKind ? new StrutEndRef(id, at)
+            : new StrutEndFaceRef(id, at);
     }
 
     private PlaceRef? ReadSegmentRef(JsonFields fields)

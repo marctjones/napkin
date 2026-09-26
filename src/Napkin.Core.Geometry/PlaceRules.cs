@@ -39,6 +39,14 @@ public static class PlaceRules
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(relationship);
 
+        if (PlacesNamed(relationship).FirstOrDefault(place => place is StrutFaceRef or StrutEndFaceRef) is { } body)
+        {
+            return NotComparable(
+                relationship,
+                $"{Describe(sketch, body)} is part of a strut's body, which is not a place a relationship can hold; "
+                + "a strut's two ends are.");
+        }
+
         switch (relationship)
         {
             case Coincident coincident when Places(sketch, coincident.A, coincident.B) is [var a, var b]:
@@ -166,6 +174,9 @@ public static class PlaceRules
             SegmentRef => $"segment {name}",
             CenterRef => $"{name}'s centre",
             FeatureRef feature => $"{name}'s {InWords(feature.Feature)}",
+            StrutEndRef end => $"{name}'s {(end.End == StrutEnd.From ? "from" : "to")} end",
+            StrutFaceRef face => $"{name}'s {face.Face.ToString().ToLowerInvariant()} face",
+            StrutEndFaceRef endFace => $"{name}'s {(endFace.End == StrutEnd.From ? "from" : "to")} end face",
             _ => name,
         };
     }
@@ -244,6 +255,26 @@ public static class PlaceRules
         [] => "none",
         [var only] => $"only {only}",
         _ => string.Join(" and ", axes),
+    };
+
+    /// <summary>Every place a relationship names, in field order.</summary>
+    internal static IEnumerable<PlaceRef> PlacesNamed(Relationship relationship) => relationship switch
+    {
+        Coincident r => [r.A, r.B],
+        Horizontal r => [r.Edge],
+        Vertical r => [r.Edge],
+        Flush r => [r.A, r.B],
+        AxisDistance r => [r.From, r.To],
+        Centered r => [r.Middle, r.A, r.B],
+        Parallel r => [r.A, r.B],
+        Perpendicular r => [r.A, r.B],
+        AngleBetween r => [r.A, r.B],
+        Distance r => [r.A, r.B],
+        PointOnEdge r => [r.Point, r.Edge],
+        Symmetric r => [r.A, r.B, r.Mirror],
+        Tangent r => [r.A, r.B],
+        Joint r => [r.Receiving, r.Inserted],
+        _ => [],
     };
 
     private static ValidationError NotComparable(Relationship relationship, string why)

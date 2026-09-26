@@ -201,6 +201,11 @@ public static class EditMessages
         RejectionReason.UnsupportedRequest => "this build does not do that yet.",
         RejectionReason.PlacesNotComparable =>
             "those two places do not lie along a common line or plane, so that relationship could never hold.",
+        RejectionReason.StrutIsAxisAligned =>
+            "its two ends line up along one axis, so it is a straight part, not an angled one. Draw it as a box.",
+        RejectionReason.StrutTooShortForItsCuts =>
+            "it is too short for its angled ends: the two cuts would meet or cross. Move its ends further apart.",
+        RejectionReason.InvalidStrut => "that angled part cannot be made as it is.",
         _ => "the drawing could not do it.",
     };
 

@@ -112,6 +112,21 @@ internal static class SceneNames
         (Geometry.NoteSymbol.Light, "light"), (Geometry.NoteSymbol.Supply, "supply"), (Geometry.NoteSymbol.Drain, "drain"),
     ];
 
+    /// <summary>The plane a strut's end is cut to (format version 11, angled-parts §7).</summary>
+    internal static readonly (EndCut Value, string Text)[] EndCuts =
+        [(EndCut.Square, "square"), (EndCut.X, "x"), (EndCut.Y, "y"), (EndCut.Z, "z")];
+
+    /// <summary>The world axis a strut's wide face stays parallel to. No default in the file: the tool chose one.</summary>
+    internal static readonly (Geometry.Axis Value, string Text)[] ReferenceAxes =
+        [(Geometry.Axis.X, "x"), (Geometry.Axis.Y, "y"), (Geometry.Axis.Z, "z")];
+
+    /// <summary>A strut's two ends.</summary>
+    internal static readonly (StrutEnd Value, string Text)[] StrutEnds = [(StrutEnd.From, "from"), (StrutEnd.To, "to")];
+
+    /// <summary>A strut's four long faces, in the blank's own compass.</summary>
+    internal static readonly (StrutFace Value, string Text)[] StrutFaces =
+        [(StrutFace.South, "south"), (StrutFace.North, "north"), (StrutFace.Bottom, "bottom"), (StrutFace.Top, "top")];
+
     /// <summary>The spelling of a value in one of the tables above.</summary>
     internal static string Spell<T>((T Value, string Text)[] table, T value)
         where T : struct, Enum
@@ -264,6 +279,16 @@ internal static class SceneNames
     internal const string Item = "item";
     internal const string Note = "note";
 
+    // Struts (format version 11, docs/design/angled-parts.md §7).
+    internal const string StrutType = "strut";
+    internal const string FromCut = "fromCut";
+    internal const string ToCut = "toCut";
+    internal const string Reference = "reference";
+    internal const string StrutEndKind = "strutEnd";
+    internal const string StrutFaceKind = "strutFace";
+    internal const string StrutEndFaceKind = "strutEndFace";
+    internal const string Face = "face";
+
     // Relationship fields.
     internal const string A = "a";
     internal const string B = "b";
@@ -278,7 +303,7 @@ internal static class SceneNames
     internal const string Angle = "angle";
 
     /// <summary>Every entity type the format spells out, for a message that lists them.</summary>
-    internal static readonly string[] EntityTypes = [Box, Dimension, Node, NoteType, Segment];
+    internal static readonly string[] EntityTypes = [Box, Dimension, Node, NoteType, Segment, StrutType];
 
     /// <summary>The three names a part's plan axis can carry, for a message that lists them.</summary>
     internal static readonly string[] PartDimensions = [PartLength, PartWidth, PartThickness];
@@ -292,8 +317,8 @@ internal static class SceneNames
     /// </summary>
     internal static readonly string[] BoxFaces = [South, East, North, West, Bottom, Top];
 
-    /// <summary>The four ways of referring to a place, for a message that lists them.</summary>
-    internal static readonly string[] PlaceKinds = [Center, Feature, Node, Segment];
+    /// <summary>The ways of referring to a place, for a message that lists them.</summary>
+    internal static readonly string[] PlaceKinds = [Center, Feature, Node, Segment, StrutEndKind, StrutFaceKind, StrutEndFaceKind];
 
     /// <summary>The two ways of referring to a line, for a message that lists them.</summary>
     internal static readonly string[] LineKinds = [Feature, Segment];

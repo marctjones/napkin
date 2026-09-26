@@ -369,6 +369,19 @@ public static class SceneWriter
                 WriteCuts(writer, box.Cuts);
                 break;
 
+            case Strut strut:
+                // The two ends, the cuts, the reference and the cross-section; never the blank,
+                // which is derived (angled-parts §7).
+                WritePoint(writer, SceneNames.From, strut.From);
+                WritePoint(writer, SceneNames.To, strut.To);
+                writer.WriteString(SceneNames.FromCut, SceneNames.Spell(SceneNames.EndCuts, strut.FromCut));
+                writer.WriteString(SceneNames.ToCut, SceneNames.Spell(SceneNames.EndCuts, strut.ToCut));
+                writer.WriteString(SceneNames.Reference, SceneNames.Spell(SceneNames.ReferenceAxes, strut.Reference));
+                writer.WriteNumber(SceneNames.Height, strut.Height.Units);
+                writer.WriteNumber(SceneNames.Depth, strut.Depth.Units);
+                WritePart(writer, strut.Part);
+                break;
+
             case Dimension dimension:
                 WriteMeasurand(writer, dimension.Measures);
 
@@ -509,6 +522,7 @@ public static class SceneWriter
         Box => SceneNames.Box,
         Dimension => SceneNames.Dimension,
         Note => SceneNames.NoteType,
+        Strut => SceneNames.StrutType,
         _ => throw Unwritable(entity),
     };
 
@@ -698,6 +712,24 @@ public static class SceneWriter
                 }
 
                 writer.WriteEndArray();
+                break;
+
+            case StrutEndRef end:
+                writer.WriteString(SceneNames.Kind, SceneNames.StrutEndKind);
+                WriteId(writer, SceneNames.StrutType, end.Strut.Value);
+                writer.WriteString(SceneNames.End, SceneNames.Spell(SceneNames.StrutEnds, end.End));
+                break;
+
+            case StrutFaceRef face:
+                writer.WriteString(SceneNames.Kind, SceneNames.StrutFaceKind);
+                WriteId(writer, SceneNames.StrutType, face.Strut.Value);
+                writer.WriteString(SceneNames.Face, SceneNames.Spell(SceneNames.StrutFaces, face.Face));
+                break;
+
+            case StrutEndFaceRef endFace:
+                writer.WriteString(SceneNames.Kind, SceneNames.StrutEndFaceKind);
+                WriteId(writer, SceneNames.StrutType, endFace.Strut.Value);
+                writer.WriteString(SceneNames.End, SceneNames.Spell(SceneNames.StrutEnds, endFace.End));
                 break;
 
             default:

@@ -85,6 +85,12 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetCut setCut => ApplySetCut(sketch, setCut),
             RemoveCut removeCut => ApplyRemoveCut(sketch, removeCut),
 
+            // A strut's ends are not propagated yet (#190, angled-parts slice B): a geometry request
+            // that could reach one through a relationship, or that moves one, is refused rather than
+            // guessed at — a wrong rule there is a silent geometric error (angled-parts §10).
+            AddRelationship or SetParameter or SetPosition or SetOrientation or Drag or DragFace
+                when ReachesAStrut(sketch, request) => new Rejected(RejectionReason.UnsupportedRequest),
+
             // Geometry requests need the rectilinear precondition first.
             AddRelationship add => ApplyAddRelationship(sketch, add),
             SetParameter setParameter => ApplySetParameter(sketch, setParameter),
@@ -100,6 +106,22 @@ public sealed class DirectUpdater : IGeometryUpdater
             // a result rather than a crash.
             _ => new Rejected(RejectionReason.UnsupportedRequest),
         };
+    }
+
+    private static bool ReachesAStrut(Sketch sketch, Request request)
+    {
+        static bool NamesAStrut(Relationship relationship)
+            => PlaceRules.PlacesNamed(relationship).Any(place => place is StrutEndRef or StrutFaceRef or StrutEndFaceRef);
+
+        EntityId? moved = request switch
+        {
+            SetPosition position => position.Id,
+            Drag drag => drag.Id,
+            _ => null,
+        };
+        return (moved is { } id && sketch.Find(id) is Strut)
+               || (request is AddRelationship add && NamesAStrut(add.Relationship))
+               || sketch.Relationships.Values.Any(NamesAStrut);
     }
 
     // ---------------------------------------------------------------------------------------
@@ -138,6 +160,19 @@ public sealed class DirectUpdater : IGeometryUpdater
             {
                 return refusal;
             }
+        }
+
+        if (entity is Strut strut && Sketch.StrutErrors(strut).FirstOrDefault() is { } broken)
+        {
+            return new Rejected(
+                broken.Kind switch
+                {
+                    ValidationErrorKind.StrutIsAxisAligned => RejectionReason.StrutIsAxisAligned,
+                    ValidationErrorKind.NonPositiveSize => RejectionReason.NonPositiveSize,
+                    ValidationErrorKind.StrutTooShortForItsCuts => RejectionReason.StrutTooShortForItsCuts,
+                    _ => RejectionReason.InvalidStrut,
+                },
+                broken);
         }
 
         if (entity is Segment segment

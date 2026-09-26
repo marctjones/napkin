@@ -23,7 +23,7 @@ public sealed class AssemblyFormatTests
     /// </summary>
     private const string TwoBoxesInSpace = """
         {
-          "formatVersion": 10,
+          "formatVersion": 11,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -220,10 +220,10 @@ public sealed class AssemblyFormatTests
     public void A_version_4_file_is_now_too_old_to_open()
     {
         LoadProblem problem = Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 10", "\"formatVersion\": 4"),
+            Scenes.OneBox.With("\"formatVersion\": 11", "\"formatVersion\": 4"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 4",
-            "format version 10");
+            "format version 11");
 
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }

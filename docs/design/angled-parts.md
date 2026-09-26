@@ -1,11 +1,16 @@
 # Angled parts: splayed legs, raked backs, angled shelves and compound mitres
 
-Status: **DRAFT — awaiting Marc's sign-off.** Written by Fable for
+Status: **Signed off by Marc 2026-09-25 with the recommended decisions (#139 comment).** Written
+by Fable for [issue #139](https://github.com/marctjones/napkin/issues/139), milestone M9 Shape. §11
+lists the decisions that were his, each in plain words with the recommended default he accepted.
+§8 lists the slices, each filed as its own issue.
 
-> **Signed off by Marc 2026-09-25 with the recommended decisions (#139 comment).**
-[issue #139](https://github.com/marctjones/napkin/issues/139), milestone M9 Shape. Nothing here is
-authorized for implementation until Marc signs off; §11 lists the decisions that are his, each in
-plain words with a recommended default. §8 lists the slices, each filed as its own issue.
+**Deviations found while building slice A (#189):** a bevel is never proven exact — §2.4's 30° case
+cannot occur with an axis reference, since `|z|²` is then a sum of two integer squares `a² + b²` and
+`4a² = a² + b²` needs `b = a√3`; and an end cut to a plane the strut runs along (an `X` cut on a
+strut with no X run) has no board and is refused as `StrutCutAlongItself`, a case §1.4 did not name.
+When a strut runs square to its reference axis, `d · r̂ = 0` does not orient it; the lower end comes
+first, then the south, then the west.
 
 **Where this note stands relative to what is already decided.** [`assembly-model.md`](./assembly-model.md)
 §3a — the **strut**, an angled member stored by its two exact endpoints — was signed off by Marc on

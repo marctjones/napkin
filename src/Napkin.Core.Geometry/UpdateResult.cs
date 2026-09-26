@@ -283,4 +283,19 @@ public enum RejectionReason
     /// <see cref="Rejected.Detail"/> says which.
     /// </summary>
     InvalidJoint,
+
+    /// <summary>
+    /// A strut's ends differ in fewer than two coordinates: along an axis it would be a box
+    /// (<c>docs/design/angled-parts.md</c> §1.4, invariant 14).
+    /// </summary>
+    StrutIsAxisAligned,
+
+    /// <summary>A strut's derived blank is too short for its end cuts: they meet or cross (invariant 17).</summary>
+    StrutTooShortForItsCuts,
+
+    /// <summary>
+    /// A strut breaks another of its rules — an end cut to a plane it runs along, or a part naming
+    /// its derived dimension its thickness. The <see cref="Rejected.Detail"/> says which.
+    /// </summary>
+    InvalidStrut,
 }

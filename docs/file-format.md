@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 10
+# The napkin project file — container version 1, scene format version 11
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -25,7 +25,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 10` and nothing else. A file from an older *or* a
+   `"containerVersion": 1` and `"formatVersion": 11` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
@@ -59,6 +59,11 @@ document and stays one.
    repository had committed until their version and their three empty lists were rewritten in the
    same change. A design with no joints, no hardware and no typed lists is the design version 4
    described, in every respect.
+
+   **Version 11** added angled parts ([`docs/design/angled-parts.md`](./design/angled-parts.md)
+   §7): the `strut` entity and the `strutEnd`, `strutFace` and `strutEndFace` references. Every
+   version-10 file is refused; the samples were restamped in the same change, since none of them
+   holds a strut.
 3. **Reading is strict and never repairs.** An unknown field, a field written twice, an id that is
    not a GUID, an id that names nothing, an id that names the wrong kind of entity, a non-positive
    size, an un-normalised rotation, cuts out of site order, a cut that does not fit the blank it is
@@ -200,7 +205,7 @@ Two places where the bytes legitimately differ:
 
 ```json
 {
-  "formatVersion": 10,
+  "formatVersion": 11,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ … ],
   "entities": [ … ],
@@ -245,7 +250,7 @@ layer the file defines.
 ### Entities
 
 Every entity has `id`, `type`, `layer`, `name` and `phase`. `type` is one of `box`, `dimension`,
-`node`, `note`, `segment`. `phase` is `existing`, `new` or `demolish` (format version 10,
+`node`, `note`, `segment`, `strut`. `phase` is `existing`, `new` or `demolish` (format version 10,
 [`renovation-sketches.md`](./design/renovation-sketches.md) §6.1): what is already there, what is
 going in, and what is coming out; anything else, or the field missing, is refused. The lists buy
 only `new`; every check runs on the building as it will be (existing and new).
@@ -262,6 +267,25 @@ only `new`; every check runs on the building as it will be (existing and new).
   "cuts": [] }
 ```
 
+A **strut** (format version 11, [`angled-parts.md`](./design/angled-parts.md) §7) is a member
+between two exact points that is not along an axis: a splayed leg, a raked back, a brace. Its
+length and end cuts are derived from its ends and never written. Every field is required, and a
+strut is refused when its ends differ in fewer than two coordinates, when an end is cut to a plane
+it runs along (an `x` cut on a strut that runs square to X), when its part names `thickness` as
+`planAxes.x` (its derived dimension is its `length` or its `width`), or when its derived board is
+too short for its end cuts.
+
+```json
+{ "id": "…", "type": "strut", "layer": "…", "name": "Leg, south-west", "phase": "new",
+  "from": { "x": 4096, "y": -4096, "z": 0 },
+  "to":   { "x": 4096, "y": 3072, "z": 24576 },
+  "fromCut": "z", "toCut": "z",
+  "reference": "z",
+  "height": 1536, "depth": 1536,
+  "part": { "stock": "2x2", "species": null, "quantity": 1,
+            "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false } }
+```
+
 A **note** (format version 10) is words at a point, counted on the shopping list and never
 modelled: `{ "id", "type": "note", "layer", "name", "phase", "position": { "x", "y" }, "text":
 text, "symbol": "none" | "outlet" | "switch" | "light" | "supply" | "drain" }`. `text` may be empty
@@ -272,6 +296,7 @@ only when `symbol` is not `none`. A note has no size and no relationships.
 | `node` | `position`: `{ "x": <integer>, "y": <integer> }` — a node is plan construction geometry, at the plan datum, and has no `z` |
 | `segment` | `start`, `end`: ids of two `node` entities |
 | `box` | `anchor`: `{ "x", "y", "z" }`, three integers — the box's south-west-bottom corner in its own frame; `width`, `height` and `depth`: integers greater than zero, along the box's local X, Y and Z; `faceUp`: which of its six faces points up, one of `top`, `bottom`, `north`, `south`, `east`, `west`; `rotation`: arcseconds, `0 ≤ rotation < 1296000`; `part`: below, or `null`; `wall`: a wall's inputs, or `null` (see [Building inputs](#building-inputs)); `cuts`: below, `[]` for a plain rectangle |
+| `strut` | `from`, `to`: `{ "x", "y", "z" }`, where the centreline meets each end's cut plane; `fromCut`, `toCut`: `square`, `x`, `y` or `z`, the plane each end is cut to; `reference`: `x`, `y` or `z`, the world axis the wide face stays parallel to; `height`, `depth`: integers greater than zero, the cross-section in and out of the wide face; `part`: as a box's, or `null` — below |
 | `dimension` | `measures`, `drives`, `placement` — below |
 
 A box is parametric: it stores the three sizes that were typed and derives its corners, so a
@@ -449,12 +474,23 @@ are present.
 | | `segment` | `segment`: a segment's id | Y when it is horizontal, X when it is vertical |
 | | `center` | `box`: a box's id | X, Y and Z |
 | | `feature` | `box`: a box's id; `faces`: one, two or three of `south`, `east`, `north`, `west`, `bottom`, `top` | one axis per face |
+| | `strutEnd` | `strut`: a strut's id; `end`: `from` or `to` | X, Y and Z |
+| | `strutFace` | `strut`: a strut's id; `face`: `south`, `north`, `bottom` or `top` | nothing yet |
+| | `strutEndFace` | `strut`: a strut's id; `end`: `from` or `to` | nothing yet |
 | a size | `boxWidth` | `box`: a box's id | |
 | | `boxHeight` | `box`: a box's id | |
 | | `boxDepth` | `box`: a box's id | |
 | | `segmentLength` | `segment`: a segment's id | |
 
 An axis is `x`, `y` or `z`.
+
+**A strut's end is a point; its body is not a place yet.** A `strutEnd` fixes all three axes at
+the stored end, so it takes part in a `coincident`, an `axisDistance` or a `centered`, and a
+`flush` naming one is refused like any other point. A `strutFace` (one of the four long faces, in
+the strut's own compass) and a `strutEndFace` (an end's cut face, for joinery) are read and
+written, but any relationship naming one is refused as an invalid value until napkin can hold it:
+a face of a strut that leans one way, and a butt joint on a strut's end
+([`angled-parts.md`](./design/angled-parts.md) §3.2, §5).
 
 **A feature is the faces that meet at it** (`docs/design/assembly-model.md` §1.5): one face, the
 edge where two meet, or the corner where three meet, named in the box's own frame before it is
@@ -629,7 +665,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 ```jsonc
 {
-  "formatVersion": 10,                                 // exactly 10, judged first
+  "formatVersion": 11,                                 // exactly 11, judged first
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
   "entities": [

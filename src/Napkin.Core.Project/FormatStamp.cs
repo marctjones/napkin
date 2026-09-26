@@ -83,8 +83,14 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
     /// <c>header</c>; a <c>room</c> on every box; and the <c>note</c> entity. Every version-9 file is
     /// refused.
     /// </para>
+    /// <para>
+    /// Version 11 added angled parts (<c>docs/design/angled-parts.md</c> &#xA7;7): the <c>strut</c>
+    /// entity — two exact ends, an end cut at each, a reference axis and a cross-section — and the
+    /// <c>strutEnd</c>, <c>strutFace</c> and <c>strutEndFace</c> references. Every version-10 file is
+    /// refused.
+    /// </para>
     /// </remarks>
-    public const int CurrentVersion = 10;
+    public const int CurrentVersion = 11;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);

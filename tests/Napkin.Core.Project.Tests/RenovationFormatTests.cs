@@ -43,7 +43,7 @@ public class RenovationFormatTests
 
     private static readonly string Scene = $$"""
         {
-          "formatVersion": 10,
+          "formatVersion": 11,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "{{Layer}}", "name": "Default" } ],
           "entities": [
@@ -193,9 +193,9 @@ public class RenovationFormatTests
     public void A_version_9_file_is_refused_naming_both_versions()
     {
         Scenes.RefuseWith(
-            Scene.With("\"formatVersion\": 10", "\"formatVersion\": 9"),
+            Scene.With("\"formatVersion\": 11", "\"formatVersion\": 9"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 9",
-            "format version 10");
+            "format version 11");
     }
 }
