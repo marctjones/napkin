@@ -73,6 +73,50 @@ public sealed class StockAssignmentTests
     }
 
     [Fact]
+    public void An_angled_leg_assigned_a_2x4_takes_its_width_and_thickness_and_keeps_its_ends()
+    {
+        // A sawhorse leg (assembly-model §3a.5): its length is derived from its ends, so the yard
+        // states only its cross-section — the width in its drawn face, the thickness out of it.
+        LumberStock lumber = Lumber("2x4");
+        Part part = new("2x4", Species: null, Quantity: 1, Flat);
+        Strut leg = new(
+            EntityId.New(), LayerId.Default,
+            Point3.Origin, new Point3(Length.Inches(6), Length.Inches(9), Length.Inches(27)),
+            EndCut.Z, EndCut.Z, Axis.Z, Length.Inches(2), Length.Inches(1));
+        Sketch sketch = Sketch.Empty.WithEntity(leg);
+
+        Solved result = Assert.IsType<Solved>(Updater.Apply(sketch, StockAssignment.RequestsFor(sketch, leg, part, lumber)));
+        Strut assigned = result.Sketch.Find<Strut>(leg.Id)!;
+
+        Assert.Equal((lumber.Width, lumber.Thickness), (assigned.Height, assigned.Depth));
+        Assert.Equal((leg.From, leg.To), (assigned.From, assigned.To));
+        Assert.Equal(part, assigned.Part);
+
+        // Assigning it again is a change to the two numbers the yard already states, not two more.
+        Solved again = Assert.IsType<Solved>(Updater.Apply(result.Sketch, StockAssignment.RequestsFor(result.Sketch, assigned, part, lumber)));
+        Assert.Equal(2, again.Sketch.RelationshipsInOrder.OfType<ParamValue>().Count());
+    }
+
+    [Fact]
+    public void An_angled_shelf_fixes_only_its_thickness()
+    {
+        // An angled shelf lists its derived dimension as its width (angled-parts §1.5), and a sheet
+        // good fixes only its thickness, which here lies in the drawn face.
+        Part part = new("3/4 plywood", Species: null, Quantity: 1, new PlanAxes(PartDimension.Width, PartDimension.Thickness));
+        Strut shelf = new(
+            EntityId.New(), LayerId.Default,
+            Point3.Origin, new Point3(Length.Zero, Length.Inches(10), Length.Inches(3)),
+            EndCut.Y, EndCut.Y, Axis.Y, Length.Inches(1), Length.Inches(30));
+        Sketch sketch = Sketch.Empty.WithEntity(shelf);
+
+        Batch batch = StockAssignment.RequestsFor(sketch, shelf, part, Find("3/4 plywood"));
+
+        Assert.Equal(2, batch.Requests.Count);
+        Solved result = Assert.IsType<Solved>(Updater.Apply(sketch, batch));
+        Assert.Equal(Length.Inches(30), result.Sketch.Find<Strut>(shelf.Id)!.Depth);
+    }
+
+    [Fact]
     [Trait("Feature", "CUT-001")]
     public void A_dimension_the_yard_fixes_cannot_then_be_dragged()
     {

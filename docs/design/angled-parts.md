@@ -12,6 +12,14 @@ strut with no X run) has no board and is refused as `StrutCutAlongItself`, a cas
 When a strut runs square to its reference axis, `d · r̂ = 0` does not orient it; the lower end comes
 first, then the south, then the west.
 
+**Found while building slice B (#190):** the axis a strut face is square to is read from the stored
+strut, not from the ends as the propagation works them out, so a request that seeds one end off it
+meets the flush's coupling and is reported rather than quietly turning the face into nothing. A
+strut face is held only by a `Flush`; any other relationship naming one is refused. A dimension on a
+strut's cross-section is refused like one along Z. §9.3 case 8's fixture holds the rail's west face
+to the leg, which an anchored rail keeps when its width changes; the test puts the rail on the leg's
+west side instead, its east face flush to the leg's bottom face, so that widening it moves both ends.
+
 **Where this note stands relative to what is already decided.** [`assembly-model.md`](./assembly-model.md)
 §3a — the **strut**, an angled member stored by its two exact endpoints — was signed off by Marc on
 2026-09-23 (decisions 17–24). **It has not been built**: `grep Strut src` finds nothing, and no issue

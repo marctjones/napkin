@@ -169,6 +169,47 @@ public static class StockAssignment
         return new Batch(requests.ToImmutable());
     }
 
+    /// <summary>
+    /// The requests that make <paramref name="strut"/> a piece of <paramref name="part"/> and land
+    /// what the stock fixes on its cross-section, as one batch — the box's rule above, for an angled
+    /// part (<c>docs/design/assembly-model.md</c> &#xA7;3a.5).
+    /// </summary>
+    /// <remarks>
+    /// <see cref="PlanAxes.X"/> names the strut's derived dimension — its length, or an angled
+    /// shelf's width — which comes from where its ends are and is never the yard's to state, so a
+    /// stock that fixes it fixes nothing here. <see cref="PlanAxes.Y"/> lands on the strut's height and
+    /// the dimension out of the plane on its depth, each as a <see cref="ParamValue"/> or a change
+    /// to the one already driving it.
+    /// </remarks>
+    /// <param name="sketch">The design the strut is in, read for the relationship that drives a size.</param>
+    /// <param name="strut">The strut the part is on.</param>
+    /// <param name="part">What the strut is a piece of, with the stock name already on it.</param>
+    /// <param name="stock">What that name resolved to, or <see langword="null"/>.</param>
+    public static Batch RequestsFor(Sketch sketch, Strut strut, Part part, StockItem? stock)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(strut);
+        ArgumentNullException.ThrowIfNull(part);
+
+        ImmutableArray<FixedDimension> fixes = Fixes(stock);
+        ImmutableList<Request>.Builder requests = ImmutableList.CreateBuilder<Request>();
+        requests.Add(new SetPart(strut.Id, part));
+
+        foreach ((PartDimension name, ParamRef size) in (ReadOnlySpan<(PartDimension, ParamRef)>)
+                 [
+                     (part.PlanAxes.Y, new StrutHeightRef(strut.Id)),
+                     (part.PlanAxes.OutOfPlane, new StrutDepthRef(strut.Id)),
+                 ])
+        {
+            if (ValueFor(fixes, name) is { } value)
+            {
+                requests.Add(SizeRequest(sketch, size, value));
+            }
+        }
+
+        return new Batch(requests.ToImmutable());
+    }
+
     /// <summary>What the stock fixes this dimension at, or null when it leaves it free.</summary>
     private static Length? ValueFor(ImmutableArray<FixedDimension> fixes, PartDimension dimension)
     {

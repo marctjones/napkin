@@ -770,6 +770,16 @@ public static class SceneWriter
                 WriteId(writer, SceneNames.Segment, length.Segment.Value);
                 break;
 
+            case StrutHeightRef strutHeight:
+                writer.WriteString(SceneNames.Kind, SceneNames.StrutHeight);
+                WriteId(writer, SceneNames.StrutType, strutHeight.Strut.Value);
+                break;
+
+            case StrutDepthRef strutDepth:
+                writer.WriteString(SceneNames.Kind, SceneNames.StrutDepth);
+                WriteId(writer, SceneNames.StrutType, strutDepth.Strut.Value);
+                break;
+
             default:
                 throw Unwritable(reference);
         }

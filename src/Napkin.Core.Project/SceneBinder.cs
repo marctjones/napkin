@@ -2115,8 +2115,15 @@ internal sealed class SceneBinder
             SceneNames.SegmentLength => ReadEntityReference(fields, SceneNames.Segment, typeof(Segment)) is { } segment
                 ? new SegmentLengthRef(segment)
                 : null,
+            SceneNames.StrutHeight => ReadEntityReference(fields, SceneNames.StrutType, typeof(Strut)) is { } strutHeight
+                ? new StrutHeightRef(strutHeight)
+                : null,
+            SceneNames.StrutDepth => ReadEntityReference(fields, SceneNames.StrutType, typeof(Strut)) is { } strutDepth
+                ? new StrutDepthRef(strutDepth)
+                : null,
             _ => UnknownRefKind<ParamRef>(
-                fields, kind, "a size", SceneNames.BoxWidth, SceneNames.BoxHeight, SceneNames.BoxDepth, SceneNames.SegmentLength),
+                fields, kind, "a size", SceneNames.BoxWidth, SceneNames.BoxHeight, SceneNames.BoxDepth, SceneNames.SegmentLength,
+                SceneNames.StrutHeight, SceneNames.StrutDepth),
         };
     }
 

@@ -105,6 +105,8 @@ public static class RelationshipText
             BoxHeightRef height => $"{nameOf(height.Box)}'s height",
             BoxDepthRef depth => $"{nameOf(depth.Box)}'s depth",
             SegmentLengthRef length => $"{nameOf(length.Segment)}'s length",
+            StrutHeightRef height => $"{nameOf(height.Strut)}'s height",
+            StrutDepthRef depth => $"{nameOf(depth.Strut)}'s depth",
             _ => "a size",
         };
     }
