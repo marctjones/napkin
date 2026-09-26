@@ -1303,6 +1303,10 @@
                                 <CheckBox Name="DeckStairCheck" Content="Stair" FontSize="11" IsCheckedChanged="OnDeckTicked"
                                           ToolTip.Tip="A 3'-0&quot; stair at the start of the first open edge, 10&quot; treads, risers from the adopted code — starting values to type over."
                                           AutomationProperties.Name="Stair" />
+                                <TextBlock Text="risers" FontSize="11" VerticalAlignment="Center" />
+                                <TextBox Name="DeckRisersBox" FontSize="11" MinWidth="40" Padding="4,2"
+                                         ToolTip.Tip="The stair's riser count: empty for the fewest the adopted code's maximum riser allows; typed, it overrides the pack's."
+                                         AutomationProperties.Name="Stair risers" />
                             </StackPanel>
                             <TextBlock Text="Code check" FontSize="11" FontWeight="SemiBold" Margin="0,4,0,0" />
                             <TextBlock Name="DeckSupportsNote" FontSize="10" TextWrapping="Wrap" IsVisible="False"

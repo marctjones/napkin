@@ -65,6 +65,61 @@ public class DeckWorkflows
         });
     });
 
+    [GuiWorkflow("GUI-DECK-02")]
+    public void Tick_a_decks_guard_and_stair_type_its_risers_and_buy_them() => GuiWorkflow.Run(app =>
+    {
+        // GUI-DECK-01's deck: 96 × 96 against the sample's existing wall, 3'-0" up, its north edge the ledger.
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "Window in an existing wall");
+        app.Wheel(At(window, Point2.Inches(72, -48)), new Vector(0, -4));
+        app.Click(At(window, Point2.Inches(72, -140)));
+        app.Press(Key.D, KeyModifiers.Shift);
+        app.Drag(At(window, Point2.Inches(24, 0)), At(window, Point2.Inches(72, -48)), At(window, Point2.Inches(120, -96)));
+
+        // Guard: napkin's starting layout on the three open edges.
+        ClickInPanel(app, window, window.DeckTicks.Guard);
+        app.Expect("the deck has a guard, and the check says why it cannot say one is required", () =>
+        {
+            Assert.NotNull(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Single(box => box.Deck is not null).Deck!.Guard);
+            Assert.Contains("Guard: ", window.DeckCheckLines, StringComparison.Ordinal);
+        });
+
+        // Stair: on the first open edge; with no adopted code there is no maximum riser, so it asks for the count.
+        ClickInPanel(app, window, window.DeckTicks.Stair);
+        app.Expect("the stair asks for its riser count", () =>
+            Assert.Contains("Type the riser count", window.DeckCheckLines, StringComparison.Ordinal));
+
+        // Five risers of 36 ÷ 5 = 7 1/5″ and four treads.
+        TypeInto(app, window, window.DeckRisers, "5");
+        app.Expect("the stair is laid out with five risers and four treads", () =>
+        {
+            Assert.Equal(5, window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Single(box => box.Deck is not null).Deck!.Stair!.Risers);
+            Assert.Contains("Stair: Lay out 5 risers of", window.DeckCheckLines, StringComparison.Ordinal);
+            Assert.Contains("4 treads", window.DeckCheckLines, StringComparison.Ordinal);
+        });
+
+        app.Chord(Key.L, KeyModifiers.Shift);
+        app.Expect("the Deck section buys the guard's balusters, cap and rails and the stair's stringers", () =>
+        {
+            CutListWindow list = window.CutList!;
+            Assert.True(list.IsShowingDeck);
+            foreach (string lumber in new[] { "2x2", "2x6", "2x4", "2x12" })
+            {
+                Assert.Contains(list.DeckRows.Sorted, row => row.Material == lumber);
+            }
+        });
+
+        // Two posts respan the beam: 96 − 7 = 89″.
+        window.CutList!.Close();
+        window.Activate();
+        TypeInto(app, window, window.DeckControls.PostCount, "2");
+        app.Expect("with two posts the beam spans 7'-5\" and the guard and stair stay", () =>
+        {
+            Assert.Contains("on 2 posts spanning 7'-5\"", window.DeckFrameLine, StringComparison.Ordinal);
+            Assert.Contains("Stair: Lay out 5 risers of", window.DeckCheckLines, StringComparison.Ordinal);
+        });
+    });
+
     [GuiWorkflow("GUI-PORCH-01")]
     public void Roof_a_deck_type_its_pitch_buy_its_rafters_and_undo_it() => GuiWorkflow.Run(app =>
     {
@@ -152,6 +207,18 @@ public class DeckWorkflows
         app.Press(Key.A, AppDriver.CommandModifier);
         app.Type(text);
         app.Press(Key.Enter);
+    }
+
+    /// <summary>A control in the Part panel, scrolled into sight, clicked.</summary>
+    static void ClickInPanel(AppDriver app, MainWindow window, Control control)
+    {
+        ScrollViewer scroller = window.FindControl<ScrollViewer>("PropertiesScroller")!;
+        for (int i = 0; i < 30 && control.TranslatePoint(new Point(0, control.Bounds.Height), window)!.Value.Y > scroller.TranslatePoint(new Point(0, scroller.Bounds.Height), window)!.Value.Y; i++)
+        {
+            app.Wheel(CentreOf(window, scroller), new Vector(0, -1));
+        }
+
+        app.Click(CentreOf(window, control));
     }
 
     static Point At(MainWindow window, Point2 world)

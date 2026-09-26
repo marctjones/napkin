@@ -66,12 +66,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: GUI-DECK-02 — Tick a deck's guard and stair and read them on the shopping list")]
-    [Trait("Feature", "GUI-DECK-02")]
-    public void GUI_DECK_02()
-    {
-    }
-
     [Fact(Skip = "planned: GUI-PORCH-02 — Build the worked example's porch end to end")]
     [Trait("Feature", "GUI-PORCH-02")]
     public void GUI_PORCH_02()
