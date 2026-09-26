@@ -194,7 +194,8 @@ Beside it, pure and tested by hand-written goldens:
   fill, the strict parsers, and `ToRequests(Design) -> ProposalPlan` — the lines of the sheet, each a
   sentence and the `Request`s it stands for.
 - **`ScriptedModel : IAssistantModel`**: answers from a script — a list of `(match, reply)` pairs
-  matched against the question, or a fixed sequence — and records every request it received. It
+  matched against the question, or a fixed sequence, each reply with an optional delay so a
+  workflow can watch the thinking line and cancel it — and records every request it received. It
   lives **in the module**, not in a test project, because the GUI suite (which references only
   `Napkin.App`) and the unit tests both need it, and because the app itself uses it for the "no
   model configured" state (`Whereabouts` = "No model — Assistant → Where the model runs…"). It is a
@@ -341,8 +342,11 @@ A proposal task asks the model for JSON against a schema (§4.4, §4.5). Both re
 constrain generation to a schema (§5.2), and the parser is strict regardless: `System.Text.Json`
 with unknown members refused, every field required, no defaults; a document that does not parse
 is one line on the note, *"the assistant's reply was not a proposal napkin could read"*, and
-nothing else happens. Every length in the JSON is **feet-inch text**, parsed by `LengthParser`; a
-value it rounds (`wasRounded`) is refused, because a proposal should say what it means exactly.
+nothing else happens. Every length in the JSON is **feet-inch text**, parsed by `LengthParser`.
+What happens to a value that is not on the grid depends on the task, and each task has one rule:
+a sketch proposal **snaps** every length to the rough step, because rough means round (§4.4); an
+edit proposal **refuses** the line on `wasRounded`, because a person who says a size means it
+exactly (§4.5).
 
 `ProposalPlan` is the sheet: `ImmutableArray<ProposalLine(string Sentence, ImmutableArray<Request>
 Requests)>`, all ticked. Accepting is exactly Firm up's acceptance: `BeginGesture("Assistant
@@ -369,10 +373,12 @@ Schema (every field required; the model fills it, napkin checks it):
 the third. Each part becomes one `AddEntity(Box.AsDrawn(...) with Part = new Part(Stock: null,
 Species: null, Quantity, PlanAxes(Length, Width)) { Rough = true })` — the rough plank of
 sketch-mode §2.3, named by the model's name (or `NextPartName` when empty), on the rough layer
-rule (`LayerForNewParts`). Sizes are **snapped to the rough ladder's inch floor** (`SnapGrid`:
-whole inches) before the request, so a model that says 15.9″ yields 16″ and the plank is as round
-as a hand-drawn one; the sheet's sentence shows the snapped value: *"Top: 48 × 2 × 3/4 at (0, 16)"*.
-Refused, line by line, with a reason on the sheet: a non-positive size, more than **24 parts** (a
+rule (`LayerForNewParts`). Every length — the three sizes and the two anchor coordinates — is
+**snapped to the rough ladder's inch floor** (`SnapGrid`: whole inches) before the request, one
+rule for the whole document, so `wasRounded` never arises here: a model that says 15.9″ yields 16″
+and the plank is as round as a hand-drawn one; the sheet's sentence shows the snapped value:
+*"Top: 48 × 2 × 3/4 at (0, 16)"*. Refused, line by line, with a reason on the sheet: a size that
+is zero or negative after snapping (so 1/3″ is refused as "a size of 0"), more than **24 parts** (a
 napkin sketch, not a kitchen), a quantity over 12, an anchor outside ±1000″. Nothing is stated:
 no `ParamValue`, no relationship, no stock, no joint — Firm up (§3 of sketch-mode) does that on
 the next key, and the sheet's closing line says so: *"Drew 4 rough parts. Next: F to firm up."*
@@ -396,7 +402,9 @@ prints it), `quantity` (part, n), `remove` (part). Each maps to what the panel d
 | `remove` | `RemoveEntity(id)` |
 
 A part is named by the model as the pack names it (`[n]` or the name); a name that matches no
-entity, or two, refuses the line. Nothing in the closed set touches a wall's inputs, a site value,
+entity, or two, refuses the line. A length that does not land on the grid (`LengthParser`'s
+`wasRounded`) refuses the line too — *"18.005″ is not a size napkin can hold exactly"* — because a
+person who says a size means that size, and nothing here is rough. Nothing in the closed set touches a wall's inputs, a site value,
 a code choice, a phase, or a relationship other than a `ParamValue` — the model cannot ask for an
 `AxisDistance`, a `Flush`, a joint, or a cut, and the parser has no case for them.
 
@@ -679,8 +687,8 @@ A good answer, and what the guard does with it:
 > directory [6]. Until then every header on a bearing wall says No data [5]. The site values are
 > also not entered yet [3], and the table will ask for the ground snow load once it exists.
 
-Every token the guard extracts — `R602.7(1)`, `2022`, `602.7` — occurs in the pack. If the answer
-had said *"a 3-foot opening in a 2x4 wall usually takes a (2) 2x6 header"*, that sentence is
+The only token the guard extracts from it, `R602.7(1)`, occurs in the pack ([6]); "No data" is
+words, not a number. If the answer had said *"a 3-foot opening in a 2x4 wall usually takes a (2) 2x6 header"*, that sentence is
 refused: `2x6` is not in the pack. The test writes both answers into the script and asserts the
 rendered note (§11.3, GUI-AST-01).
 
@@ -706,17 +714,20 @@ sketch-mode §7.2's quick bench, which is the point: Enter, then **F**, and Firm
 from a sentence to a firmed design is two existing mechanisms and one new one.
 
 Refusals, each its own test: `"height": "0"` → *"Leg 1: refused, a size of 0"*; a 25th part →
-*"refused: more than 24 parts"*; `"width": "15.9\""` → snapped, shown as 16 (rough ladder); `"x":
-"1/3\""` → refused, `wasRounded`.
+*"refused: more than 24 parts"*; `"width": "15.9\""` → snapped, shown as 16 (rough ladder);
+`"height": "1/3\""` → snaps to 0 and is refused as a size of 0; `"x": "1/3\""` → snaps to 0, a
+legal anchor, kept.
 
 ### 9.3 A shopping-list question
 
-Open `samples/coffee-table`, Ctrl/Cmd+Shift+L, ask *"how many 2x4s?"*. The pack holds the
-shopping list's CSV rows as `ShoppingListCsv` writes them; the answer *"Two 2x4 × 8', for the four
-legs and two aprons [3] [4]"* (whatever the rows say — the test reads the count from
-`samples/coffee-table.expected.json`, never from this note) passes when its numbers are the rows';
-an answer that says *"three"* when the rows say two is refused because `three`/`3` is not in the
-pack — number words are tokens too (`one` … `twelve`, tested).
+Open `samples/stocked-bench` — the sample whose parts carry stock (a 3/4 plywood top, 1x4
+aprons, 2x4 stretchers) and whose expected file records a shopping list; `coffee-table` has no
+stock on any part (sketch-mode §4.1) and so buys nothing — press Ctrl/Cmd+Shift+L and ask *"how
+many 2x4s?"*. The pack holds the shopping list's CSV rows as napkin writes them; the answer *"N
+2x4 boards, for the two stretchers [3]"* — N being whatever the 2x4 row says; the test reads it
+from `samples/stocked-bench.expected.json`, never from this note — passes when its numbers are the
+rows'; an answer that says one more than the row does is refused because that number is not in
+the pack — number words are tokens too (`one` … `twelve`, tested).
 
 ---
 
@@ -775,12 +786,13 @@ environment variable. Feature ids `AST-001…`, `GUI-AST-NN`.
    an answer with no numbers is kept whole; the refusal sentence's wording asserted verbatim.
 4. **`SketchProposal`** (`AST-004`): §9.2's JSON → the four requests with the exact anchors and
    sizes; each refusal of §4.4 by one malformed document; unknown member refused; snapping 15.9 →
-   16; the plan's sentences verbatim; a plan against a stale sketch is refused by
-   `ProposalPlan.IsFor(sketch)`.
+   16, and 1/3 → 0 (refused as a size, kept as an anchor); the plan's sentences verbatim; a plan
+   against a stale sketch is refused by `ProposalPlan.IsFor(sketch)`.
 5. **`EditProposal`** (`AST-005`): each of the six edits maps to the request table of §4.5 on
-   `samples/coffee-table`; `resize` on a rough part carries the `SetPart` clearing rough; `stock`
-   with a name not in the library is refused naming the three nearest; a name matching two entities
-   is refused; anything outside the closed set fails to parse.
+   `samples/coffee-table`; `resize` on a rough part carries the `SetPart` clearing rough; `resize`
+   to `18.005"` is refused as `wasRounded`; `stock` with a name not in the library is refused
+   naming the three nearest; a name matching two entities is refused; anything outside the closed
+   set fails to parse.
 6. **`ScriptedModel`**: replies in script order, records requests, returns `Refused` when the
    script runs out; `Whereabouts` for the empty script is the no-model sentence.
 7. **`AssistantPrompts`**: each prompt equals its committed file; each contains the number rule
@@ -821,9 +833,10 @@ The harness constructs `new MainWindow(store, new ScriptedModel(script))`.
   load"; Enter; the script's reply is delayed (the scripted model supports a delay) — assert
   "thinking…" shows; Escape; assert the note is empty and no answer arrives; ask again; assert the
   answer cites the rules-engine.md item.
-- **GUI-AST-03 A shopping-list question.** Open `coffee-table`; Ctrl/Cmd+Shift+L; Ask "how many
-  2x4s?"; assert the answer's numbers are the rows' (read from the expected file) and the rows are
-  rendered under it.
+- **GUI-AST-03 A shopping-list question.** Open `stocked-bench` (the sample with stock;
+  `coffee-table` has none and buys nothing); Ctrl/Cmd+Shift+L; Ask "how many 2x4s?"; assert the
+  answer's numbers are the rows' (read from `stocked-bench.expected.json`) and the rows are
+  rendered under it; a second scripted answer one higher than the row is refused.
 - **GUI-AST-04 Sketch from words, then firm up.** New sheet; Assistant → Sketch from words… (menu,
   pointer); type the bench sentence; Enter; the sheet lists four lines; untick Leg 2 (pointer);
   Enter; assert three rough planks with the exact anchors and sizes, `Rough == true`, no stock, no
