@@ -577,16 +577,14 @@ internal sealed class Propagator
                 break;
 
             case Flush flush:
-                if (CommonNormalAxis(flush) is { } normal
-                    && EdgeSide(flush.A, normal) is { } firstEdge
-                    && EdgeSide(flush.B, normal) is { } secondEdge)
+                if (CommonNormalAxis(flush) is { } normal)
                 {
-                    yield return (firstEdge, secondEdge);
-
                     // The one coupling of a strut's two ends (angled-parts §3.2): its face is square to
                     // the axis only while both ends agree on it, so the flush holds them equal there.
                     // Moving one end alone off the axis would end the lean being one-way, and is a
-                    // contradiction naming this flush.
+                    // contradiction naming this flush. Yielded first, and resolved before the face
+                    // pair is built: the face's value is read from the From end, so a To end that moved
+                    // must have carried From with it before the face is compared with its partner.
                     foreach (PlaceRef place in new[] { flush.A, flush.B })
                     {
                         if (place is StrutFaceRef face)
@@ -595,6 +593,11 @@ internal sealed class Propagator
                                 PointSide(new StrutEndRef(face.Strut, StrutEnd.From), normal),
                                 PointSide(new StrutEndRef(face.Strut, StrutEnd.To), normal));
                         }
+                    }
+
+                    if (EdgeSide(flush.A, normal) is { } firstEdge && EdgeSide(flush.B, normal) is { } secondEdge)
+                    {
+                        yield return (firstEdge, secondEdge);
                     }
                 }
 

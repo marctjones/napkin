@@ -311,6 +311,19 @@ public class StrutPropagationTests
     }
 
     [Fact]
+    public void WithTheRailFreeMovingTheOtherEndDoesTheSame()
+    {
+        // The mirror: the face's value is read from one end, so the coupling must settle the other
+        // end first or the flush would see the rail and the face disagree on a second pass.
+        Sketch sketch = Apply(Bench(), new RemoveRelationship(RailHeld));
+
+        Solved solved = Assert.IsType<Solved>(Updater.Apply(sketch, new SetStrutEnd(Leg, StrutEnd.To, At(5120, 3072, 24576))));
+
+        Assert.Equal(At(5120, -4096, 0), solved.Sketch.Find<Strut>(Leg)!.From);
+        Assert.Equal(new Length(-7936), solved.Sketch.Find<Box>(Rail)!.Anchor.X);
+    }
+
+    [Fact]
     public void AFaceThatIsSquareToNothingIsRefusedByName()
     {
         Sketch sketch = Apply(Sketch.Empty, new AddEntity(BenchLeg()))
