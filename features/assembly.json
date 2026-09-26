@@ -135,6 +135,15 @@
       "milestone": "backlog",
       "issue": 92,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-ASSEM-16",
+      "area": "ui",
+      "title": "The 3D view opens in perspective, switches from the menu, and still edits",
+      "acceptance": "Open the coffee table, select a leg and copy it with D; V opens the 3D view in perspective, as the status bar says; View > Orthographic keeps the centre, the scale and the selection, and View > Perspective switches back the same way; dragging the copy's top-face handle makes it taller without running away with the pointer, and one Ctrl/Cmd+Z puts it back exactly; the Left arrow twice orbits and it stays perspective; O switches to orthographic with the drawing unchanged.",
+      "milestone": "backlog",
+      "issue": 104,
+      "kind": "workflow"
     }
   ]
 }

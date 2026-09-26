@@ -36,6 +36,24 @@
       "milestone": "M1",
       "issue": 33,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-SHELL-05",
+      "area": "gui-shell",
+      "title": "Unsaved changes are asked about before they are lost",
+      "acceptance": "With an unsaved part drawn, Ctrl/Cmd+N asks to save first, and a click or Delete on the drawing under the question changes nothing; Escape cancels and keeps the drawing; File > Samples asks again, and Don't save opens the sample, which has no file for Save to write back to; after an edit, Ctrl/Cmd+O asks naming the sample, and Enter on the focused Save saves the sample to a new file of its own before the other file opens; after another edit, File > Exit asks, and Cancel keeps the window open with the edit in it.",
+      "milestone": "M1",
+      "issue": null,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SHELL-06",
+      "area": "gui-shell",
+      "title": "Every menu and submenu opens inside a 900 x 600 window",
+      "acceptance": "In the default look at 900 x 600 with the coffee table open, the menu bar reads File, Edit, Draw, View, Project, Lists; File, File > Samples, Edit, Draw, Draw > Walls, Draw > Stock, View, View > Standard views, View > Look along, View > Appearance > Theme, View > Appearance > Paper and line, Project, Project > Open designs in and Lists each open by mouse with every item inside the window; Lists > Fastener sizes and supplies opens the lists on the sizes tab, and Project > Saw kerf opens the cut layout with the kerf field focused.",
+      "milestone": "M1",
+      "issue": 169,
+      "kind": "workflow"
     }
   ]
 }
