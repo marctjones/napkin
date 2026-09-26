@@ -7,6 +7,7 @@ using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Modules.Building;
+using Napkin.Modules.Furniture;
 
 using Xunit;
 
@@ -113,6 +114,64 @@ public class RenovationWorkflows
                     window.CutList!.DemolitionLines.Select(line => line.Text));
                 Assert.Equal("Only what is New is listed; 2 items to remove are under Demolition.", window.CutList!.RenovationNoteText);
             });
+        },
+        defaultLook: true);
+
+    /// <summary>
+    /// The storyboard of renovation-sketches §9 read against §10.2's hand-worked numbers. Steps 1–5 —
+    /// four walls, their sides and header, the door and window, the room and its finishes, six notes —
+    /// build the basement-room sample exactly (samples/basement-room.design.md), and GUI-RENO-01, -02,
+    /// -03 and -05 drive each of them by hand; this opens that result and does steps 6 and 7 here.
+    /// </summary>
+    [GuiWorkflow("GUI-RENO-04")]
+    public void The_basement_storyboard_reads_its_boards_sheets_and_notes_and_demolition_follows_a_wall_marked_existing() => GuiWorkflow.Run(
+        app =>
+        {
+            MainWindow window = (MainWindow)app.Target;
+            app.Click(CentreOf(window, window.FileMenuItem));
+            app.Click(CentreOf(window, window.SamplesMenuItem));
+            app.Click(CentreOf(window, window.GetVisualDescendants().OfType<MenuItem>().Single(item => (item.Header as string) == "Basement room")));
+
+            // Step 6: Ctrl+Shift+L — framing, the area takeoff, the notes line, and no Demolition.
+            app.Chord(Key.L, KeyModifiers.Shift);
+            app.Expect("§10.2: the framing boards, 18 sheets of drywall, the notes, nothing to demolish", () =>
+            {
+                CutListWindow list = window.CutList!;
+                ShoppingListRow twoByFour = list.FramingRows.Rows.Single(row => row.Material == "2x4");
+                ShoppingListRow twoBySix = list.FramingRows.Rows.Single(row => row.Material == "2x6");
+                Assert.Equal("1 × 6'-0\", 3 × 12'-0\", 1 × 14'-0\", 31 × 16'-0\"", twoByFour.BuyText);
+                Assert.Equal("1 × 14'-0\"", twoBySix.BuyText);
+                Assert.Contains(list.TakeoffLines, line => line.Text.Contains("18 sheets 4'-0\" × 8'-0\"", StringComparison.Ordinal));
+                Assert.Equal("outlet × 4, switch × 1, light × 1", list.NotesText);
+                Assert.False(list.IsShowingDemolition);
+            });
+            AppDriver.Attach(window.CutList!, "reno-storyboard").SaveFrame("storyboard-shopping");
+
+            // Step 7: the west wall — a point on it clear of its window — marked existing by the menu.
+            window.Activate();
+            Box west = window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Single(box => box.Name == "Wall, west");
+            Point2 onWall = west.Footprint().FromLocal(new Vector2(west.Width.Divide(8, Rounding.HalfToEven), west.Height.Divide(2, Rounding.HalfToEven)));
+            app.Click(At(window, onWall));
+            app.Expect("the west wall is picked", () => Assert.Equal(west.Id, window.Editor.OnlySelected));
+            app.Click(CentreOf(window, window.EditMenuItem));
+            app.Click(CentreOf(window, window.PhaseMenuItem));
+            app.Click(CentreOf(window, window.FindControl<MenuItem>("PhaseExistingMenuItem")!));
+            app.Expect("Demolition says the two studs the window displaces come out", () =>
+            {
+                Assert.Equal(Phase.Existing, window.CurrentDesign!.Sketch.Find(west.Id)!.Phase);
+                Assert.True(window.CutList!.IsShowingDemolition);
+                Assert.Equal(
+                    ["Wall, west: 2 studs 7'-7 1/2\" (2x4) come out (assuming a regular 16\" layout in the existing wall)"],
+                    window.CutList!.DemolitionLines.Select(line => line.Text));
+            });
+
+            app.Chord(Key.Z);
+            app.Expect("undo: the wall is new again and there is nothing to demolish", () =>
+            {
+                Assert.Equal(Phase.New, window.CurrentDesign!.Sketch.Find(west.Id)!.Phase);
+                Assert.False(window.CutList!.IsShowingDemolition);
+            });
+            window.CutList!.Close();
         },
         defaultLook: true);
 
