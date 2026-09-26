@@ -3,7 +3,7 @@
   "scene": "overlap.scene.json",
   "design": "overlap.design.md",
   "derivedBy": "hand, from the stated dimensions in overlap.design.md; never regenerated from napkin's output",
-  "formatVersion": 12,
+  "formatVersion": 13,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 3,

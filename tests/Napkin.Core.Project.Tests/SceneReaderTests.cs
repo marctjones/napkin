@@ -130,7 +130,7 @@ public sealed class SceneReaderTests
     /// </summary>
     private const string AllReferenceShapes = """
         {
-          "formatVersion": 12,
+          "formatVersion": 13,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -138,11 +138,11 @@ public sealed class SceneReaderTests
               "name": "West square", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": { "stock": null, "species": "white oak", "quantity": 2,
-                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false, "grain": null, "showFace": null }, "wall": null, "room": null, "cuts": [] },
+                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false, "grain": null, "showFace": null }, "wall": null, "room": null, "deck": null, "roof": null, "opening": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "East square", "phase": "new",
               "anchor": { "x": 8192, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0,
-              "part": null, "wall": null, "room": null, "cuts": [] },
+              "part": null, "wall": null, "room": null, "deck": null, "roof": null, "opening": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000c", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "Meeting point", "phase": "new", "position": { "x": 8192, "y": 0 } },
             { "id": "0192f1a0-0000-4000-8000-00000000000d", "type": "node", "layer": "00000000-0000-0000-0000-000000000001",
@@ -151,7 +151,7 @@ public sealed class SceneReaderTests
               "name": "Joint line", "phase": "new",
               "start": "0192f1a0-0000-4000-8000-00000000000c", "end": "0192f1a0-0000-4000-8000-00000000000d" }
           ],
-          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-000000000001", "kind": "anchored",
               "entity": "0192f1a0-0000-4000-8000-00000000000a" },

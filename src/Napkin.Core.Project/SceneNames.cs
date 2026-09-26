@@ -81,6 +81,63 @@ internal static class SceneNames
     internal const string RoomMeasured = "measured";
     internal const string MeasuredDiagonal1 = "diagonal1";
     internal const string MeasuredDiagonal2 = "diagonal2";
+    internal const string Deck = "deck";
+    internal const string JoistDirection = "joistDirection";
+    internal const string JoistSpacing = "joistSpacing";
+    internal const string Joist = "joist";
+    internal const string Beam = "beam";
+    internal const string Plies = "plies";
+    internal const string Lumber = "lumber";
+    internal const string Post = "post";
+    internal const string PostCount = "postCount";
+    internal const string Cantilever = "cantilever";
+    internal const string Decking = "decking";
+    internal const string DeckingGap = "deckingGap";
+    internal const string Blocking = "blocking";
+    internal const string Supports = "supports";
+    internal const string FootingDepth = "footingDepth";
+    internal const string Guard = "guard";
+    internal const string GuardPostSpacing = "postSpacing";
+    internal const string BalusterGap = "balusterGap";
+    internal const string BottomClearance = "bottomClearance";
+    internal const string Rail = "rail";
+    internal const string Cap = "cap";
+    internal const string Baluster = "baluster";
+    internal const string Stair = "stair";
+    internal const string At = "at";
+    internal const string StairWidth = "width";
+    internal const string Run = "run";
+    internal const string Risers = "risers";
+    internal const string Stringers = "stringers";
+    internal const string Stringer = "stringer";
+    internal const string TreadBoards = "treadBoards";
+    internal const string Roof = "roof";
+    internal const string RafterSpacing = "rafterSpacing";
+    internal const string Rafter = "rafter";
+    internal const string Ledger = "ledger";
+    internal const string Overhang = "overhang";
+    internal const string Sheathing = "sheathing";
+    internal const string Roofing = "roofing";
+    internal const string Coverage = "coverage";
+    internal const string Waste = "waste";
+    internal const string LowEnd = "lowEnd";
+    internal const string LowEndWall = "wall";
+    internal const string LowEndBeam = "beam";
+    internal const string Opening = "opening";
+    internal const string Fill = "fill";
+    internal const string SiteSoilBearing = "soilBearing";
+
+    /// <summary>The joist directions M11 writes; "along" is reserved and refused.</summary>
+    internal static readonly (Geometry.JoistDirection Value, string Text)[] JoistDirections = [(Geometry.JoistDirection.Out, "out")];
+
+    /// <summary>A deck's edges, by compass.</summary>
+    internal static readonly (Geometry.DeckEdge Value, string Text)[] DeckEdges =
+        [(Geometry.DeckEdge.North, "north"), (Geometry.DeckEdge.South, "south"), (Geometry.DeckEdge.East, "east"), (Geometry.DeckEdge.West, "west")];
+
+    /// <summary>What fills an opening.</summary>
+    internal static readonly (Geometry.OpeningFill Value, string Text)[] Fills =
+        [(Geometry.OpeningFill.Glass, "glass"), (Geometry.OpeningFill.Screen, "screen"), (Geometry.OpeningFill.Solid, "solid")];
+
     internal const string NoteType = "note";
     internal const string NoteText = "text";
     internal const string NoteSymbol = "symbol";

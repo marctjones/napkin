@@ -3,7 +3,7 @@
   "scene": "window-in-existing-wall.scene.json",
   "design": "window-in-existing-wall.design.md",
   "derivedBy": "hand, from the stated dimensions in window-in-existing-wall.design.md and docs/design/renovation-sketches.md §10.3; never regenerated from napkin's output",
-  "formatVersion": 12,
+  "formatVersion": 13,
   "unitsPerInch": 1024,
   "counts": {
     "layers": 3,

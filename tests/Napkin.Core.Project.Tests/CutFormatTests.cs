@@ -19,7 +19,7 @@ public sealed class CutFormatTests
     /// </summary>
     private const string EveryKindOfCut = """
         {
-          "formatVersion": 12,
+          "formatVersion": 13,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -27,7 +27,7 @@ public sealed class CutFormatTests
               "name": "Top", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 49152, "height": 24576, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": null,
-              "wall": null, "room": null, "cuts": [
+              "wall": null, "room": null, "deck": null, "roof": null, "opening": null, "cuts": [
                 { "kind": "roundedCorner", "corner": "southWest", "radius": 1024 },
                 { "kind": "cornerCut", "corner": "southEast", "alongX": 3072, "alongY": 5120 },
                 { "kind": "curvedEdge", "edge": "north", "bow": "inward", "depth": 2048 }
@@ -36,11 +36,11 @@ public sealed class CutFormatTests
               "name": "Shelf front", "phase": "new",
               "anchor": { "x": 0, "y": 40960, "z": 0 }, "width": 49152, "height": 24576, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": null,
-              "wall": null, "room": null, "cuts": [
+              "wall": null, "room": null, "deck": null, "roof": null, "opening": null, "cuts": [
                 { "kind": "curvedEdge", "edge": "south", "bow": "outward", "depth": 2048 }
               ] }
           ],
-          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
           "relationships": []
         }
         """;
@@ -60,7 +60,7 @@ public sealed class CutFormatTests
               "anchor": { "x": 0, "y": 0 }, "width": 49152, "height": 24576, "rotation": 0,
               "part": null }
           ],
-          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
+          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
           "relationships": []
         }
         """;

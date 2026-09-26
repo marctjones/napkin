@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 12
+# The napkin project file — container version 1, scene format version 13
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -665,6 +665,36 @@ feet per gallon, `flooringBox`) are whole square feet greater than zero, or `nul
 `null` or two lengths greater than zero; `baseboardStick` and every `measured` length are greater
 than zero or `null`. An unknown text, a zero or negative coverage or length, or an unknown field is
 refused.
+
+### Deck, shed roof and opening fill
+
+Format version 13 ([`deck-and-porch.md`](./design/deck-and-porch.md) §7, #195). Every box carries
+`"deck"`, `"roof"` and `"opening"`, each `null` unless the box is one; the site carries
+`"soilBearing"` (whole psf or `null`). A deck or a roof is nothing else: a box with a deck or a roof
+and a non-null `part`, `wall`, `room`, `opening` or the other of the two is refused; an opening is
+not also a wall. No value here is a code number: every one is the person's, or napkin's labelled
+design default.
+
+```json
+"deck": { "joistDirection": "out", "joistSpacing": 16384, "joist": "2x8",
+          "beam": { "plies": 2, "lumber": "2x10" }, "post": "4x4", "postCount": 3,
+          "cantilever": 12288, "decking": "5/4x6", "deckingGap": 128, "blocking": true,
+          "supports": null, "species": null, "footingDepth": null,
+          "hardware": [ { "name": "Joist hanger, 2x8", "quantity": 10 } ],
+          "guard": null | { "height", "postSpacing", "balusterGap", "bottomClearance", "post", "rail", "cap", "baluster" },
+          "stair": null | { "edge": "south", "at", "width", "run", "risers": null, "stringers": 3, "stringer": "2x12", "treadBoards": 2 } },
+"roof": { "rafterSpacing": 16384, "rafter": "2x8", "ledger": "2x8", "overhang": 12288, "blocking": true,
+          "sheathing": null, "roofing": { "name": "…", "coverage": null, "waste": 0 },
+          "lowEnd": { "kind": "wall", "wall": "<a box id>" } | { "kind": "beam", "beam": { "plies", "lumber" }, "post", "postCount" } },
+"opening": { "fill": "glass" | "screen" | "solid" }
+```
+
+Refused: `joistDirection` other than `out` (`along` is reserved); a spacing, width, run, guard height
+or post spacing of 0 or less; a cantilever, gap, clearance, overhang, footing depth or `at` below 0;
+an empty lumber or roofing name; beam plies outside 1–3; a post count below 2, fewer than 2
+stringers or 2 risers, fewer than 1 tread board; an unknown edge, fill or low-end kind; a roofing
+coverage of 0 or less or a negative waste; a `lowEnd.wall` naming no box (a dangling reference). A
+roof's rise is its box's depth; its pitch is derived, never stored.
 
 ## An annotated example
 
