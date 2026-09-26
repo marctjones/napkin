@@ -324,6 +324,24 @@ deck, over those walls' gross area plus the triangle above each side wall and th
 to a tenth of a percent, and says which side of the 40 % line the drawing is on. It never
 classifies; a category is yours.
 
+**A shed porch roof** (§5.4, §9.5). A roof is a box over a deck, on the roof layer or with roof
+inputs. The box's depth out from the house is the run and its height is the rise, so its pitch is
+"5 in 12", or "≈ 4.96 in 12" when it is not a whole number. The high end is a ledger on the house.
+The low end is either a wall on the deck (napkin asks you to mark it bearing) or a beam on posts
+standing on the deck. From the typed rafter, ledger, spacing and overhang, napkin works out, all
+exactly:
+- the rafter length, by an integer square root;
+- the height above the plate;
+- the ledger's top above the low support;
+- the cuts, as one sentence to lay a rafter out by: the plumb cut, the birdsmouth distance and its
+  notch depth, and the tail;
+- the rafters, laid out like joists, and the blocking at the plate;
+- the sheathing sheets and roofing units by sloped area, with "a layout may need more".
+
+The rafters' horizontal span is checked against the adopted pack's rafter table at the site's
+ground snow load: passes, short, or No data. As with the deck, napkin does not know the house, so
+the panel asks you to check that the ledger clears the eave and any openings.
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code

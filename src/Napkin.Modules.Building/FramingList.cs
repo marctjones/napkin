@@ -74,6 +74,9 @@ public enum FramingRole
 
     /// <summary>A stair tread board.</summary>
     Tread,
+
+    /// <summary>A rafter of a shed roof (§5.4).</summary>
+    Rafter,
 }
 
 /// <summary>One kind of piece in a wall's frame: how many, how long, and out of what.</summary>
@@ -459,6 +462,7 @@ public static class FramingList
             FramingRole.Baluster => "baluster",
             FramingRole.Stringer => "stringer",
             FramingRole.Tread => "tread board",
+            FramingRole.Rafter => "rafter",
             _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Not a framing role."),
         };
 
