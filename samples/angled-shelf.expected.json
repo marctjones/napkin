@@ -1,0 +1,59 @@
+{
+  "fixture": "angled-shelf",
+  "scene": "angled-shelf.scene.json",
+  "design": "angled-shelf.design.md",
+  "derivedBy": "hand, from the stated dimensions in angled-shelf.design.md and docs/design/angled-parts.md §1.5; never regenerated from napkin's output",
+  "formatVersion": 11,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 2,
+    "struts": 1,
+    "pieces": 3,
+    "relationships": 0
+  },
+  "cutList": [
+    {
+      "label": "Shelf",
+      "quantity": 1,
+      "lengthUnits": 30720,
+      "widthUnits": 10816,
+      "thicknessUnits": 768,
+      "lengthText": "2'-6\"",
+      "widthText": "10 9/16\"",
+      "thicknessText": "3/4\"",
+      "material": "3/4 plywood",
+      "unresolved": false,
+      "members": [
+        "d1000000-0000-4000-8000-000000000010"
+      ],
+      "cuts": [
+        "Mitre the west end: from 9/16\" in along the south edge to the north-west corner (≈37° off square), for the full 2'-6\" length.",
+        "Mitre the east end: from 9/16\" in along the north edge to the south-east corner (≈37° off square), for the full 2'-6\" length."
+      ],
+      "derivation": "The shelf is a strut across its tilt (angled-parts 1.5): from its back edge's centreline, 2\" in and 18\" up, to its front edge's, 10\" in and 12\" up: d = (0, 8, -6) in, 8^2 + 6^2 = 10^2, so 10\" across exactly. Reference Y: local Z = d x Y = (6, 0, 0), the shelf's 30\" length, which is its Depth; its Height is the 3/4\" thickness, in the drawn face (the end profile). Both ends are cut to Y (the back panel's face, a plumb front edge), square to local Z, so plain mitres. Setback = 3/4 x (n_y / n_d) with y = z x d = (0, 36, 48) scaled: n_y = 36/60 = 0.6, n_d = 8/10 = 0.8, so 3/4 x 3/4 = 9/16\" = 576, exact. Width (planAxes x = width, invariant 16) = 10 + 9/16 = 10 9/16\" = 10816, exact. Length = Depth = 30\" = 2'-6\"; thickness = Height = 3/4\". Corners: first end SW (sign(d.Y) x sign(y.Y) > 0), second NE: a parallelogram. atan(576/768) = 36.87 degrees -> 37 to the half degree, not 45 so marked. The out-of-plane dimension is the length, so each sentence ends 'for the full 2'-6\" length' (shaped-parts 4.4)."
+    },
+    {
+      "label": "Side",
+      "quantity": 2,
+      "lengthUnits": 24576,
+      "widthUnits": 12288,
+      "thicknessUnits": 768,
+      "lengthText": "2'-0\"",
+      "widthText": "1'-0\"",
+      "thicknessText": "3/4\"",
+      "material": "3/4 plywood",
+      "unresolved": false,
+      "members": [
+        "d1000000-0000-4000-8000-000000000001",
+        "d1000000-0000-4000-8000-000000000002"
+      ],
+      "derivation": "Each side stands 3/4\" x 12\" in the plan and 24\" tall: planAxes x = thickness, y = width, so its length is its depth, 24\" = 24576 = 2'-0\". Label: common prefix 'Side, ' -> 'Side'."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+    "Shelf,1,\"2'-6\"\"\",\"10 9/16\"\"\",\"3/4\"\"\",3/4 plywood,,\"Mitre the west end: from 9/16\"\" in along the south edge to the north-west corner (≈37° off square), for the full 2'-6\"\" length.; Mitre the east end: from 9/16\"\" in along the north edge to the south-east corner (≈37° off square), for the full 2'-6\"\" length.\",",
+    "Side,2,\"2'-0\"\"\",\"1'-0\"\"\",\"3/4\"\"\",3/4 plywood,,,"
+  ]
+}

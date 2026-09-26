@@ -1,0 +1,123 @@
+{
+  "formatVersion": 11,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    }
+  ],
+  "entities": [
+    {
+      "id": "d1000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Side, left",
+      "phase": "new",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "width": 768,
+      "height": 12288,
+      "depth": 24576,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "3/4 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "d1000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Side, right",
+      "phase": "new",
+      "anchor": {
+        "x": 31488,
+        "y": 0,
+        "z": 0
+      },
+      "width": 768,
+      "height": 12288,
+      "depth": 24576,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": {
+        "stock": "3/4 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "thickness",
+          "y": "width"
+        },
+        "hardware": [],
+        "rough": false
+      },
+      "wall": null,
+      "room": null,
+      "cuts": []
+    },
+    {
+      "id": "d1000000-0000-4000-8000-000000000010",
+      "type": "strut",
+      "layer": "00000000-0000-0000-0000-000000000001",
+      "name": "Shelf",
+      "phase": "new",
+      "from": {
+        "x": 16128,
+        "y": 2048,
+        "z": 18432
+      },
+      "to": {
+        "x": 16128,
+        "y": 10240,
+        "z": 12288
+      },
+      "fromCut": "y",
+      "toCut": "y",
+      "reference": "y",
+      "height": 768,
+      "depth": 30720,
+      "part": {
+        "stock": "3/4 plywood",
+        "species": null,
+        "quantity": 1,
+        "planAxes": {
+          "x": "width",
+          "y": "thickness"
+        },
+        "hardware": [],
+        "rough": false
+      }
+    }
+  ],
+  "relationships": [],
+  "fastenerChoices": [],
+  "supplies": [],
+  "code": null,
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "source": null
+  }
+}

@@ -122,6 +122,14 @@ public static class SampleFiles
             "splayed-footstool.scene.json",
             "Splayed footstool",
             "A 1'-0\" square seat on legs leaning out two ways at once — each end still one mitre-saw setting."),
+        new(
+            "raked-chair-frame.scene.json",
+            "Raked chair frame",
+            "Rear legs raked back 7\" in 24\", side rails flush to their inside faces, the rails' ends mitred to the rake."),
+        new(
+            "angled-shelf.scene.json",
+            "Angled shelf",
+            "A 30\" shelf tilted between two sides — its run across the tilt is its width, each edge a mitre for the full length."),
     ];
 
     private static readonly string[] SceneSuffixes = [".scene.json", ".json"];
