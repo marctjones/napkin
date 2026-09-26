@@ -29,6 +29,16 @@ a box's mitre and a strut's mitre and bevel alike. `CutListRow.LengthExact` beca
 the wide faces vertical (board 1); board 2's `14202` stays the operation-order test in the unit tests,
 as §9.2 asks.
 
+**Found while building slice E (#193):** a butt on a strut's end is its own relationship,
+`StrutJoint(Receiving, StrutEndFaceRef Inserted, Fastening, Glue, StrutFace? PocketFrom)`, rather than
+a `Joint` whose faces widen to any place: every other joint type cuts into a part along a face, which a
+strut's board never carries, so only a butt is possible and none of a box joint's groove, rabbet and lap
+geometry applies. In the file it is still a `joint` whose inserted face is a `strutEndFace`, its pocket
+face spelled as the box face of the same name. The joint length is the overlap's longest edge, not its
+extent along the world axes, because a two-way lean's end is turned in the plane. J with a strut and the
+part it sits on makes the butt at once — pocket screws from the strut's bottom face, glued — with no
+popover, since nothing else is possible.
+
 **Where this note stands relative to what is already decided.** [`assembly-model.md`](./assembly-model.md)
 §3a — the **strut**, an angled member stored by its two exact endpoints — was signed off by Marc on
 2026-09-23 (decisions 17–24). **It has not been built**: `grep Strut src` finds nothing, and no issue
