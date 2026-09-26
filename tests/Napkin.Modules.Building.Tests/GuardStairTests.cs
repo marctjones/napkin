@@ -250,4 +250,16 @@ public class GuardStairTests
         LoadedPack ct = Assert.Single(CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "RealPacks")]).Loaded);
         Assert.StartsWith("Type the riser count", StairFraming.Of(Deck(null, Stair()).Framing, ct, MaterialsLibrary.Shipped).Problem, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_pack_with_no_stair_provisions_or_no_maximum_riser_asks_for_the_count()
+    {
+        GuardStairProvisions provisions = ZzDeck.Deck.GuardStair!;
+        LoadedPack noStair = ZzDeck with { Deck = ZzDeck.Deck with { GuardStair = provisions with { Stair = null } } };
+        LoadedPack noRiser = ZzDeck with { Deck = ZzDeck.Deck with { GuardStair = provisions with { Stair = provisions.Stair! with { MaximumRiser = null } } } };
+        DeckFraming framing = Deck(null, Stair()).Framing;
+
+        Assert.StartsWith("Type the riser count", StairFraming.Of(framing, noStair, MaterialsLibrary.Shipped).Problem, StringComparison.Ordinal);
+        Assert.StartsWith("Type the riser count", StairFraming.Of(framing, noRiser, MaterialsLibrary.Shipped).Problem, StringComparison.Ordinal);
+    }
 }
