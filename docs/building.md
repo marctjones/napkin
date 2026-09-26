@@ -190,6 +190,36 @@ under **Side** and **Bearing** in the wall's panel:
 The bracing check runs on every wall whatever its side or bearing. A bearing wall marked demolish
 says "Removing a bearing wall needs an engineer; napkin does nothing here."
 
+## Renovating: how to use it
+
+From [`design/renovation-sketches.md`](design/renovation-sketches.md), the finished feature in one
+place; the sections below say how each part works.
+
+- **Say what is already there.** Draw the walls of the house as they are, select them and choose
+  **Edit → Phase → Existing** (or the Part panel's Phase). They turn ghosted: faint pencil. Nothing
+  existing is ever bought or cut.
+- **Draw what goes in.** Every new wall, opening, room, part or note starts **New**, drawn solid,
+  and that is what the cut list and the shopping list buy.
+- **Cross out what comes out.** Select it and choose **Edit → Phase → Demolish**: it is drawn
+  dashed with a cross through it, it takes no part in any check, and the shopping list's
+  **Demolition** section counts it. There is no "modified": draw the old one demolished and the new
+  one new.
+- **Add a window to a wall you have.** The wall is Existing; **Draw → Window** on it makes a New
+  opening. The Part panel shows the header, king and jack studs, sill and cripples as **new
+  material** and the studs that come out under **Demolition**, and the code check and the bracing
+  check run exactly as today on the wall as it will be.
+- **Say what a wall is.** In the Part panel: **Side** exterior or interior, **Bearing** yes or no.
+  Bearing walls get the code check as today (and Supports, as today). A wall marked not bearing gets
+  no code check: you pick its openings' header yourself, and napkin says it is your choice.
+- **Finish a room.** **Draw → Room**, drag or type its inside length and width, type the ceiling
+  height in the panel's Depth, tick the finishes you want — drywall, insulation, paint, flooring,
+  baseboard — and type the sheet size, coverage, waste and stick length you will actually buy. The
+  shopping list's **Area takeoff** section does the arithmetic and rounds once per line.
+- **Measured a real room?** Type the four wall lengths and, if you have them, the two diagonals in
+  the room's panel; napkin notes "out of square by …" and does not try to model it.
+- **Mark the rough-in.** **Draw → Note**, click, type "outlet", "switch", "light", "supply", "drain"
+  or anything else; a symbol for the words it knows. Notes are counted, never modelled.
+
 ## Existing, new and demolished walls
 
 Every wall and opening is **existing**, **new** or **demolish** (**Edit → Phase**, or the Phase

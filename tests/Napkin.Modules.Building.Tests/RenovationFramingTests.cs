@@ -68,6 +68,7 @@ public class RenovationFramingTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-008")]
     public void An_exterior_bearing_wall_asks_the_exterior_table()
     {
         (Sketch sketch, _, _) = Example2(Phase.New, Phase.New, Said(WallSide.Exterior, true));
@@ -80,6 +81,7 @@ public class RenovationFramingTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-008")]
     public void An_interior_bearing_wall_asks_the_interior_table_and_a_pack_without_one_says_no_data_naming_it()
     {
         (Sketch sketch, _, _) = Example2(Phase.New, Phase.New, Said(WallSide.Interior, true));
@@ -97,6 +99,7 @@ public class RenovationFramingTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-008")]
     public void A_wall_that_is_not_bearing_is_not_checked_and_its_openings_take_the_header_typed()
     {
         (Sketch sketch, Box wall, _) = Example2(Phase.New, Phase.New, Said(WallSide.Exterior, false, new TypedHeader(2, "2x6")));
@@ -141,6 +144,7 @@ public class RenovationFramingTests
     [InlineData(null, true, "side", "Say whether Wall 1 is exterior or interior (Part panel).")]
     [InlineData(WallSide.Exterior, null, "bearing", "Say whether Wall 1 is bearing (Part panel).")]
     [InlineData(null, null, "side,bearing", "Say whether Wall 1 is exterior or interior (Part panel). Say whether Wall 1 is bearing (Part panel).")]
+    [Trait("Feature", "BLD-008")]
     public void A_side_or_a_bearing_not_said_is_an_input_missing_naming_it(WallSide? side, bool? bearing, string inputs, string sentence)
     {
         (Sketch sketch, _, _) = Example2(Phase.New, Phase.New, Said(side, bearing));
@@ -176,6 +180,7 @@ public class RenovationFramingTests
         => [.. pieces.Select(piece => (piece.Role, piece.Quantity, piece.Length, piece.Stock?.Name))];
 
     [Fact]
+    [Trait("Feature", "BLD-009")]
     public void A_new_window_in_an_existing_wall_is_new_material_and_two_studs_out()
     {
         (Sketch sketch, _, _) = Example2(Phase.Existing, Phase.New, Said(WallSide.Exterior, true));
@@ -203,6 +208,7 @@ public class RenovationFramingTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-009")]
     public void A_new_wall_is_all_new_and_a_demolished_wall_all_out()
     {
         (Sketch fresh, Box wall, _) = Example2(Phase.New, Phase.New, Said(WallSide.Exterior, true));
@@ -237,6 +243,7 @@ public class RenovationFramingTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-009")]
     public void An_existing_wall_with_no_change_is_on_neither_list_and_a_closed_up_window_fills_with_studs()
     {
         (Sketch still, _, _) = Example2(Phase.Existing, Phase.Existing, Said(WallSide.Exterior, true));
@@ -286,6 +293,7 @@ public class RenovationFramingTests
     }
 
     [Fact]
+    [Trait("Feature", "BLD-009")]
     public void Example_2s_framing_diff_is_the_expectations_row_for_row()
     {
         (Sketch sample, JsonElement expected) = Sample();

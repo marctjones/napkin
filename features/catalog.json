@@ -560,6 +560,69 @@
       "kind": "unit"
     },
     {
+      "id": "BLD-006",
+      "area": "building",
+      "title": "Walls join at corners from their exact corners",
+      "acceptance": "Two walls whose end lies on the other's long face, whose ends meet, or which overlap at a corner join; offset by one unit (1/1024 in) they do not; the plan draws a joined pair with no seam; an opening reaching into a joined wall's thickness is refused naming that wall.",
+      "milestone": "M8",
+      "issue": 161,
+      "kind": "unit"
+    },
+    {
+      "id": "BLD-007",
+      "area": "building",
+      "title": "A wall bounds a room by a flush face",
+      "acceptance": "A wall whose long face lies on the line of a room edge and overlaps it bounds the room; its openings inside the edge are the room's, one straddling the edge's end is not; a room with no bounding wall takes off its own perimeter and says openings are not subtracted.",
+      "milestone": "M8",
+      "issue": 162,
+      "kind": "unit"
+    },
+    {
+      "id": "BLD-008",
+      "area": "building",
+      "title": "The code check is routed by the wall's side and bearing",
+      "acceptance": "An exterior bearing wall asks the exterior-bearing table, an interior bearing wall the interior-bearing table (No data naming it when the pack has none); a wall marked not bearing is Not checked and takes the header the person chose, said to be their choice; a side or bearing not said is an input missing naming it.",
+      "milestone": "M8",
+      "issue": 161,
+      "kind": "unit"
+    },
+    {
+      "id": "BLD-009",
+      "area": "building",
+      "title": "The framing diff says what is new and what comes out",
+      "acceptance": "A new window in an existing 12 ft wall lists 2 kings, 2 jacks, the header, the sill and 4 cripples as new and 2 studs out, assuming a regular 16 in layout; a new wall is all new, a demolished wall all out, a closed-up window fills with studs, an unchanged existing wall is on neither list.",
+      "milestone": "M8",
+      "issue": 161,
+      "kind": "unit"
+    },
+    {
+      "id": "BLD-010",
+      "area": "building",
+      "title": "The area takeoff is exact and rounds once per line",
+      "acceptance": "For the 12 x 14 ft basement room: 18 drywall sheets from one pool, 10 bags of insulation, 4 gallons of paint, 185 sq ft and 10 boxes of flooring with the 10 % allowance, 7 sticks of baseboard; with no coverage typed each line shows the area and says what to type.",
+      "milestone": "M8",
+      "issue": 162,
+      "kind": "unit"
+    },
+    {
+      "id": "BLD-011",
+      "area": "building",
+      "title": "A measured room reports out of square without redrawing",
+      "acceptance": "Unequal opposite sides or diagonals read out of square; one diagonal is compared by its square exactly; a true 12 x 16 ft room with a 20 ft diagonal is not flagged; the takeoff stays on the drawn size and says so.",
+      "milestone": "M8",
+      "issue": 162,
+      "kind": "unit"
+    },
+    {
+      "id": "BLD-012",
+      "area": "building",
+      "title": "Insulation by stud bays counts the full-height bays",
+      "acceptance": "The basement room's four framed walls have 37 full-height bays, 7'-7 1/2\" tall; a wall napkin does not frame has none and is named.",
+      "milestone": "M8",
+      "issue": 162,
+      "kind": "unit"
+    },
+    {
       "id": "SITE-001",
       "area": "site-plan",
       "title": "A survey underlay calibrates from two known points",
@@ -1565,6 +1628,51 @@
       "acceptance": "With Open designs in > Last used, press 3; the next design opens in Front, and so does a new window on the same settings; choose Open designs in > 2D plan and the next design opens on Top.",
       "milestone": "M2",
       "issue": 107,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-RENO-01",
+      "area": "ui",
+      "title": "Mark a wall existing and put a new window in it",
+      "acceptance": "Draw a wall; mark it Existing from Edit > Phase, then New and Existing again from the panel's picker; say it is exterior and bearing; put a window in it: the message bar and the wall's panel say new - 2 king studs, 2 jack studs, header, sill, 2 cripples; out - 2 studs, assuming a regular 16\" layout; undo takes the window and then the phase back.",
+      "milestone": "M8",
+      "issue": 161,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-RENO-02",
+      "area": "ui",
+      "title": "Draw a room and read its area takeoff",
+      "acceptance": "Open the basement sample and pick its room: four bounding walls, both openings, 18 sheets and 10 bags; on a new sheet press Shift+W and click; type 14' and 12' on the room's labels; pick drywall on walls and ceiling, type a 4' x 8' sheet, tick the floor and type a 20 sq ft box: the shopping list's Area takeoff says 19 sheets and 10 boxes, and its CSV carries it.",
+      "milestone": "M8",
+      "issue": 162,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-RENO-03",
+      "area": "ui",
+      "title": "Put rough-in notes and count them",
+      "acceptance": "Press Shift+N and click three times, typing outlet, switch and sump pit; outlet and switch take their symbols, and the drain glyph is picked for the sump pit with the pointer; the shopping list's Notes line reads outlet x 1, switch x 1, drain x 1; pick the switch and press Delete: the line loses it.",
+      "milestone": "M8",
+      "issue": 163,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-RENO-04",
+      "area": "ui",
+      "title": "Finish a basement room end to end",
+      "acceptance": "Draw the four walls of the 12 x 14 ft room to exact sizes and say each is exterior, not bearing, with a (2) 2x6 header; put in the door and the window; click a room inside the walls and tick its finishes; put six notes; the shopping list buys 2x4 1 x 6', 3 x 12', 1 x 14', 31 x 16' and 2x6 1 x 14', 18 drywall sheets, and counts outlet x 4, switch x 1, light x 1; mark the west wall existing: two of its studs come out under Demolition; undo.",
+      "milestone": "M8",
+      "issue": 164,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-RENO-05",
+      "area": "ui",
+      "title": "Existing drawn faint, demolish dashed and crossed",
+      "acceptance": "Mark a wall Existing from the Edit menu, put a new window in it, then Demolish the wall from the panel with the keyboard: plan and 3D draw it faint, then long-dashed and crossed; the shopping list says only New is listed and counts the wall and its frame under Demolition; undo.",
+      "milestone": "M8",
+      "issue": 160,
       "kind": "workflow"
     }
   ]

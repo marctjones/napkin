@@ -46,7 +46,7 @@ id across files.
 | `area` | One of `geometry`, `project-file`, `materials`, `furniture`, `ui`, `rules-engine`, `code-packs`, `building`, `deck`, `site-plan`, `interop`, `packaging`, `release`, `solver`. Mirrors the `area/*` labels where one exists, so the scorecard can group the way the issue tracker does. |
 | `title` | A short noun phrase. What the feature is, not how it is built. |
 | `acceptance` | **One sentence, concrete enough to become a test**: it names the inputs and the observable result. See "Writing an acceptance sentence" below. |
-| `milestone` | `M1`, `M2`, `M3`, `M4`, `M5` or `backlog` — the milestone by the end of which the feature is expected to pass. See `PLAN.md`. |
+| `milestone` | `M1` … `M8`, or `backlog` — the milestone by the end of which the feature is expected to pass. See `PLAN.md`. |
 | `issue` | The issue number that delivers the feature, or `null` while no issue exists for it yet. One issue may deliver many features; a feature belongs to exactly one issue. |
 | `kind` | `unit`, `golden` or `workflow`. See below. |
 
