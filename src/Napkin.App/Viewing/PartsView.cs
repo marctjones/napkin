@@ -182,6 +182,10 @@ public sealed class PartsView : Control
             case ViewCommand.Down or ViewCommand.FarDown:
                 MoveFocus(Columns);
                 return true;
+
+            // I for isometric (§3): O is the 3D view's projection, and the two are not to be confused.
+            case ViewCommand.PartsIsometric:
+                return ToggleIsometric();
             default:
                 return false;
         }
@@ -220,9 +224,6 @@ public sealed class PartsView : Control
             Key.PageDown => MoveFocus(Columns * RowsPerPage),
             Key.PageUp => MoveFocus(-Columns * RowsPerPage),
             Key.Escape => ClearSelection(),
-
-            // I for isometric (§3): O is the 3D view's projection, and the two are not to be confused.
-            Key.I => ToggleIsometric(),
             _ => false,
         };
 
