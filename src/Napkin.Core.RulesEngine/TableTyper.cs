@@ -187,7 +187,7 @@ internal static class BandValidator
         }
 
         List<InputColumn> exact = [.. inputs.Where(c => c.Band == BandKind.Exact)];
-        List<InputColumn> bounds = [.. inputs.Where(c => c.Band == BandKind.UpperBound)];
+        List<InputColumn> bounds = [.. inputs.Where(c => c.Band is BandKind.UpperBound or BandKind.LowerBound)];
         InputColumn? capacity = inputs.SingleOrDefault(c => c.Band == BandKind.Capacity);
 
         foreach (InputColumn column in exact)
@@ -204,6 +204,21 @@ internal static class BandValidator
 
             foreach (InputColumn column in bounds)
             {
+                if (column.Band == BandKind.LowerBound)
+                {
+                    // A lower-bound column's bands must start at its domain's min: below the smallest
+                    // bound is out of scope, and the table says where that is.
+                    long bottom = group.Min(r => r.Inputs[column.Name].Magnitude);
+                    if (bottom != column.Domain!.Min.Magnitude)
+                    {
+                        problems.Add(
+                            where,
+                            $"gap: for {label}, the '{column.Name}' bands start at {Show(column, bottom)} but the column's domain declares min {column.Domain.Min}.");
+                    }
+
+                    continue;
+                }
+
                 long top = group.Max(r => r.Inputs[column.Name].Magnitude);
                 if (top != column.Domain!.Max.Magnitude)
                 {

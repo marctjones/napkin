@@ -241,6 +241,10 @@ internal static class TableReader
             {
                 problems.Add(c.Where, $"{path}.band: 'exact' bands are for category columns; '{name}' is upper-bound or capacity.");
             }
+            else if (band == BandKind.LowerBound)
+            {
+                problems.Add(c.Where, $"{path}.band: header-sizing columns are upper-bound or capacity, not lower-bound.");
+            }
             else if (band == BandKind.Capacity && name != Vocabulary.HeaderSpan)
             {
                 problems.Add(c.Where, $"{path}.band: only '{Vocabulary.HeaderSpan}' is a capacity column.");
