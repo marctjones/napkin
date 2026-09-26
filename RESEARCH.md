@@ -9,7 +9,7 @@ engine design.
 
 | Tool | License | Strengths | Why not chosen as napkin's model / basis |
 |---|---|---|---|
-| **SketchUp** (Free/Web, Shop, Pro) | Proprietary (Trimble) | Easiest 3D tool to learn (push/pull modeling); huge pre-built furniture/hardware library via 3D Warehouse — the actual reason it dominates makerspace/woodworking use. | Not open source. Free tier's export is limited to `.skp` and PDF/image — no DXF/Collada/OBJ without paying for Shop/Pro. This single fact drove napkin's SketchUp interop design: read-only `.skp` import via Trimble's SDK, not "ask users to export to a friendlier format." |
+| **SketchUp** (Free/Web, Shop, Pro) | Proprietary (Trimble) | Easiest 3D tool to learn (push/pull modeling); huge pre-built furniture/hardware library via 3D Warehouse — the actual reason it dominates makerspace/woodworking use. | Not open source. The free tier's export formats drove napkin's early SketchUp interop idea (read-only `.skp` import); that import is closed (#24), and what the free tier exports was not confirmed from a vendor page when re-checked on 2026-09-26 (#215), so it is not stated here. |
 | **Sweet Home 3D** | Open source (GPL) | Best-in-class for a non-CAD homeowner doing interior/floor-plan work — literal drag-and-drop walls/doors/furniture, simultaneous 2D+3D view, exports a to-scale PDF plan. | No concept of a property line, easement, or setback — can't do the site-plan/zoning side of a permit project at all. Good reference for "how easy should wall/opening editing feel," not usable as a base to build on for the building module. |
 | **FreeCAD** | Open source (mostly LGPL, some GPL/MPL components) | Most capable open-source CAD overall since the 1.0 release (Sept 2024) — parametric 3D, Arch/BIM workbench, TechDraw for dimensioned output, real IFC import/export. Its Sketcher constraint solver (PlaneGCS, LGPL, a SolveSpace derivative) is the reference implementation for 2D geometric constraint solving at this scale. | Steepest learning curve of anything evaluated — real CAD, not a napkin-sketch tool. PlaneGCS is C++, so using it from .NET/Avalonia means native interop, which is why napkin defers a general constraint solver rather than adopting it wholesale in v1. |
 | **QCAD** (Community GPL / Pro paid) | GPL (Community) | Best-maintained, best-documented pure 2D drafting tool of the group; AutoCAD-like workflow; solid native Windows/macOS builds; RibbonSoft (the vendor) has a commercial reason to keep it stable. Good fit for site/plot plans traced over a calibrated survey underlay. | Not chosen as a *base* to build on (napkin is a from-scratch app), but is the closest analog for what napkin's site-plan tooling should feel like, and a real interop target (DXF). |
@@ -21,14 +21,16 @@ None of them combine (a) genuinely no-CAD-background usability, (b) both furnitu
 building/site-plan domains in one tool, and (c) prescriptive building-code awareness baked into
 the drawing interaction itself. Sweet Home 3D nails (a) but not (b) or (c). FreeCAD covers (b) and
 could theoretically support (c) via a plugin but fails badly on (a). QCAD/LibreCAD are precision
-2D tools with no code-awareness at all. The prescriptive-code engine tied to live dimensioning is
-the actual differentiator and doesn't exist anywhere in this landscape — that's napkin's reason to
+2D tools with no code-awareness at all. Free sizing tools do exist — AWC's span calculator, ForteWEB,
+BC Calc, the DCA 6 guide (#215 lists them with their pages, checked 2026-09-26) — but each sizes one
+member from numbers typed into it. What none does is tie a prescriptive table lookup to a live
+drawing, with the citation, a bracing check and an out-of-scope stop; that is napkin's reason to
 exist rather than being a wrapper or a fork.
 
 ## File format landscape
 
 - **DXF** — the de facto (not ISO) standard for 2D CAD interchange, implemented (with varying
-  fidelity) by every tool above except SketchUp's free tier. Not one format but a lineage of
+  fidelity) by most tools above. Not one format but a lineage of
   versions (R12 through 2018+); newer versions add associative dimensions and other entity types
   that are exactly where cross-tool fidelity breaks down in practice. **Decision: target DXF 2000
   (AC1015)** — the version most interop libraries (`ezdxf`, `libdxfrw`/QCAD's and LibreCAD's own
