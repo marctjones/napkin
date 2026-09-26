@@ -322,7 +322,7 @@ public sealed class CutLayoutTests
 
     [Fact]
     [Trait("Feature", "CUT-015")]
-    public void Sheet_goods_are_reported_as_not_nested_and_are_not_laid_out()
+    public void Sheet_goods_are_nested_on_sheets_not_on_boards()
     {
         ImmutableArray<CutListRow> rows = CutList.Of(
             Design.WithParts(("Top", In(48), In(24), new Piece("3/4 plywood", null, 1, new Length(768), Flat))),
@@ -331,7 +331,8 @@ public sealed class CutLayoutTests
         CutLayoutPlan plan = CutLayout.Of(rows, Kerf);
 
         Assert.Empty(plan.Stocks);
-        Assert.Contains(CutLayout.SheetGoodsNote, plan.Notes);
+        Assert.Empty(plan.Notes);
+        Assert.Single(Assert.Single(plan.Panels).Sheets);
     }
 
     [Fact]

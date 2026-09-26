@@ -33,8 +33,8 @@ public static class ShoppingList
         => $"Shopping list: boards needed from finished sizes, joinery allowances included; includes a {CutLayout.Inches(kerf)} saw kerf per cut "
            + "(set it in the Saw kerf box on the Cut layout tab); before defect.";
 
-    /// <summary>The note on a sheet count, which is by area and so a floor.</summary>
-    public const string SheetsByArea = "sheets by area — a nesting layout may need more";
+    /// <summary>The note on a sheet count: the sheets the cut layout nests the parts on (#26).</summary>
+    public const string SheetsByLayout = SheetLayout.SheetsByLayout;
 
     /// <summary>The note on lumber the library has no stock-length list for.</summary>
     public const string NoLengthList = "napkin has read no stock-length list for this size";
@@ -99,7 +99,7 @@ public static class ShoppingList
             {
                 LumberStock lumber when lumber.StandardLengths.IsEmpty => Unlisted(lumber, bucket.Key.Species, members),
                 LumberStock lumber => Boards(lumber, bucket.Key.Species, members, kerf),
-                PanelStock panel => Sheets(panel, bucket.Key.Species, members),
+                PanelStock panel => Sheets(panel, bucket.Key.Species, members, kerf),
                 _ => Hardwood((HardwoodStock)stock, bucket.Key.Species, members),
             });
         }
@@ -167,46 +167,30 @@ public static class ShoppingList
             lumber);
     }
 
-    /// <summary>
-    /// Panels: the parts' area over a sheet's, rounded up — a floor, and labelled one, because nesting
-    /// is issue #26 (§4).
-    /// </summary>
-    private static ShoppingListRow Sheets(PanelStock panel, string species, CutListRow[] members)
+    /// <summary>Panels: the sheets <see cref="SheetLayout"/> nests the parts on, so the two lists never disagree (#26).</summary>
+    private static ShoppingListRow Sheets(PanelStock panel, string species, CutListRow[] members, Length kerf)
     {
-        Length sheetLong = Length.Max(panel.SheetWidth, panel.SheetLength);
-        Length sheetShort = Length.Min(panel.SheetWidth, panel.SheetLength);
-        Int128 area = Int128.Zero;
-        List<string> tooBig = [];
-
-        foreach (CutListRow row in members)
-        {
-            // A piece fits a sheet turned either way; one larger than the sheet is refused like an
-            // over-long board.
-            Length pieceLong = Length.Max(row.Length, row.Width);
-            Length pieceShort = Length.Min(row.Length, row.Width);
-            if (pieceLong > sheetLong || pieceShort > sheetShort)
-            {
-                tooBig.AddRange(Enumerable.Repeat($"{Text(row.Length)} × {Text(row.Width)}", row.Quantity));
-                continue;
-            }
-
-            area += Area.Of(row.Length, row.Width) * row.Quantity;
-        }
-
-        Int128 sheet = Area.Of(panel.SheetWidth, panel.SheetLength);
-        int sheets = (int)((area + sheet - 1) / sheet);
-
-        string refusal = TooBig(tooBig);
+        PanelLayout layout = SheetLayout.Of(panel, species, members, kerf);
+        string refusal = TooBig(layout.Refused.Where(piece => !piece.AgainstGrain).Select(piece => $"{Text(piece.Length)} × {Text(piece.Width)}"));
+        string[] againstGrain =
+        [
+            .. layout.Refused
+                .Where(piece => piece.AgainstGrain)
+                .GroupBy(piece => $"{Text(piece.Length)} × {Text(piece.Width)}", StringComparer.Ordinal)
+                .Select(group => $"{group.Count()} × {group.Key}"),
+        ];
+        string grain = againstGrain.Length == 0 ? string.Empty : $"{string.Join(", ", againstGrain)} fit only turned, against the grain set on them, so none is bought";
+        string note = string.Join("; ", new[] { SheetsByLayout, refusal, grain }.Where(part => part.Length > 0));
         return new ShoppingListRow(
             panel.Name,
             species,
             ShoppingListKind.Sheets,
             For(members),
             [],
-            sheets,
+            layout.Sheets.Length,
             Int128.Zero,
             Int128.Zero,
-            refusal.Length == 0 ? SheetsByArea : $"{SheetsByArea}; {refusal}",
+            note,
             panel);
     }
 

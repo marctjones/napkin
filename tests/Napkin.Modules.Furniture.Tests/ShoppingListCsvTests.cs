@@ -43,7 +43,7 @@ public sealed class ShoppingListCsvTests
         // so the 8'. (Before the kerf was planned this was a 6'.)
         Assert.Equal("1 × 8'-0\"", lines[2][2]);
         Assert.Equal("1 sheet, 4'-0\" × 8'-0\"", lines[3][2]);
-        Assert.Equal(ShoppingList.SheetsByArea, lines[3][7]);
+        Assert.Equal(ShoppingList.SheetsByLayout, lines[3][7]);
         Assert.Equal("no stock chosen, so nothing is bought for it", lines[4][7]);
     }
 

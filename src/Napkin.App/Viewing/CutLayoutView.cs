@@ -145,7 +145,7 @@ public sealed class CutLayoutView : StackPanel
                 FontSize = 12,
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 8, 0, 0),
-                FontStyle = row.Planned is null ? FontStyle.Italic : FontStyle.Normal,
+                FontStyle = row.Planned is null && row.Sheet is null ? FontStyle.Italic : FontStyle.Normal,
             });
 
             if (row.Planned is not null)
