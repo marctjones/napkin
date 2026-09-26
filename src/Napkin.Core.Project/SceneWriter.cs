@@ -461,6 +461,8 @@ public static class SceneWriter
         writer.WriteEndArray();
 
         writer.WriteBoolean(SceneNames.Rough, part.Rough);
+        WriteOptionalText(writer, SceneNames.Grain, part.Grain is { } grain ? SceneNames.Of(grain) : null);
+        WriteOptionalText(writer, SceneNames.ShowFace, part.ShowFace is { } face ? SceneNames.Of(face) : null);
 
         writer.WriteEndObject();
     }

@@ -122,6 +122,20 @@ public sealed record Part(
     /// </remarks>
     public bool Rough { get; init; }
 
+    /// <summary>
+    /// Which of the part's three dimensions its grain runs along, when the person has said (#140): a
+    /// tabletop's along its length, a leg's along its height, which is its length. Null is unsaid, and
+    /// nothing is assumed from it. Nothing in the kernel reads it; the cut list says it and warns when a
+    /// board is asked to run its grain across itself.
+    /// </summary>
+    public PartDimension? Grain { get; init; }
+
+    /// <summary>
+    /// Which face of the part is its show face, in the part's own frame, when the person has said (#140).
+    /// For a strut, one of its four long faces by the same name.
+    /// </summary>
+    public BoxFace? ShowFace { get; init; }
+
     /// <summary>Equality by value, with the hardware compared as a sequence (an <see cref="ImmutableList{T}"/> compares by reference).</summary>
     public bool Equals(Part? other)
         => other is not null
@@ -130,6 +144,8 @@ public sealed record Part(
            && Quantity == other.Quantity
            && PlanAxes == other.PlanAxes
            && Rough == other.Rough
+           && Grain == other.Grain
+           && ShowFace == other.ShowFace
            && Hardware.SequenceEqual(other.Hardware);
 
     /// <inheritdoc/>
@@ -141,6 +157,8 @@ public sealed record Part(
         hash.Add(Quantity);
         hash.Add(PlanAxes);
         hash.Add(Rough);
+        hash.Add(Grain);
+        hash.Add(ShowFace);
         foreach (HardwareItem item in Hardware)
         {
             hash.Add(item);

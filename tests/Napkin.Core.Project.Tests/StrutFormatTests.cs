@@ -20,7 +20,7 @@ public class StrutFormatTests
     // width meeting it at the top: run 7″, rise 24″, 2x2 stock.
     private static readonly string Scene = $$"""
         {
-          "formatVersion": 11,
+          "formatVersion": 12,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "{{Layer}}", "name": "Default" } ],
           "entities": [
@@ -33,7 +33,7 @@ public class StrutFormatTests
               "fromCut": "z", "toCut": "z",
               "reference": "z",
               "height": 1536, "depth": 1536,
-              "part": { "stock": "2x2", "species": null, "quantity": 1, "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false } },
+              "part": { "stock": "2x2", "species": null, "quantity": 1, "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false, "grain": null, "showFace": null } },
             { "id": "{{TwinId}}", "type": "strut", "layer": "{{Layer}}", "name": "", "phase": "existing",
               "from": { "x": 4096, "y": 10240, "z": 0 },
               "to": { "x": 4096, "y": 3072, "z": 24576 },
@@ -201,6 +201,20 @@ public class StrutFormatTests
             "strutEndFace");
 
     [Fact]
+    public void A_parts_grain_and_show_face_round_trip_and_an_unknown_one_is_refused()
+    {
+        // Format version 12 (#140): each a name or null.
+        string said = Scene.With("\"rough\": false, \"grain\": null, \"showFace\": null", "\"rough\": false, \"grain\": \"length\", \"showFace\": \"top\"");
+        Sketch sketch = Scenes.Accept(said);
+        Part part = sketch.Find<Strut>(Leg)!.Part!;
+        Assert.Equal((PartDimension.Length, BoxFace.Top), (part.Grain!.Value, part.ShowFace!.Value));
+        Assert.Equal(sketch, Scenes.Accept(SceneWriter.WriteToText(sketch)));
+
+        Scenes.RefuseWith(said.With("\"grain\": \"length\"", "\"grain\": \"diagonal\""), LoadProblemKind.UnknownValue, "grain");
+        Scenes.RefuseWith(said.With("\"showFace\": \"top\"", "\"showFace\": \"inside\""), LoadProblemKind.UnknownValue, "showFace");
+    }
+
+    [Fact]
     public void A_strut_has_no_length_to_hold()
     {
         string length = Scene.With(
@@ -246,9 +260,9 @@ public class StrutFormatTests
     public void A_version_10_file_is_refused_naming_both_versions()
     {
         Scenes.RefuseWith(
-            Scene.With("\"formatVersion\": 11", "\"formatVersion\": 10"),
+            Scene.With("\"formatVersion\": 12", "\"formatVersion\": 10"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 10",
-            "format version 11");
+            "format version 12");
     }
 }

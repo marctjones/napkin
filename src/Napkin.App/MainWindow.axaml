@@ -1266,6 +1266,15 @@
                                       AutomationProperties.Name="Rough"
                                       ToolTip.Tip="Rough: its sizes are as drawn and its stock not yet chosen. Untick it for a part that is fine as drawn; Firm up clears it too." />
                             <TextBox Name="SpeciesBox" FontSize="12" PlaceholderText="Species" />
+                            <!-- Grain and show face (#140): said or not, never assumed. -->
+                            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="4">
+                                <TextBlock Text="Grain" FontSize="11" VerticalAlignment="Center" />
+                                <ComboBox Name="GrainBox" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="Grain along" ToolTip.Tip="Which way the grain runs: along its length, its width, or unsaid." />
+                                <TextBlock Grid.Column="2" Text="Shows" FontSize="11" VerticalAlignment="Center" />
+                                <ComboBox Name="ShowFaceBox" Grid.Column="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="Show face" ToolTip.Tip="Which face shows, in the part's own frame, or unsaid." />
+                            </Grid>
                             <TextBlock Name="PartJoints" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
                                        AutomationProperties.Name="Joints of this part" />
                             <TextBox Name="HardwareBox" FontSize="12" AcceptsReturn="True" MinHeight="54"

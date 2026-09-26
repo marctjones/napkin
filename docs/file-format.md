@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 11
+# The napkin project file — container version 1, scene format version 12
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -25,7 +25,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 11` and nothing else. A file from an older *or* a
+   `"containerVersion": 1` and `"formatVersion": 12` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
@@ -64,6 +64,10 @@ document and stays one.
    §7): the `strut` entity and the `strutEnd`, `strutFace` and `strutEndFace` references. Every
    version-10 file is refused; the samples were restamped in the same change, since none of them
    holds a strut.
+
+   **Version 12** added a part's `grain` — `length`, `width`, `thickness`, or `null` when unsaid —
+   and its `showFace` — a face in the part's own frame, or `null` (#140). Both are required. Every
+   version-11 file is refused; the samples were restamped, every part saying nothing about either.
 3. **Reading is strict and never repairs.** An unknown field, a field written twice, an id that is
    not a GUID, an id that names nothing, an id that names the wrong kind of entity, a non-positive
    size, an un-normalised rotation, cuts out of site order, a cut that does not fit the blank it is
@@ -205,7 +209,7 @@ Two places where the bytes legitimately differ:
 
 ```json
 {
-  "formatVersion": 11,
+  "formatVersion": 12,
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ … ],
   "entities": [ … ],
@@ -379,7 +383,7 @@ called (`docs/design/parts-and-cut-list.md` §3).
 ### Parts
 
 `part` is a required field on a box. It is `null` on a box that is not a piece anybody cuts — a
-wall, an opening — and otherwise an object with exactly these six fields:
+wall, an opening — and otherwise an object with exactly these eight fields:
 
 ```json
 "part": {
@@ -388,7 +392,9 @@ wall, an opening — and otherwise an object with exactly these six fields:
   "quantity": 1,
   "planAxes": { "x": "width", "y": "thickness" },
   "hardware": [],
-  "rough": false
+  "rough": false,
+  "grain": "length",
+  "showFace": "top"
 }
 ```
 
@@ -400,6 +406,8 @@ wall, an opening — and otherwise an object with exactly these six fields:
 | `planAxes` | object | `x` and `y`, each exactly one of `length`, `width`, `thickness` | a key is missing, a value is not one of the three, or `x` and `y` name the same one |
 | `hardware` | array | Counted items typed onto the part, each `{ "name": text, "quantity": integer }`: a slide, a pull, a hinge. `quantity` is per copy of the part | it is not an array, an item's `name` is empty, or its `quantity` is not an integer of at least 1 |
 | `rough` | boolean | Whether the part was entered roughly: drawn in Rough mode, its sizes as drawn and its stock not yet chosen ([`sketch-mode.md`](./design/sketch-mode.md) §4.1). Format version 9; a version-8 file is refused, with no converter | it is missing, or is not `true` or `false` |
+| `grain` | string or `null` | Which of `length`, `width`, `thickness` the grain runs along, or `null` when unsaid (#140). Format version 12. The cut list notes it, and warns when a board is asked to run its grain across itself | it is missing, or not one of the three or `null` |
+| `showFace` | string or `null` | Which face shows, in the part's own frame — `south`, `east`, `north`, `west`, `bottom`, `top` — or `null` when unsaid (#140). Format version 12 | it is missing, or not a face or `null` |
 
 A part written with the `outOfPlane` field version 3 had is refused as an unknown field.
 
@@ -665,7 +673,7 @@ A 12-foot wall, 5½ inches thick, with a 3-foot opening centred on it — the
 
 ```jsonc
 {
-  "formatVersion": 11,                                 // exactly 11, judged first
+  "formatVersion": 12,                                 // exactly 11, judged first
   "units": { "length": "inch/1024", "angle": "arcsecond" },
   "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
   "entities": [

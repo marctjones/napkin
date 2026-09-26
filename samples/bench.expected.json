@@ -3,7 +3,7 @@
   "scene": "bench.scene.json",
   "design": "bench.design.md",
   "derivedBy": "hand, from the stated dimensions in bench.design.md; never regenerated from napkin's output",
-  "formatVersion": 11,
+  "formatVersion": 12,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 6,

@@ -3,7 +3,7 @@
   "scene": "raked-chair-frame.scene.json",
   "design": "raked-chair-frame.design.md",
   "derivedBy": "hand, from the stated dimensions in raked-chair-frame.design.md and docs/design/angled-parts.md §1.5, §3.2; never regenerated from napkin's output",
-  "formatVersion": 11,
+  "formatVersion": 12,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 4,

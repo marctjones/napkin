@@ -275,6 +275,10 @@ internal static class SceneNames
 
     // A part's rough mark (format version 9, docs/design/sketch-mode.md §4.1).
     internal const string Rough = "rough";
+
+    // A part's grain and show face (format version 12, #140).
+    internal const string Grain = "grain";
+    internal const string ShowFace = "showFace";
     internal const string Thickness = "thickness";
     internal const string Size = "size";
     internal const string PackSize = "packSize";

@@ -739,7 +739,38 @@ internal sealed class SceneBinder
         PlanAxes? planAxes = ReadPlanAxes(part);
         ImmutableList<HardwareItem>? hardware = ReadHardware(part);
         bool? rough = ReadBoolean(part, SceneNames.Rough);
+        (bool grainRead, string? grainText) = ReadTextOrNull(part, SceneNames.Grain);
+        (bool showRead, string? showText) = ReadTextOrNull(part, SceneNames.ShowFace);
         RejectUnknownFields(part);
+
+        // Grain and show face (format version 12, #140): each a name or null for unsaid.
+        PartDimension? grain = null;
+        if (grainText is not null)
+        {
+            if (SceneNames.TryPartDimension(grainText, out PartDimension along))
+            {
+                grain = along;
+            }
+            else
+            {
+                Add(LoadProblemKind.UnknownValue, $"{part.Path}/{SceneNames.Grain}", $"\"{grainText}\" is not one of a part's three dimensions. They are: {SceneNames.List(SceneNames.PartDimensions)}.");
+                grainRead = false;
+            }
+        }
+
+        BoxFace? showFace = null;
+        if (showText is not null)
+        {
+            if (SceneNames.TryFace(showText, out BoxFace shows))
+            {
+                showFace = shows;
+            }
+            else
+            {
+                Add(LoadProblemKind.UnknownValue, $"{part.Path}/{SceneNames.ShowFace}", $"\"{showText}\" is not a face. The faces are: {SceneNames.List(SceneNames.BoxFaces)}.");
+                showRead = false;
+            }
+        }
 
         if (quantity is { } count && count < 1)
         {
@@ -753,8 +784,8 @@ internal sealed class SceneBinder
         // A part's third dimension is its box's depth, which the box stores (format version 4,
         // assembly-model §1.2). A version-3 part's "outOfPlane" is therefore an unknown field here,
         // refused like any other, rather than a second copy of a number the box already holds.
-        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes && hardware is not null && rough is { } isRough
-            ? (true, new Part(stock, species, (int)pieces, axes) { Hardware = hardware, Rough = isRough })
+        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes && hardware is not null && rough is { } isRough && grainRead && showRead
+            ? (true, new Part(stock, species, (int)pieces, axes) { Hardware = hardware, Rough = isRough, Grain = grain, ShowFace = showFace })
             : (false, null);
     }
 

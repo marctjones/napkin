@@ -89,8 +89,12 @@ public sealed record FormatStamp(int FormatVersion, string LengthUnit, string An
     /// <c>strutEnd</c>, <c>strutFace</c> and <c>strutEndFace</c> references. Every version-10 file is
     /// refused.
     /// </para>
+    /// <para>
+    /// Version 12 added a part's <c>grain</c> — the dimension it runs along — and <c>showFace</c>
+    /// (#140), each required and null when unsaid. Every version-11 file is refused.
+    /// </para>
     /// </remarks>
-    public const int CurrentVersion = 11;
+    public const int CurrentVersion = 12;
 
     /// <summary>The stamp this build writes, and the only one it accepts.</summary>
     public static readonly FormatStamp Current = new(CurrentVersion, InchGrid, Arcsecond);
