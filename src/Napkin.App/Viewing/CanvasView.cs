@@ -2635,7 +2635,9 @@ public sealed class CanvasView : Control
             major = minor * 5;
         }
 
-        Pen minorPen = new(new SolidColorBrush(palette.GridMinor), graph ? 0.8 : 1);
+        // The minor lines fade in as they open up (#114), so a zoom never pops a wall of lines into view.
+        double faint = GridLevels.Fade(minor * _view.PixelsPerInch);
+        Pen minorPen = new(new SolidColorBrush(palette.GridMinor, faint), graph ? 0.8 : 1);
         Pen majorPen = new(new SolidColorBrush(palette.GridMajor), graph ? 1.3 : 1);
 
         (double left, double top) = _view.ToWorldInches(viewport.TopLeft);
@@ -2659,6 +2661,19 @@ public sealed class CanvasView : Control
                 isMajor ? majorPen : minorPen,
                 new Point(viewport.Left, screenY),
                 new Point(viewport.Right, screenY));
+        }
+
+        // The origin and its two axes stay plain whatever the ladder is doing: the one fixed place on the sheet.
+        Pen axisPen = new(new SolidColorBrush(palette.GridMajor), 1.6);
+        Point origin = _view.ToScreen(0, 0);
+        if (origin.X >= viewport.Left && origin.X <= viewport.Right)
+        {
+            context.DrawLine(axisPen, new Point(origin.X, viewport.Top), new Point(origin.X, viewport.Bottom));
+        }
+
+        if (origin.Y >= viewport.Top && origin.Y <= viewport.Bottom)
+        {
+            context.DrawLine(axisPen, new Point(viewport.Left, origin.Y), new Point(viewport.Right, origin.Y));
         }
     }
 

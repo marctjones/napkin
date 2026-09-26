@@ -1842,11 +1842,13 @@ public sealed class ModelView : Control
         // The ground grid is edge-on in an elevation; a standard view has its own, in the view plane (§5.2).
         StandardViewRulers? rulers = _locked is { } seen && _camera.HasViewport ? StandardViewRulers.Of(_camera, seen) : null;
         Rulers = rulers;
-        if (_showGrid && _locked is null)
+        // Seen from under the ground, the floor grid is hidden (#114): it would be drawn over what stands on it.
+        bool fromBelow = _camera.IsPerspective ? _camera.Eye.Z < 0 : _camera.TowardViewer.Z < 0;
+        if (_showGrid && _locked is null && !fromBelow)
         {
             DrawFloor(context, palette, sketch);
         }
-        else if (_showGrid && rulers is not null)
+        else if (_showGrid && _locked is not null && rulers is not null)
         {
             DrawViewGrid(context, palette, rulers);
         }
@@ -1920,7 +1922,7 @@ public sealed class ModelView : Control
     /// </summary>
     void DrawViewGrid(DrawingContext context, CanvasPalette palette, StandardViewRulers rulers)
     {
-        Pen minor = new(new SolidColorBrush(palette.GridMinor), 1);
+        Pen minor = new(new SolidColorBrush(palette.GridMinor, GridLevels.Fade(SnapGrid.StepInches(_camera.PixelsPerInch) * _camera.PixelsPerInch)), 1);
         Pen major = new(new SolidColorBrush(palette.GridMajor), 1);
         foreach (PlacedGridLine line in rulers.Across)
         {
@@ -2494,17 +2496,21 @@ public sealed class ModelView : Control
             step *= 2;
         }
 
-        Pen pen = new(new SolidColorBrush(palette.GridMajor), 1);
         double firstX = Math.Floor(minX / step) * step, lastX = Math.Ceiling(maxX / step) * step;
         double firstY = Math.Floor(minY / step) * step, lastY = Math.Ceiling(maxY / step) * step;
+
+        // Each line fades with its distance from the grid's middle (#114), so the floor reads as a floor.
+        double middleX = (firstX + lastX) / 2, middleY = (firstY + lastY) / 2;
+        double radiusX = (lastX - firstX) / 2, radiusY = (lastY - firstY) / 2;
+        Pen PenAt(double distance, double radius) => new(new SolidColorBrush(palette.GridMajor, GridLevels.GroundFade(distance, radius)), 1);
         for (double x = firstX; x <= lastX + 1e-9; x += step)
         {
-            DrawGroundLine(context, pen, new Vector3d(x, firstY, 0), new Vector3d(x, lastY, 0));
+            DrawGroundLine(context, PenAt(x - middleX, radiusX), new Vector3d(x, firstY, 0), new Vector3d(x, lastY, 0));
         }
 
         for (double y = firstY; y <= lastY + 1e-9; y += step)
         {
-            DrawGroundLine(context, pen, new Vector3d(firstX, y, 0), new Vector3d(lastX, y, 0));
+            DrawGroundLine(context, PenAt(y - middleY, radiusY), new Vector3d(firstX, y, 0), new Vector3d(lastX, y, 0));
         }
     }
 
