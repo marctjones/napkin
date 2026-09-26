@@ -73,6 +73,30 @@ public enum ValidationErrorKind
     /// naming the relationship to remove, the way a cut refusal's detail names the cut.
     /// </summary>
     TurnWouldReinterpret,
+
+    /// <summary>
+    /// A strut's ends differ in fewer than two coordinates: it is a box laid along an axis, not a
+    /// strut (<c>docs/design/angled-parts.md</c> §1.4, invariant 14).
+    /// </summary>
+    StrutIsAxisAligned,
+
+    /// <summary>
+    /// A strut's end is cut to a plane its centreline runs along — an X cut on a strut square to X —
+    /// which never crosses it, so there is no board.
+    /// </summary>
+    StrutCutAlongItself,
+
+    /// <summary>
+    /// A strut's part names thickness along its derived axis; the derived dimension is its length or
+    /// its width (invariant 16).
+    /// </summary>
+    StrutLengthIsThickness,
+
+    /// <summary>
+    /// A strut's derived blank is too short for its end cuts: they meet or cross (invariant 17,
+    /// shaped-parts invariants 7–9 on the derived values).
+    /// </summary>
+    StrutTooShortForItsCuts,
 }
 
 /// <summary>One thing wrong with a sketch.</summary>
@@ -478,6 +502,14 @@ public sealed record Sketch(
 
                     break;
 
+                case Strut strut:
+                    foreach (ValidationError error in StrutErrors(strut))
+                    {
+                        errors.Add(error);
+                    }
+
+                    break;
+
                 case Note:
                     // A note has no size and names nothing: nothing to check (renovation §7).
                     break;
@@ -550,6 +582,52 @@ public sealed record Sketch(
         }
 
         return errors.Count == 0 ? ValidationResult.Valid : new ValidationResult(errors.ToImmutable());
+    }
+
+    /// <summary>
+    /// Invariants 14–17 of <c>docs/design/angled-parts.md</c> §1.4. 14–16 are judged on the stored
+    /// integers; the blank is derived for 17 only once they hold — the one sanctioned reader of it
+    /// outside the cut list (assembly-model §3a.4).
+    /// </summary>
+    private static IEnumerable<ValidationError> StrutErrors(Strut strut)
+    {
+        bool integersHold = true;
+        if (!Strut.LeansIn(strut.Direction))
+        {
+            integersHold = false;
+            yield return new ValidationError(
+                ValidationErrorKind.StrutIsAxisAligned,
+                $"Strut {strut.Id} runs {strut.Direction}, along one axis or none; a member along an axis is a box.");
+        }
+
+        if (strut.Height <= Length.Zero || strut.Depth <= Length.Zero)
+        {
+            integersHold = false;
+            yield return new ValidationError(
+                ValidationErrorKind.NonPositiveSize,
+                $"Strut {strut.Id} is {strut.Height} by {strut.Depth}; both must be greater than zero.");
+        }
+
+        if (strut.Part is { } part && part.PlanAxes.X == PartDimension.Thickness)
+        {
+            integersHold = false;
+            yield return new ValidationError(
+                ValidationErrorKind.StrutLengthIsThickness,
+                $"Strut {strut.Id}'s part calls its derived dimension its thickness; it is its length or its width.");
+        }
+
+        if (integersHold && Strut.CutAlongItself(strut) is { } along)
+        {
+            integersHold = false;
+            yield return new ValidationError(
+                ValidationErrorKind.StrutCutAlongItself,
+                $"Strut {strut.Id} runs square to {along}, so an end cut to the {along} plane never crosses it.");
+        }
+
+        if (integersHold && StrutBlank.TooShort(strut, strut.Blank()) is { } tooShort)
+        {
+            yield return tooShort;
+        }
     }
 
     /// <inheritdoc/>
