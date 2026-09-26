@@ -273,6 +273,25 @@ per opening, and the line says to buy by area for square feet.
 unequal opposite sides or diagonals, or one diagonal whose square is not L² + W² (compared exactly),
 say "out of square"; the takeoff stays on the drawn size and says so. Nothing is redrawn.
 
+## Decks and porches: how to use it
+
+From [`design/deck-and-porch.md`](design/deck-and-porch.md), in one place; the finished example is
+`tests/Napkin.Modules.Building.Tests/Fixtures/porch-12x10.scene.json` (File → Open).
+
+- **Draw the house wall and mark it Existing** (Edit → Phase → Existing): a deck's ledger is the edge
+  that lies on an existing wall's face.
+- **Draw → Deck (Shift+D)** and drag out from that face. The Part panel's **Deck** block takes the
+  joists, beam, posts, decking, what it supports, the species and the footing depth; tick **Guard**
+  and **Stair**, and type the stair's **risers** when the adopted code gives no maximum riser.
+- **Enclose it with W**: a wall drawn inside the deck's outline stands on the decking. Say the front
+  wall is **Bearing**; put in windows with **Draw → Window** and screens with **Draw → Screen**, and
+  set any opening's **Fill**.
+- **Roof it: Draw → Porch roof (Shift+R)** and click the deck. Type the pitch as "5 in 12" in the
+  **Roof** block; read the rafters, the cuts, the coverings, the rafter check and the **Sunroom test**.
+- **Buy it**: Ctrl/Cmd+Shift+L — the **Deck** and **Roof** sections, with the sunroom line under Roof.
+- Every check is a cited line, or says **No data** / out of scope and why. Under the shipped
+  Connecticut pack the deck and rafter tables are **No data** until the real tables land (#209).
+
 ## A deck
 
 A **deck is a box on the layer Deck** (or called "Deck", or carrying deck inputs): its plan outline

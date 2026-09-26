@@ -1,0 +1,104 @@
+{
+  "fixture": "porch-12x10",
+  "scene": "porch-12x10.scene.json",
+  "design": "porch-12x10.design.md",
+  "derivedBy": "hand, from docs/design/deck-and-porch.md §9 and porch-12x10.design.md; never regenerated from napkin's output",
+  "formatVersion": 13,
+  "unitsPerInch": 1024,
+  "counts": {
+    "layers": 5,
+    "entities": 5,
+    "boxes": 5,
+    "dimensions": 0,
+    "relationships": 0
+  },
+  "overall": {
+    "widthUnits": 245760,
+    "depthUnits": 128512,
+    "widthText": "20'-0\"",
+    "depthText": "10'-5 1/2\"",
+    "derivation": "West 0, east the house's 240\" = 245760; south the deck's -120\", north the house's 5 1/2\": 125 1/2\" = 128512."
+  },
+  "boxes": [
+    {
+      "id": "72000000-0000-4000-8000-000000000001",
+      "name": "House",
+      "phase": "existing",
+      "anchorXUnits": 0,
+      "anchorYUnits": 0,
+      "widthUnits": 245760,
+      "heightUnits": 5632,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 0,
+      "depthUnits": 196608,
+      "faceUp": "top",
+      "derivation": "Origin of the design, the house's south face on y = 0. 20'-0\" = 240\" = 245760; a 2x6 wall's 5 1/2\" = 5632; two storeys drawn as one box, 16'-0\" = 192\" = 196608. Existing."
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000002",
+      "name": "Deck 1",
+      "phase": "new",
+      "anchorXUnits": 49152,
+      "anchorYUnits": -122880,
+      "widthUnits": 147456,
+      "heightUnits": 122880,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 0,
+      "depthUnits": 36864,
+      "faceUp": "top",
+      "derivation": "§9's deck: 12'-0\" along the house from x = 48\" (49152), 10'-0\" out to y = -120\" (-122880); 144\" = 147456, 120\" = 122880; 3'-0\" above grade = 36864."
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000003",
+      "name": "Front",
+      "phase": "new",
+      "anchorXUnits": 49152,
+      "anchorYUnits": -122880,
+      "widthUnits": 147456,
+      "heightUnits": 3584,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 36864,
+      "depthUnits": 98304,
+      "faceUp": "top",
+      "derivation": "On the deck's south edge, standing on the decking: anchor z = 36\" = 36864; 144\" = 147456 long, a 2x4 wall's 3 1/2\" = 3584, 8'-0\" = 98304 tall."
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000004",
+      "name": "Window 1",
+      "phase": "new",
+      "anchorXUnits": 104448,
+      "anchorYUnits": -122880,
+      "widthUnits": 36864,
+      "heightUnits": 3584,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 61440,
+      "depthUnits": 61440,
+      "faceUp": "top",
+      "derivation": "54\" along the front wall from its west end: 48 + 54 = 102\" = 104448; sill 24\" above the decking: z = 36 + 24 = 60\" = 61440; 36\" x 60\" = 36864 x 61440; the wall's 3584 thick."
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000005",
+      "name": "Roof 1",
+      "phase": "new",
+      "anchorXUnits": 49152,
+      "anchorYUnits": -122880,
+      "widthUnits": 147456,
+      "heightUnits": 122880,
+      "rotationArcseconds": 0,
+      "anchorZUnits": 135168,
+      "depthUnits": 51200,
+      "faceUp": "top",
+      "derivation": "Over the deck's outline, so the deck's anchor and plan size; z = the front wall's top, 36 + 96 = 132\" = 135168; rise 50\" = 51200 over the 120\" run: 5 in 12."
+    }
+  ],
+  "partsList": [],
+  "relationshipKinds": {},
+  "dimensionLabels": [],
+  "roof": {
+    "pitch": "5 in 12",
+    "rafters": 10,
+    "rafterLength": "11'-9 3/8\"",
+    "glazing": "6.3 %",
+    "derivation": "§9.5: hypotenuse 13/12 of the run; rafter run 120 - 1 1/2 + 12 = 130 1/2; 130 1/2 x 13 / 12 = 141 3/8 = 11'-9 3/8\"; rafters at 0, 16, ... 128 and the end one at 142 1/2: 10. Glazing: one window 36 x 60 = 2160 over the front wall 144 x 96 = 13824 and the roof 144 x 141 3/8 = 20358 (no side walls, so no rake triangles): 2160 / 34182 = 6.3 %."
+  }
+}

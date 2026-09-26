@@ -65,10 +65,13 @@ public partial class MainWindow
     public (TextBox Joist, TextBox Spacing, TextBox Plies, TextBox Beam, TextBox Post, TextBox PostCount, TextBox Cantilever, TextBox Footing, TextBox Decking, TextBox Gap, TextBox Supports, TextBox Species) DeckControls
         => (DeckJoistBox, DeckSpacingBox, DeckPliesBox, DeckBeamBox, DeckPostBox, DeckPostCountBox, DeckCantileverBox, DeckFootingBox, DeckDeckingBox, DeckGapBox, DeckSupportsBox, DeckSpeciesBox);
 
+    /// <summary>The stair's riser count box, for the GUI suite.</summary>
+    public TextBox DeckRisers => DeckRisersBox;
+
     TextBox[] DeckTextBoxes =>
     [
         DeckJoistBox, DeckSpacingBox, DeckPliesBox, DeckBeamBox, DeckPostBox, DeckPostCountBox, DeckCantileverBox, DeckFootingBox,
-        DeckDeckingBox, DeckGapBox, DeckSupportsBox, DeckSpeciesBox,
+        DeckDeckingBox, DeckGapBox, DeckSupportsBox, DeckSpeciesBox, DeckRisersBox,
     ];
 
     bool IsDeckField(TextBox box) => Array.IndexOf(DeckTextBoxes, box) >= 0;
@@ -180,6 +183,8 @@ public partial class MainWindow
             DeckBlockingCheck.IsChecked = inputs.Blocking;
             DeckGuardCheck.IsChecked = inputs.Guard is not null;
             DeckStairCheck.IsChecked = inputs.Stair is not null;
+            DeckRisersBox.Text = inputs.Stair?.Risers?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+            DeckRisersBox.IsEnabled = inputs.Stair is not null;
         }
         finally
         {
@@ -251,6 +256,15 @@ public partial class MainWindow
 
         string? Optional(TextBox box) => string.IsNullOrWhiteSpace(box.Text) ? null : box.Text.Trim();
 
+        // The riser count: empty for napkin to work it out from the pack, typed to override it (§4.2).
+        StairInputs? stair = DeckStairCheck.IsChecked == true
+            ? now.Stair ?? (deck.OpenEdges(Editor.Sketch) is { IsEmpty: false } open ? DeckTool.StartingStair(open[0]) : null)
+            : null;
+        if (stair is not null && now.Stair is not null)
+        {
+            stair = stair with { Risers = Optional(DeckRisersBox) is null ? null : Whole(DeckRisersBox, "the riser count", 1, 99, stair.Risers ?? 1) };
+        }
+
         DeckInputs next = now with
         {
             Joist = Named(DeckJoistBox, "the joist", now.Joist),
@@ -266,9 +280,7 @@ public partial class MainWindow
             Species = Optional(DeckSpeciesBox),
             Blocking = DeckBlockingCheck.IsChecked == true,
             Guard = DeckGuardCheck.IsChecked == true ? now.Guard ?? DeckTool.StartingGuard : null,
-            Stair = DeckStairCheck.IsChecked == true
-                ? now.Stair ?? (deck.OpenEdges(Editor.Sketch) is { IsEmpty: false } open ? DeckTool.StartingStair(open[0]) : null)
-                : null,
+            Stair = stair,
         };
 
         if (problems.Count > 0)
