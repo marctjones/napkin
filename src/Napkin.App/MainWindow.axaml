@@ -87,6 +87,10 @@
                           Header="Save _As…"
                           Click="OnSaveAsClicked"
                           ToolTip.Tip="Write the drawing to a new scene file, and keep saving there." />
+                <MenuItem Name="ExportDxfMenuItem"
+                          Header="Export plan as _DXF…"
+                          Click="OnExportDxfClicked"
+                          ToolTip.Tip="Write the plan to a DXF 2000 file for FreeCAD, QCAD or LibreCAD: every outline at napkin's coordinates in inches, on its layer, and every dimension as plain lines and text." />
                 <Separator />
                 <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
             </MenuItem>

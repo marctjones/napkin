@@ -54,6 +54,15 @@
       "milestone": "M1",
       "issue": 169,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-SHELL-07",
+      "area": "gui-shell",
+      "title": "Export the plan as DXF",
+      "acceptance": "Coffee table from File > Samples, then File > Export plan as DXF: the file offered is Coffee table.dxf, it reads back as DXF 2000 with one closed outline per part and each dimension's label as plain text reading as the canvas labels it, with no DIMENSION entity, and the message bar says where it went; Ctrl/Cmd+N, R and a drag draw one part, and exporting again gives one closed outline at that part's corners and no dimension layer."
+      ,"milestone": "backlog",
+      "issue": 23,
+      "kind": "workflow"
     }
   ]
 }

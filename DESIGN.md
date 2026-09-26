@@ -222,6 +222,8 @@ constants, and not copied verbatim from any single publisher's compiled table:
   with FreeCAD/QCAD/LibreCAD. Use an existing, well-tested DXF library rather than a hand-rolled
   writer; bake dimensions as literal geometry rather than DXF's native associative `DIMENSION`
   entity for cross-tool fidelity.
+  *Implemented for the plan (#23): File → Export plan as DXF writes AC1015 with **ACadSharp**
+  (MIT); the R12 fallback is not written, because ACadSharp reads R12 but does not write it.*
 - **SketchUp import, read-only**: parse `.skp` via Trimble's published SketchUp SDK (free-tier
   SketchUp users can only export `.skp`/PDF, so this is the only realistic path to their models —
   requiring Pro-tier Collada/OBJ export would exclude the free-tier users who are the actual

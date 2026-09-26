@@ -125,9 +125,17 @@ public interface ISceneFilePicker
     Task<string?> PickSaveDestinationAsync(string suggestedName);
 }
 
+/// <summary>How the app asks where to write an export (#23): a seam, like <see cref="ISceneFilePicker"/>, for the GUI suite.</summary>
+public interface IExportFilePicker
+{
+    /// <summary>Where to write the plan as DXF, or <see langword="null"/> when the person cancelled.</summary>
+    /// <param name="suggestedName">The file name the dialog offers to begin with.</param>
+    Task<string?> PickDxfDestinationAsync(string suggestedName);
+}
+
 /// <summary>The platform's own open dialog, through Avalonia's storage provider.</summary>
 /// <param name="owner">The window the dialog belongs to.</param>
-public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicker
+public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicker, IExportFilePicker
 {
     private readonly TopLevel owner = owner ?? throw new ArgumentNullException(nameof(owner));
 
@@ -180,6 +188,34 @@ public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicke
 
         // The same rule as opening: a destination with no local path is one the writer cannot
         // write to, and saying nothing now is better than failing further from the cause.
+        return chosen?.TryGetLocalPath();
+    }
+
+    /// <summary>The DXF file type the export dialog offers.</summary>
+    public static FilePickerFileType DxfFiles { get; } = new("DXF drawings")
+    {
+        Patterns = ["*.dxf"],
+        MimeTypes = ["image/vnd.dxf"],
+    };
+
+    /// <inheritdoc/>
+    public async Task<string?> PickDxfDestinationAsync(string suggestedName)
+    {
+        IStorageProvider? storage = owner.StorageProvider;
+        if (storage is null || !storage.CanSave)
+        {
+            return null;
+        }
+
+        IStorageFile? chosen = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Export the plan as DXF",
+            SuggestedFileName = suggestedName,
+            DefaultExtension = "dxf",
+            FileTypeChoices = [DxfFiles],
+            ShowOverwritePrompt = true,
+        }).ConfigureAwait(true);
+
         return chosen?.TryGetLocalPath();
     }
 }

@@ -91,7 +91,9 @@ public partial class MainWindow : Window
         InitializeComponent();
         ExtendTitleBarIntoBench();
 
-        _filePicker = new StorageProviderScenePicker(this);
+        StorageProviderScenePicker platform = new(this);
+        _filePicker = platform;
+        _exportPicker = platform;
 
         DrawingCanvas.Editor = Editor;
 
@@ -335,6 +337,15 @@ public partial class MainWindow : Window
     {
         get => _filePicker;
         set => _filePicker = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
+    IExportFilePicker _exportPicker;
+
+    /// <summary>How <em>File &#x2192; Export plan as DXF&#x2026;</em> asks where to write (#23); the GUI suite substitutes its own.</summary>
+    public IExportFilePicker ExportPicker
+    {
+        get => _exportPicker;
+        set => _exportPicker = value ?? throw new ArgumentNullException(nameof(value));
     }
 
     /// <summary>The canvas, for the GUI suite to read the view transform off.</summary>
