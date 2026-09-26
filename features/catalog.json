@@ -1073,6 +1073,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-DECK-01",
+      "area": "ui",
+      "title": "Drag a deck out from the house, type its posts and buy its frame",
+      "acceptance": "Window in an existing wall sample: Shift+D and a drag from the existing wall's south face out 8 ft draw Deck 1, 8'-0\" square and 3'-0\" above grade, its north edge the ledger; the panel's frame line reads 7 joists 2x8 at 16\" and a (2) 2x10 beam on 3 posts spanning 3'-6 3/4\"; typing 2 as the post count respans it to 7'-5\"; Ctrl/Cmd+Shift+L shows a Deck section with the deck's line and its 2x8 and 5/4x6 boards.",
+      "milestone": "M11",
+      "issue": 197,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-WALL-01",
       "area": "ui",
       "title": "Draw a wall, put a window in it, widen it, undo and buy the framing",
