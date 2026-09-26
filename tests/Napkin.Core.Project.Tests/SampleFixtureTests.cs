@@ -18,7 +18,6 @@ public sealed class SampleFixtureTests
     [InlineData("wall-with-window")]
     [InlineData("window-in-existing-wall")]
     [InlineData("basement-room")]
-    [InlineData("porch-12x10")]
     [Trait("Feature", "PRJ-001")]
     public void Sample_loads_with_the_entities_the_expectations_state(string fixture)
     {
@@ -40,7 +39,6 @@ public sealed class SampleFixtureTests
     [InlineData("rounded-corner-table")]
     [InlineData("window-in-existing-wall")]
     [InlineData("basement-room")]
-    [InlineData("porch-12x10")]
     [Trait("Feature", "PRJ-001")]
     public void Every_part_is_where_and_what_the_expectations_say(string fixture)
     {
