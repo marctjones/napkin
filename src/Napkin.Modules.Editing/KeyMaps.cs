@@ -27,6 +27,9 @@ public enum EditCommand
     /// <summary>Draw → Deck (Shift+D).</summary>
     DeckTool,
 
+    /// <summary>Draw → Porch roof (Shift+R).</summary>
+    RoofTool,
+
     /// <summary>The note tool: click to put words — "outlet", "switch" — at a point (renovation-sketches §8).</summary>
     NoteTool,
 
@@ -343,6 +346,7 @@ public static class KeyMaps
             new(K(KeyName.W), EditCommand.WallTool),
             new(Shift(KeyName.W), EditCommand.RoomTool),
             new(Shift(KeyName.D), EditCommand.DeckTool),
+            new(Shift(KeyName.R), EditCommand.RoofTool),
             new(Shift(KeyName.N), EditCommand.NoteTool),
             new(K(KeyName.L), EditCommand.StrutTool),
             new(K(KeyName.C), EditCommand.Shape),
@@ -383,6 +387,7 @@ public static class KeyMaps
             [EditCommand.RectangleTool] = "Rectangle tool; in 3D, a plain board to place; in a standard view, says why not",
             [EditCommand.WallTool] = "Wall tool, with the member it last had; brings the plan forward",
             [EditCommand.DeckTool] = "Deck tool: drag the deck out from an existing wall's face; that edge is the ledger",
+            [EditCommand.RoofTool] = "Porch roof tool: click a deck; a shed roof covers it, high at the ledger, low on the wall at its far edge",
             [EditCommand.RoomTool] = "Room tool: drag out a room, or click inside four walls for their inside faces; brings the plan forward",
             [EditCommand.NoteTool] = "Note tool: click to put a note, then type what it says — outlet, switch, light, supply, drain get their symbol; brings the plan forward",
             [EditCommand.StrutTool] = "Angled-part tool: click one end, then the other — a splayed leg, a brace; in 3D on the floor or a part's face, in the plan a flat brace to stand up in the panel",

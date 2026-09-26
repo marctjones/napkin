@@ -152,7 +152,7 @@ public sealed record Deck(Box Box)
     }
 
     /// <summary>A box's plan bounds, when it stands level and square-on; otherwise null.</summary>
-    internal static (Length West, Length South, Length East, Length North)? Bounds(Box box)
+    public static (Length West, Length South, Length East, Length North)? Bounds(Box box)
     {
         if (!box.Orientation.IsExact || box.FaceUp != BoxFace.Top)
         {
