@@ -582,8 +582,15 @@ public partial class MainWindow : Window
                 SelectRow = pick => SelectionCommands.Pick(Editor, pick.Row.Members, pick.Toggle, pick.Add),
                 Packs = Packs,
                 KerfChanged = kerf => Settings.Update(settings => settings with { SawKerf = kerf }),
+                PricesChanged = prices => Settings.Update(settings => settings with
+                {
+                    Prices = [.. prices.Select(price => new SavedPrice(price.Key.Material, price.Key.StockLength?.Units, price.Value))],
+                }),
             };
             _cutList.SawKerf = Settings.Current.SawKerf;
+            _cutList.Prices = Settings.Current.Prices.ToDictionary(
+                price => new PriceKey(price.Material, price.StockLengthUnits is { } units ? new Length(units) : null),
+                price => price.Amount);
             _cutList.Closed += (_, _) => _cutList = null;
         }
 

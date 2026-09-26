@@ -390,7 +390,96 @@ public partial class CutListWindow : Window
     }
 
     /// <summary>The shopping list as a CSV file would carry it, in the order it is on screen.</summary>
-    public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted, _kerf);
+    public string ShoppingCsv => ShoppingListCsv.ToCsv(ShoppingTable.Sorted, _kerf, ShoppingCost.Lines(ShoppingTable.Sorted, _prices));
+
+    Dictionary<PriceKey, decimal> _prices = [];
+
+    /// <summary>The prices the window prices with; set from the settings, changed by typing.</summary>
+    public IReadOnlyDictionary<PriceKey, decimal> Prices
+    {
+        get => _prices;
+        set
+        {
+            _prices = new Dictionary<PriceKey, decimal>(value);
+            ShowPrices();
+        }
+    }
+
+    /// <summary>Told when a price is typed, so the window's owner can remember it.</summary>
+    public Action<IReadOnlyDictionary<PriceKey, decimal>>? PricesChanged { get; set; }
+
+    /// <summary>The price boxes, one per line to buy, for the GUI suite.</summary>
+    public IReadOnlyList<TextBox> PriceFields => [.. PriceRows.Children.OfType<Grid>().Select(row => row.Children.OfType<TextBox>().Single())];
+
+    /// <summary>What the estimate line says.</summary>
+    public string EstimateLine => EstimateText.Text ?? string.Empty;
+
+    /// <summary>One row per line to buy, with its price box, and the estimate under them (#141).</summary>
+    void ShowPrices()
+    {
+        ImmutableArray<CostLine> lines = ShoppingCost.Lines(ShoppingTable.Rows, _prices);
+        PriceSection.IsVisible = !lines.IsEmpty;
+        PriceRows.Children.Clear();
+        foreach (CostLine line in lines)
+        {
+            Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,90"), ColumnSpacing = 6 };
+            string unit = line.Unit switch { PriceUnit.Board => "board", PriceUnit.Sheet => "sheet", _ => "bd ft" };
+            row.Children.Add(new TextBlock
+            {
+                Text = $"{line.What} — {line.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)} × price per {unit}",
+                FontSize = 11,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            });
+            TextBox price = new()
+            {
+                FontSize = 11,
+                Text = line.Price is { } each ? ShoppingCost.Money(each) : string.Empty,
+                PlaceholderText = "price",
+            };
+            Avalonia.Automation.AutomationProperties.SetName(price, $"Price: {line.What}");
+            Grid.SetColumn(price, 1);
+            PriceKey key = line.Key;
+            price.LostFocus += (_, _) => CommitPrice(key, price.Text);
+            price.KeyDown += (_, e) =>
+            {
+                if (e.Key == Avalonia.Input.Key.Enter)
+                {
+                    CommitPrice(key, price.Text);
+                    e.Handled = true;
+                }
+            };
+            row.Children.Add(price);
+            PriceRows.Children.Add(row);
+        }
+
+        EstimateText.Text = ShoppingCost.Summary(lines) ?? string.Empty;
+    }
+
+    void CommitPrice(PriceKey key, string? text)
+    {
+        string typed = (text ?? string.Empty).Trim().TrimStart('$');
+        bool changed;
+        if (typed.Length == 0)
+        {
+            changed = _prices.Remove(key);
+        }
+        else if (decimal.TryParse(typed, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out decimal amount) && amount >= 0)
+        {
+            changed = !_prices.TryGetValue(key, out decimal had) || had != amount;
+            _prices[key] = amount;
+        }
+        else
+        {
+            EstimateText.Text = $"A price is a number like 4.98; \"{typed}\" is not.";
+            return;
+        }
+
+        if (changed)
+        {
+            PricesChanged?.Invoke(_prices);
+            ShowPrices();
+        }
+    }
 
     /// <summary>The New notes counted by symbol.</summary>
     public ImmutableArray<NoteCount> NoteCounts { get; private set; } = [];
@@ -462,6 +551,7 @@ public partial class CutListWindow : Window
         // The shopping list is read from the cut list's rows, never from the design a second time,
         // so the two tabs cannot disagree about what is being built (§4).
         ShoppingTable.Rows = ShoppingList.Of(rows, _kerf);
+        ShowPrices();
         ShoppingNote.Text = ShoppingList.Statement(_kerf);
         ShowNote(RoughNote, CutList.RoughFooter(rows));
         ShowNote(ShoppingRoughNote, ShoppingList.RoughFooter(rows));

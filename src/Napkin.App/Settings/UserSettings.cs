@@ -52,6 +52,12 @@ public enum ThemeChoice
 /// are never written into a project file. Every setting has a default, and a file that says nothing
 /// about one gets it.
 /// </summary>
+/// <summary>A price the person entered for what the shopping list buys (#141): never built in.</summary>
+/// <param name="Material">The shopping row's material.</param>
+/// <param name="StockLengthUnits">For boards, the length they are bought in, in 1/1024″; null for a sheet or a board foot.</param>
+/// <param name="Amount">The price of one board, one sheet or one board foot.</param>
+public sealed record SavedPrice(string Material, long? StockLengthUnits, decimal Amount);
+
 public sealed record UserSettings
 {
     /// <summary>The file format's version. A file with any other version is not read (beta policy: no converters).</summary>
@@ -107,6 +113,9 @@ public sealed record UserSettings
 
     /// <summary>The view the person was last in; what <see cref="OpenDesignsIn.LastUsed"/> means.</summary>
     public DesignView LastView { get; init; } = DesignView.Top;
+
+    /// <summary>The prices entered on the shopping list (#141), remembered between designs; none at first.</summary>
+    public System.Collections.Immutable.ImmutableArray<SavedPrice> Prices { get; init; } = [];
 
     /// <summary>The view a newly opened design starts in: the plan is Top.</summary>
     public DesignView ViewForNewDesign() => OpenIn switch
