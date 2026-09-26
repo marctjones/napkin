@@ -61,7 +61,7 @@ public static class HiddenEdges
     public static EdgeSplit Split(IReadOnlyList<FlatFace> faces)
     {
         ArgumentNullException.ThrowIfNull(faces);
-        double[] farthest = [.. faces.Select(face => face.Corners.Min(corner => corner.Nearness))];
+        double[] nearest = [.. faces.Select(face => face.Corners.Max(corner => corner.Nearness))];
 
         List<FlatSegment> visible = [];
         List<FlatSegment> hidden = [];
@@ -82,8 +82,10 @@ public static class HiddenEdges
                     continue;
                 }
 
-                double edgeNearest = Math.Max(a.Nearness, b.Nearness);
-                List<FlatFace> nearer = [.. faces.Where((other, o) => o != f && farthest[o] > edgeNearest + DepthTolerance)];
+                // Any face that reaches nearer than the edge's farthest point might hide some of it;
+                // which pieces it hides is judged piece by piece against its plane (Pieces).
+                double edgeFarthest = Math.Min(a.Nearness, b.Nearness);
+                List<FlatFace> nearer = [.. faces.Where((other, o) => o != f && nearest[o] > edgeFarthest + DepthTolerance)];
                 foreach ((double from, double to, bool isHidden) in Pieces(a, b, nearer))
                 {
                     FlatSegment piece = new(f, e, At(a, b, from), At(a, b, to));
@@ -106,6 +108,14 @@ public static class HiddenEdges
             {
                 cuts.AddRange(Crossings(a, b, face.Corners[i], face.Corners[(i + 1) % count]));
             }
+
+            // Where the edge passes through the face's plane, nearer on one side and not on the
+            // other: the difference in nearness is linear along the edge, so it is one parameter.
+            double atA = NearnessAt(face, a) - a.Nearness, atB = NearnessAt(face, b) - b.Nearness;
+            if (double.IsFinite(atA) && double.IsFinite(atB) && Math.Sign(atA) != Math.Sign(atB))
+            {
+                cuts.Add(atA / (atA - atB));
+            }
         }
 
         double[] sorted = [.. cuts.Where(t => t >= 0 && t <= 1).Order()];
@@ -119,7 +129,7 @@ public static class HiddenEdges
             }
 
             FlatVertex middle = At(a, b, (from + to) / 2);
-            bool isHidden = nearer.Any(face => Inside(middle, face));
+            bool isHidden = nearer.Any(face => Inside(middle, face) && NearnessAt(face, middle) > middle.Nearness + DepthTolerance);
             if (pieces.Count > 0 && pieces[^1].Hidden == isHidden && Math.Abs(pieces[^1].To - from) < 1e-12)
             {
                 pieces[^1] = (pieces[^1].From, to, isHidden);
@@ -187,6 +197,31 @@ public static class HiddenEdges
         }
 
         return inside;
+    }
+
+    /// <summary>
+    /// How near a face is at a point of the view plane: the depth of its plane there
+    /// (<c>docs/design/angled-parts.md</c> &#xA7;4). Every face is planar, so its nearness is linear in
+    /// (U, V); a face parallel to the view is the same everywhere, which is every face of the axis
+    /// views, and a strut's long face slopes. A face seen edge-on covers nothing.
+    /// </summary>
+    static double NearnessAt(FlatFace face, FlatVertex point)
+    {
+        FlatVertex a = face.Corners[0];
+        double nu = 0, nv = 0, nw = 0;
+        for (int i = 1; i + 1 < face.Corners.Count; i++)
+        {
+            FlatVertex b = face.Corners[i], c = face.Corners[i + 1];
+            double bu = b.U - a.U, bv = b.V - a.V, bw = b.Nearness - a.Nearness;
+            double cu = c.U - a.U, cv = c.V - a.V, cw = c.Nearness - a.Nearness;
+            nu += (bv * cw) - (bw * cv);
+            nv += (bw * cu) - (bu * cw);
+            nw += (bu * cv) - (bv * cu);
+        }
+
+        return Math.Abs(nw) < 1e-12
+            ? double.NegativeInfinity
+            : a.Nearness - (((nu * (point.U - a.U)) + (nv * (point.V - a.V))) / nw);
     }
 
     /// <summary>What is left of a hidden piece where no visible piece lies along it.</summary>

@@ -118,14 +118,26 @@ public class HiddenEdgesTests
 
     [Fact]
     [Trait("Feature", "VIEW-007")]
-    public void A_tilted_face_hides_only_what_it_is_nearer_than_everywhere()
+    public void A_tilted_face_hides_what_its_plane_is_nearer_than()
     {
-        // A near face sloping from nearness 1 to 3 over a far square at 0 hides it; the same face
-        // sloping from −1 to 3 is not nearer everywhere and hides nothing.
+        // angled-parts §4: a face's nearness at a point is its plane's there. A face sloping from 1 to 3
+        // over a far square at 0 hides all of it; so does one sloping from −1 to 3, which is nearer
+        // than 0 wherever it is over the square (u from 1 to 2: 1/3 to 5/3).
         FlatFace far = Rect(1, 1, 2, 2, 0);
         FlatFace sloping = new([new(0, 0, 1), new(3, 0, 3), new(3, 3, 3), new(0, 3, 1)], [true, true, true, true]);
         FlatFace crossing = sloping with { Corners = [new(0, 0, -1), new(3, 0, 3), new(3, 3, 3), new(0, 3, -1)] };
         Assert.Equal(4, Total(HiddenEdges.Split([far, sloping]).Hidden, 0), 9);
-        Assert.Empty(HiddenEdges.Split([far, crossing]).Hidden);
+        Assert.Equal(4, Total(HiddenEdges.Split([far, crossing]).Hidden, 0), 9);
+
+        // One that passes through the square's depth at u = 1.5 (−3 at u = 0, 3 at u = 3) hides only
+        // the east half: half of each of the two horizontal edges and the whole east edge, 2 in all.
+        FlatFace through = sloping with { Corners = [new(0, 0, -3), new(3, 0, 3), new(3, 3, 3), new(0, 3, -3)] };
+        EdgeSplit split = HiddenEdges.Split([far, through]);
+        Assert.Equal(2, Total(split.Hidden, 0), 9);
+        Assert.Equal(2, Total(split.Visible, 0), 9);
+
+        // A face seen edge-on covers nothing.
+        FlatFace edgeOn = new([new(0, 1.5, 0), new(3, 1.5, 0), new(3, 1.5, 3)], [true, true, true]);
+        Assert.Empty(HiddenEdges.Split([far, edgeOn]).Hidden);
     }
 }
