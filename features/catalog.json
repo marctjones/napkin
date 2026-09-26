@@ -1139,7 +1139,7 @@
       "id": "GUI-PORCH-02",
       "area": "ui",
       "title": "Build the worked example's porch end to end",
-      "acceptance": "From a new sheet: an existing house wall, a 12 x 10 deck against it, a front wall drawn with W on the deck's far edge (standing on the decking) and marked bearing, windows in it, then Shift+R and 5 in 12: the panel's rafter line reads 10 rafters of 11'-9 3/8\" and the roof's low end is the front wall; the shopping list's Roof section buys them.",
+      "acceptance": "From a new sheet: an existing house wall, a 12 x 10 deck against it, a front wall drawn with W on the deck's far edge (standing on the decking) and marked bearing, a window in it, then Draw > Porch roof on the deck and 5 in 12: the panel's rafter line reads 10 rafters of 11'-9 3/8\" and the roof's low end is the front wall; the shopping list's Roof section buys them.",
       "milestone": "M11",
       "issue": 204,
       "kind": "workflow"

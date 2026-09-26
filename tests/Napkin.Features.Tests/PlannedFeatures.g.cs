@@ -66,12 +66,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: GUI-PORCH-02 — Build the worked example's porch end to end")]
-    [Trait("Feature", "GUI-PORCH-02")]
-    public void GUI_PORCH_02()
-    {
-    }
-
     [Fact(Skip = "planned: IOP-003 — PDF sheets are vector and true scale, with a title block")]
     [Trait("Feature", "IOP-003")]
     public void IOP_003()

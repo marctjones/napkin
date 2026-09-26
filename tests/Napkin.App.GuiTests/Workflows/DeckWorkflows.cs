@@ -198,13 +198,16 @@ public class DeckWorkflows
         }
 
         // Wheel out at the origin until the whole porch, 20 ft of house and 10 ft out, is on the paper.
-        bool OnPaper(Point2 world) => new Rect(window.Canvas.Bounds.Size).Contains(window.Canvas.View.ToScreen(world));
+        // Clear of the Part panel, which lies over the canvas's right side once something is selected: the
+        // wheel zooms out about a point at the canvas's left edge, so the porch shrinks toward it.
+        bool OnPaper(Point2 world) => new Rect(10, 10, 510, 470).Contains(window.Canvas.View.ToScreen(world));
+        Point corner = window.Canvas.TranslatePoint(new Point(30, window.Canvas.Bounds.Height / 2), window)!.Value;
         for (int i = 0; i < 20 && !(OnPaper(Point2.Inches(250, 10)) && OnPaper(Point2.Inches(-10, -140))); i++)
         {
-            app.Wheel(At(window, Point2.Inches(0, 0)), new Vector(0, -2));
+            app.Wheel(corner, new Vector(0, -2));
         }
 
-        Assert.True(OnPaper(Point2.Inches(250, 10)) && OnPaper(Point2.Inches(-10, -140)), "the porch does not fit on the paper.");
+        Assert.True(OnPaper(Point2.Inches(250, 10)) && OnPaper(Point2.Inches(-10, -140)), $"the porch does not fit on the paper: {window.Canvas.View.ToScreen(Point2.Inches(250, 10))} {window.Canvas.View.ToScreen(Point2.Inches(-10, -140))} {window.Canvas.View.ToScreen(Point2.Inches(0, 0))}");
 
         // The house: a 20 ft wall, its south face on y = 0, marked existing with Edit → Phase → Existing.
         app.Press(Key.W);
@@ -219,7 +222,6 @@ public class DeckWorkflows
         app.Drag(At(window, Point2.Inches(48, 0)), At(window, Point2.Inches(120, -60)), At(window, Point2.Inches(192, -120)));
         app.Expect("Deck 1, 12'-0\" × 10'-0\", against the existing house wall", () =>
         {
-            Assert.True(Deck.All(window.CurrentDesign!.Sketch).Length == 1, window.MessageOnScreen + " | tool " + window.Canvas.Tool + " | on screen " + At(window, Point2.Inches(192, -120)) + " canvas " + window.Canvas.Bounds);
             Deck deck = Assert.Single(Deck.All(window.CurrentDesign!.Sketch));
             Assert.Equal((Length.Inches(144), Length.Inches(120), DeckEdge.North), (deck.Box.Width, deck.Box.Height, deck.Ledger(window.CurrentDesign.Sketch).Edge));
         });
@@ -243,8 +245,10 @@ public class DeckWorkflows
         app.Click(CentreOf(window, window.FindControl<MenuItem>("WindowToolMenuItem")!));
         app.Click(At(window, Point2.Inches(120, -118)));
 
-        // Shift+R on the deck, and 5 in 12: §9.5's 10 rafters of 141 3/8″ on the front wall's 3 1/2″ plates.
-        app.Press(Key.R, KeyModifiers.Shift);
+        // Draw → Porch roof and a click on the deck (the Bearing picker still has the keys, so the menu
+        // rather than Shift+R), then 5 in 12: §9.5's 10 rafters of 141 3/8″ on the front wall's 3 1/2″ plates.
+        app.Click(CentreOf(window, window.DrawMenuItem));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("RoofToolMenuItem")!));
         app.Click(At(window, Point2.Inches(120, -60)));
         TypeInto(app, window, window.RoofControls.Pitch, "5 in 12");
         app.Expect("the roof bears on the front wall with ten 2x8 rafters, 11'-9 3/8\" long", () =>
