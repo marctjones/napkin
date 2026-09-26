@@ -386,6 +386,9 @@ public class StrutCutListTests
         // Screws: 3 + 2 + 2; the leg that is no part and the unfastened joint buy none.
         Assert.Equal(7, Assert.Single(FastenerList.Of(sketch)).Count);
 
+        // A foot lifted off the rail opens its joint: no contact, no recipe, nothing bought for it.
+        Assert.Equal(5, Assert.Single(FastenerList.Of(sketch.WithEntity(north with { From = At(8192, -4096, 512) }))).Count);
+
         // Parts already there buy nothing; a joint whose receiving part is gone is skipped.
         Sketch there = new Entity[] { rail with { Phase = Phase.Existing }, south with { Phase = Phase.Existing } }.Aggregate(sketch, (s, entity) => s.WithEntity(entity));
         Assert.Equal(4, Assert.Single(FastenerList.Of(there)).Count);
