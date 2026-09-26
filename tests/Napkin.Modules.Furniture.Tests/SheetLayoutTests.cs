@@ -214,6 +214,82 @@ public sealed class SheetLayoutTests
         Assert.Equal(SheetLayout.SheetsByLayout, row.Note);
     }
 
+    /// <summary>
+    /// The properties every layout keeps, over many cut lists drawn from a fixed seed: every piece is
+    /// placed once or refused once; it lies inside its sheet, inside its strip, and at least a kerf
+    /// from every other piece on the sheet; and so the sheet count is never under the area floor —
+    /// which is why the shopping list, buying the layout's count, never under-buys.
+    /// </summary>
+    [Theory]
+    [InlineData(0L)]
+    [InlineData(128L)]
+    [InlineData(384L)]
+    [Trait("Feature", "CUT-007")]
+    public void Every_layout_keeps_pieces_on_their_sheet_a_kerf_apart_and_never_under_the_area_floor(long kerfUnits)
+    {
+        Length kerf = new(kerfUnits);
+        ulong state = 26;
+        long Next(long below)
+        {
+            // A fixed linear congruential generator (Knuth's MMIX constants): the same cases every run.
+            state = (state * 6364136223846793005UL) + 1442695040888963407UL;
+            return (long)((state >> 33) % (ulong)below);
+        }
+
+        for (int trial = 0; trial < 60; trial++)
+        {
+            // 1 to 8 rows, 1 to 4 each; sides from 1 in to 100 in in eighths, so some pass a 96" sheet.
+            (string, long, long, Piece)[] parts =
+            [
+                .. Enumerable.Range(0, 1 + (int)Next(8)).Select(i => (
+                    $"P{i}",
+                    1024 + (128 * Next(792)),
+                    1024 + (128 * Next(792)),
+                    new Piece("3/4 plywood", null, 1 + (int)Next(4), new Length(768), Flat))),
+            ];
+            ImmutableArray<CutListRow> rows = Rows(parts);
+            PanelLayout layout = Lay(rows, kerf);
+
+            Assert.Equal(rows.Sum(row => row.Quantity), layout.Sheets.Sum(sheet => sheet.Pieces.Count()) + layout.Refused.Length);
+
+            foreach (PlannedSheet sheet in layout.Sheets)
+            {
+                Assert.Equal((Inches(96), Inches(48)), (sheet.Long, sheet.Short));
+                Length y = Length.Zero;
+                foreach (SheetStrip strip in sheet.Strips)
+                {
+                    Assert.Equal(y, strip.Y);
+                    y += strip.Width + kerf;
+                    Assert.All(strip.Pieces, piece =>
+                    {
+                        Assert.Equal(strip.Y, piece.Y);
+                        Assert.True(piece.Across <= strip.Width);
+                        Assert.True(piece.X + piece.Along <= sheet.Long);
+                        Assert.True(piece.Y + piece.Across <= sheet.Short);
+                    });
+                }
+
+                SheetPiece[] pieces = [.. sheet.Pieces];
+                for (int a = 0; a < pieces.Length; a++)
+                {
+                    for (int b = a + 1; b < pieces.Length; b++)
+                    {
+                        SheetPiece one = pieces[a];
+                        SheetPiece two = pieces[b];
+                        bool apart = one.X + one.Along + kerf <= two.X || two.X + two.Along + kerf <= one.X
+                                     || one.Y + one.Across + kerf <= two.Y || two.Y + two.Across + kerf <= one.Y;
+                        Assert.True(apart, $"trial {trial}: {one} and {two} on sheet {sheet.Number} are closer than a kerf");
+                    }
+                }
+            }
+
+            Int128 sheetArea = Area.Of(Inches(96), Inches(48));
+            Int128 placed = layout.Sheets.Aggregate(Int128.Zero, (sum, sheet) => sum + sheet.PiecesArea);
+            Assert.True(layout.Sheets.Length >= (placed + sheetArea - 1) / sheetArea);
+            Assert.Equal(layout.Sheets.Length, Assert.Single(ShoppingList.Of(rows, kerf)).Sheets);
+        }
+    }
+
     [Fact]
     public void A_negative_kerf_is_refused() =>
         Assert.Throws<ArgumentOutOfRangeException>(() => Lay(Rows(Panel("Top", 24, 48)), new Length(-1)));
