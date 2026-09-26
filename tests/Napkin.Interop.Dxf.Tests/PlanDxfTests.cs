@@ -6,6 +6,8 @@ using Napkin.Core.Geometry;
 using Napkin.Core.Project;
 using Napkin.Modules.Editing;
 
+using Layer = Napkin.Core.Geometry.Layer;
+
 namespace Napkin.Interop.Dxf.Tests;
 
 /// <summary>
@@ -132,6 +134,21 @@ public class PlanDxfTests
     [InlineData(1000, 12)]
     public void Marks_are_a_fiftieth_of_the_drawing_kept_between_a_quarter_inch_and_a_foot(double side, double expected)
         => Assert.Equal(expected, PlanDxf.MarkSize(side == 0 ? [] : [(0, 0), (side, side / 2)]), 9);
+
+    [Fact]
+    [Trait("Feature", "IOP-002")]
+    public void A_napkin_layer_already_called_Dimensions_is_shared_not_added_twice()
+    {
+        Sketch sketch = Sample("coffee-table");
+        Layer first = sketch.Layers.First(layer => sketch.Entities.Values.OfType<Box>().Any(box => box.Layer == layer.Id));
+        Sketch renamed = sketch with { Layers = sketch.Layers.Replace(first, first with { Name = PlanDxf.DimensionLayer }) };
+
+        CadDocument read = RoundTrip(renamed);
+
+        Assert.Single(read.Layers, layer => layer.Name == PlanDxf.DimensionLayer);
+        Assert.Contains(read.Entities.OfType<LwPolyline>(), outline => outline.Layer.Name == PlanDxf.DimensionLayer);
+        Assert.NotEmpty(read.Entities.OfType<TextEntity>());
+    }
 
     [Fact]
     public void A_sketch_with_no_dimensions_has_no_dimension_layer()
