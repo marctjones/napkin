@@ -74,6 +74,23 @@ public class PartsViewWorkflows
             Assert.StartsWith("Zoom 125%", window.ZoomReadout.Text, StringComparison.Ordinal);
         });
 
+        // V goes back to the last standard view, which the Parts view is not (parts-view §10.5): from
+        // Parts, 7 shows 3D, and V from there returns to Top, where the design opened.
+        app.Press(Key.D7);
+        app.Press(Key.V);
+        app.Expect("7 then V: back to Top, not to the Parts view", () =>
+        {
+            Assert.Equal(DesignView.Top, window.CurrentView);
+            Assert.True(window.IsShowingPlan);
+        });
+
+        app.Click(CentreOf(window, window.ViewChip(DesignView.Parts)));
+        app.Expect("the Parts chip shows it again, the zoom kept", () =>
+        {
+            Assert.True(window.IsShowingParts);
+            Assert.Equal(125, window.Parts.ZoomPercent, 6);
+        });
+
         app.Press(Key.D3);
         app.Expect("3 leaves the Parts view for Front", () =>
         {
