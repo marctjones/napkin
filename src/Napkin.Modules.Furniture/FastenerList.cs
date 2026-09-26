@@ -150,9 +150,10 @@ public static class FastenerList
 
             Length? length = StrutJointGeometry.Contact(sketch, joint)?.JointLength;
             int each = joint.Fastening.Count ?? (length is { } long_ ? Recipes.Recipe(joint.Fastening.Kind, long_) : 0);
-            Length? thickness = Recipes.DependsOnThickness(kind) ? part.SizeOn(inserted, inserted.Blank()).Thickness : null;
+            // Every fastening a butt allows is sized by what it goes through: the strut's thickness.
+            Length thickness = part.SizeOn(inserted, inserted.Blank()).Thickness;
 
-            (FastenerKind, long?) key = (kind, thickness?.Units);
+            (FastenerKind, long?) key = (kind, thickness.Units);
             if (!lines.TryGetValue(key, out List<FastenerSource>? sources))
             {
                 lines[key] = sources = [];
