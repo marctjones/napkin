@@ -956,6 +956,24 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-CUT-06",
+      "area": "ui",
+      "title": "Pick stock from the Draw menu and drag it onto the paper",
+      "acceptance": "Ctrl/Cmd+N: Draw > Stock lists the toolbar's categories in its order, each with its icon's tooltip and every size in it; hovering Draw > Stock > Dimensional lumber > 2x4 shows its actual size and citation; clicking it holds the 2x4, closes the menu and opens the lumber drawer reading Holding 2x4; a drag places a 2x4 cut to the dragged 12\", selected; the same drag from the drawer's 2x4 places an equal part, each with one value of its own holding it to the 2x4's width; a nail picked from the menu is not held, and the window says fasteners are not placed on the drawing.",
+      "milestone": "M3",
+      "issue": null,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CUT-07",
+      "area": "ui",
+      "title": "Read the DIY table's cut list with its joinery",
+      "acceptance": "Open the DIY coffee table with drawers from Samples, Ctrl/Cmd+L: thirteen rows and twenty-four pieces in the order its expectations file gives, finished sizes with the joinery allowances in (drawer box front 1'-4 1/8\", bottom 1'-4 1/8\" x 1'-3 1/2\") and every row's joint sentences on screen verbatim, none saying joint not satisfied; a click on the Part header puts the left and right drawer sides next to each other, still two rows of two; the exported CSV has the expectations' two header lines, ending Cuts,Joinery, and the same data lines; opening the plain coffee table leaves four rows with no joinery, and coming back brings the sentences back.",
+      "milestone": "M3",
+      "issue": 146,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-CHECK-01",
       "area": "ui",
       "title": "Place a window on a wall and get a cited header",
@@ -1376,6 +1394,15 @@
       "acceptance": "Open a sample, open the cut list, turn to the Cut layout tab, see a line and a drawn bar per board, change the saw kerf and see the boards change, and the exported file equals the lines on screen.",
       "milestone": "M3",
       "issue": 138,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CUT-09",
+      "area": "ui",
+      "title": "The drawer readout names what is held right after a menu pick",
+      "acceptance": "Ctrl/Cmd+N, then Draw > Stock > Dimensional lumber > 2x4 with the mouse and no further pointer move: the 2x4 is held, the lumber drawer is open, and its readout says Holding 2x4, not the hover text of the drawer item that opened under the pointer.",
+      "milestone": "M3",
+      "issue": 184,
       "kind": "workflow"
     },
     {
