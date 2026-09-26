@@ -673,7 +673,7 @@
       "boardFeetUsed": "",
       "waste": "",
       "note": "sheets from the cut layout",
-      "derivation": "Area of the parts, finished sizes (allowances in): 1785/4 in² against one 48\" x 96\" sheet = 4608 in²; ceil(area / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
+      "derivation": "Nested on sheets by the cut layout (sheetLayout below): all eight pieces go on one 48\" x 96\" sheet (PS 1-19 §5.4) in two 3 1/2\" strips, so 1 sheet. The area floor agrees: 1785/4 in² of parts, finished sizes (allowances in), against 4608 in², ceil = 1. No board feet for a panel."
     },
     {
       "material": "1/4 plywood",
@@ -690,7 +690,7 @@
       "boardFeetUsed": "",
       "waste": "",
       "note": "sheets from the cut layout",
-      "derivation": "Area of the parts, finished sizes (allowances in): 3999/8 in² against one 48\" x 96\" sheet = 4608 in²; ceil(area / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
+      "derivation": "Nested on sheets by the cut layout (sheetLayout below): both bottoms go on one 48\" x 96\" sheet (PS 1-19 §5.4) in one 15 1/2\" strip, so 1 sheet. The area floor agrees: 3999/8 in² of parts against 4608 in², ceil = 1. No board feet for a panel."
     },
     {
       "material": "1x2",
@@ -773,7 +773,7 @@
       "boardFeetUsed": "",
       "waste": "",
       "note": "sheets from the cut layout",
-      "derivation": "Area of the parts, finished sizes (allowances in): 924 in² against one 48\" x 96\" sheet = 4608 in²; ceil(area / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
+      "derivation": "Nested on sheets by the cut layout (sheetLayout below): the 42\" x 22\" top goes on one 48\" x 96\" sheet (PS 1-19 §5.4), so 1 sheet. The area floor agrees: 924 in² against 4608 in², ceil = 1. No board feet for a panel."
     }
   ],
   "shoppingListCsv": [
@@ -786,6 +786,115 @@
     "2x2,,\"1 × 6'-0\"\"\",Leg × 4,2.0,1.8,0.2,",
     "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets from the cut layout"
   ],
+  "sheetLayout": {
+    "kerfUnits": 128,
+    "derivation": "Sheet nesting (#26, docs/design/parts-and-cut-list.md §4.2), worked by hand with napkin's default 1/8 in kerf on the library's 48 x 96 in sheets (PS 1-19 §5.4). No part has its grain set, so each lies with its longer side along the sheet's 96 in. Pieces are taken widest across first, then longest, ties in cut-list order; each goes in the first strip with length left for it, else a new strip on the first sheet with width left, else a new sheet. A strip or a sheet holds n pieces when pieces + kerf x (n - 1) <= its length (the board rule); it takes n cuts when an offcut remains, n - 1 when they fill it exactly. A piece narrower than its strip takes one trim rip. Waste is the sheet's area less the pieces' area: offcuts and kerf together.",
+    "panels": [
+      {
+        "material": "1/2 plywood",
+        "species": "",
+        "refused": 0,
+        "summary": "1/2 plywood: 1 sheet; 8 pieces, waste 28.9 sq ft (90.3%) counting offcuts and kerf",
+        "sheets": [
+          {
+            "number": 1,
+            "longUnits": 98304,
+            "shortUnits": 49152,
+            "rips": 2,
+            "cuts": 10,
+            "wasteSquareUnits": 4363911168,
+            "strips": [
+              {
+                "yUnits": 0,
+                "widthUnits": 3584,
+                "crosscuts": 5,
+                "trims": 0,
+                "pieces": [
+                  { "label": "Drawer box front", "alongUnits": 16512, "acrossUnits": 3584, "turned": false, "xUnits": 0 },
+                  { "label": "Drawer box front", "alongUnits": 16512, "acrossUnits": 3584, "turned": false, "xUnits": 16640 },
+                  { "label": "Drawer side, left", "alongUnits": 16384, "acrossUnits": 3584, "turned": false, "xUnits": 33280 },
+                  { "label": "Drawer side, left", "alongUnits": 16384, "acrossUnits": 3584, "turned": false, "xUnits": 49792 },
+                  { "label": "Drawer side, right", "alongUnits": 16384, "acrossUnits": 3584, "turned": false, "xUnits": 66304 }
+                ]
+              },
+              {
+                "yUnits": 3712,
+                "widthUnits": 3584,
+                "crosscuts": 3,
+                "trims": 0,
+                "pieces": [
+                  { "label": "Drawer side, right", "alongUnits": 16384, "acrossUnits": 3584, "turned": false, "xUnits": 0 },
+                  { "label": "Drawer box back", "alongUnits": 16000, "acrossUnits": 3584, "turned": false, "xUnits": 16512 },
+                  { "label": "Drawer box back", "alongUnits": 16000, "acrossUnits": 3584, "turned": false, "xUnits": 32640 }
+                ]
+              }
+            ],
+            "line": "Sheet 1: 1/2 plywood x 4 ft × 8 ft: strip 1, 3 1/2 in: Drawer box front 16 1/8 × 3 1/2 in + Drawer box front 16 1/8 × 3 1/2 in + Drawer side, left 16 × 3 1/2 in + Drawer side, left 16 × 3 1/2 in + Drawer side, right 16 × 3 1/2 in; strip 2, 3 1/2 in: Drawer side, right 16 × 3 1/2 in + Drawer box back 15 5/8 × 3 1/2 in + Drawer box back 15 5/8 × 3 1/2 in | 10 cuts, kerf 1/8 in | offcut 28.9 sq ft",
+            "derivation": "Eight pieces, all 3 1/2 (3584) across: fronts 16 1/8 (16512), sides 16 (16384), backs 15 5/8 (16000) along. All tie on width, so longest first: front, front, left, left, right, right, back, back. Strip 1 at y 0: front at 0; front at 16 1/8 + 1/8 = 16 1/4 (16640); left at 16 1/4 + 16 1/4 = 32 1/2 (33280); left at 32 1/2 + 16 1/8 = 48 5/8 (49792); right at 48 5/8 + 16 1/8 = 64 3/4 (66304); 80 1/4 of pieces + 4 kerfs = 80 3/4 <= 96. The second right would make 96 1/4 + 5 kerfs = 96 7/8 > 96, so it opens strip 2 at y 3 1/2 + 1/8 = 3 5/8 (3712); 3 1/2 + 1/8 + 3 1/2 = 7 1/8 <= 48. Each back: strip 1 would be 95 7/8 + 5 kerfs = 96 1/2 > 96, so strip 2: right at 0, back at 16 + 1/8 = 16 1/8 (16512), back at 16 1/8 + 15 5/8 + 1/8 = 31 7/8 (32640); 47 1/4 + 2 kerfs = 47 1/2 <= 96. Cuts: strip 1 5 crosscuts and strip 2 3 (offcuts remain), 2 rips (7 1/8 < 48), no trims (every piece is its strip's width) = 10. Waste 4608 - 1785/4 = 16647/4 = 4161 3/4 in² = 4161.75 x 1024² = 4363911168 square units; / 144 = 28.901... -> 28.9 sq ft; 4161.75 / 4608 = 90.316 % -> 90.3 %."
+          }
+        ]
+      },
+      {
+        "material": "1/4 plywood",
+        "species": "",
+        "refused": 0,
+        "summary": "1/4 plywood: 1 sheet; 2 pieces, waste 28.5 sq ft (89.2%) counting offcuts and kerf",
+        "sheets": [
+          {
+            "number": 1,
+            "longUnits": 98304,
+            "shortUnits": 49152,
+            "rips": 1,
+            "cuts": 3,
+            "wasteSquareUnits": 4307681280,
+            "strips": [
+              {
+                "yUnits": 0,
+                "widthUnits": 15872,
+                "crosscuts": 2,
+                "trims": 0,
+                "pieces": [
+                  { "label": "Drawer bottom", "alongUnits": 16512, "acrossUnits": 15872, "turned": false, "xUnits": 0 },
+                  { "label": "Drawer bottom", "alongUnits": 16512, "acrossUnits": 15872, "turned": false, "xUnits": 16640 }
+                ]
+              }
+            ],
+            "line": "Sheet 1: 1/4 plywood x 4 ft × 8 ft: strip 1, 15 1/2 in: Drawer bottom 16 1/8 × 15 1/2 in + Drawer bottom 16 1/8 × 15 1/2 in | 3 cuts, kerf 1/8 in | offcut 28.5 sq ft",
+            "derivation": "Two drawer bottoms 16 1/8 x 15 1/2 (16512 x 15872): 16 1/8 along, 15 1/2 across. One strip 15 1/2 wide at y 0: bottom at 0, bottom at 16 1/8 + 1/8 = 16 1/4 (16640); 32 1/4 + 1 kerf = 32 3/8 <= 96, an offcut remains: 2 crosscuts; 1 rip (15 1/2 < 48); no trims: 3 cuts. Waste 4608 - 3999/8 = 32865/8 = 4108 1/8 in² = 4108.125 x 1024² = 4307681280 square units; / 144 = 28.528... -> 28.5 sq ft; 4108.125 / 4608 = 89.152 % -> 89.2 %."
+          }
+        ]
+      },
+      {
+        "material": "3/4 plywood",
+        "species": "",
+        "refused": 0,
+        "summary": "3/4 plywood: 1 sheet; 1 piece, waste 25.6 sq ft (79.9%) counting offcuts and kerf",
+        "sheets": [
+          {
+            "number": 1,
+            "longUnits": 98304,
+            "shortUnits": 49152,
+            "rips": 1,
+            "cuts": 2,
+            "wasteSquareUnits": 3862953984,
+            "strips": [
+              {
+                "yUnits": 0,
+                "widthUnits": 22528,
+                "crosscuts": 1,
+                "trims": 0,
+                "pieces": [
+                  { "label": "Top", "alongUnits": 43008, "acrossUnits": 22528, "turned": false, "xUnits": 0 }
+                ]
+              }
+            ],
+            "line": "Sheet 1: 3/4 plywood x 4 ft × 8 ft: strip 1, 22 in: Top 42 × 22 in | 2 cuts, kerf 1/8 in | offcut 25.6 sq ft",
+            "derivation": "The top, 42 x 22 (43008 x 22528): 42 along, 22 across. One strip 22 wide: 1 crosscut (42 < 96), 1 rip (22 < 48): 2 cuts. Waste 4608 - 924 = 3684 in² x 1024² = 3862953984 square units; / 144 = 25.583... -> 25.6 sq ft; 3684 / 4608 = 79.948 % -> 79.9 %."
+          }
+        ]
+      }
+    ]
+  },
   "fasteners": [
     {
       "kind": "PocketScrew",
