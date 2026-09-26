@@ -121,8 +121,7 @@ public sealed record StrutFrame(IntegerVector3 D, IntegerVector3 Y, IntegerVecto
         Int128 along = d.Component(reference);
         bool reversed = along != 0 ? along < 0
             : d.Z != 0 ? d.Z < 0
-            : d.Y != 0 ? d.Y < 0
-            : d.X < 0;
+            : d.Y < 0; // no Z run and no Y run would be axis-aligned, so d.Y is not zero here
         if (reversed)
         {
             d = -d;
@@ -170,9 +169,6 @@ public sealed record Strut(
 
     /// <summary>The end at <paramref name="end"/>.</summary>
     public Point3 End(StrutEnd end) => end == StrutEnd.From ? From : To;
-
-    /// <summary>What <paramref name="end"/> is cut to.</summary>
-    public EndCut CutAt(StrutEnd end) => end == StrutEnd.From ? FromCut : ToCut;
 
     /// <summary>The local axes as exact integer vectors. Only for a strut that is not axis-aligned (invariant 14).</summary>
     public StrutFrame Frame() => StrutFrame.Of(Direction, Reference);

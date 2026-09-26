@@ -181,6 +181,10 @@ meaning.** Every entity gained `"phase": "new"`, every box `"room": null`, and e
 inputs `"side": null, "bearing": null, "header": null`, by `samples restamp`; every
 `*.expected.json` changed only its `formatVersion`.
 
+**Format version 11 (angled parts, `docs/design/angled-parts.md` §7) changed no sample's
+meaning.** It added the `strut` entity and the `strutEnd`, `strutFace` and `strutEndFace`
+references, which no sample holds; every scene and expectation changed only its `formatVersion`.
+
 **A purely additive bump — a null field or an empty list, no sample's meaning changed, as every
 bump from version 5 on has been — no longer needs 15 scenes and 15 expectations rewritten by hand
 (#181).** Run

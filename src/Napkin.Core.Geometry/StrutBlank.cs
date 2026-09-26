@@ -255,12 +255,12 @@ public sealed record StrutBlank(DerivedLength Length, ImmutableList<DerivedCut> 
         return true;
     }
 
+    // Every caller has already set a square end aside.
     private static Axis AxisOf(EndCut cut) => cut switch
     {
         EndCut.X => Axis.X,
         EndCut.Y => Axis.Y,
-        EndCut.Z => Axis.Z,
-        _ => throw new ArgumentOutOfRangeException(nameof(cut), cut, "A square end has no axis."),
+        _ => Axis.Z,
     };
 
     private readonly record struct EndTerms(double Reach, DerivedCut? Cut, long Setback, bool SetbackExact, DerivedCompoundEnd? Compound);

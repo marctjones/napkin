@@ -297,6 +297,11 @@ public static class SamplesCommand
 
                 break;
 
+            case 11:
+                // Angled parts (docs/design/angled-parts.md §7): a new entity type and new reference
+                // kinds only; nothing an existing entity carries changed.
+                break;
+
             default:
                 throw new InvalidOperationException($"samples restamp does not know what format version {version} added.");
         }

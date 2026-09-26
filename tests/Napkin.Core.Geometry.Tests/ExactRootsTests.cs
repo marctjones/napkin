@@ -31,6 +31,15 @@ public class ExactRootsTests
     }
 
     [Fact]
+    public void ASquareWhoseDoubleRootLandsShortIsStillFound()
+    {
+        // Math.Sqrt of this square, as a double, truncates to one below its root.
+        Int128 root = Int128.Parse("11223131235081369", System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Equal(root, ExactRoots.SquareRoot(root * root));
+        Assert.Null(ExactRoots.SquareRoot(Int128.Parse("125958674719859055259655874658176", System.Globalization.CultureInfo.InvariantCulture)));
+    }
+
+    [Fact]
     public void TheLimitItselfIsProvedAndPastItTheProofDeclines()
     {
         Assert.Equal(Int128.One << 62, ExactRoots.SquareRoot(ExactRoots.Limit));

@@ -73,6 +73,47 @@ public class StrutTests
     }
 
     [Fact]
+    public void AFlatStrutSquareToItsReferencePutsItsSouthEndFirst()
+    {
+        // A brace lying in the plan, reference Z: d · Z = 0 and there is no Z run either.
+        Assert.True(Leg((3072, -4096, 0), EndCut.Square, EndCut.Square).Frame().Reversed);
+        Assert.False(Leg((3072, 4096, 0), EndCut.Square, EndCut.Square).Frame().Reversed);
+    }
+
+    [Fact]
+    public void AStrutNamesItsEnds()
+    {
+        Strut leg = Leg((3072, 0, 4096), from: (1, 2, 3));
+
+        Assert.Equal(leg.From, leg.End(StrutEnd.From));
+        Assert.Equal(leg.To, leg.End(StrutEnd.To));
+    }
+
+    [Fact]
+    public void AnEndCutAlongTheStrutHasNoBlank()
+        => Assert.Throws<ArgumentException>(() => Leg((0, 9216, 27648), EndCut.Z, EndCut.X).Blank());
+
+    [Fact]
+    public void ABlankEqualsByValueAndHashesItsCompoundEnds()
+    {
+        StrutBlank blank = Leg((3072, 4096, 12288), reference: Axis.X, height: 1536).Blank();
+        StrutBlank again = Leg((3072, 4096, 12288), reference: Axis.X, height: 1536).Blank();
+
+        Assert.Equal(blank.GetHashCode(), again.GetHashCode());
+        Assert.False(blank.Equals(null));
+        Assert.NotEqual(blank, Leg((3072, 4096, 12288), reference: Axis.Y, height: 1536).Blank());
+    }
+
+    [Fact]
+    public void AnEndedCompoundStrutIsJudgedTheSameEitherWayRound()
+    {
+        Strut stub = Leg((1024, 2048, 2048), EndCut.Z, EndCut.Y);
+
+        Assert.True(Swapped(stub).Frame().Reversed);
+        Assert.Contains(Validated(Swapped(stub)).Errors, e => e.Kind == ValidationErrorKind.StrutTooShortForItsCuts);
+    }
+
+    [Fact]
     public void AnAxisAlignedDirectionHasNoFrame()
         => Assert.Throws<ArgumentException>(() => Leg((0, 0, 27648)).Frame());
 
@@ -413,6 +454,8 @@ public class StrutTests
         Assert.Equal(new Place(new Length(4096), new Length(3072), new Length(24576)), sketch.PlaceOf(new StrutEndRef(leg.Id, StrutEnd.To)));
         Assert.Equal(default, sketch.PlaceOf(new StrutFaceRef(leg.Id, StrutFace.North)));
         Assert.Equal("Leg's from end", PlaceRules.Describe(sketch, new StrutEndRef(leg.Id, StrutEnd.From)));
+        Assert.Equal("Leg's to end", PlaceRules.Describe(sketch, new StrutEndRef(leg.Id, StrutEnd.To)));
+        Assert.Equal("Leg's to end face", PlaceRules.Describe(sketch, new StrutEndFaceRef(leg.Id, StrutEnd.To)));
 
         Coincident onFace = new(new RelationshipId(Guid.NewGuid()), new StrutFaceRef(leg.Id, StrutFace.North), new StrutEndRef(leg.Id, StrutEnd.To));
         ValidationError refusal = PlaceRules.Refusal(sketch, onFace)!;
