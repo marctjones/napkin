@@ -28,6 +28,9 @@ public enum EditTool
 
     /// <summary>Click to put a note (renovation-sketches §8).</summary>
     Note,
+
+    /// <summary>Two clicks, one per end, for an angled part (<see cref="StrutTool"/>, assembly-model §3a.7).</summary>
+    Strut,
 }
 
 /// <summary>

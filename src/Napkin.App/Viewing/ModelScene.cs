@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Napkin.Core.Geometry;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.Viewing;
 
@@ -139,6 +140,13 @@ public sealed class ModelScene
             }
 
             polygons.AddRange(PolygonsOf(box.Id, box.Solid()));
+        }
+
+        // An angled part, from its own solid: six planar faces, none of them a named face of a box
+        // (assembly-model §3a.7).
+        foreach (Strut strut in sketch.Entities.Values.OfType<Strut>().OrderBy(strut => strut.Id))
+        {
+            polygons.AddRange(PolygonsOf(strut));
         }
 
         return new ModelScene(polygons.ToImmutable());
@@ -342,6 +350,17 @@ public sealed class ModelScene
 
             yield return Polygon(box, face.Of, points, drawn: null);
         }
+    }
+
+    /// <summary>A strut's six faces as the 3D view paints and picks them.</summary>
+    public static IEnumerable<ScenePolygon> PolygonsOf(Strut strut)
+    {
+        ArgumentNullException.ThrowIfNull(strut);
+        return StrutSolid.Of(strut).Select(face => Polygon(
+            strut.Id,
+            null,
+            [.. face.Corners.Select(corner => new Vector3d(corner.X, corner.Y, corner.Z))],
+            drawn: null));
     }
 
     /// <summary>

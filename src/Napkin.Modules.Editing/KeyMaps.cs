@@ -27,6 +27,9 @@ public enum EditCommand
     /// <summary>The note tool: click to put words — "outlet", "switch" — at a point (renovation-sketches §8).</summary>
     NoteTool,
 
+    /// <summary>The angled-part tool: two clicks, one per end, for a leg, a brace or a raked back (assembly-model §3a.7).</summary>
+    StrutTool,
+
     /// <summary>Open the selected part in the shape workshop.</summary>
     Shape,
 
@@ -337,6 +340,7 @@ public static class KeyMaps
             new(K(KeyName.W), EditCommand.WallTool),
             new(Shift(KeyName.W), EditCommand.RoomTool),
             new(Shift(KeyName.N), EditCommand.NoteTool),
+            new(K(KeyName.L), EditCommand.StrutTool),
             new(K(KeyName.C), EditCommand.Shape),
             new(K(KeyName.D), EditCommand.Duplicate),
             new(K(KeyName.M), EditCommand.MirrorEastWest),
@@ -376,6 +380,7 @@ public static class KeyMaps
             [EditCommand.WallTool] = "Wall tool, with the member it last had; brings the plan forward",
             [EditCommand.RoomTool] = "Room tool: drag out a room, or click inside four walls for their inside faces; brings the plan forward",
             [EditCommand.NoteTool] = "Note tool: click to put a note, then type what it says — outlet, switch, light, supply, drain get their symbol; brings the plan forward",
+            [EditCommand.StrutTool] = "Angled-part tool: click one end, then the other — a splayed leg, a brace; in 3D on the floor or a part's face, in the plan a flat brace to stand up in the panel",
             [EditCommand.Shape] = "Cut the selected part to shape (the shape workshop); not in a standard view",
             [EditCommand.Duplicate] = "Duplicate the selection",
             [EditCommand.MirrorEastWest] = "Mirror copy east–west",

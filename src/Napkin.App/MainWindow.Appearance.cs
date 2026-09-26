@@ -101,6 +101,8 @@ public partial class MainWindow
         PropertiesPanel.BorderBrush = new SolidColorBrush(palette.GridMajor);
         NotePanel.Background = paper;
         NotePanel.BorderBrush = new SolidColorBrush(palette.GridMajor);
+        StrutPanel.Background = paper;
+        StrutPanel.BorderBrush = new SolidColorBrush(palette.GridMajor);
         ShowNotePanel();
         PropertiesHeadline.Foreground = edge;
         PropertiesError.Foreground = new SolidColorBrush(palette.Snap);

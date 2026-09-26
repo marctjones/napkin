@@ -52,6 +52,32 @@ public partial class MainWindow
 
     void OnNoteToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.NoteTool);
 
+    void OnStrutToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.StrutTool);
+
+    /// <summary>
+    /// Picks up the angled-part tool (assembly-model §3a.7): in the 3D view where it is natural, in the
+    /// plan otherwise; a standard view brings the plan forward, since it cannot see a click's depth.
+    /// </summary>
+    public void ArmStrut()
+    {
+        if (_view == DesignView.Model)
+        {
+            Model.ArmStrut();
+        }
+        else
+        {
+            if (!IsShowingPlan)
+            {
+                ShowView(DesignView.Top);
+            }
+
+            DrawingCanvas.ArmStrut();
+        }
+
+        UpdateToolButtons();
+        FocusDrawing();
+    }
+
     /// <summary>Picks up the note tool (renovation-sketches §8); notes are put in the plan, so the plan comes forward.</summary>
     public void ArmNote()
     {
@@ -301,6 +327,10 @@ public partial class MainWindow
 
             case EditCommand.NoteTool:
                 ArmNote();
+                return true;
+
+            case EditCommand.StrutTool:
+                ArmStrut();
                 return true;
 
             case EditCommand.Shape when IsShowingStandardView:

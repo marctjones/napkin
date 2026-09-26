@@ -44,6 +44,15 @@ public static class SketchExtents
                     bounds = bounds.Including(note.Position);
                     break;
 
+                // An angled part's plan outline, which is where its ends and its thickness reach.
+                case Strut strut:
+                    foreach ((double x, double y) in Napkin.Modules.Editing.StrutSolid.PlanOutline(strut))
+                    {
+                        bounds = bounds.Including(new Point2(Length.FromInches(x, Rounding.HalfToEven), Length.FromInches(y, Rounding.HalfToEven)));
+                    }
+
+                    break;
+
                 case Segment segment
                     when sketch.Find<Node>(segment.Start) is { } start
                          && sketch.Find<Node>(segment.End) is { } end:

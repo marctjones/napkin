@@ -297,3 +297,15 @@ public sealed record SetStrutEnd(EntityId Strut, StrutEnd End, Point3 At) : Requ
 /// <param name="End">Which end.</param>
 /// <param name="Delta">How far the person wants the end to go.</param>
 public sealed record DragStrutEnd(EntityId Strut, StrutEnd End, Vector3 Delta) : Request;
+
+/// <summary>
+/// Sets the planes a strut's ends are cut to and the axis its wide face keeps parallel to
+/// (<c>docs/design/angled-parts.md</c> &#xA7;1.2). Structural: no end moves, so nothing propagates;
+/// the strut's derived board changes. Refused when the strut would break its invariants, or when a
+/// relationship on it could no longer hold — a flush to a face that the new reference turns.
+/// </summary>
+/// <param name="Strut">The strut.</param>
+/// <param name="FromCut">The plane its From end is cut to.</param>
+/// <param name="ToCut">The plane its To end is cut to.</param>
+/// <param name="Reference">The world axis its wide face stays parallel to.</param>
+public sealed record SetStrutCuts(EntityId Strut, EndCut FromCut, EndCut ToCut, Axis Reference) : Request;

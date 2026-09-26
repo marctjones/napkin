@@ -153,6 +153,7 @@ public partial class MainWindow : Window
         WireRenovation();
         WireRoom();
         WireNotes();
+        WireStruts();
         DrawingCanvas.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         ModelDrawing.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         DrawingCanvas.ViewRequested += (_, view) => ShowView(view);

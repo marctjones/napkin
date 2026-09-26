@@ -254,6 +254,7 @@ public sealed class CanvasView : Control
             _rectangle.Cancel();
             _wall.Cancel();
             _room.Cancel();
+            _strut.Cancel();
 
             // Leaving the stock tool puts the stock down: the toolbox shows nothing picked, and a
             // later press on the paper cannot place something nobody is holding any more.
@@ -365,7 +366,7 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>Whether a press on the paper starts drawing rather than picking or panning.</summary>
-    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Note;
+    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Note or EditTool.Strut;
 
     /// <summary>
     /// The precision dimension labels are shown at. Fixed at 1/16&#x2033;; the per-project picker
@@ -734,6 +735,12 @@ public sealed class CanvasView : Control
         if (_tool == EditTool.Note)
         {
             PlaceNote(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
+            return;
+        }
+
+        if (_tool == EditTool.Strut)
+        {
+            ClickStrut(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             return;
         }
 
@@ -1408,6 +1415,63 @@ public sealed class CanvasView : Control
     /// <summary>A note was just put down: the window gives its words box the keyboard.</summary>
     public event EventHandler<EntityId>? NotePlaced;
 
+    readonly StrutTool _strut = new();
+
+    /// <summary>Picks up the angled-part tool in the plan (assembly-model §3a.7): two clicks, one per end.</summary>
+    public void ArmStrut()
+    {
+        Tool = EditTool.Strut;
+        _strut.Cancel();
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+        _editor?.Say(EditSeverity.Hint, "Angled part: click the floor for a foot, then a part for a top under it — or the floor twice for a flat brace.");
+    }
+
+    /// <summary>
+    /// One click of the angled-part tool in the plan: on a part, an end at its underside; on empty
+    /// paper, one on the floor (see <see cref="StrutTool.PlanEnd"/>).
+    /// </summary>
+    void ClickStrut(Point2 at)
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        (Point3 point, EndCut cut) = StrutTool.PlanEnd(at, PickAt(at) is { } over ? editor.Sketch.Find<Box>(over) : null);
+        LayerId layer = editor.LayerForNewParts();
+        Strut? strut = _strut.Click(point, cut, (from, fromCut, to, toCut) =>
+            StrutTool.Flattened(StrutTool.Make(EntityId.New(), layer, from, fromCut, to, toCut, Box.DefaultDepth, Box.DefaultDepth)));
+        InvalidateVisual();
+        if (strut is null)
+        {
+            if (_strut.First is not null)
+            {
+                editor.Say(EditSeverity.Hint, "Now click the other end.");
+            }
+
+            return;
+        }
+
+        if (StrutTool.Refusal(strut) is { } why)
+        {
+            editor.Say(EditSeverity.Problem, why);
+            return;
+        }
+
+        // A strut that rises is a leg; one lying flat is a brace.
+        string name = editor.NextName(strut.Direction.Dz == Length.Zero ? "Brace" : "Leg");
+        const string what = "Draw an angled part";
+        editor.BeginGesture(what);
+        if (editor.Apply(new AddEntity(strut with { Name = name }), what) is Succeeded)
+        {
+            editor.Select(strut.Id);
+            editor.Say(EditSeverity.Done, $"Drew {name}: choose its stock and its wide face in the panel.");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+    }
+
     /// <summary>Picks up the note tool (renovation-sketches §8): the next click puts a note there.</summary>
     public void ArmNote()
     {
@@ -1706,6 +1770,15 @@ public sealed class CanvasView : Control
         }
 
         Length tolerance = ModelLength(3);
+
+        // An angled part under the pointer wins over the box it stands on: it is the narrower target.
+        if (design.Sketch.Entities.Values.OfType<Strut>()
+                .OrderBy(strut => strut.Id)
+                .FirstOrDefault(strut => StrutSolid.PlanContains(strut, world.X.ToInches(), world.Y.ToInches(), tolerance.ToInches())) is { } leaning)
+        {
+            return leaning.Id;
+        }
+
         Box? best = null;
 
         foreach (Box box in design.Sketch.Entities.Values.OfType<Box>().OrderBy(entity => entity.Id))
@@ -1997,6 +2070,10 @@ public sealed class CanvasView : Control
                     DrawNote(context, palette, note);
                     break;
 
+                case Strut strut:
+                    DrawStrut(context, palette, strut, layerName);
+                    break;
+
                 case Segment segment
                     when sketch.Find<Node>(segment.Start) is { } start
                          && sketch.Find<Node>(segment.End) is { } end:
@@ -2158,6 +2235,18 @@ public sealed class CanvasView : Control
             if (sketch.Find<Note>(id) is { } note)
             {
                 context.DrawEllipse(null, pen, _view.ToScreen(note.Position), NotePickPixels, NotePickPixels);
+                continue;
+            }
+
+            if (sketch.Find<Strut>(id) is { } strut)
+            {
+                // Its silhouette, and its two ends as the grips they are (assembly-model §3a.7).
+                context.DrawGeometry(null, pen, StrutOutline(strut));
+                foreach (Point3 end in new[] { strut.From, strut.To })
+                {
+                    context.DrawRectangle(null, pen, new Rect(_view.ToScreen(new Point2(end.X, end.Y)) - new Vector(StrutGripPixels, StrutGripPixels), new Size(2 * StrutGripPixels, 2 * StrutGripPixels)));
+                }
+
                 continue;
             }
 
@@ -2475,6 +2564,42 @@ public sealed class CanvasView : Control
     /// rectangle is four <c>LineTo</c>s today as it was yesterday and a part with no cuts cannot
     /// be drawn differently by accident.
     /// </remarks>
+    /// <summary>Half the side of the square a selected strut's end is drawn with, in pixels.</summary>
+    const double StrutGripPixels = 4;
+
+    /// <summary>
+    /// An angled part from above: the outline of its solid seen from the plan, in <see cref="double"/>,
+    /// the way an arc is drawn (assembly-model §3a.7). A diagonal silhouette is its own glyph.
+    /// </summary>
+    StreamGeometry StrutOutline(Strut strut)
+    {
+        StreamGeometry outline = new();
+        using (StreamGeometryContext geometry = outline.Open())
+        {
+            ImmutableArray<(double X, double Y)> points = StrutSolid.PlanOutline(strut);
+            geometry.BeginFigure(_view.ToScreen(points[0].X, points[0].Y), isFilled: true);
+            foreach ((double x, double y) in points.Skip(1))
+            {
+                geometry.LineTo(_view.ToScreen(x, y));
+            }
+
+            geometry.EndFigure(isClosed: true);
+        }
+
+        return outline;
+    }
+
+    void DrawStrut(DrawingContext context, CanvasPalette palette, Strut strut, string layerName)
+    {
+        EntityStyle style = palette.StyleFor(layerName);
+        Pen pen = new(new SolidColorBrush(style.Stroke), style.StrokeThickness)
+        {
+            LineJoin = PenLineJoin.Miter,
+            DashStyle = strut.Phase == Phase.Demolish ? new DashStyle([12, 6], 0) : style.Dashed ? new DashStyle([4, 3], 0) : null,
+        };
+        context.DrawGeometry(new SolidColorBrush(style.Fill), pen, StrutOutline(strut));
+    }
+
     StreamGeometry Outline(Box box)
     {
         // A shaped part whose cap the plan sees is its cut outline, placed by the orientation; a

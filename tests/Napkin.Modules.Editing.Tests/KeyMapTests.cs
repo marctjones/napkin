@@ -43,6 +43,7 @@ public class KeyMapTests
         { KeyName.W, None, EditCommand.WallTool },
         { KeyName.W, Shift, EditCommand.RoomTool },
         { KeyName.N, Shift, EditCommand.NoteTool },
+        { KeyName.L, None, EditCommand.StrutTool },
         { KeyName.C, None, EditCommand.Shape },
         { KeyName.D, None, EditCommand.Duplicate },
         { KeyName.M, None, EditCommand.MirrorEastWest },

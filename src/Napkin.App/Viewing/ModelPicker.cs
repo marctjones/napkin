@@ -125,7 +125,7 @@ public static class ModelPicker
 
         BoxFeature picked = nearest.Face is { } entered
             ? BoxFeature.Face(entered)
-            : BoxFeature.Face(sketch.Find<Box>(nearest.Box)!.FaceUp);
+            : BoxFeature.Face(sketch.Find<Box>(nearest.Box)?.FaceUp ?? BoxFace.Top);
         return new ModelPick(nearest.Box, picked, nearest.Face, nearest.NormalAxis, nearest.Distance, nearest.Point);
     }
 
@@ -148,7 +148,7 @@ public static class ModelPicker
             return null;
         }
 
-        BoxFeature feature = hit.Face is { } face ? BoxFeature.Face(face) : BoxFeature.Face(sketch.Find<Box>(hit.Box)!.FaceUp);
+        BoxFeature feature = hit.Face is { } face ? BoxFeature.Face(face) : BoxFeature.Face(sketch.Find<Box>(hit.Box)?.FaceUp ?? BoxFace.Top);
         return new ModelPick(hit.Box, feature, hit.Face, hit.NormalAxis, hit.Distance, hit.Point);
     }
 
@@ -376,6 +376,17 @@ public static class ModelPicker
             if (hit is { } found && found.Distance > minimumDistance && (nearest is null || found.Distance < nearest.Value.Distance))
             {
                 nearest = found;
+            }
+        }
+
+        // An angled part is picked by its faces, like a box with cuts; none of them is a named face.
+        foreach (Strut strut in sketch.Entities.Values.OfType<Strut>().OrderBy(strut => strut.Id))
+        {
+            if (PolygonEntry(scene.Polygons.Where(polygon => polygon.Box == strut.Id), origin, direction) is { } entry
+                && entry.Distance > minimumDistance
+                && (nearest is null || entry.Distance < nearest.Value.Distance))
+            {
+                nearest = new SurfaceHit(strut.Id, null, entry.Polygon.Normal.DominantAxis().Axis, entry.Distance, origin + (direction * entry.Distance));
             }
         }
 
