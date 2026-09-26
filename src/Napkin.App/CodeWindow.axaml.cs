@@ -178,6 +178,59 @@ public partial class CodeWindow : Window
             _ => CodeCheck.FollowingNote(code.PackId),
         };
         CodeStatus.Text = resolved.Pack is { } pack ? CodeCheck.CheckingStatus(pack) : resolved.Problem;
+        FillTowns(resolved.Pack);
+    }
+
+    /// <summary>The towns the adopted code publishes site values for (#210); hidden when it publishes none.</summary>
+    private void FillTowns(LoadedPack? pack)
+    {
+        _sitePack = pack?.Site is null ? null : pack;
+        TownOffer.IsVisible = _sitePack is not null;
+        TownBox.ItemsSource = _sitePack?.Site!.Municipalities.Select(town => town.Name).ToArray() ?? [];
+        TownBox.SelectedIndex = -1;
+        TownOfferText.Text = _sitePack is null ? string.Empty : $"{_sitePack.Manifest.Adoption.ShortName} publishes these values town by town: choose yours to see them.";
+        UseTownButton.IsEnabled = false;
+    }
+
+    private LoadedPack? _sitePack;
+
+    /// <summary>The town picker (#210).</summary>
+    public ComboBox TownPicker => TownBox;
+
+    /// <summary>What the town picker offers, in words.</summary>
+    public string TownOfferLine => TownOfferText.Text ?? string.Empty;
+
+    /// <summary>The button that accepts the offer.</summary>
+    public Button UseTownValues => UseTownButton;
+
+    private MunicipalitySite? ChosenTown
+        => _sitePack?.Site is { } site && TownBox.SelectedIndex >= 0 && TownBox.SelectedIndex < site.Municipalities.Count
+            ? site.Municipalities[TownBox.SelectedIndex]
+            : null;
+
+    private void OnTownChosen(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_sitePack is null || ChosenTown is not { } town)
+        {
+            return;
+        }
+
+        TownOfferText.Text = SiteOffer.Text(_sitePack, town);
+        UseTownButton.IsEnabled = Design is not null;
+    }
+
+    private void OnUseTownClicked(object? sender, RoutedEventArgs e)
+    {
+        if (Design is null || _sitePack is null || ChosenTown is not { } town)
+        {
+            return;
+        }
+
+        SiteValues site = SiteOffer.Accept(Design.Sketch.Site, _sitePack, town, Today());
+        if (site != Design.Sketch.Site)
+        {
+            ApplyRequest?.Invoke(new SetSite(site), $"Used {town.Name}'s site values from {_sitePack.Manifest.Adoption.ShortName}");
+        }
     }
 
     private void FillSite(SiteValues site)

@@ -43,6 +43,18 @@
             <TextBlock Text="Site" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
             <TextBlock FontSize="11" Opacity="0.8" TextWrapping="Wrap"
                        Text="Type the values for this site from your building department or the adopted code's own maps. Leave a field empty until you know it: napkin never fills one in." />
+            <StackPanel Name="TownOffer" Spacing="4" IsVisible="False">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Town" FontSize="12" VerticalAlignment="Center" />
+                    <ComboBox Name="TownBox" FontSize="12" MinWidth="200" MaxDropDownHeight="300"
+                              PlaceholderText="Choose the town"
+                              AutomationProperties.Name="Town"
+                              SelectionChanged="OnTownChosen" />
+                </StackPanel>
+                <TextBlock Name="TownOfferText" FontSize="11" TextWrapping="Wrap" AutomationProperties.Name="Town values offered" />
+                <Button Name="UseTownButton" Content="Use these values" FontSize="12" IsEnabled="False" Click="OnUseTownClicked"
+                        ToolTip.Tip="Sets the ground snow load, wind speed and seismic design category from the adopted code for this town, and says where they came from." />
+            </StackPanel>
             <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" >
                 <TextBlock Grid.Row="0" Text="Ground snow load" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
                 <TextBox Grid.Row="0" Grid.Column="1" Name="SnowBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Ground snow load" />

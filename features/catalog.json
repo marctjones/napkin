@@ -1064,6 +1064,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-CHECK-06",
+      "area": "ui",
+      "title": "Pick the town and use the site values the adopted code prints for it",
+      "acceptance": "With the shipped CT pack chosen, the site section offers a town picker; a typed building width stays; choosing Bloomfield with the pointer and the keyboard shows its values and where Connecticut prints them; Use these values sets ground snow load 30 psf, ultimate wind speed 120 mph and seismic design category B, keeps the width, fills the site fields and records the source as CT 2022, Bloomfield, Appendix AY p. 157.",
+      "milestone": "backlog",
+      "issue": 210,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-WALL-01",
       "area": "ui",
       "title": "Draw a wall, put a window in it, widen it, undo and buy the framing",

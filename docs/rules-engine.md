@@ -22,8 +22,11 @@ read from Connecticut's own document (2022 CSBC w/ Errata #1, ED October 1, 2022
   **encoded** in `amendments/` as `amend-footnote` operations (the 30 psf substitution and the
   30-50 psf interpolation, below); they are pending until the IRC base tables are loaded, then
   apply automatically.
-- Appendix AY (pp. 157-160) is a per-municipality table of wind speeds and ground snow loads. It
-  is **not transcribed**; enter your town's values as project site inputs.
+- Appendix AY (pp. 157-160), the per-municipality table of wind speeds and ground snow loads, is
+  **transcribed** (#210, 2026-09-26) into `packs/packs/us-ct-2022/site-values.json`: all 169 towns
+  as printed, each row with its page, every row checked against the rendered pages. The app offers
+  a town's values in **Project → Adopted code and site** (below) and applies them only when you
+  accept.
 - The base layer `irc-2021` is **empty** ("base tables not loaded"): fill it from your own copy of
   the IRC (Tables R602.7(1)-(3), R602.3, R602.10.3 ...). Until then `SizeHeader` returns `NoData`,
   and `LoadedPack.StatusLabel` is `base tables not loaded` for a picker to show.
@@ -40,6 +43,11 @@ the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application
 A pack that fails to load is shown with its problems, not hidden. napkin never picks one: the
 choice is stored with the design (format 6), locked to a revision (with the date) or following
 the newest installed revision. The same window takes the site values; empty means not entered.
+When the chosen pack carries a `site-values.json` (Connecticut's does), a **Town** picker appears:
+choosing a town shows the values the adopted code prints for it and where ("Bloomfield, as CT 2022
+prints it: ground snow load 30 psf and ultimate wind speed 120 mph (Appendix AY, p. 157 …); seismic
+design category B statewide (Table R301.2 …)"), and **Use these values** sets them, keeps every
+other site value, and records the source. Nothing is filled until you press it.
 Each wall says what it supports in its panel, from the values the pack's table declares, and
 which bracing method is already on each of its solid segments, from the pack's methods
 ([building.md](building.md#wall-bracing)).
@@ -112,6 +120,22 @@ NAPKIN_PACKS_ROOT=/path/to/my-packs dotnet test tests/Napkin.Core.RulesEngine.Te
 Each case is its own test named `pack/table/row/index`. A pack that fails to load lists every
 problem (file, table, row, message) at once. Then have someone else check every row against the
 source (design §8.3) before setting `review.status` to `signed-off` with its checklist path.
+
+### Site values by town (`packs/<id>/site-values.json`)
+
+Optional, beside `pack.json`. Strict like every pack file (unknown fields, a missing citation, a town
+listed twice or a value below 1 refuse the whole pack):
+
+```json
+{ "schemaVersion": 1, "kind": "site-values", "notes": "…", "source": "<a pack.json source id>",
+  "title": "<the table's title as printed>",
+  "statewide": { "seismicDesignCategory": { "value": "B", "location": "<where printed>" } },
+  "municipalities": [ { "name": "Andover", "ultimateWindSpeedMph": 120, "nominalWindSpeedMph": 93,
+                        "groundSnowLoadPsf": 30, "hurricaneProne": true, "location": "<where printed>" } ] }
+```
+
+`statewide` may be `{}`. The nominal wind speed and the hurricane-prone flag are carried as printed and
+not used.
 
 ## Footnote operations: substitution and interpolation
 
