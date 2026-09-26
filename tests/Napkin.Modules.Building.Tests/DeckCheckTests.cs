@@ -65,7 +65,12 @@ public class DeckCheckTests
             StringComparison.Ordinal);
         Assert.StartsWith("Footings: zz 15 in square for a middle post's 27.1 sq ft on 2000 psf (ZZ-DECK-FOOTING", Line(checks, DeckCheckKind.Footing).Text, StringComparison.Ordinal);
         Assert.StartsWith("Frost: footings 3'-6\" below grade; frost line 3'-6\" (site value, Town building department). Note x: SYNTHETIC", Line(checks, DeckCheckKind.Frost).Text, StringComparison.Ordinal);
-        Assert.All(checks.Lines, line => Assert.True(line.Passing));
+        Assert.All(checks.Lines.Where(line => line.Kind <= DeckCheckKind.Frost), line => Assert.True(line.Passing));
+
+        // §9.2's deck is 36″ up with three open edges and no guard yet: the pack's trigger asks for one.
+        Assert.Equal(
+            "Guard required: the deck is 3'-0\" above grade, over 2'-4\", with 3 open edges (ZZ-GUARD.1, synthetic p. 7 guard): add a guard in the panel.",
+            Line(checks, DeckCheckKind.Guard).Text);
         Assert.Null(checks.SupportsNote);
         Assert.Null(checks.Frost);
     }
@@ -126,7 +131,7 @@ public class DeckCheckTests
         Assert.Equal(
             "Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": The loaded pack CT 2022 has no deck joist span, so napkin cannot check this. Nothing is guessed: add it from your copy of the code (docs/rules-engine.md).",
             Line(checks, DeckCheckKind.Joists).Text);
-        Assert.All(checks.Lines.Where(line => line.Kind != DeckCheckKind.Frost), line => Assert.IsType<DeckResult.NoData>(line.Result));
+        Assert.All(checks.Lines.Where(line => line.Kind < DeckCheckKind.Frost), line => Assert.IsType<DeckResult.NoData>(line.Result));
 
         // Connecticut's Table R301.2, p. 131: 42" — offered, never applied.
         FrostSuggestion offer = checks.Frost!;

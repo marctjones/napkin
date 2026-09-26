@@ -25,6 +25,17 @@ public static class DeckTool
         JoistDirection.Out, Length.Inches(16), "2x8", new BeamSpec(2, "2x10"), "4x4", 3, Length.Zero, "5/4x6", Length.Inches(0, 1, 8), true,
         null, null, null, null, null);
 
+    /// <summary>
+    /// The guard a tick starts with (§4.1, §9.3): 3'-0" high, posts at most 6'-0" apart, 3 1/2" gaps and
+    /// clearance, 4x4 posts, 2x4 rails, a 2x6 cap and 2x2 balusters — napkin's starting layout, to type
+    /// over, not a code value.
+    /// </summary>
+    public static readonly GuardInputs StartingGuard = new(
+        Length.Inches(36), Length.Inches(72), Length.Inches(3, 1, 2), Length.Inches(3, 1, 2), "4x4", "2x4", "2x6", "2x2");
+
+    /// <summary>The stair a tick starts with (§4.2): 3'-0" wide at the start of an edge, 10" treads, risers from the pack, 3 2x12 stringers, 2 boards a tread.</summary>
+    public static StairInputs StartingStair(DeckEdge edge) => new(edge, Length.Zero, Length.Inches(36), Length.Inches(10), null, 3, "2x12", 2);
+
     /// <summary>What the message bar says the starting values are.</summary>
     public const string StartingWords =
         "It starts 3'-0\" above grade with 2x8 joists at 16\", a (2) 2x10 beam on 3 4x4 posts and 5/4x6 decking: starting values to type over, not a standard.";

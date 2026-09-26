@@ -152,12 +152,16 @@ public static class DeckFrame
     }
 
     /// <summary>A deck's pieces as cut-list rows, "Deck 1 joist", so the shopping list buys them as a cut list's.</summary>
-    public static ImmutableArray<CutListRow> CutRows(DeckFraming framing)
+    public static ImmutableArray<CutListRow> CutRows(DeckFraming framing) => CutRows(framing, []);
+
+    /// <summary>A deck's pieces and more of its own — its guard's and stair's — as cut-list rows.</summary>
+    public static ImmutableArray<CutListRow> CutRows(DeckFraming framing, IEnumerable<FramingPiece> more)
     {
         ArgumentNullException.ThrowIfNull(framing);
+        ArgumentNullException.ThrowIfNull(more);
         return
         [
-            .. framing.Pieces.Select(piece => new CutListRow(
+            .. framing.Pieces.Concat(more).Select(piece => new CutListRow(
                 $"{framing.Deck.Name} {piece.Label}",
                 piece.Quantity,
                 piece.Length,

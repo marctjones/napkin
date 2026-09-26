@@ -58,6 +58,9 @@ public partial class MainWindow
     /// <summary>The frame in one line, or why there is none.</summary>
     public string DeckFrameLine => DeckFields.IsVisible ? DeckFrameText.Text ?? string.Empty : string.Empty;
 
+    /// <summary>The deck block's guard and stair ticks, for the GUI suite.</summary>
+    public (CheckBox Guard, CheckBox Stair) DeckTicks => (DeckGuardCheck, DeckStairCheck);
+
     /// <summary>The deck block's text boxes, for the GUI suite.</summary>
     public (TextBox Joist, TextBox Spacing, TextBox Plies, TextBox Beam, TextBox Post, TextBox PostCount, TextBox Cantilever, TextBox Footing, TextBox Decking, TextBox Gap, TextBox Supports, TextBox Species) DeckControls
         => (DeckJoistBox, DeckSpacingBox, DeckPliesBox, DeckBeamBox, DeckPostBox, DeckPostCountBox, DeckCantileverBox, DeckFootingBox, DeckDeckingBox, DeckGapBox, DeckSupportsBox, DeckSpeciesBox);
@@ -129,6 +132,8 @@ public partial class MainWindow
             DeckSupportsBox.Text = inputs.Supports ?? string.Empty;
             DeckSpeciesBox.Text = inputs.Species ?? string.Empty;
             DeckBlockingCheck.IsChecked = inputs.Blocking;
+            DeckGuardCheck.IsChecked = inputs.Guard is not null;
+            DeckStairCheck.IsChecked = inputs.Stair is not null;
         }
         finally
         {
@@ -214,6 +219,10 @@ public partial class MainWindow
             Supports = Optional(DeckSupportsBox),
             Species = Optional(DeckSpeciesBox),
             Blocking = DeckBlockingCheck.IsChecked == true,
+            Guard = DeckGuardCheck.IsChecked == true ? now.Guard ?? DeckTool.StartingGuard : null,
+            Stair = DeckStairCheck.IsChecked == true
+                ? now.Stair ?? (deck.OpenEdges(Editor.Sketch) is { IsEmpty: false } open ? DeckTool.StartingStair(open[0]) : null)
+                : null,
         };
 
         if (problems.Count > 0)

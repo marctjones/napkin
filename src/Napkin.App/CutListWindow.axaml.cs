@@ -8,6 +8,7 @@ using Design = Napkin.Modules.Editing.Design;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Core.RulesEngine;
 using Napkin.Modules.Building;
 using Napkin.Modules.Furniture;
 
@@ -633,7 +634,17 @@ public partial class CutListWindow : Window
             }
         }
 
-        DeckTable.Rows = ShoppingList.Of([.. decks.SelectMany(deck => DeckFrame.CutRows(deck.Framing))], _kerf);
+        LoadedPack? deckPack = Packs.Resolve(sketch.Code).Pack;
+        DeckTable.Rows = ShoppingList.Of(
+            [
+                .. decks.SelectMany(deck => DeckFrame.CutRows(
+                    deck.Framing,
+                    [
+                        .. GuardFraming.Of(sketch.After(), deck.Framing, MaterialsLibrary.Shipped)?.Pieces ?? [],
+                        .. StairFraming.Of(deck.Framing, deckPack, MaterialsLibrary.Shipped).Layout?.Pieces ?? [],
+                    ])),
+            ],
+            _kerf);
         DeckSection.IsVisible = deckNotes.Count > 0;
         DeckNote.Text = string.Join(" ", deckNotes)
                         + (decks.Count > 0 ? " Decking is listed by the board; napkin has read no stock-length list for decking (#155)." : string.Empty);

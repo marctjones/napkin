@@ -56,6 +56,24 @@ public enum FramingRole
 
     /// <summary>A decking board.</summary>
     DeckingBoard,
+
+    /// <summary>A guard post, bolted to the rim (deck-and-porch §4.1).</summary>
+    GuardPost,
+
+    /// <summary>A guard rail, on edge, one of two per bay.</summary>
+    GuardRail,
+
+    /// <summary>A guard cap, one per run.</summary>
+    GuardCap,
+
+    /// <summary>A baluster.</summary>
+    Baluster,
+
+    /// <summary>A stair stringer (§4.2).</summary>
+    Stringer,
+
+    /// <summary>A stair tread board.</summary>
+    Tread,
 }
 
 /// <summary>One kind of piece in a wall's frame: how many, how long, and out of what.</summary>
@@ -435,6 +453,12 @@ public static class FramingList
             FramingRole.Beam => "beam ply",
             FramingRole.Post => "post",
             FramingRole.DeckingBoard => "decking board",
+            FramingRole.GuardPost => "guard post",
+            FramingRole.GuardRail => "guard rail",
+            FramingRole.GuardCap => "guard cap",
+            FramingRole.Baluster => "baluster",
+            FramingRole.Stringer => "stringer",
+            FramingRole.Tread => "tread board",
             _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Not a framing role."),
         };
 

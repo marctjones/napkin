@@ -69,4 +69,12 @@ public class DeckToolTests
             "ledger, 10 joists 2x8 at 16\", rim, (2) 2x10 beam on 3 posts spanning 5'-6 3/4\", 22 boards (the last 1 7/8\" wide)",
             DeckTool.FrameLine(framing));
     }
+
+    [Fact]
+    public void The_starting_guard_and_stair_are_napkins_labelled_values()
+    {
+        Assert.Equal((In(36), In(72), Length.Inches(3, 1, 2)), (DeckTool.StartingGuard.Height, DeckTool.StartingGuard.PostSpacing, DeckTool.StartingGuard.BalusterGap));
+        StairInputs stair = DeckTool.StartingStair(DeckEdge.East);
+        Assert.Equal((DeckEdge.East, Length.Zero, In(36), In(10), (int?)null, 3, "2x12", 2), (stair.Edge, stair.At, stair.Width, stair.Run, stair.Risers, stair.Stringers, stair.Stringer, stair.TreadBoards));
+    }
 }

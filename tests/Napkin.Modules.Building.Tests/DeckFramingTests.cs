@@ -253,6 +253,12 @@ public class DeckFramingTests
     [InlineData(FramingRole.Beam, "beam plies")]
     [InlineData(FramingRole.Post, "posts")]
     [InlineData(FramingRole.DeckingBoard, "decking boards")]
+    [InlineData(FramingRole.GuardPost, "guard posts")]
+    [InlineData(FramingRole.GuardRail, "guard rails")]
+    [InlineData(FramingRole.GuardCap, "guard caps")]
+    [InlineData(FramingRole.Baluster, "balusters")]
+    [InlineData(FramingRole.Stringer, "stringers")]
+    [InlineData(FramingRole.Tread, "tread boards")]
     public void The_deck_pieces_are_named_one_and_many(FramingRole role, string many)
     {
         Assert.Equal(many, FramingList.Label(role, 2));
