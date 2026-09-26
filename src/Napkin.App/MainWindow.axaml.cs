@@ -578,6 +578,7 @@ public partial class MainWindow : Window
             _cutList = new CutListWindow
             {
                 ApplyRequest = (request, what) => Editor.Apply(request, what),
+                SelectRow = pick => SelectionCommands.Pick(Editor, pick.Row.Members, pick.Toggle, pick.Add),
                 Packs = Packs,
                 KerfChanged = kerf => Settings.Update(settings => settings with { SawKerf = kerf }),
             };

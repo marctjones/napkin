@@ -460,18 +460,7 @@ public sealed class PartsView : Control
             return false;
         }
 
-        if (toggle)
-        {
-            foreach (EntityId member in cell.Members)
-            {
-                editor.ToggleSelected(member);
-            }
-        }
-        else
-        {
-            editor.SelectAll(add ? editor.Selection.Concat(cell.Members) : cell.Members);
-        }
-
+        SelectionCommands.Pick(editor, cell.Members, toggle, add);
         return true;
     }
 

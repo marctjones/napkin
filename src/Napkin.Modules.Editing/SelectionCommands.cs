@@ -15,6 +15,33 @@ namespace Napkin.Modules.Editing;
 /// </remarks>
 public static class SelectionCommands
 {
+    /// <summary>
+    /// Selects the parts a list names — a Parts view cell's members, a cut-list row's (parts-view
+    /// §5.1, #205) — as a click does: exactly these; with <paramref name="toggle"/> (Ctrl or Cmd), each
+    /// one in or out of the selection; with <paramref name="add"/> (Shift), these as well as what is
+    /// selected. One selection, the editor's, whichever window asked.
+    /// </summary>
+    /// <param name="editor">Whose selection.</param>
+    /// <param name="ids">The parts.</param>
+    /// <param name="toggle">Toggle each instead of selecting.</param>
+    /// <param name="add">Add to the selection instead of replacing it.</param>
+    public static void Pick(DesignEditor editor, IEnumerable<EntityId> ids, bool toggle, bool add)
+    {
+        ArgumentNullException.ThrowIfNull(editor);
+        ArgumentNullException.ThrowIfNull(ids);
+        if (toggle)
+        {
+            foreach (EntityId id in ids)
+            {
+                editor.ToggleSelected(id);
+            }
+
+            return;
+        }
+
+        editor.SelectAll(add ? editor.Selection.Concat(ids) : ids);
+    }
+
     /// <summary>Removes what is selected, through the updater, relationships and all.</summary>
     public static void Delete(DesignEditor editor)
     {

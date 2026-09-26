@@ -35,6 +35,9 @@ public partial class CutListWindow : Window
     public CutListWindow()
     {
         InitializeComponent();
+
+        // A row pressed selects its parts in the drawing (#205): the window has no editor, so it asks.
+        Table.RowPicked += (_, pick) => SelectRow?.Invoke(pick);
         KerfNote.Text = CutList.BeforeKerfAndJoinery;
         KerfBox.Text = CutLayout.Inches(_kerf);
         SetKerfButton.Click += (_, _) => CommitKerf();
@@ -147,6 +150,9 @@ public partial class CutListWindow : Window
     /// window's): set by the owner to put a request through the editor, so undo covers it.
     /// </summary>
     public Action<Request, string>? ApplyRequest { get; set; }
+
+    /// <summary>Selects a pressed row's parts in the drawing (#205); the main window's, which holds the editor.</summary>
+    public Action<CutListRowPick>? SelectRow { get; set; }
 
     /// <summary>The fasteners, hardware and supplies below the boards, for the GUI suite to read.</summary>
     public ExtrasTable Extras => ExtrasGrid;
