@@ -124,8 +124,13 @@ public static class PlanDxf
         List<DimensionMeasurement> dimensions = [.. PlanDimensions.Measure(sketch)];
         if (dimensions.Count > 0)
         {
-            Layer layer = new(DimensionLayer);
-            document.Layers.Add(layer);
+            // A napkin layer may already be called Dimensions; its outlines and the dimensions share it.
+            if (!document.Layers.TryGetValue(DimensionLayer, out Layer? layer))
+            {
+                layer = new Layer(DimensionLayer);
+                document.Layers.Add(layer);
+            }
+
             foreach (DimensionMeasurement dimension in dimensions)
             {
                 extent.AddRange([Xy(dimension.LineFrom), Xy(dimension.LineTo)]);
