@@ -78,8 +78,8 @@ public sealed record PanelLayout(PanelStock Panel, string Species, ImmutableArra
 /// (<see cref="CutListRow.Grain"/>) runs with its grain along the sheet's long side and is never
 /// turned — napkin's assumption that a sheet's face grain runs its long way, said in
 /// <see cref="Statement"/>. Pieces are taken widest across first, then longest, ties in cut-list
-/// order; each goes in the first open strip, on any open sheet, that is wide enough and still has
-/// length for it; failing that, a new strip on the first sheet with width left for it; failing that,
+/// order; each goes in the first open strip, on any open sheet, that still has length for it (every
+/// open strip is wide enough, being as wide as an earlier, wider piece); failing that, a new strip on the first sheet with width left for it; failing that,
 /// a new sheet. A strip is as wide as its first (widest) piece.
 /// </para>
 /// <para>
@@ -174,7 +174,7 @@ public static class SheetLayout
 
     /// <summary>
     /// How a piece lies on the sheet: its grain along the sheet when it has one, otherwise its longer
-    /// side along unless only the other way fits; null when it cannot lie on the sheet at all.
+    /// side along; null when it cannot lie on the sheet that way.
     /// </summary>
     static (Length Along, Length Across, bool Turned)? Orient(CutListRow row, Length along, Length across)
     {
@@ -188,12 +188,11 @@ public static class SheetLayout
             return Fits(row.Width, row.Length, along, across) ? (row.Width, row.Length, true) : null;
         }
 
-        bool lengthLonger = row.Length >= row.Width;
-        (Length Along, Length Across, bool Turned) preferred = lengthLonger ? (row.Length, row.Width, false) : (row.Width, row.Length, true);
-        (Length Along, Length Across, bool Turned) other = lengthLonger ? (row.Width, row.Length, true) : (row.Length, row.Width, false);
-        return Fits(preferred.Along, preferred.Across, along, across) ? preferred
-            : Fits(other.Along, other.Across, along, across) ? other
-            : null;
+        // Longer side along. If that does not fit, turning cannot help: either the longer side is past the
+        // sheet's length, and then it would be past its width too, or the shorter side is past the
+        // sheet's width, and then so is the longer.
+        (Length Along, Length Across, bool Turned) preferred = row.Length >= row.Width ? (row.Length, row.Width, false) : (row.Width, row.Length, true);
+        return Fits(preferred.Along, preferred.Across, along, across) ? preferred : null;
     }
 
     static bool Fits(Length pieceAlong, Length pieceAcross, Length along, Length across) => pieceAlong <= along && pieceAcross <= across;
@@ -206,10 +205,11 @@ public static class SheetLayout
     {
         foreach (var sheet in sheets)
         {
-            foreach ((Length width, var pieces) in sheet)
+            // Pieces come widest first and a strip is as wide as its first piece, so every open strip is
+            // already wide enough; only its length is in question.
+            foreach ((_, var pieces) in sheet)
             {
-                if (piece.Across <= width
-                    && CutLayout.TryFit(Sum(pieces.Select(placed => placed.Along)) + piece.Along, pieces.Count + 1, kerf, along, out _))
+                if (CutLayout.TryFit(Sum(pieces.Select(placed => placed.Along)) + piece.Along, pieces.Count + 1, kerf, along, out _))
                 {
                     pieces.Add(piece);
                     return true;

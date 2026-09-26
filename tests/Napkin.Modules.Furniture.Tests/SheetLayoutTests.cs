@@ -141,6 +141,30 @@ public sealed class SheetLayoutTests
 
     [Fact]
     [Trait("Feature", "CUT-007")]
+    public void A_piece_whose_grain_runs_its_length_is_refused_when_only_turned_it_fits()
+    {
+        // 40 long x 90 wide, grain along its 40: the 40 runs along, 90 across a 48 sheet. Turned
+        // (90 along, 40 across) it would fit.
+        CutListRow row = Assert.Single(Rows(Panel("Panel", 40, 90))) with { Grain = PartDimension.Length };
+
+        Assert.True(Assert.Single(Lay([row]).Refused).AgainstGrain);
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-007")]
+    public void A_summary_names_the_species_and_counts_sheets_and_pieces_in_the_plural()
+    {
+        // 60 x 30 twice: two sheets, one piece each (as above). Waste 2 x (4608 - 1800) = 5616 sq in
+        // = 39.0 sq ft of 9216 = 60.9375 % -> 60.9 %.
+        ImmutableArray<CutListRow> rows = [.. Rows(Panel("Side", 60, 30, quantity: 2)).Select(row => row with { Species = "Birch" })];
+
+        Assert.Equal(
+            "3/4 plywood (Birch): 2 sheets; 2 pieces, waste 39.0 sq ft (60.9%) counting offcuts and kerf",
+            CutLayout.Summary(CutLayout.Of(rows, Kerf))[0]);
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-007")]
     public void A_piece_larger_than_the_sheet_either_way_is_refused_as_too_big()
     {
         PanelLayout layout = Lay(Rows(Panel("Bed", 100, 50)));
