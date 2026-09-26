@@ -65,6 +65,72 @@ public class DeckWorkflows
         });
     });
 
+    [GuiWorkflow("GUI-PORCH-01")]
+    public void Roof_a_deck_type_its_pitch_buy_its_rafters_and_undo_it() => GuiWorkflow.Run(app =>
+    {
+        // A 96 × 96 deck against the sample's existing wall, as GUI-DECK-01 draws it: the ledger its north edge.
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "Window in an existing wall");
+        app.Wheel(At(window, Point2.Inches(72, -48)), new Vector(0, -4));
+        app.Click(At(window, Point2.Inches(72, -140)));
+        app.Press(Key.D, KeyModifiers.Shift);
+        app.Drag(At(window, Point2.Inches(24, 0)), At(window, Point2.Inches(72, -48)), At(window, Point2.Inches(120, -96)));
+
+        // Shift+R and a click on the deck: no wall stands on its far edge, so a beam on posts carries the low end.
+        app.Press(Key.R, KeyModifiers.Shift);
+        app.Click(At(window, Point2.Inches(72, -48)));
+        app.Expect("a roof over the deck at napkin's starting 4 in 12, on a beam, 8'-0\" above the decking", () =>
+        {
+            Box roof = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>(), box => box.Roof is not null);
+            Assert.Equal((Length.Inches(96), Length.Inches(96), Length.Inches(32), Length.Inches(132)), (roof.Width, roof.Height, roof.Depth, roof.Anchor.Z));
+            Assert.Equal(RoofTool.StartingBeam, roof.Roof!.LowEnd);
+            Assert.True(window.IsShowingRoof);
+            Assert.StartsWith("Roof 1: 4 in 12, 8'-0\" along the house, a run of 8'-0\"", window.RoofHeadlineText, StringComparison.Ordinal);
+            Assert.Contains("Drew Roof 1 over Deck 1, high at the ledger, low on a (2) 2x10 beam", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Equal("Glazing: no wall stands on the deck yet, so there is nothing to take a ratio of.", window.RoofGlazingLine);
+        });
+
+        // 5 in 12 over a 96″ run is a 40″ rise and a whole 12 : 5 : 13 triangle, hypotenuse 104:
+        // rafter run 96 − 1 1/2 + 12 = 106 1/2, length 106 1/2 × 104 ÷ 96 = 115 3/8 = 9'-7 3/8"; rafters at 0 … 80 and 94 1/2: seven.
+        TypeInto(app, window, window.RoofControls.Pitch, "5 in 12");
+        app.Expect("the rise is 3'-4\" and the rafters are seven 2x8s, 9'-7 3/8\" along the slope", () =>
+        {
+            Assert.Equal(Length.Inches(40), window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Single(box => box.Roof is not null).Depth);
+            Assert.StartsWith("Roof 1: 5 in 12", window.RoofHeadlineText, StringComparison.Ordinal);
+            Assert.StartsWith("7 rafters 2x8 × 9'-7 3/8\" at 16\"", window.RoofFrameLines, StringComparison.Ordinal);
+            Assert.Contains("set the square at 5 and 12", window.RoofFrameLines, StringComparison.Ordinal);
+            Assert.StartsWith("Rafters 2x8 at 16\" o.c.", window.RoofCheckLine, StringComparison.Ordinal);
+        });
+
+        app.Chord(Key.L, KeyModifiers.Shift);
+        app.Expect("the shopping list has a Roof section buying the rafters, the beam and its posts", () =>
+        {
+            CutListWindow list = window.CutList!;
+            Assert.True(list.IsShowingRoof);
+            Assert.StartsWith("Roof 1: 7 rafters 2x8", list.RoofNoteText, StringComparison.Ordinal);
+            Assert.Contains(list.RoofRows.Sorted, row => row.Material == "2x8");
+            Assert.Contains(list.RoofRows.Sorted, row => row.Material == "2x10");
+            Assert.Contains(list.RoofRows.Sorted, row => row.Material == "4x4");
+            Assert.Contains("2x8", list.RoofCsv, StringComparison.Ordinal);
+        });
+
+        // Edit → Undo takes back the pitch, then the roof (Cmd+Z with the pitch box still holding the keys
+        // would take back its typing instead).
+        window.CutList!.Close();
+        window.Activate();
+        app.Click(CentreOf(window, window.EditMenuItem));
+        app.Click(CentreOf(window, window.UndoMenuEntry));
+        app.Expect("the pitch is back to 4 in 12", () =>
+            Assert.Equal(Length.Inches(32), window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Single(box => box.Roof is not null).Depth));
+        app.Click(CentreOf(window, window.EditMenuItem));
+        app.Click(CentreOf(window, window.UndoMenuEntry));
+        app.Expect("the roof is gone and the deck stays", () =>
+        {
+            Assert.DoesNotContain(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>(), box => box.Roof is not null);
+            Assert.Single(window.CurrentDesign.Sketch.Entities.Values.OfType<Box>(), box => box.Deck is not null);
+        });
+    });
+
     static void OpenSample(AppDriver app, MainWindow window, string sample)
     {
         app.Click(CentreOf(window, window.FileMenuItem));

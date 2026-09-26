@@ -1675,7 +1675,7 @@ public sealed class CanvasView : Control
 
         EntityId id = EntityId.New();
         LayerId layer = editor.LayerNamed(DesignLayers.Wall, out Request? addLayer);
-        if (!_wall.TryComplete(layer, addLayer, id, editor.NextName("Wall"), out Request? request))
+        if (!_wall.TryComplete(layer, addLayer, id, editor.NextName("Wall"), out Request? request, editor.Sketch))
         {
             InvalidateVisual();
             editor.Say(EditSeverity.Hint, "Drag to draw a wall — its length is the way you drag. A click on its own makes nothing.");

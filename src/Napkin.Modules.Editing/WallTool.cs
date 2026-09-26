@@ -90,8 +90,11 @@ public sealed class WallTool
         return true;
     }
 
-    /// <summary>Ends the drag, and gives back the request that adds the wall (and its layer, if new).</summary>
-    public bool TryComplete(LayerId layer, Request? addLayer, EntityId id, string name, [NotNullWhen(true)] out Request? request)
+    /// <summary>
+    /// Ends the drag, and gives back the request that adds the wall (and its layer, if new). Given the
+    /// sketch, a wall drawn within a deck's outline stands on its decking (deck-and-porch §5.1).
+    /// </summary>
+    public bool TryComplete(LayerId layer, Request? addLayer, EntityId id, string name, [NotNullWhen(true)] out Request? request, Sketch? sketch = null)
     {
         request = null;
         bool shaped = TryShape(layer, id, name, out Box? wall);
@@ -101,7 +104,30 @@ public sealed class WallTool
             return false;
         }
 
+        if (sketch is not null)
+        {
+            wall = OnDecking(sketch, wall!);
+        }
+
         request = addLayer is null ? new AddEntity(wall!) : Batch.Of(addLayer, new AddEntity(wall!));
         return true;
+    }
+
+    /// <summary>
+    /// The wall standing on the decking of the deck whose outline holds its footprint — its anchor's z
+    /// the deck's top — or the wall as drawn when no deck holds it.
+    /// </summary>
+    public static Box OnDecking(Sketch sketch, Box wall)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(wall);
+        if (Deck.Bounds(wall) is not { } w)
+        {
+            return wall;
+        }
+
+        Deck? under = Deck.All(sketch).FirstOrDefault(deck => deck.Box.Phase != Phase.Demolish && deck.Outline is { } o
+            && o.West <= w.West && w.East <= o.East && o.South <= w.South && w.North <= o.North);
+        return under is null ? wall : wall with { Anchor = wall.Anchor with { Z = under.Box.Anchor.Z + under.Height } };
     }
 }

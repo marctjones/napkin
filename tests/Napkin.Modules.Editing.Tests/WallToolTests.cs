@@ -182,6 +182,33 @@ public class WallToolTests
     }
 
     [Fact]
+    public void A_wall_drawn_on_a_deck_stands_on_its_decking_and_one_beside_it_on_the_ground()
+    {
+        // A deck 144 × 120 south of the origin, 36″ up; a wall along its south edge, and one past its east edge.
+        LayerId decks = LayerId.New();
+        Box deck = new(EntityId.New(), decks, new Point3(Length.Zero, Length.Inches(-120), Length.Zero), Length.Inches(144), Length.Inches(120), Length.Inches(36), BoxFace.Top, Angle.Zero)
+        {
+            Deck = DeckTool.StartingInputs,
+        };
+        Sketch sketch = Sketch.Empty.WithLayer(new Layer(decks, Napkin.Modules.Building.BuildingLayers.Deck)).WithEntity(deck);
+
+        WallTool front = Drawing(Point2.Inches(0, -120), Point2.Inches(144, -120));
+        Box drawn = Shape(front);
+        Assert.True(front.TryComplete(Walls, null, WallId, "Wall 1", out Request? request, sketch));
+        Assert.Equal(new AddEntity(drawn with { Anchor = drawn.Anchor with { Z = Length.Inches(36) } }), request);
+
+        WallTool beside = Drawing(Point2.Inches(150, -120), Point2.Inches(150, 0));
+        Box outside = Shape(beside);
+        Assert.True(beside.TryComplete(Walls, null, WallId, "Wall 1", out Request? ground, sketch));
+        Assert.Equal(new AddEntity(outside), ground);
+
+        // A demolished deck holds nothing up, and a tipped wall is left as drawn.
+        Assert.Equal(Length.Zero, WallTool.OnDecking(sketch.WithEntity(deck with { Phase = Phase.Demolish }), drawn).Anchor.Z);
+        Box tipped = drawn with { FaceUp = BoxFace.South };
+        Assert.Equal(tipped, WallTool.OnDecking(sketch, tipped));
+    }
+
+    [Fact]
     public void A_click_without_a_drag_completes_nothing_and_still_ends_the_drag()
     {
         WallTool tool = new() { Member = TwoByFour };
