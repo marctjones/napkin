@@ -49,7 +49,15 @@ public sealed record PartsCellDrawn(
     bool NotToScale,
     PartsDimension Length,
     PartsDimension Width,
-    ImmutableArray<PartsText> Texts);
+    ImmutableArray<PartsText> Texts)
+{
+    /// <summary>
+    /// For an angled part with compound ends, the bevel at each such end: a line across the wide face,
+    /// Depth·tan β in from that end, drawn dashed — where the cut leaves the far face
+    /// (<c>docs/design/angled-parts.md</c> &#xA7;4). Empty otherwise.
+    /// </summary>
+    public ImmutableArray<(Point From, Point To)> Bevels { get; init; } = [];
+}
 
 /// <summary>
 /// Builds one Parts view cell — geometry, dimension lines and text — without drawing it (§2.3), so
@@ -104,7 +112,10 @@ public static class PartsCellDrawing
             new Point(drawn.Right + DimensionGap, drawn.Bottom),
             picture.VerticalText);
 
-        return new PartsCellDrawn(outline, drawn, scale, notToScale, length, side, TextsFor(cell, picture, notToScale, at));
+        return new PartsCellDrawn(outline, drawn, scale, notToScale, length, side, TextsFor(cell, picture, notToScale, at))
+        {
+            Bevels = [.. PartsPicture.BevelOffsets(cell).Select(x => (ToCell(new Point2(x, Length.Zero)), ToCell(new Point2(x, cell.Blank.Height))))],
+        };
     }
 
     /// <summary>

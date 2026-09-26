@@ -407,6 +407,18 @@ public class StrutCutListTests
         Assert.Contains(SuppliesList.GlueLine(4, 4), SuppliesList.Of(sketch).Select(extra => extra.Item));
     }
 
+    [Fact]
+    public void ACompoundLegsCellShowsItsBevelsHalfAnInchInFromEachEnd()
+    {
+        // Board 2's bevel: sin β = 4/√160, so tan β = 1/3, and 1½″ × 1/3 = ½″ = 512 in from each end of
+        // the 14 202-unit blank (angled-parts §4). A plain-mitred leg has none.
+        PartsCell compound = Assert.Single(PartsSheet.Of(Rows(StoolLeg("Leg", 3072, 4096, Axis.X))));
+        Assert.Equal([new Length(512), new Length(14202 - 512)], PartsPicture.BevelOffsets(compound));
+
+        PartsCell plain = Assert.Single(PartsSheet.Of(Rows(StoolLeg("Leg", 3072, 4096, Axis.Z))));
+        Assert.Empty(PartsPicture.BevelOffsets(plain));
+    }
+
     // ---- The half-degree rule (§2.4), in its one function ----
 
     [Theory]

@@ -149,6 +149,43 @@ public static class SnapResolver
             }
         }
 
+        // A strut that leans one way keeps two faces square to the room (angled-parts §3.2, §3.3):
+        // seen from above they are two more edge lines, and a box's side flush to one is exact.
+        foreach (Strut strut in sketch.Entities.Values.OfType<Strut>().OrderBy(strut => strut.Id))
+        {
+            if (ignoring?.Contains(strut.Id) ?? false)
+            {
+                continue;
+            }
+
+            foreach ((StrutFace face, EdgeLine target) in StrutFaceLines(strut))
+            {
+                foreach (EdgeLine mine in movingEdges)
+                {
+                    Length shift = target.Coordinate - mine.Coordinate;
+                    if (mine.NormalAxis != target.NormalAxis || !Overlaps(mine, target, radius) || Length.Abs(shift) > radius)
+                    {
+                        continue;
+                    }
+
+                    Candidate candidate = new(
+                        target.NormalAxis, shift, target.Coordinate, strut.Id, target.Edge, mine.Edge,
+                        Length.Min(mine.Low, target.Low), Length.Max(mine.High, target.High))
+                    {
+                        StrutFace = face,
+                    };
+                    if (target.NormalAxis == Axis.X)
+                    {
+                        bestX = Better(bestX, candidate);
+                    }
+                    else
+                    {
+                        bestY = Better(bestY, candidate);
+                    }
+                }
+            }
+        }
+
         Length anchorX = bestX is { } x ? wantedAnchor.X + x.Shift : SnapGrid.Snap(wantedAnchor.X, gridStepInches);
         Length anchorY = bestY is { } y ? wantedAnchor.Y + y.Shift : SnapGrid.Snap(wantedAnchor.Y, gridStepInches);
         Point2 anchor = new(anchorX, anchorY);
@@ -159,7 +196,7 @@ public static class SnapResolver
 
         // Both axes caught on the same part, on edges that meet at a corner: that is one corner
         // sitting on another, and Coincident says it in one statement instead of two.
-        if (bestX is { } cornerX && bestY is { } cornerY
+        if (bestX is { StrutFace: null } cornerX && bestY is { StrutFace: null } cornerY
             && cornerX.Target == cornerY.Target
             && SharedCorner(cornerX.TargetEdge, cornerY.TargetEdge) is { } theirCorner
             && SharedCorner(cornerX.MovingEdge, cornerY.MovingEdge) is { } myCorner)
@@ -187,6 +224,15 @@ public static class SnapResolver
             }
 
             hits.Add(HitOf(caught, SnapKind.Edge));
+
+            if (caught.StrutFace is { } strutFace)
+            {
+                statements.Add(new Flush(
+                    RelationshipId.New(),
+                    new StrutFaceRef(caught.Target, strutFace),
+                    new FeatureRef(moving.Id, BoxFeature.Face(landed.Footprint().FaceAt(caught.MovingEdge)))));
+                continue;
+            }
 
             // The moving part is the one that follows, so it is the second edge: Flush(a, b)
             // reads "b follows a" (docs/design/geometry-model.md §3.2). Each plan side is the face
@@ -264,6 +310,32 @@ public static class SnapResolver
     static bool Overlaps(EdgeLine a, EdgeLine b, Length slack) =>
         a.Low - slack <= b.High && b.Low - slack <= a.High;
 
+    /// <summary>
+    /// The faces of a strut a plan snap can catch: those square to X or Y (a one-way lean's two side
+    /// faces), each as a line over the strut's plan extent along the other axis.
+    /// </summary>
+    public static IEnumerable<(StrutFace Face, EdgeLine Line)> StrutFaceLines(Strut strut)
+    {
+        ArgumentNullException.ThrowIfNull(strut);
+        IReadOnlyList<(double X, double Y)> outline = StrutSolid.PlanOutline(strut);
+        foreach (StrutFace face in Enum.GetValues<StrutFace>())
+        {
+            if (strut.FacePlane(face) is not (var axis, var at) || axis == Axis.Z)
+            {
+                continue;
+            }
+
+            IEnumerable<double> along = outline.Select(point => axis == Axis.X ? point.Y : point.X);
+            // A strut face has no box edge; the edge named here is never read for a strut target.
+            yield return (face, new EdgeLine(
+                BoxEdge.South,
+                axis,
+                at,
+                Length.FromInches(along.Min(), Rounding.HalfToEven),
+                Length.FromInches(along.Max(), Rounding.HalfToEven)));
+        }
+    }
+
     sealed record Candidate(
         Axis Axis,
         Length Shift,
@@ -272,5 +344,9 @@ public static class SnapResolver
         BoxEdge TargetEdge,
         BoxEdge MovingEdge,
         Length Low,
-        Length High);
+        Length High)
+    {
+        /// <summary>The strut face caught, when the target is a strut rather than a box.</summary>
+        public StrutFace? StrutFace { get; init; }
+    }
 }
