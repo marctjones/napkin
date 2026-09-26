@@ -124,6 +124,39 @@ public sealed record DeckInputs(
     }
 }
 
+/// <summary>What a deck's inputs may not be: the rules the panel and the updater share (§7).</summary>
+public static class DeckRules
+{
+    /// <summary>Why these inputs are refused, in words, or null when they are fine.</summary>
+    public static string? Refusal(DeckInputs deck)
+    {
+        ArgumentNullException.ThrowIfNull(deck);
+        if (deck.JoistSpacing <= Length.Zero)
+        {
+            return "a joist spacing is longer than zero";
+        }
+
+        if (deck.Beam.Plies is < 1 or > 3)
+        {
+            return "a beam has 1 to 3 plies";
+        }
+
+        if (deck.PostCount < 2)
+        {
+            return "a deck's beam stands on at least 2 posts";
+        }
+
+        if (deck.Cantilever < Length.Zero || deck.DeckingGap < Length.Zero || deck.FootingDepth < Length.Zero)
+        {
+            return "a cantilever, a decking gap and a footing depth are zero or more";
+        }
+
+        return new[] { deck.Joist, deck.Beam.Lumber, deck.Post, deck.Decking }.Any(name => name.Trim().Length == 0)
+            ? "every lumber is named"
+            : null;
+    }
+}
+
 /// <summary>A roof's covering, as the person typed it from the package (§5.3).</summary>
 /// <param name="Name">What it is.</param>
 /// <param name="Coverage">Whole square feet one unit covers, or null when not typed.</param>

@@ -73,6 +73,7 @@ public sealed class DirectUpdater : IGeometryUpdater
                 ? new Solved(sketch.WithEntity(phased with { Phase = phase.Phase }), ChangeSet.Empty with { Modified = [phase.Id] })
                 : new Rejected(RejectionReason.UnknownEntity),
             SetRoomInputs room => ApplySetRoomInputs(sketch, room),
+            SetDeckInputs deck => ApplySetDeckInputs(sketch, deck),
             SetStrutCuts cuts => ApplySetStrutCuts(sketch, cuts),
             SetNote note => sketch.Find(note.Id) switch
             {
@@ -366,6 +367,26 @@ public sealed class DirectUpdater : IGeometryUpdater
         }
 
         return new Solved(sketch.WithEntity(box with { Room = request.Inputs }), ChangeSet.Empty with { Modified = [box.Id] });
+    }
+
+    private static UpdateResult ApplySetDeckInputs(Sketch sketch, SetDeckInputs request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        if (request.Inputs is { } deck && DeckRules.Refusal(deck) is not null)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        return new Solved(sketch.WithEntity(box with { Deck = request.Inputs }), ChangeSet.Empty with { Modified = [box.Id] });
     }
 
     private static UpdateResult ApplySetPart(Sketch sketch, SetPart request)

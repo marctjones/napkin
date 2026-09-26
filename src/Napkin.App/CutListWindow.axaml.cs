@@ -526,6 +526,18 @@ public partial class CutListWindow : Window
     /// <summary>The framing section as a CSV file would carry it, in the order on screen.</summary>
     public string FramingCsv => ShoppingListCsv.ToCsv(FramingTable.Sorted, _kerf);
 
+    /// <summary>The Deck section's rows (deck-and-porch §2.4).</summary>
+    public ShoppingListTable DeckRows => DeckTable;
+
+    /// <summary>Whether the Deck section is showing.</summary>
+    public bool IsShowingDeck => DeckSection.IsVisible;
+
+    /// <summary>What the Deck section says about each deck.</summary>
+    public string DeckNoteText => DeckNote.Text ?? string.Empty;
+
+    /// <summary>The Deck section as CSV.</summary>
+    public string DeckCsv => ShoppingListCsv.ToCsv(DeckTable.Sorted, _kerf);
+
     /// <summary>The tab that shows the shopping list, for the GUI suite to click.</summary>
     public TabItem ShoppingListTabItem => ShoppingListTab;
 
@@ -603,6 +615,27 @@ public partial class CutListWindow : Window
               + (walls.Any(wall => !wall.Problems.IsEmpty && !wall.Pieces.IsEmpty) ? " Some openings could not be framed; the drawing's panel says why." : string.Empty)
               + string.Concat(diffs.Where(diff => diff.FromExisting && diff.Changes).Select(diff => $" {diff.Wall.Name} is existing: only its new pieces are bought ({diff.Sentence}), {diff.Assumption}."))
               + CodeCheckNote(sketch, checks);
+        // Each deck's frame, from the building as it will be (deck-and-porch §2.4).
+        List<(DeckFraming Framing, string Name)> decks = [];
+        List<string> deckNotes = [];
+        foreach (Deck deck in Deck.All(sketch.After()).Where(deck => deck.Box.Phase == Phase.New))
+        {
+            (DeckFraming? framing, DeckRefusal? refusal) = DeckFrame.Of(sketch.After(), deck, MaterialsLibrary.Shipped);
+            if (framing is not null)
+            {
+                decks.Add((framing, deck.Name));
+                deckNotes.Add($"{deck.Name}: {Napkin.Modules.Editing.DeckTool.FrameLine(framing)}.");
+            }
+            else
+            {
+                deckNotes.Add($"{deck.Name}: {refusal!.Text}");
+            }
+        }
+
+        DeckTable.Rows = ShoppingList.Of([.. decks.SelectMany(deck => DeckFrame.CutRows(deck.Framing))], _kerf);
+        DeckSection.IsVisible = deckNotes.Count > 0;
+        DeckNote.Text = string.Join(" ", deckNotes)
+                        + (decks.Count > 0 ? " Decking is listed by the board; napkin has read no stock-length list for decking (#155)." : string.Empty);
         BuildSizes(sketch);
         string supplies = SuppliesText(sketch);
         if (supplies != _suppliesBuiltFrom)

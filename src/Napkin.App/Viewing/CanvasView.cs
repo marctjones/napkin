@@ -366,7 +366,7 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>Whether a press on the paper starts drawing rather than picking or panning.</summary>
-    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Note or EditTool.Strut;
+    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Deck or EditTool.Note or EditTool.Strut;
 
     /// <summary>
     /// The precision dimension labels are shown at. Fixed at 1/16&#x2033;; the per-project picker
@@ -744,7 +744,7 @@ public sealed class CanvasView : Control
             return;
         }
 
-        if (_tool == EditTool.Room)
+        if (_tool is EditTool.Room or EditTool.Deck)
         {
             _room.Begin(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             _roomPressedAt = _view.ToWorld(position);
@@ -916,6 +916,10 @@ public sealed class CanvasView : Control
         else if (_wall.IsDrawing)
         {
             CompleteWall();
+        }
+        else if (_room.IsDrawing && _tool == EditTool.Deck)
+        {
+            CompleteDeck();
         }
         else if (_room.IsDrawing)
         {
@@ -1411,6 +1415,53 @@ public sealed class CanvasView : Control
     }
 
     Point2 _roomPressedAt;
+
+    /// <summary>
+    /// Picks up the deck tool (deck-and-porch §8): the next drag draws a deck whose edges snap to an
+    /// existing wall's face; the edge on the face is the ledger.
+    /// </summary>
+    public void ArmDeck()
+    {
+        Tool = EditTool.Deck;
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+        _editor?.Say(EditSeverity.Hint, "Deck tool: drag the deck out from the face of an existing wall — that edge is the ledger. " + DeckTool.StartingWords);
+    }
+
+    void CompleteDeck()
+    {
+        if (_editor is not { } editor)
+        {
+            _room.Cancel();
+            return;
+        }
+
+        bool dragged = _room.TryRectangle(out Point2 anchor, out Length length, out Length width);
+        _room.Cancel();
+        if (!dragged)
+        {
+            editor.Say(EditSeverity.Hint, "Drag the deck out from the wall's face: a click alone draws nothing.");
+            InvalidateVisual();
+            return;
+        }
+
+        (anchor, length, width) = DeckTool.SnapToHouse(editor.Sketch, anchor, length, width, Length.FromInches(Math.Max(SnapStepInches, 1), Rounding.HalfToEven));
+        EntityId id = EntityId.New();
+        LayerId layer = editor.LayerNamed(DesignLayers.Deck, out Request? addLayer);
+        string name = editor.NextName("Deck");
+        const string what = "Drew a deck";
+        editor.BeginGesture(what);
+        if (editor.Apply(DeckTool.Request(layer, addLayer, id, name, anchor, length, width), what) is Succeeded)
+        {
+            editor.Select(id);
+            Deck deck = new(editor.Sketch.Find<Box>(id)!);
+            string ledger = deck.Ledger(editor.Sketch) is { Edge: { } edge } ? $"its {edge.ToString().ToLowerInvariant()} edge is the ledger" : new DeckRefusal(deck.Ledger(editor.Sketch).Problem!.Value, string.Empty).Text;
+            editor.Say(EditSeverity.Done, $"Drew {name}, {Label(length)} × {Label(width)}; {ledger} {DeckTool.StartingWords}");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+    }
 
     /// <summary>A note was just put down: the window gives its words box the keyboard.</summary>
     public event EventHandler<EntityId>? NotePlaced;

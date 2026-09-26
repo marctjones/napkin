@@ -154,6 +154,7 @@ public partial class MainWindow : Window
         WireFirmUp();
         WireRenovation();
         WireRoom();
+        WireDeck();
         WireNotes();
         WireStruts();
         DrawingCanvas.CommandRequested += (_, request) => request.Handled = Run(request.Command);
@@ -289,6 +290,12 @@ public partial class MainWindow : Window
             {
                 // A room's typed value applies on its own, one undo step (renovation-sketches §8).
                 ApplyRoom();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && e.Source is TextBox deckBox && IsDeckField(deckBox))
+            {
+                // So does a deck's (deck-and-porch §8).
+                ApplyDeck();
                 e.Handled = true;
             }
             else if (e.Key == Key.Enter && e.Source is TextBox box

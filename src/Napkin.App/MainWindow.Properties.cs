@@ -111,6 +111,7 @@ public partial class MainWindow
             UpdateStockReadout();
             ShowFraming(box);
             ShowRoom(box);
+            ShowDeck(box);
         }
         finally
         {
@@ -168,6 +169,7 @@ public partial class MainWindow
             UpdateOutOfPlaneCaption();
             UpdateStockReadout();
             ShowRoom(box);
+            ShowDeck(box);
         }
         finally
         {

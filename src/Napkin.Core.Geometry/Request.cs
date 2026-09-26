@@ -125,6 +125,11 @@ public sealed record SetPhase(EntityId Id, Phase Phase) : Request;
 /// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>
 public sealed record SetRoomInputs(EntityId Box, RoomInputs? Inputs) : Request;
 
+/// <summary>Sets a deck's inputs (deck-and-porch §2.2). Exact, moves nothing.</summary>
+/// <param name="Box">The deck's box.</param>
+/// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>
+public sealed record SetDeckInputs(EntityId Box, DeckInputs? Inputs) : Request;
+
 /// <summary>Sets what a note says and the symbol it is drawn with. Exact, moves nothing.</summary>
 /// <param name="Id">The note.</param>
 /// <param name="Text">Its words.</param>

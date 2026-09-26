@@ -79,3 +79,48 @@ public class DeckInputsTests
         Assert.Equal(new BeamLowEnd(new BeamSpec(2, "2x10"), "4x4", 2), new BeamLowEnd(new BeamSpec(2, "2x10"), "4x4", 2));
     }
 }
+
+/// <summary>Setting a deck's inputs through the updater (deck-and-porch §8): one undo step, refused when the inputs break §7's rules.</summary>
+public class SetDeckInputsTests
+{
+    static readonly IGeometryUpdater Updater = DirectUpdater.Instance;
+
+    static DeckInputs Deck() => new(
+        JoistDirection.Out, Length.Inches(16), "2x8", new BeamSpec(2, "2x10"), "4x4", 3, Length.Zero, "5/4x6", Length.Inches(0, 1, 8), true,
+        null, null, null, null, null);
+
+    [Fact]
+    public void A_decks_inputs_are_set_and_cleared_and_bad_ones_refused()
+    {
+        SketchBuilder builder = new();
+        EntityId deck = builder.AddBox(0, 0, 144, 120);
+
+        Solved set = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new SetDeckInputs(deck, Deck())));
+        Assert.Equal(Deck(), set.Sketch.Find<Box>(deck)!.Deck);
+        Assert.Null(Assert.IsType<Solved>(Updater.Apply(set.Sketch, new SetDeckInputs(deck, null))).Sketch.Find<Box>(deck)!.Deck);
+        Assert.Null(DeckRules.Refusal(Deck()));
+
+        foreach (DeckInputs bad in new[]
+                 {
+                     Deck() with { JoistSpacing = Length.Zero },
+                     Deck() with { Beam = new BeamSpec(0, "2x10") },
+                     Deck() with { Beam = new BeamSpec(4, "2x10") },
+                     Deck() with { PostCount = 1 },
+                     Deck() with { Cantilever = new Length(-1) },
+                     Deck() with { DeckingGap = new Length(-1) },
+                     Deck() with { FootingDepth = new Length(-1) },
+                     Deck() with { Joist = " " },
+                     Deck() with { Beam = new BeamSpec(2, "") },
+                     Deck() with { Post = "" },
+                     Deck() with { Decking = "" },
+                 })
+        {
+            Assert.NotNull(DeckRules.Refusal(bad));
+            Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetDeckInputs(deck, bad)));
+        }
+
+        Assert.Equal(RejectionReason.UnknownEntity, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetDeckInputs(EntityId.New(), Deck()))).Reason);
+        EntityId node = builder.AddNode(0, 0);
+        Assert.Equal(RejectionReason.DanglingReference, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetDeckInputs(node, Deck()))).Reason);
+    }
+}

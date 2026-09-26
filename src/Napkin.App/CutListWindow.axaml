@@ -113,6 +113,12 @@
                                 <TextBlock Name="FramingNote" FontSize="11" Opacity="0.75" TextWrapping="Wrap" />
                                 <viewing:ShoppingListTable Name="FramingTable" />
                             </StackPanel>
+                            <!-- Each deck's frame, bought as boards (deck-and-porch §2.4): its own section. -->
+                            <StackPanel Name="DeckSection" Spacing="4" IsVisible="False">
+                                <TextBlock Text="Deck" Margin="0,14,0,0" FontSize="12" FontWeight="SemiBold" />
+                                <TextBlock Name="DeckNote" FontSize="11" Opacity="0.75" TextWrapping="Wrap" AutomationProperties.Name="Deck note" />
+                                <viewing:ShoppingListTable Name="DeckTable" />
+                            </StackPanel>
                             <!-- A room's finishes by area (renovation-sketches §5): each line rounds once, and says
                                  the typed values it used. -->
                             <StackPanel Name="AreaTakeoffSection" Spacing="2" IsVisible="False">

@@ -224,6 +224,11 @@
                           Header="Roo_m"
                           Click="OnRoomToolClicked"
                           ToolTip.Tip="Drag out a room, or click inside four walls to take their inside faces; tick its finishes in the panel for the Area takeoff." />
+                <!-- Deck (deck-and-porch §8): dragged out from an existing wall's face, that edge the ledger. -->
+                <MenuItem Name="DeckToolMenuItem"
+                          Header="Dec_k"
+                          Click="OnDeckToolClicked"
+                          ToolTip.Tip="Drag a deck out from the face of an existing wall: that edge is the ledger. Its frame is worked out from the inputs in the panel." />
                 <MenuItem Name="NoteToolMenuItem"
                           Header="Not_e"
                           Click="OnNoteToolClicked"
@@ -1238,6 +1243,43 @@
                                        AutomationProperties.Name="Room notes" />
                             <TextBlock Name="RoomTakeoffText" FontSize="10" Opacity="0.85" TextWrapping="Wrap"
                                        AutomationProperties.Name="Area takeoff" />
+                        </StackPanel>
+
+                        <!-- A deck's inputs and its frame (deck-and-porch §2.2, §8): pickers and typed boxes;
+                             the frame in one line, derived every time. -->
+                        <StackPanel Name="DeckFields" Spacing="4" IsVisible="False">
+                            <TextBlock Name="DeckHeadline" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Deck" />
+                            <TextBlock Name="DeckFrameText" FontSize="10" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Deck frame" />
+                            <Grid ColumnDefinitions="Auto,2*,Auto,2*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Joist" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckJoistBox" Grid.Row="0" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Deck joist" />
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="at" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckSpacingBox" Grid.Row="0" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Joist spacing" />
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Beam plies" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckPliesBox" Grid.Row="1" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Beam plies" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="of" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckBeamBox" Grid.Row="1" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Beam lumber" />
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Post" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckPostBox" Grid.Row="2" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Post lumber" />
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="posts" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckPostCountBox" Grid.Row="2" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Post count" />
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Cantilever" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckCantileverBox" Grid.Row="3" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Cantilever" />
+                                <TextBlock Grid.Row="3" Grid.Column="2" Text="Footing" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckFootingBox" Grid.Row="3" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Footing depth" />
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Decking" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckDeckingBox" Grid.Row="4" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Decking" />
+                                <TextBlock Grid.Row="4" Grid.Column="2" Text="gap" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckGapBox" Grid.Row="4" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Decking gap" />
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Supports" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckSupportsBox" Grid.Row="5" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="What the deck supports" />
+                                <TextBlock Grid.Row="5" Grid.Column="2" Text="Species" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="DeckSpeciesBox" Grid.Row="5" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Species" />
+                            </Grid>
+                            <CheckBox Name="DeckBlockingCheck" Content="Blocking at mid-span" FontSize="11"
+                                      IsCheckedChanged="OnDeckTicked" AutomationProperties.Name="Blocking" />
                         </StackPanel>
 
                         <CheckBox Name="IsPartCheck"
