@@ -54,6 +54,9 @@ public static class PartsIsometric
         foreach (PartsCell cell in cells)
         {
             (double width, double height) = Extent(cell);
+
+            // In a 224 × 100 drawing the height always binds: an isometric view is at most about 1.73
+            // times as wide as it is tall. The width is kept so that a differently shaped cell is right.
             double fits = Math.Min(
                 width > 0 ? PartsScale.DrawingWidth / width : double.PositiveInfinity,
                 height > 0 ? PartsScale.DrawingHeight / height : double.PositiveInfinity);
