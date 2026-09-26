@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "kind": "member-span",
+  "use": "deck-beam",
+  "table": "ZZ-DECK-BEAM",
+  "title": "SYNTHETIC DECK BEAM SPANS - NOT CODE VALUES",
+  "source": "zz-synth-base",
+  "location": "synthetic p. 2",
+  "inputs": [
+    {
+      "name": "species",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "zz-fir"
+      ]
+    },
+    {
+      "name": "member",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "(2) 2x8",
+        "(2) 2x10"
+      ]
+    },
+    {
+      "name": "joistSpan",
+      "type": "length",
+      "band": "upper-bound",
+      "domain": {
+        "min": "1in",
+        "max": "16ft 0in"
+      }
+    }
+  ],
+  "footnotes": [
+    {
+      "id": "a",
+      "text": "SYNTHETIC footnote a: shown with results, not encoded.",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ],
+  "rows": [
+    {
+      "id": "r.2x2x8.10ft 0in",
+      "species": "zz-fir",
+      "member": "(2) 2x8",
+      "joistSpan": "10ft 0in",
+      "span": "5ft 7in",
+      "location": "synthetic p. 3"
+    },
+    {
+      "id": "r.2x2x8.16ft 0in",
+      "species": "zz-fir",
+      "member": "(2) 2x8",
+      "joistSpan": "16ft 0in",
+      "span": "4ft 3in",
+      "location": "synthetic p. 3"
+    },
+    {
+      "id": "r.2x2x10.10ft 0in",
+      "species": "zz-fir",
+      "member": "(2) 2x10",
+      "joistSpan": "10ft 0in",
+      "span": "6ft 10in",
+      "location": "synthetic p. 3"
+    },
+    {
+      "id": "r.2x2x10.16ft 0in",
+      "species": "zz-fir",
+      "member": "(2) 2x10",
+      "joistSpan": "16ft 0in",
+      "span": "5ft 2in",
+      "location": "synthetic p. 3"
+    }
+  ]
+}

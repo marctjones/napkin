@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "kind": "deck-footing",
+  "table": "ZZ-DECK-FOOTING",
+  "title": "SYNTHETIC FOOTING SIZES - NOT CODE VALUES",
+  "source": "zz-synth-base",
+  "location": "synthetic p. 2",
+  "inputs": [
+    {
+      "name": "tributaryArea",
+      "type": "sqft",
+      "band": "upper-bound",
+      "domain": {
+        "min": 1,
+        "max": 80
+      }
+    },
+    {
+      "name": "soilBearing",
+      "type": "psf",
+      "band": "lower-bound",
+      "domain": {
+        "min": 1500,
+        "max": 4000
+      }
+    }
+  ],
+  "footnotes": [
+    {
+      "id": "a",
+      "text": "SYNTHETIC footnote a: shown with results, not encoded.",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ],
+  "rows": [
+    {
+      "id": "r.20.1500",
+      "tributaryArea": 20,
+      "soilBearing": 1500,
+      "footing": "zz 14 in square",
+      "location": "synthetic p. 6"
+    },
+    {
+      "id": "r.20.2000",
+      "tributaryArea": 20,
+      "soilBearing": 2000,
+      "footing": "zz 12 in square",
+      "location": "synthetic p. 6"
+    },
+    {
+      "id": "r.20.3000",
+      "tributaryArea": 20,
+      "soilBearing": 3000,
+      "footing": "zz 10 in square",
+      "location": "synthetic p. 6"
+    },
+    {
+      "id": "r.40.1500",
+      "tributaryArea": 40,
+      "soilBearing": 1500,
+      "footing": "zz 18 in square",
+      "location": "synthetic p. 6"
+    },
+    {
+      "id": "r.40.2000",
+      "tributaryArea": 40,
+      "soilBearing": 2000,
+      "footing": "zz 15 in square",
+      "location": "synthetic p. 6"
+    },
+    {
+      "id": "r.40.3000",
+      "tributaryArea": 40,
+      "soilBearing": 3000,
+      "footing": "zz 13 in square",
+      "location": "synthetic p. 6"
+    },
+    {
+      "id": "r.80.1500",
+      "tributaryArea": 80,
+      "soilBearing": 1500,
+      "footing": "zz 25 in square",
+      "location": "synthetic p. 6"
+    },
+    {
+      "id": "r.80.2000",
+      "tributaryArea": 80,
+      "soilBearing": 2000,
+      "footing": "zz 21 in square",
+      "location": "synthetic p. 6"
+    },
+    {
+      "id": "r.80.3000",
+      "tributaryArea": 80,
+      "soilBearing": 3000,
+      "footing": "zz 18 in square",
+      "location": "synthetic p. 6"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "kind": "member-span",
+  "use": "deck-joist",
+  "table": "ZZ-DECK-JOIST",
+  "title": "SYNTHETIC DECK JOIST SPANS - NOT CODE VALUES",
+  "source": "zz-synth-base",
+  "location": "synthetic p. 2",
+  "inputs": [
+    {
+      "name": "supports",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "zz-deck"
+      ]
+    },
+    {
+      "name": "species",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "zz-fir"
+      ]
+    },
+    {
+      "name": "member",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "2x8",
+        "2x10"
+      ]
+    },
+    {
+      "name": "spacing",
+      "type": "length",
+      "band": "exact"
+    }
+  ],
+  "footnotes": [
+    {
+      "id": "a",
+      "text": "SYNTHETIC footnote a: shown with results, not encoded.",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ],
+  "rows": [
+    {
+      "id": "r.fir.2x8.12",
+      "supports": "zz-deck",
+      "species": "zz-fir",
+      "member": "2x8",
+      "spacing": "12in",
+      "span": "12ft 7in",
+      "location": "synthetic p. 2 row 2x8 12"
+    },
+    {
+      "id": "r.fir.2x8.16",
+      "supports": "zz-deck",
+      "species": "zz-fir",
+      "member": "2x8",
+      "spacing": "16in",
+      "span": "11ft 1in",
+      "location": "synthetic p. 2 row 2x8 16"
+    },
+    {
+      "id": "r.fir.2x10.12",
+      "supports": "zz-deck",
+      "species": "zz-fir",
+      "member": "2x10",
+      "spacing": "12in",
+      "span": "15ft 2in",
+      "location": "synthetic p. 2 row 2x10 12"
+    },
+    {
+      "id": "r.fir.2x10.16",
+      "supports": "zz-deck",
+      "species": "zz-fir",
+      "member": "2x10",
+      "spacing": "16in",
+      "span": "13ft 5in",
+      "location": "synthetic p. 2 row 2x10 16"
+    }
+  ]
+}

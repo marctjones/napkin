@@ -22,3 +22,10 @@ header can be bought; the spans, loads and stud counts beside them are not from 
   (docs/design/renovation-sketches.md §4.3, §10.1): ZZ-RENO-HEADER, exterior-bearing, answers (2) 2x6 with 1 jack
   and 1 king each side for zz-roof at snow ≤ 30 and a span ≤ 4'-1" (example 2's 3'-0" window); ZZ-RENO-INTERIOR,
   interior-bearing, answers (2) 2x8 for the same request, so the route taken shows in the answer.
+- `deck/`: `us-zz-deck` ("ZZ DECK", #198) — deck tables for the M11 checks, every number made up and chosen not to
+  coincide with any published value: ZZ-DECK-JOIST (zz-deck, zz-fir, 2x8 at 16" allowed 11'-1"), ZZ-DECK-BEAM
+  ((2) 2x10 carrying joists up to 10'-0": 6'-10"), ZZ-RAFTER, ZZ-DECK-LEDGER (zz-bolts, staggered, 17" up to a
+  12'-0" joist span), ZZ-DECK-FOOTING (a lower-bound soil column: up to 40 sq ft on at least 2000 psf,
+  "zz 15 in square"), ZZ-GUARD.1 (guard trigger 28", minimum 34", opening 5"; riser 8 1/4", tread 9",
+  difference 1/2", handrail at 3 risers, width 32") and a frost.json of 3'-6". It also carries ZZ-DECK-HEADER,
+  a copy of ZZ-RENO-HEADER, so a porch's walls size under the same pack.
