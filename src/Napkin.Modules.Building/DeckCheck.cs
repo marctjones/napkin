@@ -145,10 +145,13 @@ public static class DeckCheck
     /// <summary>§5.1: a bearing wall stands on the deck and nothing says what the deck supports.</summary>
     static string? SupportsNote(Sketch sketch, Deck deck, DeckInputs inputs)
     {
-        if (inputs.Supports is not null || deck.Outline is not { } outline)
+        if (inputs.Supports is not null)
         {
             return null;
         }
+
+        // Only asked of a deck that framed, so it stands level and has an outline.
+        var outline = deck.Outline!.Value;
 
         Wall? bearing = Wall.All(sketch).FirstOrDefault(wall =>
             wall.Box.WallInputs?.Bearing == true
@@ -169,8 +172,7 @@ public static class DeckCheck
     {
         DeckResult.OutOfScope scope => new DeckCheckLine(kind, result, $"{what}: {scope.Explanation}", false),
         DeckResult.InputMissing missing => new DeckCheckLine(kind, result, $"{what}: {missing.Explanation}", false),
-        DeckResult.NoData none => new DeckCheckLine(kind, result, $"{what}: {none.Explanation}", false),
-        _ => new DeckCheckLine(kind, result, what, false),
+        _ => new DeckCheckLine(kind, result, $"{what}: {((DeckResult.NoData)result).Explanation}", false),
     };
 
     /// <summary>"ZZ-DECK-JOIST row r.fir.2x8.16, synthetic p. 2 row 2x8 16".</summary>
