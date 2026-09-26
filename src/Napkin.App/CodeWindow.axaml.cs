@@ -215,7 +215,7 @@ public partial class CodeWindow : Window
             return;
         }
 
-        TownOfferText.Text = SiteOffer.Text(_sitePack, town);
+        TownOfferText.Text = SiteOffer.Text(_sitePack.Manifest.Adoption.ShortName, _sitePack.Site!, town);
         UseTownButton.IsEnabled = Design is not null;
     }
 
@@ -226,7 +226,7 @@ public partial class CodeWindow : Window
             return;
         }
 
-        SiteValues site = SiteOffer.Accept(Design.Sketch.Site, _sitePack, town, Today());
+        SiteValues site = SiteOffer.Accept(Design.Sketch.Site, _sitePack.Manifest.Adoption.ShortName, _sitePack.Site!, town, Today());
         if (site != Design.Sketch.Site)
         {
             ApplyRequest?.Invoke(new SetSite(site), $"Used {town.Name}'s site values from {_sitePack.Manifest.Adoption.ShortName}");

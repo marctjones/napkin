@@ -14,17 +14,19 @@ public static class SiteOffer
     /// The offer in a sentence: "Bloomfield, as CT 2022 prints it: ground snow load 30 psf and ultimate
     /// wind speed 120 mph (Appendix AY, p. 157 …); seismic design category B statewide (Table R301.2 …)."
     /// </summary>
-    /// <param name="pack">The adopted code's pack.</param>
+    /// <param name="code">The adopted code's short name, "CT 2022".</param>
+    /// <param name="site">The pack's site values, which the town is one of.</param>
     /// <param name="town">The town.</param>
-    public static string Text(LoadedPack pack, MunicipalitySite town)
+    public static string Text(string code, SiteValuesTable site, MunicipalitySite town)
     {
-        ArgumentNullException.ThrowIfNull(pack);
+        ArgumentNullException.ThrowIfNull(site);
         ArgumentNullException.ThrowIfNull(town);
 
-        string seismic = pack.Site is { SeismicDesignCategory: { } category, SeismicSource: { } at }
-            ? $"; seismic design category {category} statewide ({at.Location})"
+        // The reader takes a statewide category only with the place it is printed.
+        string seismic = site.SeismicDesignCategory is { } category
+            ? $"; seismic design category {category} statewide ({site.SeismicSource!.Location})"
             : string.Empty;
-        return $"{town.Name}, as {pack.Manifest.Adoption.ShortName} prints it: ground snow load {town.GroundSnowLoadPsf} psf and "
+        return $"{town.Name}, as {code} prints it: ground snow load {town.GroundSnowLoadPsf} psf and "
                + $"ultimate wind speed {town.UltimateWindSpeedMph} mph ({town.Source.Location}){seismic}.";
     }
 
@@ -34,23 +36,23 @@ public static class SiteOffer
     /// names the code, the town and the pages, dated today.
     /// </summary>
     /// <param name="current">The site values now.</param>
-    /// <param name="pack">The adopted code's pack.</param>
+    /// <param name="code">The adopted code's short name, "CT 2022".</param>
+    /// <param name="site">The pack's site values, which the town is one of.</param>
     /// <param name="town">The town.</param>
     /// <param name="today">The date the offer was accepted.</param>
-    public static SiteValues Accept(SiteValues current, LoadedPack pack, MunicipalitySite town, DateOnly today)
+    public static SiteValues Accept(SiteValues current, string code, SiteValuesTable site, MunicipalitySite town, DateOnly today)
     {
         ArgumentNullException.ThrowIfNull(current);
-        ArgumentNullException.ThrowIfNull(pack);
+        ArgumentNullException.ThrowIfNull(site);
         ArgumentNullException.ThrowIfNull(town);
 
-        string? category = pack.Site?.SeismicDesignCategory;
-        string seismicAt = pack.Site?.SeismicSource is { } at ? $"; seismic design category, {at.Location}" : string.Empty;
+        string seismicAt = site.SeismicSource is { } at ? $"; seismic design category, {at.Location}" : string.Empty;
         return current with
         {
             GroundSnowLoadPsf = town.GroundSnowLoadPsf,
             UltimateWindSpeedMph = town.UltimateWindSpeedMph,
-            SeismicDesignCategory = category ?? current.SeismicDesignCategory,
-            Source = new SiteSource($"{pack.Manifest.Adoption.ShortName}, {town.Name}: {town.Source.Location}{seismicAt}", today),
+            SeismicDesignCategory = site.SeismicDesignCategory ?? current.SeismicDesignCategory,
+            Source = new SiteSource($"{code}, {town.Name}: {town.Source.Location}{seismicAt}", today),
         };
     }
 }

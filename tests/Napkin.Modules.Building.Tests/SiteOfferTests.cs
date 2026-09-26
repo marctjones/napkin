@@ -21,7 +21,7 @@ public class SiteOfferTests
         Assert.Equal(
             "Bloomfield, as CT 2022 prints it: ground snow load 30 psf and ultimate wind speed 120 mph (Appendix AY, p. 157 (footer 'Page - 157')); "
             + "seismic design category B statewide (Table R301.2 CLIMATIC AND GEOGRAPHIC DESIGN CRITERIA (Amd), p. 131 (footer 'Page - 131'); Appendix AY has no seismic column).",
-            SiteOffer.Text(Connecticut, Bloomfield));
+            SiteOffer.Text("CT 2022", Connecticut.Site!, Bloomfield));
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class SiteOfferTests
     {
         SiteValues typed = SiteValues.NotEntered with { FrostDepth = Length.Inches(42), GroundSnowLoadPsf = 50, RoofLiveLoadPsf = 20 };
 
-        SiteValues accepted = SiteOffer.Accept(typed, Connecticut, Bloomfield, new DateOnly(2026, 9, 26));
+        SiteValues accepted = SiteOffer.Accept(typed, "CT 2022", Connecticut.Site!, Bloomfield, new DateOnly(2026, 9, 26));
 
         Assert.Equal((30, 120, "B"), (accepted.GroundSnowLoadPsf, accepted.UltimateWindSpeedMph, accepted.SeismicDesignCategory));
         Assert.Equal((Length.Inches(42), 20), (accepted.FrostDepth!.Value, accepted.RoofLiveLoadPsf!.Value));
@@ -42,11 +42,10 @@ public class SiteOfferTests
     [Fact]
     public void A_pack_that_prints_no_statewide_category_offers_none_and_keeps_what_was_typed()
     {
-        LoadedPack noSeismic = Connecticut with { };
-        noSeismic = noSeismic with { Site = Connecticut.Site! with { SeismicDesignCategory = null, SeismicSource = null } };
+        SiteValuesTable noSeismic = Connecticut.Site! with { SeismicDesignCategory = null, SeismicSource = null };
 
-        Assert.DoesNotContain("seismic", SiteOffer.Text(noSeismic, Bloomfield), StringComparison.Ordinal);
-        SiteValues accepted = SiteOffer.Accept(SiteValues.NotEntered with { SeismicDesignCategory = "C" }, noSeismic, Bloomfield, new DateOnly(2026, 9, 26));
+        Assert.DoesNotContain("seismic", SiteOffer.Text("CT 2022", noSeismic, Bloomfield), StringComparison.Ordinal);
+        SiteValues accepted = SiteOffer.Accept(SiteValues.NotEntered with { SeismicDesignCategory = "C" }, "CT 2022", noSeismic, Bloomfield, new DateOnly(2026, 9, 26));
         Assert.Equal("C", accepted.SeismicDesignCategory);
         Assert.Equal("CT 2022, Bloomfield: Appendix AY, p. 157 (footer 'Page - 157')", accepted.Source!.Text);
     }
