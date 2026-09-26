@@ -137,6 +137,26 @@ public sealed record BoxDepthRef(EntityId Box) : ParamRef
     public override EntityId Owner => Box;
 }
 
+/// <summary>
+/// A strut's cross-section size in its wide face, along local Y (<c>docs/design/assembly-model.md</c>
+/// &#xA7;3a.5). A <see cref="ParamValue"/> or <see cref="EqualParam"/> on it resizes the strut and
+/// moves neither end: the ends are on the centreline.
+/// </summary>
+/// <param name="Strut">The strut.</param>
+public sealed record StrutHeightRef(EntityId Strut) : ParamRef
+{
+    /// <inheritdoc/>
+    public override EntityId Owner => Strut;
+}
+
+/// <summary>A strut's cross-section size out of its wide face, along local Z. As <see cref="StrutHeightRef"/>.</summary>
+/// <param name="Strut">The strut.</param>
+public sealed record StrutDepthRef(EntityId Strut) : ParamRef
+{
+    /// <inheritdoc/>
+    public override EntityId Owner => Strut;
+}
+
 /// <summary>A segment's length.</summary>
 /// <param name="Segment">The segment.</param>
 public sealed record SegmentLengthRef(EntityId Segment) : ParamRef
@@ -180,10 +200,10 @@ public sealed record StrutEndRef(EntityId Strut, StrutEnd End) : PlaceRef
 }
 
 /// <summary>
-/// One of a strut's four long faces (<c>docs/design/angled-parts.md</c> &#xA7;3.2). In the file and
-/// the kernel since format 11; a place a relationship may hold only once slice B (#190) gives a
-/// one-way lean's side faces their plane. Until then every relationship naming one is refused:
-/// a strut's body is not a place (assembly-model &#xA7;3a.5).
+/// One of a strut's four long faces (<c>docs/design/angled-parts.md</c> &#xA7;3.2). It fixes one
+/// world axis when the strut leans one way and the face is square to that axis, at the centreline
+/// coordinate plus or minus half the size across it; otherwise it fixes nothing, and a relationship
+/// on it is refused by name. A strut's size across the face must be even in units to hold one.
 /// </summary>
 /// <param name="Strut">The strut.</param>
 /// <param name="Face">Which long face.</param>

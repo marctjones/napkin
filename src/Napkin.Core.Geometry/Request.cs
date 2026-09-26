@@ -271,3 +271,29 @@ public sealed record Batch(ImmutableList<Request> Requests) : Request
     /// <summary>A batch of the given requests, in order.</summary>
     public static Batch Of(params Request[] requests) => new([.. requests]);
 }
+
+/// <summary>
+/// Puts one end of a strut at a point (<c>docs/design/assembly-model.md</c> &#xA7;3a.5). That end's
+/// three scalars are set and propagation runs as for <see cref="SetPosition"/>; the other end is not
+/// set, and moves only if a relationship moves it.
+/// </summary>
+/// <remarks>
+/// <see cref="RejectionReason.StrutIsAxisAligned"/> or <see cref="RejectionReason.StrutTooShortForItsCuts"/>
+/// when the written strut would break invariant 14 or 17, judged after propagation. An
+/// <see cref="Anchored"/> strut does not stand aside for this: asking a held part to move is what
+/// anchoring refuses.
+/// </remarks>
+/// <param name="Strut">The strut.</param>
+/// <param name="End">Which end.</param>
+/// <param name="At">Where that end goes.</param>
+public sealed record SetStrutEnd(EntityId Strut, StrutEnd End, Point3 At) : Request;
+
+/// <summary>
+/// Drags one end of a strut: the strut's analogue of <see cref="DragFace"/>. Best effort, never
+/// <see cref="OverConstrained"/>: the end moves by as much of the delta as its relationships and
+/// the strut's own invariants allow, each axis in full or not at all, and the applied delta is reported.
+/// </summary>
+/// <param name="Strut">The strut.</param>
+/// <param name="End">Which end.</param>
+/// <param name="Delta">How far the person wants the end to go.</param>
+public sealed record DragStrutEnd(EntityId Strut, StrutEnd End, Vector3 Delta) : Request;

@@ -320,9 +320,15 @@ public sealed record Sketch(
                 return new Place(at.X, at.Y, at.Z);
             }
 
-            // A strut's body fixes no world axis until slices B and E say which of its faces do; the
-            // place rules refuse any relationship that names one (assembly-model §3a.5).
-            case StrutFaceRef or StrutEndFaceRef:
+            // A long face of a strut that leans one way is square to one world axis (angled-parts
+            // §3.2); any other face fixes nothing, and the place rules refuse a relationship on it.
+            case StrutFaceRef faceRef:
+                return Require<Strut>(faceRef.Strut, reference).FacePlane(faceRef.Face) is (var faceAxis, var faceAt)
+                    ? Place.On(faceAxis, faceAt)
+                    : default;
+
+            // An end's cut face is joinery's (slice E, #193); until then it fixes nothing.
+            case StrutEndFaceRef:
                 _ = Require<Strut>(reference.Owner, reference);
                 return default;
 
@@ -455,6 +461,12 @@ public sealed record Sketch(
 
             case BoxDepthRef depth:
                 return Require<Box>(depth.Box, reference).Depth;
+
+            case StrutHeightRef strutHeight:
+                return Require<Strut>(strutHeight.Strut, reference).Height;
+
+            case StrutDepthRef strutDepth:
+                return Require<Strut>(strutDepth.Strut, reference).Depth;
 
             case SegmentLengthRef length:
             {
@@ -729,7 +741,7 @@ public sealed record Sketch(
         return relationship switch
         {
             // Only a box or a node has a position of its own to hold still.
-            Anchored anchored => KindErrors(anchored.Entity, what, entity => entity is Box or Node, "Box or Node"),
+            Anchored anchored => KindErrors(anchored.Entity, what, entity => entity is Box or Node or Strut, "Box, Node or Strut"),
             Coincident coincident => ReferenceErrors(coincident.A, what).Concat(ReferenceErrors(coincident.B, what)),
             Horizontal horizontal => ReferenceErrors(horizontal.Edge, what),
             Vertical vertical => ReferenceErrors(vertical.Edge, what),
@@ -811,6 +823,7 @@ public sealed record Sketch(
         BoxWidthRef width => KindErrors(width.Box, what, entity => entity is Box, nameof(Box)),
         BoxHeightRef height => KindErrors(height.Box, what, entity => entity is Box, nameof(Box)),
         BoxDepthRef depth => KindErrors(depth.Box, what, entity => entity is Box, nameof(Box)),
+        StrutHeightRef or StrutDepthRef => KindErrors(reference.Owner, what, entity => entity is Strut, nameof(Strut)),
         SegmentLengthRef length => KindErrors(length.Segment, what, entity => entity is Segment, nameof(Segment)),
         _ => [],
     };

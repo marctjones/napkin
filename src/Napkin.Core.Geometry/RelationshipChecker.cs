@@ -501,8 +501,9 @@ public static class RelationshipChecker
         // A segment's ends are node positions, which are exact integers whatever they are.
         NodeRef or SegmentRef => true,
 
-        // A strut's end is its stored point (assembly-model §3a.5).
-        StrutEndRef => true,
+        // A strut's end is its stored point (assembly-model §3a.5), and a face it can hold is an end
+        // coordinate plus half an even size (angled-parts §3.2).
+        StrutEndRef or StrutFaceRef => true,
         CenterRef or FeatureRef => sketch.Find<Box>(reference.Owner)?.Rotation.IsRightAngleMultiple ?? false,
         _ => false,
     };
@@ -511,7 +512,7 @@ public static class RelationshipChecker
     {
         switch (reference)
         {
-            case BoxWidthRef or BoxHeightRef or BoxDepthRef:
+            case BoxWidthRef or BoxHeightRef or BoxDepthRef or StrutHeightRef or StrutDepthRef:
                 // What the user typed, stored as typed, whatever the rotation.
                 return true;
 

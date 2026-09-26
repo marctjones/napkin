@@ -39,12 +39,9 @@ public static class PlaceRules
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(relationship);
 
-        if (PlacesNamed(relationship).FirstOrDefault(place => place is StrutFaceRef or StrutEndFaceRef) is { } body)
+        if (StrutPlaceRefusal(sketch, relationship) is { } strutPlace)
         {
-            return NotComparable(
-                relationship,
-                $"{Describe(sketch, body)} is part of a strut's body, which is not a place a relationship can hold; "
-                + "a strut's two ends are.");
+            return strutPlace;
         }
 
         switch (relationship)
@@ -131,6 +128,14 @@ public static class PlaceRules
                         + "hold that size with a typed value instead.")
                     : null;
             }
+
+            // A strut's cross-section is square to its centreline, which is not along any axis, so
+            // it lies in the plan only by accident of the lean; it is held by a typed value instead.
+            case ParamMeasurand { Param: StrutHeightRef or StrutDepthRef }:
+                return LeavesThePlan(
+                    dimension,
+                    $"measures the cross-section of {NameOf(sketch, ((ParamMeasurand)dimension.Measures).Param.Owner)}, "
+                    + "an angled part, which does not lie in the plan. Hold that size with a typed value instead.");
 
             case AxisMeasurand span:
             {
@@ -256,6 +261,58 @@ public static class PlaceRules
         [var only] => $"only {only}",
         _ => string.Join(" and ", axes),
     };
+
+    /// <summary>
+    /// A strut's face that cannot be held, said in words (<c>docs/design/angled-parts.md</c> &#xA7;3.2):
+    /// an end's cut face, which is joinery's (#193); a long face of a strut that leans two ways, which
+    /// is square to nothing; and a long face across an odd size, which would sit half a unit off the
+    /// grid. The solver (#28) is where a flush to a two-way lean belongs; this names it instead of
+    /// approximating it.
+    /// </summary>
+    private static ValidationError? StrutPlaceRefusal(Sketch sketch, Relationship relationship)
+    {
+        foreach (PlaceRef place in PlacesNamed(relationship))
+        {
+            switch (place)
+            {
+                case StrutEndFaceRef:
+                    return NotComparable(
+                        relationship,
+                        $"{Describe(sketch, place)} is where a joint will meet a strut's end, which napkin cannot hold yet; "
+                        + "a strut's two ends and the faces of a strut that leans one way are places it can.");
+
+                case StrutFaceRef when relationship is not Flush:
+                    return NotComparable(
+                        relationship,
+                        $"{Describe(sketch, place)} is a face of an angled part, which only a flush can hold.");
+
+                case StrutFaceRef face when sketch.Find<Strut>(face.Strut) is { } strut:
+                    if (Strut.FaceNormal(strut.Direction, strut.Reference, face.Face) is null)
+                    {
+                        bool leansTwoWays = strut.Direction is { Dx.Units: not 0, Dy.Units: not 0, Dz.Units: not 0 };
+                        return NotComparable(
+                            relationship,
+                            leansTwoWays
+                                ? $"{Describe(sketch, place)} is not square to anything: the strut leans two ways, so none of "
+                                  + "its faces is. napkin can't hold this."
+                                : $"{Describe(sketch, place)} is not square to any axis: it tilts with the lean. The two faces "
+                                  + "square to the axis the strut does not lean along are the ones a flush can hold.");
+                    }
+
+                    if (strut.FacePlane(face.Face) is null)
+                    {
+                        return NotComparable(
+                            relationship,
+                            $"{Describe(sketch, place)} sits half of {strut.SizeAcross(face.Face)} from the strut's centreline, "
+                            + "which is an odd number of 1/1024″ units and so half a unit off the grid.");
+                    }
+
+                    break;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>Every place a relationship names, in field order.</summary>
     internal static IEnumerable<PlaceRef> PlacesNamed(Relationship relationship) => relationship switch

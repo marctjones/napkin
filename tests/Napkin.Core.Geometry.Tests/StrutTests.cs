@@ -446,7 +446,7 @@ public class StrutTests
     }
 
     [Fact]
-    public void AStrutsEndIsAPointAndItsBodyIsNotAPlace()
+    public void AStrutsEndIsAPointAndOnlyAFlushHoldsAFace()
     {
         Strut leg = Leg((0, 7168, 24576), height: 1536, from: (4096, -4096, 0)) with { Name = "Leg" };
         Sketch sketch = Sketch.Empty.WithEntity(leg);
@@ -460,7 +460,7 @@ public class StrutTests
         Coincident onFace = new(new RelationshipId(Guid.NewGuid()), new StrutFaceRef(leg.Id, StrutFace.North), new StrutEndRef(leg.Id, StrutEnd.To));
         ValidationError refusal = PlaceRules.Refusal(sketch, onFace)!;
         Assert.Equal(ValidationErrorKind.PlacesNotComparable, refusal.Kind);
-        Assert.Contains("north face is part of a strut's body", refusal.Message, StringComparison.Ordinal);
+        Assert.Contains("north face is a face of an angled part, which only a flush can hold", refusal.Message, StringComparison.Ordinal);
 
         Coincident onEndFace = onFace with { A = new StrutEndFaceRef(leg.Id, StrutEnd.From) };
         Assert.Contains("from end face", PlaceRules.Refusal(sketch, onEndFace)!.Message, StringComparison.Ordinal);
@@ -485,25 +485,20 @@ public class StrutTests
     }
 
     [Fact]
-    public void AGeometryRequestThatCouldReachAStrutIsNotGuessedAt()
+    public void ALegsTopFollowsTheSeatUntilTheLegWouldLieFlat()
     {
         Box seat = new(EntityId.New(), Layer.Default.Id, new Point3(Length.Zero, Length.Zero, new Length(24576)), Length.Inches(36), Length.Inches(12), new Length(768), BoxFace.Top, Angle.Zero);
         Strut leg = Leg((0, 7168, 24576), height: 1536, from: (4096, -4096, 0));
-        Sketch sketch = Sketch.Empty.WithEntity(seat).WithEntity(leg);
         AxisDistance under = new(new RelationshipId(Guid.NewGuid()), new FeatureRef(seat.Id, BoxFeature.Face(BoxFace.Bottom)), new StrutEndRef(leg.Id, StrutEnd.To), Axis.Z, Length.Zero);
+        Sketch sketch = Assert.IsType<Solved>(DirectUpdater.Instance.Apply(Sketch.Empty.WithEntity(seat).WithEntity(leg), new AddRelationship(under))).Sketch;
 
-        Rejected Refused(Sketch on, Request request) => Assert.IsType<Rejected>(DirectUpdater.Instance.Apply(on, request));
+        // The seat rises 1″: the leg's top follows it and its foot stays.
+        Sketch raised = Assert.IsType<Solved>(DirectUpdater.Instance.Apply(sketch, new SetPosition(seat.Id, new Point3(Length.Zero, Length.Zero, new Length(25600))))).Sketch;
+        Assert.Equal((leg.From, new Point3(new Length(4096), new Length(3072), new Length(25600))), (raised.Find<Strut>(leg.Id)!.From, raised.Find<Strut>(leg.Id)!.To));
 
-        Assert.Equal(RejectionReason.UnsupportedRequest, Refused(sketch, new AddRelationship(under)).Reason);
-        Assert.Equal(RejectionReason.UnsupportedRequest, Refused(sketch, new SetPosition(leg.Id, Point3.Origin)).Reason);
-        Assert.Equal(RejectionReason.UnsupportedRequest, Refused(sketch, new Drag(leg.Id, Vector3.Zero)).Reason);
-
-        // Once a file holds one, nothing that propagates runs on that sketch until #190.
-        Sketch held = sketch.WithRelationship(under);
-        Assert.Equal(RejectionReason.UnsupportedRequest, Refused(held, new SetPosition(seat.Id, Point3.Origin)).Reason);
-
-        // Without one, a box still moves.
-        Assert.IsType<Solved>(DirectUpdater.Instance.Apply(sketch, new SetPosition(seat.Id, Point3.Origin)));
+        // Down to the floor, the leg would lie flat along Y, d = (0, 7168, 0): a box, not a strut.
+        Rejected flat = Assert.IsType<Rejected>(DirectUpdater.Instance.Apply(sketch, new SetPosition(seat.Id, Point3.Origin)));
+        Assert.Equal(RejectionReason.StrutIsAxisAligned, flat.Reason);
     }
 
     [Fact]

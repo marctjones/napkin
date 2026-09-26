@@ -85,12 +85,6 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetCut setCut => ApplySetCut(sketch, setCut),
             RemoveCut removeCut => ApplyRemoveCut(sketch, removeCut),
 
-            // A strut's ends are not propagated yet (#190, angled-parts slice B): a geometry request
-            // that could reach one through a relationship, or that moves one, is refused rather than
-            // guessed at — a wrong rule there is a silent geometric error (angled-parts §10).
-            AddRelationship or SetParameter or SetPosition or SetOrientation or Drag or DragFace
-                when ReachesAStrut(sketch, request) => new Rejected(RejectionReason.UnsupportedRequest),
-
             // Geometry requests need the rectilinear precondition first.
             AddRelationship add => ApplyAddRelationship(sketch, add),
             SetParameter setParameter => ApplySetParameter(sketch, setParameter),
@@ -98,6 +92,8 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetOrientation setOrientation => ApplySetOrientation(sketch, setOrientation),
             Drag drag => ApplyDrag(sketch, drag),
             DragFace dragFace => ApplyDragFace(sketch, dragFace),
+            SetStrutEnd setEnd => ApplySetStrutEnd(sketch, setEnd),
+            DragStrutEnd dragEnd => ApplyDragStrutEnd(sketch, dragEnd),
 
             Batch batch => ApplyBatch(sketch, batch),
 
@@ -106,22 +102,6 @@ public sealed class DirectUpdater : IGeometryUpdater
             // a result rather than a crash.
             _ => new Rejected(RejectionReason.UnsupportedRequest),
         };
-    }
-
-    private static bool ReachesAStrut(Sketch sketch, Request request)
-    {
-        static bool NamesAStrut(Relationship relationship)
-            => PlaceRules.PlacesNamed(relationship).Any(place => place is StrutEndRef or StrutFaceRef or StrutEndFaceRef);
-
-        EntityId? moved = request switch
-        {
-            SetPosition position => position.Id,
-            Drag drag => drag.Id,
-            _ => null,
-        };
-        return (moved is { } id && sketch.Find(id) is Strut)
-               || (request is AddRelationship add && NamesAStrut(add.Relationship))
-               || sketch.Relationships.Values.Any(NamesAStrut);
     }
 
     // ---------------------------------------------------------------------------------------
@@ -162,17 +142,9 @@ public sealed class DirectUpdater : IGeometryUpdater
             }
         }
 
-        if (entity is Strut strut && Sketch.StrutErrors(strut).FirstOrDefault() is { } broken)
+        if (entity is Strut strut && StrutRefusal(strut) is { } broken)
         {
-            return new Rejected(
-                broken.Kind switch
-                {
-                    ValidationErrorKind.StrutIsAxisAligned => RejectionReason.StrutIsAxisAligned,
-                    ValidationErrorKind.NonPositiveSize => RejectionReason.NonPositiveSize,
-                    ValidationErrorKind.StrutTooShortForItsCuts => RejectionReason.StrutTooShortForItsCuts,
-                    _ => RejectionReason.InvalidStrut,
-                },
-                broken);
+            return broken;
         }
 
         if (entity is Segment segment
@@ -204,6 +176,20 @@ public sealed class DirectUpdater : IGeometryUpdater
 
         return new Solved(sketch.WithEntity(entity), ChangeSet.Empty with { Added = [entity.Id] });
     }
+
+    /// <summary>Invariants 14–17 of a strut as a refusal, or <see langword="null"/> when they hold.</summary>
+    private static Rejected? StrutRefusal(Strut strut)
+        => Sketch.StrutErrors(strut).FirstOrDefault() is { } broken
+            ? new Rejected(
+                broken.Kind switch
+                {
+                    ValidationErrorKind.StrutIsAxisAligned => RejectionReason.StrutIsAxisAligned,
+                    ValidationErrorKind.NonPositiveSize => RejectionReason.NonPositiveSize,
+                    ValidationErrorKind.StrutTooShortForItsCuts => RejectionReason.StrutTooShortForItsCuts,
+                    _ => RejectionReason.InvalidStrut,
+                },
+                broken)
+            : null;
 
     private static UpdateResult ApplyRemoveEntity(Sketch sketch, RemoveEntity request)
     {
@@ -368,8 +354,18 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(RejectionReason.UnknownEntity);
         }
 
-        // Only a box can be a piece somebody cuts: a node has no size and a dimension is an
-        // annotation, so asking either to be a part is a mistake rather than a preference.
+        // A strut is a piece somebody cuts too, its derived dimension named length or width
+        // (angled-parts invariant 16).
+        if (entity is Strut strut)
+        {
+            Strut parted = strut with { Part = request.Part };
+            return StrutRefusal(parted) is { } refused
+                ? refused
+                : new Solved(sketch.WithEntity(parted), ChangeSet.Empty with { Modified = [request.Box] });
+        }
+
+        // Only a box or a strut can be a piece somebody cuts: a node has no size and a dimension is
+        // an annotation, so asking either to be a part is a mistake rather than a preference.
         if (entity is not Box box)
         {
             return new Rejected(RejectionReason.DanglingReference);
@@ -385,6 +381,12 @@ public sealed class DirectUpdater : IGeometryUpdater
         if (sketch.Find(request.Box) is not { } entity)
         {
             return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        // A strut's cuts are derived from its ends (assembly-model §3a.5): there is nothing to set.
+        if (entity is Strut)
+        {
+            return new Rejected(RejectionReason.UnsupportedRequest);
         }
 
         // Only a box is a blank. A node has no edges to cut and a dimension is an annotation.
@@ -422,6 +424,11 @@ public sealed class DirectUpdater : IGeometryUpdater
         if (sketch.Find(request.Box) is not { } entity)
         {
             return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is Strut)
+        {
+            return new Rejected(RejectionReason.UnsupportedRequest);
         }
 
         if (entity is not Box box)
@@ -566,6 +573,8 @@ public sealed class DirectUpdater : IGeometryUpdater
         ParamValue { Param: BoxWidthRef width } => new HashSet<ScalarKey> { new(width.Box, ScalarKind.Width) },
         ParamValue { Param: BoxHeightRef height } => new HashSet<ScalarKey> { new(height.Box, ScalarKind.Height) },
         ParamValue { Param: BoxDepthRef depth } => new HashSet<ScalarKey> { new(depth.Box, ScalarKind.Depth) },
+        ParamValue { Param: StrutHeightRef height } => new HashSet<ScalarKey> { new(height.Strut, ScalarKind.Height) },
+        ParamValue { Param: StrutDepthRef depth } => new HashSet<ScalarKey> { new(depth.Strut, ScalarKind.Depth) },
         _ => ImmutableHashSet<ScalarKey>.Empty,
     };
 
@@ -588,6 +597,12 @@ public sealed class DirectUpdater : IGeometryUpdater
             return at == placed.Position
                 ? new Solved(sketch, ChangeSet.Empty)
                 : new Solved(sketch.WithEntity(placed with { Position = at }), ChangeSet.Empty with { Moved = [placed.Id] });
+        }
+
+        if (entity is Strut)
+        {
+            // A strut has no anchor: its ends are placed one at a time (SetStrutEnd), or together by Drag.
+            return new Rejected(RejectionReason.UnsupportedRequest);
         }
 
         if (entity is not (Box or Node))
@@ -617,6 +632,66 @@ public sealed class DirectUpdater : IGeometryUpdater
         return Propagate(sketch, seeds, ChangeSet.Empty);
     }
 
+    private UpdateResult ApplySetStrutEnd(Sketch sketch, SetStrutEnd request)
+    {
+        if (GeometryPrecondition(sketch) is { } precondition)
+        {
+            return new Rejected(precondition);
+        }
+
+        if (sketch.Find<Strut>(request.Strut) is null)
+        {
+            return new Rejected(sketch.Find(request.Strut) is null ? RejectionReason.UnknownEntity : RejectionReason.DanglingReference);
+        }
+
+        // That end's three scalars, and nothing of the other end (assembly-model §3a.5): it moves
+        // only if a relationship moves it. Not request-owned, so an Anchored strut refuses.
+        Dictionary<ScalarKey, Length> seeds = [];
+        foreach (Axis axis in new[] { Axis.X, Axis.Y, Axis.Z })
+        {
+            seeds[new ScalarKey(request.Strut, Propagator.EndKind(request.End, axis))] = request.At.Component(axis);
+        }
+
+        return Propagate(sketch, seeds, ChangeSet.Empty);
+    }
+
+    private UpdateResult ApplyDragStrutEnd(Sketch sketch, DragStrutEnd request)
+    {
+        if (GeometryPrecondition(sketch) is { } precondition)
+        {
+            return new Rejected(precondition);
+        }
+
+        if (sketch.Find<Strut>(request.Strut) is not { } strut)
+        {
+            return new Rejected(sketch.Find(request.Strut) is null ? RejectionReason.UnknownEntity : RejectionReason.DanglingReference);
+        }
+
+        // Best effort, per axis and in full or not at all, like Drag: each axis is tried on top of
+        // the axes already allowed, and one that a relationship or the strut's own invariants refuse
+        // goes nowhere. A drag is a question, never a conflict.
+        Point3 start = strut.End(request.End);
+        Vector3 applied = Vector3.Zero;
+        Solved answer = new(sketch, ChangeSet.Empty);
+        foreach (Axis axis in new[] { Axis.X, Axis.Y, Axis.Z })
+        {
+            Length step = request.Delta.Component(axis);
+            if (step == Length.Zero)
+            {
+                continue;
+            }
+
+            Vector3 tried = applied.WithComponent(axis, step);
+            if (ApplySetStrutEnd(sketch, new SetStrutEnd(request.Strut, request.End, start + tried)) is Solved solved)
+            {
+                applied = tried;
+                answer = solved;
+            }
+        }
+
+        return answer with { Changes = answer.Changes with { AppliedDelta = applied } };
+    }
+
     private UpdateResult ApplySetOrientation(Sketch sketch, SetOrientation request)
     {
         if (GeometryPrecondition(sketch) is { } precondition)
@@ -626,7 +701,8 @@ public sealed class DirectUpdater : IGeometryUpdater
 
         if (sketch.Find<Box>(request.Box) is not { } box)
         {
-            return new Rejected(RejectionReason.UnknownEntity);
+            // A strut has no face-up: its ends say which way it runs.
+            return new Rejected(sketch.Find(request.Box) is Strut ? RejectionReason.UnsupportedRequest : RejectionReason.UnknownEntity);
         }
 
         if (!Enum.IsDefined(request.FaceUp))
@@ -714,7 +790,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         HashSet<EntityId> seed = entity switch
         {
             Segment segment => [segment.Start, segment.End],
-            Box or Node => [entity.Id],
+            Box or Node or Strut => [entity.Id],
             _ => [],
         };
 
@@ -777,7 +853,8 @@ public sealed class DirectUpdater : IGeometryUpdater
 
         if (sketch.Find<Box>(request.Box) is not { } box)
         {
-            return new Rejected(RejectionReason.UnknownEntity);
+            // A strut has no resizable face: its length is derived, its cross-section typed.
+            return new Rejected(sketch.Find(request.Box) is Strut ? RejectionReason.UnsupportedRequest : RejectionReason.UnknownEntity);
         }
 
         // The size along the local axis normal to the face changes (assembly-model §2.4).
@@ -919,6 +996,16 @@ public sealed class DirectUpdater : IGeometryUpdater
         }
 
         Sketch written = Write(target, propagated.Assignments, out ImmutableHashSet<EntityId> moved, out ImmutableHashSet<EntityId> resized);
+
+        // A strut an end moved or a size changed must still be one (invariants 14–17), and every
+        // relationship on it must still be one napkin can hold: a face it was flush to must still
+        // be square to its axis, across an even size. Judged on the written sketch, before the
+        // checker, which would otherwise be asked about a face that is square to nothing.
+        if (StrutsStillHold(written, moved.Union(resized)) is { } strutRefusal)
+        {
+            return strutRefusal;
+        }
+
         AssertHolds(written);
 
         // §2.3's seam, "after the write, before the return": the propagator knows nothing about
@@ -935,6 +1022,32 @@ public sealed class DirectUpdater : IGeometryUpdater
         return new Solved(
             written,
             changes with { Moved = changes.Moved.Union(moved), Resized = changes.Resized.Union(resized) });
+    }
+
+    private static Rejected? StrutsStillHold(Sketch written, ImmutableHashSet<EntityId> changed)
+    {
+        foreach (EntityId id in changed.OrderBy(id => id))
+        {
+            if (written.Find<Strut>(id) is not { } strut)
+            {
+                continue;
+            }
+
+            if (StrutRefusal(strut) is { } refusal)
+            {
+                return refusal;
+            }
+
+            foreach (Relationship relationship in written.RelationshipsInOrder.Where(relationship => relationship.References.Contains(id)))
+            {
+                if (PlaceRules.Refusal(written, relationship) is { } notComparable)
+                {
+                    return new Rejected(RejectionReason.PlacesNotComparable, notComparable);
+                }
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -1004,6 +1117,33 @@ public sealed class DirectUpdater : IGeometryUpdater
                     if (anchor != box.Anchor || sizeChanged)
                     {
                         result = result.WithEntity(box with { Anchor = anchor, Width = width, Height = height, Depth = depth });
+                    }
+
+                    break;
+                }
+
+                case Strut strut:
+                {
+                    Point3 from = new(Value(ScalarKind.FromX), Value(ScalarKind.FromY), Value(ScalarKind.FromZ));
+                    Point3 to = new(Value(ScalarKind.ToX), Value(ScalarKind.ToY), Value(ScalarKind.ToZ));
+                    Length height = Value(ScalarKind.Height);
+                    Length depth = Value(ScalarKind.Depth);
+                    bool endsMoved = from != strut.From || to != strut.To;
+                    bool sizeChanged = height != strut.Height || depth != strut.Depth;
+
+                    if (endsMoved)
+                    {
+                        movedBuilder.Add(id);
+                    }
+
+                    if (sizeChanged)
+                    {
+                        resizedBuilder.Add(id);
+                    }
+
+                    if (endsMoved || sizeChanged)
+                    {
+                        result = result.WithEntity(strut with { From = from, To = to, Height = height, Depth = depth });
                     }
 
                     break;
@@ -1096,15 +1236,18 @@ public sealed class DirectUpdater : IGeometryUpdater
         // A joint is held by nothing and holds nothing: it neither propagates nor is a reason to
         // refuse a request (joinery note §4.3).
         Anchored or Coincident or AxisDistance or Centered or Joint => true,
-        ParamValue paramValue => IsBoxSize(paramValue.Param),
-        EqualParam equalParam => IsBoxSize(equalParam.A) && IsBoxSize(equalParam.B),
+        ParamValue paramValue => IsOneNumber(paramValue.Param),
+        EqualParam equalParam => IsOneNumber(equalParam.A) && IsOneNumber(equalParam.B),
         Horizontal horizontal => horizontal.Edge is SegmentRef,
         Vertical vertical => vertical.Edge is SegmentRef,
         Flush flush => FlushNormalAxis(sketch, flush) is not null,
         _ => false,
     };
 
-    private static bool IsBoxSize(ParamRef param) => param is BoxWidthRef or BoxHeightRef or BoxDepthRef;
+    // A size the propagator holds as one scalar: a box's three, a strut's cross-section two. A
+    // segment's length is not one number, and a strut's length is derived, so neither is here.
+    private static bool IsOneNumber(ParamRef param)
+        => param is BoxWidthRef or BoxHeightRef or BoxDepthRef or StrutHeightRef or StrutDepthRef;
 
     /// <summary>The one axis both places of a flush fix, or null when they do not share exactly one.</summary>
     private static Axis? FlushNormalAxis(Sketch sketch, Flush flush)
@@ -1183,6 +1326,9 @@ public sealed class DirectUpdater : IGeometryUpdater
     private static Sketch Translate(Sketch sketch, EntityId id, Vector3 shift) => sketch.Find(id) switch
     {
         Box box => sketch.WithEntity(box with { Anchor = box.Anchor + shift }),
+
+        // Under a drag a strut moves as a unit, both ends (assembly-model §3a.5).
+        Strut strut => sketch.WithEntity(strut with { From = strut.From + shift, To = strut.To + shift }),
         Node node when shift.XY != Vector2.Zero => sketch.WithEntity(node with { Position = node.Position + shift.XY }),
         _ => sketch,
     };
@@ -1227,7 +1373,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         // Only a box or a node has a position of its own to hold still. Anchoring a segment or a
         // dimension would be inert, and an anchor that silently does nothing is worse than a
         // refusal (Fable review of #35, finding 3).
-        Anchored anchored => sketch.Find(anchored.Entity) is Box or Node,
+        Anchored anchored => sketch.Find(anchored.Entity) is Box or Node or Strut,
         Coincident coincident => ReferenceResolves(sketch, coincident.A) && ReferenceResolves(sketch, coincident.B),
         Horizontal horizontal => ReferenceResolves(sketch, horizontal.Edge),
         Vertical vertical => ReferenceResolves(sketch, vertical.Edge),
@@ -1251,6 +1397,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         BoxWidthRef width => sketch.Find<Box>(width.Box) is not null,
         BoxHeightRef height => sketch.Find<Box>(height.Box) is not null,
         BoxDepthRef depth => sketch.Find<Box>(depth.Box) is not null,
+        StrutHeightRef or StrutDepthRef => sketch.Find<Strut>(reference.Owner) is not null,
         SegmentLengthRef length => ReferenceResolves(sketch, (PlaceRef)new SegmentRef(length.Segment)),
         _ => false,
     };
