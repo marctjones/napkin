@@ -70,6 +70,7 @@ public partial class MainWindow
             (WallToolMenuItem, EditCommand.WallTool),
             (RoomToolMenuItem, EditCommand.RoomTool),
             (NoteToolMenuItem, EditCommand.NoteTool),
+            (StrutToolMenuItem, EditCommand.StrutTool),
             (ShapeMenuItem, EditCommand.Shape),
             (DuplicateMenuItem, EditCommand.Duplicate),
             (JoinMenuItem, EditCommand.Join),

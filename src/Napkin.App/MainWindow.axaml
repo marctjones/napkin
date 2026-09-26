@@ -224,6 +224,11 @@
                           Header="Not_e"
                           Click="OnNoteToolClicked"
                           ToolTip.Tip="Click to put a note — outlet, switch, light, supply, drain, or any words. Counted on the shopping list, never modelled." />
+                <!-- Angled parts (assembly-model §3a.7): a splayed leg, a brace, a raked back. -->
+                <MenuItem Name="StrutToolMenuItem"
+                          Header="_Angled part"
+                          Click="OnStrutToolClicked"
+                          ToolTip.Tip="Click one end, then the other: a splayed leg, a brace. In 3D, on the floor or on a part's face; in the plan, a flat brace whose top you raise in the panel." />
                 <Separator />
                 <!-- The toolbar's stock icons, by menu: one submenu per category, one item per
                      size, built in the code-behind from the same library the toolbox lists. -->

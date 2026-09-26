@@ -254,6 +254,7 @@ public sealed class CanvasView : Control
             _rectangle.Cancel();
             _wall.Cancel();
             _room.Cancel();
+            _strut.Cancel();
 
             // Leaving the stock tool puts the stock down: the toolbox shows nothing picked, and a
             // later press on the paper cannot place something nobody is holding any more.
@@ -365,7 +366,7 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>Whether a press on the paper starts drawing rather than picking or panning.</summary>
-    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Note;
+    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Note or EditTool.Strut;
 
     /// <summary>
     /// The precision dimension labels are shown at. Fixed at 1/16&#x2033;; the per-project picker
@@ -734,6 +735,12 @@ public sealed class CanvasView : Control
         if (_tool == EditTool.Note)
         {
             PlaceNote(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
+            return;
+        }
+
+        if (_tool == EditTool.Strut)
+        {
+            ClickStrut(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             return;
         }
 
@@ -1407,6 +1414,62 @@ public sealed class CanvasView : Control
 
     /// <summary>A note was just put down: the window gives its words box the keyboard.</summary>
     public event EventHandler<EntityId>? NotePlaced;
+
+    readonly StrutTool _strut = new();
+
+    /// <summary>Picks up the angled-part tool in the plan (assembly-model §3a.7): two clicks, one per end.</summary>
+    public void ArmStrut()
+    {
+        Tool = EditTool.Strut;
+        _strut.Cancel();
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+        _editor?.Say(EditSeverity.Hint, "Angled part: click one end, then the other. In the plan it lies flat with square ends; raise its top and set its cuts in the panel.");
+    }
+
+    /// <summary>
+    /// One click of the angled-part tool in the plan: both ends at the plan datum, square, so the
+    /// strut is a flat brace until the panel raises an end (see <see cref="StrutTool"/>).
+    /// </summary>
+    void ClickStrut(Point2 at)
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        Point3 point = new(at.X, at.Y, Length.Zero);
+        LayerId layer = editor.LayerForNewParts();
+        Strut? strut = _strut.Click(point, EndCut.Square, (from, fromCut, to, toCut) =>
+            StrutTool.Make(EntityId.New(), layer, from, fromCut, to, toCut, Box.DefaultDepth, Box.DefaultDepth));
+        InvalidateVisual();
+        if (strut is null)
+        {
+            if (_strut.First is not null)
+            {
+                editor.Say(EditSeverity.Hint, "Now click the other end.");
+            }
+
+            return;
+        }
+
+        if (StrutTool.Refusal(strut) is { } why)
+        {
+            editor.Say(EditSeverity.Problem, why);
+            return;
+        }
+
+        string name = editor.NextName("Brace");
+        const string what = "Draw an angled part";
+        editor.BeginGesture(what);
+        if (editor.Apply(new AddEntity(strut with { Name = name }), what) is Succeeded)
+        {
+            editor.Select(strut.Id);
+            editor.Say(EditSeverity.Done, $"Drew {name}: raise an end and set its cuts in the panel.");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+    }
 
     /// <summary>Picks up the note tool (renovation-sketches §8): the next click puts a note there.</summary>
     public void ArmNote()

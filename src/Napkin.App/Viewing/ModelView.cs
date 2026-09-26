@@ -402,6 +402,85 @@ public sealed class ModelView : Control
         return armed;
     }
 
+    readonly StrutTool _strut = new();
+    bool _strutArmed;
+
+    /// <summary>Whether the angled-part tool is held in the 3D view.</summary>
+    public bool IsDrawingStrut => _strutArmed;
+
+    /// <summary>
+    /// Picks up the angled-part tool in the 3D view (assembly-model §3a.7): each click is a point on
+    /// the floor, cut to the floor, or on a flat face of a part, cut to that face's axis.
+    /// </summary>
+    public void ArmStrut()
+    {
+        if (_locked is not null)
+        {
+            return;
+        }
+
+        Disarm();
+        _strutArmed = true;
+        _strut.Cancel();
+        _editor?.Say(EditSeverity.Hint, "Angled part: click where one end goes — the floor, or a part's face — then the other.");
+        InvalidateVisual();
+    }
+
+    /// <summary>Puts the angled-part tool down, forgetting a first click.</summary>
+    public void DisarmStrut()
+    {
+        _strutArmed = false;
+        _strut.Cancel();
+    }
+
+    /// <summary>One click of the angled-part tool, at a point of the view: the floor or a face, else nothing.</summary>
+    public void ClickStrut(Point position)
+    {
+        if (_editor is not { } editor || FaceUnder(position, editor) is not { } under)
+        {
+            return;
+        }
+
+        if (under.Face is not { } face)
+        {
+            editor.Say(EditSeverity.Hint, "That face is a cut, not a flat face of the blank: put the end on a flat face, or on the floor.");
+            return;
+        }
+
+        EndCut cut = face.Normal switch { Axis.X => EndCut.X, Axis.Y => EndCut.Y, _ => EndCut.Z };
+        LayerId layer = editor.LayerForNewParts();
+        Strut? strut = _strut.Click(under.Point, cut, (from, fromCut, to, toCut) =>
+            StrutTool.Make(EntityId.New(), layer, from, fromCut, to, toCut, Box.DefaultDepth, Box.DefaultDepth));
+        if (strut is null)
+        {
+            if (_strut.First is not null)
+            {
+                editor.Say(EditSeverity.Hint, "Now click the other end.");
+            }
+
+            return;
+        }
+
+        if (StrutTool.Refusal(strut) is { } why)
+        {
+            editor.Say(EditSeverity.Problem, why);
+            return;
+        }
+
+        string name = editor.NextName("Leg");
+        const string what = "Draw an angled part";
+        editor.BeginGesture(what);
+        if (editor.Apply(new AddEntity(strut with { Name = name }), what) is Succeeded)
+        {
+            editor.Select(strut.Id);
+            editor.Say(EditSeverity.Done, $"Drew {name}: choose its stock and its wide face in the panel.");
+            DisarmStrut();
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+    }
+
     /// <summary>Picks up a plain board to place: the rectangle tool, in the 3D view.</summary>
     public void ArmPlainBoard()
     {
@@ -417,6 +496,7 @@ public sealed class ModelView : Control
     /// <summary>Puts down whatever is held.</summary>
     public void Disarm()
     {
+        DisarmStrut();
         if (!_placement.IsArmed)
         {
             return;
@@ -783,6 +863,14 @@ public sealed class ModelView : Control
             return;
         }
 
+        // The angled-part tool: each left press is one end.
+        if (_strutArmed && properties.IsLeftButtonPressed && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            ClickStrut(position);
+            e.Handled = true;
+            return;
+        }
+
         // Holding something to place: a press on a face — or on the floor — starts placing it.
         if (_placement.IsArmed && properties.IsLeftButtonPressed && !e.KeyModifiers.HasFlag(KeyModifiers.Shift)
             && _editor is { } placing && FaceUnder(position, placing) is { } under)
@@ -1055,6 +1143,13 @@ public sealed class ModelView : Control
 
     bool HandleTypingKey(Key key)
     {
+        if (key == Key.Escape && _strutArmed)
+        {
+            DisarmStrut();
+            _editor?.Say(EditSeverity.Done, "Put down the angled-part tool.");
+            return true;
+        }
+
         if (key == Key.Escape && _placement.IsArmed)
         {
             string holding = _placement.Holding;
