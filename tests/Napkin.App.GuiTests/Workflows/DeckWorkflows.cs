@@ -186,6 +186,113 @@ public class DeckWorkflows
         });
     });
 
+    [GuiWorkflow("GUI-PORCH-02")]
+    public void Build_the_worked_examples_porch_from_a_new_sheet() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        app.Chord(Key.N);
+        app.Click(new Point(450, 320));
+        if (window.Editor.Selection.Count > 0)
+        {
+            app.Press(Key.Escape);
+        }
+
+        // Wheel out at the origin until the whole porch, 20 ft of house and 10 ft out, is on the paper.
+        bool OnPaper(Point2 world) => new Rect(window.Canvas.Bounds.Size).Contains(window.Canvas.View.ToScreen(world));
+        for (int i = 0; i < 20 && !(OnPaper(Point2.Inches(250, 10)) && OnPaper(Point2.Inches(-10, -140))); i++)
+        {
+            app.Wheel(At(window, Point2.Inches(0, 0)), new Vector(0, -2));
+        }
+
+        Assert.True(OnPaper(Point2.Inches(250, 10)) && OnPaper(Point2.Inches(-10, -140)), "the porch does not fit on the paper.");
+
+        // The house: a 20 ft wall, its south face on y = 0, marked existing with Edit → Phase → Existing.
+        app.Press(Key.W);
+        app.Drag(At(window, Point2.Inches(0, 0)), At(window, Point2.Inches(120, 1)), At(window, Point2.Inches(240, 1)));
+        app.Click(CentreOf(window, window.EditMenuItem));
+        app.Click(CentreOf(window, window.PhaseMenuItem));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("PhaseExistingMenuItem")!));
+
+        // §9's deck, 12'-0" along the house and 10'-0" out, once a click on empty paper gives the drawing the keys back.
+        app.Click(At(window, Point2.Inches(120, -200)));
+        app.Press(Key.D, KeyModifiers.Shift);
+        app.Drag(At(window, Point2.Inches(48, 0)), At(window, Point2.Inches(120, -60)), At(window, Point2.Inches(192, -120)));
+        app.Expect("Deck 1, 12'-0\" × 10'-0\", against the existing house wall", () =>
+        {
+            Assert.True(Deck.All(window.CurrentDesign!.Sketch).Length == 1, window.MessageOnScreen + " | tool " + window.Canvas.Tool + " | on screen " + At(window, Point2.Inches(192, -120)) + " canvas " + window.Canvas.Bounds);
+            Deck deck = Assert.Single(Deck.All(window.CurrentDesign!.Sketch));
+            Assert.Equal((Length.Inches(144), Length.Inches(120), DeckEdge.North), (deck.Box.Width, deck.Box.Height, deck.Ledger(window.CurrentDesign.Sketch).Edge));
+        });
+
+        // The front wall along the deck's south edge: drawn inside its outline, it stands on the decking; say it is bearing.
+        app.Press(Key.W);
+        app.Drag(At(window, Point2.Inches(48, -120)), At(window, Point2.Inches(120, -120)), At(window, Point2.Inches(192, -120)));
+        Reveal(app, window, window.BearingControl);
+        app.Click(CentreOf(window, window.BearingControl));
+        app.Press(Key.Down);
+        app.Press(Key.Enter);
+        app.Expect("the front wall stands on the decking, 3'-0\" up, and is bearing", () =>
+        {
+            Wall front = Assert.Single(Wall.All(window.CurrentDesign!.Sketch), wall => wall.Box.Phase == Phase.New);
+            Assert.Equal((Length.Inches(36), Length.Inches(144)), (front.Box.Anchor.Z, front.Length));
+            Assert.True(front.Box.WallInputs!.Bearing);
+        });
+
+        // A window in it: Draw → Window, a click on the wall.
+        app.Click(CentreOf(window, window.DrawMenuItem));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("WindowToolMenuItem")!));
+        app.Click(At(window, Point2.Inches(120, -118)));
+
+        // Shift+R on the deck, and 5 in 12: §9.5's 10 rafters of 141 3/8″ on the front wall's 3 1/2″ plates.
+        app.Press(Key.R, KeyModifiers.Shift);
+        app.Click(At(window, Point2.Inches(120, -60)));
+        TypeInto(app, window, window.RoofControls.Pitch, "5 in 12");
+        app.Expect("the roof bears on the front wall with ten 2x8 rafters, 11'-9 3/8\" long", () =>
+        {
+            Box roof = Assert.Single(window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>(), box => box.Roof is not null);
+            Assert.Equal((Length.Inches(144), Length.Inches(120), Length.Inches(50), Length.Inches(132)), (roof.Width, roof.Height, roof.Depth, roof.Anchor.Z));
+            Assert.IsType<WallLowEnd>(roof.Roof!.LowEnd);
+            Assert.StartsWith("Roof 1: 5 in 12", window.RoofHeadlineText, StringComparison.Ordinal);
+            Assert.StartsWith("10 rafters 2x8 × 11'-9 3/8\" at 16\"", window.RoofFrameLines, StringComparison.Ordinal);
+            Assert.DoesNotContain("mark it bearing", window.RoofFrameLines, StringComparison.Ordinal);
+        });
+
+        // 36 × 42 of glass over 144 × 96 of wall and 144 × 141 3/8 of roof: 1512 ÷ 34182 = 4.4 %.
+        app.Chord(Key.L, KeyModifiers.Shift);
+        app.Expect("the Roof section buys the rafters and the sunroom line is 4.4 %", () =>
+        {
+            CutListWindow list = window.CutList!;
+            Assert.True(list.IsShowingRoof);
+            Assert.StartsWith("Roof 1: 10 rafters 2x8 × 11'-9 3/8\"", list.RoofNoteText, StringComparison.Ordinal);
+            Assert.Contains(list.RoofRows.Sorted, row => row.Material == "2x8");
+            Assert.StartsWith("Roof 1: Glazing 4.4 % of walls and roof", list.SunroomText, StringComparison.Ordinal);
+            Assert.Contains("under the 40 % line", list.SunroomText, StringComparison.Ordinal);
+        });
+    });
+
+    /// <summary>Scrolls the Part panel with the mouse wheel, either way, until <paramref name="control"/> is inside it.</summary>
+    static void Reveal(AppDriver app, MainWindow window, Control control)
+    {
+        ScrollViewer scroller = window.FindControl<ScrollViewer>("PropertiesScroller")!;
+        double Bottom(Visual v) => v.TranslatePoint(new Point(0, v.Bounds.Height), window)!.Value.Y;
+        double Top(Visual v) => v.TranslatePoint(new Point(0, 0), window)!.Value.Y;
+        for (int i = 0; i < 30; i++)
+        {
+            if (Bottom(control) > Bottom(scroller))
+            {
+                app.Wheel(CentreOf(window, scroller), new Vector(0, -1));
+            }
+            else if (Top(control) < Top(scroller))
+            {
+                app.Wheel(CentreOf(window, scroller), new Vector(0, 1));
+            }
+            else
+            {
+                return;
+            }
+        }
+    }
+
     static void OpenSample(AppDriver app, MainWindow window, string sample)
     {
         app.Click(CentreOf(window, window.FileMenuItem));
