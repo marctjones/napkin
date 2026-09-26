@@ -69,6 +69,7 @@ public partial class MainWindow
             (RoughMenuItem, EditCommand.ToggleRough),
             (WallToolMenuItem, EditCommand.WallTool),
             (RoomToolMenuItem, EditCommand.RoomTool),
+            (DeckToolMenuItem, EditCommand.DeckTool),
             (NoteToolMenuItem, EditCommand.NoteTool),
             (StrutToolMenuItem, EditCommand.StrutTool),
             (ShapeMenuItem, EditCommand.Shape),

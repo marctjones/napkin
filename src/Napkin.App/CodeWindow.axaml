@@ -55,7 +55,7 @@
                 <Button Name="UseTownButton" Content="Use these values" FontSize="12" IsEnabled="False" Click="OnUseTownClicked"
                         ToolTip.Tip="Sets the ground snow load, wind speed and seismic design category from the adopted code for this town, and says where they came from." />
             </StackPanel>
-            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" >
+            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" >
                 <TextBlock Grid.Row="0" Text="Ground snow load" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
                 <TextBox Grid.Row="0" Grid.Column="1" Name="SnowBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Ground snow load" />
                 <TextBlock Grid.Row="0" Grid.Column="2" Text="psf" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,4" />
@@ -79,6 +79,10 @@
                 <TextBlock Grid.Row="5" Text="Roof live load (psf)" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
                 <TextBox Grid.Row="5" Grid.Column="1" Name="RoofLiveBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Roof live load (psf)" />
                 <TextBlock Grid.Row="5" Grid.Column="2" Text="if a footnote asks" FontSize="11" Opacity="0.75" VerticalAlignment="Center" Margin="6,0,0,4" />
+
+                <TextBlock Grid.Row="7" Text="Soil bearing (psf)" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
+                <TextBox Grid.Row="7" Grid.Column="1" Name="SoilBox" FontSize="12" Margin="0,0,0,4" AutomationProperties.Name="Soil bearing (psf)" />
+                <TextBlock Grid.Row="7" Grid.Column="2" Text="for deck footings" FontSize="11" Opacity="0.75" VerticalAlignment="Center" Margin="6,0,0,4" />
 
                 <TextBlock Grid.Row="6" Text="Where they came from" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,4" />
                 <TextBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Name="SourceBox" FontSize="12" Margin="0,0,0,4"
