@@ -69,6 +69,7 @@ public partial class MainWindow
         DesignView.Back => BackViewMenuItem,
         DesignView.Left => LeftViewMenuItem,
         DesignView.Right => RightViewMenuItem,
+        DesignView.Parts => PartsViewMenuItem,
         _ => ModelViewMenuItem,
     };
 
@@ -81,6 +82,7 @@ public partial class MainWindow
         DesignView.Back => BackViewChip,
         DesignView.Left => LeftViewChip,
         DesignView.Right => RightViewChip,
+        DesignView.Parts => PartsViewChip,
         _ => ModelViewChip,
     };
 
@@ -232,7 +234,7 @@ public partial class MainWindow
     void OnSheetClicked(object? sender, RoutedEventArgs e) => ShowSheet(!IsShowingSheet);
 
     static readonly DesignView[] AllViews =
-        [DesignView.Top, DesignView.Bottom, DesignView.Front, DesignView.Back, DesignView.Left, DesignView.Right, DesignView.Model];
+        [DesignView.Top, DesignView.Bottom, DesignView.Front, DesignView.Back, DesignView.Left, DesignView.Right, DesignView.Model, DesignView.Parts];
 
     readonly Dictionary<Control, object?> _toolTipsOutsideViews = [];
 

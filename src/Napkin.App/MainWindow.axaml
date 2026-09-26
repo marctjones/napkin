@@ -263,6 +263,11 @@
                               Click="OnViewMenuClicked"
                               ToolTip.Tip="The drawing in three dimensions: turn parts, and move and resize them along any axis (7)." />
                 </MenuItem>
+                <!-- The Parts view (parts-view.md): every distinct piece once, with its count. -->
+                <MenuItem Name="PartsViewMenuItem"
+                          Header="_Parts"
+                          Click="OnViewMenuClicked"
+                          ToolTip.Tip="Every distinct piece of the design drawn once, to one scale, with how many there are — the cut list, drawn." />
                 <!-- The sheet (standard-views §11): Top above Front, Right beside it, 3D in the corner. -->
                 <MenuItem Name="SheetMenuItem"
                           Header="Sheet"
@@ -506,6 +511,8 @@
                                           AutomationProperties.Name="View: Right" ToolTip.Tip="Right: from the east, read-only for now (6)" />
                             <ToggleButton Name="ModelViewChip" Content="3D" Click="OnViewChipClicked"
                                           AutomationProperties.Name="View: 3D" ToolTip.Tip="3D: turn, move and resize parts along any axis (7)" />
+                            <ToggleButton Name="PartsViewChip" Content="Parts" Click="OnViewChipClicked"
+                                          AutomationProperties.Name="View: Parts" ToolTip.Tip="Parts: every distinct piece drawn once, with how many" />
                         </StackPanel>
                     </Border>
                     <!-- Which view is showing (standard-views §4.2): Top, Front, 3D, "3D, perspective". -->

@@ -15,6 +15,9 @@ public enum DesignView
     Left,
     Right,
     Model,
+
+    /// <summary>The Parts view (docs/design/parts-view.md): every distinct piece once, with its count.</summary>
+    Parts,
 }
 
 /// <summary>Which view a design opens in.</summary>
