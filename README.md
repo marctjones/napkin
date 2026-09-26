@@ -26,18 +26,18 @@ interface).
 
 ## Status
 
-Early beta. M1 through M5 are done: open and draw a sample design with dimensions (M1); draw,
-resize by typing a dimension, undo, save (M2); build the coffee table and get its cut list and
-shopping list (M3, audited 0.93.0-beta); put a window in a wall and get a header size with the
-code row it came from (M4, 0.97.0-beta); the bracing check and switching a project's adopted code
-(M5, 0.101.0-beta). What's being built now is a Hardening pass — architecture drift, correctness
-and doc fixes from a full-repo review — before M6 Views and drawings (six locked orthographic
-views, a third-angle sheet, a Parts view).
+Beta. M1 through M9 are done: open and draw a sample design with dimensions (M1); draw, resize by
+typing a dimension, undo, save (M2); the coffee table's cut list and shopping list (M3); a header
+size with the code row it came from (M4); the bracing check and switching adopted codes (M5); the
+standard views and the Parts view (M6); sketch mode (M7); renovation — existing, new and demolished
+work (M8); angled parts, grain and a cost estimate (M9, v0.170.0-beta). Open: **M10 Real code**
+(waiting on where the IRC tables are read from, #209), **M11 Deck and three-season porch** (design
+awaiting sign-off), **M12 Print and cut** and **M13 Permit set**.
 
 The work is organised into milestones, each of them something you can hold rather than a layer of
 the architecture — **M1 Look**, **M2 Draw**, **M3 Cut**, **M4 Check**, **M5 Brace and compare**,
-**Hardening**, then **M6 Views and drawings**, **M7 Sketch mode**, **M8 Renovation**, **M9 Shape**,
-and **M10 Real code**. What each one gets you, and which issues build it, is the milestone table in
+**Hardening**, **M6 Views and drawings**, **M7 Sketch mode**, **M8 Renovation**, **M9 Shape**,
+**M10 Real code**, **M11 Deck and three-season porch**, **M12 Print and cut** and **M13 Permit set**. What each one gets you, and which issues build it, is the milestone table in
 [`PLAN.md`](./PLAN.md); the same milestones are on the issue tracker.
 
 napkin is a **beta indefinitely**: every release is a pre-release, breaking changes are always
@@ -47,8 +47,9 @@ allowed, and there is no migration path between betas (an older project file get
 
 ## Trying it
 
-There are no downloadable builds; building and releasing installers is parked until the core
-functionality exists. Run it from source (see [Building](#building)).
+Unsigned pre-releases are on the [Releases](https://github.com/marctjones/napkin/releases) page:
+zips for macOS (Apple silicon and Intel) and Windows x64, with `SHA256SUMS.txt`. Or run it from
+source (see [Building](#building)).
 
 ## Building
 

@@ -224,10 +224,10 @@ constants, and not copied verbatim from any single publisher's compiled table:
   entity for cross-tool fidelity.
   *Implemented for the plan (#23): File → Export plan as DXF writes AC1015 with **ACadSharp**
   (MIT); the R12 fallback is not written, because ACadSharp reads R12 but does not write it.*
-- **SketchUp import, read-only**: parse `.skp` via Trimble's published SketchUp SDK (free-tier
-  SketchUp users can only export `.skp`/PDF, so this is the only realistic path to their models —
-  requiring Pro-tier Collada/OBJ export would exclude the free-tier users who are the actual
-  target audience). Treat as geometry-and-dimension reference import, not two-way sync.
+- **SketchUp import, read-only**: parse `.skp` via Trimble's published SketchUp SDK, as a
+  geometry-and-dimension reference import, not two-way sync. *Closed (#24). The reasoning that
+  free-tier users could only export `.skp`/PDF was not confirmed from a vendor page when re-checked
+  on 2026-09-26 (#215) and is withdrawn.*
 - **PDF export**: true-scale vector sheets for both the cut-list/materials side and the
   building/site-plan side, with title block.
 
