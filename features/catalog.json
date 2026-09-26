@@ -1517,7 +1517,7 @@
       "id": "GUI-STRUT-01",
       "area": "ui",
       "title": "Draw the splayed bench with angled legs and read one row of four legs",
-      "acceptance": "On a new sheet, with the grid at an inch or finer, draw the seat and four legs from the floor to the seat's underside with Draw > Angled part (pointer clicks and typed values); each leg is a 2x2 and the cut list has one row of four legs at 2'-1 7/16\".",
+      "acceptance": "On a new sheet, with the grid at an inch or finer: R and a drag draw the 36 x 12 seat and its Up field is typed to 24; then four times L, a click for the foot on the paper, a click for the top on the seat, and 2x2 typed as its stock; four legs stand from the floor to the seat's underside, each a 2x2 with tilt about 16.5 degrees, and Ctrl/Cmd+L shows one row of four legs at 2'-1 7/16\".",
       "milestone": "M9",
       "issue": 192,
       "kind": "workflow"
