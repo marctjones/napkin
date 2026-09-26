@@ -193,6 +193,16 @@ public sealed class PartsSheetTests
     }
 
     [Fact]
+    public void An_empty_sheet_says_whether_the_design_has_no_parts_or_nothing_at_all()
+    {
+        Assert.Equal(CutList.NothingToCut, CutList.WhyEmpty(Sketch.Empty));
+        Sketch wall = Sketch.Empty.WithEntity(Box.AsDrawn(EntityId.New(), LayerId.Default, Point2.Origin, Length.Inches(96), Length.Inches(4), Length.Inches(96), Angle.Zero));
+        Assert.Empty(CutList.Of(wall, Library));
+        Assert.Equal(CutList.NothingIsAPartYet, CutList.WhyEmpty(wall));
+        Assert.Throws<ArgumentNullException>(() => CutList.WhyEmpty(null!));
+    }
+
+    [Fact]
     public void The_same_rows_give_equal_cells_and_a_cell_is_equal_to_another_for_the_same_row_only()
     {
         ImmutableArray<CutListRow> rows = CutList.Of(Read("coffee-table"), Library);

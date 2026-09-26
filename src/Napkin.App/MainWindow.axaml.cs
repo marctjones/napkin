@@ -105,6 +105,7 @@ public partial class MainWindow : Window
         // The sheet sits clear of the toolbar strip and the side column, so none of its panes is
         // under chrome and none needs a reserve of its own (standard-views §11.2).
         SheetDrawing.Margin = new Thickness(0, ToolBarReserve, SidePanelsReserve, 0);
+        PartsDrawing.Margin = SheetDrawing.Margin;
         Editor.MessageChanged += (_, _) =>
         {
             // A change of a header result is said with the edit that caused it (#18, design §7.3).
@@ -171,6 +172,18 @@ public partial class MainWindow : Window
         };
         ModelDrawing.ViewRequested += (_, view) => ShowView(view);
         ModelDrawing.PlacementChanged += (_, _) => UpdateToolButtons();
+
+        // The Parts view (parts-view.md): the same editor; it speaks for its zoom and asks for views.
+        PartsDrawing.Editor = Editor;
+        PartsDrawing.ViewChanged += (_, _) =>
+        {
+            if (IsShowingParts)
+            {
+                UpdateZoomReadout();
+            }
+        };
+        PartsDrawing.ViewRequested += (_, view) => ShowView(view);
+        PartsDrawing.CommandRequested += (_, request) => request.Handled = Run(request.Command);
 
         // The sheet's panes (standard-views §11.5): the same editor; each asks for commands and views
         // as the 3D view does, and the one under the pointer is the one the readouts speak for.

@@ -357,8 +357,11 @@ public partial class MainWindow
             Settings.Update(s => s with { Projection = ModelDrawing.Projection });
         }
 
-        // A standard view is orthographic by definition and nothing in it snaps: its zoom is all it says.
-        ZoomText.Text = IsShowingStandardView
+        // A standard view is orthographic by definition and nothing in it snaps: its zoom is all it says,
+        // as the Parts view's is.
+        ZoomText.Text = IsShowingParts
+            ? string.Create(CultureInfo.InvariantCulture, $"Zoom {PartsDrawing.ZoomPercent:0.#}%")
+            : IsShowingStandardView
             ? string.Create(CultureInfo.InvariantCulture, $"Zoom {ActiveModel.Camera.ZoomPercent:0.#}%")
             : IsShowingModel
             ? string.Create(
@@ -367,7 +370,7 @@ public partial class MainWindow
             : string.Create(CultureInfo.InvariantCulture, $"Zoom {DrawingCanvas.View.ZoomPercent:0.#}%");
 
         // While snapping is on, the step a drag lands on: it changes with the zoom, as the grid does.
-        if (Settings.Current.SnapToGrid && !IsShowingStandardView)
+        if (Settings.Current.SnapToGrid && !IsShowingStandardView && !IsShowingParts)
         {
             // In Rough mode that is the rough step, not the grid's (sketch-mode §2.1).
             double step = IsShowingModel ? ActiveModel.SnapStepInches : DrawingCanvas.SnapStepInches;
@@ -414,7 +417,7 @@ public partial class MainWindow
     {
         RulersMenuItem.Icon = _showRulers ? new TextBlock { Text = "✓" } : null;
 
-        double t = _showRulers && (!IsShowingModel || IsShowingStandardView) ? CanvasView.RulerThickness : 0;
+        double t = _showRulers && !IsShowingParts && (!IsShowingModel || IsShowingStandardView) ? CanvasView.RulerThickness : 0;
         ToolBar.Margin = ToolBarMargin + new Thickness(t, t, 0, 0);
         StockToolboxPanel.Margin = ToolboxMargin + new Thickness(t, t, 0, 0);
         SidePanels.Margin = SidePanelsMargin + new Thickness(0, t, 0, 0);

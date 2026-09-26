@@ -522,14 +522,8 @@ public partial class CutListWindow : Window
 
         // An empty list is never silence: a design with nothing to cut says which of the two
         // reasons it is, because "no rows" and "no parts" are different problems to a person.
-        bool anyBoxes = sketch.Entities.Values.OfType<Box>().Any();
         EmptyNote.IsVisible = design is not null && rows.IsEmpty;
-        EmptyText.Text = anyBoxes
-            ? "Nothing in this design is a part yet. A box becomes a part when it is given a "
-              + "thickness and told which of its three dimensions the drawing is showing; a wall "
-              + "and an opening are boxes nobody cuts, and they stay off this list; a wall's framing is on the "
-              + "shopping list's tab."
-            : CutList.NothingToCut;
+        EmptyText.Text = CutList.WhyEmpty(sketch);
     }
 
     /// <summary>The code check in one line per opening, with the code it is checked against (#18).</summary>

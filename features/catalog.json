@@ -1289,6 +1289,15 @@
       "kind": "unit"
     },
     {
+      "id": "CUT-022",
+      "area": "furniture",
+      "title": "The Parts sheet is a wrapped grid of equal cells, grouped under title bands, on whole pixels",
+      "acceptance": "Columns are what the width buys at the zoom and never fewer than one (1, 2, 4 at 300, 560, 1100 px at 100 %); cells fill rows in the sheet's order and never overlap; a group starts its own row under a 24 px title band; every edge is a whole pixel; a cell reads to a screen reader as its label, count, three sizes and material.",
+      "milestone": "M6",
+      "issue": 124,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-CUT-08",
       "area": "ui",
       "title": "Read the cut layout and change the saw kerf",
@@ -1493,6 +1502,15 @@
       "acceptance": "Open the l-bracket; View > Sheet: four captioned panes in third-angle order, the three drawings at one scale so x lines up in Top and Front and z in Front and Right; a click on the upright in Front draws it selected in every pane; R says not on the sheet; 3 leaves for Front alone and forgets the sheet; View > Sheet brings it back, remembered, the upright still selected.",
       "milestone": "M6",
       "issue": 133,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PARTS-01",
+      "area": "ui",
+      "title": "The Parts view shows the coffee table's pieces, one cell each, and walks them by keyboard and pointer",
+      "acceptance": "Open the coffee table from Samples; View > Parts: four cells, the top x1, the legs x4 and two apron cells x2, the Parts chip pressed and its hint said; Right, Right, Down move the focus cell along and down a row; a click focuses the legs' cell; R says not in the Parts view; View > Zoom in shows 125 %; 7 then V returns to Top, never to Parts; the Parts chip shows it again; 3 leaves for Front.",
+      "milestone": "M6",
+      "issue": 124,
       "kind": "workflow"
     },
     {
