@@ -35,7 +35,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 105,
+    "workflowsPassed": 107,
     "workflowIds": [
       "CVS-011",
       "CVS-012",
@@ -76,6 +76,7 @@
       "GUI-CUT-10",
       "GUI-CUT-11",
       "GUI-DECK-01",
+      "GUI-DECK-02",
       "GUI-DIY-01",
       "GUI-DRAW-01",
       "GUI-DRAW-02",
@@ -99,6 +100,7 @@
       "GUI-PARTS-03",
       "GUI-PARTS-04",
       "GUI-PORCH-01",
+      "GUI-PORCH-02",
       "GUI-RENO-01",
       "GUI-RENO-02",
       "GUI-RENO-03",
