@@ -951,6 +951,50 @@
                         <TextBlock Name="NoteSymbolWord" FontSize="10" Opacity="0.8" />
                     </StackPanel>
                 </Border>
+                <!-- An angled part (assembly-model §3a.7, angled-parts §1.2, §2.4): its two ends, the
+                     plane each is cut to, which way its wide face keeps, its stock and cross-section,
+                     and the derived length, tilt and azimuth, marked unless exact. -->
+                <Border Name="StrutPanel"
+                        IsVisible="False"
+                        HorizontalAlignment="Right"
+                        Padding="10,8"
+                        Width="248"
+                        CornerRadius="4"
+                        BorderThickness="1">
+                    <StackPanel Spacing="5">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Name="StrutHeadline" Text="Angled part" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Button Name="StrutApplyButton" Grid.Column="1" Content="Apply" FontSize="11" Padding="8,2"
+                                    Click="OnStrutApplyClicked" AutomationProperties.Name="Apply angled part" />
+                        </Grid>
+                        <Grid ColumnDefinitions="40,*,*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="4" RowSpacing="4">
+                            <TextBlock Text="" />
+                            <TextBlock Grid.Column="1" Text="X" FontSize="10" Opacity="0.7" />
+                            <TextBlock Grid.Column="2" Text="Y" FontSize="10" Opacity="0.7" />
+                            <TextBlock Grid.Column="3" Text="Z" FontSize="10" Opacity="0.7" />
+                            <TextBlock Grid.Row="1" Text="Foot" FontSize="11" VerticalAlignment="Center" />
+                            <TextBox Name="StrutFromXBox" Grid.Row="1" Grid.Column="1" FontSize="11" AutomationProperties.Name="From X" />
+                            <TextBox Name="StrutFromYBox" Grid.Row="1" Grid.Column="2" FontSize="11" AutomationProperties.Name="From Y" />
+                            <TextBox Name="StrutFromZBox" Grid.Row="1" Grid.Column="3" FontSize="11" AutomationProperties.Name="From Z" />
+                            <TextBlock Grid.Row="2" Text="Top" FontSize="11" VerticalAlignment="Center" />
+                            <TextBox Name="StrutToXBox" Grid.Row="2" Grid.Column="1" FontSize="11" AutomationProperties.Name="To X" />
+                            <TextBox Name="StrutToYBox" Grid.Row="2" Grid.Column="2" FontSize="11" AutomationProperties.Name="To Y" />
+                            <TextBox Name="StrutToZBox" Grid.Row="2" Grid.Column="3" FontSize="11" AutomationProperties.Name="To Z" />
+                            <TextBlock Grid.Row="3" Text="Cut" FontSize="11" VerticalAlignment="Center" />
+                            <ComboBox Name="StrutFromCutBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="1" FontSize="11" MinWidth="0" AutomationProperties.Name="Foot cut" />
+                            <ComboBox Name="StrutToCutBox" Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="1" FontSize="11" MinWidth="0" AutomationProperties.Name="Top cut" />
+                        </Grid>
+                        <ComboBox Name="StrutReferenceBox" FontSize="11" HorizontalAlignment="Stretch" AutomationProperties.Name="Wide face" />
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                            <TextBox Name="StrutStockBox" FontSize="11" PlaceholderText="Stock, e.g. 2x2" AutomationProperties.Name="Angled part stock" />
+                            <TextBox Name="StrutHeightBox" Grid.Column="1" FontSize="11" AutomationProperties.Name="Angled part width"
+                                     ToolTip.Tip="The size across its wide face." />
+                            <TextBox Name="StrutDepthBox" Grid.Column="2" FontSize="11" AutomationProperties.Name="Angled part thickness"
+                                     ToolTip.Tip="The size through its wide face." />
+                        </Grid>
+                        <TextBlock Name="StrutReadout" FontSize="10" Opacity="0.85" TextWrapping="Wrap" AutomationProperties.Name="Angled part readout" />
+                    </StackPanel>
+                </Border>
                 <Border Name="PropertiesPanel"
                         IsVisible="False"
                         HorizontalAlignment="Right"
