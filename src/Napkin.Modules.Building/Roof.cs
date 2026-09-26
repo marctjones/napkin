@@ -126,6 +126,11 @@ public static class RoofFrame
             return (null, $"{(library.TryFindLumber(inputs.Rafter, out _) ? inputs.Ledger : inputs.Rafter)} is not in the materials library, so the roof cannot be framed.");
         }
 
+        if (roof.Box.Width < rafter.Thickness)
+        {
+            return (null, $"The roof is narrower than one {inputs.Rafter}: widen the deck under it.");
+        }
+
         List<string> notes = [];
         Length plate;
         List<FramingPiece> pieces = [];
@@ -180,7 +185,7 @@ public static class RoofFrame
             rafters.Add(at);
         }
 
-        if (rafters.Count == 0 || rafters[^1] != roof.Box.Width - rafter.Thickness)
+        if (rafters[^1] != roof.Box.Width - rafter.Thickness)
         {
             rafters.Add(roof.Box.Width - rafter.Thickness);
         }

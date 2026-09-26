@@ -133,6 +133,10 @@ public class RoofTests
         Assert.Contains("over by", RoofCheck.Rafters(sketch with { Site = sketch.Site with { GroundSnowLoadPsf = 50 } }, Frame(sketch, roof) with { HorizontalSpan = In(140) }, ZzDeck).Text, StringComparison.Ordinal);
         Assert.Contains("Enter the ground snow load", RoofCheck.Rafters(sketch with { Site = SiteValues.NotEntered }, Frame(sketch, roof), ZzDeck).Text, StringComparison.Ordinal);
         Assert.Contains("past the last band", RoofCheck.Rafters(sketch with { Site = sketch.Site with { GroundSnowLoadPsf = 60 } }, Frame(sketch, roof), ZzDeck).Text, StringComparison.Ordinal);
+        // A deck read by its layer alone has no species: the rafter table asks for one.
+        Sketch bare = sketch.WithEntity(roof.Over(sketch)!.Box with { Deck = null });
+        Assert.Equal(DeckCheckKind.Joists, RoofCheck.Rafters(bare, Frame(bare, roof), ZzDeck).Kind);
+        Assert.False(RoofCheck.Rafters(bare, Frame(bare, roof), ZzDeck).Passing);
         Assert.Contains("No adopted code is chosen", RoofCheck.Rafters(sketch, Frame(sketch, roof), null).Text, StringComparison.Ordinal);
     }
 
@@ -178,9 +182,12 @@ public class RoofTests
         (Sketch low, Roof lowRoof, _) = Porch(_ => new BeamLowEnd(new BeamSpec(2, "2x10"), "4x4", 2), roofZ: 40);
         Assert.StartsWith("The roof's low end is too low for its beam", Why(low, lowRoof), StringComparison.Ordinal);
 
-        // A front wall not marked bearing is asked to be.
+        Assert.Equal("The roof is narrower than one 2x8: widen the deck under it.", Why(sketch.WithEntity(roof.Over(sketch)!.Box with { Width = In(1) }), new Roof(roof.Box with { Width = In(1) })));
+
+        // A front wall not marked bearing is asked to be — and one read only by its layer, with no inputs at all.
         (Sketch notBearing, Roof loose, _) = Porch(bearing: false);
         Assert.Contains("Front carries the roof: mark it bearing, and choose what it supports.", Frame(notBearing, loose).Notes);
+        Assert.Contains("Front carries the roof: mark it bearing, and choose what it supports.", Frame(sketch.WithEntity(front with { WallInputs = null }), roof).Notes);
         Assert.Contains("napkin does not know the house: check the ledger clears its eave and openings.", Frame(sketch, roof).Notes);
         Assert.NotNull(front);
     }
@@ -203,7 +210,7 @@ public class RoofTests
     public void A_roof_is_read_by_its_layer_its_name_or_its_inputs()
     {
         (Sketch sketch, Roof roof, _) = Porch();
-        Assert.Single(Roof.All(sketch));
+        Assert.Equal(roof.Box.Id, Assert.Single(Roof.All(sketch)).Id);
         Assert.Equal("Roof", new Roof(roof.Box with { Name = string.Empty }).Name);
         Assert.True(Roof.Is(sketch, roof.Box with { Layer = LayerId.Default, Name = "Canopy" }));
         Assert.False(Roof.Is(sketch, roof.Box with { Layer = LayerId.Default, Name = "Canopy", Roof = null }));
