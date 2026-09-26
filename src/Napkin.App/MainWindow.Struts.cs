@@ -35,11 +35,12 @@ public partial class MainWindow
     /// <summary>What the panel's readout line says.</summary>
     public string StrutReadoutText => StrutPanel.IsVisible ? StrutReadout.Text ?? string.Empty : string.Empty;
 
+    // Short, to fit beside each other: level (a floor or an underside), a face square to X or Y, or square.
     static string CutWord(EndCut cut) => cut switch
     {
-        EndCut.Z => "floor / level",
-        EndCut.X => "east–west face",
-        EndCut.Y => "north–south face",
+        EndCut.Z => "level",
+        EndCut.X => "X face",
+        EndCut.Y => "Y face",
         _ => "square",
     };
 

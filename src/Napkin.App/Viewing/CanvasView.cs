@@ -1458,7 +1458,8 @@ public sealed class CanvasView : Control
             return;
         }
 
-        string name = editor.NextName("Brace");
+        // A strut that rises is a leg; one lying flat is a brace.
+        string name = editor.NextName(strut.Direction.Dz == Length.Zero ? "Brace" : "Leg");
         const string what = "Draw an angled part";
         editor.BeginGesture(what);
         if (editor.Apply(new AddEntity(strut with { Name = name }), what) is Succeeded)

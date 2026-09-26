@@ -967,7 +967,7 @@
                             <Button Name="StrutApplyButton" Grid.Column="1" Content="Apply" FontSize="11" Padding="8,2"
                                     Click="OnStrutApplyClicked" AutomationProperties.Name="Apply angled part" />
                         </Grid>
-                        <Grid ColumnDefinitions="40,*,*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="4" RowSpacing="4">
+                        <Grid ColumnDefinitions="40,*,*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="4" RowSpacing="4">
                             <TextBlock Text="" />
                             <TextBlock Grid.Column="1" Text="X" FontSize="10" Opacity="0.7" />
                             <TextBlock Grid.Column="2" Text="Y" FontSize="10" Opacity="0.7" />
@@ -980,9 +980,14 @@
                             <TextBox Name="StrutToXBox" Grid.Row="2" Grid.Column="1" FontSize="11" AutomationProperties.Name="To X" />
                             <TextBox Name="StrutToYBox" Grid.Row="2" Grid.Column="2" FontSize="11" AutomationProperties.Name="To Y" />
                             <TextBox Name="StrutToZBox" Grid.Row="2" Grid.Column="3" FontSize="11" AutomationProperties.Name="To Z" />
-                            <TextBlock Grid.Row="3" Text="Cut" FontSize="11" VerticalAlignment="Center" />
-                            <ComboBox Name="StrutFromCutBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="1" FontSize="11" MinWidth="0" AutomationProperties.Name="Foot cut" />
-                            <ComboBox Name="StrutToCutBox" Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="1" FontSize="11" MinWidth="0" AutomationProperties.Name="Top cut" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="4">
+                            <TextBlock Text="Foot cut" FontSize="11" VerticalAlignment="Center" />
+                            <ComboBox Name="StrutFromCutBox" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" AutomationProperties.Name="Foot cut"
+                                      ToolTip.Tip="The plane the foot is cut to: level for a floor or a seat's underside, or a side face." />
+                            <TextBlock Grid.Column="2" Text="Top" FontSize="11" VerticalAlignment="Center" />
+                            <ComboBox Name="StrutToCutBox" Grid.Column="3" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch" AutomationProperties.Name="Top cut"
+                                      ToolTip.Tip="The plane the top is cut to." />
                         </Grid>
                         <ComboBox Name="StrutReferenceBox" FontSize="11" HorizontalAlignment="Stretch" AutomationProperties.Name="Wide face" />
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
