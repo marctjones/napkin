@@ -105,21 +105,48 @@ public class StrutFormatTests
     }
 
     [Fact]
-    public void Strut_face_and_end_face_references_are_spelled_and_refused_by_the_kernel_until_their_slices()
+    public void A_flush_to_a_strut_face_an_anchored_strut_and_its_sizes_round_trip()
     {
-        // The file has their shape now; what may hold one is slice B's and E's.
+        // The leg leans one way (d = (0, 7168, 24576), reference Z), so its top face is x = 4096 + 768
+        // = 4864; a stretcher's west face there is flush with it.
+        const string StretcherId = "0192f1a0-0000-4000-8000-00000000000d";
+        string held = Scene
+            .With(
+                "\"entities\": [",
+                "\"entities\": [ "
+                + $$"""{ "id": "{{StretcherId}}", "type": "box", "layer": "{{Layer}}", "name": "Stretcher", "phase": "new", "anchor": { "x": 4864, "y": 0, "z": 6144 }, "width": 6144, "height": 768, "depth": 3584, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "cuts": [] },""")
+            .With(
+                "\"relationships\": [",
+                "\"relationships\": [ "
+                + $$"""{ "id": "0192f1a0-0000-4000-8000-00000000001c", "kind": "flush", "a": { "kind": "feature", "box": "{{StretcherId}}", "faces": ["west"] }, "b": { "kind": "strutFace", "strut": "{{LegId}}", "face": "top" } },"""
+                + $$"""{ "id": "0192f1a0-0000-4000-8000-00000000001d", "kind": "anchored", "entity": "{{TwinId}}" },"""
+                + $$"""{ "id": "0192f1a0-0000-4000-8000-00000000001e", "kind": "paramValue", "param": { "kind": "strutHeight", "strut": "{{LegId}}" }, "value": 1536 },"""
+                + $$"""{ "id": "0192f1a0-0000-4000-8000-00000000001f", "kind": "equalParam", "a": { "kind": "strutDepth", "strut": "{{LegId}}" }, "b": { "kind": "strutHeight", "strut": "{{TwinId}}" } },""");
+
+        Sketch sketch = Scenes.Accept(held);
+        string text = SceneWriter.WriteToText(sketch);
+
+        Assert.Equal(sketch, Scenes.Accept(text));
+        Assert.Contains(sketch.Relationships.Values, r => r is Flush { B: StrutFaceRef { Face: StrutFace.Top } });
+        Assert.Contains("\"kind\": \"strutHeight\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"kind\": \"strutDepth\"", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_strut_face_outside_a_flush_and_an_end_face_are_refused_by_the_kernel()
+    {
         string face = Scene.With(
             "\"b\": { \"kind\": \"strutEnd\", \"strut\": \"" + TwinId + "\", \"end\": \"to\" }",
             "\"b\": { \"kind\": \"strutFace\", \"strut\": \"" + TwinId + "\", \"face\": \"north\" }");
-        LoadProblem problem = Scenes.RefuseWith(face, LoadProblemKind.InvalidValue, "strut's body");
+        LoadProblem problem = Scenes.RefuseWith(face, LoadProblemKind.InvalidValue, "only a flush can hold");
         Assert.Contains("north face", problem.Message, StringComparison.Ordinal);
 
         string endFace = Scene.With(
             "\"b\": { \"kind\": \"strutEnd\", \"strut\": \"" + TwinId + "\", \"end\": \"to\" }",
             "\"b\": { \"kind\": \"strutEndFace\", \"strut\": \"" + TwinId + "\", \"end\": \"to\" }");
-        Scenes.RefuseWith(endFace, LoadProblemKind.InvalidValue, "strut's body");
+        Scenes.RefuseWith(endFace, LoadProblemKind.InvalidValue, "joint");
 
-        // The references themselves are written and read back by the writer, whatever holds them.
+        // The references themselves are written, whatever holds them.
         Sketch sketch = Sketch.Empty.WithEntity(Scenes.Accept(Scene).Find<Strut>(Leg)!);
         foreach (PlaceRef place in new PlaceRef[] { new StrutFaceRef(Leg, StrutFace.Bottom), new StrutEndFaceRef(Leg, StrutEnd.From) })
         {
@@ -127,6 +154,16 @@ public class StrutFormatTests
             string text = SceneWriter.WriteToText(with);
             Assert.Contains(place is StrutFaceRef ? "\"face\": \"bottom\"" : "\"kind\": \"strutEndFace\"", text, StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public void A_strut_has_no_length_to_hold()
+    {
+        string length = Scene.With(
+            "\"relationships\": [",
+            "\"relationships\": [ "
+            + $$"""{ "id": "0192f1a0-0000-4000-8000-00000000001c", "kind": "paramValue", "param": { "kind": "strutLength", "strut": "{{LegId}}" }, "value": 26048 },""");
+        Scenes.RefuseWith(length, LoadProblemKind.UnknownValue, "strutLength");
     }
 
     [Fact]

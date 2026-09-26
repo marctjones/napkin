@@ -30,6 +30,24 @@ internal enum ScalarKind
     /// offset reads it on whichever world axis the box's orientation stands it along.
     /// </summary>
     Depth,
+
+    /// <summary>A strut's <see cref="Strut.From"/> X (docs/design/assembly-model.md &#xA7;3a.5): each end is its own three scalars.</summary>
+    FromX,
+
+    /// <summary>A strut's <see cref="Strut.From"/> Y.</summary>
+    FromY,
+
+    /// <summary>A strut's <see cref="Strut.From"/> Z.</summary>
+    FromZ,
+
+    /// <summary>A strut's <see cref="Strut.To"/> X.</summary>
+    ToX,
+
+    /// <summary>A strut's <see cref="Strut.To"/> Y.</summary>
+    ToY,
+
+    /// <summary>A strut's <see cref="Strut.To"/> Z.</summary>
+    ToZ,
 }
 
 /// <summary>One number the propagator can assign.</summary>
@@ -163,12 +181,22 @@ internal sealed class Propagator
             ScalarKind.Y => node.Position.Y,
             _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "A node has only an X and a Y."),
         },
+        Strut strut => key.Kind switch
+        {
+            ScalarKind.Height => strut.Height,
+            ScalarKind.Depth => strut.Depth,
+            _ when EndOf(key.Kind) is (var end, var axis) => strut.End(end).Component(axis),
+            _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "A strut has two ends and a cross-section."),
+        },
         _ => Length.Zero,
     };
 
     /// <summary>What an assignment to a scalar is about, for a conflict report.</summary>
     internal static AssignmentTarget TargetOf(Sketch sketch, ScalarKey key) => key.Kind switch
     {
+        _ when EndOf(key.Kind) is (var end, var axis) => new PointAxisTarget(new StrutEndRef(key.Entity, end), axis),
+        ScalarKind.Height when sketch.Find(key.Entity) is Strut => new ParamTarget(new StrutHeightRef(key.Entity)),
+        ScalarKind.Depth when sketch.Find(key.Entity) is Strut => new ParamTarget(new StrutDepthRef(key.Entity)),
         ScalarKind.Width => new ParamTarget(new BoxWidthRef(key.Entity)),
         ScalarKind.Height => new ParamTarget(new BoxHeightRef(key.Entity)),
         ScalarKind.Depth => new ParamTarget(new BoxDepthRef(key.Entity)),
@@ -185,6 +213,33 @@ internal sealed class Propagator
             Axis.Z),
         _ => throw new ArgumentOutOfRangeException(nameof(key), key.Kind, "Not a scalar kind."),
     };
+
+    /// <summary>The scalar of one strut end along one world axis.</summary>
+    internal static ScalarKind EndKind(StrutEnd end, Axis axis) => (end, axis) switch
+    {
+        (StrutEnd.From, Axis.X) => ScalarKind.FromX,
+        (StrutEnd.From, Axis.Y) => ScalarKind.FromY,
+        (StrutEnd.From, _) => ScalarKind.FromZ,
+        (_, Axis.X) => ScalarKind.ToX,
+        (_, Axis.Y) => ScalarKind.ToY,
+        _ => ScalarKind.ToZ,
+    };
+
+    /// <summary>The strut end and axis a scalar is, or <see langword="null"/> for a scalar that is not a strut end's.</summary>
+    internal static (StrutEnd End, Axis Axis)? EndOf(ScalarKind kind) => kind switch
+    {
+        ScalarKind.FromX => (StrutEnd.From, Axis.X),
+        ScalarKind.FromY => (StrutEnd.From, Axis.Y),
+        ScalarKind.FromZ => (StrutEnd.From, Axis.Z),
+        ScalarKind.ToX => (StrutEnd.To, Axis.X),
+        ScalarKind.ToY => (StrutEnd.To, Axis.Y),
+        ScalarKind.ToZ => (StrutEnd.To, Axis.Z),
+        _ => null,
+    };
+
+    /// <summary>A strut's eight scalars: its two ends and its cross-section.</summary>
+    internal static IEnumerable<ScalarKind> StrutKinds =>
+        [ScalarKind.FromX, ScalarKind.FromY, ScalarKind.FromZ, ScalarKind.ToX, ScalarKind.ToY, ScalarKind.ToZ, ScalarKind.Height, ScalarKind.Depth];
 
     /// <summary>The position scalar along a world axis.</summary>
     internal static ScalarKind KindOf(Axis axis) => axis switch
@@ -211,12 +266,20 @@ internal sealed class Propagator
                 continue;
             }
 
-            // A box has six scalars to hold (assembly-model §2.3); a node has its X and Y.
-            bool isBox = _sketch.Find(anchored.Entity) is Box;
-            foreach (ScalarKind kind in new[] { ScalarKind.X, ScalarKind.Y, ScalarKind.Z, ScalarKind.Width, ScalarKind.Height, ScalarKind.Depth })
+            // A box has six scalars to hold (assembly-model §2.3); a node has its X and Y; a strut its
+            // two ends and its cross-section, eight (§3a.5).
+            Entity? held = _sketch.Find(anchored.Entity);
+            IEnumerable<ScalarKind> kinds = held switch
+            {
+                Strut => StrutKinds,
+                Box => [ScalarKind.X, ScalarKind.Y, ScalarKind.Z, ScalarKind.Width, ScalarKind.Height, ScalarKind.Depth],
+                _ => [ScalarKind.X, ScalarKind.Y],
+            };
+
+            foreach (ScalarKind kind in kinds)
             {
                 ScalarKey key = new(anchored.Entity, kind);
-                if (requestOwns.Contains(key) || (!isBox && kind is not (ScalarKind.X or ScalarKind.Y)))
+                if (requestOwns.Contains(key))
                 {
                     continue;
                 }
@@ -514,11 +577,28 @@ internal sealed class Propagator
                 break;
 
             case Flush flush:
-                if (CommonNormalAxis(flush) is { } normal
-                    && EdgeSide(flush.A, normal) is { } firstEdge
-                    && EdgeSide(flush.B, normal) is { } secondEdge)
+                if (CommonNormalAxis(flush) is { } normal)
                 {
-                    yield return (firstEdge, secondEdge);
+                    // The one coupling of a strut's two ends (angled-parts §3.2): its face is square to
+                    // the axis only while both ends agree on it, so the flush holds them equal there.
+                    // Moving one end alone off the axis would end the lean being one-way, and is a
+                    // contradiction naming this flush. Yielded first, and resolved before the face
+                    // pair is built: the face's value is read from the From end, so a To end that moved
+                    // must have carried From with it before the face is compared with its partner.
+                    foreach (PlaceRef place in new[] { flush.A, flush.B })
+                    {
+                        if (place is StrutFaceRef face)
+                        {
+                            yield return (
+                                PointSide(new StrutEndRef(face.Strut, StrutEnd.From), normal),
+                                PointSide(new StrutEndRef(face.Strut, StrutEnd.To), normal));
+                        }
+                    }
+
+                    if (EdgeSide(flush.A, normal) is { } firstEdge && EdgeSide(flush.B, normal) is { } secondEdge)
+                    {
+                        yield return (firstEdge, secondEdge);
+                    }
                 }
 
                 break;
@@ -559,6 +639,13 @@ internal sealed class Propagator
         {
             case NodeRef:
                 return [Axis.X, Axis.Y];
+
+            case StrutEndRef:
+                return [Axis.X, Axis.Y, Axis.Z];
+
+            // Read from the stored strut, as a feature's axes are from the stored orientation; see CurrentFace.
+            case StrutFaceRef face when _sketch.Find<Strut>(face.Strut) is not null:
+                return CurrentFace(face) is { } plane ? [plane.Axis] : [];
 
             // Read from the stored sketch: only the axes are wanted, and they do not move with the
             // values being worked out. This is also the one reading off the quarter turns, which the
@@ -888,9 +975,12 @@ internal sealed class Propagator
             BoxWidthRef width => $"The width of {width.Box}",
             BoxHeightRef height => $"The height of {height.Box}",
             BoxDepthRef depth => $"The depth of {depth.Box}",
+            StrutHeightRef height => $"The height of {height.Strut}",
+            StrutDepthRef depth => $"The depth of {depth.Strut}",
             SegmentLengthRef length => $"The length of {length.Segment}",
             _ => "A size",
         },
+        PointAxisTarget { Point: StrutEndRef end } point => $"The {point.Axis} of {end.Strut}'s {(end.End == StrutEnd.From ? "from" : "to")} end",
         PointAxisTarget point => $"The {point.Axis} of {point.Point.Owner}",
         _ => "A value",
     };
@@ -921,6 +1011,14 @@ internal sealed class Propagator
                 return new Side([baseKey], offset, SizesOf(centre.Box), CurrentOf(baseKey) + offset, target);
             }
 
+            // The per-end rule (assembly-model §3a.5): a relationship on an end reaches that end's
+            // scalar and nothing else, so the other end keeps its value unless something moves it.
+            case StrutEndRef end:
+            {
+                ScalarKey endKey = new(end.Strut, EndKind(end.End, axis));
+                return new Side([endKey], extraOffset, [], CurrentOf(endKey) + extraOffset, target);
+            }
+
             default:
                 return new Side([baseKey], extraOffset, [], CurrentOf(baseKey) + extraOffset, target);
         }
@@ -943,6 +1041,14 @@ internal sealed class Propagator
                 key = new ScalarKey(depth.Box, ScalarKind.Depth);
                 break;
 
+            case StrutHeightRef strutHeight:
+                key = new ScalarKey(strutHeight.Strut, ScalarKind.Height);
+                break;
+
+            case StrutDepthRef strutDepth:
+                key = new ScalarKey(strutDepth.Strut, ScalarKind.Depth);
+                break;
+
             default:
                 // A segment's length is not one number the propagator can assign; DirectUpdater
                 // refuses a sketch that makes one a ParamValue or EqualParam (see §10).
@@ -958,6 +1064,20 @@ internal sealed class Propagator
         {
             case FeatureRef feature:
                 return PointSide(feature, normalAxis);
+
+            // Both ends' coordinate on the face's axis, as a segment's flush is both its nodes': the
+            // face is the centreline there plus half the size across it (angled-parts §3.2).
+            case StrutFaceRef face when CurrentFace(face) is { } plane && plane.Axis == normalAxis:
+            {
+                ScalarKey from = new(face.Strut, EndKind(StrutEnd.From, normalAxis));
+                ScalarKey to = new(face.Strut, EndKind(StrutEnd.To, normalAxis));
+                return new Side(
+                    [from, to],
+                    plane.Offset,
+                    [plane.Size],
+                    CurrentOf(from) + plane.Offset,
+                    new PointAxisTarget(face, normalAxis));
+            }
 
             case SegmentRef segmentRef when _sketch.Find<Segment>(segmentRef.Segment) is { } segment:
             {
@@ -1024,6 +1144,29 @@ internal sealed class Propagator
             width.Divide(2, Rounding.HalfToEven),
             height.Divide(2, Rounding.HalfToEven),
             depth.Divide(2, Rounding.HalfToEven)));
+    }
+
+    /// <summary>
+    /// A strut face's axis, its offset from the centreline and the size that offset reads;
+    /// <see langword="null"/> when it is square to nothing or the size across it is odd.
+    /// </summary>
+    /// <remarks>
+    /// Which axis the face is square to is read from the stored strut, the way a box feature's axes
+    /// are read from its stored orientation, and not from the ends worked out so far: a request that
+    /// seeds one end off the axis would otherwise turn the face into nothing before the flush's
+    /// coupling could either carry the other end along or report the contradiction (angled-parts §3.2).
+    /// The size is read as worked out, so a typed cross-section moves the face.
+    /// </remarks>
+    private (Axis Axis, Length Offset, ScalarKey Size)? CurrentFace(StrutFaceRef face)
+    {
+        if (_sketch.Find<Strut>(face.Strut) is not { } strut
+            || Strut.FaceNormal(strut.Direction, strut.Reference, face.Face) is not (var axis, var sign))
+        {
+            return null;
+        }
+
+        ScalarKey size = new(face.Strut, face.Face is StrutFace.South or StrutFace.North ? ScalarKind.Height : ScalarKind.Depth);
+        return CurrentOf(size).TryDivideExact(2, out Length half) ? (axis, sign * half, size) : null;
     }
 
     private Point2 CurrentPosition(EntityId entity)

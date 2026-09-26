@@ -39,6 +39,8 @@ public class RelationshipTextTests
         Assert.Equal("Leg's bottom face", RelationshipText.Place(Scene, new StrutFaceRef(Leg, StrutFace.Bottom), Name));
         Assert.Equal("Leg's second end face", RelationshipText.Place(Scene, new StrutEndFaceRef(Leg, StrutEnd.To), Name));
         Assert.Equal("Leg's first end face", RelationshipText.Place(Scene, new StrutEndFaceRef(Leg, StrutEnd.From), Name));
+        Assert.Equal("Leg's height", RelationshipText.Size(new StrutHeightRef(Leg), Name));
+        Assert.Equal("Leg's depth", RelationshipText.Size(new StrutDepthRef(Leg), Name));
     }
 
     [Fact]

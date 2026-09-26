@@ -205,6 +205,52 @@ public sealed record Strut(
         return null;
     }
 
+    /// <summary>
+    /// The world axis a long face is square to, and which way it faces along it: the face's normal
+    /// in the frame of a strut running <paramref name="direction"/> — local ∓Y for South and North,
+    /// ∓Z for Bottom and Top — when that normal has exactly one nonzero component, and
+    /// <see langword="null"/> otherwise (angled-parts §3.2). A strut that leans two ways has no face
+    /// square to anything.
+    /// </summary>
+    public static (Axis Axis, int Sign)? FaceNormal(Vector3 direction, Axis reference, StrutFace face)
+    {
+        if (!LeansIn(direction))
+        {
+            return null;
+        }
+
+        StrutFrame frame = StrutFrame.Of(direction, reference);
+        IntegerVector3 normal = face switch
+        {
+            StrutFace.South => -frame.Y,
+            StrutFace.North => frame.Y,
+            StrutFace.Bottom => -frame.Z,
+            _ => frame.Z,
+        };
+
+        Axis[] along = [.. new[] { Axis.X, Axis.Y, Axis.Z }.Where(axis => normal.Component(axis) != 0)];
+        return along is [var axis] ? (axis, Int128.Sign(normal.Component(axis))) : null;
+    }
+
+    /// <summary>The cross-section size across a long face: <see cref="Height"/> across South and North, <see cref="Depth"/> across Bottom and Top.</summary>
+    public Length SizeAcross(StrutFace face) => face is StrutFace.South or StrutFace.North ? Height : Depth;
+
+    /// <summary>
+    /// Where a long face is: the world axis it fixes and its coordinate on it, or <see langword="null"/>
+    /// when it is not square to any axis or the size across it is odd in units, which would put it
+    /// half a unit off the grid.
+    /// </summary>
+    public (Axis Axis, Length At)? FacePlane(StrutFace face)
+    {
+        if (FaceNormal(Direction, Reference, face) is not (var axis, var sign)
+            || !SizeAcross(face).TryDivideExact(2, out Length half))
+        {
+            return null;
+        }
+
+        return (axis, From.Component(axis) + (sign * half));
+    }
+
     /// <summary>Whether a direction differs in at least two coordinates — leans, rather than being a box laid along an axis (invariant 14).</summary>
     public static bool LeansIn(Vector3 direction)
         => (direction.Dx.Units != 0 ? 1 : 0) + (direction.Dy.Units != 0 ? 1 : 0) + (direction.Dz.Units != 0 ? 1 : 0) >= 2;
