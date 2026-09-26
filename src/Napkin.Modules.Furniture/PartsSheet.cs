@@ -90,6 +90,19 @@ public sealed class PartsCell : IEquatable<PartsCell>
     };
 }
 
+/// <summary>How much of a cell the design's selection holds (docs/design/parts-view.md §5.2).</summary>
+public enum PartsCellSelection
+{
+    /// <summary>None of its parts is selected.</summary>
+    None,
+
+    /// <summary>Some of its parts are, not all: what Delete would take is less than the cell.</summary>
+    Partly,
+
+    /// <summary>Every one of its parts is selected.</summary>
+    All,
+}
+
 /// <summary>The cells of one stock, under the stock's name (docs/design/parts-view.md §1.3).</summary>
 /// <param name="Title">The stock's name, an unresolved name's sentence, or "No stock".</param>
 /// <param name="Cells">Its cells, in the cut list's order.</param>
@@ -129,6 +142,22 @@ public static class PartsSheet
             .OrderBy(group => Rank(group.Key.Material, group.Key.Unresolved))
             .Select(group => new PartsGroup(Title(group.Key.Material, group.Key.Unresolved), [.. group])),
     ];
+
+    /// <summary>
+    /// How much of a cell a selection holds (§5.2): all when every member is selected, partly when
+    /// some are, none otherwise. There is one selection, the editor's; the sheet only reads it.
+    /// </summary>
+    /// <param name="cell">The cell.</param>
+    /// <param name="selection">The design's selection.</param>
+    public static PartsCellSelection SelectionOf(PartsCell cell, IReadOnlySet<EntityId> selection)
+    {
+        ArgumentNullException.ThrowIfNull(cell);
+        ArgumentNullException.ThrowIfNull(selection);
+        int held = cell.Members.Count(selection.Contains);
+        return held == 0 ? PartsCellSelection.None
+            : held == cell.Members.Length ? PartsCellSelection.All
+            : PartsCellSelection.Partly;
+    }
 
     /// <summary>Where a group falls: known stock first, unknown names next, no stock last. Stable within a rank.</summary>
     static int Rank(string material, bool unresolved) =>

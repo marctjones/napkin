@@ -203,6 +203,44 @@ public sealed class PartsSheetTests
     }
 
     [Fact]
+    [Trait("Feature", "CUT-023")]
+    public void A_cell_is_selected_when_all_its_parts_are_and_partly_when_some_are()
+    {
+        Sketch table = Read("coffee-table");
+        PartsCell legs = PartsSheet.Of(CutList.Of(table, Library)).Single(cell => cell.Row.Label == "Leg");
+
+        Assert.Equal(PartsCellSelection.None, PartsSheet.SelectionOf(legs, new HashSet<EntityId>()));
+        Assert.Equal(PartsCellSelection.Partly, PartsSheet.SelectionOf(legs, new HashSet<EntityId> { legs.Members[0] }));
+        Assert.Equal(PartsCellSelection.All, PartsSheet.SelectionOf(legs, legs.Members.ToHashSet()));
+
+        // Other parts selected besides do not make it partly: all four legs are still all of it.
+        EntityId top = PartsSheet.Of(CutList.Of(table, Library))[0].Members[0];
+        Assert.Equal(PartsCellSelection.All, PartsSheet.SelectionOf(legs, legs.Members.Append(top).ToHashSet()));
+        Assert.Throws<ArgumentNullException>(() => PartsSheet.SelectionOf(null!, new HashSet<EntityId>()));
+        Assert.Throws<ArgumentNullException>(() => PartsSheet.SelectionOf(legs, null!));
+    }
+
+    [Fact]
+    [Trait("Feature", "CUT-023")]
+    public void A_cell_says_how_many_boxes_its_pieces_come_from_only_when_that_differs()
+    {
+        // Four legs, four boxes: the badge and the selection count the same thing.
+        PartsCell legs = PartsSheet.Of(CutList.Of(Read("coffee-table"), Library)).Single(cell => cell.Row.Label == "Leg");
+        Assert.Null(PartsCellText.PiecesFrom(legs));
+
+        // One box standing for four pieces, and two boxes standing for three.
+        Sketch one = Design.WithParts(("Cleat", Length.Inches(12).Units, Length.Inches(2).Units,
+            new Piece(null, null, 4, Length.Inches(0, 3, 4), new PlanAxes(PartDimension.Length, PartDimension.Width))));
+        Assert.Equal("4 pieces from 1 box", PartsCellText.PiecesFrom(Assert.Single(PartsSheet.Of(CutList.Of(one, Library)))));
+
+        Sketch two = Design.WithParts(
+            ("Slat", Length.Inches(20).Units, Length.Inches(3).Units, new Piece(null, null, 2, Length.Inches(0, 3, 4), new PlanAxes(PartDimension.Length, PartDimension.Width))),
+            ("Slat", Length.Inches(20).Units, Length.Inches(3).Units, new Piece(null, null, 1, Length.Inches(0, 3, 4), new PlanAxes(PartDimension.Length, PartDimension.Width))));
+        Assert.Equal("3 pieces from 2 boxes", PartsCellText.PiecesFrom(Assert.Single(PartsSheet.Of(CutList.Of(two, Library)))));
+        Assert.Throws<ArgumentNullException>(() => PartsCellText.PiecesFrom(null!));
+    }
+
+    [Fact]
     public void The_same_rows_give_equal_cells_and_a_cell_is_equal_to_another_for_the_same_row_only()
     {
         ImmutableArray<CutListRow> rows = CutList.Of(Read("coffee-table"), Library);
