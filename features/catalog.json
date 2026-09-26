@@ -1541,6 +1541,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-PARTS-04",
+      "area": "ui",
+      "title": "The Parts view's grouping and 3D choice are remembered, and a new window opens in them",
+      "acceptance": "Open the stocked bench in the Parts view; View > Group parts by stock: groups 3/4 plywood, 1x4, 2x4 under title bands, the keyboard walking them in screen order; View > Parts in 3D; a new window on the same settings opens in the Parts view, grouped, in 3D, both menu items ticked.",
+      "milestone": "M6",
+      "issue": 127,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-SET-07",
       "area": "ui",
       "title": "The last view is remembered; 2D plan opens Top",
