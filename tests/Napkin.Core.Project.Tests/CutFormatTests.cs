@@ -19,7 +19,7 @@ public sealed class CutFormatTests
     /// </summary>
     private const string EveryKindOfCut = """
         {
-          "formatVersion": 10,
+          "formatVersion": 11,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [

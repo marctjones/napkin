@@ -1,5 +1,5 @@
 {
-  "formatVersion": 10,
+  "formatVersion": 11,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"

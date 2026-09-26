@@ -85,7 +85,7 @@ public sealed class ReservedRelationshipTests
     /// </summary>
     private const string SolverKinds = """
         {
-          "formatVersion": 10,
+          "formatVersion": 11,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -133,7 +133,7 @@ public sealed class ReservedRelationshipTests
     /// <summary>A radius stated about a box, because there is no arc entity to state it about.</summary>
     private const string RadiusOfABox = """
         {
-          "formatVersion": 10,
+          "formatVersion": 11,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [

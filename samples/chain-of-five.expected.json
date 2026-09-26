@@ -3,7 +3,7 @@
   "scene": "chain-of-five.scene.json",
   "design": "chain-of-five.design.md",
   "derivedBy": "hand, from the stated dimensions in chain-of-five.design.md; never regenerated from napkin's output",
-  "formatVersion": 10,
+  "formatVersion": 11,
   "unitsPerInch": 1024,
   "counts": {
     "boxes": 5,
