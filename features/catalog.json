@@ -695,6 +695,42 @@
       "kind": "unit"
     },
     {
+      "id": "ROOF-001",
+      "area": "deck",
+      "title": "A shed porch roof's rafters are counted and cut to an exact length",
+      "acceptance": "A 144 x 120 roof box at 5 in 12 over the deck, 2x8 rafters at 16\" with a 2x8 ledger and a 12\" overhang, gives 10 rafters of exactly 141 3/8\" (the 12:5:13 triangle, no approximation); an inexact pitch rounds the hypotenuse up once to the grid and says so with an approximate sign; the rafter span is checked against the pack's rafter table at the site's ground snow load, or says what is missing.",
+      "milestone": "M11",
+      "issue": 202,
+      "kind": "unit"
+    },
+    {
+      "id": "ROOF-002",
+      "area": "deck",
+      "title": "The rafter's cuts and the ledger's height are stated exactly in plain words",
+      "acceptance": "For the 5 in 12 roof the height above plate is 6 19/48\", the ledger's top 55 37/48\" above the plates, and the cuts sentence gives the plumb cut at 5 and 12, the birdsmouth plumb line 10'-8 3/8\" along the top edge with a 3 1/2\" seat and a notch about 1 7/16\" deep, and the tail 1'-1\" further on.",
+      "milestone": "M11",
+      "issue": 202,
+      "kind": "unit"
+    },
+    {
+      "id": "ROOF-003",
+      "area": "deck",
+      "title": "Sheathing and roofing are counted from the roof's sloped area",
+      "acceptance": "The 144 x 141 3/8 slope is 141.4 sq ft: 5 sheets of 7/16 OSB (by area, with a note that a layout may need more) and 5 units of shingles at 33 sq ft a unit; with 10 % waste and no coverage typed it says 155.5 sq ft and asks for the coverage; a beam-and-posts low end lists the beam and posts with the posts' length.",
+      "milestone": "M11",
+      "issue": 202,
+      "kind": "unit"
+    },
+    {
+      "id": "ROOF-004",
+      "area": "deck",
+      "title": "The porch's glazing is measured against the 40 % sunroom line",
+      "acceptance": "The porch of the worked example is 10.4 % glass under its roof (walls gross, the side walls' rake triangles and the roof's sloped area, glass openings only), 25.5 % with every screen glass, and over the line only when glass exceeds 40 %; with no roof drawn it says to draw the roof first; the line cites IRC 2021 R202 and never classifies.",
+      "milestone": "M11",
+      "issue": 201,
+      "kind": "unit"
+    },
+    {
       "id": "IOP-001",
       "area": "interop",
       "title": "Exported DXF opens in another CAD tool",
@@ -1079,6 +1115,33 @@
       "acceptance": "Window in an existing wall sample: Shift+D and a drag from the existing wall's south face out 8 ft draw Deck 1, 8'-0\" square and 3'-0\" above grade, its north edge the ledger; the panel's frame line reads 7 joists 2x8 at 16\" and a (2) 2x10 beam on 3 posts spanning 3'-6 3/4\"; typing 2 as the post count respans it to 7'-5\"; Ctrl/Cmd+Shift+L shows a Deck section with the deck's line and its 2x8 and 5/4x6 boards.",
       "milestone": "M11",
       "issue": 197,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DECK-02",
+      "area": "ui",
+      "title": "Tick a deck's guard and stair and read them on the shopping list",
+      "acceptance": "With a deck drawn against the house, ticking Guard and Stair in the panel lays out the guard's posts and balusters and the stair; Ctrl/Cmd+Shift+L shows the Deck section with the guard's posts and balusters and the stair's stringers; changing the post count changes the beam's span sentence.",
+      "milestone": "M11",
+      "issue": 204,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PORCH-01",
+      "area": "ui",
+      "title": "Roof a deck, type its pitch, buy its rafters and undo it",
+      "acceptance": "With a 96 x 96 deck against the house, Shift+R and a click on the deck make Roof 1 at 4 in 12 on a (2) 2x10 beam 8'-0\" above the decking, and the Sunroom test says no wall stands on the deck; typing 5 in 12 in the pitch box sets a 3'-4\" rise and 7 rafters 2x8 of 9'-7 3/8\"; Ctrl/Cmd+Shift+L shows a Roof section buying 2x8, 2x10 and 4x4; Edit > Undo takes back the pitch, then the roof, and the deck stays.",
+      "milestone": "M11",
+      "issue": 203,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PORCH-02",
+      "area": "ui",
+      "title": "Build the worked example's porch end to end",
+      "acceptance": "From a new sheet: an existing house wall, a 12 x 10 deck against it, a front wall drawn with W on the deck's far edge (standing on the decking) and marked bearing, windows in it, then Shift+R and 5 in 12: the panel's rafter line reads 10 rafters of 11'-9 3/8\" and the roof's low end is the front wall; the shopping list's Roof section buys them.",
+      "milestone": "M11",
+      "issue": 204,
       "kind": "workflow"
     },
     {

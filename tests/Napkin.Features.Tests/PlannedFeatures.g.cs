@@ -60,51 +60,21 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: DECK-001 — Ledger attachment is sized from the project's pack")]
-    [Trait("Feature", "DECK-001")]
-    public void DECK_001()
-    {
-    }
-
-    [Fact(Skip = "planned: DECK-002 — Joist and beam spans come from the adopted tables")]
-    [Trait("Feature", "DECK-002")]
-    public void DECK_002()
-    {
-    }
-
-    [Fact(Skip = "planned: DECK-003 — Footings are sized from tributary area and entered soil bearing")]
-    [Trait("Feature", "DECK-003")]
-    public void DECK_003()
-    {
-    }
-
-    [Fact(Skip = "planned: DECK-004 — Guards and stairs follow the adopted provisions")]
-    [Trait("Feature", "DECK-004")]
-    public void DECK_004()
-    {
-    }
-
-    [Fact(Skip = "planned: DECK-005 — A deck produces a cut list through the furniture machinery")]
-    [Trait("Feature", "DECK-005")]
-    public void DECK_005()
-    {
-    }
-
     [Fact(Skip = "planned: GUI-CUT-01 — Build the coffee table end to end")]
     [Trait("Feature", "GUI-CUT-01")]
     public void GUI_CUT_01()
     {
     }
 
-    [Fact(Skip = "planned: IOP-001 — Exported DXF opens in another CAD tool")]
-    [Trait("Feature", "IOP-001")]
-    public void IOP_001()
+    [Fact(Skip = "planned: GUI-DECK-02 — Tick a deck's guard and stair and read them on the shopping list")]
+    [Trait("Feature", "GUI-DECK-02")]
+    public void GUI_DECK_02()
     {
     }
 
-    [Fact(Skip = "planned: IOP-002 — Exported dimensions are literal geometry")]
-    [Trait("Feature", "IOP-002")]
-    public void IOP_002()
+    [Fact(Skip = "planned: GUI-PORCH-02 — Build the worked example's porch end to end")]
+    [Trait("Feature", "GUI-PORCH-02")]
+    public void GUI_PORCH_02()
     {
     }
 
