@@ -273,6 +273,25 @@ per opening, and the line says to buy by area for square feet.
 unequal opposite sides or diagonals, or one diagonal whose square is not L² + W² (compared exactly),
 say "out of square"; the takeoff stays on the drawn size and says so. Nothing is redrawn.
 
+## A deck
+
+A **deck is a box on the layer Deck** (or called "Deck", or carrying deck inputs): its plan outline
+is the deck, its depth the walking surface's height above grade — **Z = 0 is grade** in a deck
+drawing ([`deck-and-porch.md`](./design/deck-and-porch.md) §2). Its **ledger edge** is derived, never
+stored: the one edge lying on a long face of an **Existing** wall, its whole length on that face,
+judged from exact corners. No such edge says "not against a wall"; two say "against two walls: not
+modelled". The other edges are **open** until a wall stands on them at the deck's surface.
+
+The frame is derived every time (`DeckFrame.Of`): a ledger and a rim, each the deck's length along
+the house; joists out from the house at the typed spacing (faces at k·s while k·s + t fits, then an
+end joist), each D − 2t; one row of blocking at mid-span, a piece per bay; the beam's plies; the
+posts, each the deck's height less the decking, a joist and the beam (pier top at grade, a stated
+assumption); and the decking, the least number of boards whose widths and gaps cover the depth,
+with how much of the last board shows. The **beam span** between posts and a middle post's
+**tributary area** are kept as exact fractions for the code checks (slice E) and shown rounded, with
+≈ when they are not on the grid. Every piece becomes a cut-list row, so the shopping list buys
+decks as it buys walls.
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code

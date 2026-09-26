@@ -18,6 +18,12 @@ public static class BuildingLayers
 
     /// <summary>The layer notes are drawn on (renovation-sketches §7).</summary>
     public const string Notes = "Notes";
+
+    /// <summary>The layer a deck is drawn on (deck-and-porch §2.1).</summary>
+    public const string Deck = "Deck";
+
+    /// <summary>The layer a porch roof is drawn on (deck-and-porch §5.3).</summary>
+    public const string Roof = "Roof";
 }
 
 /// <summary>Whether an opening is a window or a door.</summary>
