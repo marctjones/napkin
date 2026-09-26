@@ -1,4 +1,5 @@
 using Napkin.Core.Geometry;
+using Napkin.Modules.Editing;
 
 namespace Napkin.App.Viewing;
 

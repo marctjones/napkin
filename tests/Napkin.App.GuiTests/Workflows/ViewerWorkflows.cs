@@ -7,6 +7,7 @@ using Napkin.App.Designs;
 using Napkin.App.GuiTests.Harness;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
+using Napkin.Modules.Editing;
 using Napkin.Core.Project;
 using Xunit;
 using Design = Napkin.Modules.Editing.Design;

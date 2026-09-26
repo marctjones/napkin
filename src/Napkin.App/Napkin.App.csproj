@@ -29,6 +29,7 @@
     <ProjectReference Include="..\Napkin.Modules.Building\Napkin.Modules.Building.csproj" />
     <ProjectReference Include="..\Napkin.Core.Project\Napkin.Core.Project.csproj" />
     <ProjectReference Include="..\Napkin.Modules.Editing\Napkin.Modules.Editing.csproj" />
+    <ProjectReference Include="..\Napkin.Interop.Dxf\Napkin.Interop.Dxf.csproj" />
   </ItemGroup>
 
   <!-- The app's icon, and the design system's fonts (docs/third-party-notices.md). The three OFL
