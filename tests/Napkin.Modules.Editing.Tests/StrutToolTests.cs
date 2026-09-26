@@ -69,6 +69,30 @@ public class StrutToolTests
         Assert.StartsWith("≈", StrutTool.Readouts(compound, LengthFormat.Default).Length, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void APlanClickOnAPartIsATopAtItsUndersideAndOnPaperAFootOnTheFloor()
+    {
+        // The splayed bench's seat, 3/4″ thick with its underside at 24″ (§9.1).
+        Box seat = new(EntityId.New(), LayerId.Default, At(0, 0, 24576), Length.Inches(36), Length.Inches(12), new Length(768), BoxFace.Top, Angle.Zero);
+
+        Assert.Equal((At(4096, 3072, 24576), EndCut.Z), StrutTool.PlanEnd(new Point2(new Length(4096), new Length(3072)), seat));
+        Assert.Equal((At(4096, -4096, 0), EndCut.Z), StrutTool.PlanEnd(new Point2(new Length(4096), new Length(-4096)), null));
+    }
+
+    [Fact]
+    public void TwoClicksOnThePaperAreAFlatBraceWithSquareEnds()
+    {
+        Strut flat = StrutTool.Flattened(Make(At(0, 0, 0), EndCut.Z, At(3072, 4096, 0), EndCut.Z));
+        Assert.Equal((EndCut.Square, EndCut.Square), (flat.FromCut, flat.ToCut));
+        Assert.Null(StrutTool.Refusal(flat));
+
+        Strut kept = StrutTool.Flattened(Make(At(0, 0, 0), EndCut.X, At(3072, 4096, 0), EndCut.Y));
+        Assert.Equal((EndCut.X, EndCut.Y), (kept.FromCut, kept.ToCut));
+
+        Strut leg = Make(At(4096, -4096, 0), EndCut.Z, At(4096, 3072, 24576), EndCut.Z);
+        Assert.Same(leg, StrutTool.Flattened(leg));
+    }
+
     [Theory]
     [InlineData(Axis.Z, "keep the wide face vertical")]
     [InlineData(Axis.X, "keep the wide face parallel to the long side")]

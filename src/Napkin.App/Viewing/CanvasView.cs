@@ -1423,12 +1423,12 @@ public sealed class CanvasView : Control
         Tool = EditTool.Strut;
         _strut.Cancel();
         ToolChanged?.Invoke(this, EventArgs.Empty);
-        _editor?.Say(EditSeverity.Hint, "Angled part: click one end, then the other. In the plan it lies flat with square ends; raise its top and set its cuts in the panel.");
+        _editor?.Say(EditSeverity.Hint, "Angled part: click the floor for a foot, then a part for a top under it — or the floor twice for a flat brace.");
     }
 
     /// <summary>
-    /// One click of the angled-part tool in the plan: both ends at the plan datum, square, so the
-    /// strut is a flat brace until the panel raises an end (see <see cref="StrutTool"/>).
+    /// One click of the angled-part tool in the plan: on a part, an end at its underside; on empty
+    /// paper, one on the floor (see <see cref="StrutTool.PlanEnd"/>).
     /// </summary>
     void ClickStrut(Point2 at)
     {
@@ -1437,10 +1437,10 @@ public sealed class CanvasView : Control
             return;
         }
 
-        Point3 point = new(at.X, at.Y, Length.Zero);
+        (Point3 point, EndCut cut) = StrutTool.PlanEnd(at, PickAt(at) is { } over ? editor.Sketch.Find<Box>(over) : null);
         LayerId layer = editor.LayerForNewParts();
-        Strut? strut = _strut.Click(point, EndCut.Square, (from, fromCut, to, toCut) =>
-            StrutTool.Make(EntityId.New(), layer, from, fromCut, to, toCut, Box.DefaultDepth, Box.DefaultDepth));
+        Strut? strut = _strut.Click(point, cut, (from, fromCut, to, toCut) =>
+            StrutTool.Flattened(StrutTool.Make(EntityId.New(), layer, from, fromCut, to, toCut, Box.DefaultDepth, Box.DefaultDepth)));
         InvalidateVisual();
         if (strut is null)
         {
@@ -1464,7 +1464,7 @@ public sealed class CanvasView : Control
         if (editor.Apply(new AddEntity(strut with { Name = name }), what) is Succeeded)
         {
             editor.Select(strut.Id);
-            editor.Say(EditSeverity.Done, $"Drew {name}: raise an end and set its cuts in the panel.");
+            editor.Say(EditSeverity.Done, $"Drew {name}: choose its stock and its wide face in the panel.");
             Tool = EditTool.Select;
         }
 

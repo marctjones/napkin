@@ -363,6 +363,52 @@ public class StrutPropagationTests
         Assert.Equal(RejectionReason.PlacesNotComparable, refused.Reason);
     }
 
+    // ---- Setting the cuts and the reference (the panel, #192) ----
+
+    [Fact]
+    public void AFlatBraceStandsUpAsALegInTwoSteps()
+    {
+        // What the plan tool makes, and what the panel then does to it: raise the top, then cut both
+        // ends to the floor and the seat. Cut first, the flat brace would lie in the planes it is cut to.
+        Strut brace = Member(Leg, At(0, -1024, 0), At(3072, 3072, 0), EndCut.Square, EndCut.Square, height: 1536);
+        Sketch sketch = Apply(Sketch.Empty, new AddEntity(brace));
+
+        Rejected tooSoon = Assert.IsType<Rejected>(Updater.Apply(sketch, new SetStrutCuts(Leg, EndCut.Z, EndCut.Z, Axis.Z)));
+        Assert.Equal(RejectionReason.InvalidStrut, tooSoon.Reason);
+
+        // Raised to the footstool's seat (§9.2): 13 5/8″, board 1.
+        Sketch standing = Apply(
+            sketch,
+            Batch.Of(new SetStrutEnd(Leg, StrutEnd.To, At(3072, 3072, 12288)), new SetStrutCuts(Leg, EndCut.Z, EndCut.Z, Axis.Z)));
+        Assert.Equal(new DerivedLength(new Length(13952), true), standing.Find<Strut>(Leg)!.Blank().Length);
+    }
+
+    [Fact]
+    public void TurningTheWideFaceUnderAFlushIsRefusedAndTheSameCutsAreNoChange()
+    {
+        // With reference X the bench leg's bottom face tilts with the lean; the rail's flush to it
+        // could no longer hold.
+        Rejected turned = Assert.IsType<Rejected>(Updater.Apply(Bench(), new SetStrutCuts(Leg, EndCut.Z, EndCut.Z, Axis.X)));
+        Assert.Equal(RejectionReason.PlacesNotComparable, turned.Reason);
+
+        Solved same = Assert.IsType<Solved>(Updater.Apply(Bench(), new SetStrutCuts(Leg, EndCut.Z, EndCut.Z, Axis.Z)));
+        Assert.Equal(ChangeSet.Empty, same.Changes);
+
+        Assert.Equal(RejectionReason.UnknownEntity, Assert.IsType<Rejected>(Updater.Apply(Bench(), new SetStrutCuts(EntityId.New(), EndCut.Z, EndCut.Z, Axis.Z))).Reason);
+        Assert.Equal(RejectionReason.DanglingReference, Assert.IsType<Rejected>(Updater.Apply(Bench(), new SetStrutCuts(Rail, EndCut.Z, EndCut.Z, Axis.Z))).Reason);
+    }
+
+    [Fact]
+    public void AFreeLegsWideFaceTurnsAndItsBoardChanges()
+    {
+        Sketch sketch = Apply(Sketch.Empty, new AddEntity(Member(Leg, At(0, -1024, 0), At(3072, 3072, 12288), EndCut.Z, EndCut.Z, height: 1536)));
+
+        Solved solved = Assert.IsType<Solved>(Updater.Apply(sketch, new SetStrutCuts(Leg, EndCut.Z, EndCut.Z, Axis.X)));
+
+        Assert.Equal(new[] { Leg }, solved.Changes.Modified);
+        Assert.Equal(new Length(14202), solved.Sketch.Find<Strut>(Leg)!.Blank().Length.Value);
+    }
+
     // ---- Dimensions between struts: assembly-model §9 case 33 ----
 
     [Fact]

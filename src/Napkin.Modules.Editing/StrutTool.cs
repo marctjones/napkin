@@ -13,10 +13,11 @@ namespace Napkin.Modules.Editing;
 /// <para>
 /// <strong>The ends.</strong> In the 3D view each click is a point on what the pointer is over: the
 /// floor, at Z = 0, cut <see cref="EndCut.Z"/> — the floor is the plane a foot meets — or a face of a
-/// part, cut to that face's axis. In the plan both clicks are at Z = 0, where a strut cut to the floor
-/// at both ends would lie in the plane it is cut to, which is no board at all
-/// (<see cref="ValidationErrorKind.StrutCutAlongItself"/>); so the plan makes a flat brace with square
-/// ends, and the panel types the top's height and turns its cuts to the floor and the seat.
+/// part, cut to that face's axis. In the plan a click on a part is an end at its underside and a click
+/// on empty paper one on the floor, both cut to that plane (<see cref="PlanEnd"/>); two on empty paper
+/// would lie in the plane they are cut to, which is no board at all
+/// (<see cref="ValidationErrorKind.StrutCutAlongItself"/>), so they make a flat brace with square ends
+/// (<see cref="Flattened"/>) that the panel can raise.
 /// <see cref="EndCut.Square"/> is otherwise chosen, never defaulted.
 /// </para>
 /// <para>
@@ -53,6 +54,37 @@ public sealed class StrutTool
 
         First = null;
         return first.At == at ? null : make(first.At, first.Cut, at, cut);
+    }
+
+    /// <summary>
+    /// Where a plan click puts an end: on a part, at that part's underside and cut to it — a top under a
+    /// seat or a rail — and on empty paper, on the floor and cut to it (assembly-model &#xA7;3a.7: "feet
+    /// in the plan, tops in the plan under the rail").
+    /// </summary>
+    public static (Point3 At, EndCut Cut) PlanEnd(Point2 at, Box? over)
+    {
+        Length z = over is null
+            ? Length.Zero
+            : Enumerable.Min(
+                new[] { BoxCorner.SouthWest, BoxCorner.SouthEast, BoxCorner.NorthEast, BoxCorner.NorthWest }
+                    .SelectMany(corner => new[] { over.Vertex(corner, BoxLevel.Bottom).Z, over.Vertex(corner, BoxLevel.Top).Z }));
+        return (new Point3(at.X, at.Y, z), EndCut.Z);
+    }
+
+    /// <summary>
+    /// A strut with no rise cut square wherever it was cut to the floor's plane: two clicks on empty
+    /// paper are a flat brace, which the panel can raise, not a board cut along its own length.
+    /// </summary>
+    public static Strut Flattened(Strut strut)
+    {
+        ArgumentNullException.ThrowIfNull(strut);
+        return strut.Direction.Dz != Length.Zero
+            ? strut
+            : strut with
+            {
+                FromCut = strut.FromCut == EndCut.Z ? EndCut.Square : strut.FromCut,
+                ToCut = strut.ToCut == EndCut.Z ? EndCut.Square : strut.ToCut,
+            };
     }
 
     /// <summary>Forgets a held first click: Escape, or the tool put down.</summary>

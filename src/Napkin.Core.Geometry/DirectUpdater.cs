@@ -72,6 +72,7 @@ public sealed class DirectUpdater : IGeometryUpdater
                 ? new Solved(sketch.WithEntity(phased with { Phase = phase.Phase }), ChangeSet.Empty with { Modified = [phase.Id] })
                 : new Rejected(RejectionReason.UnknownEntity),
             SetRoomInputs room => ApplySetRoomInputs(sketch, room),
+            SetStrutCuts cuts => ApplySetStrutCuts(sketch, cuts),
             SetNote note => sketch.Find(note.Id) switch
             {
                 Note found => new Solved(sketch.WithEntity(found with { Text = note.Text, Symbol = note.Symbol }), ChangeSet.Empty with { Modified = [note.Id] }),
@@ -190,6 +191,25 @@ public sealed class DirectUpdater : IGeometryUpdater
                 },
                 broken)
             : null;
+
+    private static UpdateResult ApplySetStrutCuts(Sketch sketch, SetStrutCuts request)
+    {
+        if (sketch.Find<Strut>(request.Strut) is not { } strut)
+        {
+            return new Rejected(sketch.Find(request.Strut) is null ? RejectionReason.UnknownEntity : RejectionReason.DanglingReference);
+        }
+
+        Strut cut = strut with { FromCut = request.FromCut, ToCut = request.ToCut, Reference = request.Reference };
+        if (cut == strut)
+        {
+            return new Solved(sketch, ChangeSet.Empty);
+        }
+
+        Sketch written = sketch.WithEntity(cut);
+        return StrutsStillHold(written, [request.Strut]) is { } refusal
+            ? refusal
+            : new Solved(written, ChangeSet.Empty with { Modified = [request.Strut] });
+    }
 
     private static UpdateResult ApplyRemoveEntity(Sketch sketch, RemoveEntity request)
     {
