@@ -266,6 +266,13 @@ public partial class MainWindow
 
     void OnSheetClicked(object? sender, RoutedEventArgs e) => ShowSheet(!IsShowingSheet);
 
+    /// <summary>The Parts view grouped by stock, or not (parts-view §4.4); remembered.</summary>
+    void OnGroupPartsByStockClicked(object? sender, RoutedEventArgs e)
+    {
+        PartsDrawing.GroupByStock = !PartsDrawing.GroupByStock;
+        FocusDrawing();
+    }
+
     /// <summary>The Parts view's 3D option (parts-view §3), from the menu; I does the same in the view.</summary>
     void OnPartsIn3DClicked(object? sender, RoutedEventArgs e)
     {

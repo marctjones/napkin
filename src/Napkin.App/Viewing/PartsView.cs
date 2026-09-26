@@ -31,10 +31,12 @@ public sealed class PartsView : Control
 
     DesignEditor? _editor;
     ImmutableArray<PartsCell> _cells = [];
+    ImmutableArray<PartsCell> _shown = [];
     IReadOnlyList<PartsPlacement> _placed = [];
     double _sheetScale = 1;
     double _sheetScale3D = 1;
     bool _isometric;
+    bool _grouped;
     double _zoom = 1;
     double _scroll;
     int? _focused;
@@ -48,6 +50,9 @@ public sealed class PartsView : Control
 
     /// <summary>Raised when the cells change: the design changed or another one opened.</summary>
     public event EventHandler? CellsChanged;
+
+    /// <summary>Raised when grouping by stock turns on or off.</summary>
+    public event EventHandler? GroupingChanged;
 
     /// <summary>Raised when the drawing switches between flat and 3D.</summary>
     public event EventHandler? IsometricChanged;
@@ -98,14 +103,37 @@ public sealed class PartsView : Control
     /// <summary>How many cells a row holds at this width and zoom.</summary>
     public int Columns => PartsSheetLayout.Columns(Bounds.Width, _zoom);
 
-    /// <summary>What each cell reads as, in the sheet's order: "Leg, ×4, …" (§6).</summary>
-    public ImmutableArray<string> CellsOnScreen => [.. _cells.Select(PartsCellText.AutomationName)];
+    /// <summary>What each cell reads as, in the order they are on the screen: "Leg, ×4, …" (§6).</summary>
+    public ImmutableArray<string> CellsOnScreen => [.. _shown.Select(PartsCellText.AutomationName)];
+
+    /// <summary>The group titles on the screen, in order; empty when the sheet is not grouped.</summary>
+    public ImmutableArray<string> GroupTitles => [.. _placed.Where(placement => placement.Title is not null).Select(placement => placement.Title!)];
+
+    /// <summary>
+    /// Whether the cells are grouped by stock, each group under its title band (§1.3, §4.4): known
+    /// stock in order of first appearance, then names the library does not know, then "No stock".
+    /// </summary>
+    public bool GroupByStock
+    {
+        get => _grouped;
+        set
+        {
+            if (_grouped == value)
+            {
+                return;
+            }
+
+            _grouped = value;
+            Relayout();
+            GroupingChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
 
     /// <summary>What the view says instead of cells when there are none; null when there are some.</summary>
     public string? EmptyMessage => !_cells.IsEmpty ? null : _editor is { } editor ? CutList.WhyEmpty(editor.Sketch) : NoDesign;
 
     /// <summary>The cell the keyboard is on, or null.</summary>
-    public PartsCell? FocusedCell => _focused is { } index ? _cells[index] : null;
+    public PartsCell? FocusedCell => _focused is { } index ? _shown[index] : null;
 
     /// <summary>How much of a cell the design's selection holds (§5.2): the editor's, read, never stored.</summary>
     public PartsCellSelection SelectionOf(PartsCell cell) =>
@@ -220,7 +248,7 @@ public sealed class PartsView : Control
         bool handled = e.KeyModifiers == KeyModifiers.None && e.Key switch
         {
             Key.Home => FocusAt(0),
-            Key.End => FocusAt(_cells.Length - 1),
+            Key.End => FocusAt(_shown.Length - 1),
             Key.PageDown => MoveFocus(Columns * RowsPerPage),
             Key.PageUp => MoveFocus(-Columns * RowsPerPage),
             Key.Escape => ClearSelection(),
@@ -265,7 +293,7 @@ public sealed class PartsView : Control
             return;
         }
 
-        FocusAt(_cells.IndexOf(cell));
+        FocusAt(_shown.IndexOf(cell));
         KeyModifiers held = e.KeyModifiers;
         SelectCell(cell, toggle: held.HasFlag(KeyModifiers.Control) || held.HasFlag(KeyModifiers.Meta), add: held.HasFlag(KeyModifiers.Shift));
     }
@@ -473,15 +501,23 @@ public sealed class PartsView : Control
         _cells = _editor is { } editor ? PartsSheet.Of(CutList.Of(editor.Sketch, MaterialsLibrary.Shipped)) : [];
         _sheetScale = PartsScale.Sheet(_cells.Select(PartsPicture.Of)) ?? 1;
         _sheetScale3D = PartsIsometric.Sheet(_cells) ?? 1;
-        int kept = focused is null ? -1 : _cells.IndexOf(focused);
-        _focused = kept >= 0 ? kept : null;
+        _focused = null;
         Relayout();
+        int kept = focused is null ? -1 : _shown.IndexOf(focused);
+        _focused = kept >= 0 ? kept : null;
         CellsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     void Relayout()
     {
-        _placed = PartsSheetLayout.Arrange(_cells, Bounds.Width, _zoom);
+        // The focus follows its cell when the order on screen changes (grouping on or off).
+        PartsCell? focused = FocusedCell;
+        _placed = _grouped
+            ? PartsSheetLayout.Arrange(PartsSheet.GroupedByStock(_cells), Bounds.Width, _zoom)
+            : PartsSheetLayout.Arrange(_cells, Bounds.Width, _zoom);
+        _shown = [.. _placed.Where(placement => placement.Cell is not null).Select(placement => placement.Cell!)];
+        int kept = focused is null ? -1 : _shown.IndexOf(focused);
+        _focused = kept >= 0 ? kept : null;
         ScrollTo(_scroll);
         InvalidateVisual();
         ViewChanged?.Invoke(this, EventArgs.Empty);
@@ -501,23 +537,23 @@ public sealed class PartsView : Control
 
     bool MoveFocus(int by)
     {
-        if (_cells.IsEmpty)
+        if (_shown.IsEmpty)
         {
             return true;
         }
 
-        return FocusAt(_focused is { } index ? Math.Clamp(index + by, 0, _cells.Length - 1) : 0);
+        return FocusAt(_focused is { } index ? Math.Clamp(index + by, 0, _shown.Length - 1) : 0);
     }
 
     bool FocusAt(int index)
     {
-        if (_cells.IsEmpty)
+        if (_shown.IsEmpty)
         {
             return true;
         }
 
-        _focused = Math.Clamp(index, 0, _cells.Length - 1);
-        if (CellRectangle(_cells[_focused.Value]) is { } at)
+        _focused = Math.Clamp(index, 0, _shown.Length - 1);
+        if (CellRectangle(_shown[_focused.Value]) is { } at)
         {
             // Scrolled into view (§4.2): up to its top, or down until its bottom shows.
             if (at.Top < 0)

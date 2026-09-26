@@ -185,7 +185,22 @@ public partial class MainWindow : Window
         PartsDrawing.ViewRequested += (_, view) => ShowView(view);
         PartsDrawing.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         PartsDrawing.IsometricChanged += (_, _) =>
+        {
             PartsIn3DMenuItem.Icon = PartsDrawing.Isometric ? new TextBlock { Text = "✓" } : null;
+            PartsStyle style = PartsDrawing.Isometric ? PartsStyle.Isometric : PartsStyle.Flat;
+            if (Settings.Current.PartsStyle != style)
+            {
+                Settings.Update(s => s with { PartsStyle = style });
+            }
+        };
+        PartsDrawing.GroupingChanged += (_, _) =>
+        {
+            GroupPartsByStockMenuItem.Icon = PartsDrawing.GroupByStock ? new TextBlock { Text = "✓" } : null;
+            if (Settings.Current.GroupPartsByStock != PartsDrawing.GroupByStock)
+            {
+                Settings.Update(s => s with { GroupPartsByStock = PartsDrawing.GroupByStock });
+            }
+        };
         PartsIn3DMenuItem.InputGesture = new KeyGesture(Key.I);
 
         // The sheet's panes (standard-views §11.5): the same editor; each asks for commands and views

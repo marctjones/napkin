@@ -171,6 +171,13 @@ public partial class MainWindow
         ApplyOpenIn(Settings.Current.OpenIn);
         ApplyGrid(Settings.Current.ShowGrid, Settings.Current.SnapToGrid);
         ApplyHiddenEdges(Settings.Current.ShowHiddenEdges);
+
+        // The Parts view's two choices (parts-view §3, §4.4). They are put on before the view's events
+        // are wired, so the menu's ticks are set here too.
+        PartsDrawing.Isometric = Settings.Current.PartsStyle == PartsStyle.Isometric;
+        PartsDrawing.GroupByStock = Settings.Current.GroupPartsByStock;
+        PartsIn3DMenuItem.Icon = PartsDrawing.Isometric ? new TextBlock { Text = "✓" } : null;
+        GroupPartsByStockMenuItem.Icon = PartsDrawing.GroupByStock ? new TextBlock { Text = "✓" } : null;
         _showRulers = Settings.Current.ShowRulers;
         DrawingCanvas.ShowRulers = _showRulers;
         foreach (ModelView view in ModelViews)

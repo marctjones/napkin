@@ -141,6 +141,63 @@ public class PartsViewWorkflows
         window.CutList!.Close();
     });
 
+    [GuiWorkflow("GUI-PARTS-04")]
+    public void The_Parts_view_grouped_by_stock_and_in_3D_is_what_a_new_window_opens_in() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "Stocked bench");
+        ShowParts(app, window);
+        app.Expect("the stocked bench's parts, ungrouped, flat, by default", () =>
+        {
+            Assert.Empty(window.Parts.GroupTitles);
+            Assert.False(window.Parts.Isometric);
+            Assert.Equal(DesignView.Parts, window.Settings.Current.LastView);
+        });
+
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("GroupPartsByStockMenuItem")!));
+        app.Expect("View > Group parts by stock: the largest piece's stock first, each group under its title", () =>
+        {
+            Assert.Equal(["3/4 plywood", "1x4", "2x4"], window.Parts.GroupTitles);
+            Assert.StartsWith("Top, ×1, ", window.Parts.CellsOnScreen[0], StringComparison.Ordinal);
+            Assert.NotNull(window.FindControl<MenuItem>("GroupPartsByStockMenuItem")!.Icon);
+            Assert.True(window.Settings.Current.GroupPartsByStock);
+        });
+        app.SaveFrame("stocked-bench-grouped");
+
+        // The keyboard walks the cells in the order they are on the screen, groups and all.
+        app.Press(Key.Home);
+        app.Press(Key.Right);
+        app.Expect("Home, Right: from the plywood top to the first 1x4 piece", () =>
+            Assert.Equal("Apron", window.Parts.FocusedCell?.Row.Label));
+
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("ViewMenu")!));
+        app.Click(CentreOf(window, window.FindControl<MenuItem>("PartsIn3DMenuItem")!));
+        app.Expect("View > Parts in 3D: in 3D, and remembered", () =>
+        {
+            Assert.True(window.Parts.Isometric);
+            Assert.Equal(PartsStyle.Isometric, window.Settings.Current.PartsStyle);
+        });
+
+        app.Expect("a new window on the same settings opens in the Parts view, grouped and in 3D, its menu ticked", () =>
+        {
+            var next = new MainWindow(new Napkin.App.Settings.SettingsStore(window.Settings.Location));
+            try
+            {
+                next.Show();
+                Assert.True(next.IsShowingParts);
+                Assert.True(next.Parts.GroupByStock);
+                Assert.True(next.Parts.Isometric);
+                Assert.NotNull(next.FindControl<MenuItem>("GroupPartsByStockMenuItem")!.Icon);
+                Assert.NotNull(next.FindControl<MenuItem>("PartsIn3DMenuItem")!.Icon);
+            }
+            finally
+            {
+                next.Close();
+            }
+        });
+    });
+
     [GuiWorkflow("GUI-PARTS-01")]
     public void Open_the_coffee_table_show_its_parts_and_walk_the_cells_by_keyboard_and_pointer() => GuiWorkflow.Run(app =>
     {
