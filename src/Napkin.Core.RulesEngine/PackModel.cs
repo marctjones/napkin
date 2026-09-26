@@ -313,6 +313,9 @@ public sealed record LoadedPack(
     /// <summary>The status label shown in the pack picker when no header table is loaded (the base layer is unfilled).</summary>
     public const string BaseTablesNotLoaded = "base tables not loaded";
 
+    /// <summary>The per-municipality site values the pack carries (#210), or null.</summary>
+    public SiteValuesTable? Site { get; init; }
+
     /// <summary>Whether this pack can size any header at all.</summary>
     public bool HasHeaderTables => Tables.Count > 0;
 

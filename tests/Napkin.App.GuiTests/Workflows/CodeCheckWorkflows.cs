@@ -256,6 +256,54 @@ public class CodeCheckWorkflows
         app.SaveFrame("no-data");
     }, packRoots: [Shipped]);
 
+    [GuiWorkflow("GUI-CHECK-06")]
+    public void Pick_the_town_and_use_the_values_the_adopted_code_prints_for_it() => GuiWorkflow.Run(app =>
+    {
+        // Connecticut's Appendix AY, p. 157, prints Bloomfield at 120 mph and 30 psf; Table R301.2,
+        // p. 131, prints seismic design category B for the whole state (read from the pages 2026-09-26).
+        MainWindow window = (MainWindow)app.Target;
+        DrawWall(app, window);
+        CodeWindow code = OpenCode(app, window);
+        AppDriver site = AppDriver.Attach(code, "check-06-code");
+        PickPack(site, code, "CT 2022");
+        app.Expect("the Connecticut pack offers a town picker, with nothing chosen and nothing to use yet", () =>
+        {
+            Assert.True(code.TownPicker.IsVisible);
+            Assert.Equal(169, code.TownPicker.ItemCount);
+            Assert.False(code.UseTownValues.IsEnabled);
+            Assert.StartsWith("CT 2022 publishes these values town by town", code.TownOfferLine, StringComparison.Ordinal);
+        });
+
+        Replace(site, code, code.WidthField, "24'");
+
+        // Bloomfield is the eleventh town printed: open the picker with the mouse, walk down with the keys.
+        site.Click(CentreOf(code, code.TownPicker));
+        for (int i = 0; i < 11; i++)
+        {
+            site.Press(Key.Down);
+        }
+
+        site.Press(Key.Enter);
+        app.Expect("the offer names Bloomfield's values and where they are printed, and nothing is set yet", () =>
+        {
+            Assert.StartsWith("Bloomfield, as CT 2022 prints it: ground snow load 30 psf and ultimate wind speed 120 mph (Appendix AY, p. 157", code.TownOfferLine, StringComparison.Ordinal);
+            Assert.True(code.UseTownValues.IsEnabled);
+            Assert.Null(window.CurrentDesign!.Sketch.Site.GroundSnowLoadPsf);
+        });
+
+        site.Click(CentreOf(code, code.UseTownValues));
+        site.SaveFrame("town-values");
+        app.Expect("accepted: snow, wind and seismic are Connecticut's for Bloomfield, the typed width stays, and the source says where", () =>
+        {
+            SiteValues values = window.CurrentDesign!.Sketch.Site;
+            Assert.Equal((30, 120, "B"), (values.GroundSnowLoadPsf, values.UltimateWindSpeedMph, values.SeismicDesignCategory));
+            Assert.Equal(Length.Inches(288), values.BuildingWidth);
+            Assert.StartsWith("CT 2022, Bloomfield: Appendix AY, p. 157", values.Source!.Text, StringComparison.Ordinal);
+            Assert.Equal("30", code.SnowField.Text);
+            Assert.Equal("120", code.WindField.Text);
+        });
+    }, packRoots: [Shipped]);
+
     [GuiWorkflow("GUI-CHECK-05")]
     public void A_snow_load_between_two_columns_interpolates_and_below_30_the_roof_live_load_decides() => GuiWorkflow.Run(app =>
     {

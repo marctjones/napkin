@@ -71,9 +71,15 @@ public static partial class PackLoader
                 $"tables {string.Join(" and ", group.Select(t => $"'{t.Designation}'"))} both declare wallKind '{Vocabulary.WallKindName(group.Key)}'; one table per wall kind.");
         }
 
+        // Per-municipality site values (#210), when the pack carries them beside pack.json.
+        string siteFile = $"packs/{packId}/{SiteValuesTable.FileName}";
+        SiteValuesTable? site = source.FileLength(siteFile) is null
+            ? null
+            : SiteValuesReader.Read(source, siteFile, manifest.Sources.ToDictionary(s => s.Id, StringComparer.Ordinal), problems);
+
         return problems.Count > 0
             ? Invalid(packId, problems)
-            : new PackLoadResult.Loaded(new LoadedPack(manifest, typed.ToValueList(), pending.ToValueList(), bracing));
+            : new PackLoadResult.Loaded(new LoadedPack(manifest, typed.ToValueList(), pending.ToValueList(), bracing) { Site = site });
     }
 
     private static PackLoadResult.Invalid Invalid(string packId, ProblemList problems)
