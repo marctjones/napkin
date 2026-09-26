@@ -67,7 +67,7 @@ public sealed record PartsPicture(
         string caption = pose switch
         {
             PartsPose.OnEdge => $"{CutListCsv.Text(row.Width)} wide — shown on edge",
-            PartsPose.OnEnd => $"{CutListCsv.Text(row.Length)} long — shown on end",
+            PartsPose.OnEnd => $"{row.LengthText} long — shown on end",
             _ => Thick(row),
         };
         return new PartsPicture(pose, cell.Outline, turn, turn ? up : across, turn ? across : up, caption);
@@ -173,7 +173,7 @@ public static class PartsCellText
     {
         ArgumentNullException.ThrowIfNull(cell);
         CutListRow row = cell.Row;
-        string sizes = $"{CutListCsv.Text(row.Length)} × {CutListCsv.Text(row.Width)} × {CutListCsv.Text(row.Thickness)}";
+        string sizes = $"{row.LengthText} × {row.WidthText} × {row.ThicknessText}";
         string material = row.MaterialText;
         return material.Length == 0 ? $"{row.Label}, {Badge(cell)}, {sizes}" : $"{row.Label}, {Badge(cell)}, {sizes}, {material}";
     }

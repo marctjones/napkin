@@ -217,9 +217,9 @@ public sealed class CutListTable : Grid
 
             Add(row.Rough ? RoughLabel(row.Label) : Cell(row.Label), line, 0);
             Add(Cell(row.Quantity.ToString(CultureInfo.InvariantCulture), right: true), line, 1);
-            Add(Sized(CutListCsv.Text(row.Length), row.Rough), line, 2);
-            Add(Sized(CutListCsv.Text(row.Width), row.Rough), line, 3);
-            Add(Sized(CutListCsv.Text(row.Thickness), row.Rough), line, 4);
+            Add(Sized(row.LengthText, row.Rough), line, 2);
+            Add(Sized(row.WidthText, row.Rough), line, 3);
+            Add(Sized(row.ThicknessText, row.Rough), line, 4);
 
             TextBlock material = Cell(row.MaterialText);
             if (row.Unresolved)
