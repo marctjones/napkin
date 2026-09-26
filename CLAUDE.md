@@ -46,6 +46,7 @@ which runs, in order:
 
 ```sh
 dotnet build napkin.sln --configuration Debug
+dotnet run --project tools/Napkin.Tools -- licenses check
 dotnet test napkin.sln --configuration Debug --no-build \
   --settings ratchet/coverage.runsettings --collect:"XPlat Code Coverage" \
   --logger trx --results-directory artifacts/test-results

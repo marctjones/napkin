@@ -15,6 +15,7 @@ public static class Cli
           napkin-tools scorecard report  [--summary] [--json <path>] [options]
           napkin-tools scorecard stubs   [options]
           napkin-tools samples restamp   [options]
+          napkin-tools licenses check    [--list] [--policy <path>] [options]
 
         ratchet check
           Fails when a baselined assembly's line or branch coverage has fallen below its floor,
@@ -38,6 +39,12 @@ public static class Cli
           version, adding the null/empty fields each version between theirs and the current one
           introduced, and verifies the result with the real strict reader. A no-op, no-diff, for a
           sample already at the current version.
+
+        licenses check
+          Fails when any restored NuGet package, direct or transitive, declares no license or
+          one outside licenses/policy.json's allowlist, unless that exact version has a written
+          exception there. Reads obj/project.assets.json, so run it after a restore. --list prints
+          every package and its verdict.
 
         Common options:
           --root <path>          Repository root (default: the nearest napkin.sln above the
@@ -81,6 +88,7 @@ public static class Cli
                 "scorecard report" => ScorecardCommand.Report(rest, output, error),
                 "scorecard stubs" => ScorecardCommand.Stubs(rest, output, error),
                 "samples restamp" => SamplesCommand.Restamp(rest, output, error),
+                "licenses check" => LicensesCommand.Check(rest, output, error),
                 _ => Unknown(command, output, error),
             };
         }

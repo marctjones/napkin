@@ -1,0 +1,67 @@
+{
+  "comment": "DESIGN.md §2.1 as data (#2): permissive or weak-copyleft dependencies only. `napkin-tools licenses check` fails on any restored package whose nuspec declares no license, or an SPDX expression outside `allowed`, unless that exact package version is listed under `exceptions` with the license as read and a written justification. A package that declares only a license file or URL always needs an exception: a person reads the text first.",
+  "allowed": [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "0BSD",
+    "MPL-2.0",
+    "LGPL-2.1-only",
+    "LGPL-2.1-or-later",
+    "LGPL-3.0-only",
+    "LGPL-3.0-or-later"
+  ],
+  "exceptions": [
+    {
+      "package": "Avalonia.Angle.Windows.Natives",
+      "version": "2.1.27548.20260419",
+      "license": "BSD-3-Clause (the package's LICENSE file: ANGLE Project Authors, three-clause BSD text, read 2026-09-26)",
+      "justification": "Declares a license file, not an expression. The file is the three-clause BSD licence, which the allowlist permits. Ships with the app on Windows."
+    },
+    {
+      "package": "Microsoft.CodeCoverage",
+      "version": "17.8.0",
+      "license": "MIT (the package's LICENSE_MIT.txt, read 2026-09-26)",
+      "justification": "Declares a license file whose text is the MIT licence. Test-only."
+    },
+    {
+      "package": "Microsoft.NET.Test.Sdk",
+      "version": "17.8.0",
+      "license": "MIT (the package's LICENSE_MIT.txt, read 2026-09-26)",
+      "justification": "Declares a license file whose text is the MIT licence. Test-only."
+    },
+    {
+      "package": "Microsoft.TestPlatform.ObjectModel",
+      "version": "17.8.0",
+      "license": "MIT (the package's LICENSE_MIT.txt, read 2026-09-26)",
+      "justification": "Declares a license file whose text is the MIT licence. Test-only."
+    },
+    {
+      "package": "Microsoft.TestPlatform.TestHost",
+      "version": "17.8.0",
+      "license": "MIT (the package's LICENSE_MIT.txt, read 2026-09-26)",
+      "justification": "Declares a license file whose text is the MIT licence. Test-only."
+    },
+    {
+      "package": "xunit.abstractions",
+      "version": "2.0.3",
+      "license": "Apache-2.0 (its licenseUrl, https://raw.githubusercontent.com/xunit/xunit/master/license.txt, read 2026-09-26)",
+      "justification": "Declares only a URL; the text there is the Apache 2.0 licence. Test-only, pulled in by xunit 2.5.3."
+    },
+    {
+      "package": "NETStandard.Library",
+      "version": "1.6.1",
+      "license": "MICROSOFT SOFTWARE LICENSE TERMS, MICROSOFT .NET LIBRARY (the package's dotnet_library_license.txt, read 2026-09-26) — proprietary, not on the allowlist",
+      "justification": "Test-only: restored by the xunit 2.5.3 test projects (xunit.assert, xunit.extensibility.*), never referenced by src/ and never shipped. Remove by moving those test projects to xunit v3, as Napkin.App.GuiTests already is."
+    },
+    {
+      "package": "Microsoft.NETCore.Platforms",
+      "version": "1.1.0",
+      "license": "MICROSOFT SOFTWARE LICENSE TERMS, MICROSOFT .NET LIBRARY (the package's dotnet_library_license.txt, identical to NETStandard.Library's, read 2026-09-26) — proprietary, not on the allowlist",
+      "justification": "Test-only, pulled in by NETStandard.Library 1.6.1 above; same reason and the same removal."
+    }
+  ]
+}
