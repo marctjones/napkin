@@ -118,23 +118,22 @@ public sealed class ShoppingListTests
 
     [Fact]
     [Trait("Feature", "CUT-006")]
-    public void A_sheet_count_is_by_area_and_says_it_is_a_floor()
+    public void A_sheet_count_comes_from_the_layout_and_a_piece_too_big_is_refused()
     {
-        // Two 30" x 60" panels are 2 x 1800 = 3600 in² against a 48" x 96" = 4608 in² sheet, so 1
-        // sheet by area. No layout gets both out of one sheet (side by side is 60" across a 48"
-        // sheet; end to end is 120" along a 96" one), which is exactly why the count says it is a
-        // floor. The 50" x 50" piece is wider than the sheet's 48" side whichever way it is turned,
-        // so it is refused and not counted.
+        // Two 30" x 60" panels are 2 x 1800 = 3600 in² against a 48" x 96" = 4608 in² sheet — one
+        // sheet by area, but no layout gets both out of one sheet (side by side is 60" across a 48"
+        // sheet; end to end is 120" along a 96" one), so the layout buys two (#26). The 50" x 50"
+        // piece is wider than the sheet's 48" side whichever way it is turned, so it is refused.
         ShoppingListRow row = Assert.Single(Shop(
             Along("Door", 60, 30, 0.75, "3/4 plywood", quantity: 2),
             Along("Table top", 50, 50, 0.75, "3/4 plywood")));
 
         Assert.Equal(ShoppingListKind.Sheets, row.Kind);
-        Assert.Equal(1, row.Sheets);
-        Assert.Equal(1, row.Count);
-        Assert.Equal("1 sheet, 4'-0\" × 8'-0\"", row.BuyText);
+        Assert.Equal(2, row.Sheets);
+        Assert.Equal(2, row.Count);
+        Assert.Equal("2 sheets, 4'-0\" × 8'-0\"", row.BuyText);
         Assert.Equal(
-            "sheets by area — a nesting layout may need more; no stocked size holds 1 × 4'-2\" × 4'-2\", so none is bought",
+            "sheets from the cut layout; no stocked size holds 1 × 4'-2\" × 4'-2\", so none is bought",
             row.Note);
         Assert.Equal(string.Empty, row.UsedText);
     }
@@ -159,7 +158,7 @@ public sealed class ShoppingListTests
         ShoppingListRow row = Assert.Single(Shop(Along("Side", 40, 90, 0.75, "3/4 plywood", quantity: 2)));
 
         Assert.Equal("2 sheets, 4'-0\" × 8'-0\"", row.BuyText);
-        Assert.Equal(ShoppingList.SheetsByArea, row.Note);
+        Assert.Equal(ShoppingList.SheetsByLayout, row.Note);
     }
 
     [Fact]

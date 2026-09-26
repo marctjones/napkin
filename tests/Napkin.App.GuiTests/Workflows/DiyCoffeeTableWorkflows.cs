@@ -677,16 +677,16 @@ public class DiyCoffeeTableWorkflows
             ["1/2 plywood", "1/4 plywood", "1x2", "1x6", "2x2", "3/4 plywood"],
             rows.Select(row => row.Material));
 
-        // Sheets are counted by area of the finished pieces, and labelled a floor. 1/2 plywood: 4 sides 16 x 3 1/2
-        // = 224; 2 box fronts 16 1/8 x 3 1/2 = 112.875; 2 backs 15 5/8 x 3 1/2 = 109.375: 446.25 sq in of a
-        // 4608 sq in sheet. 1/4: 2 x 16 1/8 x 15 1/2 = 499.875. 3/4: 42 x 22 = 924. One sheet each.
+        // Sheets come from the cut layout's nesting (#26): 1/2 plywood's eight 3 1/2"-wide pieces fill two
+        // 3 1/2" strips of one sheet; 1/4's two 16 1/8 x 15 1/2 bottoms share one strip; 3/4's 42 x 22 top is
+        // one strip. One sheet each.
         foreach (string sheet in new[] { "1/2 plywood", "1/4 plywood", "3/4 plywood" })
         {
             ShoppingListRow row = Assert.Single(rows, candidate => candidate.Material == sheet);
             Assert.Equal(ShoppingListKind.Sheets, row.Kind);
             Assert.Equal(1, row.Sheets);
             Assert.Equal("1 sheet, 4'-0\" × 8'-0\"", row.BuyText);
-            Assert.Equal(ShoppingList.SheetsByArea, row.Note);
+            Assert.Equal(ShoppingList.SheetsByLayout, row.Note);
         }
 
         // 1x2: one 36" piece into one 6' board. 1 x 2 x 72 / 144 = 1.0 board foot bought, 0.5 used.

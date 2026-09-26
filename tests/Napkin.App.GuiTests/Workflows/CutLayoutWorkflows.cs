@@ -47,10 +47,14 @@ public class CutLayoutWorkflows
                 [
                     "Board 1: 1x4 x 12 ft: Apron 46 in + Apron 46 in + End rail 14 in + End rail 14 in | 4 cuts, kerf 1/2 in | offcut 23 1/2 in",
                     "Board 1: 2x4 x 14 ft: Stretcher 43 in + Stretcher 43 in + Leg 16 1/2 in + Leg 16 1/2 in + Leg 16 1/2 in + Leg 16 1/2 in | 6 cuts, kerf 3/4 in | offcut 15 1/4 in",
+
+                    // The 48 x 16 top on a 48 x 96 sheet (#26): one 16" strip, 1 rip and 1 crosscut; the
+                    // rest, 4608 - 768 = 3840 sq in, is 26.67 -> 26.7 sq ft.
+                    "Sheet 1: 3/4 plywood x 4 ft × 8 ft: strip 1, 16 in: Top 48 × 16 in | 2 cuts, kerf 1/8 in | offcut 26.7 sq ft",
                 ],
                 list.LayoutRows.LinesOnScreen);
             Assert.Equal(2, list.LayoutRows.Bars.Length);
-            Assert.Contains(CutLayout.SheetGoodsNote, list.LayoutSummaryText, StringComparison.Ordinal);
+            Assert.Contains("3/4 plywood: 1 sheet; 1 piece", list.LayoutSummaryText, StringComparison.Ordinal);
         });
 
         AppDriver lists = AppDriver.Attach(window.CutList!, "cut-layout");

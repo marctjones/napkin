@@ -51,7 +51,7 @@ public sealed record StockLayout(LumberStock Stock, string Species, ImmutableArr
 /// <param name="Cuts">The number of cuts, as text, or empty.</param>
 /// <param name="Kerf">The kerf spent on the board, or empty.</param>
 /// <param name="Offcut">The offcut, or empty.</param>
-/// <param name="Planned">The board itself, for drawing it; <see langword="null"/> on a refusal.</param>
+/// <param name="Planned">The board itself, for drawing it; <see langword="null"/> on a refusal or a sheet.</param>
 public sealed record CutLayoutRow(
     string Stock,
     string Species,
@@ -61,14 +61,24 @@ public sealed record CutLayoutRow(
     string Cuts,
     string Kerf,
     string Offcut,
-    PlannedBoard? Planned);
+    PlannedBoard? Planned)
+{
+    /// <summary>The sheet itself, on a sheet's row (#26); <see langword="null"/> otherwise.</summary>
+    public PlannedSheet? Sheet { get; init; }
+}
 
 /// <summary>A whole cut layout: every stock's boards, and what was not laid out.</summary>
 /// <param name="Kerf">The saw kerf the layout was planned with.</param>
 /// <param name="Stocks">One layout per lumber stock and species, ordinal by name then species.</param>
-/// <param name="Notes">What was not laid out and why (sheet goods, hardwood, lumber with no length list).</param>
+/// <param name="Notes">What was not laid out and why (hardwood, lumber with no length list).</param>
 public sealed record CutLayoutPlan(Length Kerf, ImmutableArray<StockLayout> Stocks, ImmutableArray<string> Notes)
 {
+    /// <summary>One sheet layout per panel and species (#26), ordinal by name then species.</summary>
+    public ImmutableArray<PanelLayout> Panels { get; init; } = [];
+
+    /// <summary>Every sheet of every panel.</summary>
+    public IEnumerable<PlannedSheet> AllSheets => Panels.SelectMany(panel => panel.Sheets);
+
     /// <summary>Every board of every stock.</summary>
     public IEnumerable<PlannedBoard> AllBoards => Stocks.SelectMany(stock => stock.Boards);
 
@@ -108,7 +118,7 @@ public sealed record CutLayoutPlan(Length Kerf, ImmutableArray<StockLayout> Stoc
 /// between the pieces must fit, and the last cut may take a kerf or, when less than a kerf of board
 /// is left, whatever is left (the blade runs out through the end of the board). The piece length is the cut-list row's length (a mitred piece's long point). The kerf is
 /// a practice default the person sets, not a sourced fact; the stocked lengths come only from the
-/// materials library. Sheet goods are not laid out (2-D nesting is a later issue).
+/// materials library. Sheet goods are laid out on sheets by <see cref="SheetLayout"/> (#26).
 /// </para>
 /// <para>All arithmetic is on exact <see cref="Length"/> values (1/1024 in); no doubles.</para>
 /// </remarks>
@@ -116,9 +126,6 @@ public static class CutLayout
 {
     /// <summary>The kerf napkin plans with until the person sets one: a practice default, not a fact about their blade.</summary>
     public static readonly Length DefaultKerf = Length.Inches(0, 1, 8);
-
-    /// <summary>The note on sheet goods.</summary>
-    public const string SheetGoodsNote = "sheet goods: counted by sheets, not nested";
 
     /// <summary>The header of the exported file's columns.</summary>
     public const string Header = "Stock,Species,Board,Board length,Pieces,Cuts,Kerf,Offcut";
@@ -169,9 +176,13 @@ public static class CutLayout
             notes.Add($"{name}: napkin has read no stock-length list for this size, so it is not laid out");
         }
 
-        if (all.Any(row => row.Stock is PanelStock))
+        List<PanelLayout> panels = [];
+        foreach (IGrouping<(string Key, string Species), CutListRow> bucket in all
+                     .Where(row => row.Stock is PanelStock)
+                     .GroupBy(row => (row.Stock!.Key, row.Species)))
         {
-            notes.Add(SheetGoodsNote);
+            CutListRow[] members = [.. bucket];
+            panels.Add(SheetLayout.Of((PanelStock)members[0].Stock!, bucket.Key.Species, members, kerf));
         }
 
         if (all.Any(row => row.Stock is HardwoodStock))
@@ -182,7 +193,10 @@ public static class CutLayout
         return new CutLayoutPlan(
             kerf,
             [.. stocks.OrderBy(stock => stock.Stock.Name, StringComparer.Ordinal).ThenBy(stock => stock.Species, StringComparer.Ordinal)],
-            [.. notes]);
+            [.. notes])
+        {
+            Panels = [.. panels.OrderBy(panel => panel.Panel.Name, StringComparer.Ordinal).ThenBy(panel => panel.Species, StringComparer.Ordinal)],
+        };
     }
 
     /// <summary>The boards of one lumber stock and species.</summary>
@@ -294,6 +308,44 @@ public static class CutLayout
             }
         }
 
+        foreach (PanelLayout panel in plan.Panels)
+        {
+            string size = $"{Feet(Length.Min(panel.Panel.SheetWidth, panel.Panel.SheetLength))} × {Feet(Length.Max(panel.Panel.SheetWidth, panel.Panel.SheetLength))}";
+            foreach (PlannedSheet sheet in panel.Sheets)
+            {
+                rows.Add(new CutLayoutRow(
+                    panel.Panel.Name,
+                    panel.Species,
+                    $"Sheet {sheet.Number}",
+                    size,
+                    SheetLayout.Pieces(sheet),
+                    sheet.Cuts.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    Inches(sheet.Kerf),
+                    SheetLayout.SquareFeet(sheet.WasteArea),
+                    Planned: null)
+                {
+                    Sheet = sheet,
+                });
+            }
+
+            foreach (RefusedSheetPiece piece in panel.Refused)
+            {
+                string why = piece.AgainstGrain
+                    ? "fits only turned, against the grain set on it, so none is bought"
+                    : $"{ShoppingList.NothingHolds} it, so none is bought";
+                rows.Add(new CutLayoutRow(
+                    panel.Panel.Name,
+                    panel.Species,
+                    "No sheet",
+                    string.Empty,
+                    $"{piece.Label} {Inches(piece.Length)} × {Inches(piece.Width)}: {why}",
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    Planned: null));
+            }
+        }
+
         return [.. rows];
     }
 
@@ -338,6 +390,23 @@ public static class CutLayout
             int pieces = stock.Boards.Sum(board => board.Pieces.Length);
             string name = stock.Species.Length == 0 ? stock.Stock.Name : $"{stock.Stock.Name} ({stock.Species})";
             lines.Add($"{name}: {buy}; {pieces} {(pieces == 1 ? "piece" : "pieces")} on {stock.Boards.Length} {(stock.Boards.Length == 1 ? "board" : "boards")}");
+        }
+
+        foreach (PanelLayout panel in plan.Panels.Where(panel => !panel.Sheets.IsEmpty))
+        {
+            int pieces = panel.Sheets.Sum(sheet => sheet.Pieces.Count());
+            Int128 bought = panel.Sheets.Aggregate(Int128.Zero, (sum, sheet) => sum + sheet.SheetArea);
+            Int128 waste = panel.Sheets.Aggregate(Int128.Zero, (sum, sheet) => sum + sheet.WasteArea);
+            long tenths = (long)(((waste * 1000) + (bought / 2)) / bought);
+            string name = panel.Species.Length == 0 ? panel.Panel.Name : $"{panel.Panel.Name} ({panel.Species})";
+            int count = panel.Sheets.Length;
+            lines.Add($"{name}: {count} {(count == 1 ? "sheet" : "sheets")}; {pieces} {(pieces == 1 ? "piece" : "pieces")}, "
+                      + $"waste {SheetLayout.SquareFeet(waste)} ({tenths / 10}.{tenths % 10}%) counting offcuts and kerf");
+        }
+
+        if (plan.Panels.Any(panel => !panel.Sheets.IsEmpty))
+        {
+            lines.Add(SheetLayout.Statement);
         }
 
         if (plan.AllBoards.Any())

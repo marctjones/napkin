@@ -34,8 +34,8 @@ unsigned pre-release.
 ## Build and test locally — do this, don't skip to CI
 
 Marc wants local builds run as part of the work, not deferred to CI. `tools/scripts/gate.sh` runs
-the build/test/ratchet sequence below in one call and exits non-zero if the build has errors, any
-test fails, or ratchet check fails (it also prints a one-line pass/fail summary); prefer it over
+the build/licenses/test/ratchet sequence below in one call and exits non-zero if the build has
+errors, a package is outside `licenses/policy.json` (#2), any test fails, or ratchet check fails (it also prints a one-line pass/fail summary); prefer it over
 retyping the commands by hand:
 
 ```sh

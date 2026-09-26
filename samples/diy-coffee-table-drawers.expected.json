@@ -672,7 +672,7 @@
       "boardFeetBought": "",
       "boardFeetUsed": "",
       "waste": "",
-      "note": "sheets by area — a nesting layout may need more",
+      "note": "sheets from the cut layout",
       "derivation": "Area of the parts, finished sizes (allowances in): 1785/4 in² against one 48\" x 96\" sheet = 4608 in²; ceil(area / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
     },
     {
@@ -689,7 +689,7 @@
       "boardFeetBought": "",
       "boardFeetUsed": "",
       "waste": "",
-      "note": "sheets by area — a nesting layout may need more",
+      "note": "sheets from the cut layout",
       "derivation": "Area of the parts, finished sizes (allowances in): 3999/8 in² against one 48\" x 96\" sheet = 4608 in²; ceil(area / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
     },
     {
@@ -772,19 +772,19 @@
       "boardFeetBought": "",
       "boardFeetUsed": "",
       "waste": "",
-      "note": "sheets by area — a nesting layout may need more",
+      "note": "sheets from the cut layout",
       "derivation": "Area of the parts, finished sizes (allowances in): 924 in² against one 48\" x 96\" sheet = 4608 in²; ceil(area / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
     }
   ],
   "shoppingListCsv": [
     "\"Shopping list: boards needed from finished sizes, joinery allowances included; includes a 1/8 in saw kerf per cut (set it in the Saw kerf box on the Cut layout tab); before defect.\"",
     "Material,Species,Buy,For,Board feet bought,Board feet used,Waste,Note",
-    "1/2 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",\"Drawer box front × 2, Drawer side, left × 2, Drawer side, right × 2, Drawer box back × 2\",,,,sheets by area — a nesting layout may need more",
-    "1/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Drawer bottom × 2,,,,sheets by area — a nesting layout may need more",
+    "1/2 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",\"Drawer box front × 2, Drawer side, left × 2, Drawer side, right × 2, Drawer box back × 2\",,,,sheets from the cut layout",
+    "1/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Drawer bottom × 2,,,,sheets from the cut layout",
     "1x2,,\"1 × 6'-0\"\"\",\"Front rail × 1, Slide cleat × 2\",1.0,0.9,0.1,",
     "1x6,,\"1 × 12'-0\"\"\",\"Apron, back × 1, Drawer front × 2, Web × 1, Apron, side × 2\",6.0,5.0,1.0,",
     "2x2,,\"1 × 6'-0\"\"\",Leg × 4,2.0,1.8,0.2,",
-    "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets by area — a nesting layout may need more"
+    "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets from the cut layout"
   ],
   "fasteners": [
     {

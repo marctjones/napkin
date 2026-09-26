@@ -47,7 +47,8 @@ public sealed class CutLayoutSampleTests
         Assert.Equal(6, twoByFour.Cuts);
         Assert.Equal(Length.Inches(15, 1, 4), twoByFour.Offcut);
 
-        Assert.Contains(CutLayout.SheetGoodsNote, plan.Notes);
+        // The 3/4 plywood top is nested on one sheet (#26).
+        Assert.Single(Assert.Single(plan.Panels).Sheets);
     }
 
     [Fact]

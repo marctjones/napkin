@@ -291,6 +291,8 @@ happens whenever no grading rulebook has been read for that size — the bucket 
 feet and says "napkin has read no stock-length list for this size", and buys nothing. It does not
 fall back on a guess. That behaviour is why `StandardLengths` is empty rather than defaulted.
 
+*(Superseded by #26: sheets are now nested by `SheetLayout` — strips ripped along the sheet, crosscut within — and the shopping list buys the sheets it lays out, noted "sheets from the cut layout".)*
+
 **`PanelStock` — a two-dimensional problem, and #9 does not solve it.** Sheet nesting is its own
 issue (DESIGN.md §5.2, a bin-packing heuristic). #9 reports, per panel item, the total **area** of
 the parts cut from it, the sheet's area, and `ceil(parts area / sheet area)` sheets, labelled

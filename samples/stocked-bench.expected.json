@@ -343,7 +343,7 @@
       "boardFeetBought": "",
       "boardFeetUsed": "",
       "waste": "",
-      "note": "sheets by area — a nesting layout may need more",
+      "note": "sheets from the cut layout",
       "derivation": "The top, 48\" x 16\" = 768 in², fits a 48\" x 96\" sheet (PS 1-19 §5.4) and is its only part: ceil(768 / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
     }
   ],
@@ -352,6 +352,6 @@
     "Material,Species,Buy,For,Board feet bought,Board feet used,Waste,Note",
     "1x4,,\"1 × 12'-0\"\"\",\"Apron × 2, End rail × 2\",4.0,3.3,0.7,",
     "2x4,,\"1 × 14'-0\"\"\",\"Stretcher × 2, Leg × 4\",9.3,8.4,0.9,",
-    "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets by area — a nesting layout may need more"
+    "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets from the cut layout"
   ]
 }
