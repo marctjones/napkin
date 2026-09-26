@@ -848,6 +848,24 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-VIEW-06",
+      "area": "ui",
+      "title": "Rulers along the plan and a scale bar along the orthographic 3D view",
+      "acceptance": "Open the coffee table: the plan has no rulers; View > Rulers ticks the item and draws feet-and-inch rulers from 0\" with the toolbar stepped in clear of them; + pressed three times zooms in and the rulers read a finer step; V shows the 3D view in perspective with no scale bar and the toolbar back at its margins; O makes it orthographic with a scale bar labelled for the zoom, and O again takes the bar away; back in the plan, View > Rulers unticks the item, the rulers go and the toolbar returns to where it started.",
+      "milestone": "M2",
+      "issue": 115,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-VIEW-07",
+      "area": "ui",
+      "title": "The snap buttons look along each axis and step through a selected part's faces",
+      "acceptance": "Open the coffee table: the four view-snap buttons are hidden in the plan; select a leg and V shows them in 3D; Look along Z looks from above and again from below, Y from the south, and X from the east and again from the west; Next surface steps through the leg's six faces, top first, each face centred in the view, then wraps to the top; with nothing selected it starts again from above, then the south; V back to the plan hides the buttons.",
+      "milestone": "M2",
+      "issue": 132,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-DRAW-01",
       "area": "ui",
       "title": "Draw a rectangle by dragging",
@@ -908,6 +926,33 @@
       "acceptance": "Pin two parts so their widths cannot both change, type a width that cannot hold, and the conflict summary appears naming the relationships involved while the design stays as it was.",
       "milestone": "M2",
       "issue": 10,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DRAW-08",
+      "area": "ui",
+      "title": "Pick a shaped part, duplicate it and snap the copy",
+      "acceptance": "Open File > Samples > Rounded-corner table: a click on the blank inside its rounded-off corner picks nothing and a click on the shape picks the top; D adds a selected copy with the same size, cuts and part, no new relationship and the original unmoved; dragging the copy until its edge catches the original's adds a flush between the two; Ctrl/Cmd+L lists the two shaped blanks as one row of two with a thumbnail of the shape, and only shaped rows have one.",
+      "milestone": "M2",
+      "issue": null,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DRAW-09",
+      "area": "ui",
+      "title": "Shape one part in the workshop and take the cut off again",
+      "acceptance": "Ctrl/Cmd+N, R and a drag draw a plain rectangle; C opens the shape workshop on it, and 1x6 typed as its stock resizes the blank to the 1x6's width; dragging the south-west corner inward cuts it while the button is still down and leaves one corner cut of the dragged size, selected with its fields showing; Escape returns to the drawing with the part unmoved and its outline clipped where a click no longer hits the shape; Ctrl/Cmd+L shows the row with its thumbnail and a sentence naming the south-west corner; back in the workshop a click on the cut corner selects that cut, a typed setback changes only that setback, Full mitre sets both setbacks to the blank's width at 45°, and Delete takes the cut off, leaving a plain rectangle that is still a 1x6.",
+      "milestone": "M2",
+      "issue": null,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DRAW-10",
+      "area": "ui",
+      "title": "Undo reaches stock, duplicate, pin, delete and the shape workshop",
+      "acceptance": "Ctrl/Cmd+N greys out Undo and Redo; a 2x4 dragged from the toolbox's lumber drawer, then D, P and Delete on the copy, are four steps to undo; Ctrl/Cmd+Z three times brings back the pinned copy, then the free copy, then the lone 2x4; a corner cut in the shape workshop (C) clears the redo stack, undo there takes the cut off with the workshop still open on the same part and redo puts it back; two more undos take the cut and the placed part away, close the workshop and grey out Undo again.",
+      "milestone": "M2",
+      "issue": null,
       "kind": "workflow"
     },
     {
@@ -1005,6 +1050,33 @@
       "area": "ui",
       "title": "With the shipped pack's tables not loaded, the check says so",
       "acceptance": "Choose the shipped Connecticut pack, whose model-code tables are not loaded; the picker labels it 'base tables not loaded' and a window's code check says there is no data and where to add tables, never a size.",
+      "milestone": "M4",
+      "issue": 18,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CHECK-05",
+      "area": "ui",
+      "title": "A snow load between two table columns is interpolated, and below the lowest the roof live load decides",
+      "acceptance": "With a synthetic test pack whose header table has two snow-load columns and a footnote, draw an exterior bearing wall, type a snow load between the columns and a roof live load within the footnote's limit in Project > Adopted code and site, then place a window and type its width: the check sizes the header from the interpolated span and shows an interpolation line naming both rows and the footnote, with the weight in the working; a snow load exactly on the lower column uses that row with no interpolation line; a snow load below it with a roof live load over the footnote's limit is out of scope, citing the footnote, with no size.",
+      "milestone": "M4",
+      "issue": 14,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-WALL-01",
+      "area": "ui",
+      "title": "Draw a wall, put a window in it, widen it, undo and buy the framing",
+      "acceptance": "Ctrl/Cmd+N, zoom out with the wheel, and W takes the wall tool with 2x4 studs; a drag draws a 12 ft wall on the Wall layer, selected, framed with studs and plates at the design default spacing and a note saying so; Draw > Window and a click centre a 3 ft window in the wall, bound to it, framed with kings, jacks, cripples, a rough sill and a header not yet sized; 4' typed in its width label reframes it with one stud fewer and one cripple more; Ctrl/Cmd+Z puts the 3 ft window and its frame back; Ctrl/Cmd+Shift+L shows a framing section that buys 2x4s and lists the header as not yet sized, and its CSV is the rows on screen.",
+      "milestone": "M4",
+      "issue": 18,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-WALL-02",
+      "area": "ui",
+      "title": "Open the sample wall, change the spacing, add a door, undo and look in 3D",
+      "acceptance": "Open File > Samples > Wall with window and click the wall away from its window: it reads as a 2x6 wall with the window framed; the next Studs at choice, picked with the pointer, Down and Enter, reframes it with fewer studs and one cripple and drops the design-default note; Draw > Door and a click near the east end stand a door on the floor, and the wall frames both openings with two headers; V shows it in 3D and V comes back; Ctrl/Cmd+Z takes the door away.",
       "milestone": "M4",
       "issue": 18,
       "kind": "workflow"
@@ -1304,6 +1376,15 @@
       "acceptance": "The storyboard on the DIY table: frame, cleats, both drawers, tabletop, all 34 joints as the sample records them, 13 cut-list rows, sizes and supplies typed, 27 / 6 / 8 / 24 / 10 fasteners.",
       "milestone": "M3",
       "issue": 149,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DIY-01",
+      "area": "ui",
+      "title": "A DIY coffee table with drawers, from stock to cut list",
+      "acceptance": "Ctrl/Cmd+N, then with only the pointer and keyboard: the top, legs, aprons, rail, web and one drawer are placed from stock and sized, mirrored (M, Shift+M) and copied (D); Shift+J and J join them with pocket-screwed butts, grooves, rabbets, brads and tabletop clips and a typed screw count; the drawer is mirrored with its joints and a pull typed on its front, for 22 parts and 32 joints; in 3D the Z and Y buttons look from above and from the front; Ctrl/Cmd+L's cut list and its CSV are the twelve rows worked out by hand, with finished sizes and joinery sentences; Ctrl/Cmd+Shift+L buys boards and sheets and counts 27 pocket screws, 8 wood screws, 24 brads, 10 clips, the pull and the glue for 18 of 32 joints; a typed pocket-screw size and pack size come to one pack; and Ctrl/Cmd+S, Ctrl/Cmd+N, Ctrl/Cmd+O bring back the same 22 parts and cut list.",
+      "milestone": "M3",
+      "issue": 152,
       "kind": "workflow"
     },
     {
@@ -1646,6 +1727,60 @@
       "acceptance": "Open the stocked bench in the Parts view; View > Group parts by stock: groups 3/4 plywood, 1x4, 2x4 under title bands, the keyboard walking them in screen order; View > Parts in 3D; a new window on the same settings opens in the Parts view, grouped, in 3D, both menu items ticked.",
       "milestone": "M6",
       "issue": 127,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SET-01",
+      "area": "ui",
+      "title": "A setting changed from the View menu is kept by a new window",
+      "acceptance": "Open the coffee table: a fresh run has rulers off and perspective; View > Rulers, then V and O, write rulers on and orthographic to the settings file as they are made; a new window on the same settings file starts with rulers drawn, View > Rulers ticked and the 3D view orthographic.",
+      "milestone": "M2",
+      "issue": 102,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SET-02",
+      "area": "ui",
+      "title": "Choosing a theme from the View menu recolours the plan and the 3D view",
+      "acceptance": "Open the coffee table: the window follows the system by default, light here, and View > Appearance > Theme says so; Dark darkens the window and the plan's paper, is ticked and remembered, and V shows the 3D view on dark paper too; Light puts the same plan back on light paper; Follow system returns to the system's theme and is remembered as that choice.",
+      "milestone": "M2",
+      "issue": 112,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SET-03",
+      "area": "ui",
+      "title": "Hiding the grid does not stop snapping, and snapping off does not hide the grid",
+      "acceptance": "Open the coffee table: the grid shows and snapping is on by default, and the status bar names the step; View > Grid hides the lines and is remembered with snapping untouched, and a rectangle drawn with R still lands on the grid; View > Snap to grid turns snapping off with the grid still hidden, the step leaves the status bar, and the next rectangle is off the grid; G then V shows the grid in the plan and on the 3D ground with snapping still off, G in 3D hides the ground grid, and a new window on the same settings has no grid and no snapping.",
+      "milestone": "M2",
+      "issue": 113,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SET-04",
+      "area": "ui",
+      "title": "Designs open in the view chosen from the menu",
+      "acceptance": "Last used is the default and ticked; Project > Open designs in > 3D leaves the view on screen alone and the next sample opens in 3D, even after V back to the plan; 2D plan leaves the 3D view on screen and the next sample opens on the plan; Last used opens the next sample in the view last left, 3D; with 3D chosen again, a new window on the same settings has it ticked and opens a new sheet in 3D.",
+      "milestone": "M2",
+      "issue": 109,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SET-05",
+      "area": "ui",
+      "title": "Choosing paper and pencil from the View menu redraws both views and changes nothing else",
+      "acceptance": "Open the coffee table in the clean screen look, ticked; View > Appearance > Paper and line > Graph paper, then Pencil, put the plan and the 3D view on graph paper in pencil, ticked and remembered; Plain sheet, then Napkin with Carpenter's pencil, redraw both views; a rectangle drawn with R under the look is a real part; Screen and Clean bring the original paper back and are remembered.",
+      "milestone": "M2",
+      "issue": 142,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SET-06",
+      "area": "ui",
+      "title": "The default napkin look keeps the bench chrome and the sheet the same in light and dark",
+      "acceptance": "In the default look the coffee table opens on the napkin sheet in carpenter's pencil, with the menu bar and status bar in the bench colour; View > Appearance > Theme > Dark leaves the menu bar, the status bar and the napkin unchanged; back in Light, View > Appearance > Paper and line > Screen and Clean bring back the theme-following paper under the same bench chrome.",
+      "milestone": "M2",
+      "issue": 143,
       "kind": "workflow"
     },
     {
