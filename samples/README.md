@@ -21,6 +21,8 @@ Three hand-crafted designs, in the scene format documented in
 | Finishing a 12 × 14 ft basement room — renovation example 1 (#162) | `basement-room.design.md`, `basement-room.scene.json`, `basement-room.expected.json` |
 | A picture frame, four 45° mitres cut to the long point (#101, #97) | `picture-frame.design.md`, `picture-frame.scene.json`, `picture-frame.expected.json` |
 | A bench whose every part names its stock, for the shopping list (#9) | `stocked-bench.design.md`, `stocked-bench.scene.json`, `stocked-bench.expected.json` |
+| A bench on four legs leaning one way — angled parts, plain mitres (#191) | `splayed-bench.design.md`, `splayed-bench.scene.json`, `splayed-bench.expected.json` |
+| A footstool on legs leaning two ways (#191) | `splayed-footstool.design.md`, `splayed-footstool.scene.json`, `splayed-footstool.expected.json` |
 
 `tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts
 it matches its `*.expected.json` exactly, in integer units, and checks every box of all three —
@@ -41,6 +43,14 @@ three lines to buy, and each 6' 1x4 carries an apron and an end rail: several pa
 board. Its `shoppingList` and `shoppingListCsv` are worked by hand (first-fit decreasing over the
 library's stocked lengths, board feet summed exactly and rounded once), each row with its
 `derivation`; `SampleShoppingListTests` holds them and `GUI-CUT-04` reads them on screen.
+
+**The splayed bench and the splayed footstool are the angled-part fixtures** (#191,
+`docs/design/angled-parts.md` §9.1–§9.2). Their legs are struts, stored by their two ends, so their
+expectations carry no box bounds for them — only the cut list and its CSV, each leg's length worked
+out from a Pythagorean triple chosen so that it is exact (7-24-25; 3-4-12-13), with the arithmetic in
+each row's `derivation`. The footstool keeps its legs' wide faces vertical, so its ends are plain
+mitres; the compound board the same four points make with the wide face turned is §9.2's
+operation-order test and lives in the unit tests, not in a sample's headline number.
 
 The ten before it are the **purpose-built situations** of issue #101 (the conflict case cannot be a file, see below; the picture frame is also #97's shaped-cut fixture, and its rows carry the mitre sentences worked out by hand from `docs/design/shaped-parts-model.md` §4.4). Their
 expectations add each box's world-space `minUnits`/`maxUnits`, the design's `overall` size and the

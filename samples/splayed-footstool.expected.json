@@ -1,0 +1,61 @@
+{
+  "fixture": "splayed-footstool",
+  "scene": "splayed-footstool.scene.json",
+  "design": "splayed-footstool.design.md",
+  "derivedBy": "hand, from the stated dimensions in splayed-footstool.design.md and docs/design/angled-parts.md §9.2; never regenerated from napkin's output",
+  "formatVersion": 11,
+  "unitsPerInch": 1024,
+  "counts": {
+    "boxes": 1,
+    "struts": 4,
+    "pieces": 5,
+    "relationships": 25
+  },
+  "cutList": [
+    {
+      "label": "Leg",
+      "quantity": 4,
+      "lengthUnits": 13952,
+      "widthUnits": 1536,
+      "thicknessUnits": 1536,
+      "lengthText": "1'-1 5/8\"",
+      "widthText": "1 1/2\"",
+      "thicknessText": "1 1/2\"",
+      "material": "2x2",
+      "unresolved": false,
+      "members": [
+        "c2000000-0000-4000-8000-000000000010",
+        "c2000000-0000-4000-8000-000000000011",
+        "c2000000-0000-4000-8000-000000000012",
+        "c2000000-0000-4000-8000-000000000013"
+      ],
+      "cuts": [
+        "Mitre the west end: from 5/8\" in along the south edge to the north-west corner (≈22.5° off square).",
+        "Mitre the east end: from 5/8\" in along the north edge to the south-east corner (≈22.5° off square)."
+      ],
+      "derivation": "Each leg runs 3\" out in X, 4\" out in Y and 12\" up: d = (3, 4, 12) in, 3^2 + 4^2 + 12^2 = 169 = 13^2, so the centreline is 13\" = 13312 exactly, and the plan run is sqrt(3^2 + 4^2) = 5\" exactly. Reference Z (the tool's default: wide face vertical, sawhorse style): local Z = d x Z = (4, -3, 0) is square to Z, so both Z cuts are plain mitres. Setback = 1 1/2 x 5 / 12 = 5/8\" = 640 exactly. L = 13 + 5/8 = 13 5/8\" = 13952, exact. 13 5/8 = 12 + 1 5/8 -> 1'-1 5/8\". The four legs mirror each other across both of the seat's centre lines: one row of 4. Sentences as for any parallelogram: 5/8\" along the south edge and the whole west end, the east end its twin. atan(5/12) = 22.62 degrees -> nearest half degree 22.5, marked. At 13 5/8\" the leg is longer than the 12\" seat, so it comes first."
+    },
+    {
+      "label": "Seat",
+      "quantity": 1,
+      "lengthUnits": 12288,
+      "widthUnits": 12288,
+      "thicknessUnits": 768,
+      "lengthText": "1'-0\"",
+      "widthText": "1'-0\"",
+      "thicknessText": "3/4\"",
+      "material": "3/4 plywood",
+      "unresolved": false,
+      "members": [
+        "c2000000-0000-4000-8000-000000000001"
+      ],
+      "derivation": "12\" x 12\" x 3/4\" plywood: 12288 x 12288 x 768. 12 -> 1'-0\"."
+    }
+  ],
+  "cutListCsv": [
+    "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
+    "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
+    "Leg,4,\"1'-1 5/8\"\"\",\"1 1/2\"\"\",\"1 1/2\"\"\",2x2,,\"Mitre the west end: from 5/8\"\" in along the south edge to the north-west corner (≈22.5° off square).; Mitre the east end: from 5/8\"\" in along the north edge to the south-east corner (≈22.5° off square).\",",
+    "Seat,1,\"1'-0\"\"\",\"1'-0\"\"\",\"3/4\"\"\",3/4 plywood,,,"
+  ]
+}

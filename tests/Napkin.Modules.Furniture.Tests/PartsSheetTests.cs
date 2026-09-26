@@ -47,7 +47,8 @@ public sealed class PartsSheetTests
     public void The_counts_add_up_to_the_pieces_not_to_the_boxes(string fixture)
     {
         Sketch sketch = Read(fixture);
-        int pieces = sketch.Entities.Values.OfType<Box>().Where(box => box.Part is not null).Sum(box => box.Part!.Quantity);
+        int pieces = sketch.Entities.Values.OfType<Box>().Where(box => box.Part is not null).Sum(box => box.Part!.Quantity)
+                     + sketch.Entities.Values.OfType<Strut>().Where(strut => strut.Part is not null).Sum(strut => strut.Part!.Quantity);
 
         Assert.Equal(pieces, PartsSheet.Of(CutList.Of(sketch, Library)).Sum(cell => cell.Count));
     }

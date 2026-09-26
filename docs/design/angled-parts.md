@@ -20,6 +20,15 @@ strut's cross-section is refused like one along Z. §9.3 case 8's fixture holds 
 to the leg, which an anchored rail keeps when its width changes; the test puts the rail on the leg's
 west side instead, its east face flush to the leg's bottom face, so that widening it moves both ends.
 
+**Found while building slice C (#191):** a parallelogram's two mitres stay two sentences, as a box's
+do today, rather than collapsing to "Mitre both ends" — collapsing them would change every committed
+box sentence, and two alike compound ends *are* said once. Angles read in the cut list's existing
+decimal form ("≈16.5°"), the one function `CutDescription.AngleText` holding the half-degree rule for
+a box's mitre and a strut's mitre and bevel alike. `CutListRow.LengthExact` became `Derived` plus
+`DerivedExact`, because an angled shelf's derived dimension is its width. The footstool sample keeps
+the wide faces vertical (board 1); board 2's `14202` stays the operation-order test in the unit tests,
+as §9.2 asks.
+
 **Where this note stands relative to what is already decided.** [`assembly-model.md`](./assembly-model.md)
 §3a — the **strut**, an angled member stored by its two exact endpoints — was signed off by Marc on
 2026-09-23 (decisions 17–24). **It has not been built**: `grep Strut src` finds nothing, and no issue

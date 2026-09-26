@@ -67,9 +67,9 @@ public static class CutListCsv
         {
             csv.Append(Field(row.Label)).Append(',')
                .Append(row.Quantity.ToString(CultureInfo.InvariantCulture)).Append(',')
-               .Append(Quoted(Text(row.Length))).Append(',')
-               .Append(Quoted(Text(row.Width))).Append(',')
-               .Append(Quoted(Text(row.Thickness))).Append(',')
+               .Append(Quoted(row.LengthText)).Append(',')
+               .Append(Quoted(row.WidthText)).Append(',')
+               .Append(Quoted(row.ThicknessText)).Append(',')
                .Append(Field(row.MaterialText)).Append(',')
                .Append(row.Rough ? "yes" : string.Empty).Append(',')
                .Append(Field(string.Join(BetweenCuts, row.CutText))).Append(',')
