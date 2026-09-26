@@ -112,6 +112,7 @@ public partial class MainWindow
             ShowFraming(box);
             ShowRoom(box);
             ShowDeck(box);
+            ShowRoof(box);
             ShowOpeningFill(box);
         }
         finally
@@ -171,6 +172,7 @@ public partial class MainWindow
             UpdateStockReadout();
             ShowRoom(box);
             ShowDeck(box);
+            ShowRoof(box);
             ShowOpeningFill(box);
         }
         finally

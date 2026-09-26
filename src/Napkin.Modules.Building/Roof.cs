@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
 using Napkin.Core.RulesEngine;
+using Napkin.Modules.Furniture;
 
 namespace Napkin.Modules.Building;
 
@@ -104,6 +105,27 @@ public sealed record RoofFraming(
 public static class RoofFrame
 {
     static readonly LengthFormat Words = new FeetInchesFormat(16);
+
+    /// <summary>A roof's pieces as cut-list rows, "Roof 1 rafter", so the shopping list buys them as a cut list's.</summary>
+    public static ImmutableArray<CutListRow> CutRows(RoofFraming framing)
+    {
+        ArgumentNullException.ThrowIfNull(framing);
+        return
+        [
+            .. framing.Pieces.Select(piece => new CutListRow(
+                $"{framing.Roof.Name} {piece.Label}",
+                piece.Quantity,
+                piece.Length,
+                piece.Stock!.Width,
+                piece.Stock.Thickness,
+                piece.Stock.Name,
+                Unresolved: false,
+                piece.Stock,
+                [],
+                new PlanAxes(PartDimension.Length, PartDimension.Width),
+                [framing.Roof.Id])),
+        ];
+    }
 
     /// <summary>The roof's frame, or why there is none.</summary>
     public static (RoofFraming? Framing, string? Problem) Of(Sketch sketch, Roof roof, MaterialsLibrary library)

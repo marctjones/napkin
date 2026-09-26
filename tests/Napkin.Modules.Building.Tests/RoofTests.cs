@@ -77,6 +77,10 @@ public class RoofTests
         // Blocking at the plate: 8 × 14 1/2 + 1 × 13.
         Assert.Equal(8, Assert.Single(frame.Pieces, piece => piece.Role == FramingRole.Blocking && piece.Length == In(14, 1, 2)).Quantity);
         Assert.Equal(1, Assert.Single(frame.Pieces, piece => piece.Role == FramingRole.Blocking && piece.Length == In(13)).Quantity);
+        Assert.Equal(
+            [("Roof rafter", 10, In(141, 3, 8), "2x8"), ("Roof ledger", 1, In(144), "2x8")],
+            RoofFrame.CutRows(frame).Take(2).Select(row => (row.Label, row.Quantity, row.Length, row.Material)));
+        Assert.All(RoofFrame.CutRows(frame), row => Assert.Equal([roof.Id], row.Members));
         Assert.StartsWith("10 rafters 2x8 × 11'-9 3/8\" at 16\"; ledger 2x8 × 12'-0\", its top ≈4'-7 3/4\" above the low support's top", frame.Line, StringComparison.Ordinal);
     }
 

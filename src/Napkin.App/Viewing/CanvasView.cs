@@ -367,7 +367,7 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>Whether a press on the paper starts drawing rather than picking or panning.</summary>
-    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Deck or EditTool.Note or EditTool.Strut;
+    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Deck or EditTool.Roof or EditTool.Note or EditTool.Strut;
 
     /// <summary>
     /// The precision dimension labels are shown at. Fixed at 1/16&#x2033;; the per-project picker
@@ -730,6 +730,12 @@ public sealed class CanvasView : Control
         if (_tool == EditTool.Opening)
         {
             PlaceOpening(_view.ToWorld(position));
+            return;
+        }
+
+        if (_tool == EditTool.Roof)
+        {
+            PlaceRoof(_view.ToWorld(position));
             return;
         }
 
@@ -1457,6 +1463,51 @@ public sealed class CanvasView : Control
             Deck deck = new(editor.Sketch.Find<Box>(id)!);
             string ledger = deck.Ledger(editor.Sketch) is { Edge: { } edge } ? $"its {edge.ToString().ToLowerInvariant()} edge is the ledger" : new DeckRefusal(deck.Ledger(editor.Sketch).Problem!.Value, string.Empty).Text;
             editor.Say(EditSeverity.Done, $"Drew {name}, {Label(length)} × {Label(width)}; {ledger} {DeckTool.StartingWords}");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+    }
+
+    /// <summary>Picks up the porch roof tool (deck-and-porch §8): the next click on a deck roofs it.</summary>
+    public void ArmRoof()
+    {
+        Tool = EditTool.Roof;
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+        _editor?.Say(EditSeverity.Hint, "Porch roof tool: click a deck — the roof covers it, high at the house, low on the wall at its far edge. " + RoofTool.StartingWords);
+    }
+
+    void PlaceRoof(Point2 at)
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        if (RoofTool.DeckAt(editor.Sketch, at) is not { } deck)
+        {
+            editor.Say(EditSeverity.Hint, "Click inside a deck to roof it.");
+            return;
+        }
+
+        EntityId id = EntityId.New();
+        LayerId layer = editor.LayerNamed(DesignLayers.Roof, out Request? addLayer);
+        string name = editor.NextName("Roof");
+        (Request? request, string? problem) = RoofTool.Request(editor.Sketch, deck, layer, addLayer, id, name);
+        if (request is null)
+        {
+            editor.Say(EditSeverity.Problem, problem!);
+            return;
+        }
+
+        const string what = "Drew a porch roof";
+        editor.BeginGesture(what);
+        if (editor.Apply(request, what) is Succeeded)
+        {
+            editor.Select(id);
+            string low = editor.Sketch.Find<Box>(id)!.Roof!.LowEnd is WallLowEnd wall ? $"low on {editor.NameOf(wall.Wall)}" : "low on a (2) 2x10 beam on 2 posts — no wall stands on the deck's far edge";
+            editor.Say(EditSeverity.Done, $"Drew {name} over {deck.Name}, high at the ledger, {low}. {RoofTool.StartingWords}");
             Tool = EditTool.Select;
         }
 
