@@ -97,6 +97,15 @@
                                        FontSize="11"
                                        FontStyle="Italic"
                                        TextWrapping="Wrap" />
+                            <!-- An estimate from prices the person typed (#141): a price per line to buy,
+                                 remembered in the settings; never a price napkin carries. -->
+                            <StackPanel Name="PriceSection" Spacing="3" IsVisible="False">
+                                <TextBlock Text="Prices" Margin="0,14,0,0" FontSize="12" FontWeight="SemiBold" />
+                                <TextBlock FontSize="11" Opacity="0.75" TextWrapping="Wrap"
+                                           Text="Type what you pay for each: a board of that length, a sheet, or a board foot. napkin knows no prices." />
+                                <StackPanel Name="PriceRows" Spacing="2" />
+                                <TextBlock Name="EstimateText" FontSize="12" FontWeight="SemiBold" AutomationProperties.Name="Estimate" />
+                            </StackPanel>
                             <!-- The walls' framing (#18): derived from the walls and openings, bought through
                                  the same aggregation as the parts, and shown apart from them. -->
                             <StackPanel Name="FramingSection" Spacing="4" IsVisible="False">

@@ -46,4 +46,33 @@ public static class ShoppingListCsv
 
         return csv.ToString();
     }
+
+    /// <summary>
+    /// The same, with the estimate from the prices entered (#141) after it — a blank line, then one line
+    /// per thing priced and the estimate's sentence — when any price was entered; unchanged otherwise.
+    /// </summary>
+    /// <param name="rows">The shopping list.</param>
+    /// <param name="kerf">The saw kerf the list was worked out with.</param>
+    /// <param name="costs">The lines the prices apply to, with the prices entered.</param>
+    public static string ToCsv(IEnumerable<ShoppingListRow> rows, Length? kerf, ImmutableArray<CostLine> costs)
+    {
+        string list = ToCsv(rows, kerf);
+        if (!costs.Any(line => line.Price is not null))
+        {
+            return list;
+        }
+
+        StringBuilder csv = new(list);
+        csv.Append('\n').Append("What,Quantity,Price each,Cost").Append('\n');
+        foreach (CostLine line in costs)
+        {
+            csv.Append(CutListCsv.Field(line.What)).Append(',')
+               .Append(line.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+               .Append(line.Price is { } each ? ShoppingCost.Money(each) : string.Empty).Append(',')
+               .Append(line.Cost is { } cost ? ShoppingCost.Money(cost) : string.Empty).Append('\n');
+        }
+
+        csv.Append(CutListCsv.Field(ShoppingCost.Summary(costs)!)).Append('\n');
+        return csv.ToString();
+    }
 }

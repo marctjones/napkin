@@ -25,6 +25,45 @@ namespace Napkin.App.GuiTests.Workflows;
 /// </remarks>
 public class ShoppingListWorkflows
 {
+    [GuiWorkflow("GUI-CUT-11")]
+    public void Price_the_stocked_bench_and_read_the_estimate_again_after_reopening() => GuiWorkflow.Run(app =>
+    {
+        // #141: prices the person types, one per line to buy; napkin carries none. These are test values.
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "Stocked bench");
+        app.Chord(Key.L);
+
+        AppDriver lists = AppDriver.Attach(window.CutList!, "shopping-prices");
+        lists.Click(CentreOf(window.CutList!, window.CutList!.ShoppingListTabItem));
+        app.Expect("one price box for each line to buy — a 12' 1x4, a 14' 2x4, a plywood sheet — and no estimate yet", () =>
+        {
+            Assert.Equal(3, window.CutList!.PriceFields.Count);
+            Assert.Equal("No estimate yet: enter a price for each line to buy.", window.CutList!.EstimateLine);
+        });
+
+        foreach ((int index, string price) in new[] { (0, "9.98"), (1, "11.47"), (2, "54") })
+        {
+            lists.Click(CentreOf(window.CutList!, window.CutList!.PriceFields[index]));
+            lists.Type(price);
+            lists.Press(Key.Enter);
+        }
+
+        app.Expect("the estimate is the three prices added up", () =>
+            Assert.Equal("Estimate: 75.45, from the prices you entered.", window.CutList!.EstimateLine));
+        lists.SaveFrame("shopping-prices");
+
+        // Closed and opened again from the main window, the list prices itself from the settings.
+        window.CutList!.Close();
+        app.Chord(Key.L);
+        AppDriver again = AppDriver.Attach(window.CutList!, "shopping-prices-again");
+        again.Click(CentreOf(window.CutList!, window.CutList!.ShoppingListTabItem));
+        app.Expect("the prices are remembered", () =>
+        {
+            Assert.Equal("Estimate: 75.45, from the prices you entered.", window.CutList!.EstimateLine);
+            Assert.Equal(3, window.Settings.Current.Prices.Length);
+        });
+    });
+
     [GuiWorkflow("GUI-CUT-04")]
     public void Open_the_shopping_list_read_it_against_the_fixture_sort_it_and_export_it() => GuiWorkflow.Run(app =>
     {
