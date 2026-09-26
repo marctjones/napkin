@@ -83,6 +83,46 @@ public static class JointDescription
         return JointSequence.Sorted(facts);
     }
 
+    /// <summary>
+    /// A strut's joinery (<c>docs/design/angled-parts.md</c> &#xA7;5): the pocket holes drilled in an end
+    /// that is butted onto something, in the blank's own compass — the end west or east, the face one
+    /// of its four long faces — so the box's sentence and half-turn grouping read it unchanged.
+    /// </summary>
+    public static ImmutableArray<JointFact> FactsOf(Sketch sketch, Strut strut)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(strut);
+
+        List<JointFact> facts = [];
+        foreach (StrutJoint joint in sketch.RelationshipsInOrder.OfType<StrutJoint>())
+        {
+            if (joint.Inserted.Strut == strut.Id
+                && joint.Fastening.Kind == FasteningKind.PocketScrews
+                && joint.PocketFrom is { } from
+                && StrutJointGeometry.Contact(sketch, joint) is { } contact)
+            {
+                BoxFace end = strut.Frame().Reversed == (joint.Inserted.End == StrutEnd.From) ? BoxFace.East : BoxFace.West;
+                facts.Add(new JointFact(
+                    JointFactKind.PocketHoles,
+                    Face: from switch { StrutFace.South => BoxFace.South, StrutFace.North => BoxFace.North, StrutFace.Bottom => BoxFace.Bottom, _ => BoxFace.Top },
+                    End: end,
+                    Count: joint.Fastening.Count ?? Recipes.Recipe(FasteningKind.PocketScrews, contact.JointLength)));
+            }
+        }
+
+        return JointSequence.Sorted(facts);
+    }
+
+    /// <summary>Whether any joint on a strut is not satisfied: its end has come off what it sat on.</summary>
+    public static bool Unsatisfied(Sketch sketch, Strut strut)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(strut);
+
+        return sketch.RelationshipsInOrder.OfType<StrutJoint>()
+            .Any(joint => joint.References.Contains(strut.Id) && !StrutJointGeometry.IsSatisfied(sketch, joint));
+    }
+
     /// <summary>Whether any joint on this part is not satisfied: its parts have moved apart, or its depth is not less than the thickness.</summary>
     public static bool Unsatisfied(Sketch sketch, Box box)
     {

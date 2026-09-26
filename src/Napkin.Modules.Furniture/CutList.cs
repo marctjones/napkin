@@ -106,7 +106,7 @@ public static class CutList
             {
                 if (strut.Part is { } strutPart && strut.Phase == Phase.New)
                 {
-                    pieces.Add(StrutPiece(strut, strutPart, library));
+                    pieces.Add(StrutPiece(sketch, strut, strutPart, library));
                 }
 
                 continue;
@@ -222,9 +222,9 @@ public static class CutList
     /// One strut's contribution: its blank derived once, its derived dimension on whichever name
     /// <see cref="PlanAxes.X"/> gives it, its plain mitres as cuts and its compound ends beside them
     /// (<c>docs/design/assembly-model.md</c> &#xA7;3a.6, <c>docs/design/angled-parts.md</c> &#xA7;2).
-    /// Joinery on a strut's end is slice E's (#193); until then it has none.
+    /// Its joinery is the pocket holes in an end butted onto something (angled-parts §5).
     /// </summary>
-    private static Piece StrutPiece(Strut strut, Part part, MaterialsLibrary library)
+    private static Piece StrutPiece(Sketch sketch, Strut strut, Part part, MaterialsLibrary library)
     {
         StrutBlank blank = strut.Blank();
         FinishedSize size = part.SizeOn(strut, blank);
@@ -232,6 +232,7 @@ public static class CutList
         ImmutableArray<Cut> cuts = [.. blank.Cuts.Select(cut => cut.Cut)];
         bool setbacksExact = blank.Cuts.All(cut => cut.Exact);
         ImmutableArray<DerivedCompoundEnd> compound = [.. blank.CompoundEnds];
+        ImmutableArray<JointFact> joinery = JointDescription.FactsOf(sketch, strut);
 
         return new Piece(
             strut.Id,
@@ -245,7 +246,7 @@ public static class CutList
                 NominalName.Normalize(part.Stock),
                 part.Species ?? string.Empty,
                 cuts,
-                [],
+                joinery,
                 Derived: part.PlanAxes.X,
                 DerivedExact: blank.Length.Exact,
                 SetbacksExact: setbacksExact,
@@ -255,8 +256,8 @@ public static class CutList
             Stock: stock,
             PlanAxes: part.PlanAxes,
             Drawn: size,
-            Joinery: [],
-            Unsatisfied: false,
+            Joinery: joinery,
+            Unsatisfied: JointDescription.Unsatisfied(sketch, strut),
             Rough: part.Rough,
             Compound: compound);
     }
