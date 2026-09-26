@@ -1289,6 +1289,15 @@
       "kind": "unit"
     },
     {
+      "id": "CUT-022",
+      "area": "furniture",
+      "title": "The Parts sheet is a wrapped grid of equal cells, grouped under title bands, on whole pixels",
+      "acceptance": "Columns are what the width buys at the zoom and never fewer than one (1, 2, 4 at 300, 560, 1100 px at 100 %); cells fill rows in the sheet's order and never overlap; a group starts its own row under a 24 px title band; every edge is a whole pixel; a cell reads to a screen reader as its label, count, three sizes and material.",
+      "milestone": "M6",
+      "issue": 124,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-CUT-08",
       "area": "ui",
       "title": "Read the cut layout and change the saw kerf",

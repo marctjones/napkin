@@ -165,6 +165,19 @@ public static class PartsCellText
         return string.Join(" · ", parts.Where(part => part.Length > 0));
     }
 
+    /// <summary>
+    /// What a screen reader says for a cell (§6): its name, its count, its three sizes and its material,
+    /// e.g. "Leg, ×4, 1'-4 1/4" × 2 1/2" × 2 1/2"" — the same facts as its row in the cut list.
+    /// </summary>
+    public static string AutomationName(PartsCell cell)
+    {
+        ArgumentNullException.ThrowIfNull(cell);
+        CutListRow row = cell.Row;
+        string sizes = $"{CutListCsv.Text(row.Length)} × {CutListCsv.Text(row.Width)} × {CutListCsv.Text(row.Thickness)}";
+        string material = row.MaterialText;
+        return material.Length == 0 ? $"{row.Label}, {Badge(cell)}, {sizes}" : $"{row.Label}, {Badge(cell)}, {sizes}, {material}";
+    }
+
     /// <summary>The cuts, the first two sentences, then "(+n more)" when there are more.</summary>
     public static ImmutableArray<string> Cuts(PartsCell cell)
     {
