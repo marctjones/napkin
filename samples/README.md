@@ -23,6 +23,8 @@ Three hand-crafted designs, in the scene format documented in
 | A bench whose every part names its stock, for the shopping list (#9) | `stocked-bench.design.md`, `stocked-bench.scene.json`, `stocked-bench.expected.json` |
 | A bench on four legs leaning one way — angled parts, plain mitres (#191) | `splayed-bench.design.md`, `splayed-bench.scene.json`, `splayed-bench.expected.json` |
 | A footstool on legs leaning two ways (#191) | `splayed-footstool.design.md`, `splayed-footstool.scene.json`, `splayed-footstool.expected.json` |
+| A chair frame with raked rear legs and rails flush to them (#194) | `raked-chair-frame.design.md`, `raked-chair-frame.scene.json`, `raked-chair-frame.expected.json` |
+| A shelf tilted between two sides (#194) | `angled-shelf.design.md`, `angled-shelf.scene.json`, `angled-shelf.expected.json` |
 
 `tests/Napkin.Core.Project.Tests` loads each of the first two scenes with the #6 reader and asserts
 it matches its `*.expected.json` exactly, in integer units, and checks every box of all three —

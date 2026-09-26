@@ -32,6 +32,12 @@ public partial class MainWindow
     /// <summary>The panel's pickers, for the GUI suite: the two cuts and the wide face.</summary>
     public (ComboBox FromCut, ComboBox ToCut, ComboBox Reference) StrutPickers => (StrutFromCutBox, StrutToCutBox, StrutReferenceBox);
 
+    /// <summary>The lean fields, for the GUI suite: tilt, azimuth and rise.</summary>
+    public (TextBox Tilt, TextBox Azimuth, TextBox Rise, Button Place) StrutLeanFields => (StrutTiltBox, StrutAzimuthBox, StrutRiseBox, StrutPlaceTopButton);
+
+    /// <summary>The picker for whether the run is the part's length or its width.</summary>
+    public ComboBox StrutRunIsPicker => StrutRunIsBox;
+
     /// <summary>What the panel's readout line says.</summary>
     public string StrutReadoutText => StrutPanel.IsVisible ? StrutReadout.Text ?? string.Empty : string.Empty;
 
@@ -49,6 +55,7 @@ public partial class MainWindow
         StrutFromCutBox.ItemsSource = EndCutChoices.Select(CutWord).ToArray();
         StrutToCutBox.ItemsSource = EndCutChoices.Select(CutWord).ToArray();
         StrutReferenceBox.ItemsSource = ReferenceChoices.Select(StrutTool.ReferenceWords).ToArray();
+        StrutRunIsBox.ItemsSource = new[] { "length", "width" };
 
         foreach (TextBox field in new[] { StrutFromXBox, StrutFromYBox, StrutFromZBox, StrutToXBox, StrutToYBox, StrutToZBox, StrutStockBox, StrutHeightBox, StrutDepthBox })
         {
@@ -93,6 +100,7 @@ public partial class MainWindow
             StrutFromCutBox.SelectedIndex = Array.IndexOf(EndCutChoices, strut.FromCut);
             StrutToCutBox.SelectedIndex = Array.IndexOf(EndCutChoices, strut.ToCut);
             StrutReferenceBox.SelectedIndex = Array.IndexOf(ReferenceChoices, strut.Reference);
+            StrutRunIsBox.SelectedIndex = strut.Part?.PlanAxes.X == PartDimension.Width ? 1 : 0;
             StrutStockBox.Text = strut.Part?.Stock ?? string.Empty;
             StrutHeightBox.Text = Text(strut.Height);
             StrutDepthBox.Text = Text(strut.Depth);
@@ -144,11 +152,17 @@ public partial class MainWindow
             requests.Add(new SetStrutCuts(strut.Id, fromCut, toCut, reference));
         }
 
+        // The run is its length (a leg) or its width (an angled shelf), which names the other two
+        // (angled-parts §1.5, invariant 16).
+        PlanAxes axes = StrutRunIsBox.SelectedIndex == 1
+            ? new PlanAxes(PartDimension.Width, PartDimension.Thickness)
+            : new PlanAxes(PartDimension.Length, PartDimension.Width);
+
         // A stock named fixes the cross-section through the yard's sizes; otherwise the typed sizes do.
         string stock = StrutStockBox.Text?.Trim() ?? string.Empty;
-        if (!string.Equals(stock, strut.Part?.Stock ?? string.Empty, StringComparison.Ordinal))
+        if (!string.Equals(stock, strut.Part?.Stock ?? string.Empty, StringComparison.Ordinal) || (strut.Part is { } had && had.PlanAxes != axes))
         {
-            Part part = (strut.Part ?? new Part(null, null, 1, new PlanAxes(PartDimension.Length, PartDimension.Width))) with { Stock = stock.Length == 0 ? null : stock };
+            Part part = (strut.Part ?? new Part(null, null, 1, axes)) with { Stock = stock.Length == 0 ? null : stock, PlanAxes = axes };
             StockItem? item = MaterialsLibrary.Shipped.TryFind(part.Stock, out StockItem found) ? found : null;
             requests.AddRange(StockAssignment.RequestsFor(Editor.Sketch, strut, part, item).Requests);
         }
@@ -171,6 +185,37 @@ public partial class MainWindow
         }
 
         Editor.Apply(new Batch([.. requests]), $"Changed {Editor.NameOf(strut.Id)}");
+    }
+
+    void OnStrutPlaceTopClicked(object? sender, RoutedEventArgs e) => PlaceStrutTop();
+
+    /// <summary>
+    /// Places the selected strut's top by a typed lean (angled-parts §1.1): the tilt from vertical, the
+    /// direction in the plan and the rise, worked out and rounded once to the grid; says so when the
+    /// rounding moved it. One undo step; the angle is not kept.
+    /// </summary>
+    public void PlaceStrutTop()
+    {
+        if (SelectedStrut() is not { } strut)
+        {
+            return;
+        }
+
+        System.Globalization.CultureInfo invariant = System.Globalization.CultureInfo.InvariantCulture;
+        if (!double.TryParse(StrutTiltBox.Text, System.Globalization.NumberStyles.Float, invariant, out double tilt) || tilt < 0 || tilt >= 90
+            || !double.TryParse(string.IsNullOrWhiteSpace(StrutAzimuthBox.Text) ? "0" : StrutAzimuthBox.Text, System.Globalization.NumberStyles.Float, invariant, out double azimuth)
+            || !Length.TryParse(StrutRiseBox.Text, out Length rise, out _) || rise <= Length.Zero)
+        {
+            Editor.Say(EditSeverity.Problem, "A lean is a tilt from vertical under 90°, a direction in degrees (0 east, 90 north) and a rise greater than zero.");
+            return;
+        }
+
+        (Point3 top, bool rounded) = StrutTool.ByAngle(strut.From, tilt, azimuth, rise, null);
+        string said = rounded ? " — to the nearest 1/1024″" : string.Empty;
+        if (Editor.Apply(new SetStrutEnd(strut.Id, StrutEnd.To, top), $"Placed {Editor.NameOf(strut.Id)}'s top{said}") is Succeeded && rounded)
+        {
+            Editor.Say(EditSeverity.Done, $"Placed {Editor.NameOf(strut.Id)}'s top, rounded to the nearest 1/1024″; the panel shows the angle it now has.");
+        }
     }
 
     static bool TryPoint(TextBox x, TextBox y, TextBox z, out Point3 point)

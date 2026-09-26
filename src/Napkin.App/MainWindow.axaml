@@ -997,6 +997,24 @@
                             <TextBox Name="StrutDepthBox" Grid.Column="2" FontSize="11" AutomationProperties.Name="Angled part thickness"
                                      ToolTip.Tip="The size through its wide face." />
                         </Grid>
+                        <!-- The entry mode (angled-parts §1.1, decision 9): a typed lean places the top once, rounded
+                             to the grid and said so; the angle itself is not kept. -->
+                        <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="4">
+                            <TextBox Name="StrutTiltBox" FontSize="11" PlaceholderText="tilt °" AutomationProperties.Name="Lean tilt"
+                                     ToolTip.Tip="How far from vertical the top leans, in degrees." />
+                            <TextBox Name="StrutAzimuthBox" Grid.Column="1" FontSize="11" PlaceholderText="toward °" AutomationProperties.Name="Lean azimuth"
+                                     ToolTip.Tip="Which way it leans in the plan, in degrees: 0 east, 90 north." />
+                            <TextBox Name="StrutRiseBox" Grid.Column="2" FontSize="11" PlaceholderText="rise" AutomationProperties.Name="Lean rise"
+                                     ToolTip.Tip="How far up the top is from the foot." />
+                            <Button Name="StrutPlaceTopButton" Grid.Column="3" Content="Place top" FontSize="11" Padding="6,2"
+                                    Click="OnStrutPlaceTopClicked" AutomationProperties.Name="Place top by lean" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4">
+                            <TextBlock Text="Its run is its" FontSize="11" VerticalAlignment="Center" />
+                            <ComboBox Name="StrutRunIsBox" Grid.Column="1" FontSize="11" MinWidth="0" HorizontalAlignment="Stretch"
+                                      AutomationProperties.Name="Its run is its"
+                                      ToolTip.Tip="Length for a leg or a brace; width for an angled shelf, whose run is across it (angled-parts §1.5)." />
+                        </Grid>
                         <TextBlock Name="StrutReadout" FontSize="10" Opacity="0.85" TextWrapping="Wrap" AutomationProperties.Name="Angled part readout" />
                     </StackPanel>
                 </Border>

@@ -35,6 +35,8 @@ public sealed class SampleCutListTests
     [InlineData("diy-coffee-table-drawers")]
     [InlineData("splayed-bench")]
     [InlineData("splayed-footstool")]
+    [InlineData("angled-shelf")]
+    [InlineData("raked-chair-frame")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_cut_list_is_the_one_the_expectations_state(string fixture)
     {
@@ -92,6 +94,8 @@ public sealed class SampleCutListTests
     [InlineData("diy-coffee-table-drawers")]
     [InlineData("splayed-bench")]
     [InlineData("splayed-footstool")]
+    [InlineData("angled-shelf")]
+    [InlineData("raked-chair-frame")]
     [Trait("Feature", "CUT-004")]
     public void A_samples_csv_is_the_one_the_expectations_state(string fixture)
     {

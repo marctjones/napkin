@@ -93,6 +93,26 @@ public class StrutToolTests
         Assert.Same(leg, StrutTool.Flattened(leg));
     }
 
+    [Fact]
+    public void ATypedAngleAndRisePlaceTheTopRoundedOnceAndSayWhenItMoved()
+    {
+        // §9.3 case 14: 16.2602° over 24″ north lands the top within a unit of 7″ out, and says it
+        // rounded; 45° over 24″ lands exactly 24″ out, and says nothing.
+        (Point3 bench, bool benchRounded) = StrutTool.ByAngle(At(0, 0, 0), 16.2602, 90, Length.Inches(24), null);
+        Assert.InRange(bench.Y.Units, 7167, 7169);
+        Assert.Equal((Length.Zero, Length.Inches(24)), (bench.X, bench.Z));
+        Assert.True(benchRounded);
+
+        (Point3 square, bool squareRounded) = StrutTool.ByAngle(At(0, 0, 0), 45, 90, Length.Inches(24), null);
+        Assert.Equal(At(0, 24576, 24576), square);
+        Assert.False(squareRounded);
+
+        // By a run instead: 45° and 12″ out east is 12″ up.
+        (Point3 byRun, bool runRounded) = StrutTool.ByAngle(At(1024, 0, 0), 45, 0, null, Length.Inches(12));
+        Assert.Equal(At(1024 + 12288, 0, 12288), byRun);
+        Assert.False(runRounded);
+    }
+
     [Theory]
     [InlineData(Axis.Z, "keep the wide face vertical")]
     [InlineData(Axis.X, "keep the wide face parallel to the long side")]

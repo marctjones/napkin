@@ -1,5 +1,7 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using Napkin.App.GuiTests.Harness;
 using Napkin.Core.Geometry;
 using Napkin.Modules.Furniture;
@@ -83,6 +85,74 @@ public class StrutWorkflows
             Assert.Equal("2'-1 7/16\"", legRow.LengthText);
         });
     });
+
+    [GuiWorkflow("GUI-STRUT-02")]
+    public void Turn_a_footstool_legs_wide_face_and_place_a_new_leg_by_its_lean() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        OpenSample(app, window, "Splayed footstool");
+
+        // The south-west leg runs from (0, −1) to (3, 3) in the plan; its middle is on it.
+        EntityId legId = new(new Guid("c2000000-0000-4000-8000-000000000010"));
+        app.Click(At(window, Point2.Inches(1, 1)));
+        app.Expect("the south-west leg is selected and its panel shows", () =>
+        {
+            Assert.Equal([legId], window.Editor.Selection);
+            Assert.True(window.IsShowingStrut);
+        });
+
+        // Its wide face turned parallel to the long side: the same four points, a different board
+        // (angled-parts §9.2 board 2), whose ends are compound.
+        app.Click(CentreOf(window, window.StrutPickers.Reference));
+        app.Press(Key.Down);
+        app.Press(Key.Enter);
+        app.Click(CentreOf(window, window.FindControl<Button>("StrutApplyButton")!));
+        app.Expect("the leg keeps its wide face parallel to the long side", () =>
+            Assert.Equal(Axis.X, window.CurrentDesign!.Sketch.Find<Strut>(legId)!.Reference));
+
+        // A new leg by its lean: a click on the paper to put the keyboard back on the drawing, a flat
+        // brace beside the stool, then its top placed 45° over a 12″ rise,
+        // due east — exactly on the grid, so nothing is said about rounding (§9.3 case 14).
+        app.Click(At(window, Point2.Inches(16, 8)));
+        app.Press(Key.L);
+        app.Click(At(window, Point2.Inches(14, 0)));
+        app.Click(At(window, Point2.Inches(16, 4)));
+        Strut brace = window.CurrentDesign!.Sketch.Entities.Values.OfType<Strut>().Single(strut => strut.Name.StartsWith("Brace", StringComparison.Ordinal));
+        app.Click(CentreOf(window, window.StrutLeanFields.Tilt));
+        app.Type("45");
+        app.Click(CentreOf(window, window.StrutLeanFields.Azimuth));
+        app.Type("0");
+        app.Click(CentreOf(window, window.StrutLeanFields.Rise));
+        app.Type("12");
+        app.Click(CentreOf(window, window.StrutLeanFields.Place));
+        app.Expect("its top is 12″ east and 12″ up of its foot, exactly", () =>
+        {
+            Strut placed = window.CurrentDesign!.Sketch.Find<Strut>(brace.Id)!;
+            Assert.Equal(brace.From + new Vector3(Length.Inches(12), Length.Zero, Length.Inches(12)), placed.To);
+            Assert.DoesNotContain("rounded", window.Editor.LastMessage!.Text, StringComparison.Ordinal);
+        });
+
+        // The cut list: three legs are still one board; the turned one is its own row, cut compound.
+        app.Chord(Key.L);
+        app.Expect("the turned leg leaves the row of four and reads as a compound cut", () =>
+        {
+            CutListRow[] rows = window.CutList!.Rows.Rows.ToArray();
+            Assert.Equal(3, Assert.Single(rows, row => row.Label == "Leg").Quantity);
+            CutListRow turned = Assert.Single(rows, row => row.Members.Contains(legId));
+            Assert.Equal(1, turned.Quantity);
+            Assert.StartsWith("Cut both ends at a compound angle: mitre ≈13.5°, bevel ≈18.5°", turned.CutText[0], StringComparison.Ordinal);
+        });
+    });
+
+    static void OpenSample(AppDriver app, MainWindow window, string sample)
+    {
+        app.Click(CentreOf(window, window.FileMenuItem));
+        app.Click(CentreOf(window, window.SamplesMenuItem));
+        MenuItem item = window.GetVisualDescendants()
+            .OfType<MenuItem>()
+            .Single(candidate => (candidate.Header as string) == sample);
+        app.Click(CentreOf(window, item));
+    }
 
     static void NewSheet(AppDriver app, MainWindow window)
     {
