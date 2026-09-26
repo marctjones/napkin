@@ -104,7 +104,21 @@ public static class PartsCellDrawing
             new Point(drawn.Right + DimensionGap, drawn.Bottom),
             picture.VerticalText);
 
-        double below = drawing.Bottom + DimensionGap + LineHeight;
+        return new PartsCellDrawn(outline, drawn, scale, notToScale, length, side, TextsFor(cell, picture, notToScale, at));
+    }
+
+    /// <summary>
+    /// A cell's words where they go, whichever way it is drawn: the label top-left, the badge top-right,
+    /// then under the drawing the details line and the cut lines (§2.2).
+    /// </summary>
+    /// <param name="cell">The cell.</param>
+    /// <param name="picture">How it is drawn, for its caption.</param>
+    /// <param name="notToScale">Whether the drawing is at the floor's scale.</param>
+    /// <param name="at">The cell's top-left corner.</param>
+    public static ImmutableArray<PartsText> TextsFor(PartsCell cell, PartsPicture picture, bool notToScale, Point at)
+    {
+        ArgumentNullException.ThrowIfNull(cell);
+        double below = at.Y + LabelRow + PartsScale.DrawingHeight + DimensionGap + LineHeight;
         ImmutableArray<PartsText>.Builder texts = ImmutableArray.CreateBuilder<PartsText>();
         texts.Add(new PartsText(cell.Row.Label, new Point(at.X + PartsScale.Inset, at.Y + 6), PartsTextRole.Label));
         texts.Add(new PartsText(PartsCellText.Badge(cell), new Point(at.X + PartsScale.CellWidth - PartsScale.Inset, at.Y + 6), PartsTextRole.Badge));
@@ -115,6 +129,6 @@ public static class PartsCellDrawing
             texts.Add(new PartsText(cut, new Point(at.X + PartsScale.Inset, below), PartsTextRole.Cut));
         }
 
-        return new PartsCellDrawn(outline, drawn, scale, notToScale, length, side, texts.ToImmutable());
+        return texts.ToImmutable();
     }
 }

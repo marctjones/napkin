@@ -266,6 +266,13 @@ public partial class MainWindow
 
     void OnSheetClicked(object? sender, RoutedEventArgs e) => ShowSheet(!IsShowingSheet);
 
+    /// <summary>The Parts view's 3D option (parts-view §3), from the menu; I does the same in the view.</summary>
+    void OnPartsIn3DClicked(object? sender, RoutedEventArgs e)
+    {
+        PartsDrawing.Isometric = !PartsDrawing.Isometric;
+        FocusDrawing();
+    }
+
     static readonly DesignView[] AllViews =
         [DesignView.Top, DesignView.Bottom, DesignView.Front, DesignView.Back, DesignView.Left, DesignView.Right, DesignView.Model, DesignView.Parts];
 
@@ -305,6 +312,7 @@ public partial class MainWindow
         // A read-only view cannot draw, place or shape: those tools say so rather than vanish, and
         // come back with their own tooltips in the plan and 3D.
         SheetMenuItem.Icon = IsShowingSheet ? new TextBlock { Text = "✓" } : null;
+        PartsIn3DMenuItem.IsEnabled = IsShowingParts;
         string? refusal = IsShowingSheet ? StandardViewWords.NotOnSheet
             : IsShowingParts ? StandardViewWords.NotInPartsView
             : StandardViews.Of(_view) is { } shown ? StandardViewWords.NotInView(shown) : null;

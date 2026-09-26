@@ -2132,7 +2132,7 @@ public sealed class ModelView : Control
     /// a face turned up, a step darker facing along X, darker again along Y. A cut face — a mitre, a
     /// curve — takes the tone of the axis its normal lies most nearly along.
     /// </summary>
-    static Color Tone(CanvasPalette palette, EntityStyle style, Vector3d normal)
+    internal static Color Tone(CanvasPalette palette, EntityStyle style, Vector3d normal)
     {
         double alpha = Math.Max(style.Fill.A / 255.0, 0.45);
         Color background = palette.Background;

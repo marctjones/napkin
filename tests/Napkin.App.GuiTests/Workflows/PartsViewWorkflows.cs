@@ -167,6 +167,21 @@ public class PartsViewWorkflows
         });
         app.SaveFrame("coffee-table-parts");
 
+        // I draws each piece in 3D, isometric, and the menu item says so; I again, flat (§3).
+        app.Press(Key.I);
+        app.Expect("I: the pieces in 3D, View > Parts in 3D ticked", () =>
+        {
+            Assert.True(window.Parts.Isometric);
+            Assert.NotNull(window.FindControl<MenuItem>("PartsIn3DMenuItem")!.Icon);
+        });
+        app.SaveFrame("coffee-table-parts-3d");
+        app.Press(Key.I);
+        app.Expect("I again: flat", () =>
+        {
+            Assert.False(window.Parts.Isometric);
+            Assert.Null(window.FindControl<MenuItem>("PartsIn3DMenuItem")!.Icon);
+        });
+
         int columns = window.Parts.Columns;
         app.Press(Key.Right);
         app.Press(Key.Right);
