@@ -124,3 +124,26 @@ public class SetDeckInputsTests
         Assert.Equal(RejectionReason.DanglingReference, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetDeckInputs(node, Deck()))).Reason);
     }
 }
+
+/// <summary>Setting an opening's fill (deck-and-porch §5.2): exact, one step, never on a wall, deck or roof.</summary>
+public class SetOpeningFillTests
+{
+    static readonly IGeometryUpdater Updater = DirectUpdater.Instance;
+
+    [Fact]
+    public void A_fill_is_set_and_cleared_and_refused_where_it_cannot_be()
+    {
+        SketchBuilder builder = new();
+        EntityId opening = builder.AddBox(0, 0, 36, 4);
+
+        Solved set = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new SetOpeningFill(opening, OpeningFill.Screen)));
+        Assert.Equal(OpeningFill.Screen, set.Sketch.Find<Box>(opening)!.Opening);
+        Assert.Null(Assert.IsType<Solved>(Updater.Apply(set.Sketch, new SetOpeningFill(opening, null))).Sketch.Find<Box>(opening)!.Opening);
+
+        Sketch wall = builder.Sketch.WithEntity(builder.BoxOf(opening) with { WallInputs = new WallInputs("roof", null) });
+        Assert.IsType<Rejected>(Updater.Apply(wall, new SetOpeningFill(opening, OpeningFill.Glass)));
+        Assert.Equal(RejectionReason.UnknownEntity, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetOpeningFill(EntityId.New(), OpeningFill.Glass))).Reason);
+        EntityId node = builder.AddNode(0, 0);
+        Assert.Equal(RejectionReason.DanglingReference, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetOpeningFill(node, OpeningFill.Glass))).Reason);
+    }
+}
