@@ -229,10 +229,7 @@ public class StockToolboxWorkflows
     /// by placing one from the toolbar beside it and comparing the two.
     /// </summary>
     /// <remarks>
-    /// Claims <c>GUI-CUT-06</c>, which the catalog does not define: nothing in it says "every
-    /// toolbar function is reachable from the menu", and adding an entry is not this change's call,
-    /// so the claim shows as an orphan on the scorecard — which gates nothing — until somebody
-    /// writes the feature down.
+    /// Claims <c>GUI-CUT-06</c>: stock picked from the Draw menu, as from the toolbar.
     /// </remarks>
     [GuiWorkflow("GUI-CUT-06")]
     public void Pick_stock_from_the_draw_menu_and_drag_it_onto_the_paper() => GuiWorkflow.Run(app =>
@@ -361,8 +358,7 @@ public class StockToolboxWorkflows
     /// check the readout with the pointer exactly where the click left it.
     /// </summary>
     /// <remarks>
-    /// Claims <c>GUI-CUT-09</c>, an orphan the same way <c>GUI-CUT-06</c> is: the catalog has
-    /// nothing that names this specific readout behaviour.
+    /// Claims <c>GUI-CUT-09</c>: the drawer readout shows what is held after a menu pick.
     /// </remarks>
     [GuiWorkflow("GUI-CUT-09")]
     public void The_drawer_readout_shows_what_is_held_right_after_picking_from_the_menu_not_the_hovered_item() => GuiWorkflow.Run(app =>

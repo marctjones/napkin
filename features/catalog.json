@@ -1505,6 +1505,33 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-CUT-11",
+      "area": "ui",
+      "title": "Price the lines to buy and read the estimate",
+      "acceptance": "Stocked bench, Ctrl/Cmd+L, shopping tab: one price box for each line to buy (a 12' 1x4, a 14' 2x4, a plywood sheet) and no estimate until one is priced; typing the three prices gives their sum as the estimate; the prices are remembered in the settings and shown again after reopening.",
+      "milestone": "backlog",
+      "issue": 141,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-STRUT-01",
+      "area": "ui",
+      "title": "Draw the splayed bench with angled legs and read one row of four legs",
+      "acceptance": "On a new sheet, with the grid at an inch or finer, draw the seat and four legs from the floor to the seat's underside with Draw > Angled part (pointer clicks and typed values); each leg is a 2x2 and the cut list has one row of four legs at 2'-1 7/16\".",
+      "milestone": "M9",
+      "issue": 192,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-STRUT-02",
+      "area": "ui",
+      "title": "Turn an angled leg's wide face and place its top by its lean",
+      "acceptance": "Splayed footstool sample: click the south-west leg to select it; turn its wide face parallel to the long side in its panel; type its lean so its top is 12\" east and 12\" up of its foot, exactly; the turned leg leaves the row of four in the cut list and reads as a compound cut.",
+      "milestone": "M9",
+      "issue": 192,
+      "kind": "workflow"
+    },
+    {
       "id": "VIEW-001",
       "area": "ui",
       "title": "The six standard views look along exact axes",

@@ -24,8 +24,8 @@ namespace Napkin.App.GuiTests.Workflows;
 /// opened through the Samples menu with the mouse like any other design.
 /// </para>
 /// <para>
-/// It claims no catalogued feature id, because the catalog has no entry for shaped parts on the
-/// canvas yet and inventing one is not this session's call.
+/// Its two workflows claim GUI-DRAW-08 (duplicate and snap a shaped part) and GUI-DRAW-09 (the
+/// shape workshop and Cut).
 /// </para>
 /// </remarks>
 public class ShapedPartWorkflows
