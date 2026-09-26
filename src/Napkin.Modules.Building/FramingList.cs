@@ -35,6 +35,27 @@ public enum FramingRole
 
     /// <summary>A short stud between a sized header and the top plates, on the layout.</summary>
     CrippleAbove,
+
+    /// <summary>A deck's ledger, against the house (deck-and-porch §2.3).</summary>
+    Ledger,
+
+    /// <summary>A deck joist, running out from the ledger.</summary>
+    Joist,
+
+    /// <summary>The deck's rim joist, at the outer edge.</summary>
+    RimJoist,
+
+    /// <summary>A block between two joists, in the row at mid-span.</summary>
+    Blocking,
+
+    /// <summary>One ply of the deck's beam.</summary>
+    Beam,
+
+    /// <summary>A post under the beam.</summary>
+    Post,
+
+    /// <summary>A decking board.</summary>
+    DeckingBoard,
 }
 
 /// <summary>One kind of piece in a wall's frame: how many, how long, and out of what.</summary>
@@ -407,6 +428,13 @@ public static class FramingList
             FramingRole.RoughSill => "rough sill",
             FramingRole.CrippleBelow => "cripple below",
             FramingRole.CrippleAbove => "cripple above",
+            FramingRole.Ledger => "ledger",
+            FramingRole.Joist => "joist",
+            FramingRole.RimJoist => "rim joist",
+            FramingRole.Blocking => "block",
+            FramingRole.Beam => "beam ply",
+            FramingRole.Post => "post",
+            FramingRole.DeckingBoard => "decking board",
             _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Not a framing role."),
         };
 
@@ -414,6 +442,7 @@ public static class FramingList
         {
             "cripple below" => "cripples below",
             "cripple above" => "cripples above",
+            "beam ply" => "beam plies",
             _ => one + "s",
         };
     }
