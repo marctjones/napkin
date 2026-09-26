@@ -235,3 +235,91 @@ public class DeckLoaderTests
         Assert.Equal("27 sq ft", CellValue.Whole(ColumnType.SquareFeet, 27).ToString());
     }
 }
+
+/// <summary>More of the deck reader's refusals, one malformed file each, and the evaluator given every input.</summary>
+public class DeckReaderEdgeTests
+{
+    const string Layer = "layers/zz-deck-2099/deck";
+
+    static InMemoryPackSource Deck() => InMemoryPackSource.FromDirectory(Path.Combine(AppContext.BaseDirectory, "DeckPacks"));
+
+    static string Refused(InMemoryPackSource source)
+        => string.Join("\n", Fx.Invalid(PackLoader.Load(source, "us-zz-deck")).Problems.Select(problem => problem.Message));
+
+    static string Edited(string file, string original, string replacement)
+    {
+        InMemoryPackSource source = Deck();
+        string text = source.Text(file);
+        Assert.Contains(original, text, StringComparison.Ordinal);
+        return Refused(source.With(file, text.Replace(original, replacement, StringComparison.Ordinal)));
+    }
+
+    [Theory]
+    [InlineData("zz-deck-joist.json", "\"kind\": \"member-span\",", "", "kind: missing required field")]
+    [InlineData("zz-deck-joist.json", "\"inputs\": [\n    {", "\"inputs\": [\n    42, {", "must be a JSON object")]
+    [InlineData("zz-deck-joist.json", "\"zz-fir\"\n      ]", "\"zz-fir\", \"zz-fir\"\n      ]", "'zz-fir' is listed twice")]
+    [InlineData("zz-deck-joist.json", "\"name\": \"supports\",", "\"name\": \"species\",", "'species' is declared twice")]
+    [InlineData("zz-deck-ledger.json", "\"min\": \"1in\",\n        \"max\": \"16ft 0in\"", "\"min\": \"17ft 0in\",\n        \"max\": \"16ft 0in\"", "is above max")]
+    [InlineData("zz-deck-joist.json", "\"footnotes\": [\n    {", "\"footnotes\": [\n    42, {", "must be a JSON object")]
+    [InlineData("zz-deck-joist.json", "\"rows\": [\n    {", "\"rows\": [\n    42, {", "must be a JSON object")]
+    [InlineData("zz-deck-joist.json", "\"spacing\": \"12in\",", "", "spacing: missing required field")]
+    [InlineData("zz-deck-joist.json", "\"span\": \"11ft 1in\"", "\"span\": 5", "span")]
+    [InlineData("zz-deck-ledger.json", "\"fastener\": \"zz-bolts, staggered\",", "", "fastener: missing required field")]
+    [InlineData("zz-deck-footing.json", "\"footing\": \"zz 14 in square\",", "", "footing: missing required field")]
+    [InlineData("zz-guard-stair.json", "\"location\": \"synthetic p. 7 guard\"", "\"place\": \"synthetic p. 7 guard\"", "location: missing required field")]
+    [InlineData("zz-guard-stair.json", "\"minimumTread\": \"9in\"", "\"minimumTread\": 9", "minimumTread")]
+    public void Each_is_refused_naming_its_fault(string file, string original, string replacement, string message)
+        => Assert.Contains(message, Edited($"{Layer}/{file}", original, replacement), StringComparison.Ordinal);
+
+    [Fact]
+    public void A_footnote_declared_twice_a_file_that_is_not_json_and_a_bad_frost_file_are_refused()
+    {
+        InMemoryPackSource twice = Deck();
+        string joist = twice.Text($"{Layer}/zz-deck-joist.json");
+        int start = joist.IndexOf("\"footnotes\": [", StringComparison.Ordinal);
+        int open = joist.IndexOf('{', start), close = joist.IndexOf('}', open);
+        string note = joist[open..(close + 1)];
+        twice.With($"{Layer}/zz-deck-joist.json", joist.Insert(close + 1, ", " + note));
+        Assert.Contains("footnote 'a' is declared twice", Refused(twice), StringComparison.Ordinal);
+
+        Assert.NotEmpty(Refused(Deck().With($"{Layer}/zz-deck-joist.json", "{ not json")));
+        Assert.NotEmpty(Refused(Deck().With("packs/us-zz-deck/frost.json", "{ not json")));
+        Assert.Contains("kind: missing required field", Edited("packs/us-zz-deck/frost.json", "\"kind\": \"frost\",", ""), StringComparison.Ordinal);
+        Assert.Contains("frostLineDepth: missing required field", Edited("packs/us-zz-deck/frost.json", "\"frostLineDepth\": \"3ft 6in\",", ""), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_guard_with_no_trigger_and_a_stair_with_no_handrail_rule_are_not_covered_items()
+    {
+        InMemoryPackSource source = Deck();
+        string text = source.Text($"{Layer}/zz-guard-stair.json")
+            .Replace("\"triggerHeight\": \"28in\"", "\"triggerHeight\": null", StringComparison.Ordinal)
+            .Replace("\"handrailWhenRisersAtLeast\": 3", "\"handrailWhenRisersAtLeast\": null", StringComparison.Ordinal);
+        GuardStairProvisions provisions = Fx.Loaded(PackLoader.Load(source.With($"{Layer}/zz-guard-stair.json", text), "us-zz-deck")).Deck.GuardStair!;
+
+        Assert.Null(provisions.Guard!.TriggerHeight);
+        Assert.Null(provisions.Stair!.HandrailWhenRisersAtLeast);
+
+        string noGuard = source.Text($"{Layer}/zz-guard-stair.json");
+        int guard = noGuard.IndexOf("\"guard\":", StringComparison.Ordinal);
+        int end = noGuard.IndexOf('}', guard);
+        GuardStairProvisions stairOnly = Fx.Loaded(PackLoader.Load(Deck().With($"{Layer}/zz-guard-stair.json", noGuard[..guard] + "\"guard\": null" + noGuard[(end + 1)..]), "us-zz-deck")).Deck.GuardStair!;
+        Assert.Null(stairOnly.Guard);
+    }
+
+    [Fact]
+    public void Every_input_given_the_joist_table_reads_only_its_own()
+    {
+        LoadedPack pack = Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "DeckPacks"), "us-zz-deck"));
+        SpanRequest everything = new("2x8", Length.Inches(117), "zz-deck", "zz-fir", Length.Inches(16), Length.Inches(117), GroundSnowLoad: 30, RoofLiveLoad: 20);
+        Assert.IsType<DeckResult.Passes>(DeckEvaluator.CheckSpan(pack, SpanUse.DeckJoist, everything));
+
+        SpanRequest nothing = new("2x8", Length.Inches(117), null, null, null, null);
+        Assert.IsType<DeckResult.InputMissing>(DeckEvaluator.CheckSpan(pack, SpanUse.DeckJoist, nothing));
+        Assert.Equal("roof live load", DeckEvaluator.Spoken("roofLiveLoad"));
+        Assert.Equal("ground snow load", DeckEvaluator.Spoken("groundSnowLoad"));
+        Assert.Equal("tributary area", DeckEvaluator.Spoken("tributaryArea"));
+        Assert.Equal("joist span", DeckEvaluator.Spoken("joistSpan"));
+        Assert.Equal("soil bearing value", DeckEvaluator.Spoken("soilBearing"));
+    }
+}
