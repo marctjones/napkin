@@ -36,6 +36,11 @@ jobs:
       - name: Build (Release)
         run: dotnet build napkin.sln --configuration Release --no-restore -p:SourceRevisionId=${{ github.sha }}
 
+      # DESIGN.md §2.1 as a gate (#2): every restored package, direct and transitive, declares a
+      # license on licenses/policy.json's allowlist or has a written exception there.
+      - name: License policy
+        run: dotnet run --project tools/Napkin.Tools --configuration Debug --no-build -- licenses check
+
       # Coverage is collected on both platforms so the artifact is there to compare when they
       # disagree; only one of them gates (see the next step).
       - name: Test
