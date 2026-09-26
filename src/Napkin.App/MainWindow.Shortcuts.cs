@@ -95,7 +95,7 @@ public partial class MainWindow
         ZoomOutMenuItem.InputGesture = Gesture(ViewCommand.ZoomOut);
 
         // The views on 1-7 (standard-views §4.2); they yield to a length being typed.
-        foreach (DesignView view in AllViews)
+        foreach (DesignView view in AllViews.Where(view => view != DesignView.Parts))
         {
             ViewMenuEntry(view).InputGesture = Gesture(KeyInput.CommandFor(view));
         }
@@ -269,9 +269,9 @@ public partial class MainWindow
             return;
         }
 
-        if (IsShowingModel
-                ? !ActiveModel.IsFocused && ActiveModel.Apply(command)
-                : !DrawingCanvas.IsFocused && DrawingCanvas.Apply(command))
+        if (IsShowingParts ? !PartsDrawing.IsFocused && PartsDrawing.Apply(command)
+            : IsShowingModel ? !ActiveModel.IsFocused && ActiveModel.Apply(command)
+            : !DrawingCanvas.IsFocused && DrawingCanvas.Apply(command))
         {
             e.Handled = true;
         }

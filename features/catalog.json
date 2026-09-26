@@ -1505,6 +1505,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-PARTS-01",
+      "area": "ui",
+      "title": "The Parts view shows the coffee table's pieces, one cell each, and walks them by keyboard and pointer",
+      "acceptance": "Open the coffee table from Samples; View > Parts: four cells, the top x1, the legs x4 and two apron cells x2, the Parts chip pressed and its hint said; Right, Right, Down move the focus cell along and down a row; a click focuses the legs' cell; R says not in the Parts view; View > Zoom in shows 125 %; 3 leaves for Front.",
+      "milestone": "M6",
+      "issue": 124,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-SET-07",
       "area": "ui",
       "title": "The last view is remembered; 2D plan opens Top",

@@ -49,6 +49,12 @@ public sealed class PartsView : Control
     /// <summary>Raised when the zoom or the scroll changes.</summary>
     public event EventHandler? ViewChanged;
 
+    /// <summary>
+    /// Raised when an editing key is pressed here — R, S, Delete, the tools — for the window to run
+    /// as it does for the plan and the 3D view; the arrows are the focus cell's, never a nudge.
+    /// </summary>
+    public event EventHandler<EditCommandRequest>? CommandRequested;
+
     /// <summary>Raised when a view key asks for another view (1–7).</summary>
     public event EventHandler<DesignView>? ViewRequested;
 
@@ -183,9 +189,19 @@ public sealed class PartsView : Control
             Key.PageUp => MoveFocus(-Columns * RowsPerPage),
             _ => false,
         };
-        if (!handled && KeyInput.From(e.Key, e.KeyModifiers) is { } key && KeyMaps.View.Find(key) is { } command)
+        if (!handled && KeyInput.From(e.Key, e.KeyModifiers) is { } key)
         {
-            handled = Apply(command);
+            if (KeyMaps.Edit.Find(key) is { } edit && edit is not (>= EditCommand.NudgeLeft and <= EditCommand.NudgeFarDown))
+            {
+                EditCommandRequest request = new(edit);
+                CommandRequested?.Invoke(this, request);
+                handled = request.Handled;
+            }
+
+            if (!handled && KeyMaps.View.Find(key) is { } command)
+            {
+                handled = Apply(command);
+            }
         }
 
         e.Handled = handled;
@@ -381,7 +397,8 @@ public sealed class PartsView : Control
         context.DrawLine(pen, dimension.To - across, dimension.To + across);
         FormattedText label = Text(dimension.Label, 10, ink, FontWeight.Normal);
         Point middle = new((dimension.From.X + dimension.To.X) / 2, (dimension.From.Y + dimension.To.Y) / 2);
-        context.DrawText(label, vertical ? new Point(middle.X + 4, middle.Y - (label.Height / 2)) : new Point(middle.X - (label.Width / 2), middle.Y + 2));
+        // Clear of the end ticks, which on a thin piece sit either side of the label's middle.
+        context.DrawText(label, vertical ? new Point(middle.X + 7, middle.Y - (label.Height / 2)) : new Point(middle.X - (label.Width / 2), middle.Y + 4));
     }
 
     static void DrawText(DrawingContext context, CanvasPalette palette, PartsCell cell, PartsText text)

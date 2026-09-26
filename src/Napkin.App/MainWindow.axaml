@@ -565,6 +565,10 @@
                 clear of the toolbar and the side column (its margin is set in the code-behind from the
                 same reserves zoom to fit uses), on the bench, so its gutters read as gaps.
             -->
+            <!-- The Parts view (parts-view.md): every distinct piece once, with its count; clear of the
+                 toolbar and the side column like the sheet (its margin is set in the code-behind). -->
+            <viewing:PartsView Name="PartsDrawing" IsVisible="False" />
+
             <viewing:SheetView Name="SheetDrawing"
                                IsVisible="False"
                                ClipToBounds="True"

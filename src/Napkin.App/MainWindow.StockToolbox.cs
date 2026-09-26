@@ -75,6 +75,12 @@ public partial class MainWindow
     {
         // In the 3D view stock is placed on the face under the pointer (#74); in the plan, dragged
         // out on the paper.
+        if (IsShowingParts)
+        {
+            Editor.Say(EditSeverity.Hint, StandardViewWords.NotInPartsView);
+            return;
+        }
+
         if (IsShowingModel)
         {
             if (ActiveModel.Arm(item))

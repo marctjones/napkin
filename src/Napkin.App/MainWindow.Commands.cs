@@ -55,7 +55,7 @@ public partial class MainWindow
     /// <summary>Picks up the note tool (renovation-sketches §8); notes are put in the plan, so the plan comes forward.</summary>
     public void ArmNote()
     {
-        if (IsShowingModel)
+        if (!IsShowingPlan)
         {
             ShowView(DesignView.Top);
         }
@@ -68,7 +68,7 @@ public partial class MainWindow
     /// <summary>Picks up the room tool (renovation-sketches §8); rooms are drawn in the plan, so the plan comes forward.</summary>
     public void ArmRoom()
     {
-        if (IsShowingModel)
+        if (!IsShowingPlan)
         {
             ShowView(DesignView.Top);
         }
@@ -84,7 +84,7 @@ public partial class MainWindow
     /// </summary>
     public void ArmWall(string? member)
     {
-        if (IsShowingModel)
+        if (!IsShowingPlan)
         {
             ShowView(DesignView.Top);
         }
@@ -101,7 +101,7 @@ public partial class MainWindow
     /// <summary>Picks up the opening tool: the next click on a wall in the plan puts a window or door in it.</summary>
     public void ArmOpening(OpeningKind kind)
     {
-        if (IsShowingModel)
+        if (!IsShowingPlan)
         {
             ShowView(DesignView.Top);
         }
@@ -120,6 +120,10 @@ public partial class MainWindow
         if (IsShowingSheet)
         {
             Editor.Say(EditSeverity.Hint, StandardViewWords.NotOnSheet);
+        }
+        else if (IsShowingParts)
+        {
+            Editor.Say(EditSeverity.Hint, StandardViewWords.NotInPartsView);
         }
         else if (IsShowingStandardView)
         {
@@ -167,7 +171,11 @@ public partial class MainWindow
 
     void OnZoomToFitClicked(object? sender, RoutedEventArgs e)
     {
-        if (IsShowingSheet)
+        if (IsShowingParts)
+        {
+            PartsDrawing.ZoomToFit();
+        }
+        else if (IsShowingSheet)
         {
             // Fit on the sheet is the sheet's: the three drawings at their one scale again (§11.4).
             SheetDrawing.RequestFit();
@@ -184,12 +192,18 @@ public partial class MainWindow
 
     void OnResetViewClicked(object? sender, RoutedEventArgs e)
     {
-        _ = IsShowingModel ? ActiveModel.Apply(ViewCommand.ResetView) : DrawingCanvas.Apply(ViewCommand.ResetView);
+        _ = IsShowingParts ? PartsDrawing.Apply(ViewCommand.ResetView)
+            : IsShowingModel ? ActiveModel.Apply(ViewCommand.ResetView)
+            : DrawingCanvas.Apply(ViewCommand.ResetView);
     }
 
     void OnZoomInClicked(object? sender, RoutedEventArgs e)
     {
-        if (IsShowingModel)
+        if (IsShowingParts)
+        {
+            PartsDrawing.Apply(ViewCommand.ZoomIn);
+        }
+        else if (IsShowingModel)
         {
             ActiveModel.ZoomIn();
         }
@@ -201,7 +215,11 @@ public partial class MainWindow
 
     void OnZoomOutClicked(object? sender, RoutedEventArgs e)
     {
-        if (IsShowingModel)
+        if (IsShowingParts)
+        {
+            PartsDrawing.Apply(ViewCommand.ZoomOut);
+        }
+        else if (IsShowingModel)
         {
             ActiveModel.ZoomOut();
         }
@@ -345,7 +363,7 @@ public partial class MainWindow
                 Editor.ClearSelection();
                 return true;
 
-            case EditCommand.EditWidth when !IsShowingModel && Editor.OnlySelectedBox is { } forWidth:
+            case EditCommand.EditWidth when IsShowingPlan && Editor.OnlySelectedBox is { } forWidth:
                 OpenDimensionEditor(forWidth.Id, SizeAxis.Width);
                 return true;
 

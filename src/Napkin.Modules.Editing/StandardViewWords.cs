@@ -29,6 +29,9 @@ public static class StandardViewWords
     /// <summary>Why a drawing tool does nothing on the sheet, and where it does something.</summary>
     public const string NotOnSheet = "Not on the sheet — 1 for the plan or 7 for 3D.";
 
+    /// <summary>What the Parts view says on arriving (parts-view.md).</summary>
+    public const string PartsHint = "Parts: every distinct piece drawn once, to one scale, with how many — 1 for the plan or 7 for 3D.";
+
     /// <summary>Why a drawing tool does nothing in the Parts view, and where it does something.</summary>
     public const string NotInPartsView = "Not in the Parts view — 1 for the plan or 7 for 3D.";
 
