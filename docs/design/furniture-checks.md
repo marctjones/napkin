@@ -1,7 +1,7 @@
 # Furniture checks: shelf sag, tip-over, bunk-bed guards and screw hold, honestly scoped
 
 Status: **DRAFT awaiting Marc's sign-off.** Milestone **M9 Shape**, issue #154. §8 lists the
-slices; each is filed as its own issue and none starts before sign-off. §9 lists the decisions
+slices, filed as #216–#222; none starts before sign-off. §9 lists the decisions
 that are Marc's, each with the default I recommend, so a "yes" is enough.
 
 Marc asked (#154): *is there a standard for how strong furniture must be, what weight it must
