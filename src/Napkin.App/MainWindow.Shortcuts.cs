@@ -24,10 +24,12 @@ public partial class MainWindow
         for (int i = 0; i < Samples.Count; i++)
         {
             IDesignSource source = Samples[i];
+            // Compact rows: the list is long, and every sample has to show inside a 900 × 600 window (GUI-SHELL-06).
             MenuItem item = new()
             {
                 Header = source.Name,
                 Tag = source,
+                Padding = new Avalonia.Thickness(11, 4, 11, 4),
             };
 
             // The first nine samples get a command-digit shortcut; past that the menu is the way
