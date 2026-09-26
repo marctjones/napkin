@@ -87,6 +87,35 @@ public sealed class StrutTool
             };
     }
 
+    /// <summary>
+    /// The entry mode (<c>docs/design/angled-parts.md</c> &#xA7;1.1, decision 9): where a strut's far
+    /// end goes for a typed tilt from vertical, an azimuth in the plan from east counter-clockwise, and
+    /// a rise or a run. The point is worked out in <see cref="double"/> and rounded once onto the grid,
+    /// and <c>Rounded</c> says whether that moved it; the angle is never stored, only the point.
+    /// </summary>
+    /// <param name="from">The end it leans from.</param>
+    /// <param name="tiltDegrees">How far from vertical, 0 up to (not including) 90.</param>
+    /// <param name="azimuthDegrees">Which way it leans in the plan: 0 east, 90 north.</param>
+    /// <param name="rise">How far up the far end is; or null, when <paramref name="run"/> is given.</param>
+    /// <param name="run">How far out in the plan it is; used when <paramref name="rise"/> is null.</param>
+    public static (Point3 To, bool Rounded) ByAngle(Point3 from, double tiltDegrees, double azimuthDegrees, Length? rise, Length? run)
+    {
+        double tilt = tiltDegrees * Math.PI / 180, azimuth = azimuthDegrees * Math.PI / 180;
+        double up = rise is { } r ? r.ToInches() : run!.Value.ToInches() / Math.Tan(tilt);
+        double across = rise is not null ? up * Math.Tan(tilt) : run!.Value.ToInches();
+
+        (Length Value, bool Moved) Once(double inches)
+        {
+            Length value = Length.FromInches(inches, Rounding.HalfToEven);
+            return (value, Math.Abs((inches * Length.UnitsPerInch) - value.Units) > 1e-6);
+        }
+
+        (Length dx, bool mx) = Once(across * Math.Cos(azimuth));
+        (Length dy, bool my) = Once(across * Math.Sin(azimuth));
+        (Length dz, bool mz) = Once(up);
+        return (from + new Vector3(dx, dy, dz), mx || my || mz);
+    }
+
     /// <summary>Forgets a held first click: Escape, or the tool put down.</summary>
     public void Cancel() => First = null;
 
