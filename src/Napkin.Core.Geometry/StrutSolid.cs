@@ -1,8 +1,6 @@
 using System.Collections.Immutable;
 
-using Napkin.Core.Geometry;
-
-namespace Napkin.Modules.Editing;
+namespace Napkin.Core.Geometry;
 
 /// <summary>Which of a strut solid's six faces this is.</summary>
 public enum StrutSolidFace

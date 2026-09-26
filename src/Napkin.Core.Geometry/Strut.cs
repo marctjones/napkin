@@ -170,6 +170,9 @@ public sealed record Strut(
     /// <summary>The end at <paramref name="end"/>.</summary>
     public Point3 End(StrutEnd end) => end == StrutEnd.From ? From : To;
 
+    /// <summary>What <paramref name="end"/> is cut to.</summary>
+    public EndCut CutAt(StrutEnd end) => end == StrutEnd.From ? FromCut : ToCut;
+
     /// <summary>The local axes as exact integer vectors. Only for a strut that is not axis-aligned (invariant 14).</summary>
     public StrutFrame Frame() => StrutFrame.Of(Direction, Reference);
 

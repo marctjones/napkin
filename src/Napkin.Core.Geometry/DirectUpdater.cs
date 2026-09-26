@@ -41,6 +41,7 @@ public sealed class DirectUpdater : IGeometryUpdater
         typeof(EqualParam),
         typeof(Centered),
         typeof(Joint),
+        typeof(StrutJoint),
     ];
 
     /// <inheritdoc/>
@@ -531,6 +532,13 @@ public sealed class DirectUpdater : IGeometryUpdater
             return new Rejected(
                 RejectionReason.InvalidJoint,
                 new ValidationError(ValidationErrorKind.InvalidJoint, invalid));
+        }
+
+        if (relationship is StrutJoint strutJoint && StrutJoint.Errors(strutJoint).FirstOrDefault() is { } invalidOnStrut)
+        {
+            return new Rejected(
+                RejectionReason.InvalidJoint,
+                new ValidationError(ValidationErrorKind.InvalidJoint, invalidOnStrut));
         }
 
         Sketch target = sketch.WithRelationship(relationship);
@@ -1255,7 +1263,7 @@ public sealed class DirectUpdater : IGeometryUpdater
     {
         // A joint is held by nothing and holds nothing: it neither propagates nor is a reason to
         // refuse a request (joinery note §4.3).
-        Anchored or Coincident or AxisDistance or Centered or Joint => true,
+        Anchored or Coincident or AxisDistance or Centered or Joint or StrutJoint => true,
         ParamValue paramValue => IsOneNumber(paramValue.Param),
         EqualParam equalParam => IsOneNumber(equalParam.A) && IsOneNumber(equalParam.B),
         Horizontal horizontal => horizontal.Edge is SegmentRef,
@@ -1405,6 +1413,7 @@ public sealed class DirectUpdater : IGeometryUpdater
                              && ReferenceResolves(sketch, centered.A)
                              && ReferenceResolves(sketch, centered.B),
         Joint joint => ReferenceResolves(sketch, joint.Receiving) && ReferenceResolves(sketch, joint.Inserted),
+        StrutJoint strutJoint => ReferenceResolves(sketch, strutJoint.Receiving) && ReferenceResolves(sketch, strutJoint.Inserted),
         _ => relationship.References.All(id => sketch.Find(id) is not null),
     };
 

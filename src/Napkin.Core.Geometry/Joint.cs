@@ -216,6 +216,80 @@ public static class JointRules
     }
 }
 
+/// <summary>
+/// A butt joint on a strut's end (<c>docs/design/angled-parts.md</c> &#xA7;5): the strut's end face,
+/// always the inserted side, sits on a box's face or another strut's end face and is held there. A
+/// relationship of its own rather than a <see cref="Joint"/> with widened faces, because every other
+/// joint type cuts into a part along a face, which a strut's derived board never carries (decision
+/// 24): only a butt is possible, and nothing about a box's grooves, rabbets and laps applies.
+/// </summary>
+/// <remarks>
+/// Stored, never propagated, never a reason to refuse a request, like a <see cref="Joint"/>
+/// (joinery note &#xA7;4.3). Pocket holes are drilled from one of the strut's four long faces, in the
+/// blank's own compass.
+/// </remarks>
+/// <param name="Id">The relationship's identity.</param>
+/// <param name="Receiving">The face it sits on: one face of a box, or another strut's end face.</param>
+/// <param name="Inserted">The strut's end face.</param>
+/// <param name="Fastening">What holds it; its <see cref="Fastening.PocketFace"/> is a box's and stays null here.</param>
+/// <param name="Glue">Whether it is glued.</param>
+/// <param name="PocketFrom">For pocket screws only: the long face of the strut the holes are drilled from.</param>
+public sealed record StrutJoint(
+    RelationshipId Id,
+    PlaceRef Receiving,
+    StrutEndFaceRef Inserted,
+    Fastening Fastening,
+    bool Glue,
+    StrutFace? PocketFrom) : Relationship(Id)
+{
+    /// <inheritdoc/>
+    public override IEnumerable<EntityId> References => [Receiving.Owner, Inserted.Strut];
+
+    /// <summary>
+    /// Everything wrong with its own fields, in the words a refusal uses; empty when it is well
+    /// formed. Whether the faces touch, and whether the strut's end is cut to anything, are the
+    /// sketch's to judge.
+    /// </summary>
+    public static IEnumerable<string> Errors(StrutJoint joint)
+    {
+        ArgumentNullException.ThrowIfNull(joint);
+        string who = $"Joint {joint.Id}";
+
+        if (joint.Receiving is not (FeatureRef { Feature.Faces.Length: 1 } or StrutEndFaceRef))
+        {
+            yield return $"{who} sits a strut's end on something that is not one face of a part or another strut's end.";
+        }
+
+        if (joint.Receiving.Owner == joint.Inserted.Strut)
+        {
+            yield return $"{who} joins a strut to itself; a joint is between two different parts.";
+        }
+
+        Fastening fastening = joint.Fastening;
+        if (!JointRules.AllowedFastenings(JointType.Butt).Contains(fastening.Kind))
+        {
+            yield return $"{who} is a butt on a strut's end held with {fastening.Kind}, which napkin does not allow for a butt.";
+        }
+
+        if (fastening.Count is < 1)
+        {
+            yield return $"{who} has a \"fastening.count\" of {fastening.Count}; a count is at least 1, or null for the recipe.";
+        }
+
+        if (fastening.PocketFace is not null)
+        {
+            yield return $"{who} names a box's \"fastening.pocketFace\"; a strut's pocket holes are drilled from one of its own faces.";
+        }
+
+        if ((fastening.Kind == FasteningKind.PocketScrews) != joint.PocketFrom.HasValue)
+        {
+            yield return fastening.Kind == FasteningKind.PocketScrews
+                ? $"{who} is held with pocket screws and says no face of the strut to drill them from."
+                : $"{who} names a face to drill pocket holes from but is not held with pocket screws.";
+        }
+    }
+}
+
 /// <summary>What a person builds with typed in the fastener-choices panel: a size for a kind of fastener in a stock thickness (&#xA7;7.3).</summary>
 /// <param name="Kind">Which fastener.</param>
 /// <param name="Thickness">The thickness of the fastened-through part, or <see langword="null"/> for a kind that does not depend on it.</param>
