@@ -47,8 +47,26 @@ public static class CutDescription
         ImmutableArray<Cut> cuts,
         FinishedSize size,
         PlanAxes planAxes)
+        => Describe(cuts, size, planAxes, setbacksExact: true, compound: []);
+
+    /// <summary>
+    /// The same, for a blank derived from a strut (<c>docs/design/angled-parts.md</c> &#xA7;2.2&#x2013;&#xA7;2.3):
+    /// its plain mitres are <paramref name="cuts"/>, marked &#x2248; unless their setbacks were proven
+    /// exact, and its compound ends are said after them, west first.
+    /// </summary>
+    /// <param name="cuts">The blank's plain cuts, in site order.</param>
+    /// <param name="size">The part's three finished dimensions.</param>
+    /// <param name="planAxes">Which dimension is the blank's local X, Y and Z.</param>
+    /// <param name="setbacksExact">Whether every setback was proven to be on the grid; false marks each one &#x2248;.</param>
+    /// <param name="compound">The ends cut at a mitre and a bevel, west first.</param>
+    public static ImmutableArray<string> Describe(
+        ImmutableArray<Cut> cuts,
+        FinishedSize size,
+        PlanAxes planAxes,
+        bool setbacksExact,
+        ImmutableArray<DerivedCompoundEnd> compound)
     {
-        if (cuts.IsDefaultOrEmpty)
+        if (cuts.IsDefaultOrEmpty && compound.IsDefaultOrEmpty)
         {
             return [];
         }
@@ -68,9 +86,9 @@ public static class CutDescription
         // Like cuts are said once: a sentence is built with a placeholder where its sites go, and
         // cuts whose sentences are otherwise identical share one.
         List<(string Template, List<string> Sites)> grouped = [];
-        foreach (Cut cut in cuts)
+        foreach (Cut cut in cuts.IsDefault ? [] : cuts)
         {
-            (string template, string site) = Sentence(cut, planWidth, planHeight, through);
+            (string template, string site) = Sentence(cut, planWidth, planHeight, through, setbacksExact);
 
             int at = grouped.FindIndex(group => string.Equals(group.Template, template, StringComparison.Ordinal));
             if (at < 0)
@@ -83,9 +101,49 @@ public static class CutDescription
             }
         }
 
-        return [.. grouped.Select(group => group.Template.Contains(SitesPlaceholder, StringComparison.Ordinal)
-            ? group.Template.Replace(SitesPlaceholder, Sites(group.Sites), StringComparison.Ordinal)
-            : group.Template)];
+        return
+        [
+            .. grouped.Select(group => group.Template.Contains(SitesPlaceholder, StringComparison.Ordinal)
+                ? group.Template.Replace(SitesPlaceholder, Sites(group.Sites), StringComparison.Ordinal)
+                : group.Template),
+            .. Compound(compound.IsDefault ? [] : compound, through),
+        ];
+    }
+
+    /// <summary>
+    /// The compound ends, in the words of &#xA7;2.2: the mitre across the wide face and the bevel
+    /// through it, both off square to the nearest half degree, with the face the board lies on and
+    /// where the long point is. Two ends cut alike are said once, naming both long points.
+    /// </summary>
+    private static IEnumerable<string> Compound(ImmutableArray<DerivedCompoundEnd> ends, string through)
+    {
+        string Setting(DerivedCompoundEnd end) => end.Mitre is { Degrees: 0, Exact: true }
+            ? $"bevel {AngleText(end.Bevel.Degrees, end.Bevel.Exact)}"
+            : $"mitre {AngleText(end.Mitre.Degrees, end.Mitre.Exact)}, bevel {AngleText(end.Bevel.Degrees, end.Bevel.Exact)}";
+
+        if (ends is [var west, var east] && string.Equals(Setting(west), Setting(east), StringComparison.Ordinal))
+        {
+            yield return $"Cut both ends at a compound angle: {Setting(west)}, with the top face on the saw table; "
+                + $"long point at the {LongPoint(west.LongPoint)} of the west end and the {LongPoint(east.LongPoint)} "
+                + $"of the east end{through}.";
+            yield break;
+        }
+
+        foreach (DerivedCompoundEnd end in ends)
+        {
+            yield return $"Cut the {(end.End == BlankEnd.West ? "west" : "east")} end at a compound angle: {Setting(end)}, "
+                + $"with the top face on the saw table; long point at the {LongPoint(end.LongPoint)}{through}.";
+        }
+    }
+
+    /// <summary>A long point in the blank's own compass: "south-bottom corner", or "bottom edge" when it is a whole edge.</summary>
+    private static string LongPoint(StrutCorner corner)
+    {
+        string? across = corner.Y switch { < 0 => "south", > 0 => "north", _ => null };
+        string? through = corner.Z switch { < 0 => "bottom", > 0 => "top", _ => null };
+        return across is not null && through is not null
+            ? $"{across}-{through} corner"
+            : $"{across ?? through} edge";
     }
 
     /// <summary>Where a sentence's list of sites goes, when the sentence can hold more than one.</summary>
@@ -98,7 +156,7 @@ public static class CutDescription
     /// curved edge. A fourth kind would fail loudly here rather than be described wrongly.
     /// </remarks>
     private static (string Template, string Site) Sentence(
-        Cut cut, Length planWidth, Length planHeight, string through)
+        Cut cut, Length planWidth, Length planHeight, string through, bool setbacksExact)
     {
         if (cut is RoundedCorner rounded)
         {
@@ -109,7 +167,7 @@ public static class CutDescription
 
         if (cut is CornerCut corner)
         {
-            return Straight(corner, planWidth, planHeight, through);
+            return Straight(corner, planWidth, planHeight, through, setbacksExact);
         }
 
         CurvedEdge curve = (CurvedEdge)cut;
@@ -125,7 +183,7 @@ public static class CutDescription
     /// setbacks whole means the cut runs corner to corner.
     /// </remarks>
     private static (string Template, string Site) Straight(
-        CornerCut cut, Length planWidth, Length planHeight, string through)
+        CornerCut cut, Length planWidth, Length planHeight, string through, bool setbacksExact = true)
     {
         BoxEdge alongX = XEdge(cut.Corner);
         BoxEdge alongY = YEdge(cut.Corner);
@@ -149,10 +207,12 @@ public static class CutDescription
             Length setback = xIsWhole ? cut.AlongY : cut.AlongX;
             Length whole = xIsWhole ? planWidth : planHeight;
 
+            // A derived setback that was rounded onto the grid is marked whatever it reads as, and
+            // so is the angle worked back from it (angled-parts §2.4): only a proven 45° is exact.
             return (
-                $"Mitre the {EdgeName(end)} end: from {CutListCsv.Text(setback)} in along the "
+                $"Mitre the {EdgeName(end)} end: from {Marked(setback, setbacksExact)} in along the "
                 + $"{EdgeName(from)} edge to the {CornerName(FarEnd(cut.Corner, end))} corner "
-                + $"({OffSquare(setback, whole)} off square){through}.",
+                + $"({OffSquare(setback, whole, setbacksExact)} off square){through}.",
                 CornerName(cut.Corner));
         }
 
@@ -203,16 +263,29 @@ public static class CutDescription
     /// </remarks>
     /// <param name="setback">The short setback: the mark on the edge that survives.</param>
     /// <param name="whole">The edge the cut runs the whole of.</param>
-    private static string OffSquare(Length setback, Length whole)
+    /// <param name="exact">Whether the setback was proven exact; a rounded one is never 45° exactly.</param>
+    private static string OffSquare(Length setback, Length whole, bool exact)
+        => AngleText(Math.Atan2(setback.Units, whole.Units) * 180 / Math.PI, exact && setback == whole);
+
+    /// <summary>
+    /// A derived angle on a saw's scale: the nearest half degree, a half rounded away from zero, and
+    /// &#x2248; unless the angle was proven exact (<c>docs/design/angled-parts.md</c> &#xA7;2.4). The one
+    /// place the rule is written; a box's mitre and a strut's mitre and bevel all read it.
+    /// </summary>
+    /// <param name="degrees">The angle, worked out in <see cref="double"/>; display only.</param>
+    /// <param name="exact">Whether it was proven exact in integers.</param>
+    public static string AngleText(double degrees, bool exact)
     {
-        double degrees = Math.Atan2(setback.Units, whole.Units) * 180 / Math.PI;
         double halves = Math.Round(degrees * 2, MidpointRounding.AwayFromZero) / 2;
+        string text = halves.ToString(halves == Math.Floor(halves) ? "0" : "0.0", CultureInfo.InvariantCulture) + "°";
+        return exact ? text : CutListCsv.Approximately + text;
+    }
 
-        string text = halves.ToString(
-            halves == Math.Floor(halves) ? "0" : "0.0",
-            CultureInfo.InvariantCulture) + "°";
-
-        return setback == whole ? text : CutListCsv.Approximately + text;
+    /// <summary>A length as <see cref="CutListCsv.Text"/> says it, marked &#x2248; as well when it was rounded onto the grid.</summary>
+    private static string Marked(Length length, bool exact)
+    {
+        string text = CutListCsv.Text(length);
+        return exact || text.StartsWith(CutListCsv.Approximately, StringComparison.Ordinal) ? text : CutListCsv.Approximately + text;
     }
 
     /// <summary>

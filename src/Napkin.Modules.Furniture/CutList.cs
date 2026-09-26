@@ -99,11 +99,22 @@ public static class CutList
         // Step 1 — collect, in ascending id order, so that the first member of a group is a
         // property of the design rather than of a dictionary's enumeration order.
         List<Piece> pieces = [];
-        foreach (Box box in sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id))
+        foreach (Entity entity in sketch.Entities.Values.OrderBy(entity => entity.Id))
         {
+            // A strut is a part like a box (assembly-model §3a.6), its length derived.
+            if (entity is Strut strut)
+            {
+                if (strut.Part is { } strutPart && strut.Phase == Phase.New)
+                {
+                    pieces.Add(StrutPiece(strut, strutPart, library));
+                }
+
+                continue;
+            }
+
             // Only what is New is cut (renovation-sketches §6.2): an existing part is already there,
             // a demolished one is counted under Demolition.
-            if (box.Part is not { } part || box.Phase != Phase.New)
+            if (entity is not Box { Part: { } part } box || box.Phase != Phase.New)
             {
                 continue;
             }
@@ -137,7 +148,11 @@ public static class CutList
                     NominalName.Normalize(part.Stock),
                     part.Species ?? string.Empty,
                     cuts,
-                    joinery),
+                    joinery,
+                    Derived: null,
+                    DerivedExact: true,
+                    SetbacksExact: true,
+                    Compound: []),
                 Material: stock?.Name ?? part.Stock ?? string.Empty,
                 Unresolved: part.Stock is not null && stock is null,
                 Stock: stock,
@@ -145,7 +160,8 @@ public static class CutList
                 Drawn: drawn,
                 Joinery: joinery,
                 Unsatisfied: JointDescription.Unsatisfied(sketch, box),
-                Rough: part.Rough));
+                Rough: part.Rough,
+                Compound: []));
         }
 
         // Step 4 — group. Exact integer equality on all three dimensions, with no tolerance: two
@@ -177,6 +193,10 @@ public static class CutList
                 // Not in the key (docs/design/sketch-mode.md §5): a rough leg and a firm one of the
                 // same sizes are one row of two, and the row is rough because one of them is.
                 Rough = members.Any(member => member.Rough),
+                Derived = group.Key.Derived,
+                DerivedExact = group.Key.DerivedExact,
+                SetbacksExact = group.Key.SetbacksExact,
+                CompoundEnds = members[0].Compound,
             });
         }
 
@@ -196,6 +216,49 @@ public static class CutList
                 .ThenBy(row => row.Cuts, CutSequence.Order)
                 .ThenBy(row => row.Joinery, JointSequence.Order),
         ];
+    }
+
+    /// <summary>
+    /// One strut's contribution: its blank derived once, its derived dimension on whichever name
+    /// <see cref="PlanAxes.X"/> gives it, its plain mitres as cuts and its compound ends beside them
+    /// (<c>docs/design/assembly-model.md</c> &#xA7;3a.6, <c>docs/design/angled-parts.md</c> &#xA7;2).
+    /// Joinery on a strut's end is slice E's (#193); until then it has none.
+    /// </summary>
+    private static Piece StrutPiece(Strut strut, Part part, MaterialsLibrary library)
+    {
+        StrutBlank blank = strut.Blank();
+        FinishedSize size = part.SizeOn(strut, blank);
+        StockItem? stock = part.Stock is not null && library.TryFind(part.Stock, out StockItem item) ? item : null;
+        ImmutableArray<Cut> cuts = [.. blank.Cuts.Select(cut => cut.Cut)];
+        bool setbacksExact = blank.Cuts.All(cut => cut.Exact);
+        ImmutableArray<DerivedCompoundEnd> compound = [.. blank.CompoundEnds];
+
+        return new Piece(
+            strut.Id,
+            strut.Name,
+            part.Quantity,
+            size,
+            Key: new GroupKey(
+                size.Length,
+                size.Width,
+                size.Thickness,
+                NominalName.Normalize(part.Stock),
+                part.Species ?? string.Empty,
+                cuts,
+                [],
+                Derived: part.PlanAxes.X,
+                DerivedExact: blank.Length.Exact,
+                SetbacksExact: setbacksExact,
+                Compound: cuts.IsEmpty ? HalfTurns.Canonical(compound) : compound),
+            Material: stock?.Name ?? part.Stock ?? string.Empty,
+            Unresolved: part.Stock is not null && stock is null,
+            Stock: stock,
+            PlanAxes: part.PlanAxes,
+            Drawn: size,
+            Joinery: [],
+            Unsatisfied: false,
+            Rough: part.Rough,
+            Compound: compound);
     }
 
     /// <summary>
@@ -272,7 +335,8 @@ public static class CutList
         FinishedSize Drawn,
         ImmutableArray<JointFact> Joinery,
         bool Unsatisfied,
-        bool Rough);
+        bool Rough,
+        ImmutableArray<DerivedCompoundEnd> Compound);
 
     /// <summary>
     /// What makes two parts one row: the same three finished dimensions out of the same stock in
@@ -294,7 +358,11 @@ public static class CutList
         string Stock,
         string Species,
         ImmutableArray<Cut> Cuts,
-        ImmutableArray<JointFact> Joinery)
+        ImmutableArray<JointFact> Joinery,
+        PartDimension? Derived,
+        bool DerivedExact,
+        bool SetbacksExact,
+        ImmutableArray<DerivedCompoundEnd> Compound)
     {
         /// <summary>
         /// Equality by value, with the cuts compared as a sequence.
@@ -319,7 +387,11 @@ public static class CutList
                & string.Equals(Stock, other.Stock, StringComparison.Ordinal)
                & string.Equals(Species, other.Species, StringComparison.Ordinal)
                & CutSequence.AreEqual(Cuts, other.Cuts)
-               & JointSequence.AreEqual(Joinery, other.Joinery);
+               & JointSequence.AreEqual(Joinery, other.Joinery)
+               & Derived == other.Derived
+               & DerivedExact == other.DerivedExact
+               & SetbacksExact == other.SetbacksExact
+               & Compound.SequenceEqual(other.Compound);
 
         /// <inheritdoc/>
         public override int GetHashCode()
@@ -330,6 +402,7 @@ public static class CutList
                 StringComparer.Ordinal.GetHashCode(Stock),
                 StringComparer.Ordinal.GetHashCode(Species),
                 CutSequence.HashOf(Cuts),
-                JointSequence.HashOf(Joinery));
+                JointSequence.HashOf(Joinery),
+                HashCode.Combine(Derived, DerivedExact, SetbacksExact, Compound.Length));
     }
 }

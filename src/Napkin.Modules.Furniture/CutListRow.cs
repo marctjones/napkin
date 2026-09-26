@@ -70,7 +70,48 @@ public sealed record CutListRow(
     /// answer (<c>docs/design/parts-and-cut-list.md</c> &#xA7;3.1).
     /// </remarks>
     public ImmutableArray<string> CutText
-        => CutDescription.Describe(Cuts, Drawn ?? new FinishedSize(Length, Width, Thickness), PlanAxes);
+        => CutDescription.Describe(Cuts, Drawn ?? new FinishedSize(Length, Width, Thickness), PlanAxes, SetbacksExact, CompoundEnds);
+
+    /// <summary>
+    /// Which of the three dimensions is derived rather than stored — a strut's, from where its ends
+    /// are (<c>docs/design/assembly-model.md</c> &#xA7;3a.6) — or <see langword="null"/> for a box,
+    /// whose three are all stored.
+    /// </summary>
+    public PartDimension? Derived { get; init; }
+
+    /// <summary>
+    /// Whether the derived dimension was proven to be exactly the listed value; when not, it was
+    /// rounded onto the grid once and reads with &#x2248; whatever it rounds to. True for a box.
+    /// </summary>
+    public bool DerivedExact { get; init; } = true;
+
+    /// <summary>Whether every mitre's setback on a strut's blank was proven exact. True for a box, whose cuts are typed.</summary>
+    public bool SetbacksExact { get; init; } = true;
+
+    /// <summary>A strut's ends cut at a mitre and a bevel, west first (<c>docs/design/angled-parts.md</c> &#xA7;2.2). Empty for a box.</summary>
+    public ImmutableArray<DerivedCompoundEnd> CompoundEnds { get; init; } = [];
+
+    /// <summary>The length as the table and the CSV say it.</summary>
+    public string LengthText => SizeText(PartDimension.Length, Length);
+
+    /// <summary>The width as the table and the CSV say it.</summary>
+    public string WidthText => SizeText(PartDimension.Width, Width);
+
+    /// <summary>The thickness as the table and the CSV say it.</summary>
+    public string ThicknessText => SizeText(PartDimension.Thickness, Thickness);
+
+    /// <summary>
+    /// A size as <see cref="CutListCsv.Text"/> says it, and marked &#x2248; as well when it is the
+    /// derived dimension and was rounded: a rounded length that lands on a sixteenth is still not
+    /// the leg's length (assembly-model &#xA7;3a.4).
+    /// </summary>
+    private string SizeText(PartDimension dimension, Length value)
+    {
+        string text = CutListCsv.Text(value);
+        return Derived == dimension && !DerivedExact && !text.StartsWith(CutListCsv.Approximately, StringComparison.Ordinal)
+            ? CutListCsv.Approximately + text
+            : text;
+    }
 
     /// <summary>
     /// What the part's joints do to it, in structure: the allowances that are already in
@@ -151,6 +192,10 @@ public sealed record CutListRow(
            && Rough == other.Rough
            && Drawn == other.Drawn
            && PlanAxes == other.PlanAxes
+           && Derived == other.Derived
+           && DerivedExact == other.DerivedExact
+           && SetbacksExact == other.SetbacksExact
+           && CompoundEnds.SequenceEqual(other.CompoundEnds)
            && Members.SequenceEqual(other.Members);
 
     /// <inheritdoc/>
@@ -181,6 +226,14 @@ public sealed record CutListRow(
         hash.Add(JointsUnsatisfied);
         hash.Add(Rough);
         hash.Add(Drawn);
+        hash.Add(Derived);
+        hash.Add(DerivedExact);
+        hash.Add(SetbacksExact);
+
+        foreach (DerivedCompoundEnd end in CompoundEnds)
+        {
+            hash.Add(end);
+        }
 
         foreach (EntityId member in Members)
         {

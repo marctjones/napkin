@@ -176,4 +176,29 @@ public sealed record Part(
         => which == PlanAxes.X ? box.Width
             : which == PlanAxes.Y ? box.Height
             : box.Depth;
+
+    /// <summary>
+    /// The three finished dimensions of the piece a strut is: its derived long-point length on the
+    /// dimension <see cref="PlanAxes.X"/> names — its length, or an angled shelf's width
+    /// (<c>docs/design/angled-parts.md</c> invariant 16) — and its stored <see cref="Strut.Height"/>
+    /// and <see cref="Strut.Depth"/> on the other two (<c>docs/design/assembly-model.md</c> &#xA7;3a.6).
+    /// </summary>
+    /// <remarks>
+    /// Its ends are never read except through the blank, which is rounded once and says whether it
+    /// was proven exact; a translation changes no direction and so no size.
+    /// </remarks>
+    /// <param name="strut">The strut this part is on.</param>
+    /// <param name="blank">Its derived blank, which the caller has already worked out once.</param>
+    public FinishedSize SizeOn(Strut strut, StrutBlank blank)
+    {
+        ArgumentNullException.ThrowIfNull(strut);
+        ArgumentNullException.ThrowIfNull(blank);
+
+        Length Value(PartDimension which)
+            => which == PlanAxes.X ? blank.Length.Value
+                : which == PlanAxes.Y ? strut.Height
+                : strut.Depth;
+
+        return new FinishedSize(Value(PartDimension.Length), Value(PartDimension.Width), Value(PartDimension.Thickness));
+    }
 }
