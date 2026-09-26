@@ -1262,6 +1262,24 @@
       "kind": "unit"
     },
     {
+      "id": "CUT-019",
+      "area": "furniture",
+      "title": "The Parts view's sheet is the cut list, one cell per row",
+      "acceptance": "For every sample, PartsSheet.Of(CutList.Of(sketch)) has one cell per row, in row order, each cell's row the row itself and its count the row's quantity; the blank a cell draws is the piece in its own frame in all 24 orientations, and the cut list's thumbnails draw the same blank.",
+      "milestone": "M6",
+      "issue": 122,
+      "kind": "unit"
+    },
+    {
+      "id": "CUT-020",
+      "area": "furniture",
+      "title": "The Parts view's counts add up to pieces, not boxes",
+      "acceptance": "For every sample the cells' counts sum to the sum of Part.Quantity over boxes with a part; the coffee table's four legs are one cell of 4 and each apron length one cell of 2.",
+      "milestone": "M6",
+      "issue": 122,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-CUT-08",
       "area": "ui",
       "title": "Read the cut layout and change the saw kerf",
