@@ -539,6 +539,21 @@ public partial class CutListWindow : Window
     /// <summary>The Deck section as CSV.</summary>
     public string DeckCsv => ShoppingListCsv.ToCsv(DeckTable.Sorted, _kerf);
 
+    /// <summary>The Roof section's rows (deck-and-porch §8).</summary>
+    public ShoppingListTable RoofRows => RoofTable;
+
+    /// <summary>Whether the Roof section is showing.</summary>
+    public bool IsShowingRoof => RoofSection.IsVisible;
+
+    /// <summary>What the Roof section says about each roof: its rafters, cuts, coverings and check.</summary>
+    public string RoofNoteText => RoofNote.Text ?? string.Empty;
+
+    /// <summary>The sunroom test's line under the Roof section.</summary>
+    public string SunroomText => SunroomLine.Text ?? string.Empty;
+
+    /// <summary>The Roof section as CSV.</summary>
+    public string RoofCsv => ShoppingListCsv.ToCsv(RoofTable.Sorted, _kerf);
+
     /// <summary>The tab that shows the shopping list, for the GUI suite to click.</summary>
     public TabItem ShoppingListTabItem => ShoppingListTab;
 
@@ -648,6 +663,35 @@ public partial class CutListWindow : Window
         DeckSection.IsVisible = deckNotes.Count > 0;
         DeckNote.Text = string.Join(" ", deckNotes)
                         + (decks.Count > 0 ? " Decking is listed by the board; napkin has read no stock-length list for decking (#155)." : string.Empty);
+
+        // Each porch roof's frame and coverings, and the sunroom test under it (deck-and-porch §8).
+        List<RoofFraming> roofs = [];
+        List<string> roofNotes = [];
+        List<string> sunroom = [];
+        foreach (Roof roof in Roof.All(sketch.After()).Where(roof => roof.Box.Phase == Phase.New && roof.Box.Roof is not null))
+        {
+            (RoofFraming? framing, string? problem) = RoofFrame.Of(sketch.After(), roof, MaterialsLibrary.Shipped);
+            if (framing is null)
+            {
+                roofNotes.Add($"{roof.Name}: {problem}");
+                continue;
+            }
+
+            roofs.Add(framing);
+            roofNotes.Add($"{roof.Name}: {framing.Line}. {framing.Cuts}");
+            roofNotes.AddRange(framing.Coverings);
+            roofNotes.Add(RoofCheck.Rafters(sketch.After(), framing, deckPack).Text);
+            if (Glazing.Of(sketch.After(), framing.Deck, roof.Box.Height, roof.Box.Depth, framing.SlopedArea) is { } ratio)
+            {
+                sunroom.Add($"{roof.Name}: {ratio.Text}");
+            }
+        }
+
+        RoofTable.Rows = ShoppingList.Of([.. roofs.SelectMany(framing => RoofFrame.CutRows(framing))], _kerf);
+        RoofSection.IsVisible = roofNotes.Count > 0;
+        RoofNote.Text = string.Join(" ", roofNotes);
+        SunroomLine.Text = string.Join(" ", sunroom);
+        SunroomLine.IsVisible = sunroom.Count > 0;
         BuildSizes(sketch);
         string supplies = SuppliesText(sketch);
         if (supplies != _suppliesBuiltFrom)

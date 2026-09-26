@@ -119,6 +119,13 @@
                                 <TextBlock Name="DeckNote" FontSize="11" Opacity="0.75" TextWrapping="Wrap" AutomationProperties.Name="Deck note" />
                                 <viewing:ShoppingListTable Name="DeckTable" />
                             </StackPanel>
+                            <!-- A porch roof's rafters, ledger and blocking, its coverings and the sunroom test (deck-and-porch §8). -->
+                            <StackPanel Name="RoofSection" Spacing="4" IsVisible="False">
+                                <TextBlock Text="Roof" Margin="0,14,0,0" FontSize="12" FontWeight="SemiBold" />
+                                <TextBlock Name="RoofNote" FontSize="11" Opacity="0.75" TextWrapping="Wrap" AutomationProperties.Name="Roof note" />
+                                <viewing:ShoppingListTable Name="RoofTable" />
+                                <TextBlock Name="SunroomLine" FontSize="11" TextWrapping="Wrap" AutomationProperties.Name="Sunroom test" />
+                            </StackPanel>
                             <!-- A room's finishes by area (renovation-sketches §5): each line rounds once, and says
                                  the typed values it used. -->
                             <StackPanel Name="AreaTakeoffSection" Spacing="2" IsVisible="False">

@@ -34,6 +34,9 @@ public enum EditTool
 
     /// <summary>A drag from an existing wall's face for a deck (<see cref="DeckTool"/>, deck-and-porch §8).</summary>
     Deck,
+
+    /// <summary>A click on a deck for a shed roof over it (<see cref="RoofTool"/>, deck-and-porch §8).</summary>
+    Roof,
 }
 
 /// <summary>

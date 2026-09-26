@@ -54,6 +54,8 @@ public partial class MainWindow
 
     void OnDeckToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.DeckTool);
 
+    void OnRoofToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.RoofTool);
+
     void OnNoteToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.NoteTool);
 
     void OnStrutToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.StrutTool);
@@ -104,6 +106,19 @@ public partial class MainWindow
         }
 
         DrawingCanvas.ArmDeck();
+        UpdateToolButtons();
+        FocusDrawing();
+    }
+
+    /// <summary>Picks up the porch roof tool (deck-and-porch §8): a click on a deck in the plan roofs it.</summary>
+    public void ArmRoof()
+    {
+        if (!IsShowingPlan)
+        {
+            ShowView(DesignView.Top);
+        }
+
+        DrawingCanvas.ArmRoof();
         UpdateToolButtons();
         FocusDrawing();
     }
@@ -344,6 +359,10 @@ public partial class MainWindow
 
             case EditCommand.DeckTool:
                 ArmDeck();
+                return true;
+
+            case EditCommand.RoofTool:
+                ArmRoof();
                 return true;
 
             case EditCommand.NoteTool:

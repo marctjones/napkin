@@ -155,6 +155,7 @@ public partial class MainWindow : Window
         WireRenovation();
         WireRoom();
         WireDeck();
+        WireRoof();
         WireNotes();
         WireStruts();
         DrawingCanvas.CommandRequested += (_, request) => request.Handled = Run(request.Command);
@@ -296,6 +297,12 @@ public partial class MainWindow : Window
             {
                 // So does a deck's (deck-and-porch §8).
                 ApplyDeck();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && e.Source is TextBox roofBox && IsRoofField(roofBox))
+            {
+                // And a roof's.
+                ApplyRoof();
                 e.Handled = true;
             }
             else if (e.Key == Key.Enter && e.Source is TextBox box

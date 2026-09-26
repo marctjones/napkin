@@ -324,8 +324,15 @@ deck, over those walls' gross area plus the triangle above each side wall and th
 to a tenth of a percent, and says which side of the 40 % line the drawing is on. It never
 classifies; a category is yours.
 
-**A shed porch roof** (§5.4, §9.5). A roof is a box over a deck, on the roof layer or with roof
-inputs. The box's depth out from the house is the run and its height is the rise, so its pitch is
+**A shed porch roof** (§5.4, §9.5). **Draw → Porch roof** (**Shift+R**) and a click on a deck
+make the roof over the deck's outline, at napkin's starting 4 in 12. Its high end is at the ledger.
+Its low end is the wall standing on the deck's far edge; with no wall there, it is a (2) 2x10 beam
+on two 4x4 posts, 8'-0" above the decking. A wall drawn with **W** inside a deck's outline stands on
+the decking. The panel's **Roof** block takes the pitch typed as "5 in 12" (which sets the rise, on
+the grid) and the rafter, spacing, ledger, overhang, sheathing and roofing. It shows the rafters,
+the cuts, the coverings, the rafter check and the **Sunroom test**. The shopping list's **Roof**
+section buys the pieces, with the sunroom line under it. A roof is a box on the roof layer or with
+roof inputs. The box's depth out from the house is the run and its height is the rise, so its pitch is
 "5 in 12", or "≈ 4.96 in 12" when it is not a whole number. The high end is a ledger on the house.
 The low end is either a wall on the deck (napkin asks you to mark it bearing) or a beam on posts
 standing on the deck. From the typed rafter, ledger, spacing and overhang, napkin works out, all

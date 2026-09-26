@@ -38,6 +38,7 @@ text: no shortcut below except the window's fires while a field has the keyboard
 | `W` | Wall tool, with the member it last had; brings the plan forward |
 | `Shift+W` | Room tool: drag out a room, or click inside four walls for their inside faces; brings the plan forward |
 | `Shift+D` | Deck tool: drag the deck out from an existing wall's face; that edge is the ledger |
+| `Shift+R` | Porch roof tool: click a deck; a shed roof covers it, high at the ledger, low on the wall at its far edge |
 | `Shift+N` | Note tool: click to put a note, then type what it says — outlet, switch, light, supply, drain get their symbol; brings the plan forward |
 | `L` | Angled-part tool: click one end, then the other — a splayed leg, a brace; in 3D on the floor or a part's face, in the plan a flat brace to stand up in the panel |
 | `C` | Cut the selected part to shape (the shape workshop); not in a standard view |

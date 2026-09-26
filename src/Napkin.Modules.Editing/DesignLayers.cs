@@ -32,6 +32,9 @@ public static class DesignLayers
     /// <summary>Decks, in plan: the outline with the ledger edge ticked (deck-and-porch §8).</summary>
     public const string Deck = Napkin.Modules.Building.BuildingLayers.Deck;
 
+    /// <summary>Porch roofs, in plan: the outline over the deck (deck-and-porch §8).</summary>
+    public const string Roof = Napkin.Modules.Building.BuildingLayers.Roof;
+
     /// <summary>Notes: words and rough-in symbols (renovation-sketches §7).</summary>
     public const string Notes = Napkin.Modules.Building.BuildingLayers.Notes;
 

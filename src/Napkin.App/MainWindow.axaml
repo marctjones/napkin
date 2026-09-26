@@ -233,6 +233,11 @@
                           Header="Dec_k"
                           Click="OnDeckToolClicked"
                           ToolTip.Tip="Drag a deck out from the face of an existing wall: that edge is the ledger. Its frame is worked out from the inputs in the panel." />
+                <!-- Porch roof (deck-and-porch §8): a click on a deck roofs it, high at the ledger. -->
+                <MenuItem Name="RoofToolMenuItem"
+                          Header="Porch _roof"
+                          Click="OnRoofToolClicked"
+                          ToolTip.Tip="Click a deck: a shed roof covers it, high at the house, low on the wall at its far edge (or a beam on posts). Type the pitch as 5 in 12 in the panel." />
                 <MenuItem Name="NoteToolMenuItem"
                           Header="Not_e"
                           Click="OnNoteToolClicked"
@@ -1308,6 +1313,41 @@
                                            AutomationProperties.Name="Frost depth offered" />
                                 <Button Name="DeckUseFrostButton" Content="Use it" FontSize="10" Click="OnUseFrostClicked" />
                             </StackPanel>
+                        </StackPanel>
+
+                        <!-- A shed porch roof's inputs and its frame (deck-and-porch §5.3, §8): the pitch typed as
+                             "5 in 12" sets the rise; the rafters, cuts and coverings derived every time. -->
+                        <StackPanel Name="RoofFields" Spacing="4" IsVisible="False">
+                            <TextBlock Name="RoofHeadline" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Roof" />
+                            <Grid ColumnDefinitions="Auto,2*,Auto,2*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Pitch" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="RoofPitchBox" Grid.Row="0" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Roof pitch" />
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="overhang" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="RoofOverhangBox" Grid.Row="0" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Overhang" />
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Rafter" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="RoofRafterBox" Grid.Row="1" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Rafter lumber" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="at" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="RoofSpacingBox" Grid.Row="1" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Rafter spacing" />
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Ledger" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="RoofLedgerBox" Grid.Row="2" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Ledger lumber" />
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="sheathing" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="RoofSheathingBox" Grid.Row="2" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Sheathing" />
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Roofing" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="RoofRoofingBox" Grid.Row="3" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Roofing" />
+                                <TextBlock Grid.Row="3" Grid.Column="2" Text="sq ft/unit" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="RoofCoverageBox" Grid.Row="3" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Roofing coverage" />
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Waste %" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
+                                <TextBox Name="RoofWasteBox" Grid.Row="4" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Roofing waste" />
+                            </Grid>
+                            <CheckBox Name="RoofBlockingCheck" Content="Blocking at the plate" FontSize="11"
+                                      IsCheckedChanged="OnRoofTicked" AutomationProperties.Name="Roof blocking" />
+                            <TextBlock Name="RoofLowEndText" FontSize="10" TextWrapping="Wrap" AutomationProperties.Name="Roof low end" />
+                            <TextBlock Name="RoofFrameText" FontSize="10" TextWrapping="Wrap" AutomationProperties.Name="Roof frame" />
+                            <TextBlock Text="Code check" FontSize="11" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            <TextBlock Name="RoofCheckText" FontSize="10" TextWrapping="Wrap" AutomationProperties.Name="Roof code check" />
+                            <TextBlock Text="Sunroom test" FontSize="11" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            <TextBlock Name="RoofGlazingText" FontSize="10" TextWrapping="Wrap" AutomationProperties.Name="Sunroom test" />
                         </StackPanel>
 
                         <CheckBox Name="IsPartCheck"
