@@ -165,3 +165,43 @@ public sealed record ParamMeasurand(ParamRef Param) : Measurand;
 /// <param name="To">The place measured to.</param>
 /// <param name="Axis">The axis measured along: X or Y, since a dimension lies in the plan (assembly-model invariant 13).</param>
 public sealed record AxisMeasurand(PlaceRef From, PlaceRef To, Axis Axis) : Measurand;
+
+/// <summary>
+/// One of a strut's two stored ends: a point fixing X, Y and Z (<c>docs/design/assembly-model.md</c>
+/// &#xA7;3a.5). It takes part in <see cref="Coincident"/>, <see cref="AxisDistance"/> and
+/// <see cref="Centered"/>, and in nothing that needs a face.
+/// </summary>
+/// <param name="Strut">The strut.</param>
+/// <param name="End">Which end.</param>
+public sealed record StrutEndRef(EntityId Strut, StrutEnd End) : PlaceRef
+{
+    /// <inheritdoc/>
+    public override EntityId Owner => Strut;
+}
+
+/// <summary>
+/// One of a strut's four long faces (<c>docs/design/angled-parts.md</c> &#xA7;3.2). In the file and
+/// the kernel since format 11; a place a relationship may hold only once slice B (#190) gives a
+/// one-way lean's side faces their plane. Until then every relationship naming one is refused:
+/// a strut's body is not a place (assembly-model &#xA7;3a.5).
+/// </summary>
+/// <param name="Strut">The strut.</param>
+/// <param name="Face">Which long face.</param>
+public sealed record StrutFaceRef(EntityId Strut, StrutFace Face) : PlaceRef
+{
+    /// <inheritdoc/>
+    public override EntityId Owner => Strut;
+}
+
+/// <summary>
+/// The end face of a strut, as a joint's inserted face (<c>docs/design/angled-parts.md</c> &#xA7;5).
+/// In the file and the kernel since format 11; joinery on it is slice E (#193), and until then
+/// every relationship naming one is refused.
+/// </summary>
+/// <param name="Strut">The strut.</param>
+/// <param name="End">Which end.</param>
+public sealed record StrutEndFaceRef(EntityId Strut, StrutEnd End) : PlaceRef
+{
+    /// <inheritdoc/>
+    public override EntityId Owner => Strut;
+}

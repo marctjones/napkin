@@ -314,6 +314,18 @@ public sealed record Sketch(
             case FeatureRef featureRef:
                 return FeaturePlace(Require<Box>(featureRef.Box, reference), featureRef.Feature, reference);
 
+            case StrutEndRef endRef:
+            {
+                Point3 at = Require<Strut>(endRef.Strut, reference).End(endRef.End);
+                return new Place(at.X, at.Y, at.Z);
+            }
+
+            // A strut's body fixes no world axis until slices B and E say which of its faces do; the
+            // place rules refuse any relationship that names one (assembly-model §3a.5).
+            case StrutFaceRef or StrutEndFaceRef:
+                _ = Require<Strut>(reference.Owner, reference);
+                return default;
+
             default:
                 throw new InvalidOperationException($"Unknown place reference {reference}.");
         }
@@ -589,7 +601,7 @@ public sealed record Sketch(
     /// integers; the blank is derived for 17 only once they hold — the one sanctioned reader of it
     /// outside the cut list (assembly-model §3a.4).
     /// </summary>
-    private static IEnumerable<ValidationError> StrutErrors(Strut strut)
+    internal static IEnumerable<ValidationError> StrutErrors(Strut strut)
     {
         bool integersHold = true;
         if (!Strut.LeansIn(strut.Direction))
@@ -751,6 +763,7 @@ public sealed record Sketch(
         CenterRef centre => KindErrors(centre.Box, what, entity => entity is Box, nameof(Box)),
         FeatureRef feature => KindErrors(feature.Box, what, entity => entity is Box, nameof(Box))
             .Concat(FeatureErrors(feature, what)),
+        StrutEndRef or StrutFaceRef or StrutEndFaceRef => KindErrors(reference.Owner, what, entity => entity is Strut, nameof(Strut)),
         _ => [],
     };
 
@@ -769,6 +782,7 @@ public sealed record Sketch(
                                      && Find<Node>(segment.End) is not null,
             CenterRef centre => Find<Box>(centre.Box) is not null,
             FeatureRef feature => Find<Box>(feature.Box) is not null && !feature.Feature.Faces.IsEmpty,
+            StrutEndRef or StrutFaceRef or StrutEndFaceRef => Find<Strut>(reference.Owner) is not null,
             _ => false,
         };
 
