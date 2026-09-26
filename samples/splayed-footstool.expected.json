@@ -9,7 +9,7 @@
     "boxes": 1,
     "struts": 4,
     "pieces": 5,
-    "relationships": 25
+    "relationships": 29
   },
   "cutList": [
     {
@@ -33,7 +33,10 @@
         "Mitre the west end: from 5/8\" in along the south edge to the north-west corner (≈22.5° off square).",
         "Mitre the east end: from 5/8\" in along the north edge to the south-east corner (≈22.5° off square)."
       ],
-      "derivation": "Each leg runs 3\" out in X, 4\" out in Y and 12\" up: d = (3, 4, 12) in, 3^2 + 4^2 + 12^2 = 169 = 13^2, so the centreline is 13\" = 13312 exactly, and the plan run is sqrt(3^2 + 4^2) = 5\" exactly. Reference Z (the tool's default: wide face vertical, sawhorse style): local Z = d x Z = (4, -3, 0) is square to Z, so both Z cuts are plain mitres. Setback = 1 1/2 x 5 / 12 = 5/8\" = 640 exactly. L = 13 + 5/8 = 13 5/8\" = 13952, exact. 13 5/8 = 12 + 1 5/8 -> 1'-1 5/8\". The four legs mirror each other across both of the seat's centre lines: one row of 4. Sentences as for any parallelogram: 5/8\" along the south edge and the whole west end, the east end its twin. atan(5/12) = 22.62 degrees -> nearest half degree 22.5, marked. At 13 5/8\" the leg is longer than the 12\" seat, so it comes first."
+      "joinery": [
+        "Drill 2 pocket holes in the east end from the bottom face."
+      ],
+      "derivation": "Each leg runs 3\" out in X, 4\" out in Y and 12\" up: d = (3, 4, 12) in, 3^2 + 4^2 + 12^2 = 169 = 13^2, so the centreline is 13\" = 13312 exactly, and the plan run is sqrt(3^2 + 4^2) = 5\" exactly. Reference Z (the tool's default: wide face vertical, sawhorse style): local Z = d x Z = (4, -3, 0) is square to Z, so both Z cuts are plain mitres. Setback = 1 1/2 x 5 / 12 = 5/8\" = 640 exactly. L = 13 + 5/8 = 13 5/8\" = 13952, exact. 13 5/8 = 12 + 1 5/8 -> 1'-1 5/8\". The four legs mirror each other across both of the seat's centre lines: one row of 4. Sentences as for any parallelogram: 5/8\" along the south edge and the whole west end, the east end its twin. atan(5/12) = 22.62 degrees -> nearest half degree 22.5, marked. At 13 5/8\" the leg is longer than the 12\" seat, so it comes first. Joinery (angled-parts 5): each leg's top end, cut to Z, is butted to the seat's underside with pocket screws from its bottom face. The end is the 1 1/2\" square section stretched along the lean by 13/12: 1 1/2\" by 1 5/8\"; its long side, 1 5/8\", is the joint length. Pocket screws are at least 2, one per 2\" (joinery 7.2): ceil(1.625 / 2) = 1, so 2. The top end is the blank's east end (d.Z > 0, not reversed)."
     },
     {
       "label": "Seat",
@@ -55,7 +58,7 @@
   "cutListCsv": [
     "Cut list: finished sizes: joinery allowances included; before saw kerf (#138).",
     "Label,Quantity,Length,Width,Thickness,Material,Rough,Cuts,Joinery",
-    "Leg,4,\"1'-1 5/8\"\"\",\"1 1/2\"\"\",\"1 1/2\"\"\",2x2,,\"Mitre the west end: from 5/8\"\" in along the south edge to the north-west corner (≈22.5° off square).; Mitre the east end: from 5/8\"\" in along the north edge to the south-east corner (≈22.5° off square).\",",
+    "Leg,4,\"1'-1 5/8\"\"\",\"1 1/2\"\"\",\"1 1/2\"\"\",2x2,,\"Mitre the west end: from 5/8\"\" in along the south edge to the north-west corner (≈22.5° off square).; Mitre the east end: from 5/8\"\" in along the north edge to the south-east corner (≈22.5° off square).\",Drill 2 pocket holes in the east end from the bottom face.",
     "Seat,1,\"1'-0\"\"\",\"1'-0\"\"\",\"3/4\"\"\",3/4 plywood,,,"
   ]
 }

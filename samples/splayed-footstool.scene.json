@@ -285,6 +285,30 @@
     },
     {
       "id": "c2100000-0000-4000-8000-000000000008",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "c2000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "inserted": {
+        "kind": "strutEndFace",
+        "strut": "c2000000-0000-4000-8000-000000000010",
+        "end": "to"
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "bottom"
+      },
+      "glue": true
+    },
+    {
+      "id": "c2100000-0000-4000-8000-000000000009",
       "kind": "axisDistance",
       "from": {
         "kind": "feature",
@@ -302,7 +326,7 @@
       "distance": 0
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000009",
+      "id": "c2100000-0000-4000-8000-000000000010",
       "kind": "axisDistance",
       "from": {
         "kind": "feature",
@@ -320,7 +344,7 @@
       "distance": 9216
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000010",
+      "id": "c2100000-0000-4000-8000-000000000011",
       "kind": "axisDistance",
       "from": {
         "kind": "feature",
@@ -335,22 +359,6 @@
         "end": "to"
       },
       "axis": "y",
-      "distance": 3072
-    },
-    {
-      "id": "c2100000-0000-4000-8000-000000000011",
-      "kind": "axisDistance",
-      "from": {
-        "kind": "strutEnd",
-        "strut": "c2000000-0000-4000-8000-000000000011",
-        "end": "to"
-      },
-      "to": {
-        "kind": "strutEnd",
-        "strut": "c2000000-0000-4000-8000-000000000011",
-        "end": "from"
-      },
-      "axis": "x",
       "distance": 3072
     },
     {
@@ -366,11 +374,27 @@
         "strut": "c2000000-0000-4000-8000-000000000011",
         "end": "from"
       },
+      "axis": "x",
+      "distance": 3072
+    },
+    {
+      "id": "c2100000-0000-4000-8000-000000000013",
+      "kind": "axisDistance",
+      "from": {
+        "kind": "strutEnd",
+        "strut": "c2000000-0000-4000-8000-000000000011",
+        "end": "to"
+      },
+      "to": {
+        "kind": "strutEnd",
+        "strut": "c2000000-0000-4000-8000-000000000011",
+        "end": "from"
+      },
       "axis": "y",
       "distance": -4096
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000013",
+      "id": "c2100000-0000-4000-8000-000000000014",
       "kind": "axisDistance",
       "from": {
         "kind": "strutEnd",
@@ -386,7 +410,31 @@
       "distance": -12288
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000014",
+      "id": "c2100000-0000-4000-8000-000000000015",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "c2000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "inserted": {
+        "kind": "strutEndFace",
+        "strut": "c2000000-0000-4000-8000-000000000011",
+        "end": "to"
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "bottom"
+      },
+      "glue": true
+    },
+    {
+      "id": "c2100000-0000-4000-8000-000000000016",
       "kind": "axisDistance",
       "from": {
         "kind": "feature",
@@ -404,7 +452,7 @@
       "distance": 0
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000015",
+      "id": "c2100000-0000-4000-8000-000000000017",
       "kind": "axisDistance",
       "from": {
         "kind": "feature",
@@ -422,7 +470,7 @@
       "distance": 3072
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000016",
+      "id": "c2100000-0000-4000-8000-000000000018",
       "kind": "axisDistance",
       "from": {
         "kind": "feature",
@@ -440,7 +488,7 @@
       "distance": 9216
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000017",
+      "id": "c2100000-0000-4000-8000-000000000019",
       "kind": "axisDistance",
       "from": {
         "kind": "strutEnd",
@@ -456,7 +504,7 @@
       "distance": -3072
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000018",
+      "id": "c2100000-0000-4000-8000-000000000020",
       "kind": "axisDistance",
       "from": {
         "kind": "strutEnd",
@@ -472,7 +520,7 @@
       "distance": 4096
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000019",
+      "id": "c2100000-0000-4000-8000-000000000021",
       "kind": "axisDistance",
       "from": {
         "kind": "strutEnd",
@@ -488,7 +536,31 @@
       "distance": -12288
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000020",
+      "id": "c2100000-0000-4000-8000-000000000022",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "c2000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "inserted": {
+        "kind": "strutEndFace",
+        "strut": "c2000000-0000-4000-8000-000000000012",
+        "end": "to"
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "bottom"
+      },
+      "glue": true
+    },
+    {
+      "id": "c2100000-0000-4000-8000-000000000023",
       "kind": "axisDistance",
       "from": {
         "kind": "feature",
@@ -506,7 +578,7 @@
       "distance": 0
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000021",
+      "id": "c2100000-0000-4000-8000-000000000024",
       "kind": "axisDistance",
       "from": {
         "kind": "feature",
@@ -524,7 +596,7 @@
       "distance": 9216
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000022",
+      "id": "c2100000-0000-4000-8000-000000000025",
       "kind": "axisDistance",
       "from": {
         "kind": "feature",
@@ -542,7 +614,7 @@
       "distance": 9216
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000023",
+      "id": "c2100000-0000-4000-8000-000000000026",
       "kind": "axisDistance",
       "from": {
         "kind": "strutEnd",
@@ -558,7 +630,7 @@
       "distance": 3072
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000024",
+      "id": "c2100000-0000-4000-8000-000000000027",
       "kind": "axisDistance",
       "from": {
         "kind": "strutEnd",
@@ -574,7 +646,7 @@
       "distance": 4096
     },
     {
-      "id": "c2100000-0000-4000-8000-000000000025",
+      "id": "c2100000-0000-4000-8000-000000000028",
       "kind": "axisDistance",
       "from": {
         "kind": "strutEnd",
@@ -588,6 +660,30 @@
       },
       "axis": "z",
       "distance": -12288
+    },
+    {
+      "id": "c2100000-0000-4000-8000-000000000029",
+      "kind": "joint",
+      "type": "butt",
+      "receiving": {
+        "kind": "feature",
+        "box": "c2000000-0000-4000-8000-000000000001",
+        "faces": [
+          "bottom"
+        ]
+      },
+      "inserted": {
+        "kind": "strutEndFace",
+        "strut": "c2000000-0000-4000-8000-000000000013",
+        "end": "to"
+      },
+      "depth": null,
+      "fastening": {
+        "kind": "pocketScrews",
+        "count": null,
+        "pocketFace": "bottom"
+      },
+      "glue": true
     }
   ],
   "fastenerChoices": [],

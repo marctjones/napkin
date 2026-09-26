@@ -1693,8 +1693,8 @@ internal sealed class SceneBinder
     {
         int before = problems.Count;
         string? typeText = ReadText(fields, SceneNames.Type);
-        FeatureRef? receiving = ReadJointFace(fields, SceneNames.Receiving);
-        FeatureRef? inserted = ReadJointFace(fields, SceneNames.Inserted);
+        PlaceRef? receiving = ReadJointFace(fields, SceneNames.Receiving);
+        PlaceRef? inserted = ReadJointFace(fields, SceneNames.Inserted);
         (bool depthRead, long? depth) = ReadIntegerOrNull(fields, SceneNames.Depth);
         Fastening? fastening = ReadFastening(fields);
         bool? glue = ReadBoolean(fields, SceneNames.Glue);
@@ -1714,7 +1714,46 @@ internal sealed class SceneBinder
             return null;
         }
 
-        Joint joint = new(id, receiving, inserted, type, depth is { } units ? new Length(units) : null, fastening, glued);
+        // A strut's end is always the inserted face (angled-parts §5, §7): a butt, no depth, pocket
+        // holes drilled from one of its four long faces, which the file spells as a box's faces are.
+        if (inserted is StrutEndFaceRef strutEnd)
+        {
+            if (type != JointType.Butt || depth is not null)
+            {
+                Add(LoadProblemKind.InvalidValue, fields.Path, $"A joint on a strut's end is a butt with no depth; this one is a {typeText}.");
+                return null;
+            }
+
+            StrutFace? from = fastening.PocketFace switch
+            {
+                null => null,
+                BoxFace.South => StrutFace.South,
+                BoxFace.North => StrutFace.North,
+                BoxFace.Bottom => StrutFace.Bottom,
+                BoxFace.Top => StrutFace.Top,
+                _ => Refuse<StrutFace>($"{fields.Path}/{SceneNames.Fastening}/{SceneNames.PocketFace}", "A strut's pocket holes are drilled from its south, north, bottom or top face."),
+            };
+            if (problems.Count > before)
+            {
+                return null;
+            }
+
+            StrutJoint onStrut = new(id, receiving, strutEnd, fastening with { PocketFace = null }, glued, from);
+            foreach (string problem in StrutJoint.Errors(onStrut))
+            {
+                Add(LoadProblemKind.InvalidValue, fields.Path, problem);
+            }
+
+            return problems.Count > before ? null : onStrut;
+        }
+
+        if (receiving is not FeatureRef receivingFace || inserted is not FeatureRef insertedFace)
+        {
+            Add(LoadProblemKind.InvalidValue, fields.Path, "A strut's end is a joint's inserted face, never its receiving one, unless both are struts' ends.");
+            return null;
+        }
+
+        Joint joint = new(id, receivingFace, insertedFace, type, depth is { } units ? new Length(units) : null, fastening, glued);
         foreach (string problem in JointRules.Errors(joint))
         {
             Add(LoadProblemKind.InvalidValue, fields.Path, problem);
@@ -1723,8 +1762,15 @@ internal sealed class SceneBinder
         return problems.Count > before ? null : joint;
     }
 
-    /// <summary>One face of one part: only a <c>feature</c> reference is a joint's face.</summary>
-    private FeatureRef? ReadJointFace(JsonFields parent, string name)
+    private T? Refuse<T>(string path, string message)
+        where T : struct
+    {
+        Add(LoadProblemKind.InvalidValue, path, message);
+        return null;
+    }
+
+    /// <summary>One face of one part: a <c>feature</c> of a box, or a <c>strutEndFace</c> (format version 11).</summary>
+    private PlaceRef? ReadJointFace(JsonFields parent, string name)
     {
         JsonFields? fields = ReadObject(parent, name);
         if (fields is null)
@@ -1733,13 +1779,17 @@ internal sealed class SceneBinder
         }
 
         string? kind = ReadText(fields, SceneNames.Kind);
-        FeatureRef? reference = null;
-        if (kind is not null && kind != SceneNames.Feature)
+        PlaceRef? reference = null;
+        if (kind is not null && kind != SceneNames.Feature && kind != SceneNames.StrutEndFaceKind)
         {
             Add(
                 LoadProblemKind.UnknownValue,
                 $"{fields.Path}/{SceneNames.Kind}",
-                $"A joint's \"{name}\" is a face of a box, a \"{SceneNames.Feature}\" reference; \"{kind}\" is not.");
+                $"A joint's \"{name}\" is a face of a box, a \"{SceneNames.Feature}\" reference, or a strut's end, a \"{SceneNames.StrutEndFaceKind}\"; \"{kind}\" is not.");
+        }
+        else if (kind == SceneNames.StrutEndFaceKind)
+        {
+            reference = ReadStrutPlace(fields, kind);
         }
         else if (kind is not null)
         {

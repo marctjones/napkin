@@ -21,8 +21,13 @@ instead, which is the same four points and a different board (§9.2 board 2, in 
 The seat is anchored; each leg's top is held to its underside and edges, and each foot to its own
 top: 3" out in X, 4" out in Y, 12" lower.
 
+Each leg's top is butted to the seat's underside with pocket screws drilled from the leg's bottom
+face, and glued — the classic splayed-leg attachment (angled-parts §5).
+
 ## What the cut list should say
 
 - **Leg**, 4, 1'-1 5/8" × 1 1/2" × 1 1/2", 2x2: a 13" centreline plus half of each 5/8" setback,
-  exact. Each end is mitred ≈22.5° off square.
+  exact. Each end is mitred ≈22.5° off square. Drill 2 pocket holes in the top (east) end from the
+  bottom face: the top meets the seat over 1 1/2" × 1 5/8", and pocket screws are at least 2, one per
+  2". Eight pocket screws in all, and glue on four joints.
 - **Seat**, 1, 1'-0" × 1'-0" × 3/4", 3/4 plywood.

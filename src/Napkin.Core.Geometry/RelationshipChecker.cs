@@ -83,7 +83,7 @@ public static class RelationshipChecker
             // A joint is data, not a constraint (joinery note §4.3): parts that have drifted apart
             // leave it unsatisfied — drawn hollow, flagged in the cut list — and never make a
             // file unloadable or an edit refused. IsSatisfied is how that is asked.
-            if (relationship is Joint)
+            if (relationship is Joint or StrutJoint)
             {
                 continue;
             }
@@ -169,6 +169,11 @@ public static class RelationshipChecker
 
         // Zero while the two faces touch; NotEvaluable once they do not (joinery note §4.3).
         Joint joint => JointGeometry.IsSatisfied(sketch, joint)
+            ? Residual.FromDistance(Length.Zero, exact: true)
+            : Residual.NotEvaluable,
+
+        // Likewise: a strut's end that has come off what it sat on opens, and is not a violation.
+        StrutJoint strutJoint => StrutJointGeometry.IsSatisfied(sketch, strutJoint)
             ? Residual.FromDistance(Length.Zero, exact: true)
             : Residual.NotEvaluable,
 
@@ -503,7 +508,7 @@ public static class RelationshipChecker
 
         // A strut's end is its stored point (assembly-model §3a.5), and a face it can hold is an end
         // coordinate plus half an even size (angled-parts §3.2).
-        StrutEndRef or StrutFaceRef => true,
+        StrutEndRef or StrutFaceRef or StrutEndFaceRef => true,
         CenterRef or FeatureRef => sketch.Find<Box>(reference.Owner)?.Rotation.IsRightAngleMultiple ?? false,
         _ => false,
     };

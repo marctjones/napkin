@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Core.Project;
 
 namespace Napkin.Modules.Furniture.Tests;
 
@@ -304,6 +305,106 @@ public class StrutCutListTests
         Assert.Equal(one, two);
         Assert.Equal(one.GetHashCode(), two.GetHashCode());
         Assert.NotEqual(one, one with { CompoundEnds = [] });
+    }
+
+    // ---- Pocket-screwed legs (angled-parts §5, §9.3 case 11) ----
+
+    [Fact]
+    public void BenchLegsPocketScrewedUnderTheSeatSayWhereToDrillAndCountTheScrews()
+    {
+        // Each leg's top meets the seat's underside over a 1½″ × 1.5625″ patch; pocket screws are at
+        // least 2, one per 2″ (§7.2), so 2 each, drilled in the top (east) end from the bottom face.
+        Box seat = new(EntityId.New(), LayerId.Default, At(0, 0, 24576), Length.Inches(36), Length.Inches(12), new Length(768), BoxFace.Top, Angle.Zero)
+        {
+            Name = "Seat",
+            Part = new Part("3/4 plywood", null, 1, LengthWidth),
+        };
+        Strut[] legs =
+        [
+            Leg("Leg, south-west", At(4096, -4096, 0), At(4096, 3072, 24576)),
+            Leg("Leg, north-west", At(4096, 16384, 0), At(4096, 9216, 24576)),
+            Leg("Leg, south-east", At(32768, -4096, 0), At(32768, 3072, 24576)),
+            Leg("Leg, north-east", At(32768, 16384, 0), At(32768, 9216, 24576)),
+        ];
+        Sketch sketch = legs.Aggregate(Sketch.Empty.WithEntity(seat), (s, leg) => s.WithEntity(leg).WithRelationship(new StrutJoint(
+            new RelationshipId(Guid.NewGuid()),
+            new FeatureRef(seat.Id, BoxFeature.Face(BoxFace.Bottom)),
+            new StrutEndFaceRef(leg.Id, StrutEnd.To),
+            new Fastening(FasteningKind.PocketScrews, null, null),
+            Glue: true,
+            StrutFace.Bottom)));
+
+        CutListRow row = Assert.Single(CutList.Of(sketch, Library), candidate => candidate.Label == "Leg");
+        Assert.Equal(4, row.Quantity);
+        Assert.Equal(["Drill 2 pocket holes in the east end from the bottom face."], row.JointText);
+        Assert.False(row.JointsUnsatisfied);
+
+        FastenerRow screws = Assert.Single(FastenerList.Of(sketch));
+        Assert.Equal((FastenerKind.PocketScrew, 8), (screws.Kind, screws.Count));
+        Assert.Equal(new Length(1536), screws.Thickness);
+        Assert.All(screws.Sources, source => Assert.Equal(new Length(1600), source.JointLength));
+        Assert.Contains(SuppliesList.GlueLine(4, 4), SuppliesList.Of(sketch).Select(extra => extra.Item));
+
+        // A leg whose top has come off the seat opens: flagged on its row, nothing drilled.
+        Sketch lowered = sketch.WithEntity(legs[0] with { To = At(4096, 3072, 23552) });
+        Assert.Contains(CutList.Of(lowered, Library), candidate => candidate.JointsUnsatisfied);
+    }
+
+    [Fact]
+    public void EveryWayAStrutsEndCanBeFastenedIsCountedOrLeftOffAsItShouldBe()
+    {
+        // A floor rail under the bench legs' feet: a foot's end, cut to Z at 0, sits on the rail's top.
+        Box rail = new(EntityId.New(), LayerId.Default, At(0, -8192, -1536), Length.Inches(40), Length.Inches(8), new Length(1536), BoxFace.Top, Angle.Zero)
+        {
+            Name = "Rail",
+            Part = new Part("2x2", null, 1, LengthWidth),
+        };
+        FeatureRef railTop = new(rail.Id, BoxFeature.Face(BoxFace.Top));
+        Strut south = Leg("A", At(4096, -4096, 0), At(4096, 3072, 24576));
+        Strut north = Leg("B", At(8192, -4096, 0), At(8192, 3072, 24576));
+        Strut top = Leg("C", At(12288, -4096, 0), At(12288, 3072, 24576));
+        Strut bare = Leg("D", At(16384, -4096, 0), At(16384, 3072, 24576)) with { Part = null };
+        Strut plain = Leg("E", At(20480, -4096, 0), At(20480, 3072, 24576));
+
+        StrutJoint Foot(Strut strut, FasteningKind kind, StrutFace? from, int? count = null)
+            => new(new RelationshipId(Guid.NewGuid()), railTop, new StrutEndFaceRef(strut.Id, StrutEnd.From), new Fastening(kind, count, null), Glue: false, from);
+
+        Sketch sketch = new[] { south, north, top, bare, plain }.Aggregate(Sketch.Empty.WithEntity(rail), (s, strut) => s.WithEntity(strut))
+            .WithRelationship(Foot(south, FasteningKind.PocketScrews, StrutFace.South, count: 3))
+            .WithRelationship(Foot(north, FasteningKind.PocketScrews, StrutFace.North))
+            .WithRelationship(Foot(top, FasteningKind.PocketScrews, StrutFace.Top))
+            .WithRelationship(Foot(bare, FasteningKind.PocketScrews, StrutFace.Bottom))
+            .WithRelationship(Foot(plain, FasteningKind.None, null));
+
+        // Each in the foot (west) end, from its own face; three typed, the rest by the recipe.
+        ImmutableArray<CutListRow> rows = CutList.Of(sketch, Library);
+        Assert.Equal(["Drill 3 pocket holes in the west end from the south face."], Assert.Single(rows, row => row.Label == "A").JointText);
+        Assert.Equal(["Drill 2 pocket holes in the west end from the north face."], Assert.Single(rows, row => row.Label == "B").JointText);
+        Assert.Equal(["Drill 2 pocket holes in the west end from the top face."], Assert.Single(rows, row => row.Label == "C").JointText);
+        Assert.Empty(Assert.Single(rows, row => row.Label == "E").JointText);
+
+        // Screws: 3 + 2 + 2; the leg that is no part and the unfastened joint buy none.
+        Assert.Equal(7, Assert.Single(FastenerList.Of(sketch)).Count);
+
+        // A foot lifted off the rail opens its joint: no contact, no recipe, nothing bought for it.
+        Assert.Equal(5, Assert.Single(FastenerList.Of(sketch.WithEntity(north with { From = At(8192, -4096, 512) }))).Count);
+
+        // Parts already there buy nothing; a joint whose receiving part is gone is skipped.
+        Sketch there = new Entity[] { rail with { Phase = Phase.Existing }, south with { Phase = Phase.Existing } }.Aggregate(sketch, (s, entity) => s.WithEntity(entity));
+        Assert.Equal(4, Assert.Single(FastenerList.Of(there)).Count);
+        Assert.Empty(FastenerList.Of(sketch.WithoutEntity(rail.Id)));
+    }
+
+    [Fact]
+    public void TheFootstoolSampleBuysEightPocketScrewsAndGluesFourJoints()
+    {
+        // samples/splayed-footstool: four legs, each 2 pocket screws into the seat (1 5/8″ contact).
+        Sketch sketch = Assert.IsType<Loaded>(SceneReader.ReadFile(ExpectedFixture.ScenePath("splayed-footstool"))).Sketch;
+
+        FastenerRow screws = Assert.Single(FastenerList.Of(sketch));
+        Assert.Equal((FastenerKind.PocketScrew, 8, new Length(1536)), (screws.Kind, screws.Count, screws.Thickness));
+        Assert.All(screws.Sources, source => Assert.Equal(new Length(1664), source.JointLength));
+        Assert.Contains(SuppliesList.GlueLine(4, 4), SuppliesList.Of(sketch).Select(extra => extra.Item));
     }
 
     // ---- The half-degree rule (§2.4), in its one function ----

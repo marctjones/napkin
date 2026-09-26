@@ -156,6 +156,50 @@ public class StrutFormatTests
         }
     }
 
+    private static string WithJoint(string joint) => Scene.With("\"relationships\": [", "\"relationships\": [ " + joint + ",");
+
+    private static string LegOnSeat(string type = "butt", string pocketFace = "bottom", string receiving = "{ \"kind\": \"feature\", \"box\": \"" + SeatId + "\", \"faces\": [\"bottom\"] }", string inserted = "{ \"kind\": \"strutEndFace\", \"strut\": \"" + LegId + "\", \"end\": \"to\" }")
+        => "{ \"id\": \"0192f1a0-0000-4000-8000-00000000002a\", \"kind\": \"joint\", \"type\": \"" + type + "\", "
+           + "\"receiving\": " + receiving + ", \"inserted\": " + inserted + ", \"depth\": null, "
+           + "\"fastening\": { \"kind\": \"pocketScrews\", \"count\": null, \"pocketFace\": \"" + pocketFace + "\" }, \"glue\": true }";
+
+    [Fact]
+    public void A_leg_pocket_screwed_under_the_seat_round_trips()
+    {
+        // angled-parts §7: a joint whose inserted face is a strutEndFace; the pocket face is one of the
+        // strut's long faces, spelled as a box's face of the same name.
+        Sketch sketch = Scenes.Accept(WithJoint(LegOnSeat()));
+        StrutJoint joint = Assert.Single(sketch.Relationships.Values.OfType<StrutJoint>());
+
+        Assert.Equal((StrutFace.Bottom, FasteningKind.PocketScrews, true), (joint.PocketFrom!.Value, joint.Fastening.Kind, joint.Glue));
+        Assert.Equal(new StrutEndFaceRef(Leg, StrutEnd.To), joint.Inserted);
+        string text = SceneWriter.WriteToText(sketch);
+        Assert.Equal(sketch, Scenes.Accept(text));
+        Assert.Contains("\"pocketFace\": \"bottom\"", text, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("groove", "bottom", "butt with no depth")]
+    [InlineData("butt", "east", "south, north, bottom or top")]
+    public void A_strut_joint_that_is_not_a_butt_from_a_long_face_is_refused(string type, string face, string mustName)
+        => Scenes.RefuseWith(WithJoint(LegOnSeat(type, face)), LoadProblemKind.InvalidValue, mustName);
+
+    [Fact]
+    public void A_strut_end_is_never_the_receiving_face_of_a_box()
+    {
+        string swapped = LegOnSeat(
+            receiving: "{ \"kind\": \"strutEndFace\", \"strut\": \"" + LegId + "\", \"end\": \"to\" }",
+            inserted: "{ \"kind\": \"feature\", \"box\": \"" + SeatId + "\", \"faces\": [\"bottom\"] }");
+        Scenes.RefuseWith(WithJoint(swapped), LoadProblemKind.InvalidValue, "inserted face");
+    }
+
+    [Fact]
+    public void A_joint_face_of_another_kind_is_refused_naming_both()
+        => Scenes.RefuseWith(
+            WithJoint(LegOnSeat(inserted: "{ \"kind\": \"strutEnd\", \"strut\": \"" + LegId + "\", \"end\": \"to\" }")),
+            LoadProblemKind.UnknownValue,
+            "strutEndFace");
+
     [Fact]
     public void A_strut_has_no_length_to_hold()
     {

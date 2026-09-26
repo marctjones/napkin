@@ -183,6 +183,23 @@ public partial class MainWindow
             return;
         }
 
+        // An angled part among two selected: its end sits on the other, and the one joint it can make
+        // is a butt, made at once (angled-parts §5).
+        if (!all && Editor.Selection.Count == 2 && Editor.Selection.Any(id => Editor.Sketch.Find<Strut>(id) is not null))
+        {
+            EntityId[] two = [.. Editor.Selection.OrderBy(id => id)];
+            if (StrutJoining.Propose(Editor.Sketch, two[0], two[1]) is not { } joint)
+            {
+                Editor.Say(EditSeverity.Problem, StrutJoining.NothingSits);
+                return;
+            }
+
+            Editor.Apply(
+                new AddRelationship(joint),
+                $"Joined {Editor.NameOf(joint.Inserted.Strut)} to {Editor.NameOf(joint.Receiving.Owner)} with pocket screws from its bottom face, glued");
+            return;
+        }
+
         Box[] boxes = SelectionCommands.SelectedBoxes(Editor);
         if (boxes.Length < 2)
         {

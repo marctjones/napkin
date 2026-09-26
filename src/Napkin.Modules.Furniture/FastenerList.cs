@@ -99,7 +99,7 @@ public static class FastenerList
     /// Whether a joint's fasteners are bought: when at least one of its parts is New
     /// (renovation-sketches §6.2). A joint between two existing parts is already fastened.
     /// </summary>
-    public static bool Buys(Box inserted, Box receiving)
+    public static bool Buys(Entity inserted, Entity receiving)
     {
         ArgumentNullException.ThrowIfNull(inserted);
         ArgumentNullException.ThrowIfNull(receiving);
@@ -135,6 +135,31 @@ public static class FastenerList
             }
 
             sources.Add(new FastenerSource(joint.Id, inserted.Name, receiving.Name, length, joint.Fastening.Count is not null, each, copies));
+        }
+
+        // A strut's end held to what it sits on (angled-parts §5): the same count, from the same recipe.
+        foreach (StrutJoint joint in sketch.RelationshipsInOrder.OfType<StrutJoint>())
+        {
+            if (Recipes.FastenerOf(joint.Fastening.Kind) is not { } kind
+                || sketch.Find<Strut>(joint.Inserted.Strut) is not { Part: { } part } inserted
+                || sketch.Find(joint.Receiving.Owner) is not { } receiving
+                || !FastenerList.Buys(inserted, receiving))
+            {
+                continue;
+            }
+
+            Length? length = StrutJointGeometry.Contact(sketch, joint)?.JointLength;
+            int each = joint.Fastening.Count ?? (length is { } long_ ? Recipes.Recipe(joint.Fastening.Kind, long_) : 0);
+            // Every fastening a butt allows is sized by what it goes through: the strut's thickness.
+            Length thickness = part.SizeOn(inserted, inserted.Blank()).Thickness;
+
+            (FastenerKind, long?) key = (kind, thickness.Units);
+            if (!lines.TryGetValue(key, out List<FastenerSource>? sources))
+            {
+                lines[key] = sources = [];
+            }
+
+            sources.Add(new FastenerSource(joint.Id, inserted.Name, receiving.Name, length, joint.Fastening.Count is not null, each, part.Quantity));
         }
 
         return

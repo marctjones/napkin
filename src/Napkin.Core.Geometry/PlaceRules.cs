@@ -82,6 +82,14 @@ public static class PlaceRules
                         $"{Fixes(sketch, centered.Middle, middle)}; {Fixes(sketch, centered.A, a)}; "
                         + $"{Fixes(sketch, centered.B, b)}. Centring along {centered.Axis} needs all three to fix {centered.Axis}.");
 
+            case StrutJoint strutJoint when Places(sketch, strutJoint.Receiving, strutJoint.Inserted) is [var receiving, var inserted]:
+                return receiving.Count == 1 && inserted.Count == 1 && receiving.Axes[0] == inserted.Axes[0]
+                    ? null
+                    : NotComparable(
+                        relationship,
+                        $"{Fixes(sketch, strutJoint.Receiving, receiving)}; {Fixes(sketch, strutJoint.Inserted, inserted)}. "
+                        + "A strut's end sits on a face square to the same axis its end is cut to.");
+
             case Joint joint when Places(sketch, joint.Receiving, joint.Inserted) is [var receiving, var inserted]:
                 return receiving.Count == 1 && inserted.Count == 1 && receiving.Axes[0] == inserted.Axes[0]
                     ? null
@@ -275,11 +283,15 @@ public static class PlaceRules
         {
             switch (place)
             {
-                case StrutEndFaceRef:
+                case StrutEndFaceRef when relationship is not StrutJoint:
                     return NotComparable(
                         relationship,
-                        $"{Describe(sketch, place)} is where a joint will meet a strut's end, which napkin cannot hold yet; "
-                        + "a strut's two ends and the faces of a strut that leans one way are places it can.");
+                        $"{Describe(sketch, place)} is a strut's end face, which only a joint can hold.");
+
+                case StrutEndFaceRef endFace when sketch.Find<Strut>(endFace.Strut) is { } ended && ended.CutAt(endFace.End) == EndCut.Square:
+                    return NotComparable(
+                        relationship,
+                        $"{Describe(sketch, place)} is square to the strut, so it meets nothing flat: cut that end to a plane first.");
 
                 case StrutFaceRef when relationship is not Flush:
                     return NotComparable(
@@ -331,6 +343,7 @@ public static class PlaceRules
         Symmetric r => [r.A, r.B, r.Mirror],
         Tangent r => [r.A, r.B],
         Joint r => [r.Receiving, r.Inserted],
+        StrutJoint r => [r.Receiving, r.Inserted],
         _ => [],
     };
 

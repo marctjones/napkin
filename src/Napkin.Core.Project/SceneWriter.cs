@@ -614,6 +614,30 @@ public static class SceneWriter
                 writer.WriteBoolean(SceneNames.Glue, joint.Glue);
                 break;
 
+            case StrutJoint onStrut:
+                // A butt on a strut's end (angled-parts §7): its pocket face is one of the strut's four
+                // long faces, spelled as a box's face of the same name.
+                writer.WriteString(SceneNames.Kind, SceneNames.Joint);
+                writer.WriteString(SceneNames.Type, SceneNames.Of(JointType.Butt));
+                WritePlaceRef(writer, SceneNames.Receiving, onStrut.Receiving);
+                WritePlaceRef(writer, SceneNames.Inserted, onStrut.Inserted);
+                writer.WriteNull(SceneNames.Depth);
+                writer.WriteStartObject(SceneNames.Fastening);
+                writer.WriteString(SceneNames.Kind, SceneNames.Of(onStrut.Fastening.Kind));
+                WriteOptionalNumber(writer, SceneNames.Count, onStrut.Fastening.Count);
+                if (onStrut.PocketFrom is { } from)
+                {
+                    writer.WriteString(SceneNames.PocketFace, SceneNames.Spell(SceneNames.StrutFaces, from));
+                }
+                else
+                {
+                    writer.WriteNull(SceneNames.PocketFace);
+                }
+
+                writer.WriteEndObject();
+                writer.WriteBoolean(SceneNames.Glue, onStrut.Glue);
+                break;
+
             case Geometry.Parallel parallel:
                 writer.WriteString(SceneNames.Kind, SceneNames.Parallel);
                 WritePlaceRef(writer, SceneNames.A, parallel.A);

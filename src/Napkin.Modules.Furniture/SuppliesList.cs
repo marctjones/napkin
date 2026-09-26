@@ -92,28 +92,31 @@ public static class SuppliesList
             rows.Add(new ExtraRow(ExtraSection.Supplies, line.Item, string.Empty, null, null, null, line.Note));
         }
 
-        Joint[] joints =
+        // Every joint that buys anything, a box's or a strut's end's: whether it is glued.
+        bool[] glued =
         [
             .. sketch.RelationshipsInOrder.OfType<Joint>().Where(joint =>
                 sketch.Find<Box>(joint.Inserted.Box) is not { } inserted
                 || sketch.Find<Box>(joint.Receiving.Box) is not { } receiving
-                || FastenerList.Buys(inserted, receiving)),
+                || FastenerList.Buys(inserted, receiving)).Select(joint => joint.Glue),
+            .. sketch.RelationshipsInOrder.OfType<StrutJoint>().Where(joint =>
+                sketch.Find(joint.Inserted.Strut) is not { } inserted
+                || sketch.Find(joint.Receiving.Owner) is not { } receiving
+                || FastenerList.Buys(inserted, receiving)).Select(joint => joint.Glue),
         ];
-        if (joints.Length > 0)
+        if (glued.Length > 0)
         {
-            rows.Add(new ExtraRow(ExtraSection.Supplies, GlueLine(joints), string.Empty, null, null, null, string.Empty));
+            rows.Add(new ExtraRow(ExtraSection.Supplies, GlueLine(glued.Count(glue => glue), glued.Length), string.Empty, null, null, null, string.Empty));
         }
 
         return [.. rows];
     }
 
     /// <summary>"Glue: 20 of 34 joints": the one supply napkin can stand behind (&#xA7;8).</summary>
-    /// <param name="joints">Every joint.</param>
-    public static string GlueLine(IReadOnlyCollection<Joint> joints)
-    {
-        ArgumentNullException.ThrowIfNull(joints);
-        return $"Glue: {joints.Count(joint => joint.Glue)} of {joints.Count} joint{(joints.Count == 1 ? string.Empty : "s")}";
-    }
+    /// <param name="glued">How many joints are glued.</param>
+    /// <param name="joints">How many joints there are.</param>
+    public static string GlueLine(int glued, int joints)
+        => $"Glue: {glued} of {joints} joint{(joints == 1 ? string.Empty : "s")}";
 
     /// <summary>A fastener kind as the list names it.</summary>
     /// <param name="kind">The kind.</param>

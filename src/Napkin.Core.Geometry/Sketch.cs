@@ -327,10 +327,20 @@ public sealed record Sketch(
                     ? Place.On(faceAxis, faceAt)
                     : default;
 
-            // An end's cut face is joinery's (slice E, #193); until then it fixes nothing.
-            case StrutEndFaceRef:
-                _ = Require<Strut>(reference.Owner, reference);
-                return default;
+            // An end's cut face is the plane it is cut to, through the end (angled-parts §5); a square
+            // end is cut to nothing flat and fixes nothing.
+            case StrutEndFaceRef endFace:
+            {
+                Strut strut = Require<Strut>(endFace.Strut, reference);
+                Point3 at = strut.End(endFace.End);
+                return strut.CutAt(endFace.End) switch
+                {
+                    EndCut.X => Place.On(Axis.X, at.X),
+                    EndCut.Y => Place.On(Axis.Y, at.Y),
+                    EndCut.Z => Place.On(Axis.Z, at.Z),
+                    _ => default,
+                };
+            }
 
             default:
                 throw new InvalidOperationException($"Unknown place reference {reference}.");
@@ -590,6 +600,14 @@ public sealed record Sketch(
                     errors.Add(new ValidationError(ValidationErrorKind.InvalidJoint, problem));
                 }
             }
+
+            if (relationship is StrutJoint strutJoint)
+            {
+                foreach (string problem in StrutJoint.Errors(strutJoint))
+                {
+                    errors.Add(new ValidationError(ValidationErrorKind.InvalidJoint, problem));
+                }
+            }
         }
 
         for (int i = 0; i < inOrder.Count; i++)
@@ -762,6 +780,7 @@ public sealed record Sketch(
                 .Concat(ReferenceErrors(symmetric.Mirror, what)),
             Tangent tangent => ReferenceErrors(tangent.A, what).Concat(ReferenceErrors(tangent.B, what)),
             Joint joint => ReferenceErrors(joint.Receiving, what).Concat(ReferenceErrors(joint.Inserted, what)),
+            StrutJoint strutJoint => ReferenceErrors(strutJoint.Receiving, what).Concat(ReferenceErrors(strutJoint.Inserted, what)),
 
             // Radius names an arc, and there are no arcs yet; any entity it names must at least exist.
             _ => relationship.References.SelectMany(id => KindErrors(id, what, _ => true, "Entity")),
