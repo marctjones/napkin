@@ -130,6 +130,16 @@ swap of the two axes, never trigonometry). The third dimension is a caption, not
 reader is told the picture is an edge view rather than left to notice. No edge strip is drawn: a
 strip ¾″ tall at sheet scale is a line, and the number carries the fact better. (Decision 2, §10.)
 
+**Amended 2026-09-25 (Marc, while #123 was being built): a piece standing on end.** The rule above
+was written for boards on edge; a leg or a post stands on *end* — its length points up, so its plan
+plane is its cross-section (the coffee table's legs are `PlanAxes = (Width, Thickness)`), and the
+rule would draw a small square. Decided: a piece whose plan plane does not contain its length is
+drawn **face-on, length × width**, captioned "2½″ thick", *unless it has cuts* — cuts exist only in
+the plan plane, so a cut piece on end is drawn in its plan plane and captioned "16¼″ long — shown on
+end". The four poses, in `PartsPicture` (`Napkin.Modules.Furniture`): **flat** (length × width in
+plan, "thick"), **on edge** (length × thickness, "wide — shown on edge"), **face-on** (on end, no
+cuts, "thick"), **on end** (on end, with cuts, "long — shown on end").
+
 ### 1.3 Groups
 
 `GroupedByStock(cells)` partitions the cells by `(Row.Material, Row.Unresolved)`, preserving the

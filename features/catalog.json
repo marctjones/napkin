@@ -1280,6 +1280,15 @@
       "kind": "unit"
     },
     {
+      "id": "CUT-021",
+      "area": "furniture",
+      "title": "A Parts view cell shows its piece at the sheet's one scale, or says it is not to scale",
+      "acceptance": "A piece is drawn flat, on edge, face-on (on end, no cuts: a leg, length x width) or on end (with cuts), its longer side across, captioned with the dimension it does not show; the sheet's scale is the largest at which every piece fits 224 x 100 px (the coffee table's is 100/24 px/in); a piece whose longer side would draw under 48 px is drawn at 48 px and says not to scale (scale-extremes' shim, 8 px/in); a cell says its count and at most two cuts before how many more.",
+      "milestone": "M6",
+      "issue": 123,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-CUT-08",
       "area": "ui",
       "title": "Read the cut layout and change the saw kerf",
