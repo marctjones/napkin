@@ -141,11 +141,55 @@ public class ConnecticutPackTests
     }
 
     [Fact]
-    public void Appendix_AY_is_recorded_as_a_location_only_with_no_values()
+    public void Appendix_AY_is_recorded_as_transcribed_into_the_site_values_file()
     {
         JsonElement ay = OverlayData().GetProperty("appendixAy");
-        Assert.False(ay.GetProperty("valuesTranscribed").GetBoolean());
+        Assert.True(ay.GetProperty("valuesTranscribed").GetBoolean());
         Assert.Contains("pp. 157-160", ay.GetProperty("location").GetString(), StringComparison.Ordinal);
+        Assert.Contains("site-values.json", ay.GetProperty("why").GetString(), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Rows typed from the rendered pages 157-160 of Connecticut's document (read 2026-09-26), never
+    /// from the pack file: the first and last towns, a town on each page, the coastal maximum, the
+    /// three rows whose printed Vasd (101) does not follow from their Vult, and the misspelt town as
+    /// printed.
+    /// </summary>
+    [Theory]
+    [InlineData("Andover", 120, 93, 30, true, 157)]
+    [InlineData("Barkamsted", 115, 89, 35, false, 157)]
+    [InlineData("Bloomfield", 120, 93, 30, true, 157)]
+    [InlineData("Canaan", 115, 89, 40, false, 157)]
+    [InlineData("Groton", 128, 99, 30, true, 158)]
+    [InlineData("Hartford", 120, 93, 30, true, 158)]
+    [InlineData("Ledyard", 126, 101, 30, true, 158)]
+    [InlineData("North Stonington", 127, 101, 30, true, 159)]
+    [InlineData("Stonington", 129, 100, 30, true, 159)]
+    [InlineData("Voluntown", 125, 101, 30, true, 160)]
+    [InlineData("Woodstock", 120, 93, 40, true, 160)]
+    public void Appendix_AY_rows_match_connecticuts_pages(string town, int vult, int vasd, int pg, bool hurricane, int page)
+    {
+        MunicipalitySite site = Pack().Site!.Find(town)!;
+
+        Assert.Equal((town, vult, vasd, pg, hurricane), (site.Name, site.UltimateWindSpeedMph, site.NominalWindSpeedMph, site.GroundSnowLoadPsf, site.HurricaneProne));
+        Assert.Equal($"Appendix AY, p. {page} (footer 'Page - {page}')", site.Source.Location);
+        Assert.Equal("ct-csbc-2022", site.Source.SourceId);
+        Assert.Equal("1325ee87f4bc5a0adbe6013dd6ef2def79229bcd189ea59388d1e03899618947", site.Source.Sha256);
+    }
+
+    [Fact]
+    public void Appendix_AY_has_every_one_of_its_169_towns_in_the_order_printed_and_the_statewide_seismic_category()
+    {
+        SiteValuesTable site = Pack().Site!;
+
+        Assert.Equal(169, site.Municipalities.Count);
+        Assert.Equal("Andover", site.Municipalities[0].Name);
+        Assert.Equal("Woodstock", site.Municipalities[^1].Name);
+        Assert.Equal([.. site.Municipalities.Select(town => town.Name).Order(StringComparer.Ordinal)], site.Municipalities.Select(town => town.Name));
+        Assert.Equal("B", site.SeismicDesignCategory);
+        Assert.Contains("p. 131", site.SeismicSource!.Location, StringComparison.Ordinal);
+        Assert.Null(site.Find("Springfield"));
+        Assert.Equal("Bloomfield", site.Find("bloomfield")!.Name);
     }
 
     [Fact]

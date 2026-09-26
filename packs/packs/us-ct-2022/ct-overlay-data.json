@@ -17,8 +17,8 @@
     "title": "(Add) APPENDIX AY - WIND SPEEDS, SEISMIC DESIGN CATEGORIES and GROUND SNOW LOADS",
     "location": "pp. 157-160 (footers 'Page - 157' through 'Page - 160')",
     "contents": "A per-municipality table: Ultimate Design Wind Speed Vult (mph), Nominal Design Wind Speed Vasd (mph), Ground Snow Load pg (psf), Hurricane-Prone Region (Yes or -). It has no seismic design category column despite its title.",
-    "valuesTranscribed": false,
-    "why": "Per-town values are not transcribed: left as a gap, to be entered per project by the person from Connecticut's document. Site inputs (snow, wind) are entered by the user."
+    "valuesTranscribed": true,
+    "why": "Transcribed for #210 (2026-09-26) into site-values.json beside pack.json, which the loader reads: napkin offers a town's values with this citation and applies them only when the person accepts."
   },
   "amendments": [
     {
