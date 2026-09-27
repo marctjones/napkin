@@ -170,7 +170,7 @@ public class ExportWorkflows
             Assert.Equal((1224.0, 792.0), (document.Pages[0].Width, document.Pages[0].Height));
             string[] titles = ["S1 Site plan", "A2 Elevation: Front", "S2 Framing plan: Deck 1", "S3 Details: Deck 1", PermitSetPdf.CodePage, PermitSetPdf.Worksheet];
             Assert.All(titles, title => Assert.Contains(pages, page => page.Contains(title, StringComparison.Ordinal)));
-            Assert.All(pages, page => Assert.Contains(DeckSetPdf.NotASurvey, page, StringComparison.Ordinal));
+            Assert.All(pages, page => Assert.Contains(PermitSheets.NotASurvey, page, StringComparison.Ordinal));
             Assert.All(pages, page => Assert.Contains("NOT A COMPLETE PERMIT SET", page, StringComparison.Ordinal));
             Assert.Contains("Printed the deck's permit set", window.MessageOnScreen, StringComparison.Ordinal);
             Assert.Contains("on Tabloid", window.MessageOnScreen, StringComparison.Ordinal);
@@ -186,6 +186,39 @@ public class ExportWorkflows
         {
             Assert.Equal(MainWindow.NothingToPermit, window.MessageOnScreen);
             Assert.Equal(before, picker.Last);
+        });
+
+        Directory.Delete(folder, recursive: true);
+    });
+
+    [GuiWorkflow("GUI-PERMIT-02")]
+    public void Print_the_window_samples_permit_set_on_Letter() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        string folder = Directory.CreateTempSubdirectory("napkin-window-set-").FullName;
+        ScriptedExport picker = new(folder);
+        window.ExportPicker = picker;
+        window.Today = () => new DateOnly(2026, 9, 27);
+
+        OpenSample(app, window, "Window in an existing wall");
+        app.Press(Key.D3);
+        app.Expect("the sample is open in Front", () => Assert.Equal(Napkin.App.Settings.DesignView.Front, window.CurrentView));
+        app.Click(CentreOf(window, window.FileMenuItem));
+        app.Click(CentreOf(window, window.PermitLetterMenuEntry));
+        app.Expect("the window set is S1, A1 plan, A2 elevation, S3 header details, C1 and W1 on Letter, each titled and disclaimed", () =>
+        {
+            Assert.Equal("Window in an existing wall permit set.pdf", picker.Suggested);
+            Excise.Core.Document.PdfDocument document = Excise.Core.Document.PdfDocument.Open(File.ReadAllBytes(picker.Last!));
+            string[] pages = [.. Enumerable.Range(0, document.PageCount).Select(i => new Excise.Core.Text.TextExtractor(document.Pages[i]).ExtractText())];
+            Assert.Equal((792.0, 612.0), (document.Pages[0].Width, document.Pages[0].Height));
+            string[] titles = ["S1 Site plan", "A1 Plan: Top", "A2 Elevation: Front", "S3 Details", PermitSetPdf.CodePage];
+            for (int page = 0; page < titles.Length; page++)
+            {
+                Assert.Contains(titles[page], pages[page], StringComparison.Ordinal);
+            }
+
+            Assert.All(pages, page => Assert.Contains(PermitSheets.NotASurvey, page, StringComparison.Ordinal));
+            Assert.Contains("Printed the window and door permit set", window.MessageOnScreen, StringComparison.Ordinal);
         });
 
         Directory.Delete(folder, recursive: true);

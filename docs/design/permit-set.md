@@ -237,6 +237,15 @@ each member prints its size, or a blank rule when its check has no answer, and i
 **File → Print permit set on Letter… / on Tabloid…** prints it for a design with a deck. IBM Plex has no
 ⌈ ⌉, so the ledger count's brackets print as "ceil(" and ")".
 
+**Slice E as built (#227).** `WindowSetPdf`, with the deck set's S1 and view sheet now shared in
+`PermitSheets`: **S1**; **A1** the plan as the Top view draws it, each opening's width and where its near
+side is in its wall, and the wall's length; **A2** the view facing the wall (Front for a wall running
+east–west, Right for one running north–south), each opening's sill and head; **S3** a block per opening,
+four to a sheet, its header's size with its jacks and kings — a blank where napkin has no answer, the
+person's own choice on a wall said not to bear — and the check's lines; then C1 and W1. **File → Print
+permit set** prints the deck set for a design with a deck and the window set for one with an opening in
+a wall and no deck, and tells a design with neither what it needs.
+
 **Decided (Marc, 2026-09-27): the permit set targets typical Connecticut requirements only** — the
 towns of §1. Other jurisdictions' specific asks (text-size minimums, a mandatory graphic scale bar and
 the like) are out of scope; the sheets keep their text sizes and print the scale as a ratio and in words.

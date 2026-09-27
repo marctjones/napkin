@@ -51,7 +51,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 121,
+    "workflowsPassed": 122,
     "workflowIds": [
       "CVS-011",
       "CVS-012",
@@ -126,6 +126,7 @@
       "GUI-PARTS-03",
       "GUI-PARTS-04",
       "GUI-PERMIT-01",
+      "GUI-PERMIT-02",
       "GUI-PORCH-01",
       "GUI-PORCH-02",
       "GUI-RENO-01",

@@ -149,18 +149,21 @@ public partial class MainWindow
     void OnPrintPermitTabloidClicked(object? sender, RoutedEventArgs e) => _ = PrintPermitSetAsync(SheetPaper.Tabloid);
 
     /// <summary>What the message bar says when a design has nothing a permit set napkin makes is about.</summary>
-    public const string NothingToPermit = "Not printed — a permit set needs a deck to show: draw one with Draw → Deck first.";
+    public const string NothingToPermit = "Not printed — a permit set needs a deck, or an opening in a wall, to show: draw one first.";
 
     /// <summary>
-    /// Asks where, writes the design's permit set there on the chosen paper (#226: a deck's S1, A2, S2,
-    /// S3, C1 and W1), and says what happened — and when anything is not sized, that the set says so.
+    /// Asks where, writes the design's permit set there on the chosen paper, and says what happened — and,
+    /// when anything is not sized, that the set says so. A design with a deck gets the deck set (#226: S1,
+    /// A2, S2, S3, C1, W1); one with an opening in a wall and no deck, the window set (#227: S1, A1, A2, S3,
+    /// C1, W1).
     /// </summary>
     /// <param name="paper">Letter or Tabloid.</param>
     /// <returns>Whether a file was written.</returns>
     public async Task<bool> PrintPermitSetAsync(SheetPaper paper)
     {
         ArgumentNullException.ThrowIfNull(paper);
-        if (Napkin.Modules.Building.Deck.All(Editor.Sketch).IsEmpty)
+        bool deck = !Napkin.Modules.Building.Deck.All(Editor.Sketch).IsEmpty;
+        if (!deck && Napkin.Modules.Building.CodeCheck.Of(Editor.Sketch, Packs).IsEmpty)
         {
             Editor.Say(EditSeverity.Hint, NothingToPermit);
             return false;
@@ -184,8 +187,19 @@ public partial class MainWindow
             return false;
         }
 
-        DeckSet set = PermitPaper.DeckSet(Editor.Sketch, name, Today(), Editor.LabelFormat, Packs, paper, Settings.Current.ShowHiddenEdges);
-        Excise.Core.Document.PdfDocument document = DeckSetPdf.Document(set);
+        PermitSet permit;
+        Excise.Core.Document.PdfDocument document;
+        if (deck)
+        {
+            DeckSet set = PermitPaper.DeckSet(Editor.Sketch, name, Today(), Editor.LabelFormat, Packs, paper, Settings.Current.ShowHiddenEdges);
+            (permit, document) = (set.Permit, DeckSetPdf.Document(set));
+        }
+        else
+        {
+            WindowSet set = PermitPaper.WindowSet(Editor.Sketch, name, Today(), Editor.LabelFormat, Packs, paper, Settings.Current.ShowHiddenEdges);
+            (permit, document) = (set.Permit, WindowSetPdf.Document(set));
+        }
+
         try
         {
             using FileStream file = File.Create(path);
@@ -197,10 +211,10 @@ public partial class MainWindow
             return false;
         }
 
-        string incomplete = PermitItems.Banner(set.Permit.Items) is { } banner ? $" {banner}." : string.Empty;
+        string incomplete = PermitItems.Banner(permit.Items) is { } banner ? $" {banner}." : string.Empty;
         Editor.Say(
             EditSeverity.Done,
-            $"Printed the deck's permit set, {document.PageCount} sheets on {paper.Name}, to {Path.GetFileName(path)} in {Path.GetDirectoryName(path)}.{incomplete}");
+            $"Printed the {(deck ? "deck's" : "window and door")} permit set, {document.PageCount} sheets on {paper.Name}, to {Path.GetFileName(path)} in {Path.GetDirectoryName(path)}.{incomplete}");
         return true;
     }
 
