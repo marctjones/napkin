@@ -42,7 +42,7 @@ public class DeckFormatTests
 
     static readonly string Porch = $$"""
         {
-          "formatVersion": 14,
+          "formatVersion": 15,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "{{Layer}}", "name": "Default" } ],
           "entities": [
@@ -52,7 +52,7 @@ public class DeckFormatTests
             {{Box(RoofId, "Roof", "135168", "147456", "122880", "51200", roof: Roof)}}
           ],
           "fastenerChoices": [], "supplies": [], "code": null,
-          "furniture": { "kind": "none", "anchored": false }, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": 1500, "source": null },
+          "furniture": { "kind": "none", "anchored": false }, "site": { "north": 0, "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": 1500, "source": null },
           "relationships": []
         }
         """;
@@ -173,5 +173,5 @@ public class DeckFormatTests
 
     [Fact]
     public void A_version_12_file_is_refused_naming_both_versions()
-        => Scenes.RefuseWith(Scenes.OneBox.With("\"formatVersion\": 14", "\"formatVersion\": 12"), LoadProblemKind.UnsupportedFormatVersion, "format version 12", "format version 14");
+        => Scenes.RefuseWith(Scenes.OneBox.With("\"formatVersion\": 15", "\"formatVersion\": 12"), LoadProblemKind.UnsupportedFormatVersion, "format version 12", "format version 15");
 }

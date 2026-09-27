@@ -245,6 +245,7 @@ public partial class MainWindow
         // because both are readings of one design rather than a drawing and a snapshot of it.
         _cutList?.ShowDesign(CurrentDesign);
         _codeWindow?.ShowDesign(CurrentDesign);
+        _siteWindow?.ShowDesign(CurrentDesign);
         if (PropertiesPanel.IsVisible && Editor.OnlySelectedBox is { } selected)
         {
             ShowFraming(selected);

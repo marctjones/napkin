@@ -1,0 +1,47 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="560" d:DesignHeight="620"
+        x:Class="Napkin.App.SitePlanWindow"
+        Title="Site plan"
+        Icon="/Assets/napkin-256.png"
+        Width="560" Height="640"
+        MinWidth="380" MinHeight="360">
+
+    <!--
+        The lot's property lines as the survey prints them, its setbacks and north (docs/design/permit-set.md
+        §5.2, §5.3, §5.5, #223). Typed, never traced; the closure is reported and never adjusted; setbacks are
+        zoning, compared only with what is typed.
+    -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="14" Spacing="8">
+            <TextBlock Name="DesignHeadline" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock FontSize="11" Opacity="0.8" TextWrapping="Wrap"
+                       Text="Type the property lines as your survey prints them, one course per line, like N 12°34'56&quot; E 125.50'. Add a setback after a course, like rear 30'. This site plan is not a survey." />
+
+            <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="4">
+                <TextBlock Text="North" FontSize="12" VerticalAlignment="Center" />
+                <TextBox Name="NorthBox" Grid.Column="1" FontSize="12" AutomationProperties.Name="North"
+                         ToolTip.Tip="Degrees clockwise from the drawing's up, like 0 or 12°30'. The bearings are measured from it." />
+                <TextBlock Grid.Row="1" Text="Start x" FontSize="12" VerticalAlignment="Center" />
+                <TextBox Name="StartXBox" Grid.Row="1" Grid.Column="1" FontSize="12" AutomationProperties.Name="Point of beginning x"
+                         ToolTip.Tip="Where the survey's point of beginning is on the drawing, east of the origin." />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="y" FontSize="12" VerticalAlignment="Center" />
+                <TextBox Name="StartYBox" Grid.Row="1" Grid.Column="3" FontSize="12" AutomationProperties.Name="Point of beginning y"
+                         ToolTip.Tip="North of the origin; negative for south." />
+            </Grid>
+
+            <TextBlock Text="Courses" FontSize="12" FontWeight="SemiBold" />
+            <TextBox Name="CoursesBox" AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="120" FontSize="12"
+                     FontFamily="{DynamicResource MonoFont}" AutomationProperties.Name="Courses" />
+            <Button Name="ApplyButton" Content="Apply" HorizontalAlignment="Left" Click="OnApplyClicked" />
+            <TextBlock Name="ProblemText" FontSize="11" TextWrapping="Wrap" IsVisible="False"
+                       Foreground="{DynamicResource SystemErrorTextColor}" AutomationProperties.Name="Site plan problem" />
+
+            <TextBlock Text="Distances" FontSize="12" FontWeight="SemiBold" Margin="0,6,0,0" />
+            <TextBlock Name="ReadoutText" FontSize="12" TextWrapping="Wrap" AutomationProperties.Name="Site plan distances" />
+            <TextBlock Name="ZoningText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</Window>

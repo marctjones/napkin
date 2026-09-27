@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 14
+# The napkin project file — container version 1, scene format version 15
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -711,6 +711,25 @@ anchored to the wall.
 
 Refused: an `extension` of 0 or less; an unknown `kind`; a non-boolean `anchored`; either field
 missing.
+
+### A lot's boundary and north
+
+Format version 15 ([`permit-set.md`](./design/permit-set.md) §5.2, §5.5, §6, #223). A `boundary`
+entity is a lot's property lines as the survey prints them: the point of beginning and at least
+three courses, each a quadrant bearing (`from` N or S, `angle` 0 to 324000 arcseconds, `toward` E or
+W) and a `distance`, with an optional setback labelled front, side or rear. The corners are derived,
+never stored. The site carries `north`: arcseconds clockwise from the drawing's +Y, 0 by default.
+
+```json
+{ "id": "…", "type": "boundary", "layer": "…", "name": "Lot", "phase": "existing",
+  "start": { "x": 0, "y": 0 },
+  "courses": [ { "bearing": { "from": "N", "angle": 0, "toward": "E" }, "distance": 614400,
+                 "setback": { "distance": 122880, "kind": "side" } | null }, … ] },
+"site": { …, "north": 0 }
+```
+
+Refused: an unknown `from`, `toward` or setback `kind`; an angle outside 0 to 324000; a distance
+or setback of 0 or less; fewer than three courses; an unknown field; `north` missing.
 
 ## An annotated example
 

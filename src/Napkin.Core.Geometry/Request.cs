@@ -107,6 +107,12 @@ public sealed record SetCode(CodeChoice? Code) : Request;
 /// <param name="Site">The values, as the person now has them.</param>
 public sealed record SetSite(SiteValues Site) : Request;
 
+/// <summary>Replaces a boundary's point of beginning and courses (permit-set §5.2). Exact, moves nothing else.</summary>
+/// <param name="Id">The boundary.</param>
+/// <param name="Start">The point of beginning.</param>
+/// <param name="Courses">The courses, in the survey's order.</param>
+public sealed record SetBoundary(EntityId Id, Point2 Start, System.Collections.Immutable.ImmutableArray<Course> Courses) : Request;
+
 /// <summary>Replaces the design's furniture marks (furniture-checks §9.1). Exact, moves nothing.</summary>
 /// <param name="Marks">The marks, as the person now has them.</param>
 public sealed record SetFurnitureMarks(FurnitureMarks Marks) : Request;

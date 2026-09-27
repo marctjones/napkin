@@ -353,6 +353,16 @@ public static class SamplesCommand
 
                 break;
 
+            case 15:
+                // A lot's boundary and north (docs/design/permit-set.md §5.2, §5.5): a new entity type
+                // only, and the site's north is the drawing's +Y until the person turns it.
+                if (root["site"] is JsonObject north && !north.ContainsKey("north"))
+                {
+                    north["north"] = 0;
+                }
+
+                break;
+
             default:
                 throw new InvalidOperationException($"samples restamp does not know what format version {version} added.");
         }

@@ -504,6 +504,7 @@ public sealed class DesignEditor
         Segment => $"the line {id}",
         Node => $"the point {id}",
         Note note => note.Name.Length > 0 ? note.Name : note.Text.Length > 0 ? $"the note \"{note.Text}\"" : "the note",
+        Boundary boundary => boundary.Name.Length > 0 ? boundary.Name : "the lot",
         _ => $"part {id}",
     };
 

@@ -126,6 +126,24 @@ internal static class SceneNames
     internal const string Opening = "opening";
     internal const string Fill = "fill";
     internal const string SiteSoilBearing = "soilBearing";
+    internal const string BoundaryType = "boundary";
+    internal const string Courses = "courses";
+    internal const string BearingName = "bearing";
+    internal const string AngleName = "angle";
+    internal const string Toward = "toward";
+    internal const string SetbackName = "setback";
+    internal const string SiteNorth = "north";
+
+    /// <summary>A bearing's meridian and turn, as a survey prints them (format version 15).</summary>
+    internal static readonly (Geometry.NorthSouth Value, string Text)[] Meridians = [(Geometry.NorthSouth.North, "N"), (Geometry.NorthSouth.South, "S")];
+
+    /// <summary>A bearing's turn.</summary>
+    internal static readonly (Geometry.EastWest Value, string Text)[] Turns = [(Geometry.EastWest.East, "E"), (Geometry.EastWest.West, "W")];
+
+    /// <summary>What a setback is called.</summary>
+    internal static readonly (Geometry.SetbackKind Value, string Text)[] SetbackKinds =
+        [(Geometry.SetbackKind.Front, "front"), (Geometry.SetbackKind.Side, "side"), (Geometry.SetbackKind.Rear, "rear")];
+
     internal const string Drawer = "drawer";
     internal const string Extension = "extension";
     internal const string Furniture = "furniture";

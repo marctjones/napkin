@@ -394,6 +394,10 @@
                           Header="_Adopted code and site…"
                           Click="OnCodeClicked"
                           ToolTip.Tip="Choose the building code this project is checked against, lock it or let it follow new revisions, and enter the site's snow load and other values. Nothing is assumed." />
+                <MenuItem Name="SitePlanMenuItem"
+                          Header="_Site plan…"
+                          Click="OnSitePlanClicked"
+                          ToolTip.Tip="Type the lot's property lines as the survey prints them, the setbacks and north; see how far the structure is from each line. Not a survey." />
                 <MenuItem Name="SawKerfMenuItem"
                           Header="Saw _kerf…"
                           Click="OnSawKerfClicked"

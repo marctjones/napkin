@@ -672,8 +672,8 @@
       "area": "site-plan",
       "title": "Property lines and setbacks measure against structures",
       "acceptance": "Property lines and their setback offsets draw over the underlay, and the distance from a placed structure to each line is reported in feet, inches and fractions.",
-      "milestone": "backlog",
-      "issue": 21,
+      "milestone": "M13",
+      "issue": 223,
       "kind": "unit"
     },
     {
@@ -681,8 +681,17 @@
       "area": "site-plan",
       "title": "North arrow and sheet orientation are stored with the project",
       "acceptance": "The site plan's north direction is stored as an exact Angle in the project file and survives save and reopen.",
-      "milestone": "backlog",
-      "issue": 21,
+      "milestone": "M13",
+      "issue": 223,
+      "kind": "unit"
+    },
+    {
+      "id": "SITE-004",
+      "area": "site",
+      "title": "Property lines are entered as the survey's courses and their closure is reported, never adjusted",
+      "acceptance": "A boundary is a point of beginning and at least three courses, each a quadrant bearing (N/S, 0-90 degrees exact in arcseconds, E/W) and a distance as the survey prints them; corners are derived from the running sum and rounded to the grid once each; a 100' x 50' lot of right-angle courses closes exactly, and an open traverse reports its closure error; the boundary and the site's north round-trip in scene format 15.",
+      "milestone": "M13",
+      "issue": 223,
       "kind": "unit"
     },
     {
@@ -2006,6 +2015,15 @@
       "acceptance": "Mark a wall Existing from the Edit menu, put a new window in it, then Demolish the wall from the panel with the keyboard: plan and 3D draw it faint, then long-dashed and crossed; the shopping list says only New is listed and counts the wall and its frame under Demolition; undo.",
       "milestone": "M8",
       "issue": 160,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SITE-01",
+      "area": "ui",
+      "title": "Type a lot as the survey prints it and read each line's distance from the house",
+      "acceptance": "On a new sheet with a 16 ft wall along y = 0, Project > Site plan opens a window; typing the point of beginning (-10', -25') and four courses (N 0 E 50' side 10', N 90 E 40' rear 20', S 0 E 50', N 90 W 40' front 25') and Apply adds the lot in one step: it closes, and the lines read 2'-0\" short of the 10'-0\" side setback by 8'-0\", 24'-8 1/2\" clear of the rear, 22'-0\" to line 3, and 25'-0\" clear of the front; a 91-degree bearing is refused by line and changes nothing; Edit > Undo takes the lot off.",
+      "milestone": "M13",
+      "issue": 223,
       "kind": "workflow"
     }
   ]

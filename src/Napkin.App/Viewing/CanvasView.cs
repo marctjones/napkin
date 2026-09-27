@@ -2174,6 +2174,10 @@ public sealed class CanvasView : Control
                     DrawNote(context, palette, note);
                     break;
 
+                case Boundary boundary:
+                    DrawBoundary(context, palette, boundary, sketch.Site.North, layerName);
+                    break;
+
                 case Strut strut:
                     DrawStrut(context, palette, strut, layerName);
                     break;
@@ -2937,6 +2941,54 @@ public sealed class CanvasView : Control
             rectangle.Center.X - (text.Width / 2),
             rectangle.Center.Y - (text.Height / 2) + lift));
         return true;
+    }
+
+    /// <summary>
+    /// A lot (permit-set §5.2–§5.5): its property lines through the derived corners, each setback as a
+    /// dashed line offset inward, and a north arrow at the point of beginning. Drawing only, in double.
+    /// </summary>
+    void DrawBoundary(DrawingContext context, CanvasPalette palette, Boundary boundary, Angle north, string layerName)
+    {
+        ImmutableArray<Point2> corners = boundary.Corners(north);
+        for (int i = 0; i + 1 < corners.Length; i++)
+        {
+            DrawSegment(context, palette, layerName, corners[i], corners[i + 1]);
+        }
+
+        // Inward is to the left of each course when the corners run anticlockwise, to the right otherwise.
+        double area = 0;
+        for (int i = 0; i + 1 < corners.Length; i++)
+        {
+            area += ((double)corners[i].X.Units * corners[i + 1].Y.Units) - ((double)corners[i + 1].X.Units * corners[i].Y.Units);
+        }
+
+        double side = area >= 0 ? 1 : -1;
+        Pen dashed = new(new SolidColorBrush(palette.Dimension), 1) { DashStyle = new DashStyle([4, 4], 0) };
+        for (int i = 0; i < boundary.Courses.Length; i++)
+        {
+            if (boundary.Courses[i].Setback is not { } setback)
+            {
+                continue;
+            }
+
+            double ax = corners[i].X.Units, ay = corners[i].Y.Units, bx = corners[i + 1].X.Units, by = corners[i + 1].Y.Units;
+            double length = Math.Sqrt(((bx - ax) * (bx - ax)) + ((by - ay) * (by - ay)));
+            double nx = -(by - ay) / length * side * setback.Distance.Units, ny = (bx - ax) / length * side * setback.Distance.Units;
+            Point2 from = new(new Length((long)(ax + nx)), new Length((long)(ay + ny)));
+            Point2 to = new(new Length((long)(bx + nx)), new Length((long)(by + ny)));
+            context.DrawLine(dashed, _view.ToScreen(from), _view.ToScreen(to));
+        }
+
+        // North: an arrow 40 px long from the point of beginning, turned by north, and an N at its tip.
+        Point origin = _view.ToScreen(boundary.Start);
+        double radians = north.Arcseconds * Math.PI / 648000d;
+        Point tip = new(origin.X + (40 * Math.Sin(radians)), origin.Y - (40 * Math.Cos(radians)));
+        Pen arrow = new(new SolidColorBrush(palette.Dimension), 1.5);
+        context.DrawLine(arrow, origin, tip);
+        context.DrawLine(arrow, tip, new Point(tip.X - (6 * Math.Sin(radians - 0.5)), tip.Y + (6 * Math.Cos(radians - 0.5))));
+        context.DrawLine(arrow, tip, new Point(tip.X - (6 * Math.Sin(radians + 0.5)), tip.Y + (6 * Math.Cos(radians + 0.5))));
+        FormattedText label = Text("N", palette.Dimension);
+        context.DrawText(label, new Point(tip.X - (label.Width / 2), tip.Y - label.Height - 2));
     }
 
     void DrawSegment(

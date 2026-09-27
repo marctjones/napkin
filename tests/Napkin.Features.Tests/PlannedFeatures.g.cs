@@ -108,18 +108,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: SITE-002 — Property lines and setbacks measure against structures")]
-    [Trait("Feature", "SITE-002")]
-    public void SITE_002()
-    {
-    }
-
-    [Fact(Skip = "planned: SITE-003 — North arrow and sheet orientation are stored with the project")]
-    [Trait("Feature", "SITE-003")]
-    public void SITE_003()
-    {
-    }
-
     [Fact(Skip = "planned: SOLV-001 — Angled golden cases solve and verify")]
     [Trait("Feature", "SOLV-001")]
     public void SOLV_001()

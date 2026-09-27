@@ -130,7 +130,7 @@ public sealed class SceneReaderTests
     /// </summary>
     private const string AllReferenceShapes = """
         {
-          "formatVersion": 14,
+          "formatVersion": 15,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -151,7 +151,7 @@ public sealed class SceneReaderTests
               "name": "Joint line", "phase": "new",
               "start": "0192f1a0-0000-4000-8000-00000000000c", "end": "0192f1a0-0000-4000-8000-00000000000d" }
           ],
-          "fastenerChoices": [], "supplies": [], "code": null, "furniture": { "kind": "none", "anchored": false }, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
+          "fastenerChoices": [], "supplies": [], "code": null, "furniture": { "kind": "none", "anchored": false }, "site": { "north": 0, "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-000000000001", "kind": "anchored",
               "entity": "0192f1a0-0000-4000-8000-00000000000a" },
