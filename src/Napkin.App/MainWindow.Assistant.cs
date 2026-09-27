@@ -17,8 +17,9 @@ namespace Napkin.App;
 
 /// <summary>
 /// Ask and Explain this result (docs/design/llm-assistant.md &#xA7;2.4, &#xA7;8, &#xA7;10 slice B):
-/// the Assistant menu, Ctrl/Cmd+Shift+A, and the note on the sheet. Sketch from words and Where the
-/// model runs are later slices (E, C) and stay greyed out here.
+/// the Assistant menu, Ctrl/Cmd+Shift+A, and the note on the sheet; and Where the model runs&#x2026;
+/// (slice C, #231), which chooses the model the note asks. Sketch from words is a later slice (E)
+/// and stays greyed out here.
 /// </summary>
 public partial class MainWindow
 {
@@ -26,6 +27,60 @@ public partial class MainWindow
     DispatcherTimer? _assistantTimer;
     DateTime _assistantStarted;
     int _assistantGeneration;
+    AssistantWindow? _assistantWindow;
+
+    /// <summary>
+    /// How the assistant reaches a program on this machine: null for napkin's own loopback-only
+    /// handler (<see cref="Napkin.Assistant.LocalServer.LoopbackHttp"/>). The GUI suite sets a stub
+    /// here, the <see cref="PackRoots"/> way, so no workflow opens a socket.
+    /// </summary>
+    public HttpMessageHandler? AssistantHttp { get; set; }
+
+    /// <summary>The Where the model runs&#x2026; dialog, when it is open.</summary>
+    public AssistantWindow? WhereModelRuns => _assistantWindow;
+
+    /// <summary>The Assistant menu's Where the model runs&#x2026; entry.</summary>
+    public MenuItem WhereModelRunsMenuEntry => WhereModelRunsMenuItem;
+
+    void OnWhereModelRunsClicked(object? sender, RoutedEventArgs e) => OpenWhereModelRuns();
+
+    /// <summary>
+    /// Opens Assistant &#x2192; Where the model runs&#x2026; (&#xA7;8) on the person's settings, or brings
+    /// the open one forward without disturbing what is typed in it.
+    /// </summary>
+    /// <returns>The dialog.</returns>
+    public AssistantWindow OpenWhereModelRuns()
+    {
+        if (_assistantWindow is null)
+        {
+            _assistantWindow = new AssistantWindow { Http = AssistantHttp, Apply = UseAssistantSettings };
+            _assistantWindow.ShowSettings(Settings.Current.Assistant);
+            _assistantWindow.Closed += (_, _) => _assistantWindow = null;
+        }
+
+        _assistantWindow.Show(this);
+        _assistantWindow.Activate();
+        return _assistantWindow;
+    }
+
+    /// <summary>
+    /// Saves where the model runs and builds the model the note asks from then on. A question still
+    /// out is cancelled first, so no reply from the old model lands on the note.
+    /// </summary>
+    /// <returns>The note's whereabouts line under the new model.</returns>
+    string UseAssistantSettings(Napkin.App.Settings.AssistantSettings chosen)
+    {
+        Settings.Update(settings => settings with { Assistant = chosen });
+        if (IsAssistantThinking)
+        {
+            CancelAssistantThinking();
+        }
+
+        IAssistantModel previous = AssistantModel;
+        AssistantModel = AssistantModels.FromSettings(Settings.Current, AssistantHttp);
+        (previous as IDisposable)?.Dispose();
+        return AssistantModel.Whereabouts;
+    }
 
     /// <summary>The note, for the GUI suite to find a control on.</summary>
     public Border AssistantSheet => AssistantPanel;

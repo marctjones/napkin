@@ -39,6 +39,35 @@ public enum OpenDesignsIn
     Model,
 }
 
+/// <summary>Where the assistant's model runs (docs/design/llm-assistant.md &#xA7;7).</summary>
+public enum AssistantProvider
+{
+    /// <summary>No model: the assistant says how to add one.</summary>
+    None,
+
+    /// <summary>A program on this machine — Ollama, or llama.cpp's llama-server — over loopback.</summary>
+    LocalServer,
+}
+
+/// <summary>
+/// The assistant's settings (docs/design/llm-assistant.md &#xA7;7). The address is kept as typed and
+/// read through <c>LocalEndpoint</c> — loopback only — every time a model is built from it, so a
+/// hand-edited file naming another machine gives no model, never a connection.
+/// </summary>
+/// <param name="Provider">Where the model runs.</param>
+/// <param name="Endpoint">The program's address, like <c>http://127.0.0.1:11434</c>; kept when the provider is None, so choosing it again restores it.</param>
+/// <param name="Model">The model's name as the program lists it.</param>
+/// <param name="Temperature">The sampling temperature; napkin's default 0.2 (&#xA7;5.2).</param>
+public sealed record AssistantSettings(AssistantProvider Provider, string? Endpoint, string? Model, double Temperature)
+{
+    /// <summary>No model, the Ollama address filled in, napkin's default temperature.</summary>
+    public static readonly AssistantSettings None = new(
+        AssistantProvider.None,
+        Napkin.Assistant.LocalServer.LocalEndpoint.OllamaDefault,
+        null,
+        Napkin.Assistant.LocalServer.LocalServerModel.DefaultTemperature);
+}
+
 /// <summary>Which theme the window wears: one of the two, or whichever the operating system is in.</summary>
 public enum ThemeChoice
 {
@@ -61,8 +90,11 @@ public sealed record SavedPrice(string Material, long? StockLengthUnits, decimal
 public sealed record UserSettings
 {
     /// <summary>The file format's version. A file with any other version is not read (beta policy: no converters).</summary>
-    /// <remarks>2: <see cref="DesignView"/> gained the six standard views, <c>Plan</c> becoming <c>Top</c>.</remarks>
-    public const int CurrentVersion = 2;
+    /// <remarks>
+    /// 2: <see cref="DesignView"/> gained the six standard views, <c>Plan</c> becoming <c>Top</c>.
+    /// 3: <see cref="Assistant"/>, where the assistant's model runs (docs/design/llm-assistant.md &#xA7;7).
+    /// </remarks>
+    public const int CurrentVersion = 3;
 
     public int Version { get; init; } = CurrentVersion;
 
@@ -125,6 +157,13 @@ public sealed record UserSettings
 
     /// <summary>The prices entered on the shopping list (#141), remembered between designs; none at first.</summary>
     public System.Collections.Immutable.ImmutableArray<SavedPrice> Prices { get; init; } = [];
+
+    /// <summary>
+    /// Where the assistant's model runs (docs/design/llm-assistant.md &#xA7;7): none until the person
+    /// chooses a program on this machine in Assistant &#x2192; Where the model runs&#x2026;. No key is
+    /// ever stored here.
+    /// </summary>
+    public AssistantSettings Assistant { get; init; } = AssistantSettings.None;
 
     /// <summary>The view a newly opened design starts in: the plan is Top.</summary>
     public DesignView ViewForNewDesign() => OpenIn switch
