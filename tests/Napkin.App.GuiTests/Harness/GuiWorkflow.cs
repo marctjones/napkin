@@ -41,7 +41,17 @@ public static class GuiWorkflow
     /// Where the app looks for code packs. None by default, so no workflow depends on packs a
     /// person has installed on the machine running it; a code-check workflow names its own.
     /// </param>
-    public static void Run(Action<AppDriver> scenario, bool defaultLook = false, IReadOnlyList<string>? packRoots = null)
+    /// <param name="model">
+    /// The assistant model the window asks (docs/design/llm-assistant.md &#xA7;2.4, &#xA7;11.3): a
+    /// <see cref="Napkin.Modules.Assistant.ScriptedModel"/> with a script for an assistant workflow,
+    /// or null for every other one, which gets the window's own default (a scripted model with no
+    /// script — nothing loads weights or opens a socket either way).
+    /// </param>
+    public static void Run(
+        Action<AppDriver> scenario,
+        bool defaultLook = false,
+        IReadOnlyList<string>? packRoots = null,
+        Napkin.Modules.Assistant.IAssistantModel? model = null)
     {
         var featureId = GuiWorkflowContext.FeatureId
             ?? throw new GuiWorkflowRuleException(
@@ -53,7 +63,9 @@ public static class GuiWorkflow
         {
             // Never the person's real settings: each run gets its own file, gone when it ends.
             string settingsDir = Path.Combine(Path.GetTempPath(), "napkin-gui-settings-" + Guid.NewGuid().ToString("N"));
-            var window = new MainWindow(defaultLook ? new Napkin.App.Settings.SettingsStore(Path.Combine(settingsDir, Napkin.App.Settings.SettingsStore.FileName)) : ScreenStore(settingsDir))
+            var window = new MainWindow(
+                defaultLook ? new Napkin.App.Settings.SettingsStore(Path.Combine(settingsDir, Napkin.App.Settings.SettingsStore.FileName)) : ScreenStore(settingsDir),
+                model)
             {
                 Width = DefaultWindowSize.Width,
                 Height = DefaultWindowSize.Height,
