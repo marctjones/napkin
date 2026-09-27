@@ -40,7 +40,7 @@ check result is one of:
 Three rules follow from the research:
 
 - **Never "complies" and never "passes".** At most napkin says it "approximates F2057-23 §9.2.3 as
-  described at 88 FR 28408". A furniture check is an estimate or a geometric comparison.
+  described at 88 FR 28405". A furniture check is an estimate or a geometric comparison.
 - **A limit is always someone's choice, and the check names whose.** A sag limit is the
   person's, or napkin's default, labelled as napkin's. No source read gives one: KCMA's summary says
   "no excessive deflection" with no number.
@@ -55,7 +55,7 @@ napkin has no furniture types: a design is parts, joints and fasteners. So a che
 | Check | Runs on | Reads | Source of the method | Source of any number |
 |---|---|---|---|---|
 | **Shelf sag** (§3) | a part lying flat (thickness up) held at its two ends by joints: a dado, a shelf pin line, a cleat | span between the supports, width, thickness, species, load | Wood Handbook ch. 9 Eq. 9-2, Table 9-1 | E by species: Wood Handbook ch. 5 Table 5-3b. Load: the person's, or KCMA's 15 lb/sq ft, attributed. Limit: the person's |
-| **Tip-over estimate** (§4) | a design marked **clothing storage** (§9.1) | its outline, its parts' weights (volume × a species density, §9.4), which parts are drawers and how far they open | static moments on the tilted unit | F2057-23 §9.2.1–9.2.3 as restated in 88 FR 28408 (public domain) |
+| **Tip-over estimate** (§4) | a design marked **clothing storage** (§9.1) | its outline, its parts' weights (volume × a species density, §9.4), which parts are drawers and how far they open | static moments on the tilted unit | F2057-23 §9.2.1–9.2.3 as restated at 88 FR 28405 (public domain) |
 | **Clothing-storage scope flag** (§4.3) | the same design | height, estimated weight, enclosed volume | — | ASTM F2057-23 §1.1 thresholds, read from astm.org's scope |
 | **Bunk-bed guardrail** (§5) | a design marked **bunk bed** (§9.1) | guardrail top above the mattress top; gaps | exact geometry | 16 CFR 1213.3(a)(2), (a)(6) |
 | **Screw hold** (§6) | every screwed joint | screw diameter and embedment (from the typed size), species specific gravity | Wood Handbook ch. 8 Eq. 8-10b | G by species: Wood Handbook ch. 5 |
@@ -94,7 +94,7 @@ reading of the Handbook.
 ### 4.1 What is modelled
 
 A unit marked **clothing storage** gets three static estimates, one per F2057-23 test as restated
-in the Federal Register (88 FR 28408):
+in the Federal Register (88 FR 28405; the rule itself is 16 CFR 1261.2 at 28408):
 
 1. **§9.2.1:** every drawer and door open, on level ground. If half or more of the storage volume
    is extended, the drawers are filled at the FR's simulated clothing density.
@@ -106,7 +106,7 @@ in the Federal Register (88 FR 28408):
 Each estimate gives the margin: the restoring moment about the front tipping edge minus the
 tipping moment, in lb·in. The words are "stands, with ≈ N lb·in to spare" or "tips, short by
 ≈ N lb·in". It is always an estimate that "approximates F2057-23 §9.2.x as described at
-88 FR 28408", never "complies".
+88 FR 28405", never "complies".
 
 ### 4.2 What napkin needs that it does not have
 

@@ -263,6 +263,15 @@
       "kind": "unit"
     },
     {
+      "id": "FURN-003",
+      "area": "furniture",
+      "title": "A clothing storage unit's tip-over is estimated the way 88 FR 28405 describes ASTM F2057-23's tests",
+      "acceptance": "For a design said to be clothing storage, napkin gives three static margins about the front floor edge — every drawer open and filled at 8.5 lb/ft³; a 10 lbf pull at the highest handhold up to 56\"; 60 lb on the front edge of the worst open drawer with the unit tilted on a 0.43\" block — each 'stands, with N lb·in to spare' or 'tips, short by N lb·in', approximating the test as described and never 'complies'; weights are part volumes × Wood Handbook density (Eq. 4-14); any part without a density gives no margins and says which; the F2057-23 sec. 1.1 scope flag (27 in, 30 lb, 3.2 ft³) shows whether or not the design is marked; anchored units are estimated anyway and say so. The hand-worked oak chest reads 533.83, 275.98 and −163.91 lb·in.",
+      "milestone": "M9",
+      "issue": 219,
+      "kind": "unit"
+    },
+    {
       "id": "CUT-001",
       "area": "furniture",
       "title": "A part resolves its stock through the materials library",
