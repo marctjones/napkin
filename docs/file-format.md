@@ -12,7 +12,9 @@ supported:
 | `*.napkin` | A zip container holding `manifest.json` and `scene.json` | `ProjectFile.Load` | `ProjectFile.Save` |
 | `*.scene.json` | One plain scene document, on its own | `SceneReader.Read` | `SceneWriter.Write` |
 
-The scene document is the same either way — the container wraps it, it does not change it. A file
+The app saves a new design as a `.napkin` project; a design opened from a `.scene.json` keeps
+saving there unless you choose Save As. The scene document is the same either way — the container
+wraps it, it does not change it. A file
 written by hand in a text editor, such as the three in [`samples/`](../samples), is a plain scene
 document and stays one.
 
@@ -25,7 +27,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 12` and nothing else. A file from an older *or* a
+   `"containerVersion": 2` and `"formatVersion": 16` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
