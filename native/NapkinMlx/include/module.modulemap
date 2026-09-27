@@ -1,0 +1,5 @@
+module CNapkinMlx {
+    header "napkin_mlx.h"
+    header "napkin_mlx_internal.h"
+    export *
+}
