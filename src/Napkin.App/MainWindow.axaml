@@ -91,6 +91,10 @@
                           Header="Export plan as _DXF…"
                           Click="OnExportDxfClicked"
                           ToolTip.Tip="Write the plan to a DXF 2000 file for FreeCAD, QCAD or LibreCAD: every outline at napkin's coordinates in inches, on its layer, and every dimension as plain lines and text." />
+                <MenuItem Name="ExportPdfMenuItem"
+                          Header="Export plan as _PDF…"
+                          Click="OnExportPdfClicked"
+                          ToolTip.Tip="Write a true-scale PDF sheet: Top over Front with Right beside it, as the sheet shows them, at one scale printed in the title block, with the code check's results and their citations, and napkin's disclaimer on every page." />
                 <Separator />
                 <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
             </MenuItem>

@@ -133,6 +133,10 @@ public interface IExportFilePicker
     /// <summary>Where to write the plan as DXF, or <see langword="null"/> when the person cancelled.</summary>
     /// <param name="suggestedName">The file name the dialog offers to begin with.</param>
     Task<string?> PickDxfDestinationAsync(string suggestedName);
+
+    /// <summary>Where to write the plan and elevations as a PDF sheet (#25), or <see langword="null"/> when the person cancelled.</summary>
+    /// <param name="suggestedName">The file name the dialog offers to begin with.</param>
+    Task<string?> PickPdfDestinationAsync(string suggestedName);
 }
 
 /// <summary>The platform's own open dialog, through Avalonia's storage provider.</summary>
@@ -222,6 +226,34 @@ public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicke
             SuggestedFileName = suggestedName,
             DefaultExtension = "dxf",
             FileTypeChoices = [DxfFiles],
+            ShowOverwritePrompt = true,
+        }).ConfigureAwait(true);
+
+        return chosen?.TryGetLocalPath();
+    }
+
+    /// <summary>The PDF file type the export dialog offers.</summary>
+    public static FilePickerFileType PdfFiles { get; } = new("PDF sheets")
+    {
+        Patterns = ["*.pdf"],
+        MimeTypes = ["application/pdf"],
+    };
+
+    /// <inheritdoc/>
+    public async Task<string?> PickPdfDestinationAsync(string suggestedName)
+    {
+        IStorageProvider? storage = owner.StorageProvider;
+        if (storage is null || !storage.CanSave)
+        {
+            return null;
+        }
+
+        IStorageFile? chosen = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Export the plan and elevations as a PDF sheet",
+            SuggestedFileName = suggestedName,
+            DefaultExtension = "pdf",
+            FileTypeChoices = [PdfFiles],
             ShowOverwritePrompt = true,
         }).ConfigureAwait(true);
 

@@ -63,6 +63,15 @@
       ,"milestone": "backlog",
       "issue": 23,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-SHELL-08",
+      "area": "gui-shell",
+      "title": "Export the plan and elevations as a PDF sheet",
+      "acceptance": "Coffee table from File > Samples, then File > Export plan as PDF: the file offered is Coffee table.pdf, it reads back as one page whose text carries the project name, Scale 1:12, the date, Sheet 1 of 1, napkin's scope disclaimer and every dimension label as the canvas reads it, with hidden edges as grey dashes, and the message bar says the scale and where it went; 3 then H turns hidden edges off, and exporting again prints no hidden edge.",
+      "milestone": "M12",
+      "issue": 25,
+      "kind": "workflow"
     }
   ]
 }
