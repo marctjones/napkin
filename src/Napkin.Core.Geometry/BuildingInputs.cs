@@ -58,6 +58,9 @@ public sealed record SiteValues(
     /// </summary>
     public Angle North { get; init; } = Angle.Zero;
 
+    /// <summary>The survey image behind the site plan and how it is calibrated (format version 16, permit-set §5.4), or null.</summary>
+    public SurveyUnderlay? Underlay { get; init; }
+
     /// <summary>Nothing entered yet: a new design's site.</summary>
     public static readonly SiteValues NotEntered = new(null, null, null, null, null, null, null);
 }
