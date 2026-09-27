@@ -41,6 +41,19 @@ public sealed class LocalServerModel : IAssistantModel, IDisposable
     /// <summary>napkin's own default temperature for answers (§5.2), not a model card's.</summary>
     public const double DefaultTemperature = 0.2;
 
+    /// <summary>
+    /// The context window, in tokens, napkin asks Ollama for on every question, sent as
+    /// <c>options.num_ctx</c> (§16.1 item 3, §17 — the carry-over from slice C, issue #232).
+    /// Ollama's own default is 4,096 ("By default, Ollama uses a context window size of 4096
+    /// tokens" — <see href="https://docs.ollama.com/faq"/>, "How can I specify the context window
+    /// size?", read 2026-09-27), which napkin's 6,000-word pack plus its prompt can exceed; the same
+    /// page names <c>num_ctx</c> as the API's own answer ("When using the API, specify the
+    /// <c>num_ctx</c> parameter"). llama-server has no request-time equivalent — its context is
+    /// fixed when the server starts (<c>-c</c>/<c>--ctx-size</c>) — so <see cref="Wire.OpenAiChat"/>
+    /// sends nothing for it.
+    /// </summary>
+    public const int OllamaContextLength = 16384;
+
     /// <summary>napkin's own limit on one question, probe and answer together (§5.2, §12.1).</summary>
     public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
 

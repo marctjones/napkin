@@ -78,9 +78,11 @@ internal static class Wire
     /// Ollama's <c>POST /api/chat</c> body (docs/api.md "Generate a chat completion", read
     /// 2026-09-27): <c>model</c>; <c>messages</c> (system, user); <c>stream: false</c> ("the response
     /// will be returned as a single response object"); <c>think: false</c> ("should the model think
-    /// before responding?"); <c>options.temperature</c>; and for a proposal <c>format</c> = the schema,
-    /// written through as JSON ("Format can be <c>json</c> or a JSON schema"). <c>keep_alive</c> is left
-    /// to the program's default.
+    /// before responding?"); <c>options.temperature</c> and <c>options.num_ctx</c> (§16.1 item 3,
+    /// §17: <see cref="LocalServerModel.OllamaContextLength"/>, the FAQ's own way of raising the
+    /// window past its 4,096-token default); and for a proposal <c>format</c> = the schema, written
+    /// through as JSON ("Format can be <c>json</c> or a JSON schema"). <c>keep_alive</c> is left to
+    /// the program's default.
     /// </summary>
     public static byte[] OllamaChat(string model, ModelRequest request, double temperature) => Write(json =>
     {
@@ -90,6 +92,7 @@ internal static class Wire
         json.WriteBoolean("think", false);
         json.WriteStartObject("options");
         json.WriteNumber("temperature", temperature);
+        json.WriteNumber("num_ctx", LocalServerModel.OllamaContextLength);
         json.WriteEndObject();
         if (request.Schema is { } schema)
         {
@@ -105,7 +108,10 @@ internal static class Wire
     /// to the json templating system. For example: <c>{"enable_thinking": false}</c>") — the
     /// counterpart of Ollama's <c>think: false</c>; and for a proposal <c>response_format</c> =
     /// <c>{"type": "json_object", "schema": …}</c>, the README's "schema-constrained JSON" form, with
-    /// the schema directly under <c>response_format</c>.
+    /// the schema directly under <c>response_format</c>. Nothing here asks for a context window: unlike
+    /// Ollama's <c>options.num_ctx</c> (<see cref="OllamaChat"/>), llama-server's context is fixed by
+    /// its own <c>-c</c>/<c>--ctx-size</c> at server start, so there is no per-request field to send
+    /// (§16.1 item 3, §17).
     /// </summary>
     public static byte[] OpenAiChat(string model, ModelRequest request, double temperature) => Write(json =>
     {
