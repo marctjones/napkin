@@ -392,10 +392,11 @@ layout's count buys what the person will actually cut.
 piece positions, cuts, waste, and the line the tab shows. The coffee table's eight 1/2 plywood
 drawer parts take two 3 1/2 in strips on one sheet.
 
-**On screen and not yet.** The Cut layout tab lists each sheet as a line and draws it under the line
-at the boards' scale, with the pieces placed and the waste hatched. Not yet built: labels on the
-drawn pieces and the printed sheet diagram (#211, in the PDF of #25); turning an ungrained piece to
-fill a gap; and carrying offcuts from one sheet or panel to another.
+**On screen, on paper, and not yet.** The Cut layout tab lists each sheet as a line and draws it under
+the line at the boards' scale, with the pieces placed and the waste hatched. The printed shop set
+(#211, File → Print shop set) draws the same sheets with each piece named where its name fits and a
+grain arrow along the sheet on a piece whose grain is set. Not yet built: turning an ungrained piece
+to fill a gap, and carrying offcuts from one sheet or panel to another.
 
 ---
 
@@ -593,3 +594,9 @@ line at the same scale as the boards: pieces where they lie, waste hatched. The 
 panel's sheets, pieces and waste.
 The layout is a plan, not a guarantee: it does not know about knots, checks or defects.
 The file the tab exports is exactly the lines on screen, one row per board or sheet.
+
+**File → Print shop set** writes all of it as a PDF to take to the saw (#211): the cut list as a
+table of the same cells, the cut layout's lines with every board and sheet drawn at one printed
+scale — pieces named, cuts marked, offcuts hatched — and a page of labels, one per piece, each
+naming its part, its finished size and the board or sheet it comes from. It uses the kerf set here.
+Every page carries the title block and napkin's disclaimer.

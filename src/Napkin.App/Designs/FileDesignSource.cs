@@ -134,7 +134,7 @@ public interface IExportFilePicker
     /// <param name="suggestedName">The file name the dialog offers to begin with.</param>
     Task<string?> PickDxfDestinationAsync(string suggestedName);
 
-    /// <summary>Where to write the plan and elevations as a PDF sheet (#25), or <see langword="null"/> when the person cancelled.</summary>
+    /// <summary>Where to write a PDF — the plan and elevations (#25) or the shop set (#211) — or <see langword="null"/> when the person cancelled.</summary>
     /// <param name="suggestedName">The file name the dialog offers to begin with.</param>
     Task<string?> PickPdfDestinationAsync(string suggestedName);
 }
@@ -250,7 +250,7 @@ public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicke
 
         IStorageFile? chosen = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Export the plan and elevations as a PDF sheet",
+            Title = "Save as PDF",
             SuggestedFileName = suggestedName,
             DefaultExtension = "pdf",
             FileTypeChoices = [PdfFiles],

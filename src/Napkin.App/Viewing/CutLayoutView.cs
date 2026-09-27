@@ -105,7 +105,8 @@ public sealed class CutLayoutBar : Control
 /// <remarks>
 /// Drawn to the same scale as the boards in its view, so an 8' sheet is as long as an 8' board.
 /// The pieces are not labelled here: the line above the drawing names them, strip by strip, in the
-/// order they lie. The printed diagram, with labels, is #211.
+/// order they lie. The printed diagram, with labels and grain arrows, is the shop set's (#211,
+/// <c>Napkin.Interop.Pdf.ShopSetPdf</c>).
 /// </remarks>
 public sealed class CutLayoutSheet : Control
 {

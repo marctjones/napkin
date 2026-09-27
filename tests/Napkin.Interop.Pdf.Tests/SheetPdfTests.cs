@@ -289,8 +289,8 @@ public class SheetPdfTests
     [Fact]
     public void Paper_grey_is_what_black_at_an_opacity_leaves_on_white()
     {
-        Assert.Equal(0.65, SheetPdf.PaperGrey(DrawingLines.Of(LineKind.Hidden).Opacity), 12);
-        Assert.Equal(0, SheetPdf.PaperGrey(1));
-        Assert.Equal(1, SheetPdf.PaperGrey(-1));
+        Assert.Equal(0.65, SheetInk.PaperGrey(DrawingLines.Of(LineKind.Hidden).Opacity), 12);
+        Assert.Equal(0, SheetInk.PaperGrey(1));
+        Assert.Equal(1, SheetInk.PaperGrey(-1));
     }
 }

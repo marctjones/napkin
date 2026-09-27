@@ -11,6 +11,7 @@ using Napkin.App.Designs;
 using Napkin.App.GuiTests.Harness;
 using Napkin.Core.Geometry;
 using Napkin.Interop.Dxf;
+using Napkin.Interop.Pdf;
 using Napkin.Modules.Editing;
 
 using Xunit;
@@ -108,6 +109,54 @@ public class ExportWorkflows
 
         Directory.Delete(folder, recursive: true);
     });
+
+    [GuiWorkflow("GUI-CUT-12")]
+    public void Print_the_stocked_benchs_shop_set_and_a_new_sheets() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        string folder = Directory.CreateTempSubdirectory("napkin-shop-").FullName;
+        ScriptedExport picker = new(folder);
+        window.ExportPicker = picker;
+        window.Today = () => new DateOnly(2026, 9, 27);
+
+        OpenSample(app, window, "Stocked bench");
+        PrintShopSet(app, window);
+        app.Expect("the stocked bench's shop set reads its cut list, its layout and a label per piece, every page titled and disclaimed", () =>
+        {
+            Assert.Equal("Stocked bench shop set.pdf", picker.Suggested);
+            Excise.Core.Document.PdfDocument document = Excise.Core.Document.PdfDocument.Open(File.ReadAllBytes(picker.Last!));
+            string[] pages = [.. Enumerable.Range(0, document.PageCount).Select(i => new Excise.Core.Text.TextExtractor(document.Pages[i]).ExtractText())];
+            Assert.All(pages, text => Assert.Contains(Napkin.Core.RulesEngine.ScopeDisclaimer.Text, text, StringComparison.Ordinal));
+            string all = Squash(string.Concat(pages));
+            ShopSet set = ShopSet.Of(window.Editor.Sketch, Napkin.Core.Materials.MaterialsLibrary.Shipped, window.Settings.Current.SawKerf, new TitleBlock("Stocked bench", new DateOnly(2026, 9, 27), null), window.Editor.LabelFormat);
+            Assert.All(set.Rows, row => Assert.Contains(Squash(string.Concat(ShopSetPdf.Cells(row))), all, StringComparison.Ordinal));
+            Assert.All(Napkin.Modules.Furniture.CutLayout.Rows(set.Layout), row => Assert.Contains(Squash(Napkin.Modules.Furniture.CutLayout.Line(Napkin.Modules.Furniture.CutLayout.Fields(row))), all, StringComparison.Ordinal));
+            Assert.All(set.Labels, label => Assert.Contains(Squash(label.Part + label.Copy + label.Size), all, StringComparison.Ordinal));
+            Assert.StartsWith($"Printed the shop set, {document.PageCount} pages, to Stocked bench shop set.pdf", window.MessageOnScreen, StringComparison.Ordinal);
+        });
+
+        // A new sheet has nothing to cut: one page that says so.
+        app.Chord(Key.N);
+        app.Click(new Point(450, 320));
+        PrintShopSet(app, window);
+        app.Expect("a new sheet's shop set is one page saying there is nothing to cut", () =>
+        {
+            Excise.Core.Document.PdfDocument document = Excise.Core.Document.PdfDocument.Open(File.ReadAllBytes(picker.Last!));
+            Assert.Equal(1, document.PageCount);
+            Assert.Contains(Napkin.Modules.Furniture.CutList.NothingToCut, new Excise.Core.Text.TextExtractor(document.Pages[0]).ExtractText(), StringComparison.Ordinal);
+            Assert.StartsWith("Printed the shop set, 1 page, to", window.MessageOnScreen, StringComparison.Ordinal);
+        });
+
+        Directory.Delete(folder, recursive: true);
+    });
+
+    static string Squash(string text) => System.Text.RegularExpressions.Regex.Replace(text, @"\s+", string.Empty);
+
+    static void PrintShopSet(AppDriver app, MainWindow window)
+    {
+        app.Click(CentreOf(window, window.FileMenuItem));
+        app.Click(CentreOf(window, window.PrintShopSetMenuEntry));
+    }
 
     static void ExportPdf(AppDriver app, MainWindow window)
     {

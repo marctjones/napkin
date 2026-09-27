@@ -95,6 +95,10 @@
                           Header="Export plan as _PDF…"
                           Click="OnExportPdfClicked"
                           ToolTip.Tip="Write a true-scale PDF sheet: Top over Front with Right beside it, as the sheet shows them, at one scale printed in the title block, with the code check's results and their citations, and napkin's disclaimer on every page." />
+                <MenuItem Name="PrintShopSetMenuItem"
+                          Header="Print _shop set…"
+                          Click="OnPrintShopSetClicked"
+                          ToolTip.Tip="Write the shop set as a PDF to print: the cut list, every board and sheet of the cut layout drawn to scale with its pieces named, and a label for each piece saying what it is and what it is cut from." />
                 <Separator />
                 <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
             </MenuItem>

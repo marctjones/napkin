@@ -76,8 +76,8 @@ public class SheetPartsTests
     public void Text_wraps_at_spaces_and_a_word_too_long_for_the_line_is_broken()
     {
         Excise.Core.Graphics.PdfFont font = Excise.Core.Graphics.PdfFont.Courier(10); // 6 pt a character
-        Assert.Equal(["one two", "three"], SheetPdf.Wrap("one two three", font, 45));
-        Assert.Equal(["abcde", "fghij", "k"], SheetPdf.Wrap("abcdefghijk", font, 30));
-        Assert.Equal([string.Empty], SheetPdf.Wrap(string.Empty, font, 30));
+        Assert.Equal(["one two", "three"], SheetFrame.Wrap("one two three", font, 45));
+        Assert.Equal(["abcde", "fghij", "k"], SheetFrame.Wrap("abcdefghijk", font, 30));
+        Assert.Equal([string.Empty], SheetFrame.Wrap(string.Empty, font, 30));
     }
 }

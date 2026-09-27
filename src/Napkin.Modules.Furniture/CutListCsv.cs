@@ -55,12 +55,8 @@ public static class CutListCsv
         ArgumentNullException.ThrowIfNull(rows);
 
         List<CutListRow> all = [.. rows];
-        string statement = all.Any(row => row.Rough)
-            ? CutList.BeforeKerfAndJoinery[..^1] + RoughClause + "."
-            : CutList.BeforeKerfAndJoinery;
-
         StringBuilder csv = new();
-        csv.Append(Field(statement)).Append('\n');
+        csv.Append(Field(Statement(all))).Append('\n');
         csv.Append(Header).Append('\n');
 
         foreach (CutListRow row in all)
@@ -78,6 +74,20 @@ public static class CutListCsv
         }
 
         return csv.ToString();
+    }
+
+    /// <summary>
+    /// What a cut list says it is before its rows — finished sizes, joinery allowances in, saw kerf
+    /// not — and that rough rows are as drawn when any is: the file's first line and the printed
+    /// cut list's (#211).
+    /// </summary>
+    /// <param name="rows">The rows.</param>
+    public static string Statement(IEnumerable<CutListRow> rows)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        return rows.Any(row => row.Rough)
+            ? CutList.BeforeKerfAndJoinery[..^1] + RoughClause + "."
+            : CutList.BeforeKerfAndJoinery;
     }
 
     /// <summary>

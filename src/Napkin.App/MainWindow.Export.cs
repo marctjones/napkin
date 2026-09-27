@@ -1,5 +1,6 @@
 using Avalonia.Interactivity;
 
+using Napkin.Core.Materials;
 using Napkin.Core.Project;
 using Napkin.App.Viewing;
 using Napkin.Interop.Dxf;
@@ -10,7 +11,8 @@ namespace Napkin.App;
 
 /// <summary>
 /// File → Export plan as DXF… (#23): the plan written as DXF 2000 by <see cref="PlanDxf"/>; and
-/// File → Export plan as PDF… (#25): the sheet's views at true scale, written by <see cref="SheetPdf"/>.
+/// File → Export plan as PDF… (#25): the sheet's views at true scale, written by <see cref="SheetPdf"/>;
+/// and File → Print shop set… (#211): the cut list, layout and labels, written by <see cref="ShopSetPdf"/>.
 /// </summary>
 public partial class MainWindow
 {
@@ -82,6 +84,57 @@ public partial class MainWindow
         Editor.Say(
             EditSeverity.Done,
             $"Exported the plan and elevations as a PDF sheet at {SheetPdf.Place(sheet).Scale.Label} to {Path.GetFileName(path)} in {Path.GetDirectoryName(path)}.");
+        return true;
+    }
+
+    /// <summary>The Print shop set menu entry.</summary>
+    public Avalonia.Controls.MenuItem PrintShopSetMenuEntry => PrintShopSetMenuItem;
+
+    void OnPrintShopSetClicked(object? sender, RoutedEventArgs e) => _ = PrintShopSetAsync();
+
+    /// <summary>
+    /// Asks where, writes the shop set there (#211) — the cut list, the cut layout drawn and a label
+    /// per piece, from the rows and layout the cut-list window shows, at the saw kerf set there — and
+    /// says what happened.
+    /// </summary>
+    /// <returns>Whether a file was written.</returns>
+    public async Task<bool> PrintShopSetAsync()
+    {
+        string name = ExportName();
+        string? path;
+        try
+        {
+            path = await ExportPicker.PickPdfDestinationAsync(name + " shop set.pdf").ConfigureAwait(true);
+        }
+        catch (Exception exception) when (ProjectFile.IsFileException(exception))
+        {
+            Editor.Say(EditSeverity.Problem, $"Not printed: {exception.Message}");
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            Editor.Say(EditSeverity.Hint, "Not printed — no file was chosen, so nothing was written.");
+            return false;
+        }
+
+        ShopSet set = ShopSet.Of(Editor.Sketch, MaterialsLibrary.Shipped, Settings.Current.SawKerf, new TitleBlock(name, Today(), null), Editor.LabelFormat);
+        Excise.Core.Document.PdfDocument document = ShopSetPdf.Document(set);
+        try
+        {
+            using FileStream file = File.Create(path);
+            document.Save(file);
+        }
+        catch (Exception exception) when (ProjectFile.IsFileException(exception))
+        {
+            Editor.Say(EditSeverity.Problem, $"Not printed: {exception.Message}");
+            return false;
+        }
+
+        int pages = document.PageCount;
+        Editor.Say(
+            EditSeverity.Done,
+            $"Printed the shop set, {pages} {(pages == 1 ? "page" : "pages")}, to {Path.GetFileName(path)} in {Path.GetDirectoryName(path)}.");
         return true;
     }
 

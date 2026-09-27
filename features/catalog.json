@@ -1595,6 +1595,15 @@
       "kind": "unit"
     },
     {
+      "id": "CUT-024",
+      "area": "furniture",
+      "title": "The shop set prints the cut list's rows, the cut layout drawn and a label per piece",
+      "acceptance": "For every sample, the printed cut list reads each row's cells exactly as the window shows them, in its order; every board and sheet of the cut layout is printed with its line as the screen reads it and drawn at one scale, pieces labelled, kerf marked, offcuts hatched and a grain arrow on a piece whose grain is set; there is one label per piece naming its part, its finished size and the board or sheet it is cut from; every page carries the title block and the disclaimer.",
+      "milestone": "M12",
+      "issue": 211,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-CUT-08",
       "area": "ui",
       "title": "Read the cut layout and change the saw kerf",
@@ -1628,6 +1637,15 @@
       "acceptance": "Stocked bench, Ctrl/Cmd+L, shopping tab: one price box for each line to buy (a 12' 1x4, a 14' 2x4, a plywood sheet) and no estimate until one is priced; typing the three prices gives their sum as the estimate; the prices are remembered in the settings and shown again after reopening.",
       "milestone": "backlog",
       "issue": 141,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-CUT-12",
+      "area": "ui",
+      "title": "Print the shop set",
+      "acceptance": "Stocked bench from File > Samples, then File > Print shop set: the file offered is Stocked bench shop set.pdf, and it reads back as the cut list with every row's cells as the window shows them, the cut layout's boards and sheet with their lines, and one label per piece, every page with the title block and the disclaimer; the message bar says how many pages and where it went; a new sheet (Ctrl/Cmd+N) prints one page saying there is nothing to cut.",
+      "milestone": "M12",
+      "issue": 211,
       "kind": "workflow"
     },
     {

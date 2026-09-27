@@ -38,8 +38,11 @@ internal sealed class ReadBack
     {
         using MemoryStream stream = new();
         SheetPdf.Write(sheet, stream);
-        return new ReadBack(PdfDocument.Open(stream.ToArray()));
+        return Open(stream.ToArray());
     }
+
+    /// <summary>A PDF's bytes read back.</summary>
+    public static ReadBack Open(byte[] pdf) => new(PdfDocument.Open(pdf));
 
     /// <summary>A number as a PDF content stream prints it: at most six decimals, trailing zeros trimmed.</summary>
     public static string N(double value)

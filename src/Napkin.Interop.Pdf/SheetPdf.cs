@@ -1,33 +1,9 @@
-using System.Globalization;
-
-using Excise.Core.Authoring;
 using Excise.Core.Document;
 using Excise.Core.Graphics;
 
 using Napkin.Modules.Editing;
 
 namespace Napkin.Interop.Pdf;
-
-/// <summary>A rectangle of the page, in PDF points, y up.</summary>
-/// <param name="Left">Its left edge.</param>
-/// <param name="Bottom">Its bottom edge.</param>
-/// <param name="Width">Its width.</param>
-/// <param name="Height">Its height.</param>
-public readonly record struct PageRect(double Left, double Bottom, double Width, double Height)
-{
-    /// <summary>Its right edge.</summary>
-    public double Right => Left + Width;
-
-    /// <summary>Its top edge.</summary>
-    public double Top => Bottom + Height;
-
-    /// <summary>Its centre.</summary>
-    public PagePoint Centre => new(Left + (Width / 2), Bottom + (Height / 2));
-
-    /// <summary>The same rectangle less <paramref name="all"/> on every side, and <paramref name="top"/> more off its top.</summary>
-    public PageRect Inset(double all, double top = 0) =>
-        new(Left + all, Bottom + all, Math.Max(Width - (2 * all), 0), Math.Max(Height - (2 * all) - top, 0));
-}
 
 /// <summary>Where one view is drawn: its pane, and which point of the design lands on which point of the page.</summary>
 /// <param name="View">The view.</param>
@@ -73,7 +49,7 @@ public sealed record SheetPlacement(
 /// <strong>Two workarounds for Excise.Core's pen</strong> (marctjones/excise#1851, which has no dash
 /// pattern, cap, join or opacity yet): every dash is its own short solid line (<see cref="Dashes"/>),
 /// and a line drawn at an opacity on screen is drawn in the solid grey that ink of that opacity lays
-/// on white paper (<see cref="PaperGrey"/>) — exact here, because nothing but paper lies under it.
+/// on white paper (<see cref="SheetInk.PaperGrey"/>) — exact here, because nothing but paper lies under it.
 /// Lines keep PDF's default butt cap where the screen rounds a visible edge's ends.
 /// </para>
 /// <para>
@@ -85,15 +61,6 @@ public sealed record SheetPlacement(
 /// </remarks>
 public static class SheetPdf
 {
-    /// <summary>The page: US Letter, landscape (Excise.Core's <see cref="PageSize.Letter"/>).</summary>
-    public static readonly PageSize Page = PageSize.Letter.Landscape();
-
-    /// <summary>The empty border round every page, in points: half an inch.</summary>
-    public const double Margin = 36;
-
-    /// <summary>The space between the drawing area and the title block, in points.</summary>
-    public const double TitleGap = 8;
-
     /// <summary>How far a view is kept from its pane's edges, in points: room for a label on its dimension line.</summary>
     public const double PanePadding = DimensionMarks.LabelSize;
 
@@ -106,33 +73,14 @@ public static class SheetPdf
     /// <summary>The size of the notes' text; their headings are the same size, in the medium weight.</summary>
     public const double NoteSize = 8;
 
-    /// <summary>The size of the title block's small print: the code line and the disclaimer.</summary>
-    public const double SmallPrint = 7;
-
-    /// <summary>The project name's size in the title block.</summary>
-    public const double ProjectNameSize = 14;
-
     /// <summary>What the first page is called in its title block.</summary>
     public const string SheetTitle = "Plan and elevations";
 
     /// <summary>What a page of notes that did not fit on the first is called.</summary>
     public const string NotesTitle = "Code check notes, continued";
 
-    /// <summary>Line spacing as a multiple of text size.</summary>
-    const double Leading = 1.3;
-
-    /// <summary>Space inside the title block's cells, in points.</summary>
-    const double CellPad = 5;
-
-    /// <summary>The height of the title block's first row: the project name, the scale, the date and the sheet.</summary>
-    const double TitleRow = 34;
-
-    /// <summary>
-    /// The solid grey that black ink laid at an opacity leaves on white paper, as a PDF grey level
-    /// (0 black, 1 white): what the screen composites, without transparency.
-    /// </summary>
-    /// <param name="opacity">How much of the ink is laid down, 0–1.</param>
-    public static double PaperGrey(double opacity) => 1 - Math.Clamp(opacity, 0, 1);
+    /// <summary>What the first page's title block says it is: the sheet and how its views are arranged.</summary>
+    public static string FirstPageTitle => $"{SheetTitle} · {StandardViewWords.ThirdAngle}";
 
     /// <summary>Writes the sheet to a stream as a PDF.</summary>
     /// <param name="sheet">The sheet.</param>
@@ -149,38 +97,30 @@ public static class SheetPdf
     {
         ArgumentNullException.ThrowIfNull(sheet);
         SheetFonts fonts = SheetFonts.Load();
-        SheetPlacement placement = Place(sheet, fonts);
-        List<IReadOnlyList<PlacedText>> notePages = NotePages(sheet, placement, fonts);
-        int pages = Math.Max(notePages.Count, 1);
+        SheetFrame frame = SheetFrame.For(sheet.Title, fonts);
+        SheetPlacement placement = Place(sheet, frame);
+        List<IReadOnlyList<PlacedText>> notes = TextFlow.Lay(
+            NoteItems(sheet, fonts),
+            placement.NotesPane.Inset(PanePadding),
+            placement.DrawingArea.Inset(PanePadding));
 
-        PdfDocument document = PdfDocument.CreateNew();
-        document.SetTitle(sheet.Title.ProjectName);
-        document.SetCreator("napkin");
-        for (int number = 1; number <= pages; number++)
-        {
-            PdfPage page = document.Pages.AddBlank(Page.Width, Page.Height);
-            using PdfGraphics graphics = page.GetGraphics();
-            Ink ink = new(graphics, fonts);
-            if (number == 1)
+        List<SetPage> pages =
+        [
+            new(FirstPageTitle, placement.Scale, ink =>
             {
                 foreach (ViewPlacement view in placement.Views)
                 {
                     DrawView(ink, view, placement.Scale);
                 }
-            }
 
-            if (number <= notePages.Count)
-            {
-                foreach (PlacedText text in notePages[number - 1])
+                if (notes.Count > 0)
                 {
-                    ink.Text(text.Text, text.Font, text.X, text.Y);
+                    ink.Text(notes[0]);
                 }
-            }
-
-            DrawTitleBlock(ink, sheet, placement, number == 1 ? SheetTitle : NotesTitle, number, pages);
-        }
-
-        return document;
+            }),
+            .. notes.Skip(1).Select(lines => new SetPage(NotesTitle, null, ink => ink.Text(lines))),
+        ];
+        return SheetSet.Document(sheet.Title, sheet.Format, frame, fonts, pages);
     }
 
     /// <summary>How the sheet falls on its pages: the scale, the views' places and the title block's box.</summary>
@@ -188,15 +128,12 @@ public static class SheetPdf
     public static SheetPlacement Place(PlanSheet sheet)
     {
         ArgumentNullException.ThrowIfNull(sheet);
-        return Place(sheet, SheetFonts.Load());
+        return Place(sheet, SheetFrame.For(sheet.Title));
     }
 
-    static SheetPlacement Place(PlanSheet sheet, SheetFonts fonts)
+    static SheetPlacement Place(PlanSheet sheet, SheetFrame frame)
     {
-        double inner = Page.Width - (2 * Margin) - (2 * CellPad);
-        double smallLines = SmallPrintLines(sheet.Title, fonts, inner).Count;
-        PageRect title = new(Margin, Margin, Page.Width - (2 * Margin), TitleRow + (2 * CellPad) + (smallLines * SmallPrint * Leading));
-        PageRect area = new(Margin, title.Top + TitleGap, Page.Width - (2 * Margin), Page.Height - Margin - (title.Top + TitleGap));
+        PageRect area = frame.DrawingArea, title = frame.TitleBlock;
 
         IReadOnlyList<SheetPane> panes = SheetLayout.Panes(area.Width, area.Height, SheetLayout.Gutter);
         PageRect OnPage(SheetPane pane) => new(area.Left + pane.Left, area.Top - pane.Top - pane.Height, pane.Width, pane.Height);
@@ -267,7 +204,7 @@ public static class SheetPdf
     }
 
     /// <summary>A view: its caption, its hidden edges, its visible edges, then its dimensions.</summary>
-    static void DrawView(Ink ink, ViewPlacement placement, SheetScale scale)
+    static void DrawView(SheetInk ink, ViewPlacement placement, SheetScale scale)
     {
         ink.Text(placement.View.Name, ink.Fonts.Regular(CaptionSize), placement.Pane.Left + 8, placement.Pane.Top - 6 - CaptionSize);
         PagePoint At(DrawingPoint point) => placement.ToPage(point, scale);
@@ -292,7 +229,7 @@ public static class SheetPdf
     /// pointing in, when the line is too short for them — and the label on a white chip that breaks
     /// the line, reading up the page when the line runs up it.
     /// </summary>
-    static void DrawDimension(Ink ink, (PagePoint From, PagePoint To) measured, (PagePoint From, PagePoint To) line, string label)
+    static void DrawDimension(SheetInk ink, (PagePoint From, PagePoint To) measured, (PagePoint From, PagePoint To) line, string label)
     {
         (double X, double Y) along = (line.To.X - line.From.X, line.To.Y - line.From.Y);
         double length = Math.Sqrt((along.X * along.X) + (along.Y * along.Y));
@@ -322,7 +259,7 @@ public static class SheetPdf
         ink.Label(label, centre, vertical);
     }
 
-    static void ExtensionLine(Ink ink, PagePoint measured, PagePoint line)
+    static void ExtensionLine(SheetInk ink, PagePoint measured, PagePoint line)
     {
         (double X, double Y) away = (line.X - measured.X, line.Y - measured.Y);
         double length = Math.Sqrt((away.X * away.X) + (away.Y * away.Y));
@@ -339,200 +276,23 @@ public static class SheetPdf
             null);
     }
 
-    /// <summary>The code line and the disclaimer, wrapped to the title block's width.</summary>
-    static List<string> SmallPrintLines(TitleBlock title, SheetFonts fonts, double width)
+    /// <summary>The notes as paragraphs: the heading, then each note's heading and its lines, indented.</summary>
+    static List<FlowItem> NoteItems(PlanSheet sheet, SheetFonts fonts)
     {
-        PdfFont small = fonts.Regular(SmallPrint);
-        List<string> lines = [];
-        if (title.Code is { Length: > 0 } code)
-        {
-            lines.AddRange(Wrap(code, small, width));
-        }
-
-        lines.AddRange(Wrap(title.Disclaimer, small, width));
-        return lines;
-    }
-
-    /// <summary>
-    /// The title block: the project and what the page is, the scale in ratio and in words, the date and
-    /// the sheet's number; under them the adopted code and the disclaimer, in full.
-    /// </summary>
-    static void DrawTitleBlock(Ink ink, PlanSheet sheet, SheetPlacement placement, string pageTitle, int number, int pages)
-    {
-        PageRect box = placement.TitleBlock;
-        LineStyle rule = DrawingLines.Of(LineKind.Dimension);
-        double rowBottom = box.Top - TitleRow - (2 * CellPad);
-        double scaleLeft = box.Left + (box.Width * 0.5), dateLeft = box.Left + (box.Width * 0.75);
-
-        ink.Line(new(box.Left, box.Bottom), new(box.Right, box.Bottom), rule, null);
-        ink.Line(new(box.Right, box.Bottom), new(box.Right, box.Top), rule, null);
-        ink.Line(new(box.Right, box.Top), new(box.Left, box.Top), rule, null);
-        ink.Line(new(box.Left, box.Top), new(box.Left, box.Bottom), rule, null);
-        ink.Line(new(box.Left, rowBottom), new(box.Right, rowBottom), rule, null);
-        ink.Line(new(scaleLeft, rowBottom), new(scaleLeft, box.Top), rule, null);
-        ink.Line(new(dateLeft, rowBottom), new(dateLeft, box.Top), rule, null);
-
-        double firstLine = box.Top - CellPad - ProjectNameSize;
-        double secondLine = rowBottom + CellPad + 2;
-        ink.Text(sheet.Title.ProjectName, ink.Fonts.Medium(ProjectNameSize), box.Left + CellPad, firstLine);
-        ink.Text($"{pageTitle} · {StandardViewWords.ThirdAngle}", ink.Fonts.Regular(NoteSize), box.Left + CellPad, secondLine);
-
-        ink.Text($"Scale {placement.Scale.Label}", ink.Fonts.Medium(11), scaleLeft + CellPad, firstLine);
-        ink.Text(placement.Scale.InWords(sheet.Format), ink.Fonts.Regular(NoteSize), scaleLeft + CellPad, secondLine);
-
-        ink.Text($"Date {sheet.Title.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}", ink.Fonts.Regular(10), dateLeft + CellPad, firstLine);
-        ink.Text(
-            $"Sheet {number.ToString(CultureInfo.InvariantCulture)} of {pages.ToString(CultureInfo.InvariantCulture)}",
-            ink.Fonts.Regular(NoteSize),
-            dateLeft + CellPad,
-            secondLine);
-
-        PdfFont small = ink.Fonts.Regular(SmallPrint);
-        double y = rowBottom - CellPad - SmallPrint;
-        foreach (string line in SmallPrintLines(sheet.Title, ink.Fonts, box.Width - (2 * CellPad)))
-        {
-            ink.Text(line, small, box.Left + CellPad, y);
-            y -= SmallPrint * Leading;
-        }
-    }
-
-    /// <summary>A line of text at its baseline, in the font it is set in.</summary>
-    readonly record struct PlacedText(string Text, PdfFont Font, double X, double Y);
-
-    /// <summary>
-    /// The notes laid out page by page: the heading, then each note's heading and its lines, wrapped,
-    /// filling the spare pane and then the drawing area of each further page. Empty with no notes.
-    /// </summary>
-    static List<IReadOnlyList<PlacedText>> NotePages(PlanSheet sheet, SheetPlacement placement, SheetFonts fonts)
-    {
-        List<IReadOnlyList<PlacedText>> pages = [];
+        List<FlowItem> items = [];
         if (sheet.Notes.Count == 0)
         {
-            return pages;
+            return items;
         }
 
         PdfFont heading = fonts.Medium(NoteSize + 1), title = fonts.Medium(NoteSize), body = fonts.Regular(NoteSize);
-        List<(string Text, PdfFont Font, double Indent, double Before)> items = [(sheet.NotesHeading, heading, 0, 0)];
+        items.Add(new FlowItem(sheet.NotesHeading, heading));
         foreach (SheetNote note in sheet.Notes)
         {
-            items.Add((note.Heading, title, 0, NoteSize * 0.6));
-            items.AddRange(note.Lines.Select(line => (line, body, NoteSize, 0.0)));
+            items.Add(new FlowItem(note.Heading, title, 0, NoteSize * 0.6));
+            items.AddRange(note.Lines.Select(line => new FlowItem(line, body, NoteSize)));
         }
 
-        PageRect first = placement.NotesPane.Inset(PanePadding), rest = placement.DrawingArea.Inset(PanePadding);
-        List<PlacedText> page = [];
-        PageRect area = first;
-        double y = area.Top;
-        foreach ((string text, PdfFont font, double indent, double spaceBefore) in items)
-        {
-            double step = font.Size * Leading, before = spaceBefore;
-            foreach (string line in Wrap(text, font, area.Width - indent))
-            {
-                double baseline = y - (page.Count == 0 ? 0 : before) - font.Size;
-                if (baseline < area.Bottom && page.Count > 0)
-                {
-                    pages.Add(page);
-                    page = [];
-                    area = rest;
-                    baseline = area.Top - font.Size;
-                }
-
-                page.Add(new PlacedText(line, font, area.Left + indent, baseline));
-                y = baseline - (step - font.Size);
-                before = 0;
-            }
-        }
-
-        pages.Add(page);
-        return pages;
-    }
-
-    /// <summary>Greedy word wrap to a width, by the font's own measure; a word wider than the line is broken where it must be.</summary>
-    internal static IReadOnlyList<string> Wrap(string text, PdfFont font, double width)
-    {
-        List<string> lines = [];
-        string current = string.Empty;
-        foreach (string word in text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-        {
-            string candidate = current.Length == 0 ? word : current + " " + word;
-            if (font.MeasureWidth(candidate) <= width)
-            {
-                current = candidate;
-                continue;
-            }
-
-            if (current.Length > 0)
-            {
-                lines.Add(current);
-            }
-
-            current = word;
-            while (current.Length > 1 && font.MeasureWidth(current) > width)
-            {
-                int fits = 1;
-                while (fits < current.Length && font.MeasureWidth(current[..(fits + 1)]) <= width)
-                {
-                    fits++;
-                }
-
-                lines.Add(current[..fits]);
-                current = current[fits..];
-            }
-        }
-
-        if (current.Length > 0 || lines.Count == 0)
-        {
-            lines.Add(current);
-        }
-
-        return lines;
-    }
-
-    /// <summary>What the sheet draws with: one page's graphics, black ink on white, and the embedded fonts.</summary>
-    sealed class Ink(PdfGraphics graphics, SheetFonts fonts)
-    {
-        public SheetFonts Fonts { get; } = fonts;
-
-        /// <summary>A line in a kind's weight and ink, cut into its dashes (the table's, or <paramref name="dashes"/>), each a solid line.</summary>
-        public void Line(PagePoint from, PagePoint to, LineStyle style, IReadOnlyList<double>? dashes)
-        {
-            PdfPen pen = new(PdfColor.FromGray(PaperGrey(style.Opacity)), style.Pixels);
-            foreach (PageSegment piece in Dashes.Along(from, to, dashes ?? style.Dashes))
-            {
-                graphics.DrawLine(piece.From.X, piece.From.Y, piece.To.X, piece.To.Y, pen);
-            }
-        }
-
-        /// <summary>A filled arrowhead with its tip at <paramref name="tip"/>, pointing along <paramref name="pointing"/> (a unit vector).</summary>
-        public void Arrowhead(PagePoint tip, (double X, double Y) pointing)
-        {
-            (double X, double Y) back = (-pointing.X * DimensionMarks.ArrowLength, -pointing.Y * DimensionMarks.ArrowLength);
-            (double X, double Y) side = (-pointing.Y * DimensionMarks.ArrowHalfWidth, pointing.X * DimensionMarks.ArrowHalfWidth);
-            graphics.MoveTo(tip.X, tip.Y);
-            graphics.LineTo(tip.X + back.X + side.X, tip.Y + back.Y + side.Y);
-            graphics.LineTo(tip.X + back.X - side.X, tip.Y + back.Y - side.Y);
-            graphics.ClosePath();
-            graphics.Fill(PdfBrush.Black);
-        }
-
-        /// <summary>A dimension's label centred on a point, on a white chip, turned to read up the page when <paramref name="vertical"/>.</summary>
-        public void Label(string text, PagePoint centre, bool vertical)
-        {
-            PdfFont font = Fonts.Regular(DimensionMarks.LabelSize);
-            double width = font.MeasureWidth(text), height = font.Ascender + font.Descender;
-            graphics.SaveState();
-            graphics.Transform(vertical ? 0 : 1, vertical ? 1 : 0, vertical ? -1 : 0, vertical ? 0 : 1, centre.X, centre.Y);
-            graphics.DrawRectangle(
-                -(width / 2) - DimensionMarks.ChipPadAlong,
-                -(height / 2) - DimensionMarks.ChipPadAcross,
-                width + (2 * DimensionMarks.ChipPadAlong),
-                height + (2 * DimensionMarks.ChipPadAcross),
-                PdfBrush.White);
-            graphics.DrawString(text, font, PdfBrush.Black, -(width / 2), (font.Descender - font.Ascender) / 2);
-            graphics.RestoreState();
-        }
-
-        /// <summary>A line of text with its baseline starting at a point.</summary>
-        public void Text(string text, PdfFont font, double x, double y) => graphics.DrawString(text, font, PdfBrush.Black, x, y);
+        return items;
     }
 }
