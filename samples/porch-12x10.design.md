@@ -1,6 +1,6 @@
 # A 12 × 10 ft porch on a deck, under a 5-in-12 shed roof — the design, as you would write it on paper
 
-The deck-and-porch note's worked example ([`docs/design/deck-and-porch.md`](../../../docs/design/deck-and-porch.md)
+The deck-and-porch note's worked example ([`docs/design/deck-and-porch.md`](../docs/design/deck-and-porch.md)
 §9), cut down to one front wall and one window. Plan view, looking down; the origin is the house's
 south-west corner, and the house's south face is on y = 0.
 
@@ -35,7 +35,3 @@ By hand (§9.5): rafter run 120 - 1 1/2 + 12 = 130 1/2"; 12 : 5 : 13, so each ra
 line.
 
 Under the shipped Connecticut pack the deck and rafter checks say **No data** (#209).
-
-A test fixture, not yet one of the app's samples: the Samples menu holds 22 rows inside a 900 × 600
-window (GUI-SHELL-06), and making room — regrouping the menu or retiring a sample — is Marc's call
-(#204).

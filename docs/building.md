@@ -275,8 +275,8 @@ say "out of square"; the takeoff stays on the drawn size and says so. Nothing is
 
 ## Decks and porches: how to use it
 
-From [`design/deck-and-porch.md`](design/deck-and-porch.md), in one place; the finished example is
-`tests/Napkin.Modules.Building.Tests/Fixtures/porch-12x10.scene.json` (File → Open).
+From [`design/deck-and-porch.md`](design/deck-and-porch.md), in one place; **File → Samples → Building →
+Porch on a deck** is the finished example.
 
 - **Draw the house wall and mark it Existing** (Edit → Phase → Existing): a deck's ledger is the edge
   that lies on an existing wall's face.
