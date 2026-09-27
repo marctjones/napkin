@@ -448,7 +448,8 @@
 
             <!-- The assistant (docs/design/llm-assistant.md §8, §13.7, §13.12): explains a result
                  napkin already computed, answers a question from napkin's own screen and help, and
-                 will propose edits in later slices. It never states a fact napkin did not give it. -->
+                 proposes rough planks from a sentence (Sketch from words, #233). It never states a
+                 fact napkin did not give it, and never touches the drawing without a tick. -->
             <MenuItem Name="AssistantMenu" Header="_Assistant">
                 <MenuItem Name="AskMenuItem"
                           Header="_Ask…"
@@ -460,8 +461,8 @@
                           ToolTip.Tip="Explain the selected result's own words and citation — why a header is sized, out of scope, missing an input, or has no data." />
                 <MenuItem Name="SketchFromWordsMenuItem"
                           Header="_Sketch from words…"
-                          IsEnabled="False"
-                          ToolTip.Tip="Propose rough planks from a sentence, for Firm up to size. Not yet built (#233)." />
+                          Click="OnSketchFromWordsClicked"
+                          ToolTip.Tip="Describe a piece of furniture in a sentence: the assistant proposes rough planks, a tick each, and Enter draws the ticked ones as one undo step for Firm up (F) to size. Nothing is stated and no stock is chosen." />
                 <Separator />
                 <MenuItem Name="WhereModelRunsMenuItem"
                           Header="_Where the model runs…"
@@ -1605,13 +1606,28 @@
                              AutomationProperties.Name="Question" />
                     <TextBlock Name="AssistantThinkingText" FontSize="11" IsVisible="False" FontStyle="Italic" />
                     <TextBlock Name="AssistantAnswerText" FontSize="12" TextWrapping="Wrap" IsVisible="False" />
+                    <!-- Sketch from words (llm-assistant.md §4.3–§4.4, §8): the proposal sheet in Firm
+                         up's shape — a tick per line, all ticked; a line napkin refused says why and
+                         has no tick to give; Enter draws the ticked planks as one undo step, "Assistant
+                         sketch"; the message line reports a refusal in the updater's words. -->
+                    <ScrollViewer Name="AssistantProposal" IsVisible="False" MaxHeight="300"
+                                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Name="AssistantProposalLines" Spacing="2" Margin="0,0,14,0" />
+                    </ScrollViewer>
+                    <TextBlock Name="AssistantProposalMessageText" FontSize="11" IsVisible="False" TextWrapping="Wrap" />
+                    <Grid Name="AssistantProposalButtons" IsVisible="False" ColumnDefinitions="*,Auto,Auto">
+                        <TextBlock Text="Enter to draw · Esc to cancel" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                        <Button Name="AssistantProposalCancelButton" Grid.Column="1" Content="Cancel" FontSize="12" Padding="10,3" Margin="0,0,6,0" />
+                        <Button Name="AssistantProposalOkButton" Grid.Column="2" Content="Draw" FontSize="12" Padding="10,3"
+                                AutomationProperties.Name="Draw the ticked planks" />
+                    </Grid>
                     <StackPanel Name="AssistantReferences" Spacing="2" IsVisible="False">
                         <TextBlock Text="From napkin:" FontSize="11" FontWeight="SemiBold" />
                         <StackPanel Name="AssistantReferenceLines" Spacing="2" />
                     </StackPanel>
                     <TextBlock Name="AssistantDisclaimerText" FontSize="10.5" TextWrapping="Wrap" Opacity="0.85" IsVisible="False" />
                     <TextBlock Name="AssistantWhereaboutsText" FontSize="10.5" FontStyle="Italic" IsVisible="False" />
-                    <TextBlock Text="Enter to ask · Esc to cancel or close" FontSize="11" Opacity="0.7" />
+                    <TextBlock Name="AssistantHintText" Text="Enter to ask · Esc to cancel or close" FontSize="11" Opacity="0.7" />
                 </StackPanel>
             </Border>
 

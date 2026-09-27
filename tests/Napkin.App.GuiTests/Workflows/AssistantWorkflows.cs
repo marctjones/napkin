@@ -262,6 +262,137 @@ public class AssistantWorkflows
             model: model);
     }
 
+    /// <summary>§9.2's scripted reply, verbatim: the quick bench of sketch-mode §7.2, in words.</summary>
+    const string QuickBenchReply = """
+        { "parts": [
+            { "name": "Top",       "width": "4'-0\"", "height": "2\"",   "depth": "3/4\"", "x": "0",     "y": "1'-4\"", "quantity": 1 },
+            { "name": "Leg 1",     "width": "4\"",    "height": "1'-4\"", "depth": "3/4\"", "x": "2\"",   "y": "0",      "quantity": 1 },
+            { "name": "Leg 2",     "width": "4\"",    "height": "1'-4\"", "depth": "3/4\"", "x": "3'-6\"", "y": "0",     "quantity": 1 },
+            { "name": "Stretcher", "width": "3'-0\"", "height": "3\"",   "depth": "3/4\"", "x": "6\"",   "y": "4\"",    "quantity": 1 } ],
+          "note": "A plank bench: a top on two legs, a stretcher between them." }
+        """;
+
+    [GuiWorkflow("GUI-AST-04")]
+    public void Sketch_a_bench_from_words_leave_a_leg_out_then_firm_it_up()
+    {
+        const string description = "a bench 4 ft long, 16 in tall, with two legs 4 in wide and a 3 in stretcher";
+        ScriptedModel model = new(ScriptedReply.Json(QuickBenchReply, match: "bench"));
+
+        GuiWorkflow.Run(
+            app =>
+            {
+                MainWindow window = (MainWindow)app.Target;
+                NewSheet(app, window);
+
+                // Assistant → Sketch from words… by menu (pointer).
+                app.Click(CentreOf(window, window.FindControl<MenuItem>("AssistantMenu")!));
+                app.Click(CentreOf(window, window.SketchFromWordsMenuEntry));
+                app.Expect("the note is open for a sketch, empty, with the keyboard", () =>
+                {
+                    Assert.True(window.IsAskingAssistant);
+                    Assert.Equal(AssistantTask.Sketch, window.AssistantNoteTask);
+                    Assert.True(window.AssistantQuestionField.IsFocused);
+                    Assert.False(window.IsProposingSketch);
+                });
+
+                // The bench in words, Enter (keyboard).
+                app.Type(description);
+                app.Press(Key.Enter);
+
+                app.Expect("the sheet lists §9.2's four lines, all ticked, and nothing is drawn yet", () =>
+                {
+                    Assert.True(window.IsProposingSketch);
+                    Assert.Equal(
+                        [
+                            "Top: 48 × 2 × 3/4 at (0, 16)",
+                            "Leg 1: 4 × 16 × 3/4 at (2, 0)",
+                            "Leg 2: 4 × 16 × 3/4 at (42, 0)",
+                            "Stretcher: 36 × 3 × 3/4 at (6, 4)",
+                        ],
+                        window.AssistantProposalLineTexts);
+                    Assert.All(window.AssistantProposalTicks, tick => Assert.True(tick.IsChecked));
+                    Assert.Empty(Boxes(window));
+                    Assert.Equal(0, window.Editor.History.UndoCount);
+
+                    // The model was asked for a sketch: the sketch prompt, the schema, the words as typed.
+                    ModelRequest asked = Assert.Single(model.Requests);
+                    Assert.Equal(AssistantPrompts.Sketch, asked.System);
+                    Assert.Equal(SketchProposal.Schema, asked.Schema);
+                    Assert.Equal(description, asked.Question);
+                    Assert.Equal(ContextPack.Disclaimer, window.AssistantDisclaimerOnScreen);
+                    Assert.Equal(ScriptedModel.ScriptedWhereabouts, window.AssistantWhereaboutsOnScreen);
+                });
+
+                // Leave Leg 2 out: its tick, with the pointer.
+                app.Click(CentreOf(window, window.AssistantProposalTicks[2]));
+                app.Expect("Leg 2's line is unticked and the rest stay ticked", () =>
+                    Assert.Equal([true, true, false, true], window.AssistantProposalTicks.Select(tick => tick.IsChecked == true)));
+
+                // Enter draws the ticked three (keyboard).
+                app.Press(Key.Enter);
+                app.Expect("three rough planks at §7.2's anchors and sizes, nothing stated, one undo step, and the note points at Firm up", () =>
+                {
+                    Box[] boxes = Boxes(window);
+                    Assert.Equal(["Top", "Leg 1", "Stretcher"], boxes.Select(box => box.Name));
+                    AssertPlank(boxes[0], 0, 16, 48, 2);
+                    AssertPlank(boxes[1], 2, 0, 4, 16);
+                    AssertPlank(boxes[2], 6, 4, 36, 3);
+                    Assert.Empty(window.CurrentDesign!.Sketch.RelationshipsInOrder);
+
+                    Assert.Equal(1, window.Editor.History.UndoCount);
+                    Assert.Equal("Assistant sketch", window.Editor.History.UndoWhat);
+                    Assert.Equal("Assistant sketch: drew 3 rough parts.", window.Editor.LastMessage!.Text);
+                    Assert.Equal("Drew 3 rough parts. Next: F to firm up.", window.AssistantAnswerOnScreen);
+                    Assert.False(window.IsProposingSketch);
+                    Assert.Equal(string.Empty, window.AssistantProposalMessage);
+                });
+
+                // One undo takes the whole sketch away; redo puts it back (keyboard).
+                app.Chord(Key.Z);
+                app.Expect("Ctrl+Z empties the sheet", () =>
+                {
+                    Assert.Empty(Boxes(window));
+                    Assert.Equal("Undone: Assistant sketch.", window.Editor.LastMessage!.Text);
+                });
+
+                app.Chord(Key.Y);
+                app.Expect("Ctrl+Y brings the three planks back", () =>
+                    Assert.Equal(["Top", "Leg 1", "Stretcher"], Boxes(window).Select(box => box.Name)));
+
+                // F: Firm up, exactly as for a hand-drawn rough sketch (keyboard).
+                app.Press(Key.F);
+                app.Expect("Firm up proposes the §7.2 contacts among the three parts, and a stock and a size line for each", () =>
+                {
+                    Assert.True(window.IsFirmingUp);
+                    Assert.Equal(2, window.FirmUpRelationshipTicks.Count);
+                    Assert.Equal(
+                        ["Top's south face against Leg 1's north face", "Leg 1's east face against Stretcher's west face"],
+                        window.FirmUpLineTexts.Take(2));
+                    Assert.Equal(3, window.FirmUpStockTicks.Count);
+                    Assert.Equal(3, window.FirmUpSizeTicks.Count);
+                });
+            },
+            model: model);
+    }
+
+    /// <summary>The design's boxes, oldest first — the order a sketch's planks were proposed in.</summary>
+    static Box[] Boxes(MainWindow window) =>
+        [.. window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().OrderBy(box => box.Id)];
+
+    /// <summary>A rough plank as sketch-mode §2.3 draws one: the anchor and plan sizes in whole inches, 3/4" deep, no stock, marked rough.</summary>
+    static void AssertPlank(Box box, long x, long y, long width, long height)
+    {
+        Assert.Equal(new Point3(Length.Inches(x), Length.Inches(y), Length.Zero), box.Anchor);
+        Assert.Equal(Length.Inches(width), box.Width);
+        Assert.Equal(Length.Inches(height), box.Height);
+        Assert.Equal(Length.Inches(0, 3, 4), box.Depth);
+        Part part = Assert.IsType<Part>(box.Part);
+        Assert.True(part.Rough);
+        Assert.Null(part.Stock);
+        Assert.Null(part.Species);
+        Assert.Equal(1, part.Quantity);
+    }
+
     [GuiWorkflow("GUI-AST-06")]
     public void Choose_a_model_on_this_machine_test_it_and_ask_it()
     {

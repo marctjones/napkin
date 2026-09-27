@@ -101,6 +101,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-AST-04",
+      "area": "assistant",
+      "title": "Sketch a bench from words, leave a leg out, then firm it up",
+      "acceptance": "On a new sheet, Assistant → Sketch from words… opens the note for a sketch; describing the quick bench and pressing Enter lists the design note's four rough planks on a sheet with a tick each and draws nothing; unticking Leg 2 with the pointer and pressing Enter draws exactly three rough planks at sketch-mode §7.2's anchors and sizes, 3/4 inch deep, with no stock and no relationship, as one undo step named \"Assistant sketch\", the note's closing line pointing at Firm up; Ctrl/Cmd+Z empties the sheet and Ctrl/Cmd+Y restores it; F opens Firm up with the two contacts among the three parts and a stock line and a size line for each.",
+      "milestone": "M14",
+      "issue": 233,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-AST-06",
       "area": "assistant",
       "title": "Choose a model on this machine, test it and ask it",

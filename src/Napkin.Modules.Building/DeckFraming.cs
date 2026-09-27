@@ -18,7 +18,11 @@ namespace Napkin.Modules.Building;
 /// <param name="Width">W: the deck's length along the ledger.</param>
 /// <param name="Depth">D: its depth out from the house.</param>
 /// <param name="Joists">Each joist's near face, from the start of the ledger.</param>
-/// <param name="JoistSpan">The joists' clear span, ledger face to beam: D − 2t − cantilever.</param>
+/// <param name="JoistSpan">
+/// The joists' clear span, ledger face to the beam's near face — DCA 6's "face of support at one end of the joist to
+/// the face of support at the other end" (Table 2, p. 3): D − t − the beam's own thickness (plies × a ply's thickness)
+/// − cantilever. The beam's thickness is subtracted in full, not assumed to be one ply.
+/// </param>
 /// <param name="BeamSpan">
 /// The beam span L_B between adjacent posts, face to face, in 1/1024″, exact: (W − posts × post width) ÷ (posts − 1),
 /// the end posts flush with the deck's ends and the rest evenly between. Measured as DCA 6 measures the L_B of its beam
@@ -221,8 +225,10 @@ public static class DeckFrame
             return (null, new DeckRefusal(DeckProblem.TooLow, string.Empty));
         }
 
+        Int128 beamThicknessUnits = inputs.Beam.Plies * (Int128)beam.Thickness.Units;
+        Length beamThickness = new((long)beamThicknessUnits);
         Length joistLength = d - (t * 2);
-        Length joistSpan = joistLength - inputs.Cantilever;
+        Length joistSpan = d - t - beamThickness - inputs.Cantilever;
         List<FramingPiece> pieces =
         [
             new(FramingRole.Ledger, 1, w, joist),
@@ -253,9 +259,8 @@ public static class DeckFrame
         int n = inputs.PostCount;
         Int128 postWidth = post.Width.Units;
         ExactFraction beamSpan = new(w.Units - (n * postWidth), n - 1);
-        Int128 beamThickness = inputs.Beam.Plies * (Int128)beam.Thickness.Units;
-        DeckTributary end = Tributary(TributaryPost.Corner, w, d, t, postWidth, n, inputs.Cantilever, beamThickness);
-        DeckTributary? middle = n > 2 ? Tributary(TributaryPost.Centre, w, d, t, postWidth, n, inputs.Cantilever, beamThickness) : null;
+        DeckTributary end = Tributary(TributaryPost.Corner, w, d, t, postWidth, n, inputs.Cantilever, beamThicknessUnits);
+        DeckTributary? middle = n > 2 ? Tributary(TributaryPost.Centre, w, d, t, postWidth, n, inputs.Cantilever, beamThicknessUnits) : null;
 
         return (new DeckFraming(deck, edge, w, d, [.. joists], joistSpan, beamSpan, end, middle, postLength, (int)boards, last, [.. pieces]), null);
     }

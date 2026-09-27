@@ -83,7 +83,10 @@ public class DeckFramingTests
         // 144″, and the two clear spans share the rest: (144 − 3 × 3 1/2) ÷ 2 = 133 1/2 ÷ 2 = 66 3/4″ exactly.
         Assert.Equal(ExactFraction.Whole(In(66, 3, 4).Units), frame.BeamSpan);
         Assert.Equal("5'-6 3/4\"", frame.BeamSpanText);
-        Assert.Equal(In(117), frame.JoistSpan);
+
+        // Joist span, ledger face to the beam's near face (DCA 6 Table 2, p. 3): D − t (ledger) − the (2) 2x10 beam's
+        // own 3" thickness (2 plies × 1 1/2") − cantilever (0): 120 − 1 1/2 − 3 = 115 1/2".
+        Assert.Equal(In(115, 1, 2), frame.JoistSpan);
 
         // Tributary area, DCA 6 Appendix B (pp. B1–B2), Eq. B-1 for the middle post: no beam overhang, so B_L runs from
         // its centreline (at 3 1/2 ÷ 2 + (144 − 3 1/2) ÷ 2 = 1 3/4 + 70 1/4 = 72″) to the deck's outside edge, 72″ each
@@ -148,12 +151,13 @@ public class DeckFramingTests
     [Trait("Feature", "DECK-005")]
     public void A_cantilever_shortens_the_joist_span_and_measures_the_joists_to_the_beams_centre()
     {
-        // 12″ cantilever: joist span 117 − 12 = 105″. The (2) 2x10 beam is 3″ thick, its outer face 12″ in from the rim's
+        // 12″ cantilever: joist span, ledger face to the beam's near face, D − t − beam thickness − cantilever =
+        // 120 − 1 1/2 − 3 − 12 = 103 1/2″. The (2) 2x10 beam is 3″ thick, its outer face 12″ in from the rim's
         // outer face, so its centre is 120 − 12 − 1 1/2 = 106 1/2″ out: J_L = 106 1/2 − 1 1/2 = 105″ (ledger face to the
         // beam's centre, p. B1) and J_O = 120 − 106 1/2 = 13 1/2″. A = (105 ÷ 2 + 13 1/2) × 72 = 66 × 72 = 4752 sq in = 33.0 sq ft.
         DeckFraming frame = Frame(Drawing(House(), DeckBox(Inputs(cantilever: In(12)))));
 
-        Assert.Equal(In(105), frame.JoistSpan);
+        Assert.Equal(In(103, 1, 2), frame.JoistSpan);
         Assert.Equal((ExactFraction.Whole(In(105).Units), ExactFraction.Whole(In(13, 1, 2).Units)), (frame.Tributary.JoistLength, frame.Tributary.JoistOverhang));
         Assert.Equal(new ExactFraction((Int128)In(66).Units * In(72).Units, 1), frame.TributaryArea);
         Assert.Equal(
@@ -161,8 +165,10 @@ public class DeckFramingTests
             frame.Tributary.Words);
 
         // A (3) 2x10 beam is 4 1/2″ thick: its centre is 120 − 12 − 2 1/4 = 105 3/4″ out, J_L = 104 1/4″, J_O = 14 1/4″;
-        // A = (52 1/8 + 14 1/4) × 72 = 66 3/8 × 72 = 4779 sq in = 33.19 sq ft, shown 33.2.
+        // A = (52 1/8 + 14 1/4) × 72 = 66 3/8 × 72 = 4779 sq in = 33.19 sq ft, shown 33.2. Its joist span scales with the
+        // extra ply: 120 − 1 1/2 − 4 1/2 (3 × 1 1/2) − 12 = 102″ — 1 1/2″ less than the (2)-ply beam's 103 1/2″.
         DeckFraming three = Frame(Drawing(House(), DeckBox(Inputs(cantilever: In(12)) with { Beam = new BeamSpec(3, "2x10") })));
+        Assert.Equal(In(102), three.JoistSpan);
         Assert.Equal((ExactFraction.Whole(In(104, 1, 4).Units), ExactFraction.Whole(In(14, 1, 4).Units)), (three.Tributary.JoistLength, three.Tributary.JoistOverhang));
         Assert.Equal(new ExactFraction((Int128)In(66, 3, 8).Units * In(72).Units, 1), three.TributaryArea);
         Assert.Equal("33.2 sq ft", three.TributaryAreaText);
