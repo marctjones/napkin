@@ -701,9 +701,19 @@ paths are untouched throughout.
    it. This is the cost of #40–#43 being real; it is spread over five landable slices, and no
    slice ships a value without its review. If the post-height tables prove too much, B3 can land
    B3-the-footing-table first and the `deck-post` kind after.
-8. **AWC's terms.** The PDF is free to download; its permissions flag says `copy: no`; AWC's terms
-   of use were not read for this note. Marc's 2026-09-25 decision covered code tables read from a
-   primary source; a trade association's guide is a different document. A Decision (§8.6).
+8. **AWC's terms — now read, and open again.** Checked 2026-09-27 while researching the
+   safe-default-pack question (`docs/research/safe-default-header-sources.md` §1):
+   [awc.org/about/end-user-license-agreement](https://awc.org/about/end-user-license-agreement/)
+   states (fragments; the page is Cloudflare-blocked to automated fetch, read only in part,
+   **Marc should read it directly**): one printed copy only, no reproduction/resale/modification,
+   "proprietary to the American Wood Council... protected under U.S. copyright law", and "INPUTTING
+   THE PRODUCT OR ANY PORTION THEREOF INTO ANY ARTIFICIAL INTELLIGENCE OR SIMILAR PROGRAM, SUCH AS
+   CHAT GPT, IS PROHIBITED." Whether "the Product" reaches a freely-downloadable guide like DCA 6,
+   and what the AI clause means for a citation/computation use rather than reproducing the
+   document, is Marc's reading, not a transcriber's or reviewer's. **Landed slices B1–B3 (Tables
+   2, 3A, B1–B3) are not being revisited or retracted on this alone** — that is also Marc's call.
+   **Ledger (#40, Table 5) and guards/stairs (#43) are held and must not start until Marc has read
+   the page and said how this applies**, since they would repeat the same act now in question.
 9. **The porch's Supports vocabulary** moves from "what the joist table declares" to "what the
    guide's scope declares"; the panel's `SupportsNote` and the free-text box must follow, or the
    person has nothing to choose from.

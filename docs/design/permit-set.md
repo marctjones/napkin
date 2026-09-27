@@ -67,6 +67,32 @@ number:
 COMPLETE PERMIT SET — n items are not sized; see C1". The C1 code page is always printed, even
 when every result is Sized.
 
+### 3.1 Blanks and a worksheet page (decided 2026-09-27)
+
+Marc, 2026-09-27: *"if we don't have code book values for these prints, can we leave the spaces
+to fill in the missing data and add a printed page with instructions what is missing and a
+worksheet for collecting it?"* Decided: yes, in addition to the banner, not instead of it.
+
+- **On the sheet itself**, wherever a member's size would print, a result other than Sized draws
+  a **blank line** (an underscore-style rule the right width for a nominal dimension, e.g.
+  `______`) beside its label, instead of leaving the label bare or omitting the row. The row's
+  usual note still prints beneath it exactly as §3 already specifies ("beyond the table: get this
+  engineered", "not sized: enter the ground snow load…", "not sized: the adopted code's pack has
+  no table for this") — the blank is for a value someone will write in by hand, on paper, after
+  the sheet is printed; it is never something napkin fills in for them, on screen or off.
+- **A new worksheet page, W1**, printed whenever any result is not Sized (alongside C1, never
+  instead of it): one row per unsized item, each naming exactly what to look up — the adopted
+  code, the table, and the inputs already known (span, snow load band, what the wall or deck
+  member supports) — a blank line to write the answer, and a blank line for its citation (table
+  and row, or "entered by hand" if that is what napkin already recorded via #245). W1 is the
+  paper form of the same lookup #245's *Enter this row…* button does on screen; filling it out on
+  paper and later typing it into napkin via #245 is the expected loop, not a competing one.
+- The banner's wording gains "see C1 and W1" once W1 is added.
+- This does not relax §7's rule that a set with any non-Sized result is marked incomplete. A
+  filled-in worksheet is a person's own reading, not napkin's, and every value that reaches the
+  screen from it still goes through #245's citation and "ENTERED BY HAND" tag — W1 does not let a
+  blank line's answer join the sheet's own printed numbers unlabeled.
+
 ## 4. The title block
 
 Every sheet has one title block, the same as #25's:
@@ -164,7 +190,10 @@ or not a PNG or JPEG. No field is optional, as always.
 - It does not make a survey, check a survey, or say whether a lot conforms to zoning.
 - It does not trace an image or read a PDF survey.
 - It does not decide which sheets a town wants. The set is §2's, and each town may ask for more.
-- It does not print a set whose results are not all Sized without the banner (§3).
+- It does not print a set whose results are not all Sized without the banner and the W1 worksheet
+  (§3, §3.1).
+- It does not accept a worksheet's filled-in answer back into the project except through #245,
+  cited and tagged like any other entered value.
 
 ## 8. Slices
 
@@ -172,7 +201,7 @@ or not a PNG or JPEG. No field is optional, as always.
 |---|---|---|
 | **A** | Site plan model (§5.2, §5.3, §5.5): boundary entity from courses, closure error, setbacks, distances, north; the Site layer; scene format bump; panel and plan drawing; GUI workflow | sign-off |
 | **B** | Survey underlay (§5.4): container `assets/`, calibration, drawing it behind the plan | A |
-| **C** | Sheet framework on #25: title block, banner, scale choice, Letter/Tabloid | #25 |
+| **C** | Sheet framework on #25: title block, banner, scale choice, Letter/Tabloid, blanks on unsized results and the W1 worksheet page (§3.1) | #25 |
 | **D** | Deck set: S1, A2, S2, S3, C1 | C, M11 (B–F) |
 | **E** | Window set: S1, A1, A2, S3, C1 | C |
 
