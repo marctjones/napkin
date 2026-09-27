@@ -92,7 +92,7 @@ appears at the bottom right:
 | The third field | The one dimension the plan cannot hold. It is labelled with whichever name the two above did not claim. |
 | Qty | How many identical copies this one box stands for — the four legs you draw once. |
 | Stock | A nominal name, spelled however you like: "2x4", "2 x 4", "2×4" are one stock. |
-| Species | Free text. This build never interprets it. |
+| Species | Typed freely, or picked from the **Table…** list beside it: the 26 species napkin has cited properties for (specific gravity and bending E at 12 % moisture, USDA Wood Handbook FPL-GTR-282, Table 5–3b, read 2026-09-26). The line under it says the picked row's values, or that typed text is kept as typed and never interpreted. |
 
 The stock line under the field is the materials library's own: type `2 x 4` and it reads
 `2x4 — actual 1 1/2" x 3 1/2", PS 20-25` before anything is applied. A name the library does not

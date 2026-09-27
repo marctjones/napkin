@@ -1856,6 +1856,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-FURN-01",
+      "area": "ui",
+      "title": "Pick a part's species from the cited table, type one it does not have, and undo",
+      "acceptance": "Coffee table sample: select a leg; choosing Oak, northern red from the species picker with the pointer sets the leg's species and the panel says specific gravity 0.63 and bending E 1,820,000 lbf/in² at 12 % moisture with Table 5–3b p. 5–10; typing red oak and Enter keeps it as typed, clears the picker and says it is not interpreted; Edit > Undo puts northern red oak back.",
+      "milestone": "M9",
+      "issue": 216,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-SET-01",
       "area": "ui",
       "title": "A setting changed from the View menu is kept by a new window",

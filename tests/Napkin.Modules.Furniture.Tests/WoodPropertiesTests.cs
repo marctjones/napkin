@@ -54,4 +54,13 @@ public class WoodPropertiesTests
     [Fact]
     public void A_name_is_found_whatever_its_case_and_surrounding_spaces()
         => Assert.Equal("Oak, northern red", Table.Find("  OAK, NORTHERN RED ")!.Name);
+
+    [Fact]
+    [Trait("Feature", "MAT-006")]
+    public void The_panel_line_gives_the_cited_values_or_says_typed_text_is_not_interpreted()
+    {
+        Assert.Equal("Specific gravity 0.63 and bending E 1,820,000 lbf/in² at 12 % moisture, clear wood (Wood Handbook, Table 5–3b, p. 5–10).", Table.Describe("Oak, northern red"));
+        Assert.Equal("\"red oak\" is not in napkin's species table: kept as typed and never interpreted, so a check that needs the species will say it is missing.", Table.Describe(" red oak "));
+        Assert.Equal(string.Empty, Table.Describe(null));
+    }
 }

@@ -49,6 +49,23 @@ public sealed class WoodProperties
         return key.Length == 0 ? null : Species.FirstOrDefault(row => string.Equals(row.Name, key, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// What the part panel says under a part's species: the row's cited values, or that typed text is
+    /// kept as typed and never interpreted; nothing when the species is empty.
+    /// </summary>
+    public string Describe(string? species)
+    {
+        string typed = (species ?? string.Empty).Trim();
+        if (typed.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        return Find(typed) is { } row
+            ? string.Create(CultureInfo.InvariantCulture, $"Specific gravity {row.SpecificGravity} and bending E {row.ModulusOfElasticityPsi:N0} lbf/in² at 12 % moisture, clear wood (Wood Handbook, Table 5–3b, p. {row.Page}).")
+            : $"\"{typed}\" is not in napkin's species table: kept as typed and never interpreted, so a check that needs the species will say it is missing.";
+    }
+
     static WoodProperties Load()
     {
         using Stream stream = typeof(WoodProperties).Assembly.GetManifestResourceStream("Napkin.Modules.Furniture.Data.wood-properties.json")
