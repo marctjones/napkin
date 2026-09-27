@@ -1,0 +1,11 @@
+{
+  "id": "ask-help-ground-snow",
+  "description": "A help-only question with no selection: ground snow load is not entered, and where to set it.",
+  "sample": "window-in-existing-wall",
+  "question": "what is ground snow load?",
+  "task": "answer",
+  "reply": "napkin doesn't have a ground snow load for this project yet — nothing was entered [[ref:ground snow load not entered]]. You can set it, or a town's default, in Project → Adopted code and site… [[ref:\"In the app\"]].",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": ["30 psf", "40 psf"]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ask-entity-bench-leg",
+  "description": "A plain design question, no code involved: a stocked-bench leg's size.",
+  "sample": "stocked-bench",
+  "question": "how long is one of the bench legs?",
+  "task": "answer",
+  "reply": "One of the south-west leg's parts is 1'-4 1/2\" long [[ref:Leg, south-west]].",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": ["1'-6\"", "18\""]
+}

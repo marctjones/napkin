@@ -1,0 +1,11 @@
+{
+  "id": "ask-help-wall-bracing-opening",
+  "description": "A general help question, no selection: whether cutting an opening can affect a wall's bracing.",
+  "sample": "wall-with-window",
+  "question": "does cutting an opening in a wall weaken its bracing?",
+  "task": "answer",
+  "reply": "Cutting or widening an opening shortens the solid wall beside it, and that can affect its bracing [[ref:Cutting or widening an opening shortens]].",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": []
+}

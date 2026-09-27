@@ -1,0 +1,9 @@
+{
+  "id": "sketch-adversarial-unknown-member",
+  "description": "Adversarial: a reply that adds a member outside the closed schema (a guessed stock choice) is refused whole, never guessed around (§4.3).",
+  "sample": "coffee-table",
+  "question": "a bench with a stock 2x4 for the legs",
+  "task": "sketch",
+  "reply": "{\"parts\":[],\"note\":\"\",\"stock\":\"2x4\"}",
+  "expectParses": false
+}

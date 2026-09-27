@@ -17,6 +17,9 @@ public static class Cli
           napkin-tools samples restamp   [options]
           napkin-tools licenses check    [--list] [--policy <path>] [options]
           napkin-tools assistant mlx-smoke [--model <folder>] [--root <path>]
+          napkin-tools assistant eval --scripted [--root <path>]
+          napkin-tools assistant eval --endpoint <url> --model <name> [--root <path>]
+          napkin-tools assistant eval --mlx <folder> [--root <path>]
 
         ratchet check
           Fails when a baselined assembly's line or branch coverage has fallen below its floor,
@@ -55,6 +58,16 @@ public static class Cli
           command that loads the bridge; never run by the gate or CI; never downloads anything.
           Exits 0 when it ran to the end whatever the model said, 1 when the bridge could not
           run here, 3 when there is no bridge beside this tool or the folder is refused.
+
+        assistant eval
+          Runs the twenty offline cases (tests/Napkin.Modules.Assistant.Tests/Eval/*.json) against
+          exactly one runtime and prints a pass/fail table: --scripted (ScriptedModel with each
+          case's own expected reply — offline, deterministic, the only mode gate.sh or a unit test
+          ever runs), --endpoint <url> --model <name> (a real Ollama or llama-server), or --mlx
+          <folder> (the real MLX bridge beside this tool, mlx-runtime.md §17.5). It measures answer
+          quality and gates nothing: it exits 0 once the cases have run, whatever they scored.
+          Exits 2 for the command line, 3 for an unreadable case or a refused --mlx folder, 1 only
+          when --mlx cannot even load the model.
 
         Common options:
           --root <path>          Repository root (default: the nearest napkin.sln above the
@@ -100,6 +113,7 @@ public static class Cli
                 "samples restamp" => SamplesCommand.Restamp(rest, output, error),
                 "licenses check" => LicensesCommand.Check(rest, output, error),
                 "assistant mlx-smoke" => AssistantSmoke.MlxSmoke(rest, output, error),
+                "assistant eval" => AssistantEval.Eval(rest, output, error),
                 _ => Unknown(command, output, error),
             };
         }

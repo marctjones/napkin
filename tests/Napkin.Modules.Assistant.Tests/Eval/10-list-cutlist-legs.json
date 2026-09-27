@@ -1,0 +1,12 @@
+{
+  "id": "list-cutlist-legs",
+  "description": "A cut-list question (#232): how many legs are on coffee-table's cut list.",
+  "sample": "coffee-table",
+  "lists": ["cutList"],
+  "question": "how many legs does it have?",
+  "task": "answer",
+  "reply": "There are 4 legs on the cut list [[ref:Cut list: Leg,]].",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": ["37", "6"]
+}

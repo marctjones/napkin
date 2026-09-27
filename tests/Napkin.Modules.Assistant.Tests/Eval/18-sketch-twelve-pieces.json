@@ -1,0 +1,10 @@
+{
+  "id": "sketch-twelve-pieces",
+  "description": "Sketch from words: a quantity up to 12 stands for that many identical pieces on one line (\u00a74.4).",
+  "sample": "coffee-table",
+  "question": "a slat shelf: twelve slats and two legs",
+  "task": "sketch",
+  "reply": "{\"parts\":[{\"name\":\"Slat\",\"width\":\"3\\\"\",\"height\":\"18\\\"\",\"depth\":\"3/4\\\"\",\"x\":\"0\",\"y\":\"0\",\"quantity\":12},{\"name\":\"Leg\",\"width\":\"4\\\"\",\"height\":\"16\\\"\",\"depth\":\"3/4\\\"\",\"x\":\"0\",\"y\":\"0\",\"quantity\":2}],\"note\":\"n\"}",
+  "expectParses": true,
+  "expectedParts": 2
+}

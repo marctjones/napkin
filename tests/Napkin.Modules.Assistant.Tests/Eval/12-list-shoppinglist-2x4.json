@@ -1,0 +1,12 @@
+{
+  "id": "list-shoppinglist-2x4",
+  "description": "A shopping-list question (#232, GUI-AST-03's kind): how many 2x4s stocked-bench needs.",
+  "sample": "stocked-bench",
+  "lists": ["shoppingList"],
+  "question": "what does the 2x4 line on the shopping list buy, and for what?",
+  "task": "answer",
+  "reply": "The shopping list buys 2x4 lumber for 2 stretchers and 4 legs [[ref:Stretcher × 2, Leg × 4]].",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": ["2x6", "6 legs", "3 stretchers"]
+}

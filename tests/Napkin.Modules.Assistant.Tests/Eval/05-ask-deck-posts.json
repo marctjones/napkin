@@ -1,0 +1,12 @@
+{
+  "id": "ask-deck-posts",
+  "description": "A deck check question (porch-12x10, Deck 1 selected): the end and middle post lines, cited.",
+  "sample": "porch-12x10",
+  "select": ["Deck 1"],
+  "question": "how tall are the deck posts, and how much does the middle one carry?",
+  "task": "answer",
+  "reply": "The end posts are 4x4s reaching 1'-6 1/2\" from grade to the beam's underside [[ref:End posts 4x4]], and the middle post carries 29.6 square feet [[ref:Middle post 4x4]].",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": ["6x6", "37.0"]
+}

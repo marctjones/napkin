@@ -35,6 +35,20 @@ public sealed class RepoLayout
     public string StubsPath =>
         Path.Combine(Root, "tests", "Napkin.Features.Tests", "PlannedFeatures.g.cs");
 
+    /// <summary>Where the app's samples live (read by the real scene reader, not copied).</summary>
+    public string SamplesDirectory => Path.Combine(Root, "samples");
+
+    /// <summary>
+    /// The packs root as <see cref="Napkin.Core.RulesEngine.PackLocations"/> means one: a folder that
+    /// itself holds <c>packs/</c> and <c>layers/</c> subfolders (the repository's own <c>packs/</c>,
+    /// or a build's copy of it) — what <see cref="Napkin.Modules.Building.CodePacks.Discover"/> takes.
+    /// </summary>
+    public string PacksDirectory => Path.Combine(Root, "packs");
+
+    /// <summary>The offline eval set: <c>assistant eval</c>'s twenty cases (docs/design/llm-assistant.md §11.4).</summary>
+    public string EvalDirectory =>
+        Path.Combine(Root, "tests", "Napkin.Modules.Assistant.Tests", "Eval");
+
     /// <summary>
     /// Walks up from <paramref name="start"/> until it finds the directory holding
     /// <see cref="RootMarker"/>. Returns null when there is none.
