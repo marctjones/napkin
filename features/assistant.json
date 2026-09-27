@@ -45,6 +45,24 @@
       "milestone": "M14",
       "issue": 234,
       "kind": "unit"
+    },
+    {
+      "id": "GUI-AST-01",
+      "area": "assistant",
+      "title": "Explain a No data header, then a made-up size is refused",
+      "acceptance": "Opening samples/window-in-existing-wall, selecting Window 1 and asking Ctrl/Cmd+Shift+A why its header is No data shows the good answer whole with the From-napkin block, the disclaimer and the whereabouts line, and a second question whose scripted reply claims a header size napkin never gave it is shown with that sentence replaced by the refusal naming the tokens, the rest of the answer standing; Escape closes the note.",
+      "milestone": "M14",
+      "issue": 230,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-AST-02",
+      "area": "assistant",
+      "title": "A help question, thinking watched and cancelled, then asked again",
+      "acceptance": "Asking a free-text question shows the thinking line while a delayed scripted reply is out; Escape cancels it, leaving the note open and empty with no answer; asking again (a cancelled question has used its reply) gets the second scripted reply and shows an answer citing the help item its own reference pack says it should.",
+      "milestone": "M14",
+      "issue": 230,
+      "kind": "workflow"
     }
   ]
 }

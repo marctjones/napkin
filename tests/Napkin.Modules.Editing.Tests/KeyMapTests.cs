@@ -25,6 +25,7 @@ public class KeyMapTests
         { KeyName.Y, Cmd, ShellCommand.Redo },
         { KeyName.L, Cmd, ShellCommand.CutList },
         { KeyName.L, Cmd | Shift, ShellCommand.ShoppingList },
+        { KeyName.A, Cmd | Shift, ShellCommand.Ask },
         { KeyName.D1, Cmd, ShellCommand.Sample1 },
         { KeyName.D2, Cmd, ShellCommand.Sample2 },
         { KeyName.D3, Cmd, ShellCommand.Sample3 },

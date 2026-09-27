@@ -74,6 +74,7 @@ public partial class MainWindow
         RedoMenuItem.InputGesture = RedoGestures[0];
         CutListMenuItem.InputGesture = Gesture(ShellCommand.CutList);
         ShoppingListMenuItem.InputGesture = Gesture(ShellCommand.ShoppingList);
+        AskMenuItem.InputGesture = Gesture(ShellCommand.Ask);
 
         foreach ((MenuItem item, EditCommand command) in (ReadOnlySpan<(MenuItem, EditCommand)>)
         [
@@ -192,6 +193,10 @@ public partial class MainWindow
 
             case ShellCommand.ShoppingList:
                 OpenShoppingList();
+                break;
+
+            case ShellCommand.Ask:
+                BeginAsk();
                 break;
 
             default:

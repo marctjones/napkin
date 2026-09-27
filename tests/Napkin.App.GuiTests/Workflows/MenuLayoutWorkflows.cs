@@ -13,8 +13,8 @@ namespace Napkin.App.GuiTests.Workflows;
 
 /// <summary>
 /// The regrouped menus (#169) in the default look, in a small window: File, Edit, Draw (tools
-/// only), View, Project and Lists, each opened with the mouse and its frame saved to be read, and
-/// every item of every open menu and submenu inside a 900×600 window.
+/// only), View, Project, Lists and Assistant, each opened with the mouse and its frame saved to be
+/// read, and every item of every open menu and submenu inside a 900×600 window.
 /// </summary>
 public class MenuLayoutWorkflows
 {
@@ -25,9 +25,9 @@ public class MenuLayoutWorkflows
         app.ResizeWindow(900, 600);
         OpenSample(app, window, "Coffee table");
 
-        app.Expect("the menu bar reads File, Edit, Draw, View, Project, Lists", () =>
+        app.Expect("the menu bar reads File, Edit, Draw, View, Project, Lists, Assistant", () =>
             Assert.Equal(
-                ["FileMenu", "EditMenu", "DrawMenu", "ViewMenu", "ProjectMenu", "ListsMenu"],
+                ["FileMenu", "EditMenu", "DrawMenu", "ViewMenu", "ProjectMenu", "ListsMenu", "AssistantMenu"],
                 window.MenuBar.Items.OfType<MenuItem>().Select(item => item.Name)));
 
         Open(app, window, "file", "FileMenu");
@@ -45,6 +45,7 @@ public class MenuLayoutWorkflows
         Open(app, window, "project", "ProjectMenu");
         Open(app, window, "project-open-in", "ProjectMenu", "OpenInMenuItem");
         Open(app, window, "lists", "ListsMenu");
+        Open(app, window, "assistant", "AssistantMenu");
 
         app.Click(CentreOf(window, window.FindControl<MenuItem>("ListsMenu")!));
         app.Click(CentreOf(window, window.FindControl<MenuItem>("FastenerSizesMenuItem")!));

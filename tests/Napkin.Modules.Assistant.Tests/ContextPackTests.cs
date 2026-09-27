@@ -102,10 +102,11 @@ public class ContextPackTests
         GuardedAnswer guarded = AnswerGuard.Check(bad, pack);
         Assert.Equal([true, false, true], guarded.Sentences.Select(sentence => sentence.Kept));
         GuardedSentence refused = guarded.Sentences[1];
-        // The 3-foot opening is the window's 3'-0" [1]; the pack has no 2x4 and no 2x6. (Its "2" is now in the
-        // pack as the Connecticut pack's revision 2, item [4], so the guard lets the ply count through.)
-        Assert.Equal(["2x4", "2x6"], refused.Unsupported);
-        Assert.Equal("[one sentence refused: it said 2x4 and 2x6, which napkin did not give it]", refused.Shown);
+        // The 3-foot opening is the window's 3'-0" [1]; the pack has no 2x4, no 2 and no 2x6. Item
+        // [4]'s "revision 2" does not count: AnswerGuard.IsMetadata (the #41 carry-over) restricts
+        // the adopted-code line to its own designations, the same rule a help item's numbers get.
+        Assert.Equal(["2x4", "2", "2x6"], refused.Unsupported);
+        Assert.Equal("[one sentence refused: it said 2x4, 2 and 2x6, which napkin did not give it]", refused.Shown);
         Assert.Equal(
             $"No data means napkin has no table to look in [5]. {refused.Shown} The table is Table R602.7(1) [6].",
             guarded.Text);
