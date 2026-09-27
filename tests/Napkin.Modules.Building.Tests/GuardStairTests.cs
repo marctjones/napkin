@@ -132,21 +132,38 @@ public class GuardStairTests
 
         Assert.Equal(
             [
-                "Guard required: the deck is 3'-0\" above grade, over 2'-4\", with 3 open edges (ZZ-GUARD.1, synthetic p. 7 guard).",
-                "Guard height 3'-0\": at least 2'-10\" (ZZ-GUARD.1, synthetic p. 7 guard).",
-                "Guard openings: baluster gaps 3 3/8\", 3 1/16\", 3 3/16\" and 3 1/2\" under the rail, none over 5\" (ZZ-GUARD.1, synthetic p. 7 guard).",
+                "Guard required: the deck is 3'-0\" above grade, over 2'-4\", with 3 open edges (ZZ-GUARD.1, synthetic p. 7 guard). UNREVIEWED: values not yet checked against the source.",
+                "Guard height 3'-0\": at least 2'-10\" (ZZ-GUARD.1, synthetic p. 7 guard). UNREVIEWED: values not yet checked against the source.",
+                "Guard openings: baluster gaps 3 3/8\", 3 1/16\", 3 3/16\" and 3 1/2\" under the rail, none over 5\" (ZZ-GUARD.1, synthetic p. 7 guard). UNREVIEWED: values not yet checked against the source.",
             ],
             guard);
         Assert.StartsWith("Stair: Lay out 5 risers", stair[0], StringComparison.Ordinal);
         Assert.Equal(
             [
-                "Risers ≈7 3/16\": at most 8 1/4\" (ZZ-GUARD.1, synthetic p. 7 stair).",
-                "Treads 10\": at least 9\" (ZZ-GUARD.1, synthetic p. 7 stair).",
-                "Handrail required: 5 risers, at least 3 (ZZ-GUARD.1, synthetic p. 7 stair); add it as hardware.",
-                "Stair width 3'-0\": at least 2'-8\" (ZZ-GUARD.1, synthetic p. 7 stair).",
+                "Risers ≈7 3/16\": at most 8 1/4\" (ZZ-GUARD.1, synthetic p. 7 stair). UNREVIEWED: values not yet checked against the source.",
+                "Treads 10\": at least 9\" (ZZ-GUARD.1, synthetic p. 7 stair). UNREVIEWED: values not yet checked against the source.",
+                "Handrail required: 5 risers, at least 3 (ZZ-GUARD.1, synthetic p. 7 stair); add it as hardware. UNREVIEWED: values not yet checked against the source.",
+                "Stair width 3'-0\": at least 2'-8\" (ZZ-GUARD.1, synthetic p. 7 stair). UNREVIEWED: values not yet checked against the source.",
             ],
             stair[1..]);
         Assert.All(checks.Lines.Where(line => line.Kind is DeckCheckKind.Guard or DeckCheckKind.Stair), line => Assert.True(line.Passing));
+    }
+
+    [Fact]
+    public void Guard_and_stair_provisions_from_a_guide_say_what_the_guide_is_not()
+    {
+        // The synthetic guard-and-stair file moved under the synthetic guide (docs/design/deck-guide-pack.md §1.2).
+        InMemoryPackSource source = InMemoryPackSource.FromDirectory(Path.Combine(AppContext.BaseDirectory, "CodePacks", "deck"));
+        string file = "zz-guard-stair.json";
+        source.With($"layers/zz-guide-2099/deck/{file}", source.Text($"layers/zz-deck-2099/deck/{file}").Replace("zz-synth-base", "zz-synth-guide", StringComparison.Ordinal))
+            .Without($"layers/zz-deck-2099/deck/{file}");
+        LoadedPack guided = ((PackLoadResult.Loaded)PackLoader.Load(source, "us-zz-deck")).Pack;
+        (Sketch sketch, _) = Deck(Guard, Stair());
+        DeckChecks checks = DeckCheck.For(sketch, Building.Deck.All(sketch)[0], guided, MaterialsLibrary.Shipped);
+
+        const string Clause = "(ZZ-GUARD.1, synthetic p. 7 guard — a guide on the 2098 IRC, not ZZ DECK's adopted IRC 2099; the IRC governs where they differ (synthetic guide p. 1))";
+        Assert.Equal($"Guard height 3'-0\": at least 2'-10\" {Clause}. UNREVIEWED: values not yet checked against the source.", checks.Lines.Single(line => line.Text.StartsWith("Guard height", StringComparison.Ordinal)).Text);
+        Assert.Contains("(ZZ-GUARD.1, synthetic p. 7 stair — a guide on the 2098 IRC", checks.Lines.Single(line => line.Text.StartsWith("Treads", StringComparison.Ordinal)).Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -156,7 +173,7 @@ public class GuardStairTests
         (Sketch sketch, _) = Deck(low, Stair(risers: 4, run: 8) with { Width = In(30) });
         DeckChecks checks = DeckCheck.For(sketch, Building.Deck.All(sketch)[0], ZzDeck, MaterialsLibrary.Shipped);
 
-        Assert.Contains(checks.Lines, line => line.Text == "Guard height 2'-6\": 4\" short of the 2'-10\" required (ZZ-GUARD.1, synthetic p. 7 guard).");
+        Assert.Contains(checks.Lines, line => line.Text == "Guard height 2'-6\": 4\" short of the 2'-10\" required (ZZ-GUARD.1, synthetic p. 7 guard). UNREVIEWED: values not yet checked against the source.");
         Assert.Contains(checks.Lines, line => line.Text.StartsWith("Guard openings: the widest is 6\", over the 5\" allowed", StringComparison.Ordinal));
         Assert.Contains(checks.Lines, line => line.Text.StartsWith("Risers 9\": over the 8 1/4\" allowed", StringComparison.Ordinal));
         Assert.Contains(checks.Lines, line => line.Text.StartsWith("Treads 8\": 1\" short of the 9\" required", StringComparison.Ordinal));
@@ -168,7 +185,7 @@ public class GuardStairTests
 
         // 36″ high with no guard typed: required, and the line says to add one.
         (Sketch bare, _) = Deck(null, null);
-        Assert.Contains(DeckCheck.For(bare, Building.Deck.All(bare)[0], ZzDeck, MaterialsLibrary.Shipped).Lines, line => line.Text.EndsWith(": add a guard in the panel.", StringComparison.Ordinal) && !line.Passing);
+        Assert.Contains(DeckCheck.For(bare, Building.Deck.All(bare)[0], ZzDeck, MaterialsLibrary.Shipped).Lines, line => line.Text.EndsWith(": add a guard in the panel. UNREVIEWED: values not yet checked against the source.", StringComparison.Ordinal) && !line.Passing);
 
         // Two risers: fewer than 3, no handrail.
         (Sketch two, _) = Deck(null, Stair(risers: 2, run: 10));

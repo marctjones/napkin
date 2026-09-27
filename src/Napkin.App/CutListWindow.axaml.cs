@@ -637,6 +637,7 @@ public partial class CutListWindow : Window
         // Each deck's frame, from the building as it will be (deck-and-porch §2.4).
         List<(DeckFraming Framing, string Name)> decks = [];
         List<string> deckNotes = [];
+        IEnumerable<string> guideNotes = [];
         foreach (Deck deck in Deck.All(sketch.After()).Where(deck => deck.Box.Phase == Phase.New))
         {
             (DeckFraming? framing, DeckRefusal? refusal) = DeckFrame.Of(sketch.After(), deck, MaterialsLibrary.Shipped);
@@ -644,13 +645,18 @@ public partial class CutListWindow : Window
             {
                 decks.Add((framing, deck.Name));
                 deckNotes.Add($"{deck.Name}: {Napkin.Modules.Editing.DeckTool.FrameLine(framing)}.");
-                deckNotes.AddRange(DeckCheck.For(sketch.After(), deck, Packs.Resolve(sketch.Code).Pack, MaterialsLibrary.Shipped).Lines.Select(line => line.Text));
+                DeckChecks deckChecks = DeckCheck.For(sketch.After(), deck, Packs.Resolve(sketch.Code).Pack, MaterialsLibrary.Shipped);
+                deckNotes.AddRange(deckChecks.Lines.Select(line => line.Text));
+                guideNotes = deckChecks.Guides;
             }
             else
             {
                 deckNotes.Add($"{deck.Name}: {refusal!.Text}");
             }
         }
+
+        // A guide the deck answers come from is said once, before them (deck-guide-pack §1.2, Decision 5).
+        deckNotes.InsertRange(0, guideNotes);
 
         LoadedPack? deckPack = Packs.Resolve(sketch.Code).Pack;
         DeckTable.Rows = ShoppingList.Of(

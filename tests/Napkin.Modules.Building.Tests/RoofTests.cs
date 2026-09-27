@@ -133,7 +133,7 @@ public class RoofTests
 
         // 2x8 at 16", zz-fir, 30 psf: allowed 13'-2"; the span is 9'-10 1/2".
         Assert.True(line.Passing);
-        Assert.Equal("Rafters 2x8 at 16\" o.c., horizontal span 9'-10 1/2\": allowed up to 13'-2\" (ZZ-RAFTER row r.2x8.30, synthetic p. 4).", line.Text);
+        Assert.Equal("Rafters 2x8 at 16\" o.c., horizontal span 9'-10 1/2\": allowed up to 13'-2\" (ZZ-RAFTER row r.2x8.30, synthetic p. 4). UNREVIEWED: values not yet checked against the source.", line.Text);
 
         Assert.Contains("over by", RoofCheck.Rafters(sketch with { Site = sketch.Site with { GroundSnowLoadPsf = 50 } }, Frame(sketch, roof) with { HorizontalSpan = In(140) }, ZzDeck).Text, StringComparison.Ordinal);
         Assert.Contains("Enter the ground snow load", RoofCheck.Rafters(sketch with { Site = SiteValues.NotEntered }, Frame(sketch, roof), ZzDeck).Text, StringComparison.Ordinal);

@@ -157,7 +157,8 @@ public partial class MainWindow
             : refusal!.Text;
 
         DeckChecks checks = DeckCheck.For(Editor.Sketch.After(), deck, Packs.Resolve(Editor.Sketch.Code).Pack, MaterialsLibrary.Shipped);
-        DeckCheckText.Text = string.Join("\n", checks.Lines.Select(line => line.Text));
+        // A guide the answers come from is said once, at the top of the block (deck-guide-pack §1.2, Decision 5).
+        DeckCheckText.Text = string.Join("\n", checks.Guides.Concat(checks.Lines.Select(line => line.Text)));
         DeckSupportsNote.Text = checks.SupportsNote ?? string.Empty;
         DeckSupportsNote.IsVisible = checks.SupportsNote is not null;
         _frostOffered = checks.Frost;
