@@ -172,19 +172,18 @@ public sealed class ContextPack
         }
         else
         {
-            // Lists first: keep each list's lines in order while they fit, with room kept for the
-            // line that says what was cut.
-            int allCut = open.Sum(list => CountWords(CutText(list, 0)));
+            // Lists first: keep each list's lines in order while they fit, with room kept for every
+            // list's line saying what was cut; a list kept whole gives its room back to the next.
+            int allCut = open.Sum(Reserve);
             bool helpFits = used + helpWords + allCut <= budget;
-            int room = budget - used - (helpFits ? helpWords : 0);
+            int room = budget - used - (helpFits ? helpWords : 0) - allCut;
             foreach (OpenList list in open)
             {
-                int reserve = CountWords(CutText(list, 0));
                 int kept = 0;
                 foreach (string line in helpFits ? list.Lines : [])
                 {
                     int words = CountWords(RowText(list, line));
-                    if (words + reserve > room)
+                    if (words > room)
                     {
                         break;
                     }
@@ -197,7 +196,10 @@ public sealed class ContextPack
                 if (kept < list.Lines.Length)
                 {
                     listItems.Add((ContextKind.ListCut, CutText(list, kept)));
-                    room -= reserve;
+                }
+                else
+                {
+                    room += Reserve(list);
                 }
             }
 
@@ -272,6 +274,9 @@ public sealed class ContextPack
     private const string NotEntered = "not entered";
 
     private static string RowText(OpenList list, string line) => $"{list.Title}: {line}";
+
+    /// <summary>The words kept for a list's cut line: the numbers in it are one word each, whatever they are.</summary>
+    private static int Reserve(OpenList list) => list.Lines.IsEmpty ? 0 : CountWords(CutText(list, 0));
 
     private static string CutText(OpenList list, int keptLines)
     {

@@ -211,6 +211,36 @@ public class ContextPackTests
 
     [Fact]
     [Trait("Feature", "AST-001")]
+    public void No_budget_with_room_for_the_design_and_the_cut_lines_is_ever_exceeded()
+    {
+        Design design = Fixtures.Sample("coffee-table");
+        ImmutableArray<CutListRow> rows = CutList.Of(design.Sketch, MaterialsLibrary.Shipped);
+        OpenList[] lists = [OpenList.CutList(rows), new OpenList("Fasteners", string.Empty), OpenList.ShoppingList(ShoppingList.Of(rows))];
+        const string question = "how many boards are on the cut list and what is ground snow load";
+
+        ContextPack whole = ContextPack.For(design, [], ContextChecks.None, lists, question);
+        int design_ = whole.Items.Where(item => item.Kind is not (ContextKind.ListRow or ContextKind.Help)).Sum(item => ContextPack.CountWords(item.Text));
+        int cuts = lists.Sum(list => ContextPack.CountWords($"{list.Title}: … {list.Rows} more rows not shown; napkin's list has {list.Rows}."));
+
+        for (int budget = design_ + cuts; budget <= whole.Words; budget += 5)
+        {
+            ContextPack pack = ContextPack.For(design, [], ContextChecks.None, lists, question, budget);
+            Assert.True(pack.Words <= budget, $"{pack.Words} words against a budget of {budget}");
+            Assert.DoesNotContain(pack.Items, item => item.Text.StartsWith("Fasteners", StringComparison.Ordinal));
+            Assert.Equal(
+                whole.Items.Where(item => item.Kind is not (ContextKind.ListRow or ContextKind.Help)).Select(item => item.Text),
+                pack.Items.Where(item => item.Kind is not (ContextKind.ListRow or ContextKind.Help or ContextKind.ListCut)).Select(item => item.Text));
+
+            // Help goes only once no list line is left.
+            if (pack.Items.Count(item => item.Kind == ContextKind.Help) < whole.Items.Count(item => item.Kind == ContextKind.Help))
+            {
+                Assert.DoesNotContain(pack.Items, item => item.Kind == ContextKind.ListRow);
+            }
+        }
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-001")]
     public void Every_check_is_its_results_own_text_the_selections_first_and_picks_its_help()
     {
         Box deckBox = Box.AsDrawn(new EntityId(Guid.NewGuid()), LayerId.Default, new Point2(Length.Zero, new Length(-24576)), new Length(12288), new Length(12288), new Length(1024), Angle.Zero)
