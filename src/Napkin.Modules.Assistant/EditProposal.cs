@@ -419,9 +419,7 @@ public sealed record EditProposal(ImmutableArray<PartEdit> Edits)
         }
 
         label = DesignWords.NameOf(design, id);
-        Sketch sketch = design.Sketch;
-        if (sketch.Find<Box>(id) is not { Part: not null } part
-            || Wall.Is(sketch, part) || Opening.Is(sketch, part) || Room.Is(sketch, part) || Deck.Is(sketch, part) || Roof.Is(sketch, part))
+        if (design.Sketch.Find<Box>(id) is not { } part || !IsPart(design.Sketch, part))
         {
             refusal = "it is not a part";
             return false;
@@ -430,6 +428,21 @@ public sealed record EditProposal(ImmutableArray<PartEdit> Edits)
         box = part;
         refusal = null;
         return true;
+    }
+
+    /// <summary>
+    /// Whether a box is a furniture part — one the assistant may edit (&#xA7;1): a box with a
+    /// <see cref="Part"/> that is not a wall, an opening, a room, a deck or a roof. The Ask box sends
+    /// a question as an edit when the selection holds one (&#xA7;19 of the note).
+    /// </summary>
+    /// <param name="sketch">The design the box is in.</param>
+    /// <param name="box">The box.</param>
+    public static bool IsPart(Sketch sketch, Box box)
+    {
+        ArgumentNullException.ThrowIfNull(sketch);
+        ArgumentNullException.ThrowIfNull(box);
+        return box.Part is not null
+               && !Wall.Is(sketch, box) && !Opening.Is(sketch, box) && !Room.Is(sketch, box) && !Deck.Is(sketch, box) && !Roof.Is(sketch, box);
     }
 
     /// <summary>Whether a reference is exactly <c>[n]</c>, and n.</summary>
