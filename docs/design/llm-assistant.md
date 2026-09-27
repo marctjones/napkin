@@ -1381,9 +1381,10 @@ and *Assistant → Sketch from words…* on the note in `MainWindow.Assistant.cs
 4. **The sheet is on the note**, as §8 says (the tick lines and OK/Cancel inside `AssistantPanel`),
    not in `FirmUpPanel`; it is Firm up's shape: a tick per line, all ticked; a line napkin refused
    shows its reason in the pencil colour with a tick that is off and cannot be turned on (Firm up's
-   stock line with no candidate); Enter anywhere but the Cancel button, or **Draw**, lands the ticked
-   ones; a rejection goes on the message line in the updater's words, every tick is turned off and
-   the rest have landed. Escape or Cancel closes the note and draws nothing. Once everything ticked
+   stock line with no candidate); Enter anywhere but the description box and the Cancel button, or
+   **Draw**, lands the ticked ones — Enter in the description box asks again, and the new proposal
+   replaces the sheet, so a person refines the sentence by clicking back into it; a rejection goes on
+   the message line in the updater's words, every tick is turned off and the rest have landed. Escape or Cancel closes the note and draws nothing. Once everything ticked
    has landed the lines go, the note shows the closing line, and the drawing gets the keyboard so
    **F**, Ctrl/Cmd+Z and Ctrl/Cmd+Y reach it; the note stays open until Escape. The note has one task
    at a time (Ask or Sketch); switching cancels any question still out.
