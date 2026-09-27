@@ -29,6 +29,10 @@
       "line": 100,
       "branch": 100
     },
+    "Napkin.Interop.Pdf": {
+      "line": 99.31,
+      "branch": 98.48
+    },
     "Napkin.Modules.Assistant": {
       "line": 99.85,
       "branch": 95.68
@@ -47,7 +51,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 118,
+    "workflowsPassed": 119,
     "workflowIds": [
       "CVS-011",
       "CVS-012",
@@ -141,6 +145,7 @@
       "GUI-SHELL-05",
       "GUI-SHELL-06",
       "GUI-SHELL-07",
+      "GUI-SHELL-08",
       "GUI-SITE-01",
       "GUI-SITE-02",
       "GUI-SKETCH-01",
