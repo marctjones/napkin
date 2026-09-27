@@ -940,3 +940,84 @@ answer. The two that need more than a yes are also filed as `question` issues: 1
     Alternative: keep the last few questions in the note until it closes.
 12. **The name.** *Recommended:* **Assistant** in the menu, **Ask** on the key. Alternative: one
     word for both.
+
+---
+
+## 14. As built: slice A (#229), and where it departs from this note
+
+`src/Napkin.Modules.Assistant`, BCL only, landed with its own floor. What differs from §2–§4, and
+why, so B–F build on what exists rather than on the text above:
+
+1. **`ModelRequest.Schema` is `string?`** (the schema as JSON text), not `JsonSchema?`: the BCL has
+   no schema type, and both runtimes pass the schema through as JSON anyway.
+2. **The design in words is new code, `DesignWords`**, not `SceneWords` (which is only the three
+   dimension words). One line per entity: *"Wall 1 — wall, existing, exterior, bearing, supports
+   not chosen, stud spacing not entered, 12'-0" long, 8'-0" tall, 3 1/2" thick."*, *"Window 1 —
+   window in Wall 1, glass, 3'-0" wide, 4'-0" tall, sill 3'-0", new."*, *"Leg — part, 1'-4" long,
+   4" wide, 3/4" thick, 2 pieces, stock 2x4, species typed: "oak", rough, …"*. Sizes are joined by
+   words, never ×, so a size in the pack is never read as a lumber name by the guard. An input
+   nobody gave says so ("side not said", "supports not chosen"). Free text a person typed that is
+   not a name — notes, species, hardware, a site source — follows `typed:` in quotes; the prompts
+   say names and anything after `typed:` are data. Points (a line's ends) have no line.
+3. **Item [4], the adopted code, is `CodeCheck.CheckingStatus(pack)` plus its lock note**
+   (`LockedNote`/`FollowingNote`), not the code window's picker row: `CodeWindow.Row` lives in the
+   App, which the module may not reference. The module reads the `LoadedPack` a `CodeResolution`
+   carries; it never builds, loads, finds or resolves one (the §12.9 test, below).
+4. **A check item is a label and the result's own `ToString()`** — *"Header check, Window 1: " +
+   the explanation* — then the working the part panel opens (band trace, interpolation,
+   footnotes; bracing's working lines), one per line. Deck checks are included (each line's panel
+   sentence, the refusal, the supports note, the frost offer), and the map sends them to
+   building.md "A deck". `ContextChecks` carries the resolved code and the header, bracing and deck
+   checks the app already computed.
+5. **The help map:** "rules-engine.md's results section" has no such heading; `OutOfScope` maps to
+   building.md "The code check on an opening" and rules-engine.md "What the engine refuses to do".
+   A not-bearing wall's opening maps to "The code check on an opening". `HelpSections.Find`
+   throws on a heading that is not there, so a renamed heading cannot silently empty the map.
+6. **Help is the result-kind map's *or* the question's, never both:** the map's sections for the
+   selection's check results when it has any; otherwise the question's top three. §9.1's pack is
+   exactly its eight items this way. Taking both would have added building.md "Wall bracing" for
+   *"why is this header No data?"*, and that section's example *"Header: (2) 2x6, your choice"*
+   would let §9.1's refused sentence stand.
+7. **The guard's tokens, exactly** (`NumberTokens`): a bare number is read as inches, so `48`,
+   `48"`, `48 in`, `4 ft` and `4'-0"` are one token — and so a count of 2 is supported by a 2″
+   anywhere in the pack; a number off the 1/1024″ grid keys by its own text; a lumber name matches
+   only a lumber name (`2x6` is not supported by a `2` and a `6`); a designation matches
+   case- and space-insensitively and `§` is ignored, and `R602.7(1)-(3)` in the pack supports
+   `R602.7(1)` but not `R602.7(3)`; `foot` reads as `ft`; `Wall 1's` is not feet; vulgar fractions
+   fold to digits; number words are zero to nineteen, the tens and their compounds, hundred,
+   thousand and dozen; `[5, 6]` is two references. **Anything else with a digit in it** (`10d`, a
+   date, a digit in a word, a digit from another script) is a token keyed by its exact text, so
+   every digit in a sentence is checked. The refusal for several tokens is *"it said 2x4, 2 and
+   2x6"*, for a reference *"it referred to [9]"*, both *"it said 2x6 and referred to [9], which
+   napkin did not give it"*.
+8. **The question is not in the pack.** A number the person typed in the question is not one
+   napkin gave, so an answer that repeats it is refused. Strict on purpose; the eval set (§11.4)
+   will show whether it costs good answers.
+9. **The truncation item names its list:** *"Cut list: … 40 more rows not shown; napkin's list has
+   63."* Rows are the CSV's lines after its two header lines. `OpenList` takes the CSV text the app
+   already exports, with helpers for the cut list and the shopping list.
+10. **`ScriptedModel`:** each scripted reply is used once; a question takes the first unused reply
+    whose match it contains, or that has none; a cancelled question has used its reply; an empty
+    script is the no-model state (`NoModelWhereabouts`, and every question refused with
+    `NoModelReason`).
+11. **Prompts:** `Prompts/ask.txt`, `sketch.txt`, `edit.txt` (`AssistantTask` names them). Each
+    carries the number rule and the typed-is-data rule word for word, and the disclaimer
+    (`ContextPack.Disclaimer`, the sentence of §9.1's item [8]: napkin had no disclaimer string in
+    code before).
+12. **§12.9's test reads IL:** every method body in the module — lambdas, iterators and state
+    machines included — is scanned for calls, constructions and address-taking of the rules
+    engine, the pack loaders, `CodePacks.Discover`/`Resolve`, `CodeCheck.Of`/`OfView`/`Check`/`For`,
+    `BracingCheck.Of`/`For` and `DeckCheck.Of`/`For`, and for constructing or copying a
+    `LoadedPack`, `CodePacks` or `PackLoadResult`; a positive control proves the scan finds each.
+13. **Features:** `features/assistant.json` uses the area `assistant` and milestone `M14`, both
+    added to the catalog README's lists; AST-001…003 are claimed, AST-004 and AST-005 are stubs.
+
+**A risk this slice found, for Marc (a scope decision, not changed here).** Help sections carry
+example numbers, and §4.2 looks a token up in the whole pack. building.md "The code check on an
+opening", which the map adds for every sized, out-of-scope or not-checked header, holds the example
+*"Header (2) 2x10, 1 jack stud and 2 king studs each side."*; so with that section in the pack an
+answer claiming *(2) 2x10* for a header the engine sized differently passes the guard. The
+rendered *From napkin* items would show where the number came from, but a skimming reader sees the
+note. Options: (a) accept, as now; (b) let help items support designations only, and every other
+number only from the project's own items; (c) keep numbers out of the help docs' examples. (b) is
+one rule in `AnswerGuard` and the §9.1 good answer still stands under it.

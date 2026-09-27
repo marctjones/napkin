@@ -12,6 +12,18 @@ namespace Napkin.Features.Tests;
 
 public class PlannedFeatures
 {
+    [Fact(Skip = "planned: AST-004 — Sketch from words proposes rough planks only")]
+    [Trait("Feature", "AST-004")]
+    public void AST_004()
+    {
+    }
+
+    [Fact(Skip = "planned: AST-005 — Edit in words proposes only the requests the panel already makes")]
+    [Trait("Feature", "AST-005")]
+    public void AST_005()
+    {
+    }
+
     [Fact(Skip = "planned: CODE-001 — Connecticut 2026 header and fastener tables")]
     [Trait("Feature", "CODE-001")]
     public void CODE_001()
