@@ -94,7 +94,6 @@ public sealed class ModelDownloadTests : IDisposable
     [InlineData("http://us.aws.cdn.hf.co/model.safetensors", "http://us.aws.cdn.hf.co")]
     [InlineData("https://us.aws.cdn.hf.co:8443/model.safetensors", "https://us.aws.cdn.hf.co:8443")]
     [InlineData("https://huggingface.co.evil.example/model.safetensors", "https://huggingface.co.evil.example")]
-    [InlineData("//evil.example/model.safetensors", "https://evil.example")]
     public async Task ARedirectAnywhereElseIsRefusedNamingWhere(string location, string named)
     {
         _hub.Answer = request => request.RequestUri!.Host == "huggingface.co" ? HubStub.Redirect(HttpStatusCode.Found, location) : throw new InvalidOperationException("followed");
@@ -106,6 +105,20 @@ public sealed class ModelDownloadTests : IDisposable
         Assert.Equal($"napkin refused a redirect of model.safetensors to {named}: it downloads only over HTTPS from huggingface.co and the content servers the Hub documents.", result.Line);
         Assert.Single(_hub.Requests);
         Assert.False(Directory.Exists(Destination));
+    }
+
+    [Fact]
+    public async Task ASchemeRelativeRedirectToAnotherHostIsRefused()
+    {
+        // "//host/path" is taken against the URL that gave it (Unix) or as a UNC file URL (Windows);
+        // either way it is not an allowed HTTPS host, and it is refused naming the host.
+        _hub.Answer = request => request.RequestUri!.Host == "huggingface.co" ? HubStub.Redirect(HttpStatusCode.Found, "//evil.example/model.safetensors") : throw new InvalidOperationException("followed");
+
+        DownloadResult result = await new ModelDownload(_catalog, _models, _hub).RunAsync(consented: true);
+
+        Assert.StartsWith("napkin refused a redirect of model.safetensors to ", result.Line, StringComparison.Ordinal);
+        Assert.Contains("evil.example", result.Line, StringComparison.Ordinal);
+        Assert.Single(_hub.Requests);
     }
 
     [Fact]

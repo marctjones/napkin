@@ -397,7 +397,9 @@ public class AssistantWorkflows
         File.WriteAllText(Path.Combine(folder, "tokenizer.json"), "{}");
         File.WriteAllText(Path.Combine(folder, "tokenizer_config.json"), """{"tokenizer_class":"Qwen2Tokenizer"}""");
         File.WriteAllBytes(Path.Combine(folder, "model.safetensors"), new byte[1024]);
-        string whereabouts = $"In napkin (MLX): {Path.GetFileName(folder)} from {folder} — nothing leaves this machine.";
+        // The folder as the whereabouts line writes it: under the home folder it is "~/…" (on Windows
+        // the temp folder is under the profile; on macOS it is not), so the expectation is built the same way.
+        string whereabouts = $"In napkin (MLX): {Path.GetFileName(folder)} from {HomeRelative(folder)} — nothing leaves this machine.";
 
         // Stands in for the Swift bridge: nothing here dlopens a library. A short load delay gives
         // the workflow a real window to observe the loading line before Test's "ok" arrives.
@@ -625,7 +627,7 @@ public class AssistantWorkflows
             });
 
             // Use these settings (pointer): the downloaded folder is what is saved.
-            string whereabouts = $"In napkin (MLX): Qwen3-4B-4bit from {destination} — nothing leaves this machine.";
+            string whereabouts = $"In napkin (MLX): Qwen3-4B-4bit from {HomeRelative(destination)} — nothing leaves this machine.";
             where.Click(CentreOf(dialog, dialog.Use));
             app.Expect("the settings name the downloaded folder", () =>
             {
@@ -658,6 +660,9 @@ public class AssistantWorkflows
     }
 
     static string Sha256(byte[] bytes) => Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(bytes));
+
+    /// <summary>A path as the MLX whereabouts line writes it: "~" for the home folder, as <see cref="ModelFolder.HomeRelativePath"/> does.</summary>
+    static string HomeRelative(string path) => ModelFolder.HomeRelative(path, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
 
     // ---- Steps and fixtures ---------------------------------------------------------------
 

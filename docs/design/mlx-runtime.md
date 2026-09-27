@@ -1687,6 +1687,11 @@ loaded exactly that folder and the answer is on the note with the in-napkin wher
 13. The *Downloaded* state checks sizes only (the hashes were checked when the files landed, and the
     folder has its name only after they all passed); hashing 2.3 GB each time the dialog opens was
     not worth it.
+14. **GUI-AST-07's expected whereabouts line is now built as the line is** (`ModelFolder.HomeRelative`
+    of the folder), in the same file as GUI-AST-08. On `windows-latest` the temp folder is under the
+    profile, so the line reads `~\AppData\Local\Temp\…`, and CI on `main` after C's landing (run
+    36317059058) failed on exactly that; macOS's temp folder is not under the home folder, which is
+    why the local gate passed. GUI-AST-08 builds its expectation the same way.
 
 ### 16.6 Not verified
 
