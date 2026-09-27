@@ -39,6 +39,18 @@
             <TextBlock Name="ProblemText" FontSize="11" TextWrapping="Wrap" IsVisible="False"
                        Foreground="{DynamicResource SystemErrorTextColor}" AutomationProperties.Name="Site plan problem" />
 
+            <TextBlock Text="Survey underlay" FontSize="12" FontWeight="SemiBold" Margin="0,6,0,0" />
+            <TextBlock Name="UnderlayText" FontSize="12" TextWrapping="Wrap" AutomationProperties.Name="Survey underlay" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Name="ChooseImageButton" Content="Choose image…" Click="OnChooseImageClicked"
+                        ToolTip.Tip="A PNG or JPEG of the survey, up to 8 MB, drawn behind the plan. Nothing snaps to it and nothing is traced from it." />
+                <TextBlock Text="Distance" FontSize="12" VerticalAlignment="Center" />
+                <TextBox Name="CalibrationDistanceBox" MinWidth="90" FontSize="12" AutomationProperties.Name="Calibration distance"
+                         ToolTip.Tip="The real distance between two points you can find on the survey, like 100'." />
+                <Button Name="CalibrateButton" Content="Calibrate" Click="OnCalibrateClicked"
+                        ToolTip.Tip="Then click the two points on the plan: the image is scaled and turned so they are this far apart." />
+            </StackPanel>
+
             <TextBlock Text="Distances" FontSize="12" FontWeight="SemiBold" Margin="0,6,0,0" />
             <TextBlock Name="ReadoutText" FontSize="12" TextWrapping="Wrap" AutomationProperties.Name="Site plan distances" />
             <TextBlock Name="ZoningText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" />

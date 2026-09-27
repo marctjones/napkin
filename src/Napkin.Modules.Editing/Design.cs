@@ -28,6 +28,9 @@ public sealed record Design(
     Sketch Sketch,
     ImmutableDictionary<EntityId, string> Labels)
 {
+    /// <summary>The images the design carries, by SHA-256 (container version 2): the survey underlay's, for the session and for saving.</summary>
+    public ImmutableDictionary<string, byte[]> Assets { get; init; } = ImmutableDictionary<string, byte[]>.Empty;
+
     /// <summary>A design with no labels at all — what a file with no names in it produces.</summary>
     public static Design Unlabelled(string name, Sketch sketch) =>
         new(name, sketch, ImmutableDictionary<EntityId, string>.Empty);

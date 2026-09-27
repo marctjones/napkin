@@ -20,7 +20,7 @@ public class StrutFormatTests
     // width meeting it at the top: run 7″, rise 24″, 2x2 stock.
     private static readonly string Scene = $$"""
         {
-          "formatVersion": 15,
+          "formatVersion": 16,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "{{Layer}}", "name": "Default" } ],
           "entities": [
@@ -42,7 +42,7 @@ public class StrutFormatTests
               "height": 1536, "depth": 768,
               "part": null }
           ],
-          "fastenerChoices": [], "supplies": [], "code": null, "furniture": { "kind": "none", "anchored": false }, "site": { "north": 0, "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
+          "fastenerChoices": [], "supplies": [], "code": null, "furniture": { "kind": "none", "anchored": false }, "site": { "north": 0, "underlay": null, "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "axisDistance",
               "from": { "kind": "feature", "box": "{{SeatId}}", "faces": ["bottom"] },
@@ -260,9 +260,9 @@ public class StrutFormatTests
     public void A_version_10_file_is_refused_naming_both_versions()
     {
         Scenes.RefuseWith(
-            Scene.With("\"formatVersion\": 15", "\"formatVersion\": 10"),
+            Scene.With("\"formatVersion\": 16", "\"formatVersion\": 10"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 10",
-            "format version 15");
+            "format version 16");
     }
 }

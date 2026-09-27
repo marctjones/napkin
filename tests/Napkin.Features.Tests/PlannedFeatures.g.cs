@@ -84,12 +84,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: PRJ-006 — The project is a documented zip container")]
-    [Trait("Feature", "PRJ-006")]
-    public void PRJ_006()
-    {
-    }
-
     [Fact(Skip = "planned: REL-001 — A tag produces downloadable macOS and Windows artifacts")]
     [Trait("Feature", "REL-001")]
     public void REL_001()
@@ -99,12 +93,6 @@ public class PlannedFeatures
     [Fact(Skip = "planned: REL-003 — The arm64 macOS artifact carries its ad-hoc signature only")]
     [Trait("Feature", "REL-003")]
     public void REL_003()
-    {
-    }
-
-    [Fact(Skip = "planned: SITE-001 — A survey underlay calibrates from two known points")]
-    [Trait("Feature", "SITE-001")]
-    public void SITE_001()
     {
     }
 

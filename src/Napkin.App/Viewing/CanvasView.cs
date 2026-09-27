@@ -697,6 +697,27 @@ public sealed class CanvasView : Control
             return;
         }
 
+        // Calibrating the survey image (permit-set §5.4): two clicks, the first point and the second.
+        if (_calibration is { } calibrate)
+        {
+            Point2 clicked = _view.ToWorld(position);
+            if (_calibrationFirst is not { } first)
+            {
+                _calibrationFirst = clicked;
+                _editor?.Say(EditSeverity.Hint, "Now click the second point on the survey image.");
+            }
+            else
+            {
+                _calibration = null;
+                _calibrationFirst = null;
+                calibrate(first, clicked);
+            }
+
+            e.Handled = true;
+            InvalidateVisual();
+            return;
+        }
+
         if (_editor is not { } editor)
         {
             BeginPan(e.Pointer, position);
@@ -2158,6 +2179,8 @@ public sealed class CanvasView : Control
             layer => layer.Id,
             layer => layer.Name);
 
+        DrawUnderlay(context, design);
+
         foreach (Entity entity in sketch.Entities.Values.OrderBy(item => item.Id))
         {
             string layerName = DesignLayers.StyleName(sketch, entity, layerNames);
@@ -2941,6 +2964,68 @@ public sealed class CanvasView : Control
             rectangle.Center.X - (text.Width / 2),
             rectangle.Center.Y - (text.Height / 2) + lift));
         return true;
+    }
+
+    Action<Point2, Point2>? _calibration;
+    Point2? _calibrationFirst;
+    readonly Dictionary<string, Avalonia.Media.Imaging.Bitmap?> _underlayImages = new(StringComparer.Ordinal);
+
+    /// <summary>Takes the next two clicks on the plan as the survey image's calibration points (permit-set §5.4).</summary>
+    public void ArmCalibration(Action<Point2, Point2> done)
+    {
+        _calibration = done;
+        _calibrationFirst = null;
+        _editor?.Say(EditSeverity.Hint, "Click the first of two points on the survey image whose distance apart you typed.");
+    }
+
+    /// <summary>Whether the plan is waiting for calibration clicks.</summary>
+    public bool IsCalibrating => _calibration is not null;
+
+    /// <summary>
+    /// The survey image behind the plan (§5.4): placed by its calibration, pixels down and north up, for
+    /// drawing only. An image that will not decode is simply not drawn; the Site plan window says so.
+    /// </summary>
+    void DrawUnderlay(DrawingContext context, Design design)
+    {
+        if (design.Sketch.Site.Underlay is not { } underlay || !design.Assets.TryGetValue(underlay.Asset, out byte[]? bytes))
+        {
+            return;
+        }
+
+        if (!_underlayImages.TryGetValue(underlay.Asset, out Avalonia.Media.Imaging.Bitmap? bitmap))
+        {
+            try
+            {
+                bitmap = new Avalonia.Media.Imaging.Bitmap(new MemoryStream(bytes));
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or IOException or NotSupportedException)
+            {
+                bitmap = null;
+            }
+
+            _underlayImages[underlay.Asset] = bitmap;
+        }
+
+        if (bitmap is null)
+        {
+            return;
+        }
+
+        UnderlayPlacement placement = new(underlay);
+        double w = bitmap.PixelSize.Width, h = bitmap.PixelSize.Height;
+        Point Screen(double px, double py)
+        {
+            (double x, double y) = placement.ToWorld(px, py);
+            return _view.ToScreen(x / Length.UnitsPerInch, y / Length.UnitsPerInch);
+        }
+
+        Point origin = Screen(0, 0), across = Screen(w, 0), down = Screen(0, h);
+        Matrix map = new((across.X - origin.X) / w, (across.Y - origin.Y) / w, (down.X - origin.X) / h, (down.Y - origin.Y) / h, origin.X, origin.Y);
+        using (context.PushTransform(map))
+        using (context.PushOpacity(0.5))
+        {
+            context.DrawImage(bitmap, new Rect(0, 0, w, h));
+        }
     }
 
     /// <summary>

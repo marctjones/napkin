@@ -67,7 +67,9 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetFastenerChoices choices => new Solved(sketch with { FastenerChoices = choices.Choices }, ChangeSet.Empty),
             SetSupplies supplies => new Solved(sketch with { Supplies = supplies.Supplies }, ChangeSet.Empty),
             SetCode code => new Solved(sketch with { Code = code.Code }, ChangeSet.Empty),
-            SetSite site => new Solved(sketch with { Site = site.Site }, ChangeSet.Empty),
+            SetSite site => site.Site.Underlay is { } underlay && SurveyUnderlayRules.Refusal(underlay) is not null
+                ? new Rejected(RejectionReason.NonPositiveSize)
+                : new Solved(sketch with { Site = site.Site }, ChangeSet.Empty),
             SetFurnitureMarks marks => new Solved(sketch with { Furniture = marks.Marks }, ChangeSet.Empty),
             SetBoundary boundary => ApplySetBoundary(sketch, boundary),
             SetWallInputs wall => ApplySetWallInputs(sketch, wall),

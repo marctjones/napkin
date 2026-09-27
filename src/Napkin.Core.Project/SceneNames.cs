@@ -133,6 +133,12 @@ internal static class SceneNames
     internal const string Toward = "toward";
     internal const string SetbackName = "setback";
     internal const string SiteNorth = "north";
+    internal const string Underlay = "underlay";
+    internal const string Asset = "asset";
+    internal const string ImageA = "imageA";
+    internal const string ImageB = "imageB";
+    internal const string WorldA = "worldA";
+    internal const string WorldB = "worldB";
 
     /// <summary>A bearing's meridian and turn, as a survey prints them (format version 15).</summary>
     internal static readonly (Geometry.NorthSouth Value, string Text)[] Meridians = [(Geometry.NorthSouth.North, "N"), (Geometry.NorthSouth.South, "S")];

@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 
 using Napkin.Core.Geometry;
 using Napkin.Modules.Building;
@@ -34,6 +35,18 @@ public partial class SitePlanWindow : Window
     /// <summary>The Site layer's id, and the request that adds it when the design has none.</summary>
     public Func<(LayerId Layer, Request? Add)>? SiteLayer { get; set; }
 
+    /// <summary>Brings an image in under the site plan (the editor's AddUnderlay): the underlay it made, or null when it is not a PNG or JPEG.</summary>
+    public Func<byte[], string, SurveyUnderlay?>? AddUnderlay { get; set; }
+
+    /// <summary>Asks the plan for two calibration clicks.</summary>
+    public Action<Action<Point2, Point2>>? ArmCalibration { get; set; }
+
+    /// <summary>The underlay's controls, for the GUI suite.</summary>
+    public (TextBox Distance, Button Calibrate) UnderlayFields => (CalibrationDistanceBox, CalibrateButton);
+
+    /// <summary>What the window says about the survey image.</summary>
+    public string UnderlayLine => UnderlayText.Text ?? string.Empty;
+
     /// <summary>The fields, for the GUI suite.</summary>
     public (TextBox North, TextBox StartX, TextBox StartY, TextBox Courses, Button Apply) Fields => (NorthBox, StartXBox, StartYBox, CoursesBox, ApplyButton);
 
@@ -56,6 +69,9 @@ public partial class SitePlanWindow : Window
         StartXBox.Text = (boundary?.Start.X ?? Length.Zero).Format(feet).Text;
         StartYBox.Text = (boundary?.Start.Y ?? Length.Zero).Format(feet).Text;
         CoursesBox.Text = boundary is null ? string.Empty : CourseText.Of(boundary.Courses);
+        UnderlayText.Text = sketch.Site.Underlay is { } underlay
+            ? $"Survey underlay: {underlay.Name}, calibrated to {underlay.Distance.Format(feet).Text} between two points. This site plan is not a survey."
+            : "No survey image.";
         ShowReadout(sketch);
     }
 
@@ -73,6 +89,88 @@ public partial class SitePlanWindow : Window
     }
 
     void OnApplyClicked(object? sender, RoutedEventArgs e) => Apply();
+
+    /// <summary>
+    /// Puts an image under the site plan. The dialog's handler calls this, and so does the GUI suite,
+    /// which cannot drive the platform's file picker; everything after the bytes are read is the same.
+    /// </summary>
+    public bool SetUnderlay(byte[] bytes, string name)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        if (bytes.LongLength > Napkin.Core.Project.ContainerLimits.MaxAssetBytes)
+        {
+            Complain($"{name} is larger than 8 MB, which is as large an image as a napkin project carries. Nothing was changed.");
+            return false;
+        }
+
+        if (AddUnderlay?.Invoke(bytes, name) is null)
+        {
+            Complain($"{name} is not a PNG or JPEG napkin can read. Nothing was changed.");
+            return false;
+        }
+
+        ProblemText.IsVisible = false;
+        return true;
+    }
+
+    async void OnChooseImageClicked(object? sender, RoutedEventArgs e)
+    {
+        if (StorageProvider is not { CanOpen: true } storage)
+        {
+            return;
+        }
+
+        IReadOnlyList<Avalonia.Platform.Storage.IStorageFile> chosen = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "Choose the survey image",
+            AllowMultiple = false,
+            FileTypeFilter = [new Avalonia.Platform.Storage.FilePickerFileType("Images") { Patterns = ["*.png", "*.jpg", "*.jpeg"] }],
+        }).ConfigureAwait(true);
+        if (chosen.Count == 0 || chosen[0].TryGetLocalPath() is not { } path)
+        {
+            return;
+        }
+
+        try
+        {
+            SetUnderlay(await System.IO.File.ReadAllBytesAsync(path).ConfigureAwait(true), System.IO.Path.GetFileName(path));
+        }
+        catch (Exception exception) when (Napkin.Core.Project.ProjectFile.IsFileException(exception))
+        {
+            Complain($"{System.IO.Path.GetFileName(path)} could not be read: {exception.Message}");
+        }
+    }
+
+    void OnCalibrateClicked(object? sender, RoutedEventArgs e) => Calibrate();
+
+    /// <summary>Reads the typed distance and asks the plan for the two points; the calibration is applied on the second click, one undo step.</summary>
+    public bool Calibrate()
+    {
+        if (Design?.Sketch.Site.Underlay is null || ApplyRequest is null || ArmCalibration is null)
+        {
+            Complain("Choose the survey image first.");
+            return false;
+        }
+
+        if (!Length.TryParse(CalibrationDistanceBox.Text, out Length distance, out _) || distance <= Length.Zero)
+        {
+            Complain("The calibration distance is a length longer than zero, like 100'. Nothing was changed.");
+            return false;
+        }
+
+        ProblemText.IsVisible = false;
+        ArmCalibration((first, second) =>
+        {
+            if (Design?.Sketch.Site.Underlay is not { } underlay || Underlays.Calibrate(underlay, first, second, distance) is not { } calibrated)
+            {
+                Complain("The two points are the same point: click two different ones. Nothing was changed.");
+                return;
+            }
+
+            ApplyRequest(new SetSite(Design.Sketch.Site with { Underlay = calibrated }), "Calibrated the survey image");
+        });
+        return true;
+    }
 
     /// <summary>Reads the fields and sets the lot and north: one undo step. A field that does not read is said, and nothing changes.</summary>
     public bool Apply()

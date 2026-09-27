@@ -84,24 +84,26 @@ public static class ProjectFile
     /// <param name="path">Where to save. The extension is the caller's business.</param>
     /// <param name="sketch">The drawing to save.</param>
     /// <param name="adoptedCode">The project's adopted code, or <see langword="null"/> for none.</param>
-    public static SaveResult Save(string path, Sketch sketch, AdoptedCode? adoptedCode = null)
-        => Save(path, sketch, adoptedCode, CreateNew);
+    /// <param name="assets">The images the sketch refers to, by SHA-256 (container version 2); only the one the site's underlay names is written.</param>
+    public static SaveResult Save(string path, Sketch sketch, AdoptedCode? adoptedCode = null, IReadOnlyDictionary<string, byte[]>? assets = null)
+        => Save(path, sketch, adoptedCode, CreateNew, assets);
 
     /// <summary>Saves a drawing as a project file into a stream.</summary>
     /// <param name="stream">Where the bytes go. Not closed by this call.</param>
     /// <param name="sketch">The drawing to save.</param>
     /// <param name="adoptedCode">The project's adopted code, or <see langword="null"/> for none.</param>
-    public static SaveResult Save(Stream stream, Sketch sketch, AdoptedCode? adoptedCode = null)
+    /// <param name="assets">The images the sketch refers to, by SHA-256.</param>
+    public static SaveResult Save(Stream stream, Sketch sketch, AdoptedCode? adoptedCode = null, IReadOnlyDictionary<string, byte[]>? assets = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(sketch);
 
-        if (Unsavable(sketch) is { } refusal)
+        if (Unsavable(sketch, assets) is { } refusal)
         {
             return refusal;
         }
 
-        byte[] bytes = Pack(sketch, adoptedCode);
+        byte[] bytes = Pack(sketch, adoptedCode, assets);
 
         try
         {
@@ -123,10 +125,11 @@ public static class ProjectFile
     /// </remarks>
     /// <param name="sketch">The drawing to save.</param>
     /// <param name="adoptedCode">The project's adopted code, or <see langword="null"/> for none.</param>
-    public static byte[] SaveToBytes(Sketch sketch, AdoptedCode? adoptedCode = null)
+    /// <param name="assets">The images the sketch refers to, by SHA-256.</param>
+    public static byte[] SaveToBytes(Sketch sketch, AdoptedCode? adoptedCode = null, IReadOnlyDictionary<string, byte[]>? assets = null)
     {
         ArgumentNullException.ThrowIfNull(sketch);
-        return Pack(sketch, adoptedCode);
+        return Pack(sketch, adoptedCode, assets);
     }
 
     /// <summary>
@@ -134,20 +137,20 @@ public static class ProjectFile
     /// way through and watch the previous file survive it.
     /// </summary>
     internal static SaveResult Save(
-        string path, Sketch sketch, AdoptedCode? adoptedCode, Func<string, Stream> create)
+        string path, Sketch sketch, AdoptedCode? adoptedCode, Func<string, Stream> create, IReadOnlyDictionary<string, byte[]>? assets = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
         ArgumentNullException.ThrowIfNull(sketch);
         ArgumentNullException.ThrowIfNull(create);
 
-        if (Unsavable(sketch) is { } refusal)
+        if (Unsavable(sketch, assets) is { } refusal)
         {
             return refusal;
         }
 
         // Built before anything on disk is touched: a sketch the writer cannot spell fails here,
         // with the old file still in place.
-        byte[] bytes = Pack(sketch, adoptedCode);
+        byte[] bytes = Pack(sketch, adoptedCode, assets);
 
         string full = Path.GetFullPath(path);
         string directory = Path.GetDirectoryName(full) ?? Directory.GetCurrentDirectory();
@@ -199,8 +202,22 @@ public static class ProjectFile
         }
     }
 
-    private static NotSaved? Unsavable(Sketch sketch)
+    private static NotSaved? Unsavable(Sketch sketch, IReadOnlyDictionary<string, byte[]>? assets)
     {
+        // The underlay's image travels with the drawing; without its bytes the file would name an
+        // image it does not hold, and napkin would refuse to open it again.
+        if (sketch.Site.Underlay is { } underlay
+            && (assets is null || !assets.TryGetValue(underlay.Asset, out byte[]? image)
+                || ProjectAssets.Extension(image) is null || ProjectAssets.Hash(image) != underlay.Asset))
+        {
+            return new NotSaved(
+            [
+                new SaveProblem(
+                    SaveProblemKind.InvalidSketch,
+                    $"The survey underlay's image ({underlay.Name}) is not here to save with the drawing, or is not the PNG or JPEG it names."),
+            ]);
+        }
+
         // A sketch that does not validate would be written into a file this build refuses to
         // open. Saving it would turn a bug in the editor into a drawing the user cannot get back.
         ValidationResult validation = sketch.Validate();
@@ -234,7 +251,7 @@ public static class ProjectFile
     /// The container, byte for byte the same for the same drawing: a fixed entry order, fixed
     /// timestamps, no extra fields, and two documents that are themselves deterministic.
     /// </summary>
-    private static byte[] Pack(Sketch sketch, AdoptedCode? adoptedCode)
+    private static byte[] Pack(Sketch sketch, AdoptedCode? adoptedCode, IReadOnlyDictionary<string, byte[]>? assets)
     {
         byte[] manifest = ManifestJson.Write(ProjectManifest.Current.With(adoptedCode));
         byte[] scene = SceneWriter.WriteToBytes(sketch);
@@ -248,6 +265,13 @@ public static class ProjectFile
             foreach (string name in ContainerNames.InWriteOrder)
             {
                 Store(archive, name, name == ContainerNames.Manifest ? manifest : scene);
+            }
+
+            // The image the underlay names, and nothing else: an unreferenced asset is never written.
+            if (sketch.Site.Underlay is { } underlay && assets is not null && assets.TryGetValue(underlay.Asset, out byte[]? image)
+                && ProjectAssets.Extension(image) is { } extension)
+            {
+                Store(archive, ProjectAssets.EntryName(underlay.Asset, extension), image);
             }
         }
 
@@ -390,13 +414,56 @@ public static class ProjectFile
                 return new Refused([.. problems]);
             }
 
-            using MemoryStream scene = new(sceneBytes, writable: false);
-            return SceneReader.Read(scene, updater) switch
+            // Each image: its bytes are the PNG or JPEG its name says, and hash to its name.
+            Dictionary<string, byte[]> assets = new(StringComparer.Ordinal);
+            foreach ((string name, ZipArchiveEntry _) in entries.Where(pair => pair.Key.StartsWith(ContainerNames.AssetsDirectory, StringComparison.Ordinal)).OrderBy(pair => pair.Key, StringComparer.Ordinal))
             {
-                Loaded loaded => new LoadedProject(new ProjectContents(loaded.Sketch, manifest, loaded.Stamp)),
-                Refused refused => Inside(refused),
-                LoadResult other => other,
-            };
+                if (Extract(entries, name, problems) is not { } image)
+                {
+                    continue;
+                }
+
+                ProjectAssets.TryEntry(name, out string hash, out string extension);
+                if (ProjectAssets.Extension(image) != extension)
+                {
+                    problems.Add(new LoadProblem(LoadProblemKind.InvalidValue, name, $"\"{name}\" is not the {(extension == ".png" ? "PNG" : "JPEG")} its name says: its first bytes are not one."));
+                }
+                else if (ProjectAssets.Hash(image) != hash)
+                {
+                    problems.Add(new LoadProblem(LoadProblemKind.InvalidValue, name, $"\"{name}\" is not the image its name says: its bytes' SHA-256 is another."));
+                }
+                else
+                {
+                    assets[hash] = image;
+                }
+            }
+
+            if (problems.Count > 0)
+            {
+                return new Refused([.. problems]);
+            }
+
+            using MemoryStream scene = new(sceneBytes, writable: false);
+            LoadResult read = SceneReader.Read(scene, updater);
+            if (read is not Loaded loaded)
+            {
+                return read is Refused refused ? Inside(refused) : read;
+            }
+
+            // The scene and the images agree: the one the underlay names is here, and nothing else is.
+            string? named = loaded.Sketch.Site.Underlay?.Asset;
+            if (named is not null && !assets.ContainsKey(named))
+            {
+                problems.Add(new LoadProblem(LoadProblemKind.MissingEntry, $"{ContainerNames.AssetsDirectory}{named}", $"The survey underlay names an image ({named}) the container does not hold."));
+            }
+
+            problems.AddRange(assets.Keys.Where(hash => hash != named).Select(hash => new LoadProblem(
+                LoadProblemKind.UnknownEntry,
+                $"{ContainerNames.AssetsDirectory}{hash}",
+                "The container holds an image nothing in the drawing refers to; napkin writes only the image the underlay names.")));
+            return problems.Count > 0
+                ? new Refused([.. problems])
+                : new LoadedProject(new ProjectContents(loaded.Sketch, manifest, loaded.Stamp) { Assets = assets.ToImmutableDictionary(StringComparer.Ordinal) });
         }
     }
 
@@ -449,14 +516,14 @@ public static class ProjectFile
                 continue;
             }
 
-            if (!ContainerNames.InWriteOrder.Contains(name, StringComparer.Ordinal))
+            if (!ContainerNames.InWriteOrder.Contains(name, StringComparer.Ordinal) && !ProjectAssets.TryEntry(name, out _, out _))
             {
                 problems.Add(new LoadProblem(
                     LoadProblemKind.UnknownEntry,
                     name,
                     $"\"{name}\" is not an entry this format defines. A napkin project holds "
-                    + $"{string.Join(" and ", ContainerNames.InWriteOrder)} and nothing else: with the container "
-                    + "version pinned there is no legitimate reason for another entry."));
+                    + $"{string.Join(" and ", ContainerNames.InWriteOrder)} and images named assets/<sha256>.png or .jpg, and nothing else: "
+                    + "with the container version pinned there is no legitimate reason for another entry."));
                 continue;
             }
 
