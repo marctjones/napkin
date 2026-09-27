@@ -18,11 +18,13 @@ public static class DeckTool
     /// <summary>
     /// The inputs a new deck starts with: napkin's design defaults where the note names one (joists out
     /// at 16″, a 1/8″ decking gap, blocking, no cantilever) and a starting frame to type over (2x8
-    /// joists, a (2) 2x10 beam on 3 4x4 posts, 5/4x6 decking). What the deck supports, the species and
-    /// the footing depth start empty: never defaulted.
+    /// joists, a (2) 2x10 beam on 3 6x6 posts, 5/4x6 decking). The post starts at 6x6, not 4x4: DCA 6's
+    /// "All deck post sizes shall be 6x6 (nominal) or larger" (p. 10) is enforced (t.post-size, since
+    /// 0.217.0-beta), so a 4x4 default made every new deck's post lines Out of scope under CT. What the
+    /// deck supports, the species and the footing depth start empty: never defaulted.
     /// </summary>
     public static readonly DeckInputs StartingInputs = new(
-        JoistDirection.Out, Length.Inches(16), "2x8", new BeamSpec(2, "2x10"), "4x4", 3, Length.Zero, "5/4x6", Length.Inches(0, 1, 8), true,
+        JoistDirection.Out, Length.Inches(16), "2x8", new BeamSpec(2, "2x10"), "6x6", 3, Length.Zero, "5/4x6", Length.Inches(0, 1, 8), true,
         null, null, null, null, null);
 
     /// <summary>
@@ -38,7 +40,7 @@ public static class DeckTool
 
     /// <summary>What the message bar says the starting values are.</summary>
     public const string StartingWords =
-        "It starts 3'-0\" above grade with 2x8 joists at 16\", a (2) 2x10 beam on 3 4x4 posts and 5/4x6 decking: starting values to type over, not a standard.";
+        "It starts 3'-0\" above grade with 2x8 joists at 16\", a (2) 2x10 beam on 3 6x6 posts and 5/4x6 decking: starting values to type over, not a standard.";
 
     /// <summary>
     /// A dragged rectangle with each edge moved onto a parallel long face of an existing wall within

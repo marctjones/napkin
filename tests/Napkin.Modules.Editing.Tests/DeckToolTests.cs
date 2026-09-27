@@ -65,9 +65,10 @@ public class DeckToolTests
 
         DeckFraming framing = DeckFrame.Of(sketch, new Deck(deck), MaterialsLibrary.Shipped).Framing!;
 
-        // Three 4x4 posts under 144": face to face of posts (DCA 6 Figure 3, p. 7) (144 − 3 × 3 1/2) ÷ 2 = 66 3/4".
+        // Three 6x6 posts under 144" (napkin's starting post, since DCA 6's 6x6 minimum is enforced): face to
+        // face of posts (DCA 6 Figure 3, p. 7) (144 − 3 × 5 1/2) ÷ 2 = 63 3/4".
         Assert.Equal(
-            "ledger, 10 joists 2x8 at 16\", rim, (2) 2x10 beam on 3 posts spanning 5'-6 3/4\" between post faces, 22 boards (the last 1 7/8\" wide)",
+            "ledger, 10 joists 2x8 at 16\", rim, (2) 2x10 beam on 3 posts spanning 5'-3 3/4\" between post faces, 22 boards (the last 1 7/8\" wide)",
             DeckTool.FrameLine(framing));
     }
 
