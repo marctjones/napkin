@@ -47,6 +47,7 @@ public static partial class PackLoader
 
         Dictionary<string, RawTable> tables = new(StringComparer.Ordinal);
         BracingProvisions? bracing = LoadBaseLayer(source, manifest, manifestFile, tables, problems, out DeckProvisions deck);
+        List<DeckGuide> guides = LoadGuides(source, manifest, manifestFile, ref deck, problems);
 
         List<PendingAmendment> pending = [];
         foreach (string entry in manifest.Layers.Skip(1))
@@ -85,7 +86,54 @@ public static partial class PackLoader
 
         return problems.Count > 0
             ? Invalid(packId, problems)
-            : new PackLoadResult.Loaded(new LoadedPack(manifest, typed.ToValueList(), pending.ToValueList(), bracing) { Site = site, Deck = deck, Frost = frost });
+            : new PackLoadResult.Loaded(new LoadedPack(manifest, typed.ToValueList(), pending.ToValueList(), bracing)
+            {
+                Site = site,
+                Deck = deck,
+                Frost = frost,
+                Guides = guides.ToValueList(),
+            });
+    }
+
+    /// <summary>
+    /// Reads every guide the pack declares (deck-guide-pack §1.2) and adds its deck tables to the base
+    /// layer's, refusing a kind both declare. A guide carries deck tables or it has no reason to be listed.
+    /// </summary>
+    private static List<DeckGuide> LoadGuides(IPackSource source, PackManifest manifest, string manifestFile, ref DeckProvisions deck, ProblemList problems)
+    {
+        List<DeckGuide> guides = [];
+        foreach (GuideEntry entry in manifest.Guides)
+        {
+            if (entry.Id == manifest.Layers[0])
+            {
+                problems.Add(new Where(manifestFile), $"guides: '{entry.Id}' is the pack's base layer; a guide is never also a base layer.");
+                continue;
+            }
+
+            if (!source.DirectoryExists($"layers/{entry.Id}"))
+            {
+                problems.Add(new Where(manifestFile), $"guides: guide '{entry.Id}' does not resolve (no directory layers/{entry.Id}).");
+                continue;
+            }
+
+            if (GuideReader.Read(source, entry.Id, problems) is not { } guide)
+            {
+                continue;
+            }
+
+            string directory = $"layers/{entry.Id}/deck";
+            if (!source.ListFiles(directory).Any(IsJson))
+            {
+                problems.Add(new Where($"layers/{entry.Id}/layer.json"), $"guide '{entry.Id}' has no files under deck/; a pack declares a guide for its deck tables.");
+                continue;
+            }
+
+            DeckProvisions own = DeckReader.Read(source, directory, guide.Sources.ToDictionary(s => s.Id, StringComparer.Ordinal), problems, guide);
+            deck = DeckReader.Merge(deck, own, new Where(manifestFile), problems);
+            guides.Add(guide);
+        }
+
+        return guides;
     }
 
     private static PackLoadResult.Invalid Invalid(string packId, ProblemList problems)
