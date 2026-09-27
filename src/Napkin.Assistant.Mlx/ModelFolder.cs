@@ -65,7 +65,11 @@ public sealed partial class ModelFolder
     /// <summary><c>config.json</c>'s <c>quantization.group_size</c>, or null.</summary>
     public int? QuantizationGroupSize { get; }
 
-    /// <summary>The <c>license:</c> line of <c>README.md</c>'s front matter (the model card's), or null when the folder states none.</summary>
+    /// <summary>
+    /// The catalog's licence for a folder napkin's download made (its name is a <see cref="CatalogModel.FolderName"/>;
+    /// such a folder has no <c>README.md</c>, since the loader does not want the card — mlx-runtime.md §4.4);
+    /// otherwise the <c>license:</c> line of <c>README.md</c>'s front matter (the model card's); null when neither states one.
+    /// </summary>
     public string? Licence { get; }
 
     /// <summary>The bytes of every <c>*.safetensors</c> file in the folder — what the load reads, and what napkin's memory rule weighs.</summary>
@@ -112,7 +116,7 @@ public sealed partial class ModelFolder
             StringIn(config, "model_type"),
             bits,
             group,
-            ReadmeLicence(System.IO.Path.Combine(full, "README.md")),
+            ModelCatalog.ForFolder(System.IO.Path.GetFileName(full))?.Licence ?? ReadmeLicence(System.IO.Path.Combine(full, "README.md")),
             Directory.EnumerateFiles(full, "*.safetensors").Sum(file => new FileInfo(file).Length));
         return true;
     }
@@ -151,6 +155,13 @@ public sealed partial class ModelFolder
         }
 
         full = System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(path.Trim()));
+        if (full.EndsWith(ModelDownload.StagingSuffix, StringComparison.OrdinalIgnoreCase))
+        {
+            // napkin's own check, before the bridge's: a download is assembled here file by file and
+            // is not a model until every file has passed and the folder has its own name.
+            return $"{full} is a download napkin has not finished; press Download… to finish it.";
+        }
+
         if (!Directory.Exists(full))
         {
             return !File.Exists(full) ? $"There is no folder at {full}." : $"{full} is a file, not a model folder.";

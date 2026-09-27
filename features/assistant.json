@@ -65,6 +65,15 @@
       "kind": "unit"
     },
     {
+      "id": "AST-008",
+      "area": "assistant",
+      "title": "A model is downloaded only with consent, from its pinned commit, and every file is checked against its SHA-256",
+      "acceptance": "Through a stub HTTP handler and no socket, the catalog's three models match the Hugging Face Hub as read (repository, 40-hex commit, card licence and every file's name, size and SHA-256, only the loader's *.safetensors/*.json/*.jinja, no .py); a download not told of consent throws before any request; every file is asked for at its https://huggingface.co/<repo>/resolve/<commit>/<file> URL and redirects are followed by napkin, relative ones against their own URL, only over HTTPS to the Hub's documented hosts and at most five times, any other refused naming where; a resume sends Range from the part's length on every hop and appends only a 206 starting there, a 200 starts the file again; more bytes than the catalog's are never written, a short file is kept to resume, a file whose SHA-256 differs is deleted and refused naming it and both hashes; cancel leaves what arrived; the folder is assembled as <folder>.downloading, which is never a model folder, and renamed only when every file passed; something already at the destination is never touched.",
+      "milestone": "M14",
+      "issue": 242,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-AST-01",
       "area": "assistant",
       "title": "Explain a No data header, then a made-up size is refused",

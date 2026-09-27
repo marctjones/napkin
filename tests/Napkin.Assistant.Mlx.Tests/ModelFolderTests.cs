@@ -36,6 +36,26 @@ public class ModelFolderTests
         Assert.Equal("Qwen3-4B-4bit", folder.DisplayName);
     }
 
+    [Fact]
+    public void AFolderNapkinsDownloadMadeStatesTheCatalogsLicence()
+    {
+        using TempModel model = TempModel.Complete("mlx-community--Phi-4-mini-instruct-4bit--ac1c269cb422").Write("README.md", "---\nlicense: apache-2.0\n---\n");
+
+        Assert.Equal("mit", model.Folder().Licence);
+        Assert.EndsWith("licence: mit", model.Folder().Description, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("mlx-community--Qwen3-4B-4bit--4dcb3d101c2a.downloading")]
+    [InlineData("anything.DOWNLOADING")]
+    public void ADownloadNapkinHasNotFinishedIsNotAModelFolder(string name)
+    {
+        using TempModel model = TempModel.Complete(name);
+
+        Assert.False(ModelFolder.TryParse(model.Path, out _, out string? refusal));
+        Assert.Equal($"{model.Path} is a download napkin has not finished; press Download… to finish it.", refusal);
+    }
+
     [Theory]
     [InlineData("my--model")]
     [InlineData("mlx-community--Qwen3-4B-4bit--4DCB3D101C2A")]
