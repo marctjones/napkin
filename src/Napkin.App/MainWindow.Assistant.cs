@@ -1,9 +1,12 @@
 using System.Collections.Immutable;
 
+using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 
@@ -18,9 +21,11 @@ namespace Napkin.App;
 
 /// <summary>
 /// Ask and Explain this result (docs/design/llm-assistant.md &#xA7;2.4, &#xA7;8, &#xA7;10 slice B):
-/// the Assistant menu, Ctrl/Cmd+Shift+A, and the note on the sheet; and Where the model runs&#x2026;
+/// the Assistant menu, Ctrl/Cmd+Shift+A, and the note on the sheet; Where the model runs&#x2026;
 /// (slice C, #231; the MLX choice, docs/design/mlx-runtime.md #241), which chooses the model the
-/// note asks. Sketch from words is a later slice (E) and stays greyed out here.
+/// note asks; and Sketch from words&#x2026; (slice E, #233), whose reply is a proposal sheet on the
+/// same note in Firm up's shape — a tick per rough plank, Enter draws the ticked ones as one undo
+/// step, "Assistant sketch", and F firms them up as if they had been drawn by hand.
 /// </summary>
 public partial class MainWindow
 {
@@ -29,6 +34,9 @@ public partial class MainWindow
     DateTime _assistantStarted;
     int _assistantGeneration;
     AssistantWindow? _assistantWindow;
+    AssistantTask _assistantTask = AssistantTask.Ask;
+    ProposalPlan? _assistantPlan;
+    readonly List<(CheckBox Tick, ProposalLine Line)> _assistantProposalLines = [];
 
     /// <summary>
     /// How the assistant reaches a program on this machine: null for napkin's own loopback-only
@@ -160,14 +168,39 @@ public partial class MainWindow
     /// <summary>The Assistant menu's Explain this result entry.</summary>
     public MenuItem ExplainMenuEntry => ExplainMenuItem;
 
+    /// <summary>The Assistant menu's Sketch from words&#x2026; entry.</summary>
+    public MenuItem SketchFromWordsMenuEntry => SketchFromWordsMenuItem;
+
+    /// <summary>What the note is doing: answering (Ask, Explain) or sketching (Sketch from words).</summary>
+    public AssistantTask AssistantNoteTask => _assistantTask;
+
+    /// <summary>Whether a proposal sheet is up on the note, waiting for Enter.</summary>
+    public bool IsProposingSketch => _assistantPlan is not null;
+
+    /// <summary>The proposal sheet's ticks, one per line in the reply's order; a refused line's is off and cannot be ticked.</summary>
+    public IReadOnlyList<CheckBox> AssistantProposalTicks => [.. _assistantProposalLines.Select(line => line.Tick)];
+
+    /// <summary>The proposal sheet's lines, word for word, in the reply's order.</summary>
+    public IReadOnlyList<string> AssistantProposalLineTexts => [.. _assistantProposalLines.Select(line => line.Line.Sentence)];
+
+    /// <summary>The proposal sheet's message line: a refusal in the updater's words, or the stale rule's sentence; empty when none.</summary>
+    public string AssistantProposalMessage => AssistantProposalMessageText.IsVisible ? AssistantProposalMessageText.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The proposal sheet's Draw button.</summary>
+    public Button AssistantProposalDraw => AssistantProposalOkButton;
+
     void WireAssistant()
     {
         AddHandler(KeyDownEvent, OnAssistantKeyDown, RoutingStrategies.Tunnel);
+        AssistantProposalOkButton.Click += (_, _) => AcceptAssistantProposal();
+        AssistantProposalCancelButton.Click += (_, _) => CloseAssistant();
     }
 
     void OnAskClicked(object? sender, RoutedEventArgs e) => BeginAsk();
 
     void OnExplainClicked(object? sender, RoutedEventArgs e) => BeginExplain();
+
+    void OnSketchFromWordsClicked(object? sender, RoutedEventArgs e) => BeginSketchFromWords();
 
     void OnAssistantKeyDown(object? sender, KeyEventArgs e)
     {
@@ -189,23 +222,51 @@ public partial class MainWindow
 
             e.Handled = true;
         }
-        else if (e.Key == Key.Enter && e.Source is TextBox && !IsAssistantThinking)
+        else if (e.Key == Key.Enter && !IsAssistantThinking)
         {
-            _ = AskAssistant();
-            e.Handled = true;
+            if (e.Source is TextBox)
+            {
+                _ = AskAssistant();
+                e.Handled = true;
+            }
+            else if (_assistantPlan is not null && e.Source is not Button { Name: "AssistantProposalCancelButton" })
+            {
+                // Firm up's key: Enter anywhere but the Cancel button draws what is ticked.
+                AcceptAssistantProposal();
+                e.Handled = true;
+            }
         }
     }
 
-    /// <summary>Opens the note (or brings the open one to the front) and gives the question box the keyboard.</summary>
-    void BeginAsk()
+    /// <summary>Opens the note for Ask (or brings the open one to the front) and gives the question box the keyboard.</summary>
+    void BeginAsk() => OpenAssistant(AssistantTask.Ask);
+
+    /// <summary>Opens the note for Sketch from words and gives the description box the keyboard.</summary>
+    void BeginSketchFromWords() => OpenAssistant(AssistantTask.Sketch);
+
+    /// <summary>
+    /// Opens the note for a task, or brings the open one to the front. Switching task starts the
+    /// note afresh: a question still out for the other task is cancelled and its reply never lands.
+    /// </summary>
+    void OpenAssistant(AssistantTask task)
     {
         if (IsShapingPart || IsAskingToSave || IsJoining || IsFirmingUp)
         {
             return;
         }
 
-        if (!AssistantPanel.IsVisible)
+        if (!AssistantPanel.IsVisible || _assistantTask != task)
         {
+            _assistantCancel?.Cancel();
+            _assistantGeneration++;
+            ShowAssistantThinking(false);
+            _assistantTask = task;
+            bool sketching = task == AssistantTask.Sketch;
+            AssistantTitle.Text = sketching ? "Sketch from words" : "Assistant";
+            AssistantQuestionBox.PlaceholderText = sketching
+                ? "Describe a piece of furniture; rough planks are proposed for you to tick…"
+                : "Ask a question about the design or result on screen…";
+            AssistantHintText.Text = sketching ? "Enter to sketch · Esc to cancel or close" : "Enter to ask · Esc to cancel or close";
             AssistantPanel.IsVisible = true;
             AssistantQuestionBox.Text = string.Empty;
             ClearAssistantAnswer();
@@ -266,6 +327,7 @@ public partial class MainWindow
         _assistantCancel?.Cancel();
         AssistantPanel.IsVisible = false;
         ShowAssistantThinking(false);
+        EndAssistantProposal();
         FocusDrawing();
     }
 
@@ -342,16 +404,25 @@ public partial class MainWindow
         CancellationTokenSource cancel = new();
         _assistantCancel = cancel;
         int generation = ++_assistantGeneration;
+        AssistantTask task = _assistantTask;
 
         ContextPack pack = BuildAssistantPack(question);
         LastAssistantPack = pack;
+
+        // A sketch is planned against the design as it is now, not as it is when the reply comes:
+        // the person may draw meanwhile, and then the plan is stale and refused (§4.3).
+        Sketch askedAbout = Editor.Sketch;
+        LayerId layer = Editor.LayerForNewParts();
+        ModelRequest request = task == AssistantTask.Sketch
+            ? ModelRequest.ForProposal(AssistantPrompts.Sketch, pack, question, SketchProposal.Schema)
+            : ModelRequest.ForAnswer(AssistantPrompts.Ask, pack, question);
         ClearAssistantAnswer();
         ShowAssistantThinking(true);
 
         ModelReply reply;
         try
         {
-            reply = await AssistantModel.AskAsync(ModelRequest.ForAnswer(AssistantPrompts.Ask, pack, question), cancel.Token).ConfigureAwait(true);
+            reply = await AssistantModel.AskAsync(request, cancel.Token).ConfigureAwait(true);
         }
         catch (OperationCanceledException)
         {
@@ -366,7 +437,14 @@ public partial class MainWindow
         }
 
         ShowAssistantThinking(false);
-        RenderAssistantReply(reply, pack);
+        if (task == AssistantTask.Sketch)
+        {
+            RenderSketchReply(reply, askedAbout, layer);
+        }
+        else
+        {
+            RenderAssistantReply(reply, pack);
+        }
     }
 
     void ShowAssistantThinking(bool thinking)
@@ -398,6 +476,8 @@ public partial class MainWindow
         AssistantReferences.IsVisible = false;
         AssistantDisclaimerText.IsVisible = false;
         AssistantWhereaboutsText.IsVisible = false;
+        EndAssistantProposal();
+        AssistantProposalMessageText.IsVisible = false;
     }
 
     /// <summary>
@@ -454,9 +534,171 @@ public partial class MainWindow
 
         AssistantAnswerText.IsVisible = true;
         AssistantReferences.IsVisible = AssistantReferenceLines.Children.Count > 0;
+        ShowAssistantFooter();
+    }
+
+    /// <summary>The disclaimer and the whereabouts, the note's last two lines whatever the reply was (&#xA7;8).</summary>
+    void ShowAssistantFooter()
+    {
         AssistantDisclaimerText.Text = ContextPack.Disclaimer;
         AssistantDisclaimerText.IsVisible = true;
         AssistantWhereaboutsText.Text = AssistantModel.Whereabouts;
         AssistantWhereaboutsText.IsVisible = true;
+    }
+
+    /// <summary>One plain line in the answer's place: a refusal, the unreadable-reply line, the closing line.</summary>
+    void ShowAssistantLine(string text)
+    {
+        InlineCollection inlines = AssistantAnswerText.Inlines ??= [];
+        inlines.Clear();
+        inlines.Add(new Run(text));
+        AssistantAnswerText.IsVisible = true;
+    }
+
+    /// <summary>
+    /// A sketch reply (&#xA7;4.3&#x2013;&#xA7;4.4): a document napkin reads becomes the proposal sheet,
+    /// planned against the design the question was asked about; anything else is one line — the
+    /// runtime's refusal in its words, or napkin's "not a proposal" — and nothing else happens. The
+    /// model's note is parsed and never shown: the guard would have to vet it, and the planks are the
+    /// proposal (&#xA7;18 of the note).
+    /// </summary>
+    void RenderSketchReply(ModelReply reply, Sketch askedAbout, LayerId layer)
+    {
+        switch (reply)
+        {
+            case ModelReply.Json json when SketchProposal.Parse(json.Document) is { } proposal:
+            {
+                ProposalPlan plan = proposal.Plan(askedAbout, layer, Editor.NextPartName);
+                if (plan.Lines.IsEmpty)
+                {
+                    ShowAssistantLine(SketchProposal.NoParts);
+                }
+                else if (!plan.IsFor(Editor.Sketch))
+                {
+                    ShowAssistantProposalMessage(ProposalPlan.StaleText);
+                }
+                else
+                {
+                    ShowAssistantProposal(plan);
+                }
+
+                break;
+            }
+
+            case ModelReply.Refused refused:
+                ShowAssistantLine(refused.Reason);
+                break;
+
+            default:
+                ShowAssistantLine(SketchProposal.Unreadable);
+                break;
+        }
+
+        ShowAssistantFooter();
+    }
+
+    /// <summary>
+    /// The proposal sheet, in Firm up's shape (<see cref="FirmUpPanel"/>): a tick per line, all
+    /// ticked; a line napkin refused is shown with its reason in the pencil colour and a tick that is
+    /// off and cannot be turned on. The Draw button has the keyboard, so Enter draws.
+    /// </summary>
+    void ShowAssistantProposal(ProposalPlan plan)
+    {
+        EndAssistantProposal();
+        _assistantPlan = plan;
+        CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
+        foreach (ProposalLine line in plan.Lines)
+        {
+            CheckBox tick = new()
+            {
+                IsChecked = !line.Refused,
+                IsEnabled = !line.Refused,
+                MinWidth = 0,
+                Padding = new Thickness(4, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            AutomationProperties.SetName(tick, line.Sentence);
+            TextBlock text = new()
+            {
+                Text = line.Sentence,
+                FontSize = 12,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(2, 0, 6, 0),
+                Foreground = line.Refused ? new SolidColorBrush(palette.Dimension) : null,
+            };
+
+            Grid row = new() { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+            Grid.SetColumn(text, 1);
+            row.Children.Add(tick);
+            row.Children.Add(text);
+            AssistantProposalLines.Children.Add(row);
+            _assistantProposalLines.Add((tick, line));
+        }
+
+        AssistantProposalMessageText.IsVisible = false;
+        AssistantProposal.IsVisible = true;
+        AssistantProposalButtons.IsVisible = true;
+        AssistantProposalOkButton.Focus();
+    }
+
+    /// <summary>Takes the proposal sheet off the note; nothing is drawn.</summary>
+    void EndAssistantProposal()
+    {
+        _assistantPlan = null;
+        _assistantProposalLines.Clear();
+        AssistantProposalLines.Children.Clear();
+        AssistantProposal.IsVisible = false;
+        AssistantProposalButtons.IsVisible = false;
+    }
+
+    void ShowAssistantProposalMessage(string text)
+    {
+        AssistantProposalMessageText.Text = text;
+        AssistantProposalMessageText.Foreground = new SolidColorBrush(CanvasPalette.For(ActualThemeVariant).Selection);
+        AssistantProposalMessageText.IsVisible = true;
+    }
+
+    /// <summary>
+    /// Draws the ticked planks (&#xA7;4.3): one gesture, one undo step "Assistant sketch", the message
+    /// bar saying how many. A plan made against a design that has since changed is refused whole and
+    /// the sheet goes; a line the updater refused is reported on the message line in its words while
+    /// the rest land, and the sheet stays with every tick off, as Firm up's does. Once everything
+    /// ticked has landed the note says so and points at Firm up, and the drawing has the keyboard so
+    /// F, and undo, reach it.
+    /// </summary>
+    void AcceptAssistantProposal()
+    {
+        if (_assistantPlan is not { } plan)
+        {
+            return;
+        }
+
+        ProposalOutcome outcome = plan.Accept(
+            Editor,
+            _assistantProposalLines.Where(line => line.Tick.IsChecked == true).Select(line => line.Line),
+            SketchProposal.MessageLine);
+
+        if (outcome.Stale)
+        {
+            EndAssistantProposal();
+            ShowAssistantProposalMessage(ProposalPlan.StaleText);
+            return;
+        }
+
+        if (!outcome.Rejections.IsEmpty)
+        {
+            ShowAssistantProposalMessage(string.Join("\n", outcome.Rejections));
+            foreach ((CheckBox tick, _) in _assistantProposalLines)
+            {
+                tick.IsChecked = false;
+            }
+
+            return;
+        }
+
+        EndAssistantProposal();
+        ShowAssistantLine(SketchProposal.ClosingLine(outcome.Landed));
+        FocusDrawing();
     }
 }
