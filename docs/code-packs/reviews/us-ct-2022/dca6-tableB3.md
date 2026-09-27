@@ -10,10 +10,10 @@ Reviewed by: ______  Date: ______  Source: `awc-dca6-2015` sha256 ______ (must e
 
 Pack data hash at the reviewed commit:
 `shasum -a 256 packs/layers/dca6-2015/layer.json packs/layers/dca6-2015/deck/table-b3.json packs/golden/us-ct-2022/dca6-table-b3.golden.json packs/packs/us-ct-2022/pack.json`
-- ______ `packs/layers/dca6-2015/layer.json` (its `notes` text names Tables B1–B3 and their checklists; nothing else changed since the Table 3A review)
+- ______ `packs/layers/dca6-2015/layer.json` (its `notes` text names Tables B1–B3 and their checklists and, since #42's 6x6 fix, the scope note `n.post-size` is added; nothing else changed since the Table 3A review)
 - ______ `packs/layers/dca6-2015/deck/table-b3.json`
 - ______ `packs/golden/us-ct-2022/dca6-table-b3.golden.json`
-- ______ `packs/packs/us-ct-2022/pack.json` (`revision` 3 → 4 and one sentence added to `notes`, nothing else)
+- ______ `packs/packs/us-ct-2022/pack.json` (`revision` 3 → 4 → 5, a sentence added to `notes` for each, nothing else)
 
 ## Reviewer's method
 
@@ -29,10 +29,10 @@ how it was compared.) ______
 | URL | https://web-media.awc.org/wp-content/uploads/2022/02/17210514/AWC-DCA62015-DeckGuide-1804.pdf |
 | SHA-256 | `205d57b515e22aeed6b2c5c5eecd02967dbb98aa40b6f841d25fcec119b3009e` |
 | Retrieved / checked | 2026-09-27 (hash verified by the transcriber before reading) |
-| Pages read by the transcriber | pp. B1–B2 (Tributary Area, Eq. B-1 and B-2, J_L, J_O, B_L, B_O, Figures B1–B3, "Post and Footings Size"), pp. B3–B5 (Tables B1, B2, B3 and their notes), p. 10 (POST REQUIREMENTS: post height measured grade to the beam's underside; the 6x6 minimum), p. 12 (Table 4, read and not used, decision 2) |
+| Pages read by the transcriber | pp. B1–B2 (Tributary Area, Eq. B-1 and B-2, J_L, J_O, B_L, B_O, Figures B1–B3, "Post and Footings Size"), pp. B3–B5 (Tables B1, B2, B3 and their notes), p. 10 (POST REQUIREMENTS: post height measured grade to the beam's underside; the 6x6 minimum), p. 2 (item 3, the 6x6 minimum again), p. B1's opening paragraph (what Appendix B is an alternative to), pp. C2 and C7 (commentary on post size, read for context only), p. 12 (Table 4, read and not used, decision 2) |
 | How read (transcriber) | Each table from its page rendered at 500 dpi (`pdftoppm -r 500`), in four crops (the 6x6 and 4x4 halves, rows 10–130 and 140–250; for B3 the 1500/2000 and 2500/3000 psf halves), typed into a reading file and from it into the pack; the golden file's per-row expectations were generated separately from `pdftotext -layout` of pp. B1–B5; the two readings were compared cell by cell before either was committed (800 cells, 0 differences) and the golden run agrees on every row. |
 
-Transcribed by: Claude Opus 5.5 (#42 slice B3), 2026-09-27. Files: `packs/layers/dca6-2015/deck/table-b3.json`, `packs/layers/dca6-2015/layer.json` (its `notes`), `packs/packs/us-ct-2022/pack.json` (revision 4), golden file `packs/golden/us-ct-2022/dca6-table-b3.golden.json`.
+Transcribed by: Claude Opus 5.5 (#42 slice B3), 2026-09-27. Files: `packs/layers/dca6-2015/deck/table-b3.json`, `packs/layers/dca6-2015/layer.json` (its `notes`), `packs/packs/us-ct-2022/pack.json` (revision 4; revision 5 for the 6x6 fix), golden file `packs/golden/us-ct-2022/dca6-table-b3.golden.json`.
 
 ## Rows (Table B3, p. B5): 100 rows
 
@@ -167,15 +167,16 @@ its three outputs are the column's printed Round Footing Diameter (in.), Square 
 | Which post is which | p. B1, Figure B1 ("Corner Tributary Area", "Center Tributary Area") | napkin's end posts are corner posts (Table B1), its middle posts centre posts (Table B2); both lines are checked, since B1's 4x4 heights are far lower than B2's | ______ | ☐ |
 | Post height | p. 10, POST REQUIREMENTS: "measured from grade or top of foundation, whichever is highest, to the underside of the beam" | the frame's post length, the deck's height less decking, joist and beam, from grade (the larger of the two, so conservative) | ______ | ☐ |
 | Continuous beam | Table B2 note 4, Table B3 note 2 ("beams not spliced (continuous)") | napkin's beam is one piece the deck's width long, so continuous over every middle post: the factor applies (the larger area) | ______ | ☐ |
-| 4x4 posts | p. 10 ("All deck post sizes shall be 6x6 (nominal) or larger"); Tables B1/B2 print 4x4 columns with note 3 | transcribed as printed (design note risk 4): a 4x4 answers from its column; p. 10's sentence is not encoded (Marc's call) | ______ | ☐ |
+| 4x4 posts | p. 10 ("All deck post sizes shall be 6x6 (nominal) or larger"); p. 2, item 3 ("Minimum post size is 6x6 nominal"); p. B1 (Appendix B provides "an alternative to the assumptions of Table 4 Post Height for 6x6 and Footings Sizes for all Posts"); p. B2 ("As an alternative to Table 4 of DCA 6, the post height and footing size may be in accordance with Table B1 through B3"); Tables B1/B2 print 4x4 columns with note 3; commentary C2 item 3 and C7 (a 4x4 post as an alternative method a building official approves) | **Changed by #42's fix, 2026-09-27** (was: a 4x4 answered from its column, p. 10 not encoded). Appendix B stands in for Table 4's height and footing assumptions, not for the size minimum, so p. 10 holds under it: Tables B1 and B2 refuse any post under 6x6 nominal (limit `t.post-size`) before their lookup, citing p. 10, and the 4x4 column stays transcribed as printed. The footing is sized either way: Table B3 bands on area and soil, not on the post. Reviewer: confirm this reading of pp. B1–B2 against p. 10 and p. 2 item 3, and that nothing in Appendix B itself permits a 4x4 deck post | ______ | ☐ |
 
 ## The guide manifest and the pack
 
 | Item | Where read | What the pack encodes | Verbatim / right | OK |
 |---|---|---|---|---|
-| `layer.json` `notes` | — (napkin's own) | names Tables B1–B3 (#42 slice B3) and their three checklists; the caveats, scope limits, notes, species and sources are unchanged | ☐ | ☐ |
+| `layer.json` `notes` | — (napkin's own) | names Tables B1–B3 (#42 slice B3) and their three checklists, and the 6x6 fix (`n.post-size`, the tables' `t.post-size`); the caveats, scope limits, species and sources are unchanged | ☐ | ☐ |
+| Scope note `n.post-size` (#42 fix) | p. 2, MINIMUM REQUIREMENTS & LIMITATIONS item 3 | "Minimum post size is 6x6 nominal and maximum post height shall be in accordance with Table 4.", `location` "MINIMUM REQUIREMENTS & LIMITATIONS item 3, p. 2": shown once in the paragraph at the top of the deck block beside the other scope items, not itself checked (Tables B1 and B2's `t.post-size` is) | ☐ | ☐ |
 | Scope limits apply to the post and footing tables | p. 2 items 2, 8, 9; Table B3 note 1 | the guide's `s.loads`, `s.snow`, `s.shape` are tried before every lookup (the golden file has a case for each) | ☐ | ☐ |
-| CT pack revision 4 | — (napkin's own) | `revision: 4`, its `notes` say what revision 4 adds, `review.status: "unreviewed"` | ☐ | ☐ |
+| CT pack revision 5 | — (napkin's own) | `revision: 5`, its `notes` say what revisions 4 (the three tables) and 5 (the 6x6 minimum) add, `review.status: "unreviewed"` | ☐ | ☐ |
 
 Read and deliberately not encoded in this slice: Table 4 (p. 12; decision 2), p. 10's diagonal bracing and
 post-to-beam details, p. 11's footing and frost text (napkin's frost line is its own comparison), Appendix C.
@@ -199,7 +200,7 @@ ______
 
 ## Sign-off
 
-Rows checked: __ of 100. Table-level items: __. Derivation items: __ of 7. Manifest items: __ of 3.
+Rows checked: __ of 100. Table-level items: __. Derivation items: __ of 7. Manifest items: __ of 4.
 Golden spot-checks: __.
 Discrepancies found (each a fix and re-review, not a comment): ______
 

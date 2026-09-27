@@ -61,6 +61,14 @@ read from Connecticut's own document (2022 CSBC w/ Errata #1, ED October 1, 2022
   `docs/code-packs/reviews/us-ct-2022/dca6-tableB1.md`, `dca6-tableB2.md`, `dca6-tableB3.md`, unfilled until
   the independent review is done. `review.status` is pack-wide and stays `unreviewed`, so every line says
   UNREVIEWED.
+- **Revision 5** (#42, 2026-09-27, a correction to revision 4) enforces DCA 6's minimum post size, which
+  revision 4 had left out: p. 10 opens "All deck post sizes shall be 6x6 (nominal) or larger", and Appendix B
+  is an alternative to Table 4's height and footing assumptions (pp. B1–B2), not to that minimum — yet a 4x4
+  post answered from Tables B1/B2's 4x4 columns. Each of the two post tables now carries the limit
+  `t.post-size` (`member` `notIn` 6x6, 6x8, 8x8 — every materials-library size 6x6 nominal or larger in both
+  dimensions), tried before its lookup, so a smaller post is **Out of scope** citing p. 10; the 4x4 columns
+  stay transcribed as printed. The guide adds item 3, p. 2 ("Minimum post size is 6x6 nominal …") as the scope
+  note `n.post-size`, shown in the paragraph at the top of the deck block.
 
 **Where the app looks for packs roots** (`PackLocations.All()`): `packs/` beside the executable, then
 the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application Support/napkin`, or
@@ -70,7 +78,7 @@ the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application
 
 **Project → Adopted code and site…** lists every pack found in those folders as "<shortName> —
 <baseCode>, in force <from>" with its id, revision, status and review state, for example "CT 2022
-— IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 4): base tables not loaded; deck tables from
+— IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 5): base tables not loaded; deck tables from
 DCA 6-2015, a guide (UNREVIEWED)".
 A pack that fails to load is shown with its problems, not hidden. napkin never picks one: the
 choice is stored with the design (format 6), locked to a revision (with the date) or following
@@ -355,9 +363,11 @@ or any other kind may not declare one. `DeckEvaluator.SizeFooting(pack, area, so
 `CheckPost(pack, request, scope)` take a `PostArea` — the tributary area (square 1/1024″, exact), the
 position and whether the beam over the post is continuous — and multiply the area by the factor, exactly,
 for a centre post under a continuous beam before the lookup; the result's `Area` says the area asked, the
-factor and the area looked up. `CheckPost` picks the table by position and answers **Passes** or **Short**
-against the row's height. The deck check (`DeckCheck`) asks, under napkin's beam — one piece the deck's
-width long, so continuous — an **End posts** line (a corner post, Eq. B-2) and, with three or more posts, a
+factor and the area looked up. `CheckPost` picks the table by position, tries the guide's scope limits and
+then the table's own — DCA 6's post tables refuse a post under 6x6 nominal there, citing p. 10, before any row
+is read, so that answer carries no area — and answers **Passes** or **Short** against the row's height. The
+deck check (`DeckCheck`) asks, under napkin's beam — one piece the deck's width long, so continuous — an **End
+posts** line (a corner post, Eq. B-2) and, with three or more posts, a
 **Middle posts** line (a centre post, Eq. B-1), each with the frame's post length from grade to the beam's
 underside (DCA 6 p. 10), and a **Footings** line for the most loaded post, each saying its area, the
 equation and measures, and the factor ("× 1.25, a centre post under a continuous beam (DCA 6-2015 Table B3
@@ -414,8 +424,9 @@ my-packs/
   table's own `limits` (any deck table may carry them, same shape), in order. The first whose input is not
   entered is **Input missing** naming it; the first that holds is **Out of scope** citing its text and
   location ("Beyond the scope of ZZ GUIDE: "…" (ZZ GUIDE p. 2, item 9). Get it engineered."). Inputs:
-  `supports`, `species`, `member` (categories; `member` is the lookup's own member, so a footing has none —
-  put member limits on the table they concern), `groundSnowLoad` (the site's, psf), `deckLength` (out from
+  `supports`, `species`, `member` (categories; `member` is the lookup's own member — for a post table, the
+  post — so a footing has none: put member limits on the table they concern, as DCA 6's Tables B1 and B2 carry
+  p. 10's 6x6 minimum, `t.post-size`), `groundSnowLoad` (the site's, psf), `deckLength` (out from
   the house) and `deckWidth` (along it). Forms, exactly one per limit: `above` (a number or length, strictly
   greater), `equals`, `in`, `notIn` (categories), `aboveInput` (a length above another length). The deck
   check supplies them (`DeckScopeInputs`; `SizeLedger`/`SizeFooting` take them as an argument, `SpanRequest`

@@ -345,7 +345,7 @@ span (DCA 6: L_O or L/4), both said, compared exactly; a table that prints no ov
 not cover one. Under the deck block, napkin lists the words the adopted pack's tables and guide use
 for **Supports** and **Species** — type one; nothing is filled in.
 
-**Under the shipped Connecticut pack** (revision 4) the joist table is **DCA 6-2015 Table 2** (p. 4),
+**Under the shipped Connecticut pack** (revision 5) the joist table is **DCA 6-2015 Table 2** (p. 4),
 the beam table its **Table 3A** (p. 6), and the post and footing tables its Appendix B **Tables B1, B2
 and B3** (pp. B3–B5), from the American Wood Council's *Prescriptive Residential
 Wood Deck Construction Guide*, a guide on the 2015 IRC — not Connecticut's adopted code (the 2021
@@ -360,13 +360,19 @@ and lumber — "(2) 2x10" is Table 3A's "2-2x10", "(1) 4x8" its "4x8" — and Ta
 3x or 4x beam for Southern Pine. Its line reads the beam span between post faces, as Figure 3 (p. 7)
 dimensions Table 3A's L_B, against the column for the joists it carries: "Beam (2) 2x10 on 3 posts, span
 5'-6 3/4" between post faces, carrying 9'-9" of joists: allowed up to 7'-9" (DCA 6-2015 Table 3A row
-r.sp.2-2x10.10, p. 6 …)". The posts: a Southern Pine 4x4 end post of the worked example carries 14.8 sq ft,
-Table B1's ≤ 20 sq ft row, 6 ft (p. B3); the middle post 29.6 × 1.25 = 37.0 sq ft, Table B2's ≤ 40 row,
-13 ft (p. B4); both stand 1'-6 1/2" and pass. Tables B1 and B2 print 4x4 columns beside the main body's
-"All deck post sizes shall be 6x6 (nominal) or larger" (p. 10); napkin answers from the table as printed,
-with its note 3. A cell printed **NP** is out of scope, quoting NP as the page prints it. The footing on
-2000 psf is Table B3's ≤ 40 sq ft row: 14" round or 13" square, 6" thick (p. B5); below 1,500 psf is out of
-scope. The ledger line is still **No data**: its table is M10's next slice (#40).
+r.sp.2-2x10.10, p. 6 …)". The posts: DCA 6 says "All deck post sizes shall be 6x6 (nominal) or larger"
+(p. 10; item 3, p. 2, shown in the block's opening paragraph), and Tables B1 and B2 check it before they are
+read, so a post under 6x6 nominal — the worked example's 4x4s, a 4x6, a 2x4 — is **out of scope** citing p. 10:
+"End posts 4x4, 1'-6 1/2" from grade to the beam's underside, Southern Pine, each carrying 14.8 sq ft (…):
+Beyond table B1: "All deck post sizes shall be 6x6 (nominal) or larger" (DCA 6-2015 POST REQUIREMENTS, p. 10).
+Get it engineered." The tables' own 4x4 columns are transcribed as printed but never answer (#42; Appendix B is
+an alternative to Table 4's heights and footings, not to the minimum post). On 6x6 posts the same deck reads
+Table B1's ≤ 20 sq ft row for its 14.8 sq ft end posts, 14 ft (p. B3), and Table B2's ≤ 40 row for its middle
+post's 29.6 × 1.25 = 37.0 sq ft, 14 ft (p. B4); both stand 1'-6 1/2" and pass. An 8x8 meets p. 10 but Appendix
+B prints no 8x8 column, so it is out of scope naming the post column. A cell printed **NP** is out of scope,
+quoting NP as the page prints it. The footing does not depend on the post's size: on 2000 psf it is Table B3's
+≤ 40 sq ft row, 14" round or 13" square, 6" thick (p. B5), under 4x4 and 6x6 posts alike; below 1,500 psf is out
+of scope. The ledger line is still **No data**: its table is M10's next slice (#40).
 
 **Guard and stair** (§4, napkin's layout, not a code detail). Tick **Guard** and every open edge gets
 posts at both ends of each run and evenly between (at most the typed spacing apart, a corner post
