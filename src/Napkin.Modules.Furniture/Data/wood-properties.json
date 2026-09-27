@@ -1,0 +1,225 @@
+{
+  "tableVersion": 1,
+  "kind": "wood-properties",
+  "id": "wood-handbook-2021-table-5-3b",
+  "title": "Specific gravity and bending modulus of elasticity of clear wood at 12 % moisture content",
+  "citation": {
+    "designation": "FPL-GTR-282",
+    "standard": "Wood Handbook: Wood as an Engineering Material (2021), chapter 5, Mechanical Properties of Wood (Senalik and Farber)",
+    "publisher": "USDA Forest Service, Forest Products Laboratory",
+    "where": "Table 5–3b, \"Strength properties of some commercially important woods grown in the United States (inch–pound)\", pp. 5–9 to 5–13: the 12% rows, columns \"Specific gravity\" and \"Static bending, Modulus of elasticity (10^6 lbf in–2)\". Footnote b: \"Specific gravity is based on weight when ovendry and volume when green or at 12% moisture content.\" Footnote c: \"Modulus of elasticity measured from a simply supported, center-loaded beam, on a span depth ratio of 14/1. To correct for shear deflection, the modulus can be increased by 10%.\" Values are for clear, straight-grained specimens; lumber with knots and cross grain is less stiff.",
+    "url": "https://www.fpl.fs.usda.gov/documnts/fplgtr/fplgtr282/chapter_05_fpl_gtr282.pdf",
+    "retrieved": "2026-09-26"
+  },
+  "scope": "The species a DIYer buys for furniture (hardwoods) and the species dimension lumber is milled from (softwoods). A commercial group such as SPF or hem-fir is several species and is not a row: pick the species, or type free text, which napkin never interprets.",
+  "entries": [
+    {
+      "name": "Alder, red",
+      "group": "hardwood",
+      "specificGravity12": "0.41",
+      "modulusOfElasticity12Psi": 1380000,
+      "page": "5–9",
+      "tableRow": "Alder, red"
+    },
+    {
+      "name": "Ash, white",
+      "group": "hardwood",
+      "specificGravity12": "0.60",
+      "modulusOfElasticity12Psi": 1740000,
+      "page": "5–9",
+      "tableRow": "Ash / White"
+    },
+    {
+      "name": "Basswood, American",
+      "group": "hardwood",
+      "specificGravity12": "0.37",
+      "modulusOfElasticity12Psi": 1460000,
+      "page": "5–9",
+      "tableRow": "Basswood, American"
+    },
+    {
+      "name": "Birch, yellow",
+      "group": "hardwood",
+      "specificGravity12": "0.62",
+      "modulusOfElasticity12Psi": 2010000,
+      "page": "5–9",
+      "tableRow": "Birch / Yellow"
+    },
+    {
+      "name": "Cherry, black",
+      "group": "hardwood",
+      "specificGravity12": "0.50",
+      "modulusOfElasticity12Psi": 1490000,
+      "page": "5–9",
+      "tableRow": "Cherry, black"
+    },
+    {
+      "name": "Maple, red (soft maple)",
+      "group": "hardwood",
+      "specificGravity12": "0.54",
+      "modulusOfElasticity12Psi": 1640000,
+      "page": "5–10",
+      "tableRow": "Maple / Red"
+    },
+    {
+      "name": "Maple, sugar (hard maple)",
+      "group": "hardwood",
+      "specificGravity12": "0.63",
+      "modulusOfElasticity12Psi": 1830000,
+      "page": "5–10",
+      "tableRow": "Maple / Sugar"
+    },
+    {
+      "name": "Oak, northern red",
+      "group": "hardwood",
+      "specificGravity12": "0.63",
+      "modulusOfElasticity12Psi": 1820000,
+      "page": "5–10",
+      "tableRow": "Oak, red / Northern red"
+    },
+    {
+      "name": "Oak, white",
+      "group": "hardwood",
+      "specificGravity12": "0.68",
+      "modulusOfElasticity12Psi": 1780000,
+      "page": "5–11",
+      "tableRow": "Oak, white / White"
+    },
+    {
+      "name": "Walnut, black",
+      "group": "hardwood",
+      "specificGravity12": "0.55",
+      "modulusOfElasticity12Psi": 1680000,
+      "page": "5–11",
+      "tableRow": "Walnut, Black"
+    },
+    {
+      "name": "Yellow-poplar",
+      "group": "hardwood",
+      "specificGravity12": "0.42",
+      "modulusOfElasticity12Psi": 1580000,
+      "page": "5–11",
+      "tableRow": "Yellow-poplar"
+    },
+    {
+      "name": "Cedar, western red",
+      "group": "softwood",
+      "specificGravity12": "0.32",
+      "modulusOfElasticity12Psi": 1110000,
+      "page": "5–12",
+      "tableRow": "Cedar—con. / Western redcedar"
+    },
+    {
+      "name": "Douglas-fir, Coast",
+      "group": "softwood",
+      "specificGravity12": "0.48",
+      "modulusOfElasticity12Psi": 1950000,
+      "page": "5–12",
+      "tableRow": "Douglas-fir / Coast"
+    },
+    {
+      "name": "Fir, balsam",
+      "group": "softwood",
+      "specificGravity12": "0.35",
+      "modulusOfElasticity12Psi": 1450000,
+      "page": "5–12",
+      "tableRow": "Fir / Balsam"
+    },
+    {
+      "name": "Hemlock, western",
+      "group": "softwood",
+      "specificGravity12": "0.45",
+      "modulusOfElasticity12Psi": 1630000,
+      "page": "5–12",
+      "tableRow": "Hemlock / Western"
+    },
+    {
+      "name": "Pine, eastern white",
+      "group": "softwood",
+      "specificGravity12": "0.35",
+      "modulusOfElasticity12Psi": 1240000,
+      "page": "5–12",
+      "tableRow": "Pine / Eastern white"
+    },
+    {
+      "name": "Pine, loblolly",
+      "group": "softwood",
+      "specificGravity12": "0.51",
+      "modulusOfElasticity12Psi": 1790000,
+      "page": "5–12",
+      "tableRow": "Pine / Loblolly"
+    },
+    {
+      "name": "Pine, longleaf",
+      "group": "softwood",
+      "specificGravity12": "0.59",
+      "modulusOfElasticity12Psi": 1980000,
+      "page": "5–12",
+      "tableRow": "Pine / Longleaf"
+    },
+    {
+      "name": "Pine, ponderosa",
+      "group": "softwood",
+      "specificGravity12": "0.40",
+      "modulusOfElasticity12Psi": 1290000,
+      "page": "5–13",
+      "tableRow": "Pine—con. / Ponderosa"
+    },
+    {
+      "name": "Pine, shortleaf",
+      "group": "softwood",
+      "specificGravity12": "0.51",
+      "modulusOfElasticity12Psi": 1750000,
+      "page": "5–13",
+      "tableRow": "Pine—con. / Shortleaf"
+    },
+    {
+      "name": "Pine, slash",
+      "group": "softwood",
+      "specificGravity12": "0.59",
+      "modulusOfElasticity12Psi": 1980000,
+      "page": "5–13",
+      "tableRow": "Pine—con. / Slash"
+    },
+    {
+      "name": "Redwood, young-growth",
+      "group": "softwood",
+      "specificGravity12": "0.35",
+      "modulusOfElasticity12Psi": 1100000,
+      "page": "5–13",
+      "tableRow": "Redwood / Young-growth"
+    },
+    {
+      "name": "Spruce, black",
+      "group": "softwood",
+      "specificGravity12": "0.42",
+      "modulusOfElasticity12Psi": 1610000,
+      "page": "5–13",
+      "tableRow": "Spruce / Black"
+    },
+    {
+      "name": "Spruce, Engelmann",
+      "group": "softwood",
+      "specificGravity12": "0.35",
+      "modulusOfElasticity12Psi": 1300000,
+      "page": "5–13",
+      "tableRow": "Spruce / Engelmann"
+    },
+    {
+      "name": "Spruce, red",
+      "group": "softwood",
+      "specificGravity12": "0.40",
+      "modulusOfElasticity12Psi": 1660000,
+      "page": "5–13",
+      "tableRow": "Spruce / Red"
+    },
+    {
+      "name": "Spruce, white",
+      "group": "softwood",
+      "specificGravity12": "0.36",
+      "modulusOfElasticity12Psi": 1430000,
+      "page": "5–13",
+      "tableRow": "Spruce / White"
+    }
+  ]
+}

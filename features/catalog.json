@@ -236,6 +236,15 @@
       "kind": "unit"
     },
     {
+      "id": "MAT-006",
+      "area": "materials",
+      "title": "Wood species properties are cited per row and never guessed",
+      "acceptance": "The shipped species table carries specific gravity and bending E at 12 % moisture for each listed species exactly as the USDA Wood Handbook (FPL-GTR-282) Table 5–3b prints it, with the page per row and the table's footnotes; a part's species is picked from it or typed as free text, and free text is never matched to a row.",
+      "milestone": "M9",
+      "issue": 216,
+      "kind": "unit"
+    },
+    {
       "id": "CUT-001",
       "area": "furniture",
       "title": "A part resolves its stock through the materials library",
