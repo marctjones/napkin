@@ -299,9 +299,9 @@ public static class DeckSetPdf
         }
 
         DeckInputs inputs = checks.Deck.Box.Deck!;
-        LumberStock joist = set.Library.TryFindLumber(inputs.Joist, out LumberStock j) ? j : throw new InvalidOperationException("A framed deck's joist is in the library.");
-        LumberStock beam = set.Library.TryFindLumber(inputs.Beam.Lumber, out LumberStock b) ? b : throw new InvalidOperationException("A framed deck's beam is in the library.");
-        LumberStock post = set.Library.TryFindLumber(inputs.Post, out LumberStock p) ? p : throw new InvalidOperationException("A framed deck's post is in the library.");
+        // The lumber the frame was laid out with: its pieces carry it.
+        LumberStock Stock(FramingRole role) => frame.Pieces.First(piece => piece.Role == role).Stock!;
+        LumberStock joist = Stock(FramingRole.Joist), beam = Stock(FramingRole.Beam), post = Stock(FramingRole.Post);
         double w = In(frame.Width), d = In(frame.Depth), t = In(joist.Thickness);
         double beamOuter = d - In(inputs.Cantilever), beamInner = beamOuter - (inputs.Beam.Plies * In(beam.Thickness)), pw = In(post.Width);
         DrawingExtent extent = new(0, -d, w, 0);

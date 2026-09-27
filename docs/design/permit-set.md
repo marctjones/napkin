@@ -224,6 +224,19 @@ already known. The banner is `TitleBlock.Banner`, a band across every title bloc
 `SheetInk.Blank`, thin rules to write on. A deck line napkin writes itself when it cannot answer
 carries `DeckCheckLine.Unanswered`. No menu item yet: the sets that use it are D and E.
 
+**Slice D as built (#226).** `DeckSetPdf`: **S1** draws the lot's courses as `SitePlan` lays them, each
+setback offset inward in the centre line's chain, the footprints of the New and Existing walls, decks
+and roofs, and a north arrow, with each numbered line's distance and setback, the closure and the
+zoning note at the side — or says how to enter a lot when there is none — at the largest architect
+or engineer scale that fits. **A2** is the standard view facing the deck's open side (the side away
+from its ledger), built by the app from the locked view's own calls, with each deck's height above
+grade and its guard and stair lines. **S2** draws `DeckFrame`'s frame with the house at the top:
+ledger, rim, every joist, the blocking row, and the beam and posts dashed beneath; width and depth
+dimensioned. **S3** holds the ledger, footing and frost, guard and stair blocks. On S2, S3 and A2
+each member prints its size, or a blank rule when its check has no answer, and its check's lines.
+**File → Print permit set on Letter… / on Tabloid…** prints it for a design with a deck. IBM Plex has no
+⌈ ⌉, so the ledger count's brackets print as "ceil(" and ")".
+
 **Decided (Marc, 2026-09-27): the permit set targets typical Connecticut requirements only** — the
 towns of §1. Other jurisdictions' specific asks (text-size minimums, a mandatory graphic scale bar and
 the like) are out of scope; the sheets keep their text sizes and print the scale as a ratio and in words.

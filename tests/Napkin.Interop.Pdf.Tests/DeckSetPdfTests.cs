@@ -174,6 +174,29 @@ public class DeckSetPdfTests
     }
 
     [Fact]
+    public void A_scale_falls_back_to_the_engineer_scales_then_to_a_halving_ratio_when_nothing_on_its_list_fits()
+    {
+        DrawingExtent thousand = new(0, 0, 1000, 10);
+        // 150 pt for 1000": 0.15 pt/in — under every architect scale; 1:480 (1" = 40') is 0.15.
+        Assert.Equal(new SheetScale(480, ScaleWords.Engineer), DeckSetPdf.Fit(SheetScale.Architect, thousand, new PageRect(0, 0, 150, 500)));
+        // 10 pt for 1000": 0.01 pt/in — under every engineer scale too: 1:96 halved until it fits, 1:12288.
+        Assert.Equal(new SheetScale(12288), DeckSetPdf.Fit(SheetScale.Architect, thousand, new PageRect(0, 0, 10, 500)));
+    }
+
+    [Fact]
+    public void A_set_for_a_design_with_nothing_on_it_is_its_empty_site_plan_elevation_and_code_page()
+    {
+        PermitSet permit = new(new TitleBlock("Nothing", Day, null), new FeetInchesFormat(16), SheetPaper.Letter, []);
+        using MemoryStream stream = new();
+        DeckSetPdf.Write(new DeckSet(permit, Sketch.Empty, Packs, MaterialsLibrary.Shipped, null), stream);
+        ReadBack read = ReadBack.Open(stream.ToArray());
+        Assert.Equal(3, read.Text.Count);
+        Assert.Contains("Scale —", read.Text[0], StringComparison.Ordinal);
+        Assert.Contains("A2 Elevation", read.Text[1], StringComparison.Ordinal);
+        Assert.Contains(PermitSetPdf.NothingAsked, read.Text[2], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Without_a_lot_the_site_plan_says_so_and_draws_the_footprints()
     {
         ReadBack read = Read(Set(Design()));
