@@ -42,7 +42,7 @@ public class DeckFormatTests
 
     static readonly string Porch = $$"""
         {
-          "formatVersion": 13,
+          "formatVersion": 14,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "{{Layer}}", "name": "Default" } ],
           "entities": [
@@ -52,7 +52,7 @@ public class DeckFormatTests
             {{Box(RoofId, "Roof", "135168", "147456", "122880", "51200", roof: Roof)}}
           ],
           "fastenerChoices": [], "supplies": [], "code": null,
-          "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": 1500, "source": null },
+          "furniture": { "kind": "none", "anchored": false }, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": 1500, "source": null },
           "relationships": []
         }
         """;
@@ -165,7 +165,7 @@ public class DeckFormatTests
 
     [Theory]
     // A deck that is also a part, a roof that is also a deck, an opening that is also a wall.
-    [InlineData("\"part\": null, \"wall\": null, \"room\": null, \"deck\": {", "\"part\": { \"stock\": null, \"species\": null, \"quantity\": 1, \"planAxes\": { \"x\": \"length\", \"y\": \"width\" }, \"hardware\": [], \"rough\": false, \"grain\": null, \"showFace\": null }, \"wall\": null, \"room\": null, \"deck\": {", "deck")]
+    [InlineData("\"part\": null, \"wall\": null, \"room\": null, \"deck\": {", "\"part\": { \"stock\": null, \"species\": null, \"quantity\": 1, \"planAxes\": { \"x\": \"length\", \"y\": \"width\" }, \"hardware\": [], \"rough\": false, \"grain\": null, \"showFace\": null, \"drawer\": null }, \"wall\": null, \"room\": null, \"deck\": {", "deck")]
     [InlineData("\"deck\": null, \"roof\": { \"rafterSpacing\"", "\"deck\": " + "{ \"joistDirection\": \"out\", \"joistSpacing\": 16384, \"joist\": \"2x8\", \"beam\": { \"plies\": 1, \"lumber\": \"2x8\" }, \"post\": \"4x4\", \"postCount\": 2, \"cantilever\": 0, \"decking\": \"5/4x6\", \"deckingGap\": 0, \"blocking\": false, \"supports\": null, \"species\": null, \"footingDepth\": null, \"hardware\": [], \"guard\": null, \"stair\": null }" + ", \"roof\": { \"rafterSpacing\"", "deck")]
     [InlineData("\"header\": null }, \"room\": null, \"deck\": null, \"roof\": null, \"opening\": null", "\"header\": null }, \"room\": null, \"deck\": null, \"roof\": null, \"opening\": { \"fill\": \"glass\" }", "opening")]
     public void A_box_that_is_two_things_at_once_is_refused(string original, string replacement, string named)
@@ -173,5 +173,5 @@ public class DeckFormatTests
 
     [Fact]
     public void A_version_12_file_is_refused_naming_both_versions()
-        => Scenes.RefuseWith(Scenes.OneBox.With("\"formatVersion\": 13", "\"formatVersion\": 12"), LoadProblemKind.UnsupportedFormatVersion, "format version 12", "format version 13");
+        => Scenes.RefuseWith(Scenes.OneBox.With("\"formatVersion\": 14", "\"formatVersion\": 12"), LoadProblemKind.UnsupportedFormatVersion, "format version 12", "format version 14");
 }

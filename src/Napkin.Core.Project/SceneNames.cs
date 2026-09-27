@@ -126,6 +126,14 @@ internal static class SceneNames
     internal const string Opening = "opening";
     internal const string Fill = "fill";
     internal const string SiteSoilBearing = "soilBearing";
+    internal const string Drawer = "drawer";
+    internal const string Extension = "extension";
+    internal const string Furniture = "furniture";
+    internal const string FurnitureKindName = "kind";
+
+    /// <summary>What a piece of furniture is, as the person said (format version 14).</summary>
+    internal static readonly (Geometry.FurnitureKind Value, string Text)[] FurnitureKinds =
+        [(Geometry.FurnitureKind.None, "none"), (Geometry.FurnitureKind.ClothingStorage, "clothingStorage"), (Geometry.FurnitureKind.BunkBed, "bunkBed")];
 
     /// <summary>The joist directions M11 writes; "along" is reserved and refused.</summary>
     internal static readonly (Geometry.JoistDirection Value, string Text)[] JoistDirections = [(Geometry.JoistDirection.Out, "out")];

@@ -47,6 +47,7 @@ internal sealed class SceneBinder
         ImmutableList<SupplyLine> supplies = ReadSupplies(document);
         (bool codeRead, CodeChoice? code) = ReadCode(document);
         SiteValues? site = ReadSite(document);
+        FurnitureMarks? furniture = ReadFurniture(document);
         RejectUnknownFields(document);
 
         if (problems.Count > 0)
@@ -72,6 +73,7 @@ internal sealed class SceneBinder
             Supplies = supplies,
             Code = codeRead ? code : null,
             Site = site ?? SiteValues.NotEntered,
+            Furniture = furniture ?? FurnitureMarks.None,
         };
 
         ValidationResult validation = sketch.Validate();
@@ -768,6 +770,7 @@ internal sealed class SceneBinder
         bool? rough = ReadBoolean(part, SceneNames.Rough);
         (bool grainRead, string? grainText) = ReadTextOrNull(part, SceneNames.Grain);
         (bool showRead, string? showText) = ReadTextOrNull(part, SceneNames.ShowFace);
+        (bool drawerRead, DrawerMark? drawer) = ReadNullable(part, SceneNames.Drawer, ReadDrawer);
         RejectUnknownFields(part);
 
         // Grain and show face (format version 12, #140): each a name or null for unsaid.
@@ -811,8 +814,8 @@ internal sealed class SceneBinder
         // A part's third dimension is its box's depth, which the box stores (format version 4,
         // assembly-model §1.2). A version-3 part's "outOfPlane" is therefore an unknown field here,
         // refused like any other, rather than a second copy of a number the box already holds.
-        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes && hardware is not null && rough is { } isRough && grainRead && showRead
-            ? (true, new Part(stock, species, (int)pieces, axes) { Hardware = hardware, Rough = isRough, Grain = grain, ShowFace = showFace })
+        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes && hardware is not null && rough is { } isRough && grainRead && showRead && drawerRead
+            ? (true, new Part(stock, species, (int)pieces, axes) { Hardware = hardware, Rough = isRough, Grain = grain, ShowFace = showFace, Drawer = drawer })
             : (false, null);
     }
 
@@ -975,6 +978,40 @@ internal sealed class SceneBinder
     }
 
     /// <summary>The site values (format version 7): every field present, each a value or null for "not entered".</summary>
+    /// <summary>A part's drawer mark (format version 14): how far it opens, longer than zero.</summary>
+    private DrawerMark? ReadDrawer(JsonFields fields)
+    {
+        long? extension = ReadInteger(fields, SceneNames.Extension);
+        RejectUnknownFields(fields);
+        if (extension is not { } units)
+        {
+            return null;
+        }
+
+        if (units <= 0)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.Extension}", "A drawer opens some distance: its extension is longer than zero.");
+            return null;
+        }
+
+        return new DrawerMark(new Length(units));
+    }
+
+    /// <summary>The design's furniture marks (format version 14): what the piece is, and whether it is anchored.</summary>
+    private FurnitureMarks? ReadFurniture(JsonFields document)
+    {
+        JsonFields? fields = ReadObject(document, SceneNames.Furniture);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        FurnitureKind? kind = ReadEnum(fields, SceneNames.FurnitureKindName, SceneNames.FurnitureKinds, "furniture kind");
+        bool? anchored = ReadBoolean(fields, SceneNames.Anchored);
+        RejectUnknownFields(fields);
+        return kind is { } k && anchored is { } a ? new FurnitureMarks(k, a) : null;
+    }
+
     private SiteValues? ReadSite(JsonFields document)
     {
         JsonFields? fields = ReadObject(document, SceneNames.Site);
