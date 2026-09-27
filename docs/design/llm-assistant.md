@@ -1097,3 +1097,177 @@ differs from §8 and §11.3, and why:
    answer's `[n]`s off it, so a future pack change (another check added, another help section)
    moves the workflow's expectations with it instead of silently drifting from what the app
    actually renders.
+
+## 16. As built: slice C (#231), and where it departs from this note
+
+`src/Napkin.Assistant.LocalServer` (BCL only, its own floor), settings version 3, and
+*Assistant → Where the model runs…*. Public surface: `LocalEndpoint` (`TryParse`, `Parse`,
+`IsLoopbackHost`, `OllamaDefault`, `LlamaServerDefault`), `LoopbackHttp.CreateHandler()`,
+`LocalProgram` (`ListAsync`), `LocalServerModel : IAssistantModel` (`AskAsync`, `TestAsync`,
+`UserMessage`, `Whereabouts`, `NoReply`, `DefaultTemperature` 0.2, `DefaultTimeout` 30 s),
+`InstalledModel`, `ServerListing`, `Dialect`, `TestResult` and `Guidance` (the dialog's words about
+getting a model). Every fact below about Ollama, llama-server or a model was read again on
+**2026-09-27** from the page named beside it.
+
+### 16.1 What the primary sources said that changes this note
+
+1. **`qwen3:4b` is no longer the model §5.3 recommends.** On
+   [ollama.com/library/qwen3/tags](https://ollama.com/library/qwen3/tags) the tag `qwen3:4b` has
+   the digest `359d7dd4bcda`, the same as `qwen3:4b-thinking-2507-q4_K_M` — Qwen3-4B-Thinking-2507,
+   whose card says *"This model supports only thinking mode"*
+   ([huggingface.co/Qwen/Qwen3-4B-Thinking-2507](https://huggingface.co/Qwen/Qwen3-4B-Thinking-2507)).
+   Ollama's `think: false` is honoured only *"if the model permits it"* (Ollama
+   `docs/capabilities/thinking.mdx`). The tag that is exactly the signed-off model, Qwen3-4B at
+   Q4_K_M, is **`qwen3:4b-q4_K_M`**: its page
+   ([ollama.com/library/qwen3:4b-q4_K_M](https://ollama.com/library/qwen3:4b-q4_K_M)) reads *arch
+   qwen3, parameters 4.02B, quantization Q4_K_M, 2.6GB, license Apache License Version 2.0*, and the
+   card ([huggingface.co/Qwen/Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B)) says `license:
+   apache-2.0` and describes switching thinking off. So the install lines say `ollama pull
+   qwen3:4b-q4_K_M` (2.6 GB, not 2.5). **For Marc:** the alternative is `qwen3:4b-instruct`
+   (Qwen3-4B-Instruct-2507: the same tags page lists it as `0edcdef34593`, 2.5GB, 256K context; its
+   card says it *"supports only non-thinking mode"*, `license: apache-2.0`) — newer, never thinks,
+   but not the model the note names. Not switched without your say-so.
+2. **Ollama does mark a remote model.** §5.5 said whether `/api/tags` marks a cloud model was
+   unverified. Ollama's `docs/openapi.yaml`, `ModelSummary`, documents `remote_model` (*"Name of the
+   upstream model, if the model is remote"*) and `remote_host` (*"URL of the upstream Ollama host,
+   if the model is remote"*); `docs/api/errors.mdx` lists *"502: Bad Gateway (e.g. when a cloud
+   model cannot be reached)"*. So napkin now **refuses a model Ollama reports as remote** before
+   anything is sent (*"Ollama says gpt-oss:120b-cloud runs at https://ollama.com:443, not on this
+   machine; napkin will not use it, so nothing was sent…"*), and the dialog's list marks it and does
+   not ask `/api/show` about it. This is not the name-guess §13.4 rejected — it is Ollama's own
+   field, and without it the note's last line, *"nothing leaves this machine"*, could be false. The
+   cloud sentence keeps `OLLAMA_NO_CLOUD=1` (FAQ, *"How do I disable Ollama Cloud features?"*) and
+   now reads: *"Ollama can also run models in its own cloud. napkin will not use a model Ollama
+   reports as remote, but cannot be sure every Ollama reports it. To be sure nothing leaves this
+   machine, set OLLAMA_NO_CLOUD=1 before starting Ollama — see its FAQ."* **For Marc:** reversible
+   (one check in `LocalServerModel.RefusalFor`) if you would rather only warn.
+3. **Ollama's default context window is 4,096 tokens** (FAQ, *"How can I specify the context window
+   size?"*: *"By default, Ollama uses a context window size of 4096 tokens"*;
+   `docs/context-length.mdx`: 4k below 24 GiB of VRAM). napkin's pack budget is 6,000 words (§3.4),
+   chosen against the model's native 32,768; a question whose pack carries long help sections
+   (building.md "A deck" is 1,453 words, "Wall bracing" 1,154) plus the 310-word prompt can pass
+   4,096 tokens. What Ollama does with the excess is not stated on the pages read. **Not changed
+   here, for Marc:** (a) send `options.num_ctx` — the FAQ's own API answer (*"When using the API,
+   specify the `num_ctx` parameter"*) — at the cost of memory (*"Setting a larger context length will
+   increase the amount of memory required"*); (b) lower the word budget; (c) tell the person to start
+   Ollama with `OLLAMA_CONTEXT_LENGTH` (the Try-it below does this). Recommended: (a) with 16,384,
+   measured by the eval set (§11.4) before it is fixed.
+4. **llama-server's `/v1/models` is documented** (§5.2 said unverified): *"Returns information about
+   the loaded model… The returned list always has one single element. The `meta` field can be `null`
+   (for example, while the model is still loading)"*; `id` is the `-m` path unless `--alias` sets it;
+   `meta` carries `size`, `n_params`, `n_ctx_train` (tools/server/README.md). So the probe is
+   `GET /api/tags` then `GET /v1/models` — two reads with no side effect — rather than §11.2's
+   "200 on `/v1/chat/completions`", and the dialog lists llama-server's model with its size,
+   parameter count and training context as read, *"quantization not reported, license not
+   reported"*.
+5. **llama-server's schema form** is `response_format: {"type": "json_object", "schema": …}` — the
+   README's *"schema-constrained JSON"* example puts `schema` directly under `response_format`, not
+   OpenAI's `json_schema.schema`; that form is what is sent. The README also documents
+   `chat_template_kwargs` (*"For example: `{"enable_thinking": false}`"*), so the llama-server body
+   carries `chat_template_kwargs: {"enable_thinking": false}` as the counterpart of Ollama's
+   `think: false` — an addition to §5.2's field list.
+
+### 16.2 Other departures, and why
+
+1. **Loopback is three layers, not one.** (i) `LocalEndpoint`: `http://` only; the host is exactly
+   `localhost` or an IP literal `IPAddress.IsLoopback` accepts (so any `127.x.x.x` and `::1`); no
+   user name, path, query or fragment; with or without `http://` typed. (ii)
+   `LoopbackHttp.CreateHandler()`: `AllowAutoRedirect = false` and `UseProxy = false` (a 302 from a
+   local program or a system proxy would otherwise carry the design off the machine through a
+   "loopback" address), and a `ConnectCallback` that resolves the host and connects only to its
+   loopback addresses — which is what makes "localhost, resolving to loopback" true rather than
+   assumed. (iii) the remote-model refusal (16.1.2). Refusals are asserted word for word, and the stub
+   handler records that nothing was sent. The one uncovered line in the assembly is the socket
+   connect itself.
+2. **Settings version 3 is leaner than §7**: `AssistantSettings(Provider, Endpoint, Model,
+   Temperature)` with `AssistantProvider` `None | LocalServer`. `Claude` and `ConsentVersion` are
+   slice H's (#236, still a `question`); adding them now would be the speculative flexibility the
+   beta policy rules out, and H can add both **without** another version bump (`System.Text.Json`
+   ignores a member a file does not have, and a new enum name is additive). The endpoint is stored
+   as typed and read through `LocalEndpoint` every time a model is built, so a hand-edited file
+   naming another machine gives the no-model state, never a connection. A version-2 file gives the
+   defaults and the store's existing notice, *"Settings file is version 2, which this napkin does
+   not read; using defaults."*
+3. **The timeout covers a whole question** — the probe, the listing check and the chat together —
+   not each request; its refusal is *"No reply in 30 s from qwen3:4b-q4_K_M at 127.0.0.1:11434."*
+   (§11.2's *"no reply in 30 s"*). A listing that runs out of time says *"No answer in 30 s from
+   http://127.0.0.1:11434."* The person's Escape surfaces as `OperationCanceledException`.
+4. **Under Ollama every question reads `/api/tags` again** and refuses a model Ollama does not list
+   (*"Ollama at 127.0.0.1:11434 has no model named … Pull it (ollama pull …) or choose another…"*)
+   or lists as remote, before the design is sent. It is one loopback read. The dialect is remembered
+   once a probe succeeds; a failed probe is not, so starting Ollama after napkin works on the next
+   question. A bare name matches `name:latest`, as *"The tag is optional and, if not provided, will
+   default to `latest`"* (api.md, "Model names").
+5. **The two messages:** the system prompt alone in the system message; the user message is
+   `Context:`, the pack, a blank line, then `Question: ` and the question
+   (`LocalServerModel.UserMessage`) — the prompt says *"the numbered context below"*, and what the
+   person typed stays out of the system message.
+6. **Failures are refusals in the program's words:** Ollama's `{"error": "…"}` (errors.mdx) and
+   llama-server's `{"error": {"message": …}}` (README "API errors") become *"Ollama at … said: …"* /
+   *"The server at … said: …"*; a status with no message is said by its code; a reply with no
+   `message.content` / `choices[0].message.content` is *"…was not one napkin could read"*; an empty
+   one *"…replied with nothing."* A schema that is not JSON is napkin's own bug and throws.
+7. **The dialog**: radio buttons *None* / *A program on this machine* (no Claude choice until H);
+   the address with Ollama's and llama-server's defaults named under it; **Check** lists the models
+   as the program reports them — *"qwen3:4b-q4_K_M — 2.6 GB, 4.0B parameters, Q4_K_M, license:
+   Apache License Version 2.0, January 2004, context 40,960 tokens"*, the license folded and cut at
+   72 characters (the whole text is what `/api/show` returned), the context length from
+   `model_info`'s `<architecture>.context_length` (api.md's example pairs `general.architecture:
+   "llama"` with `llama.context_length`; the pattern is read from that one example); a row fills the
+   model name; a temperature field (napkin's 0.2, with Qwen3's card's *"Temperature=0.7"* for
+   non-thinking named beside it); **Test** sends *"Reply with ok."* and nothing about the design;
+   nothing is saved until **Use these settings**, which rebuilds the window's model (the old one
+   disposed after any question still out is cancelled). The memory line and "too big for this
+   machine by napkin's rule" are §5.4's, labelled as napkin's. `MainWindow.AssistantHttp` (the
+   `PackRoots` pattern) lets the GUI suite put a stub handler under both the dialog and the model.
+8. **Not done here:** §5.5's *"every Assistant command opens that dialog"* when no model is set.
+   Slice B's Ask shows the no-model refusal on the note instead, and GUI-AST-01/02 hold that; it is
+   one line in `BeginAsk` if wanted.
+9. **Tests:** `tests/Napkin.Assistant.LocalServer.Tests` (AST-006) through a stub
+   `HttpMessageHandler` whose bodies are written by hand in the documented shapes (the URLs are in
+   `Documented.cs`); settings v3 in `SettingsStoreTests`; **GUI-AST-06** drives the dialog and a
+   question end to end over a stub Ollama (`OllamaStub.cs`).
+
+### 16.3 Still unverified
+
+- What Ollama does with `think: false` for a model that has no thinking (`phi4-mini`) or only
+  thinking (`qwen3:4b` today): the docs say only *"if the model permits it"*. An error would reach
+  the note as Ollama's own words.
+- Whether every Ollama version reports `remote_host`; the field is in today's `openapi.yaml`.
+- What Ollama does with a prompt longer than its context window (16.1.3).
+- Other OpenAI-compatible servers (LM Studio and the like): not read; they work only if they answer
+  `/v1/models` and `/v1/chat/completions` in the shapes above.
+- A memory figure for any model: Ollama's pages still state none, so napkin's rule stays napkin's.
+
+### 16.4 Try it (for Marc)
+
+Every command and address below is from Ollama's own pages, read 2026-09-27: the README
+(github.com/ollama/ollama, "Download"), `docs/cli.mdx` ("Download a model", "List models", "Start
+Ollama"), `docs/faq.mdx` ("How do I disable Ollama Cloud features?", "How can I specify the context
+window size?", "Setting environment variables on Mac") and the model's library page.
+
+1. **Install Ollama:** download it from <https://ollama.com/download> (on a Mac, the
+   [Ollama.dmg](https://ollama.com/download/Ollama.dmg), dragged to Applications), or in a terminal
+   on macOS or Linux: `curl -fsSL https://ollama.com/install.sh | sh`.
+2. **Pull the model:** `ollama pull qwen3:4b-q4_K_M` (2.6 GB, Apache-2.0). `ollama ls` then lists
+   it.
+3. **Start Ollama local-only, with room for napkin's context:** quit the Ollama app if it is
+   running, then in a terminal, and leave it open:
+   `OLLAMA_NO_CLOUD=1 OLLAMA_CONTEXT_LENGTH=16384 ollama serve`.
+   (To keep using the app instead: `launchctl setenv OLLAMA_NO_CLOUD 1` and
+   `launchctl setenv OLLAMA_CONTEXT_LENGTH 16384`, then restart the app. 16,384 is napkin's
+   suggestion, 16.1.3; a larger window takes more memory.)
+4. **Point napkin at it:** in napkin (this branch until it lands: `dotnet run --project
+   src/Napkin.App`), **Assistant → Where the model runs…** → *A program on this machine* → the
+   address is already `http://127.0.0.1:11434` → **Check** → click `qwen3:4b-q4_K_M` → **Test**
+   (*"qwen3:4b-q4_K_M replied in … s: “ok”."*; Ollama keeps a model in memory for five minutes
+   after use by default (FAQ), so the first reply after a pause can be slow, and napkin gives up at
+   30 s — press Test again) → **Use these settings**.
+5. **Ask:** open a sample (File → Samples → Building → *Window in an existing wall*), click the
+   window, **Ctrl/Cmd+Shift+A**, type *why is this header No data?*, Enter. The note's last line
+   reads *"Local: qwen3:4b-q4_K_M at 127.0.0.1:11434 — nothing leaves this machine."*
+
+With llama.cpp instead: `llama-server -hf Qwen/Qwen3-4B-GGUF:Q4_K_M --alias qwen3-4b` (README:
+`-hf` fetches from a Hugging Face repository — the publisher's lists `Qwen3-4B-Q4_K_M.gguf`,
+`license: apache-2.0` — and `--alias` names the model for the API), then the address
+`http://127.0.0.1:8080` and the model `qwen3-4b` in the dialog.
