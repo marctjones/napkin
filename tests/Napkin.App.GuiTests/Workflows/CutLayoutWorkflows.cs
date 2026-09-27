@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.VisualTree;
 
 using Napkin.App.GuiTests.Harness;
+using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Modules.Furniture;
 
@@ -55,6 +56,13 @@ public class CutLayoutWorkflows
                 list.LayoutRows.LinesOnScreen);
             Assert.Equal(2, list.LayoutRows.Bars.Length);
             Assert.Contains("3/4 plywood: 1 sheet; 1 piece", list.LayoutSummaryText, StringComparison.Ordinal);
+
+            // The sheet is drawn under its line at the bars' one scale: its 96 in against the 14 ft
+            // (168 in) 2x4's bar is 96/168 of that bar's length, and its 48 in half that again.
+            CutLayoutSheet sheet = Assert.Single(list.LayoutRows.Sheets);
+            Assert.Single(sheet.Sheet.Pieces);
+            Assert.Equal((list.LayoutRows.Bars[1].Width - 1) * 96 / 168, sheet.Width - 1, 6);
+            Assert.Equal((sheet.Width - 1) / 2, sheet.Height - 1, 6);
         });
 
         AppDriver lists = AppDriver.Attach(window.CutList!, "cut-layout");
