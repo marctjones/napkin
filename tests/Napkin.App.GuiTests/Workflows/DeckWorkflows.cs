@@ -297,10 +297,15 @@ public class DeckWorkflows
         }
     }
 
+    /// <summary>Opens a sample through File → Samples, going into Samples → Building when it is one of those.</summary>
     static void OpenSample(AppDriver app, MainWindow window, string sample)
     {
         app.Click(CentreOf(window, window.FileMenuItem));
         app.Click(CentreOf(window, window.SamplesMenuItem));
+        if (!window.GetVisualDescendants().OfType<MenuItem>().Any(candidate => (candidate.Header as string) == sample))
+        {
+            app.Click(CentreOf(window, window.SamplesBuildingMenuItem!));
+        }
         MenuItem item = window.GetVisualDescendants().OfType<MenuItem>().Single(candidate => (candidate.Header as string) == sample);
         app.Click(CentreOf(window, item));
     }

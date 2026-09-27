@@ -297,6 +297,13 @@ public class CanvasAutomationTests
             window.SamplesMenuItem.IsSubMenuOpen = true;
             HeadlessWindow.Settle();
 
+            // The later building samples are one level down, under Samples → Building.
+            if (window.SamplesBuildingMenuItem is { } building)
+            {
+                building.IsSubMenuOpen = true;
+                HeadlessWindow.Settle();
+            }
+
             AutomationPeer samples = Find(root, "SamplesMenu", 0)
                 ?? throw new InvalidOperationException("No Samples menu.");
 
