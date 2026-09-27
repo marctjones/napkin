@@ -22,6 +22,12 @@ internal sealed class ReadBack
 
     public PdfDocument Document { get; }
 
+    /// <summary>Each page's text with every space taken out: what survives a reader running wrapped lines together.</summary>
+    public IReadOnlyList<string> Letters => [.. Text.Select(Squash)];
+
+    /// <summary>Text with its whitespace taken out.</summary>
+    public static string Squash(string text) => Regex.Replace(text, @"\s+", string.Empty);
+
     /// <summary>Each page's content stream.</summary>
     public IReadOnlyList<string> Operators { get; }
 
