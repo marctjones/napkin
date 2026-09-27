@@ -163,6 +163,55 @@ public class SheetPdfTests
     }
 
     [Fact]
+    public void A_vertical_label_reads_up_the_page_a_short_line_has_its_arrowheads_outside_and_a_dot_is_not_drawn()
+    {
+        // Top's depth, 3″ west of its west edge: a line running up the page, its label turned a quarter
+        // turn anticlockwise about the line's middle — the transform [0 1 −1 0] there.
+        DrawingDimension depth = new("1'-0\"", P(0, 0), P(0, 12), P(-3, 0), P(-3, 12));
+        // A 3″ gap: 27 pt at 1:8, under 3.5 × 9 = 31.5 pt, so the line runs 9 pt past each end and the
+        // arrowheads sit outside, pointing in.
+        DrawingDimension gap = new("3\"", P(10, 12), P(13, 12), P(10, 14), P(13, 14));
+        // A 1/10″ step, 0.9 pt: too short to draw at all. Its extension lines, 0.1″ long, are too.
+        DrawingDimension dot = new("≈0\"", P(20, 12), P(20.1, 12), P(20, 12.1), P(20.1, 12.1));
+        // A line a quarter inch off what it measures, 2.25 pt: no room for an extension line past the
+        // 3 pt gap, so none is drawn, though the line is.
+        DrawingDimension flush = new("2'-0\"", P(0, 12), P(24, 12), P(0, 12.25), P(24, 12.25));
+        PlanSheet sheet = Box(topDimensions: [depth, gap, dot, flush]);
+        ViewPlacement top = SheetPdf.Place(sheet).Views.Single(view => view.View.View == StandardView.Top);
+        PagePoint At(DrawingPoint point) => top.ToPage(point, new SheetScale(8));
+        ReadBack read = Of(sheet);
+        string page = read.Operators[0];
+
+        PagePoint middle = At(P(-3, 6));
+        Assert.Contains($"q\n0 1 -1 0 {N(middle.X)} {N(middle.Y)} cm\n", page, StringComparison.Ordinal);
+        Assert.Contains("1'-0\"", read.Text[0], StringComparison.Ordinal);
+
+        PagePoint from = At(P(10, 14)), to = At(P(13, 14));
+        Assert.Contains("0 G\n0.8 w\n" + Stroke(from.X - 9, from.Y, to.X + 9, to.Y), page, StringComparison.Ordinal);
+        // The west arrowhead points east, into the gap: its back is 9 pt west of its tip.
+        Assert.Contains($"{N(from.X)} {N(from.Y)} m\n{N(from.X - 9)} {N(from.Y + 2.75)} l\n{N(from.X - 9)} {N(from.Y - 2.75)} l\nh\n0 g\nf", page, StringComparison.Ordinal);
+
+        Assert.DoesNotContain("≈0\"", read.Text[0], StringComparison.Ordinal);
+
+        PagePoint edge = At(P(0, 12)), line = At(P(0, 12.25)), far = At(P(24, 12.25));
+        Assert.DoesNotContain($"{N(edge.X)} {N(edge.Y + 3)} m\n", page, StringComparison.Ordinal);
+        Assert.Contains("0 G\n0.8 w\n" + Stroke(line.X, line.Y, far.X, far.Y), page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Views_with_nothing_in_them_keep_their_panes_and_the_sheet_its_full_scale()
+    {
+        PlanSheet empty = Box() with
+        {
+            Views = [new DrawingView(StandardView.Top, [], []), new DrawingView(StandardView.Front, [], []), new DrawingView(StandardView.Right, [], [])],
+        };
+        SheetPlacement placement = SheetPdf.Place(empty);
+        Assert.Equal(new SheetScale(1), placement.Scale);
+        Assert.All(placement.Views, view => Assert.Equal(P(0, 0), view.Centre));
+        Assert.Contains("Front", Assert.Single(Of(empty).Text), StringComparison.Ordinal);
+    }
+
+    [Fact]
     [Trait("Feature", "IOP-003")]
     public void Every_sheet_carries_the_project_the_scale_the_date_the_code_and_the_disclaimer()
     {

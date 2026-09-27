@@ -102,6 +102,46 @@ public class SheetNotesTests
     }
 
     [Fact]
+    [Trait("Feature", "IOP-003")]
+    public void A_deck_prints_its_frame_and_its_check_lines_as_the_deck_panel_shows_them()
+    {
+        // The deck tests' §9.1 deck under the SYNTHETIC us-zz-deck: 144 × 120, 36" up, north edge on the house.
+        CodePacks packs = CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "CodePacks", "deck")]);
+        LayerId wallLayer = LayerId.New(), deckLayer = LayerId.New();
+        Box house = new(EntityId.New(), wallLayer, new Point3(Length.Zero, Length.Zero, In(36)), In(240), Length.Inches(5, 1, 2), In(96), BoxFace.Top, Angle.Zero)
+        {
+            Name = "House",
+            Phase = Phase.Existing,
+        };
+        DeckInputs inputs = new(
+            JoistDirection.Out, In(16), "2x8", new BeamSpec(2, "2x10"), "6x6", 3, Length.Zero, "5/4x6", Length.Inches(0, 1, 8), true, "zz-deck", "zz-fir", In(42), null, null);
+        Box deck = new(EntityId.New(), deckLayer, new Point3(In(48), In(-120), Length.Zero), In(144), In(120), In(36), BoxFace.Top, Angle.Zero)
+        {
+            Name = "Deck 1",
+            Deck = inputs,
+        };
+        Sketch sketch = Sketch.Empty.WithLayer(new Layer(wallLayer, BuildingLayers.Wall)).WithLayer(new Layer(deckLayer, BuildingLayers.Deck)).WithEntity(house).WithEntity(deck) with
+        {
+            Code = new CodeChoice("us-zz-deck", 1, CodeMode.Locked, new DateOnly(2026, 9, 26)),
+            Site = SiteValues.NotEntered with { SoilBearingPsf = 2000, FrostDepth = In(42), GroundSnowLoadPsf = 30 },
+        };
+
+        SheetNote note = Assert.Single(SheetNotes.Of(sketch, packs, Library), note => note.Heading == "Deck 1");
+        DeckChecks checks = Assert.Single(DeckCheck.Of(sketch, packs, Library));
+        Assert.Equal(
+            [$"Frame: {Napkin.Modules.Editing.DeckTool.FrameLine(checks.Framing!)}.", .. checks.Guides, .. checks.Lines.Select(line => line.Text)],
+            note.Lines);
+        Assert.Contains(note.Lines, line => line.Contains(AdoptedCodeRef.UnreviewedText, StringComparison.Ordinal));
+
+        // A deck with no frame says why instead, as the panel does.
+        Sketch unframed = sketch.WithEntity(deck with { Deck = inputs with { Joist = "zz-nothing" } });
+        DeckChecks refused = Assert.Single(DeckCheck.Of(unframed, packs, Library));
+        Assert.Null(refused.Framing);
+        SheetNote why = Assert.Single(SheetNotes.Of(unframed, packs, Library), note => note.Heading == "Deck 1");
+        Assert.Equal(refused.Refusal!.Text, why.Lines[0]);
+    }
+
+    [Fact]
     public void Walls_are_checked_for_bracing_under_a_bracing_pack_and_a_design_with_nothing_to_check_has_no_notes()
     {
         CodePacks brace = CodePacks.Discover([RootBrace]);
