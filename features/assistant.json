@@ -117,6 +117,15 @@
       "milestone": "M14",
       "issue": 241,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-AST-08",
+      "area": "assistant",
+      "title": "Download a model only after consent, each file checked against its SHA-256",
+      "acceptance": "With a stub Hub under the window serving small files whose hashes the workflow computed (the real default's repository, commit, licence and file names), choosing MLX shows Download… naming the model, its size and licence; Download… lays a consent sheet over the dialog listing the repository and pinned commit, every file with its size, SHA-256 and pinned URL, the licence and card link and the destination, with nothing sent; Download is disabled and does nothing until the box is ticked; a file served with one wrong byte is refused naming it and both hashes with no folder made; after the server is put right, ticking again and Download fetches only the files that had not passed, the progress reaches the last file, 'Downloaded and checked: 8 files.' shows, the folder box is filled with the new folder and described with the catalog's licence; every request was a pinned URL or the content server it redirected to; Escape closes the sheet and Download… reads Downloaded; Use these settings saves the folder.",
+      "milestone": "M14",
+      "issue": 242,
+      "kind": "workflow"
     }
   ]
 }

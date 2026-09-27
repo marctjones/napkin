@@ -1,104 +1,113 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="clr-namespace:Napkin.App"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="700"
         x:Class="Napkin.App.AssistantWindow"
         Title="Where the model runs"
         Icon="/Assets/napkin-256.png"
-        Width="600" Height="720"
+        Width="600" Height="780"
         MinWidth="420" MinHeight="420">
 
     <!--
         Where the assistant's model runs (docs/design/llm-assistant.md §5.4, §5.5, §6.1, §8, issue
         #231): none, or a program the person installed on this machine — Ollama, or llama.cpp's
         llama-server — at a loopback address. The list is what the program reports, as read; napkin
-        guesses nothing from a name and downloads nothing. Not modal, like the code window.
+        guesses nothing from a name and downloads nothing. Not modal, like the code window. The MLX
+        choice (docs/design/mlx-runtime.md §4.4, §6.3) can download a catalog model, only through the
+        consent sheet laid over the page.
     -->
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="14" Spacing="8">
-            <TextBlock Text="Where the assistant's model runs" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+    <Grid>
+        <ScrollViewer Name="Page" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="14" Spacing="8">
+                <TextBlock Text="Where the assistant's model runs" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
 
-            <RadioButton Name="NoneRadio" GroupName="Provider" FontSize="12"
-                         Content="None — the assistant says how to add a model"
-                         IsCheckedChanged="OnProviderChanged" />
-            <RadioButton Name="LocalRadio" GroupName="Provider" FontSize="12"
-                         Content="A program on this machine: Ollama, or llama.cpp's llama-server"
-                         IsCheckedChanged="OnProviderChanged" />
+                <RadioButton Name="NoneRadio" GroupName="Provider" FontSize="12"
+                             Content="None — the assistant says how to add a model"
+                             IsCheckedChanged="OnProviderChanged" />
+                <RadioButton Name="LocalRadio" GroupName="Provider" FontSize="12"
+                             Content="A program on this machine: Ollama, or llama.cpp's llama-server"
+                             IsCheckedChanged="OnProviderChanged" />
 
-            <StackPanel Name="LocalPanel" Spacing="6" Margin="22,0,0,0">
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                    <TextBlock Text="Address" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <TextBox Grid.Column="1" Name="AddressBox" FontSize="12" AutomationProperties.Name="Address" />
-                    <Button Grid.Column="2" Name="CheckButton" Content="Check" FontSize="12" Margin="8,0,0,0" Click="OnCheckClicked"
-                            ToolTip.Tip="Ask the program on this machine which models it has." />
-                </Grid>
-                <TextBlock Name="AddressHintText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" />
-                <TextBlock Name="CheckText" FontSize="11" TextWrapping="Wrap" IsVisible="False" AutomationProperties.Name="What the program said" />
-                <ListBox Name="ModelList" SelectionMode="Single" MaxHeight="150"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         AutomationProperties.Name="Models on this machine"
-                         SelectionChanged="OnModelChosen">
-                    <ListBox.ItemTemplate>
+                <StackPanel Name="LocalPanel" Spacing="6" Margin="22,0,0,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <TextBlock Text="Address" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox Grid.Column="1" Name="AddressBox" FontSize="12" AutomationProperties.Name="Address" />
+                        <Button Grid.Column="2" Name="CheckButton" Content="Check" FontSize="12" Margin="8,0,0,0" Click="OnCheckClicked"
+                                ToolTip.Tip="Ask the program on this machine which models it has." />
+                    </Grid>
+                    <TextBlock Name="AddressHintText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" />
+                    <TextBlock Name="CheckText" FontSize="11" TextWrapping="Wrap" IsVisible="False" AutomationProperties.Name="What the program said" />
+                    <ListBox Name="ModelList" SelectionMode="Single" MaxHeight="150"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             AutomationProperties.Name="Models on this machine"
+                             SelectionChanged="OnModelChosen">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" FontSize="11.5" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Name="MemoryText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" AutomationProperties.Name="Memory" />
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Text="Model" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox Grid.Column="1" Name="ModelBox" FontSize="12" PlaceholderText="qwen3:4b-q4_K_M" AutomationProperties.Name="Model" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Name="TestButton" Content="Test" FontSize="12" Click="OnTestClicked"
+                                ToolTip.Tip="Ask the model to reply &quot;ok&quot; and say how long the round trip took. Nothing about the design is sent." />
+                        <TextBlock Name="TestText" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" IsVisible="False" AutomationProperties.Name="Test result" />
+                    </StackPanel>
+                </StackPanel>
+
+                <RadioButton Name="MlxRadio" GroupName="Provider" FontSize="12"
+                             Content="In napkin, on this Mac (MLX)"
+                             IsCheckedChanged="OnProviderChanged" />
+                <TextBlock Name="MlxUnavailableText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" Margin="22,0,0,0"
+                           IsVisible="False" AutomationProperties.Name="Why MLX is not available" />
+
+                <StackPanel Name="MlxPanel" Spacing="6" Margin="22,0,0,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <TextBlock Text="Model folder" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox Grid.Column="1" Name="MlxFolderBox" FontSize="12" TextChanged="OnMlxFolderChanged" AutomationProperties.Name="Model folder" />
+                        <Button Grid.Column="2" Name="MlxChooseButton" Content="Choose…" FontSize="12" Margin="8,0,0,0" Click="OnChooseMlxFolderClicked"
+                                ToolTip.Tip="Choose a folder holding config.json, tokenizer.json and *.safetensors weights, as mlx-community publishes them." />
+                    </Grid>
+                    <TextBlock Name="MlxFolderText" FontSize="11" TextWrapping="Wrap" IsVisible="False" AutomationProperties.Name="What the folder holds" />
+                    <Button Name="MlxDownloadButton" FontSize="12" HorizontalAlignment="Left" Click="OnMlxDownloadClicked"
+                            ToolTip.Tip="See exactly what would be fetched from huggingface.co — every file, its size and SHA-256, the licence and where it goes — and download it only if you agree." />
+                    <TextBlock Name="MlxMemoryText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" IsVisible="False" AutomationProperties.Name="This Mac" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Name="MlxTestButton" Content="Test" FontSize="12" Click="OnMlxTestClicked"
+                                ToolTip.Tip="Load the model and ask it to reply &quot;ok&quot;. Nothing about the design is sent." />
+                        <TextBlock Name="MlxTestText" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" IsVisible="False" AutomationProperties.Name="MLX test result" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Name="TemperaturePanel" Orientation="Horizontal" Spacing="8" Margin="22,0,0,0">
+                    <TextBlock Text="Temperature" FontSize="12" VerticalAlignment="Center" />
+                    <TextBox Name="TemperatureBox" FontSize="12" Width="60" AutomationProperties.Name="Temperature" />
+                </StackPanel>
+                <TextBlock Name="TemperatureHintText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" Margin="22,0,0,0" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Name="UseButton" Content="Use these settings" FontSize="12" Click="OnUseClicked" />
+                    <TextBlock Name="SavedText" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" IsVisible="False" AutomationProperties.Name="Saved" />
+                </StackPanel>
+
+                <TextBlock Text="Getting a model" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
+                <ItemsControl Name="InstallLines">
+                    <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding}" FontSize="11.5" TextWrapping="Wrap" />
+                            <SelectableTextBlock Text="{Binding}" FontSize="11.5" TextWrapping="Wrap" Margin="0,0,0,3" />
                         </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-                <TextBlock Name="MemoryText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" AutomationProperties.Name="Memory" />
-                <Grid ColumnDefinitions="Auto,*">
-                    <TextBlock Text="Model" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <TextBox Grid.Column="1" Name="ModelBox" FontSize="12" PlaceholderText="qwen3:4b-q4_K_M" AutomationProperties.Name="Model" />
-                </Grid>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Name="TestButton" Content="Test" FontSize="12" Click="OnTestClicked"
-                            ToolTip.Tip="Ask the model to reply &quot;ok&quot; and say how long the round trip took. Nothing about the design is sent." />
-                    <TextBlock Name="TestText" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" IsVisible="False" AutomationProperties.Name="Test result" />
-                </StackPanel>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <SelectableTextBlock Name="CloudText" FontSize="11.5" TextWrapping="Wrap" AutomationProperties.Name="Ollama's cloud" />
             </StackPanel>
+        </ScrollViewer>
 
-            <RadioButton Name="MlxRadio" GroupName="Provider" FontSize="12"
-                         Content="In napkin, on this Mac (MLX)"
-                         IsCheckedChanged="OnProviderChanged" />
-            <TextBlock Name="MlxUnavailableText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" Margin="22,0,0,0"
-                       IsVisible="False" AutomationProperties.Name="Why MLX is not available" />
-
-            <StackPanel Name="MlxPanel" Spacing="6" Margin="22,0,0,0">
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                    <TextBlock Text="Model folder" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <TextBox Grid.Column="1" Name="MlxFolderBox" FontSize="12" TextChanged="OnMlxFolderChanged" AutomationProperties.Name="Model folder" />
-                    <Button Grid.Column="2" Name="MlxChooseButton" Content="Choose…" FontSize="12" Margin="8,0,0,0" Click="OnChooseMlxFolderClicked"
-                            ToolTip.Tip="Choose a folder holding config.json, tokenizer.json and *.safetensors weights, as mlx-community publishes them." />
-                </Grid>
-                <TextBlock Name="MlxFolderText" FontSize="11" TextWrapping="Wrap" IsVisible="False" AutomationProperties.Name="What the folder holds" />
-                <TextBlock Name="MlxMemoryText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" IsVisible="False" AutomationProperties.Name="This Mac" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Name="MlxTestButton" Content="Test" FontSize="12" Click="OnMlxTestClicked"
-                            ToolTip.Tip="Load the model and ask it to reply &quot;ok&quot;. Nothing about the design is sent." />
-                    <TextBlock Name="MlxTestText" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" IsVisible="False" AutomationProperties.Name="MLX test result" />
-                </StackPanel>
-            </StackPanel>
-
-            <StackPanel Name="TemperaturePanel" Orientation="Horizontal" Spacing="8" Margin="22,0,0,0">
-                <TextBlock Text="Temperature" FontSize="12" VerticalAlignment="Center" />
-                <TextBox Name="TemperatureBox" FontSize="12" Width="60" AutomationProperties.Name="Temperature" />
-            </StackPanel>
-            <TextBlock Name="TemperatureHintText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" Margin="22,0,0,0" />
-
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Name="UseButton" Content="Use these settings" FontSize="12" Click="OnUseClicked" />
-                <TextBlock Name="SavedText" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" IsVisible="False" AutomationProperties.Name="Saved" />
-            </StackPanel>
-
-            <TextBlock Text="Getting a model" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
-            <ItemsControl Name="InstallLines">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <SelectableTextBlock Text="{Binding}" FontSize="11.5" TextWrapping="Wrap" Margin="0,0,0,3" />
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <SelectableTextBlock Name="CloudText" FontSize="11.5" TextWrapping="Wrap" AutomationProperties.Name="Ollama's cloud" />
-        </StackPanel>
-    </ScrollViewer>
+        <app:DownloadSheet Name="Sheet" IsVisible="False" />
+    </Grid>
 </Window>

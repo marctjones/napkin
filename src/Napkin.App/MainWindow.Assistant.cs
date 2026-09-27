@@ -51,6 +51,22 @@ public partial class MainWindow
     /// </summary>
     public Func<string?> AssistantMlxAvailable { get; set; } = MlxAvailability.ForThisProcess;
 
+    /// <summary>
+    /// The model <em>Download…</em> offers (docs/design/mlx-runtime.md &#xA7;6, #242):
+    /// <see cref="ModelCatalog.Default"/>. The GUI suite sets a catalog entry of small files whose
+    /// hashes it computed, served by the stub under <see cref="AssistantHttp"/>, so no workflow
+    /// fetches a real model.
+    /// </summary>
+    public CatalogModel AssistantDownloadModel { get; set; } = ModelCatalog.Default;
+
+    /// <summary>
+    /// Where downloaded models live: <c>models/</c> beside the settings file — napkin's config
+    /// directory for the person's own settings (&#xA7;6.4, decision 5), and a workflow's own throw-away
+    /// folder under the GUI suite.
+    /// </summary>
+    public string AssistantModelsDirectory => ModelCatalog.ModelsDirectory(
+        Path.GetDirectoryName(Settings.Location) is { Length: > 0 } folder ? folder : Napkin.App.Settings.SettingsStore.ConfigDirectory());
+
     /// <summary>The Where the model runs&#x2026; dialog, when it is open.</summary>
     public AssistantWindow? WhereModelRuns => _assistantWindow;
 
@@ -73,6 +89,8 @@ public partial class MainWindow
                 Http = AssistantHttp,
                 Mlx = AssistantMlx,
                 MlxUnavailable = AssistantMlxAvailable,
+                DownloadModel = AssistantDownloadModel,
+                ModelsDirectory = AssistantModelsDirectory,
                 Apply = UseAssistantSettings,
             };
             _assistantWindow.ShowSettings(Settings.Current.Assistant);

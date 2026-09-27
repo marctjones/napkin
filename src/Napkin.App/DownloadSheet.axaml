@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Napkin.App.DownloadSheet">
+
+    <!--
+        The consent sheet for downloading a model (docs/design/mlx-runtime.md §6.3, issue #242): a
+        sheet over Where the model runs, the Firm up shape. It lists exactly what will be fetched —
+        the repository and pinned commit, every file with its size, SHA-256 and URL, the licence as
+        the model card states it, and where the folder will be — and nothing starts until the box is
+        ticked and Download is pressed. The dialog decides when it is up; this control owns what is
+        on it and runs the one download.
+    -->
+    <Border Name="SheetBorder"
+            Background="{DynamicResource SePaperBrush}"
+            BorderBrush="{DynamicResource SeRuleBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
+            Margin="10"
+            Padding="12,10"
+            AutomationProperties.Name="Download a model">
+        <Grid RowDefinitions="Auto,*,Auto">
+            <StackPanel Grid.Row="0" Spacing="6">
+                <TextBlock Name="TitleText" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <SelectableTextBlock Name="RepositoryText" FontSize="11.5" TextWrapping="Wrap" AutomationProperties.Name="Repository and commit" />
+                <TextBlock Name="FilesText" FontSize="11.5" TextWrapping="Wrap" AutomationProperties.Name="Files and total" />
+            </StackPanel>
+
+            <ScrollViewer Grid.Row="1" Margin="0,6" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl Name="FileLines" AutomationProperties.Name="Every file, its size, SHA-256 and address">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <SelectableTextBlock Text="{Binding}" FontSize="10.5" FontFamily="{DynamicResource SeFontMono}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="2" Spacing="6">
+                <SelectableTextBlock Name="LicenceText" FontSize="11.5" TextWrapping="Wrap" AutomationProperties.Name="Licence" />
+                <HyperlinkButton Name="CardLink" FontSize="11" Padding="0" AutomationProperties.Name="The model card" />
+                <SelectableTextBlock Name="DestinationText" FontSize="11.5" TextWrapping="Wrap" AutomationProperties.Name="Where it will be put" />
+                <TextBlock Name="NetworkText" FontSize="11.5" TextWrapping="Wrap" />
+                <CheckBox Name="ConsentBox" FontSize="12" Content="Download these files from huggingface.co"
+                          IsCheckedChanged="OnConsentChanged" />
+                <ProgressBar Name="Bar" Minimum="0" Maximum="100" Height="6" IsVisible="False" AutomationProperties.Name="How far" />
+                <TextBlock Name="ProgressText" FontSize="11" TextWrapping="Wrap" IsVisible="False" AutomationProperties.Name="Progress" />
+                <SelectableTextBlock Name="ResultText" FontSize="11.5" TextWrapping="Wrap" IsVisible="False" AutomationProperties.Name="How it ended" />
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                    <TextBlock Text="Esc to close; closing stops a download" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                    <Button Name="CancelButton" Grid.Column="1" Content="Cancel" FontSize="12" Padding="10,3" Margin="0,0,6,0" Click="OnCancelClicked" />
+                    <Button Name="DownloadButton" Grid.Column="2" Content="Download" FontSize="12" Padding="10,3" IsEnabled="False" Click="OnDownloadClicked"
+                            AutomationProperties.Name="Download the listed files" />
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
