@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The in-process runtime: the model runs inside napkin, on an Apple silicon Mac, through the
+       Swift bridge over mlx-swift-lm (docs/design/mlx-runtime.md §4.1, issue #240). The
+       Napkin.Assistant.LocalServer pattern: one outside thing behind a seam (INativeMlx), tested
+       through a managed fake so no test loads the bridge or needs Metal; its own coverage floor.
+       The outside thing is a native library, not a package: libNapkinMlx.dylib, built by
+       tools/scripts/build-mlx.sh (never by dotnet build) and shipped beside the executable in
+       native/ (native/NapkinMlx/NapkinMlx.props). No package dependency. Avalonia-free.
+
+       LocalServer is referenced for its UserMessage (the two messages both runtimes send) and its
+       TestResult (the dialog's Test line), so the two runtimes cannot drift apart. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Napkin.Modules.Assistant\Napkin.Modules.Assistant.csproj" />
+    <ProjectReference Include="..\Napkin.Assistant.LocalServer\Napkin.Assistant.LocalServer.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- LibraryImport requires it: "The project must be marked unsafe using AllowUnsafeBlocks"
+         (learn.microsoft.com/dotnet/standard/native-interop/pinvoke-source-generation). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+</Project>

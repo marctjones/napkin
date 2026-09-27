@@ -56,6 +56,15 @@
       "kind": "unit"
     },
     {
+      "id": "AST-007",
+      "area": "assistant",
+      "title": "The MLX runtime runs the model in napkin through the bridge's C ABI, and says why when it cannot",
+      "acceptance": "Through a fake bridge and no native library, the MLX runtime checks the bridge's interface version, initialises it with the metallib beside it and loads the folder once, off the calling thread, on the first question; asks with the system prompt alone, the Context/Question user message, thinking off, the schema passed through verbatim and 1024 or 2048 tokens; answers text or a JSON document, refuses in the bridge's own words for an error and in napkin's for running out of room, no Metal device or a question already out; starts the 30-second limit after the load and refuses no reply in time as no reply, while a cancelled question throws OperationCanceledException; unloads exactly once; refuses a model folder missing a file the bridge needs, by name and in the bridge's words; reports MLX unavailable off Apple silicon or without all three of the bridge's files; and the structs are 136 and 40 bytes with the header's offsets, statuses and array sizes.",
+      "milestone": "M14",
+      "issue": 240,
+      "kind": "unit"
+    },
+    {
       "id": "GUI-AST-01",
       "area": "assistant",
       "title": "Explain a No data header, then a made-up size is refused",

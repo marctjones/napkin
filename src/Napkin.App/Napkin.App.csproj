@@ -68,4 +68,8 @@
              CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- The MLX bridge's three files in native/ beside the executable, when tools/scripts/build-mlx.sh
+       has built them; nothing otherwise (docs/design/mlx-runtime.md §3.1). -->
+  <Import Project="..\..\native\NapkinMlx\NapkinMlx.props" />
 </Project>

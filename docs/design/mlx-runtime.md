@@ -31,7 +31,7 @@ states a code value, a lumber size, a span or a load.
 §0 what exists and what this note does with it; **How to use it**; §1 the bridge (packages,
 versions, licences, toolchain, the C ABI); §2 structured output; §3 build and packaging; §4 the
 .NET side; §5 models; §6 the consented download; §7 tests; §8 risks; §9 slices; §10 try it;
-§11 unverified; §12 decisions for Marc; §13 as built in A (#239).
+§11 unverified; §12 decisions for Marc; §13 as built in A (#239); §14 as built in B (#240).
 
 ---
 
@@ -1212,3 +1212,157 @@ after mlx-swift-lm hops to its `GenerationWorker` executor, still reaches the br
 (the test covers a synchronous error only); that Xcode 26.4 is enough (`build-mlx.sh` repeats §1.2's
 secondary-source floor; only 27.0 was used); and that `xcodebuild test`'s time-out was this
 sandboxed session's XPC and not the package — on an ordinary Mac it may just work.
+
+---
+
+## 14. As built in B (#240), and where it departs from this note
+
+`src/Napkin.Assistant.Mlx` (BCL only; references `Napkin.Modules.Assistant` and
+`Napkin.Assistant.LocalServer`; `AllowUnsafeBlocks`), `tests/Napkin.Assistant.Mlx.Tests` (AST-007,
+171 tests, all through the fake; 100% line and branch, the floor), `native/NapkinMlx/NapkinMlx.props` imported by `Napkin.App` and
+`Napkin.Tools`, `napkin-tools assistant mlx-smoke`, and the assembly's floor. Nothing in the app's
+behaviour changes: the app does not reference the assembly yet (slice C). §13's corrections are
+followed: the metallib passed to `init` is exactly `native/mlx.metallib` beside the dylib; the three
+files travel together; the structs are asserted at 136 and 40 bytes.
+
+Public surface: `INativeMlx` (the eight functions as six methods — the two `_free`s are the
+marshalling's), `MlxStatus`, `MlxStopReason`, `MlxModelHandle`, `MlxDeviceInfo`, `MlxGeneration`,
+`CancelFlag`, `NativeMlx`, `MlxBridge` (the three file names, `NativeDirectory`/`LibraryPath`/
+`MetallibPath`, `AbiVersion` 1), `MlxAvailability` (`Check`, `ForThisProcess`, `Probe` →
+`MlxProbe`, `NotAppleSilicon`, `NoMetal`), `ModelFolder` (`TryParse`, `Path`, `Name`,
+`DisplayName`, `ModelType`, `QuantizationBits`, `QuantizationGroupSize`, `Licence`, `WeightBytes`,
+`Description`, `HomeRelativePath`, `HomeRelative`), `MlxModel : IAssistantModel, IDisposable`
+(`AskAsync`, `LoadAsync`, `TestAsync`, `State`, `LoadingLine`, `LoadTime`, `Whereabouts`,
+`NoReply`, `Timeout`, `TextMaxTokens` 1024, `ProposalMaxTokens` 2048, `TopP` 1.0, `RanOutOfRoom`,
+`StillAnswering`), `MlxLoadState`, and the fake: `FakeNativeMlx`, `FakeMlxReply`, `FakeMlxRequest`.
+
+### 14.1 Departures, and why
+
+1. **`UserMessage` is not moved; LocalServer is referenced** (§4.1 left it to B). `MlxModel` also
+   uses its `TestRequest`, `TestResult`, `DefaultTemperature` (0.2) and `DefaultTimeout` (30 s), so
+   the two runtimes cannot drift apart, and no file outside B's list changed.
+2. **No reply in time is `ModelReply.Refused`, not an `OperationCanceledException`**: *"No reply in
+   30 s from Qwen3-4B-4bit in napkin (MLX)."* The seam says so (`IAssistantModel` lists *"no reply in
+   time"* under `Refused`), AST-006 holds the loopback runtime to it, and `MainWindow.AskAssistant`'s
+   `OperationCanceledException` path returns without hiding the thinking line — a time-out surfaced
+   that way would leave *"thinking… (30s)"* on screen. The person's cancel, and `Dispose` while a
+   question is out, are `OperationCanceledException` with no reply.
+3. **Refusals.** `ERROR` — and any status napkin does not word itself — is the bridge's sentence
+   word for word; if the bridge gave none, *"The MLX bridge answered with status N (Name) and did not
+   say why."* §4.1's three are written as sentences: *"The assistant ran out of room before finishing
+   the proposal."* (`INCOMPLETE`), *"MLX found no Metal device on this Mac."* (`NO_METAL`), *"The
+   assistant is still answering the last question."* (`BUSY`). An OK with nothing but whitespace is
+   *"Qwen3-4B-4bit replied with nothing."*
+4. **The load's cancel flag belongs to the model, not to a question.** A load cannot be interrupted
+   inside mlx-swift-lm, so Escape during it returns at once (`WaitAsync`) and the load finishes
+   behind it and is kept for the next question; a second question during the load waits for the
+   same load. `Dispose` sets the flag, and a load that comes back OK after `Dispose` (the bridge read
+   the flag before it was set) is unloaded by napkin — `Unload` runs exactly once either way. A
+   refused load or init is not remembered: the next question tries again (the bridge latches
+   `init` only on success).
+5. **`MlxAvailability` is two steps.** `Check` loads nothing: macOS, the **process** architecture
+   arm64 (an x64 napkin under Rosetta on Apple silicon cannot load an arm64 dylib, and
+   `ProcessArchitecture` says X64 there), and all three files in `native/`. `Probe` then loads the
+   bridge and asks its interface version and `napkin_mlx_device` — the *"Metal present"* part — so
+   the dialog can say *"MLX found no Metal device on this Mac."* before anyone presses Test. Two
+   sentences rather than the one of *How to use it*: off Apple silicon, the note's own; with a file
+   missing, §3.1's *"MLX is not in this build"*, naming it — *"MLX is not in this build of napkin:
+   ‹path› is missing. Use a program on this machine (Ollama or llama-server) instead."*
+6. **`NativeMlx` loads the library itself**, with `NativeLibrary.Load(<base>/native/libNapkinMlx.dylib)`
+   before its first import, and the assembly's one resolver returns that handle for `"NapkinMlx"`
+   and nothing for any other name — so the `DllNotFoundException` provably comes from napkin's line
+   and names the path, whatever a resolver's exceptions do. Nothing loads when a `NativeMlx` is made.
+   `MlxModel` and `Probe` turn `DllNotFoundException`, `EntryPointNotFoundException` and
+   `BadImageFormatException` — and nothing else — into *"napkin could not load the MLX bridge:
+   ‹the loader's words›"*.
+7. **One props file, not §3.1's inline block**: `native/NapkinMlx/NapkinMlx.props` lists the three
+   files once, and both projects that load the bridge import it (the tool, so the smoke loads it
+   from `native/` beside itself exactly as the app does). A single-file `osx-arm64` publish
+   (`--self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true`) was
+   run: the three files are in `native/` beside `napkin` (`ExcludeFromSingleFile`); the bundle's
+   own contents were not inspected.
+8. **`ModelFolder` is the bridge's check, in its order and words** (a test reads `Bridge.swift` and
+   compares), plus one of napkin's own: `config.json` must be a JSON object, since napkin reads
+   `model_type` and `quantization` from it. A file napkin cannot read is *"not a JSON object"*, as
+   the bridge says. The licence is the `README.md` front matter's top-level `license:` only; the
+   catalog's licence for a folder napkin downloaded is slice D's. `WeightBytes` (every
+   `*.safetensors`) is there for the dialog's memory rule and the loading line.
+9. **For slice C's dialog and note**: `State`, `LoadingLine` (*"loading the model (2.3 GB)… 12 s"*,
+   decimal GB of the weights, while loading, else null), `LoadTime`, `LoadAsync`, and `TestAsync`,
+   whose line gives the load too when the test did it — *"Qwen3-4B-4bit loaded in 8.1 s and replied
+   in 0.4 s: “ok”."*
+10. **`FakeNativeMlx`** keeps the bridge's rules (init before load; `BUSY` for a second generation on
+    a model; the flag read before and after a load and polled during a reply; a dead handle is
+    `ERROR`) and speaks its sentences, which a test reads from `Errors.swift` and `Bridge.swift`.
+    `Throws` makes every call throw (a bridge that will not load); `LoadGate`/`LoadDelay` hold a
+    load; `FakeMlxReply.UntilCancelled()` generates until the flag.
+11. **The smoke** is `tools/Napkin.Tools/Commands/AssistantSmoke.cs` (the tool's `Commands/`
+    pattern). It runs `MlxModel` on the real bridge, so the smoke tests the product's path, not a
+    second one; its proposal sends the sketch schema's exact bytes, read from
+    `native/NapkinMlx/Sources/NapkinMlxSchemas/Schemas.swift` (so the load-time constraint is used,
+    §13.2 item 4), under `AssistantPrompts.Sketch`. Exit codes: 0 ran to the end (whatever the model
+    said, or no `--model` given); 1 the bridge was found but could not run (would not load, another
+    interface, no Metal, `init` or the load refused); 3 no bridge beside the tool, or the folder
+    refused. `NAPKIN_MLX_DIAGNOSTICS=1` in the environment reaches the bridge (it read it: its
+    *"init ok in 111 ms"* line printed).
+12. **Marshalling tests** assert the sizes and every offset of both structs, the status enum's four
+    bytes, and — read from `napkin_mlx.h` at test time — the six status values, the two array
+    sizes, both structs' member order, and that the header's eight functions are exactly the eight
+    `NativeMlx` imports; the ABI version equals `Errors.swift`'s. A header edit is a red test.
+
+### 14.2 Run on this Mac (M5, 24 GiB, macOS 26.6.2, Xcode 27.0; bridge built by `build-mlx.sh`)
+
+`dotnet tools/Napkin.Tools/bin/Debug/net10.0/Napkin.Tools.dll assistant mlx-smoke`, no model
+(`NAPKIN_MLX_DIAGNOSTICS=1`; exit 0):
+
+```
+assistant mlx-smoke — napkin's MLX runtime on the real bridge, in this process
+bridge    …/tools/Napkin.Tools/bin/Debug/net10.0/native
+abi       1
+device    Metal, applegpu_g17g, 24.0 GiB memory, Metal recommends up to 17.8 GiB; mlx-swift-lm ee673d6a71d76e67b532dc7eaf91d92edc3bb8bb
+napkin_mlx: init ok in 111 ms (Metal applegpu_g17g, metallib …/net10.0/native/mlx.metallib)
+init      OK in 112 ms (…/net10.0/native/mlx.metallib)
+model     none given (--model <folder>): the load, a text answer and a sketch proposal need an mlx-community model folder
+          holding config.json, tokenizer.json, tokenizer_config.json and *.safetensors. Nothing was loaded and nothing was downloaded.
+```
+
+With `--model ~/Library/Application Support/napkin/models/mlx-community--Qwen3-4B-4bit--4dcb3d101c2a`
+(not there — nothing was downloaded): the same through `init`, then *"mlx-smoke: There is no folder
+at /Users/marc/Library/Application Support/napkin/models/mlx-community--Qwen3-4B-4bit--4dcb3d101c2a."*,
+exit 3. From a copy of the tool without `native/`: *"mlx-smoke: MLX is not in this build of napkin:
+…/native/libNapkinMlx.dylib is missing. Use a program on this machine (Ollama or llama-server)
+instead."* and the `build-mlx.sh` hint, exit 3.
+
+Every `NativeMlx` import was also called on the real dylib, with no model, from a throwaway program
+(not committed): `abi_version` 1; `device` OK — 25,769,803,776 bytes, Metal recommends
+19,069,665,280, `applegpu_g17g`, the revision; `init` with `/nonexistent/mlx.metallib` → `ERROR`
+*"There is no Metal library at /nonexistent/mlx.metallib."*; `init` with the colocated path → OK;
+`load` of an empty folder → `ERROR` *"The folder … has no config.json."*; of a folder whose
+`tokenizer_config.json` names no class → the bridge's sentence; `generate` with a NULL model →
+*"napkin_mlx_generate was given no model"*, with `max_tokens` 0 → *"max_tokens must be at least 1;
+it was 0."*, on a handle never loaded → *"…a model that is not loaded (unloaded already?)."*; then
+20,000 error round trips (each sentence handed to `napkin_mlx_string_free`), after which the working
+set was 98 MB — one reading, which rules out nothing small: a leak of every sentence would be about
+2 MB. So the string, `SafeHandle` and out-pointer marshalling of the calls
+that need no model is right against the real library; `napkin_mlx_result_free` and reading a real
+result struct are proved only by the tests until a model is loaded.
+
+**Pending a model folder** (none was downloaded): the load's time and memory, a text answer, a
+proposal, `BUSY` and cancel through `MlxModel` on the real bridge — `assistant mlx-smoke --model
+<folder>` does the first three in one run.
+
+### 14.3 What slice C (#241) plugs into
+
+- `Napkin.App.csproj` gains the `ProjectReference` to `Napkin.Assistant.Mlx` (the props import is
+  already there). `AssistantModels.FromSettings(settings, http, mlx)`: `Provider == Mlx`,
+  `MlxAvailability.ForThisProcess() is null` and `ModelFolder.TryParse(settings.ModelFolder, out
+  folder, out _)` → `new MlxModel(mlx ?? new NativeMlx(), folder, temperature)`; anything else →
+  `new ScriptedModel()`. The old model is disposed when the settings change (that unloads it).
+- The dialog: the third radio disabled with `MlxAvailability.ForThisProcess()`'s sentence; the
+  memory line from `MlxAvailability.Probe(native).Device` — off the UI thread, since it loads the
+  bridge — with `Probe`'s refusal shown if Metal is missing; the folder line
+  `ModelFolder.Description` or the `TryParse` refusal; **Test** → `MlxModel.TestAsync`, with
+  `LoadingLine` polled for *"loading…"*.
+- The GUI suite passes a `FakeNativeMlx` (the `AssistantHttp` pattern: `MainWindow.AssistantMlx`)
+  — `LoadDelay` or `LoadGate` to watch *"loading…"*, `FakeMlxReply.Answer("ok")` for Test — and
+  forces availability through a seam C adds (the note's §7.3), so the workflows run on Windows too.

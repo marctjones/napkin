@@ -16,6 +16,7 @@ public static class Cli
           napkin-tools scorecard stubs   [options]
           napkin-tools samples restamp   [options]
           napkin-tools licenses check    [--list] [--policy <path>] [options]
+          napkin-tools assistant mlx-smoke [--model <folder>] [--root <path>]
 
         ratchet check
           Fails when a baselined assembly's line or branch coverage has fallen below its floor,
@@ -45,6 +46,15 @@ public static class Cli
           one outside licenses/policy.json's allowlist, unless that exact version has a written
           exception there. Reads obj/project.assets.json, so run it after a restore. --list prints
           every package and its verdict.
+
+        assistant mlx-smoke
+          Runs napkin's own MLX runtime on the real bridge (native/ beside this tool, copied there
+          by the build once tools/scripts/build-mlx.sh has built it; Apple silicon only): the
+          bridge's interface version, this Mac's Metal device and init, then with --model a
+          folder's load time and memory, a text answer, a sketch proposal and the unload. The only
+          command that loads the bridge; never run by the gate or CI; never downloads anything.
+          Exits 0 when it ran to the end whatever the model said, 1 when the bridge could not
+          run here, 3 when there is no bridge beside this tool or the folder is refused.
 
         Common options:
           --root <path>          Repository root (default: the nearest napkin.sln above the
@@ -89,6 +99,7 @@ public static class Cli
                 "scorecard stubs" => ScorecardCommand.Stubs(rest, output, error),
                 "samples restamp" => SamplesCommand.Restamp(rest, output, error),
                 "licenses check" => LicensesCommand.Check(rest, output, error),
+                "assistant mlx-smoke" => AssistantSmoke.MlxSmoke(rest, output, error),
                 _ => Unknown(command, output, error),
             };
         }
