@@ -32,7 +32,7 @@ states a code value, a lumber size, a span or a load.
 versions, licences, toolchain, the C ABI); §2 structured output; §3 build and packaging; §4 the
 .NET side; §5 models; §6 the consented download; §7 tests; §8 risks; §9 slices; §10 try it;
 §11 unverified; §12 decisions for Marc; §13 as built in A (#239); §14 as built in B (#240);
-§15 as built in C (#241); §16 as built in D (#242).
+§15 as built in C (#241); §16 as built in D (#242); §17 as built in E (#243).
 
 ---
 
@@ -1702,3 +1702,221 @@ loaded exactly that folder and the answer is on the note with the in-napkin wher
   seen.
 - Behaviour behind a proxy, on a slow or flaky link, or with a full disk (the disk error is a sentence
   by the same path as a network one, tested with a thrown `IOException`, not a real full disk).
+
+---
+
+## 17. As built in E (#243), and where it departs from this note
+
+`.github/workflows/mlx-bridge.yml` (new, a reusable workflow), an `mlx-bridge` job in `ci.yml` and in
+`release.yml`, the bridge in the `osx-arm64` zip with its signature check, `native/NOTICES.txt`,
+the MLX section of `docs/third-party-notices.md`, `docs/release.md`, `ReleaseWorkflowRules`/`Tests`
+extended, `MlxBridgeNoticesTests`, and one guard in `build-mlx.sh`. `dotnet build`, `gate.sh` and
+CI's `build-and-test` are unchanged and need no Xcode: the gate for this slice ran with no
+`native/NapkinMlx/out/` in the worktree. `NapkinMlx.props` (slice B) is untouched. No workflow ran on
+GitHub for this slice (§17.7), and nothing was tagged or published. Every fact below about the runner,
+Xcode, the artifact actions and the licences was read on **2026-09-27** from the source named beside
+it.
+
+### 17.1 The `mlx-bridge` job, exactly as built
+
+A reusable workflow (`on: workflow_call`, input `test`), `permissions: contents: read`, one job on
+**`macos-latest`**, which is the macOS 26 arm64 image
+([runner-images README](https://github.com/actions/runner-images/blob/main/README.md): "macOS 26
+Arm64 … `macos-latest`, `macos-26` or `macos-26-xlarge`"). Its steps:
+
+1. **Select Xcode**: `sudo xcode-select -s "$XCODE_APP"`, with `XCODE_APP:
+   /Applications/Xcode_26.6.app` set once at the top of the file. The
+   [macos-26-arm64 image README](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md)
+   (image 20260907.0351.1, file last changed 2026-09-11) lists Xcode 26.6 (17F113) as the default at
+   that path, with 26.5, 26.4.1, 26.3, 26.2, 26.1.1 and 26.0.1 beside it. Apple's Xcode 26.6 release
+   notes: *"Xcode 26.6 includes Swift 6.3"* — which mlx-swift 0.31.6's `swift-tools-version: 6.3`
+   needs (§1.2; this replaces §1.2's secondary xcodereleases.com figure for 26.6 with Apple's own).
+   Xcode 27 ("includes Swift 6.4", Apple's Xcode 27 release notes) is on the runners only behind a
+   separate **`xcode-27`** label, a public preview (the README's image table and its announcement,
+   actions/runner-images#14404).
+2. **Metal Toolchain**: `xcodebuild -showComponent MetalToolchain`, read whole, and
+   `xcodebuild -downloadComponent MetalToolchain` only if it does not say `Status: installed`.
+   Apple: *"To build your Metal apps, download and install the optional Metal Toolchain"*, with
+   `xcodebuild -downloadComponent metalToolchain`
+   ([Downloading and installing additional Xcode components](https://developer.apple.com/documentation/xcode/downloading-and-installing-additional-xcode-components)).
+   The image maintainer's last word in [actions/runner-images#13080](https://github.com/actions/runner-images/issues/13080)
+   (2025-11-28, closing it): they *"plan to provide this component for all release versions of Xcode
+   26 and beyond"*; a 2026-03-25 follow-up there is unanswered and today's image README does not
+   list the component, so the step checks.
+3. **Build the bridge**: `tools/scripts/build-mlx.sh`, with `--test` when the input says so.
+4. **Check the three files**: all present and non-empty; `libNapkinMlx.dylib` is `arm64` alone and
+   exports exactly the eight `_napkin_mlx_*` of the header (named in the step, as §3.6 asked); its
+   dependencies outside the OS are printed; `codesign -dvv` shows `Signature=adhoc` and no
+   `Authority=` or `Developer ID`, and `codesign --verify --strict` passes;
+   `libswiftCompatibilitySpan.dylib` passes `codesign --verify --strict -R="anchor apple"` — Apple's
+   own signature, intact (a Developer ID signature is `anchor apple generic` and fails it).
+5. **Upload** exactly the three files as the artifact **`mlx-bridge`** (14 days), not the spike
+   harness. upload-artifact's README (v4): *"If multiple paths are provided as input, the least
+   common ancestor of all the search paths will be used as the root directory of the artifact"* — so
+   the artifact's root holds the three files.
+6. On failure only, `build-mlx.log` and `test-mlx.log` as `mlx-bridge-logs`.
+
+It never loads a model. GitHub's
+[hosted-runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners):
+the arm64 macOS runners are M1 with 3 processors, 7 GB of RAM and 14 GB of storage (public
+repositories), and *"Nested-virtualization is not supported due to the limitation of Apple's
+Virtualization Framework"*; nothing there says a Metal device is available.
+
+`ci.yml` gains a job `mlx-bridge` that calls it with `test: true`; `build-and-test` neither waits
+for it nor changes. It runs on every push to `main` (and on a pull request, of which there are
+none), not only on changes under `native/**` as §3.6 suggested: a job cannot filter by path (path
+filters belong to a workflow's triggers, and ci.yml's serve `build-and-test`). If it proves slow,
+risk §8.9's answer (narrow it, cache by `Package.resolved`) still applies.
+
+`build-mlx.sh` now reads `-showComponent`'s output whole before matching it, as the workflow does,
+instead of piping it into `grep -q` under `pipefail`, where a grep that stops early can fail the pipe
+and report an installed toolchain as missing.
+
+### 17.2 The release, exactly as built
+
+- A job **`mlx-bridge`** (`needs: version`, `uses: ./.github/workflows/mlx-bridge.yml`, `test:
+  false` — the Swift tests are CI's; a release needs the files). **`build` needs `[version,
+  mlx-bridge]`** for all three runtimes: a matrix cannot wait per entry, so the Windows and x64
+  builds wait for the bridge too, and a release whose bridge did not build publishes nothing rather
+  than an arm64 zip without MLX.
+- `osx-arm64` only, before the publish: `actions/download-artifact@v4` `name: mlx-bridge`, `path:
+  native/NapkinMlx/out` — where `NapkinMlx.props` includes the files, so the publish puts them in
+  `native/` beside the executable, outside the single file (§3.1, §14.1 item 7). Then `chmod 755` on
+  the two dylibs: the README says *"File permissions are not maintained during artifact upload. All
+  directories will have 755 and all files will have 644."* The mode is not part of a signature;
+  the bytes are untouched.
+- **Stage** copies `native/NOTICES.txt` into `native/` when the publish made a bridge there, and
+  `SOURCE.txt` gains a paragraph then: *"native/ holds napkin's MLX bridge (Apple silicon only),
+  built from native/NapkinMlx in that source by tools/scripts/build-mlx.sh. … see native/NOTICES.txt
+  here, and docs/third-party-notices.md in the source."*
+- **Check signature (macOS)**, on the files as they come out of the zip: for `osx-arm64`, the three
+  files and `NOTICES.txt` present; the bridge `arm64`, `Signature=adhoc`, no `Authority=`/`Developer
+  ID`, no notarization ticket, `codesign --verify --strict`; the Span library `-R="anchor apple"`.
+  `osx-x64` fails if it has a `native/` folder; so does `win-x64` in its archive check. The launch
+  smoke test is unchanged (nothing loads the bridge until a person chooses MLX). **No signing step.**
+- `ReleaseWorkflowRules` now also requires that release.yml runs `mlx-bridge.yml`, downloads
+  `mlx-bridge` into `native/NapkinMlx/out`, and keeps `codesign -dvv "$bridge"`, the bridge's
+  `Signature=adhoc` and `Authority=` greps and `-R="anchor apple"`; and it holds `mlx-bridge.yml`
+  itself to the no-signing and actions rules, `contents: read`, `workflow_call`, and uploading
+  `mlx-bridge` — since a release runs it, a signing step there would be one in the release. Every
+  new rule has a mutation test in `ReleaseWorkflowTests`.
+
+### 17.3 `libswiftCompatibilitySpan.dylib`: the licence, and the macOS floor
+
+**Decision taken on the recommended default; Marc has not answered it:** keep the bridge's macOS 14
+floor and ship the Span library beside it, because its licence was confirmed compatible with
+DESIGN.md §2.1. Read from primary sources:
+
+- The library is built from `stdlib/toolchain/CompatibilitySpan` in
+  [swiftlang/swift](https://github.com/swiftlang/swift) (`CMakeLists.txt`: library
+  `swiftCompatibilitySpan`, `BACK_DEPLOYMENT_LIBRARY 6.2`, compiling `stdlib/public/core/Span/*.swift`
+  with `-DSPAN_COMPATIBILITY_STUB`; last changed at `56c13c6`, 2026-08-10). Every source header read
+  says *"Licensed under Apache License v2.0 with Runtime Library Exception"* and points at
+  swift.org/LICENSE.txt.
+- [`LICENSE.txt`](https://github.com/swiftlang/swift/blob/main/LICENSE.txt) is the Apache License
+  2.0 followed by the Runtime Library Exception; the GitHub API's licence field is `Apache-2.0`;
+  there is no `NOTICE` file. Apache-2.0 is on `licenses/policy.json`'s allowlist.
+- The exception covers portions *"embedded into the binary product"* by compiling; this file ships
+  separately, so napkin **does not rely on it** and gives the attribution Apache §4 asks:
+  `native/NOTICES.txt` carries the Apache text, the exception and the copyright line.
+- The bytes shipped are Apple's build from the building Xcode (Apple-signed, `Identifier=
+  com.apple.dt.runtime.swiftCompatibilitySpan`, a universal x86_64/arm64e/arm64 file). Xcode 27.0's
+  own `Acknowledgments.pdf` lists *"Apple Inc. and Swift project authors ( Swift )"* as *"Licensed
+  under Apache License v2.0 with Runtime Library Exception"*. The Xcode and Apple SDKs Agreement
+  (Xcode 27.0's `License.rtf`) §2.7 forbids redistributing the Apple Software *"unless otherwise
+  expressly permitted by Apple in writing"*, and in the same section excepts what *"may be permitted
+  by licensing terms governing use of open-sourced components or sample code included with the
+  Apple Software"*; §2.4 adds that *"macOS applications and libraries may be distributed … so long
+  as such applications and libraries comply with the terms of this Agreement"*. napkin reads the
+  open-source carve-out as covering this open-source runtime library. **That reading is Marc's to
+  confirm**; if he reads §2.7 otherwise, the alternative is the bridge at macOS 26 (the file then
+  disappears — `Package.swift`'s platform, `build-mlx.sh`'s copy, `NapkinMlx.props`' third file,
+  `MlxAvailability`'s check, and a sentence for macOS 14–15).
+- Secondary, not licence evidence: an Apple engineer in
+  [apple/swift-collections#732](https://github.com/apple/swift-collections/issues/732#issuecomment-5823499281)
+  (2026-09-24) — Swift 6.2+ toolchains ship this back-deployment binary, it *"must be installed
+  alongside any executable"* built with them that runs before macOS 26, and *"For app targets, Xcode
+  automatically takes care of copying this dylib into the correct location in the app bundle"*.
+
+### 17.4 Notices, as re-read (corrections to §13.3)
+
+Every licence in §13.3 was re-read at its pinned revision through the GitHub API, and the link list
+of the bridge's own Release build (`NapkinMlx-product`'s `LinkFileList`) was read to say what is
+compiled in. Differences from §13.3:
+
+1. **PocketFFT is compiled in and §13.3 did not list it.** MLX's `mlx/backend/cpu/fft.cpp` includes
+   `mlx/3rdparty/pocketfft.h` (BSD-3-Clause: Max-Planck-Society, Peter Bell, and for the DCT-IV
+   transforms Matteo Frigo and MIT), and mlx-swift's `Package.swift` does not exclude it. MLX's own
+   `ACKNOWLEDGMENTS.md` names exactly two third-party works, PocketFFT and metal-cpp.
+2. **swift-collections and swift-numerics are Apache-2.0 *with the Runtime Library Exception***
+   (their `LICENSE.txt`; swift-collections' headers say `SPDX-License-Identifier: Apache-2.0 WITH
+   Swift-exception`), as are swift-argument-parser and swift-syntax, which are not shipped.
+3. **swift-crypto has a `NOTICE.txt`**, carried in `native/NOTICES.txt`; on macOS its vendored
+   BoringSSL is not compiled (`Package.swift` adds `CCryptoBoringSSL` only for Linux, Android,
+   Windows, WASI and OpenBSD; no BoringSSL object is in the link list). swift-asn1 has a `NOTICE.txt`
+   too but is not linked.
+4. Nothing else changed: the link list is exactly §13.3's "yes" rows; the vendored XGrammar sources'
+   headers name only "Contributors", picojson and DLPack; the sources of swift-transformers,
+   swift-jinja, swift-huggingface and EventSource name no other copyright holder.
+
+`MlxBridgeNoticesTests` fails when a `Package.resolved` revision is not in the notices (a mutation of
+one pin was caught), and checks that `native/NOTICES.txt` carries each licence text it must.
+
+### 17.5 `assistant eval --mlx`: not built — a departure
+
+The note's slice E row lists `assistant eval --mlx`, depending on #235. `assistant eval` does not
+exist: #235 (the eval set, the command, the help page) is open and unbuilt, and its proposal cases
+need #233 and #234, also unbuilt. Adding `--mlx` would mean building #235's command and cases here,
+which is #235's scope, so this slice does not. For #235 to adopt: **`assistant eval --mlx <folder>`**
+refuses the folder with `ModelFolder.TryParse`'s sentence and exits 3, otherwise runs the cases
+through `new MlxModel(new NativeMlx(), folder, metallibPath: MlxBridge.MetallibPath(…))` exactly as
+`AssistantSmoke` does (the bridge beside the tool, `MlxAvailability.Check` first), prints the same
+table as for `--endpoint`, and exits 0 whatever the numbers; never in `gate.sh` or CI. Until then,
+`assistant mlx-smoke --model <folder>` is the real-weights path on a person's Mac.
+
+### 17.6 What was run here (Marc's Mac: M5, macOS 26.6.2, Xcode 27.0, Metal Toolchain 32023.921)
+
+- `tools/scripts/build-mlx.sh --test` in this worktree: built in 119 s; sizes as §13.4
+  (31,094,040 / 3,836,652 / 188,320 bytes); the eight exports; `adhoc,linker-signed`; 41 Swift
+  tests, 1 skipped, 0 failures.
+- `mlx-bridge.yml`'s *Metal Toolchain* and *Check the three files* steps, their own text extracted
+  from the YAML and run: both pass (the Span library satisfies `anchor apple`; the bridge does not,
+  as it should not).
+- `release.yml`'s osx-arm64 steps, their own text, in order — the artifact simulated as the three
+  files at mode 644, then *MLX bridge file modes*, *Publish*, *Stage*, *Zip (macOS)*, *Check
+  signature (macOS)* (the launch smoke test was not run: it opens the app). The zip holds
+  `native/{libNapkinMlx.dylib, libswiftCompatibilitySpan.dylib, mlx.metallib, NOTICES.txt}` with the
+  dylibs at 755, `SOURCE.txt` has the paragraph, and the check passes. The unzipped bridge then
+  loaded and ran on the GPU from there: `napkin-mlx-spike --dylib verify/…/native/libNapkinMlx.dylib`
+  — dlopen 338 ms, the eight symbols, `abi 1`, `device` OK, `init` OK in 114 ms with the colocated
+  metallib.
+- osx-x64, the same steps with no bridge downloaded: no `native/`, no paragraph, the check passes.
+- Seven negative cases, each an edit to a copy of a rehearsed zip, each **failed** the check: x64
+  with a `native/` folder; arm64 without `NOTICES.txt`; without `mlx.metallib`; the Span library
+  replaced by an ad-hoc file; one byte of the bridge changed (`codesign --verify` fails); the bridge
+  replaced by the universal Span file (architecture); the bridge replaced by the Span file's arm64
+  slice (`Authority=`).
+- `actionlint` (with shellcheck) on the three workflows: nothing new (two info notes predate this in
+  release.yml's checksum step).
+
+### 17.7 Only a real run can show
+
+No workflow ran for this branch: `ci.yml` runs on pushes to `main` and on pull requests,
+`mlx-bridge.yml` only when called, `release.yml` on a `v*` tag, a dispatch or a pull request. The
+first real run of the `mlx-bridge` job is the push to `main` that lands this slice.
+
+- **Xcode 26.6 building the bridge.** Only Xcode 27.0 has built it. Whether Swift 6.3 accepts
+  mlx-swift's `6.3;(experimentalCGen)` manifest and compiles mlx-swift-lm's `main`, and whether 26.6's
+  toolchain has `usr/lib/swift-6.2/macosx/libswiftCompatibilitySpan.dylib` for `build-mlx.sh` to copy
+  (it refuses by name if not). If 26.6 cannot, the choice is `XCODE_APP` or the `xcode-27` preview
+  label — Marc's.
+- Whether the image has the Metal Toolchain for 26.6 already, and whether `-downloadComponent` needs
+  `sudo` there.
+- Whether `xctest` starts on a runner with no usable Metal device (§7.1). If it cannot, ci.yml's
+  `mlx-bridge` job goes red while `build-and-test` stays green; the fix is one line (`test: false`)
+  or a skip in the Swift tests.
+- Build time and disk on a 3-core M1 with 7 GB of RAM (DerivedData here: 2.7 GB with the tests;
+  the job's limit is 60 minutes).
+- The artifact passing from the called workflow to the `build` job in the same run, and its files
+  landing at the root of `native/NapkinMlx/out`.
+- The release check on the runner's own files — Xcode 26.6's Span library passing `anchor apple`.

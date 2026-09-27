@@ -15,8 +15,13 @@ name: Release
 # Nothing here signs or notarizes anything, on either platform. macOS arm64 keeps the automatic
 # ad-hoc signature the toolchain applies, which arm64 code needs in order to run at all; a step
 # below asserts that it is the only signature there is. tests/Napkin.Tools.Tests/
-# ReleaseWorkflowTests.cs fails if this file gains a signing or notarization step, or loses the
-# pre-release flags.
+# ReleaseWorkflowTests.cs fails if this file (or mlx-bridge.yml, which it runs) gains a signing or
+# notarization step, or loses the pre-release flags.
+#
+# The osx-arm64 zip also carries napkin's MLX bridge in native/ beside the executable
+# (docs/design/mlx-runtime.md §3, #243), built from the same commit by mlx-bridge.yml: the
+# bridge keeps the linker's ad-hoc signature and the Swift runtime library beside it keeps Apple's,
+# and the check step asserts both. osx-x64 and win-x64 carry no native/ folder.
 
 on:
   push:
@@ -80,9 +85,20 @@ jobs:
           echo "is_release=$is_release" >> "$GITHUB_OUTPUT"
           echo "Version $version; real release: $is_release"
 
+  # The MLX bridge's three files (docs/design/mlx-runtime.md §3.6), built from this commit by the
+  # same reusable workflow CI runs, for the osx-arm64 build to put in native/. Its Swift tests are
+  # CI's to run (test: false). Every build waits for it — a matrix cannot wait per entry — so a
+  # release whose bridge did not build publishes nothing rather than an arm64 zip without MLX.
+  mlx-bridge:
+    name: MLX bridge
+    needs: version
+    uses: ./.github/workflows/mlx-bridge.yml
+    with:
+      test: false
+
   build:
     name: Build ${{ matrix.rid }}
-    needs: version
+    needs: [version, mlx-bridge]
     strategy:
       fail-fast: false
       matrix:
@@ -113,11 +129,34 @@ jobs:
         with:
           global-json-file: global.json
 
+      # osx-arm64 only: the MLX bridge from the mlx-bridge job, into native/NapkinMlx/out/, where
+      # native/NapkinMlx/NapkinMlx.props includes it — so the publish below copies the three files
+      # to native/ beside the executable and keeps them out of the single file (mlx-runtime.md
+      # §3.1, §3.3). The other two builds download nothing and publish no native/ folder.
+      - name: MLX bridge (osx-arm64)
+        if: matrix.rid == 'osx-arm64'
+        uses: actions/download-artifact@v4
+        with:
+          name: mlx-bridge
+          path: native/NapkinMlx/out
+
+      # An artifact does not keep Unix permissions ("All directories will have 755 and all files
+      # will have 644", upload-artifact's README); the two libraries get back the mode they were
+      # built with. Only the mode: the files' bytes, and so their signatures, are untouched.
+      - name: MLX bridge file modes (osx-arm64)
+        if: matrix.rid == 'osx-arm64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod 755 native/NapkinMlx/out/libNapkinMlx.dylib native/NapkinMlx/out/libswiftCompatibilitySpan.dylib
+          ls -l native/NapkinMlx/out
+
       # Self-contained, single file. The flags live here and not in the project file: a
       # PublishSingleFile property in the csproj would switch on the single-file analyzers in
       # every ordinary `dotnet build` too. IncludeNativeLibrariesForSelfExtract folds the native
       # libraries (Skia, HarfBuzz, Avalonia's own) into the one file; without it they would sit
-      # beside it. Trimming is off: Avalonia relies on reflection.
+      # beside it. Trimming is off: Avalonia relies on reflection. The MLX bridge's files are the
+      # exception: NapkinMlx.props marks them ExcludeFromSingleFile, so they land in native/.
       - name: Publish
         shell: bash
         run: >
@@ -134,7 +173,8 @@ jobs:
       # The layout is the publish output, minus symbols, plus the licence, the written offer of
       # source (AGPL-3.0 §6) and the first-run instructions, so that every artifact carries them
       # (issue #27). Whatever else the publish left beside the executable ships too and shows up
-      # in the listing below.
+      # in the listing below. Where the publish made native/ (osx-arm64: the MLX bridge), the
+      # bridge's third-party licence texts go in with it as native/NOTICES.txt (#243).
       - name: Stage
         shell: bash
         run: |
@@ -147,6 +187,11 @@ jobs:
           find "$dest" -name '*.pdb' -delete
           cp LICENSE "$dest/LICENSE"
           cp docs/first-run.md "$dest/FIRST-RUN.md"
+          bridge=false
+          if [ -f "$dest/native/libNapkinMlx.dylib" ]; then
+            bridge=true
+            cp native/NOTICES.txt "$dest/native/NOTICES.txt"
+          fi
           {
             echo "napkin $VERSION ($RID)"
             echo
@@ -164,6 +209,13 @@ jobs:
             echo "That commit is the one this build was made from. The release tag v$VERSION"
             echo "points at it. Third-party libraries are pulled in as NuGet packages at the"
             echo "versions pinned in the project files in that source; each is under its own licence."
+            if [ "$bridge" = true ]; then
+              echo
+              echo "native/ holds napkin's MLX bridge (Apple silicon only), built from native/NapkinMlx"
+              echo "in that source by tools/scripts/build-mlx.sh. The Swift and C++ libraries compiled"
+              echo "into it, and the Swift runtime library beside it, keep their own licences: see"
+              echo "native/NOTICES.txt here, and docs/third-party-notices.md in the source."
+            fi
             echo
             echo "First-run instructions for an unsigned build: FIRST-RUN.md in this folder."
           } > "$dest/SOURCE.txt"
@@ -238,6 +290,52 @@ jobs:
             echo "osx-arm64: ad-hoc signature present and valid; no Developer ID, no notarization ticket."
           fi
 
+          # The MLX bridge (docs/design/mlx-runtime.md §3.5, §13.1 items 8-9; #243). osx-arm64
+          # must carry all three files and the notices in native/; the bridge must hold exactly
+          # what the executable holds (the linker's ad-hoc signature, no Authority=, no ticket);
+          # the Swift runtime library must be Apple's, as Xcode ships it — the one file here
+          # signed by anyone, and not by napkin. osx-x64 must carry no native/ at all: the bridge
+          # is Apple silicon only (§3.4).
+          native="verify/$name/native"
+          if [ "$RID" = "osx-arm64" ]; then
+            for file in libNapkinMlx.dylib mlx.metallib libswiftCompatibilitySpan.dylib NOTICES.txt; do
+              test -s "$native/$file" || { echo "::error::osx-arm64 has no native/$file: the MLX bridge's files travel together beside the executable (mlx-runtime.md §3.3)."; exit 1; }
+            done
+            ls -l "$native"
+
+            bridge="$native/libNapkinMlx.dylib"
+            got_arch=$(lipo -archs "$bridge")
+            [ "$got_arch" = "arm64" ] || { echo "::error::native/libNapkinMlx.dylib is '$got_arch', expected 'arm64'."; exit 1; }
+            codesign -dvv "$bridge" > bridge-signature.txt 2>&1 || true
+            cat bridge-signature.txt
+            if grep -Eq '^Authority=|Developer ID' bridge-signature.txt; then
+              echo "::error::native/libNapkinMlx.dylib carries a certificate authority. napkin does no Developer ID signing (DESIGN.md §6.6)."
+              exit 1
+            fi
+            if grep -qi 'Notarization Ticket' bridge-signature.txt; then
+              echo "::error::native/libNapkinMlx.dylib carries a notarization ticket. napkin does no notarization (DESIGN.md §6.6)."
+              exit 1
+            fi
+            if ! grep -q '^Signature=adhoc' bridge-signature.txt; then
+              echo "::error::native/libNapkinMlx.dylib has no ad-hoc signature. arm64 code does not load without one (DESIGN.md §6.6)."
+              exit 1
+            fi
+            codesign --verify --strict --verbose=2 "$bridge"
+
+            span="$native/libswiftCompatibilitySpan.dylib"
+            codesign -dvv "$span" > span-signature.txt 2>&1 || true
+            cat span-signature.txt
+            if ! codesign --verify --strict --verbose=2 -R="anchor apple" "$span"; then
+              echo "::error::native/libswiftCompatibilitySpan.dylib is not Apple's own signed file, intact. It is copied from Xcode unmodified; napkin signs nothing (DESIGN.md §6.6)."
+              exit 1
+            fi
+            echo "osx-arm64 native/: the bridge is ad-hoc signed and valid with no Developer ID; the Swift runtime library is Apple's, intact."
+          elif [ -e "$native" ]; then
+            echo "::error::$RID carries a native/ folder. The MLX bridge is Apple silicon only (mlx-runtime.md §3.4)."
+            ls -l "$native"
+            exit 1
+          fi
+
       # Launch smoke test. CI being green proved nothing about whether the download STARTS: the
       # first build of this pipeline was killed by macOS at launch (exit 137) because of the
       # executable's file name (issue #56), and every other check passed. This starts the program
@@ -270,6 +368,7 @@ jobs:
           Expand-Archive -Path "dist/$name.zip" -DestinationPath verify
           $exe = Get-Item "verify/$name/napkin.exe"
           if ($exe.Length -lt 1MB) { throw "napkin.exe is only $($exe.Length) bytes." }
+          if (Test-Path "verify/$name/native") { throw "win-x64 carries a native/ folder. The MLX bridge is Apple silicon only (docs/design/mlx-runtime.md §3.4)." }
           Get-ChildItem "verify/$name" | Format-Table Name, Length
 
       # Launch smoke test: see the macOS step. The program must still be running after 8 seconds.
