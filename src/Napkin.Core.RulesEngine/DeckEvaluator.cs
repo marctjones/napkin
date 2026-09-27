@@ -13,26 +13,52 @@ public abstract record DeckResult
     }
 
     /// <summary>The span is within the row's allowed span.</summary>
-    public sealed record Passes(DeckTable Table, DeckRow Row, Length Allowed, Length Actual) : DeckResult;
+    /// <param name="Code">The adopted code it was computed under.</param>
+    /// <param name="Table">The table.</param>
+    /// <param name="Row">The row that answered.</param>
+    /// <param name="Allowed">The row's allowed span.</param>
+    /// <param name="Actual">The span asked about.</param>
+    /// <param name="Group">The species group the typed species was read as, when the table groups species; otherwise null.</param>
+    public sealed record Passes(AdoptedCodeRef Code, DeckTable Table, DeckRow Row, Length Allowed, Length Actual, SpeciesGroup? Group) : DeckResult;
 
     /// <summary>The span is past the row's allowed span, by <see cref="Over"/>.</summary>
-    public sealed record Short(DeckTable Table, DeckRow Row, Length Allowed, Length Actual) : DeckResult
+    /// <param name="Code">The adopted code it was computed under.</param>
+    /// <param name="Table">The table.</param>
+    /// <param name="Row">The row that answered.</param>
+    /// <param name="Allowed">The row's allowed span.</param>
+    /// <param name="Actual">The span asked about.</param>
+    /// <param name="Group">The species group the typed species was read as, or null.</param>
+    public sealed record Short(AdoptedCodeRef Code, DeckTable Table, DeckRow Row, Length Allowed, Length Actual, SpeciesGroup? Group) : DeckResult
     {
         /// <summary>How far over.</summary>
         public Length Over => Actual - Allowed;
     }
 
     /// <summary>A ledger or footing row answered: its words as printed, the ledger's spacing and napkin's fastener count.</summary>
-    public sealed record Sized(DeckTable Table, DeckRow Row, int? Count) : DeckResult;
+    public sealed record Sized(AdoptedCodeRef Code, DeckTable Table, DeckRow Row, int? Count) : DeckResult;
 
-    /// <summary>The request is outside what the table covers, and the table says so.</summary>
-    public sealed record OutOfScope(DeckTable Table, string Explanation) : DeckResult;
+    /// <summary>
+    /// The request is outside what the table covers, and the table (or its guide) says so: a scope
+    /// <paramref name="Limit"/> that held, or the <paramref name="Column"/> whose value no row covers.
+    /// </summary>
+    public sealed record OutOfScope(AdoptedCodeRef Code, DeckTable Table, string Explanation, ScopeLimit? Limit, string? Column) : DeckResult;
 
-    /// <summary>An input the table bands on is not entered.</summary>
+    /// <summary>An input the table bands on, or a scope limit tests, is not entered.</summary>
     public sealed record InputMissing(string Input, string Explanation) : DeckResult;
 
     /// <summary>No adopted code, or a pack without the table.</summary>
     public sealed record NoData(string Explanation) : DeckResult;
+}
+
+/// <summary>
+/// The facts about the deck itself that a guide's scope limits may test (deck-guide-pack §2), for a
+/// lookup that does not carry them in its own request: what it supports, its species, the site's ground
+/// snow load, and its length out from the house and width along it (Figure 5's definitions).
+/// </summary>
+public sealed record DeckScopeInputs(string? Supports, string? Species, int? GroundSnowLoad, Length? DeckLength, Length? DeckWidth)
+{
+    /// <summary>Nothing entered.</summary>
+    public static readonly DeckScopeInputs NotEntered = new(null, null, null, null, null);
 }
 
 /// <summary>What a span check asks (§3.1): the typed member and the actual span, and every input a table may band on.</summary>
@@ -44,12 +70,25 @@ public abstract record DeckResult
 /// <param name="JoistSpan">The joist span a beam carries.</param>
 /// <param name="GroundSnowLoad">The site's ground snow load, psf, or null.</param>
 /// <param name="RoofLiveLoad">The site's roof live load, psf, or null.</param>
+/// <param name="DeckLength">The deck's length out from the house, for a guide's scope; null when not known.</param>
+/// <param name="DeckWidth">The deck's width along the house, for a guide's scope; null when not known.</param>
 public sealed record SpanRequest(
-    string Member, Length ActualSpan, string? Supports, string? Species, Length? Spacing, Length? JoistSpan, int? GroundSnowLoad = null, int? RoofLiveLoad = null);
+    string Member,
+    Length ActualSpan,
+    string? Supports,
+    string? Species,
+    Length? Spacing,
+    Length? JoistSpan,
+    int? GroundSnowLoad = null,
+    int? RoofLiveLoad = null,
+    Length? DeckLength = null,
+    Length? DeckWidth = null);
 
 /// <summary>
 /// The deck checks' lookups (§3.1–§3.3): a banded lookup in the adopted pack's deck tables, strictly
-/// as the table declares its columns — exact, upper-bound, lower-bound — and never a guess.
+/// as the table declares its columns — exact, upper-bound, lower-bound — and never a guess. Before every
+/// lookup the table's guide's scope limits and then its own are tried (deck-guide-pack §2), and a typed
+/// species is read as the group the table prints (§3.6).
 /// </summary>
 public static class DeckEvaluator
 {
@@ -71,10 +110,22 @@ public static class DeckEvaluator
         }
 
         DeckTable table = pack!.Deck.Spans[use];
+        DeckScopeInputs scope = new(request.Supports, request.Species, request.GroundSnowLoad, request.DeckLength, request.DeckWidth);
+        if (Scope(pack.Code, table, scope, request.Member) is { } stopped)
+        {
+            return stopped;
+        }
+
+        (SpeciesGroup? group, DeckResult? unplaced) = Group(pack.Code, table, request.Species);
+        if (unplaced is not null)
+        {
+            return unplaced;
+        }
+
         Dictionary<string, (string? Symbol, ExactFraction? Magnitude)?> inputs = new(StringComparer.Ordinal)
         {
             ["supports"] = request.Supports is { } s ? (s, null) : null,
-            ["species"] = request.Species is { } sp ? (sp, null) : null,
+            ["species"] = request.Species is { } sp ? (group?.Group ?? sp, null) : null,
             ["member"] = (request.Member, null),
             ["spacing"] = request.Spacing is { } g ? (null, ExactFraction.Whole(g.Units)) : null,
             ["joistSpan"] = request.JoistSpan is { } j ? (null, ExactFraction.Whole(j.Units)) : null,
@@ -82,16 +133,19 @@ public static class DeckEvaluator
             ["roofLiveLoad"] = request.RoofLiveLoad is { } live ? (null, ExactFraction.Whole(live)) : null,
         };
 
-        return Lookup(table, inputs) switch
+        return Lookup(pack.Code, table, inputs) switch
         {
-            (DeckRow row, _) when request.ActualSpan <= row.Span => new DeckResult.Passes(table, row, row.Span, request.ActualSpan),
-            (DeckRow row, _) => new DeckResult.Short(table, row, row.Span, request.ActualSpan),
+            (DeckRow row, _) when request.ActualSpan <= row.Span => new DeckResult.Passes(pack.Code, table, row, row.Span, request.ActualSpan, group),
+            (DeckRow row, _) => new DeckResult.Short(pack.Code, table, row, row.Span, request.ActualSpan, group),
             (_, DeckResult other) => other,
         };
     }
 
-    /// <summary>The ledger's fastening (§3.2), and napkin's count for a ledger of this length: ⌈length ÷ spacing⌉ + 1.</summary>
-    public static DeckResult SizeLedger(LoadedPack? pack, string member, Length joistSpan, Length ledgerLength)
+    /// <summary>
+    /// The ledger's fastening (§3.2), and napkin's count for a ledger of this length: ⌈length ÷ spacing⌉ + 1.
+    /// <paramref name="deck"/> carries what a guide's scope may test; null means nothing entered.
+    /// </summary>
+    public static DeckResult SizeLedger(LoadedPack? pack, string member, Length joistSpan, Length ledgerLength, DeckScopeInputs? deck = null)
     {
         if (NoTable(pack, pack?.Deck.Ledger, "deck ledger table") is { } none)
         {
@@ -99,21 +153,29 @@ public static class DeckEvaluator
         }
 
         DeckTable table = pack!.Deck.Ledger!;
+        if (Scope(pack.Code, table, deck ?? DeckScopeInputs.NotEntered, member) is { } stopped)
+        {
+            return stopped;
+        }
+
         Dictionary<string, (string? Symbol, ExactFraction? Magnitude)?> inputs = new(StringComparer.Ordinal)
         {
             ["member"] = (member, null),
             ["joistSpan"] = (null, ExactFraction.Whole(joistSpan.Units)),
         };
 
-        return Lookup(table, inputs) switch
+        return Lookup(pack.Code, table, inputs) switch
         {
-            (DeckRow row, _) => new DeckResult.Sized(table, row, (int)((ledgerLength.Units + row.Spacing.Units - 1) / row.Spacing.Units) + 1),
+            (DeckRow row, _) => new DeckResult.Sized(pack.Code, table, row, (int)((ledgerLength.Units + row.Spacing.Units - 1) / row.Spacing.Units) + 1),
             (_, DeckResult other) => other,
         };
     }
 
-    /// <summary>The footing (§3.3) for a post's tributary area, in square 1/1024″, and the site's soil bearing value.</summary>
-    public static DeckResult SizeFooting(LoadedPack? pack, ExactFraction tributaryArea, int? soilBearing)
+    /// <summary>
+    /// The footing (§3.3) for a post's tributary area, in square 1/1024″, and the site's soil bearing value.
+    /// <paramref name="deck"/> carries what a guide's scope may test; null means nothing entered.
+    /// </summary>
+    public static DeckResult SizeFooting(LoadedPack? pack, ExactFraction tributaryArea, int? soilBearing, DeckScopeInputs? deck = null)
     {
         if (NoTable(pack, pack?.Deck.Footing, "deck footing table") is { } none)
         {
@@ -121,6 +183,11 @@ public static class DeckEvaluator
         }
 
         DeckTable table = pack!.Deck.Footing!;
+        if (Scope(pack.Code, table, deck ?? DeckScopeInputs.NotEntered, null) is { } stopped)
+        {
+            return stopped;
+        }
+
         Int128 perFoot = (Int128)Length.UnitsPerFoot * Length.UnitsPerFoot;
         Dictionary<string, (string? Symbol, ExactFraction? Magnitude)?> inputs = new(StringComparer.Ordinal)
         {
@@ -128,9 +195,9 @@ public static class DeckEvaluator
             ["soilBearing"] = soilBearing is { } psf ? (null, ExactFraction.Whole(psf)) : null,
         };
 
-        return Lookup(table, inputs) switch
+        return Lookup(pack.Code, table, inputs) switch
         {
-            (DeckRow row, _) => new DeckResult.Sized(table, row, null),
+            (DeckRow row, _) => new DeckResult.Sized(pack.Code, table, row, null),
             (_, DeckResult other) => other,
         };
     }
@@ -150,22 +217,96 @@ public static class DeckEvaluator
     }
 
     /// <summary>
+    /// The table's guide's scope limits and then its own, in order (deck-guide-pack §2): the first whose
+    /// input is not entered is Input missing, naming it; the first that holds is Out of scope, citing it;
+    /// none holding is null, and the lookup goes on. <paramref name="member"/> is the lookup's own member,
+    /// null for a footing.
+    /// </summary>
+    internal static DeckResult? Scope(AdoptedCodeRef code, DeckTable table, DeckScopeInputs deck, string? member)
+    {
+        CellValue? Value(string input) => input switch
+        {
+            "supports" => deck.Supports is { } s ? CellValue.Category(s) : null,
+            "species" => deck.Species is { } sp ? CellValue.Category(sp) : null,
+            "member" => member is { } m ? CellValue.Category(m) : null,
+            "groundSnowLoad" => deck.GroundSnowLoad is { } snow ? CellValue.Whole(ColumnType.Psf, snow) : null,
+            "deckLength" => deck.DeckLength is { } l ? CellValue.Of(l) : null,
+            _ => deck.DeckWidth is { } w ? CellValue.Of(w) : null,
+        };
+
+        // A guide's limit is "beyond the scope of DCA 6-2015"; a table's own, "beyond table X". Either is
+        // cited with the guide's name before its location when the table comes from a guide.
+        string cite = table.Guide is { } guide ? $"{guide.ShortName} " : string.Empty;
+        IEnumerable<(ScopeLimit Limit, string Beyond, string Named)> limits = (table.Guide?.Limits ?? ValueList<ScopeLimit>.Empty)
+            .Select(limit => (limit, $"the scope of {table.Guide!.ShortName}", $"{table.Guide.ShortName} scope limit {limit.Id}"))
+            .Concat(table.Limits.Select(limit => (limit, $"table {table.Designation}", $"table {table.Designation} limit {limit.Id}")));
+        foreach ((ScopeLimit limit, string beyond, string named) in limits)
+        {
+            ScopeCondition when = limit.When;
+            foreach (string input in new[] { when.Input, when.OtherInput }.OfType<string>())
+            {
+                if (Value(input) is null)
+                {
+                    return new DeckResult.InputMissing(input, $"{Enter(input)}: {named} ({cite}{limit.Location}) depends on it.");
+                }
+            }
+
+            CellValue value = Value(when.Input)!.Value;
+            bool holds = when.Form switch
+            {
+                ScopeForm.Above => value.Magnitude > when.Value!.Value.Magnitude,
+                ScopeForm.AboveInput => value.Magnitude > Value(when.OtherInput!)!.Value.Magnitude,
+                ScopeForm.EqualTo or ScopeForm.In => when.Values.Contains(value.Symbol!),
+                _ => !when.Values.Contains(value.Symbol!),
+            };
+            if (holds)
+            {
+                return new DeckResult.OutOfScope(code, table, $"Beyond {beyond}: \"{limit.Text}\" ({cite}{limit.Location}). Get it engineered.", limit, null);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The printed group a typed species is read as (deck-guide-pack §3.6): none when the table does not
+    /// group species or none is entered; out of scope when no group places it.
+    /// </summary>
+    static (SpeciesGroup? Group, DeckResult? Unplaced) Group(AdoptedCodeRef code, DeckTable table, string? species)
+    {
+        if (table.SpeciesGroups.Count == 0 || species is null)
+        {
+            return (null, null);
+        }
+
+        return table.SpeciesGroups.FirstOrDefault(group => group.Species.Contains(species)) is { } found
+            ? (found, null)
+            : (null, new DeckResult.OutOfScope(
+                code,
+                table,
+                $"Table {table.Designation} places no species {species} in its groups ({string.Join("; ", table.SpeciesGroups.Select(group => group.Group))}): get it engineered.",
+                null,
+                "species"));
+    }
+
+    /// <summary>
     /// The one row the request selects, or why none: an input not entered, a category or exact value the
     /// table has no row for, or a banded value past the table's last band (upper-bound) or below its first
     /// (lower-bound).
     /// </summary>
-    internal static (DeckRow? Row, DeckResult? Result) Lookup(DeckTable table, IReadOnlyDictionary<string, (string? Symbol, ExactFraction? Magnitude)?> inputs)
+    internal static (DeckRow? Row, DeckResult? Result) Lookup(AdoptedCodeRef code, DeckTable table, IReadOnlyDictionary<string, (string? Symbol, ExactFraction? Magnitude)?> inputs)
     {
         IEnumerable<DeckRow> rows = table.Rows;
         foreach (InputColumn column in table.Inputs)
         {
             if (inputs.GetValueOrDefault(column.Name) is not { } value)
             {
-                return (null, new DeckResult.InputMissing(column.Name, $"Enter the {Spoken(column.Name)}: table {table.Designation} bands on it."));
+                return (null, new DeckResult.InputMissing(column.Name, $"{Enter(column.Name)}: table {table.Designation} bands on it."));
             }
 
             List<DeckRow> left = [.. rows];
             string Shown() => value.Symbol ?? new CellValue(column.Type, null, (long)(value.Magnitude!.Value.Numerator / value.Magnitude.Value.Denominator)).ToString();
+            DeckResult.OutOfScope Stop(string explanation) => new(code, table, explanation, null, column.Name);
             switch (column.Band)
             {
                 case BandKind.Exact:
@@ -174,7 +315,7 @@ public static class DeckEvaluator
                         : ExactFraction.Whole(row.Inputs[column.Name].Magnitude).CompareTo(value.Magnitude!.Value) == 0).ToList();
                     if (!rows.Any())
                     {
-                        return (null, new DeckResult.OutOfScope(table, $"Table {table.Designation} has no row for {Spoken(column.Name)} {Shown()}: get it engineered."));
+                        return (null, Stop($"Table {table.Designation} has no row for {Spoken(column.Name)} {Shown()}: get it engineered."));
                     }
 
                     break;
@@ -184,7 +325,7 @@ public static class DeckEvaluator
                     List<DeckRow> covering = [.. left.Where(row => ExactFraction.Whole(row.Inputs[column.Name].Magnitude) >= value.Magnitude!.Value)];
                     if (covering.Count == 0)
                     {
-                        return (null, new DeckResult.OutOfScope(table, $"The {Spoken(column.Name)} {Shown()} is past the last band of table {table.Designation} ({column.Domain!.Max}): get it engineered."));
+                        return (null, Stop($"The {Spoken(column.Name)} {Shown()} is past the last band of table {table.Designation} ({column.Domain!.Max}): get it engineered."));
                     }
 
                     long bound = covering.Min(row => row.Inputs[column.Name].Magnitude);
@@ -197,7 +338,7 @@ public static class DeckEvaluator
                     List<DeckRow> covering = [.. left.Where(row => ExactFraction.Whole(row.Inputs[column.Name].Magnitude) <= value.Magnitude!.Value)];
                     if (covering.Count == 0)
                     {
-                        return (null, new DeckResult.OutOfScope(table, $"The {Spoken(column.Name)} {Shown()} is below the lowest band of table {table.Designation} ({column.Domain!.Min}): get it engineered."));
+                        return (null, Stop($"The {Spoken(column.Name)} {Shown()} is below the lowest band of table {table.Designation} ({column.Domain!.Min}): get it engineered."));
                     }
 
                     long bound = covering.Max(row => row.Inputs[column.Name].Magnitude);
@@ -210,6 +351,9 @@ public static class DeckEvaluator
         return (rows.Single(), null);
     }
 
+    /// <summary>"Enter the species", "Enter what the deck supports".</summary>
+    static string Enter(string input) => input == "supports" ? $"Enter {Spoken(input)}" : $"Enter the {Spoken(input)}";
+
     /// <summary>An input's name in a sentence.</summary>
     public static string Spoken(string input) => input switch
     {
@@ -219,6 +363,8 @@ public static class DeckEvaluator
         "roofLiveLoad" => "roof live load",
         "tributaryArea" => "tributary area",
         "soilBearing" => "soil bearing value",
+        "deckLength" => "deck's length out from the house",
+        "deckWidth" => "deck's width along the house",
         _ => input,
     };
 }

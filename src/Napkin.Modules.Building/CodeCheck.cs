@@ -120,12 +120,16 @@ public static class CodeCheck
     /// answer and still has none (only the pack named in it differs) is not counted as changed.
     /// </summary>
     /// <example>"Now checking against ZZ BRACE B (…): every result recomputed; 2 changed, 1 newly flagged, none can no longer be computed."</example>
-    public static string SwitchSummary(AdoptedCodeRef? code, RecomputeReport headers, BracingRecomputeReport bracing)
+    public static string SwitchSummary(AdoptedCodeRef? code, RecomputeReport headers, BracingRecomputeReport bracing, DeckRecomputeReport? decks = null)
     {
+        ValueList<DeckChange> deckChanges = decks?.Changes ?? ValueList<DeckChange>.Empty;
         int changed = headers.Changes.Count(change => change.Kind is not (ChangeKind.CitationOnly or ChangeKind.NoAnswerChanged))
-                      + bracing.Changes.Count(change => change.Kind is not (BracingChangeKind.CitationOnly or BracingChangeKind.NoAnswerChanged));
-        int flagged = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope) + bracing.NewlyFlagged.Count();
-        int lost = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToNoAnswer or ChangeKind.OutOfScopeToNoAnswer) + bracing.NoLongerComputable.Count();
+                      + bracing.Changes.Count(change => change.Kind is not (BracingChangeKind.CitationOnly or BracingChangeKind.NoAnswerChanged))
+                      + deckChanges.Count(change => change.Kind is not (DeckChangeKind.CitationOnly or DeckChangeKind.NoAnswerChanged or DeckChangeKind.SpanMoved));
+        int flagged = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope) + bracing.NewlyFlagged.Count()
+                      + (decks?.NewlyFlagged.Count() ?? 0);
+        int lost = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToNoAnswer or ChangeKind.OutOfScopeToNoAnswer) + bracing.NoLongerComputable.Count()
+                   + (decks?.NoLongerComputable.Count() ?? 0);
         string under = code is null ? "No code resolves now" : $"Now checking against {PackLabel(code)}";
         return $"{under}: every result recomputed; {Tally(changed, "changed")}, {Tally(flagged, "newly flagged")}, "
                + $"{Tally(lost, "can no longer be computed")}.";

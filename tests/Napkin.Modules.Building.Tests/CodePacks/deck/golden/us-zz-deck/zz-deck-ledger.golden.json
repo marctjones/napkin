@@ -1,0 +1,37 @@
+{
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES. Each expectation is worked by hand from the synthetic ledger table (layers/zz-deck-2099), not exported from the pack; the count is napkin's, ceil(ledger / spacing) + 1. The generated cases are GoldenRunner.DeckBoundaries' output, committed.",
+  "pack": "us-zz-deck",
+  "deck": "ZZ-DECK-LEDGER",
+  "source": "zz-synth-base",
+  "transcriber": { "who": "synthetic", "on": "2026-09-27" },
+  "cases": [
+    { "row": "r.2x8.12", "location": "synthetic p. 5, 2x8 up to 12'-0\": ceil(144 / 17) + 1 = 10",
+      "inputs": { "member": "2x8", "joistSpan": "9ft 9in", "ledgerLength": "12ft 0in" },
+      "expect": { "sized": { "text": "zz-bolts, staggered", "spacing": "17in", "count": 10 } } },
+    { "row": "r.2x8.16", "location": "synthetic p. 5, 2x8 up to 16'-0\": ceil(144 / 11) + 1 = 15",
+      "inputs": { "member": "2x8", "joistSpan": "14ft 0in", "ledgerLength": "12ft 0in" },
+      "expect": { "sized": { "text": "zz-bolts, staggered", "spacing": "11in", "count": 15 } } },
+    { "row": "r.2x10.12", "location": "synthetic p. 5, 2x10 up to 12'-0\": ceil(120 / 17) + 1 = 9",
+      "inputs": { "member": "2x10", "joistSpan": "12ft 0in", "ledgerLength": "10ft 0in" },
+      "expect": { "sized": { "text": "zz-bolts, staggered", "spacing": "17in", "count": 9 } } },
+    { "row": "r.2x10.16", "location": "synthetic p. 5, 2x10 up to 16'-0\": ceil(96 / 11) + 1 = 10",
+      "inputs": { "member": "2x10", "joistSpan": "16ft 0in", "ledgerLength": "8ft 0in" },
+      "expect": { "sized": { "text": "zz-bolts, staggered", "spacing": "11in", "count": 10 } } },
+
+    { "location": "synthetic p. 5: 2x8 and 2x10 only",
+      "inputs": { "member": "2x12", "joistSpan": "9ft 9in", "ledgerLength": "12ft 0in" },
+      "expect": { "outOfScope": { "column": "member" } } },
+    { "location": "synthetic p. 5: no band past 16'-0\"",
+      "inputs": { "member": "2x8", "joistSpan": "16ft 1in", "ledgerLength": "12ft 0in" },
+      "expect": { "outOfScope": { "column": "joistSpan" } } },
+
+    {"row":"r.2x8.12","generated":"boundary","inputs":{"member":"2x8","joistSpan":"12ft 0in","ledgerLength":"12ft 0in"},"expect":{"sized":{"text":"zz-bolts, staggered","spacing":"1ft 5in","count":10}}},
+    {"row":"r.2x8.16","generated":"boundary","inputs":{"member":"2x8","joistSpan":"12ft 0-1/1024in","ledgerLength":"12ft 0in"},"expect":{"sized":{"text":"zz-bolts, staggered","spacing":"11in","count":15}}},
+    {"row":"r.2x8.16","generated":"boundary","inputs":{"member":"2x8","joistSpan":"16ft 0in","ledgerLength":"12ft 0in"},"expect":{"sized":{"text":"zz-bolts, staggered","spacing":"11in","count":15}}},
+    {"row":"r.2x8.16","generated":"boundary","inputs":{"member":"2x8","joistSpan":"16ft 0-1/1024in","ledgerLength":"12ft 0in"},"expect":{"outOfScope":{"column":"joistSpan"}}},
+    {"row":"r.2x10.12","generated":"boundary","inputs":{"member":"2x10","joistSpan":"12ft 0in","ledgerLength":"10ft 0in"},"expect":{"sized":{"text":"zz-bolts, staggered","spacing":"1ft 5in","count":9}}},
+    {"row":"r.2x10.16","generated":"boundary","inputs":{"member":"2x10","joistSpan":"12ft 0-1/1024in","ledgerLength":"10ft 0in"},"expect":{"sized":{"text":"zz-bolts, staggered","spacing":"11in","count":12}}},
+    {"row":"r.2x10.16","generated":"boundary","inputs":{"member":"2x10","joistSpan":"16ft 0in","ledgerLength":"8ft 0in"},"expect":{"sized":{"text":"zz-bolts, staggered","spacing":"11in","count":10}}},
+    {"row":"r.2x10.16","generated":"boundary","inputs":{"member":"2x10","joistSpan":"16ft 0-1/1024in","ledgerLength":"8ft 0in"},"expect":{"outOfScope":{"column":"joistSpan"}}}
+  ]
+}

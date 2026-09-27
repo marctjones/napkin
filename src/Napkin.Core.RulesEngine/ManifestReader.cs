@@ -126,7 +126,7 @@ internal static partial class ManifestReader
                 }
             }
 
-            BaseCode? baseCode = ReadBaseCode(root, where, problems);
+            BaseCode? baseCode = ReadBaseCode(root, "baseCode", problems);
 
             List<string> layers = [];
             IReadOnlyList<JsonElement>? layerItems = root.Array("layers", minItems: 1);
@@ -143,6 +143,7 @@ internal static partial class ManifestReader
             }
 
             List<SourceDocument> sources = ReadSources(root, where, problems);
+            List<GuideEntry> guides = ReadGuides(root, where, problems);
 
             PackReview? review = null;
             JsonObj? r = root.Obj("review");
@@ -171,8 +172,48 @@ internal static partial class ManifestReader
                 return null;
             }
 
-            return new PackManifest(id, revision.Value, jurisdiction, adoption, baseCode, layers.ToValueList(), sources.ToValueList(), review);
+            return new PackManifest(id, revision.Value, jurisdiction, adoption, baseCode, layers.ToValueList(), sources.ToValueList(), review)
+            {
+                Guides = guides.ToValueList(),
+            };
         }
+    }
+
+    /// <summary>
+    /// A pack's <c>guides</c> (deck-guide-pack §1.2): the guide layers it declares for its deck tables,
+    /// each at most once. Optional; a pack without it has no guide.
+    /// </summary>
+    private static List<GuideEntry> ReadGuides(JsonObj root, Where where, ProblemList problems)
+    {
+        List<GuideEntry> guides = [];
+        IReadOnlyList<JsonElement>? items = root.Array("guides", required: false);
+        for (int i = 0; items is not null && i < items.Count; i++)
+        {
+            JsonObj? g = JsonObj.Create(items[i], $"guides[{i}]", where, problems);
+            if (g is null)
+            {
+                continue;
+            }
+
+            string? id = g.String("id");
+            string? notes = g.Has("notes") ? g.String("notes") : null;
+            g.MarkUsed("notes");
+            g.Done();
+            if (id is not null && !LayerIdPattern().IsMatch(id))
+            {
+                problems.Add(where, $"guides[{i}].id: '{id}' is not a layer id (lower case letters, digits, '.', '-').");
+            }
+            else if (id is not null && guides.Any(guide => guide.Id == id))
+            {
+                problems.Add(where, $"guides[{i}].id: guide '{id}' is listed twice.");
+            }
+            else if (id is not null)
+            {
+                guides.Add(new GuideEntry(id, notes));
+            }
+        }
+
+        return guides;
     }
 
     public static LayerManifest? ReadLayer(IPackSource source, string file, ProblemList problems)
@@ -187,8 +228,19 @@ internal static partial class ManifestReader
 
             int before = problems.Count;
             Where where = new(file);
+            if (root.Has("kind"))
+            {
+                // A base layer has no kind; a guide layer's says so, and a guide is never a base layer.
+                string kind = root.String("kind") ?? string.Empty;
+                problems.Add(
+                    where,
+                    kind == GuideReader.Kind
+                        ? "kind: 'guide': a guide layer is never a pack's base layer; list it under the pack's 'guides', not in 'layers' (deck-guide-pack §1.2)."
+                        : $"kind: '{kind}' is not a layer kind; a base layer has none and a guide layer says '{GuideReader.Kind}'.");
+            }
+
             string? id = root.String("id");
-            BaseCode? code = ReadBaseCode(root, where, problems);
+            BaseCode? code = ReadBaseCode(root, "baseCode", problems);
             List<SourceDocument> sources = ReadSources(root, where, problems);
             root.Done();
             return problems.Count > before || id is null || code is null
@@ -197,9 +249,10 @@ internal static partial class ManifestReader
         }
     }
 
-    private static BaseCode? ReadBaseCode(JsonObj root, Where where, ProblemList problems)
+    /// <summary>A model code: a pack's or base layer's <c>baseCode</c>, or a guide's <c>basis</c>.</summary>
+    public static BaseCode? ReadBaseCode(JsonObj parent, string name, ProblemList problems)
     {
-        JsonObj? b = root.Obj("baseCode");
+        JsonObj? b = parent.Obj(name);
         if (b is null)
         {
             return null;
@@ -211,18 +264,18 @@ internal static partial class ManifestReader
         b.Done();
         if (publisher is not null && publisher != "ICC")
         {
-            problems.Add(where, $"baseCode.publisher: '{publisher}' is not supported; only 'ICC' model codes are encoded.");
+            problems.Add(b.Where, $"{b.Child("publisher")}: '{publisher}' is not supported; only 'ICC' model codes are encoded.");
         }
 
         if (code is not null && code != "IRC")
         {
-            problems.Add(where, $"baseCode.code: '{code}' is not supported; only 'IRC' is encoded.");
+            problems.Add(b.Where, $"{b.Child("code")}: '{code}' is not supported; only 'IRC' is encoded.");
         }
 
         return publisher is null || code is null || year is null ? null : new BaseCode(publisher, code, year.Value);
     }
 
-    private static List<SourceDocument> ReadSources(JsonObj root, Where where, ProblemList problems)
+    public static List<SourceDocument> ReadSources(JsonObj root, Where where, ProblemList problems)
     {
         List<SourceDocument> sources = [];
         IReadOnlyList<JsonElement>? items = root.Array("sources", minItems: 1);
@@ -275,4 +328,7 @@ internal static partial class ManifestReader
 
     [GeneratedRegex("^[0-9a-f]{64}$")]
     private static partial Regex ShaPattern();
+
+    [GeneratedRegex("^[a-z0-9][a-z0-9.-]*$")]
+    private static partial Regex LayerIdPattern();
 }

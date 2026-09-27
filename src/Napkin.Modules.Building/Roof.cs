@@ -279,9 +279,14 @@ public static class RoofCheck
         string what = $"Rafters {inputs.Rafter} at {inputs.RafterSpacing.Format(new InchesOnlyFormat(16)).Text} o.c., horizontal span {framing.HorizontalSpan.Format(new FeetInchesFormat(16)).Text}";
         return result switch
         {
-            DeckResult.Passes passes => new DeckCheckLine(DeckCheckKind.Joists, result, $"{what}: allowed up to {passes.Allowed.Format(new FeetInchesFormat(16)).Text} ({DeckCheck.Cited(passes.Table, passes.Row)}).", true),
-            DeckResult.Short over => new DeckCheckLine(DeckCheckKind.Joists, result, $"{what}: allowed up to {over.Allowed.Format(new FeetInchesFormat(16)).Text}, over by {over.Over.Format(new FeetInchesFormat(16)).Text} ({DeckCheck.Cited(over.Table, over.Row)}). Use a deeper rafter or closer spacing.", false),
-            DeckResult.OutOfScope scope => new DeckCheckLine(DeckCheckKind.Joists, result, $"{what}: {scope.Explanation}", false),
+            DeckResult.Passes passes => new DeckCheckLine(
+                DeckCheckKind.Joists, result, $"{what}: allowed up to {passes.Allowed.Format(new FeetInchesFormat(16)).Text} ({DeckCheck.Cited(passes.Code, passes.Table, passes.Row, passes.Group)}).{passes.Code.UnreviewedSentence}", true),
+            DeckResult.Short over => new DeckCheckLine(
+                DeckCheckKind.Joists,
+                result,
+                $"{what}: allowed up to {over.Allowed.Format(new FeetInchesFormat(16)).Text}, over by {over.Over.Format(new FeetInchesFormat(16)).Text} ({DeckCheck.Cited(over.Code, over.Table, over.Row, over.Group)}). Use a deeper rafter or closer spacing.{over.Code.UnreviewedSentence}",
+                false),
+            DeckResult.OutOfScope scope => new DeckCheckLine(DeckCheckKind.Joists, result, $"{what}: {scope.Explanation}{scope.Code.UnreviewedSentence}", false),
             DeckResult.InputMissing missing => new DeckCheckLine(DeckCheckKind.Joists, result, $"{what}: {missing.Explanation}", false),
             _ => new DeckCheckLine(DeckCheckKind.Joists, result, $"{what}: {((DeckResult.NoData)result).Explanation}", false),
         };

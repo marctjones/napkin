@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES. A synthetic guide layer (docs/design/deck-guide-pack.md §1.2): every word and number here is made up; nothing was read from any document.",
+  "kind": "guide",
+  "id": "zz-guide-2099",
+  "guide": {
+    "shortName": "ZZ GUIDE",
+    "title": "SYNTHETIC DECK GUIDE - NOT A CODE",
+    "publisher": "nobody (synthetic)",
+    "basis": {
+      "publisher": "ICC",
+      "code": "IRC",
+      "year": 2098
+    }
+  },
+  "caveats": [
+    {
+      "id": "basis",
+      "text": "SYNTHETIC: based on the 2098 model code.",
+      "location": "synthetic guide cover"
+    },
+    {
+      "id": "irc-governs",
+      "text": "SYNTHETIC: where this guide and the model code differ, the model code applies.",
+      "location": "synthetic guide p. 1"
+    }
+  ],
+  "scope": {
+    "limits": [
+      {
+        "id": "s.loads",
+        "when": {
+          "input": "supports",
+          "notIn": [
+            "zz-deck"
+          ]
+        },
+        "text": "SYNTHETIC: covers a deck carrying only its own loads.",
+        "location": "synthetic guide p. 2, item 8"
+      },
+      {
+        "id": "s.snow",
+        "when": {
+          "input": "groundSnowLoad",
+          "above": 77
+        },
+        "text": "SYNTHETIC: not for ground snow loads above 77 psf.",
+        "location": "synthetic guide p. 2, item 9"
+      },
+      {
+        "id": "s.shape",
+        "when": {
+          "input": "deckLength",
+          "aboveInput": "deckWidth"
+        },
+        "text": "SYNTHETIC: a deck no longer out from the house than it is wide.",
+        "location": "synthetic guide p. 2, item 2"
+      }
+    ],
+    "notes": [
+      {
+        "id": "n.single",
+        "text": "SYNTHETIC: one level, attached to the house.",
+        "location": "synthetic guide p. 2, item 1"
+      }
+    ]
+  },
+  "species": [
+    "zz-fir",
+    "zz-hem",
+    "zz-cedar"
+  ],
+  "sources": [
+    {
+      "id": "zz-synth-guide",
+      "title": "SYNTHETIC TEST GUIDE - NOT A CODE",
+      "publisher": "nobody (synthetic)",
+      "url": "https://example.invalid/synthetic-guide",
+      "printing": "synthetic printing, no errata",
+      "retrievedOn": "2026-09-27",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

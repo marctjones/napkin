@@ -50,7 +50,12 @@ public sealed record FrostSuggestion(Length Depth, string Text);
 /// <param name="Lines">The check lines, in §3's order.</param>
 /// <param name="SupportsNote">A bearing wall stands on the deck and nothing says what the deck supports; otherwise null.</param>
 /// <param name="Frost">A frost depth the adopted code offers, when it differs from the site's; otherwise null.</param>
-public sealed record DeckChecks(Deck Deck, DeckFraming? Framing, DeckRefusal? Refusal, ImmutableArray<DeckCheckLine> Lines, string? SupportsNote, FrostSuggestion? Frost);
+/// <param name="Guides">
+/// For each guide the pack declares, the paragraph shown once at the top of the block: what the guide is
+/// and is not, its caveats and its scope (deck-guide-pack §1.2, Decision 5); empty without a guide.
+/// </param>
+public sealed record DeckChecks(
+    Deck Deck, DeckFraming? Framing, DeckRefusal? Refusal, ImmutableArray<DeckCheckLine> Lines, string? SupportsNote, FrostSuggestion? Frost, ImmutableArray<string> Guides);
 
 /// <summary>
 /// Every deck's code checks (docs/design/deck-and-porch.md §3): a lookup in the adopted pack for each,
@@ -80,9 +85,10 @@ public static class DeckCheck
         FrostSuggestion? frost = pack?.Frost is { } offered && sketch.Site.FrostDepth != offered.FrostLineDepth
             ? new FrostSuggestion(offered.FrostLineDepth, $"{pack.Manifest.Adoption.ShortName} says {Text(offered.FrostLineDepth)} ({offered.Source.Location}) — use it?")
             : null;
+        ImmutableArray<string> guides = pack is null ? [] : [.. pack.Guides.Select(guide => guide.Paragraph(pack.Code))];
         if (framing is null)
         {
-            return new DeckChecks(deck, null, refusal, [], null, frost);
+            return new DeckChecks(deck, null, refusal, [], null, frost, guides);
         }
 
         DeckInputs inputs = deck.Box.Deck!;
@@ -90,23 +96,28 @@ public static class DeckCheck
         string spacing = inputs.JoistSpacing.Format(new InchesOnlyFormat(16)).Text;
         List<DeckCheckLine> lines = [];
 
-        DeckResult joists = DeckEvaluator.CheckSpan(pack, SpanUse.DeckJoist, new SpanRequest(member, framing.JoistSpan, inputs.Supports, inputs.Species, inputs.JoistSpacing, null));
+        // What a guide's scope may test (deck-guide-pack §2): Figure 5's length out from the house and
+        // width along it, the site's ground snow load, what the deck supports and its species.
+        DeckScopeInputs scope = new(inputs.Supports, inputs.Species, sketch.Site.GroundSnowLoadPsf, framing.Depth, framing.Width);
+        DeckResult joists = DeckEvaluator.CheckSpan(
+            pack, SpanUse.DeckJoist, new SpanRequest(member, framing.JoistSpan, inputs.Supports, inputs.Species, inputs.JoistSpacing, null, scope.GroundSnowLoad, null, scope.DeckLength, scope.DeckWidth));
         lines.Add(Span(DeckCheckKind.Joists, joists, $"Joists {member} at {spacing} o.c.{Species(inputs)}, span {Text(framing.JoistSpan)}", "Use a deeper joist, closer spacing or another beam."));
 
         // The beam's clear span is exact but may fall between grid points: the table is asked about
         // the span rounded up, never down, and the sentence says ≈ when it was.
         Length beamSpan = new((long)((framing.BeamSpan.Numerator + framing.BeamSpan.Denominator - 1) / framing.BeamSpan.Denominator));
         string beamMember = $"({inputs.Beam.Plies}) {inputs.Beam.Lumber}";
-        DeckResult beam = DeckEvaluator.CheckSpan(pack, SpanUse.DeckBeam, new SpanRequest(beamMember, beamSpan, inputs.Supports, inputs.Species, null, framing.JoistSpan));
+        DeckResult beam = DeckEvaluator.CheckSpan(
+            pack, SpanUse.DeckBeam, new SpanRequest(beamMember, beamSpan, inputs.Supports, inputs.Species, null, framing.JoistSpan, scope.GroundSnowLoad, null, scope.DeckLength, scope.DeckWidth));
         lines.Add(Span(DeckCheckKind.Beam, beam, $"Beam {beamMember} on {inputs.PostCount} posts, span {framing.BeamSpanText} carrying {Text(framing.JoistSpan)} of joists", "Add a post, or use a deeper beam."));
 
-        DeckResult ledger = DeckEvaluator.SizeLedger(pack, member, framing.JoistSpan, framing.Width);
+        DeckResult ledger = DeckEvaluator.SizeLedger(pack, member, framing.JoistSpan, framing.Width, scope);
         lines.Add(ledger is DeckResult.Sized sized
             ? new DeckCheckLine(
                 DeckCheckKind.Ledger,
                 ledger,
-                $"Ledger to the house: {sized.Row.Text}, {Text(sized.Row.Spacing)} on centre ({Cited(sized.Table, sized.Row)}); {sized.Count} fasteners for a {Text(framing.Width)} ledger "
-                + $"(⌈{Text(framing.Width)} ÷ {Text(sized.Row.Spacing)}⌉ + 1, napkin's count).{Notes(sized.Table, sized.Row)}",
+                $"Ledger to the house: {sized.Row.Text}, {Text(sized.Row.Spacing)} on centre ({Cited(sized.Code, sized.Table, sized.Row)}); {sized.Count} fasteners for a {Text(framing.Width)} ledger "
+                + $"(⌈{Text(framing.Width)} ÷ {Text(sized.Row.Spacing)}⌉ + 1, napkin's count).{sized.Code.UnreviewedSentence}{Notes(sized.Table, sized.Row)}",
                 true)
             : Other(DeckCheckKind.Ledger, ledger, "Ledger"));
 
@@ -115,19 +126,57 @@ public static class DeckCheck
         bool middle = inputs.PostCount >= 3;
         ExactFraction area = middle ? framing.TributaryArea : new ExactFraction(framing.TributaryArea.Numerator, framing.TributaryArea.Denominator * 2);
         string which = middle ? "a middle post" : "an end post";
-        DeckResult footing = DeckEvaluator.SizeFooting(pack, area, sketch.Site.SoilBearingPsf);
+        DeckResult footing = DeckEvaluator.SizeFooting(pack, area, sketch.Site.SoilBearingPsf, scope);
         lines.Add(footing is DeckResult.Sized foot
             ? new DeckCheckLine(
                 DeckCheckKind.Footing,
                 footing,
-                $"Footings: {foot.Row.Text} for {which}'s {DeckFrame.SquareFeet(area)} on {sketch.Site.SoilBearingPsf} psf ({Cited(foot.Table, foot.Row)}).{Notes(foot.Table, foot.Row)}",
+                $"Footings: {foot.Row.Text} for {which}'s {DeckFrame.SquareFeet(area)} on {sketch.Site.SoilBearingPsf} psf ({Cited(foot.Code, foot.Table, foot.Row)}).{foot.Code.UnreviewedSentence}{Notes(foot.Table, foot.Row)}",
                 true)
             : Other(DeckCheckKind.Footing, footing, $"Footings ({which}, {DeckFrame.SquareFeet(area)})"));
 
         lines.Add(FrostLine(sketch, inputs, pack));
         lines.AddRange(GuardLines(sketch, framing, pack, library));
         lines.AddRange(StairLines(framing, pack, library));
-        return new DeckChecks(deck, framing, null, [.. lines], SupportsNote(sketch, deck, inputs), frost);
+        return new DeckChecks(deck, framing, null, [.. lines], SupportsNote(sketch, deck, inputs), frost, guides);
+    }
+
+    /// <summary>
+    /// The engine's diff over the deck lookups (joists, beam, ledger, footing) of the decks present both
+    /// before and after (design §7.3, deck-guide-pack §6 slice A).
+    /// </summary>
+    public static DeckRecomputeReport Report(IReadOnlyList<DeckChecks> before, IReadOnlyList<DeckChecks> after)
+    {
+        ArgumentNullException.ThrowIfNull(before);
+        ArgumentNullException.ThrowIfNull(after);
+        List<KeyValuePair<DeckCheckKey, DeckResult>> was = [.. Results(before)], now = [.. Results(after)];
+        HashSet<DeckCheckKey> both = [.. was.Select(pair => pair.Key).Intersect(now.Select(pair => pair.Key))];
+        return Recompute.DiffDeck([.. was.Where(pair => both.Contains(pair.Key))], [.. now.Where(pair => both.Contains(pair.Key))]);
+
+        static IEnumerable<KeyValuePair<DeckCheckKey, DeckResult>> Results(IEnumerable<DeckChecks> decks)
+            => decks.SelectMany(checks => checks.Lines.Where(line => line.Result is not null)
+                .Select(line => KeyValuePair.Create(new DeckCheckKey(checks.Deck.Id, line.Kind.ToString()), line.Result!)));
+    }
+
+    /// <summary>
+    /// What a recompute changed on the decks, one sentence per lookup whose answer differs, newly flagged
+    /// first: "Deck 1, can no longer be checked: Joists 2x8 …: The loaded pack CT 2022 has no deck joist span …".
+    /// A span that moved within its row is not a change of the answer, and is not said.
+    /// </summary>
+    public static ImmutableArray<string> Changes(IReadOnlyList<DeckChecks> before, IReadOnlyList<DeckChecks> after)
+        => [.. Report(before, after).Changes.Where(change => change.Kind is not (DeckChangeKind.SpanMoved or DeckChangeKind.NoAnswerChanged)).Select(change => Sentence(after, change))];
+
+    static string Sentence(IReadOnlyList<DeckChecks> after, DeckChange change)
+    {
+        DeckChecks checks = after.First(deck => deck.Deck.Id == change.Key.Element);
+        string said = change.Kind switch
+        {
+            DeckChangeKind.PassToShort or DeckChangeKind.ToShort or DeckChangeKind.ToOutOfScope => "newly flagged",
+            DeckChangeKind.ToNoAnswer => "can no longer be checked",
+            DeckChangeKind.ShortToPass or DeckChangeKind.ToAnswer => "now answered",
+            _ => "changed",
+        };
+        return $"{checks.Deck.Name}, {said}: {checks.Lines.First(line => line.Kind.ToString() == change.Key.Check).Text}";
     }
 
     /// <summary>The footing depth against the site's frost depth: two typed values, compared exactly.</summary>
@@ -167,7 +216,8 @@ public static class DeckCheck
             yield break;
         }
 
-        string cite = $"{provisions.Section}, {guard.Source.Location}";
+        string cite = Provisions(pack!, provisions, guard.Source);
+        string mark = pack!.Code.UnreviewedSentence;
         if (guard.TriggerHeight is { } trigger)
         {
             bool required = framing.Deck.Height > trigger && open > 0;
@@ -177,7 +227,7 @@ public static class DeckCheck
             yield return new DeckCheckLine(
                 DeckCheckKind.Guard,
                 null,
-                required && inputs.Guard is null ? $"{need}: add a guard in the panel." : need + ".",
+                (required && inputs.Guard is null ? $"{need}: add a guard in the panel." : need + ".") + mark,
                 !required || inputs.Guard is not null);
         }
         else
@@ -193,8 +243,8 @@ public static class DeckCheck
         if (guard.MinimumHeight is { } minimum)
         {
             yield return typed.Height >= minimum
-                ? new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard height {Text(typed.Height)}: at least {Text(minimum)} ({cite}).", true)
-                : new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard height {Text(typed.Height)}: {Text(minimum - typed.Height)} short of the {Text(minimum)} required ({cite}).", false);
+                ? new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard height {Text(typed.Height)}: at least {Text(minimum)} ({cite}).{mark}", true)
+                : new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard height {Text(typed.Height)}: {Text(minimum - typed.Height)} short of the {Text(minimum)} required ({cite}).{mark}", false);
         }
 
         if (guard.MaximumOpening is { } opening && GuardFraming.Of(sketch, framing, library) is { } layout)
@@ -207,8 +257,8 @@ public static class DeckCheck
 
             string gaps = string.Join(", ", layout.Runs.Select(run => GuardFraming.Words(run.Gap)).Distinct());
             yield return widest <= ExactFraction.Whole(opening.Units)
-                ? new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard openings: baluster gaps {gaps} and {Text(typed.BottomClearance)} under the rail, none over {Text(opening)} ({cite}).", true)
-                : new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard openings: the widest is {GuardFraming.Words(widest)}, over the {Text(opening)} allowed ({cite}).", false);
+                ? new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard openings: baluster gaps {gaps} and {Text(typed.BottomClearance)} under the rail, none over {Text(opening)} ({cite}).{mark}", true)
+                : new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard openings: the widest is {GuardFraming.Words(widest)}, over the {Text(opening)} allowed ({cite}).{mark}", false);
         }
     }
 
@@ -239,19 +289,20 @@ public static class DeckCheck
             yield break;
         }
 
-        string cite = $"{pack.Deck.GuardStair!.Section}, {rules.Source.Location}";
+        string cite = Provisions(pack, pack.Deck.GuardStair!, rules.Source);
+        string mark = pack.Code.UnreviewedSentence;
         if (rules.MaximumRiser is { } riser)
         {
             yield return layout.RiseEach <= ExactFraction.Whole(riser.Units)
-                ? new DeckCheckLine(DeckCheckKind.Stair, null, $"Risers {DeckFrame.Words(layout.RiseEach)}: at most {Text(riser)} ({cite}).", true)
-                : new DeckCheckLine(DeckCheckKind.Stair, null, $"Risers {DeckFrame.Words(layout.RiseEach)}: over the {Text(riser)} allowed ({cite}).", false);
+                ? new DeckCheckLine(DeckCheckKind.Stair, null, $"Risers {DeckFrame.Words(layout.RiseEach)}: at most {Text(riser)} ({cite}).{mark}", true)
+                : new DeckCheckLine(DeckCheckKind.Stair, null, $"Risers {DeckFrame.Words(layout.RiseEach)}: over the {Text(riser)} allowed ({cite}).{mark}", false);
         }
 
         if (rules.MinimumTread is { } tread)
         {
             yield return stair.Run >= tread
-                ? new DeckCheckLine(DeckCheckKind.Stair, null, $"Treads {Text(stair.Run)}: at least {Text(tread)} ({cite}).", true)
-                : new DeckCheckLine(DeckCheckKind.Stair, null, $"Treads {Text(stair.Run)}: {Text(tread - stair.Run)} short of the {Text(tread)} required ({cite}).", false);
+                ? new DeckCheckLine(DeckCheckKind.Stair, null, $"Treads {Text(stair.Run)}: at least {Text(tread)} ({cite}).{mark}", true)
+                : new DeckCheckLine(DeckCheckKind.Stair, null, $"Treads {Text(stair.Run)}: {Text(tread - stair.Run)} short of the {Text(tread)} required ({cite}).{mark}", false);
         }
 
         if (rules.HandrailWhenRisersAtLeast is { } handrail)
@@ -260,18 +311,25 @@ public static class DeckCheck
                 DeckCheckKind.Stair,
                 null,
                 layout.Risers >= handrail
-                    ? $"Handrail required: {layout.Risers} risers, at least {handrail} ({cite}); add it as hardware."
-                    : $"No handrail required: {layout.Risers} risers, fewer than {handrail} ({cite}).",
+                    ? $"Handrail required: {layout.Risers} risers, at least {handrail} ({cite}); add it as hardware.{mark}"
+                    : $"No handrail required: {layout.Risers} risers, fewer than {handrail} ({cite}).{mark}",
                 true);
         }
 
         if (rules.MinimumWidth is { } width)
         {
             yield return stair.Width >= width
-                ? new DeckCheckLine(DeckCheckKind.Stair, null, $"Stair width {Text(stair.Width)}: at least {Text(width)} ({cite}).", true)
-                : new DeckCheckLine(DeckCheckKind.Stair, null, $"Stair width {Text(stair.Width)}: {Text(width - stair.Width)} short of the {Text(width)} required ({cite}).", false);
+                ? new DeckCheckLine(DeckCheckKind.Stair, null, $"Stair width {Text(stair.Width)}: at least {Text(width)} ({cite}).{mark}", true)
+                : new DeckCheckLine(DeckCheckKind.Stair, null, $"Stair width {Text(stair.Width)}: {Text(width - stair.Width)} short of the {Text(width)} required ({cite}).{mark}", false);
         }
     }
+
+    /// <summary>
+    /// "ZZ-GUARD.1, synthetic p. 7 guard": the provisions' section and where the item is printed, and from a
+    /// guide the clause that says what the guide is not (deck-guide-pack §1.2).
+    /// </summary>
+    static string Provisions(LoadedPack pack, GuardStairProvisions provisions, SourceRef source)
+        => $"{provisions.Section}, {source.Location}" + (provisions.Guide is { } guide ? $" — {guide.Clause(pack.Code)}" : string.Empty);
 
     /// <summary>§5.1: a bearing wall stands on the deck and nothing says what the deck supports.</summary>
     static string? SupportsNote(Sketch sketch, Deck deck, DeckInputs inputs)
@@ -294,20 +352,34 @@ public static class DeckCheck
 
     static DeckCheckLine Span(DeckCheckKind kind, DeckResult result, string what, string advice) => result switch
     {
-        DeckResult.Passes passes => new DeckCheckLine(kind, result, $"{what}: allowed up to {Text(passes.Allowed)} ({Cited(passes.Table, passes.Row)}).{Notes(passes.Table, passes.Row)}", true),
-        DeckResult.Short over => new DeckCheckLine(kind, result, $"{what}: allowed up to {Text(over.Allowed)}, over by {Text(over.Over)} ({Cited(over.Table, over.Row)}). {advice}{Notes(over.Table, over.Row)}", false),
+        DeckResult.Passes passes => new DeckCheckLine(
+            kind, result, $"{what}: allowed up to {Text(passes.Allowed)} ({Cited(passes.Code, passes.Table, passes.Row, passes.Group)}).{passes.Code.UnreviewedSentence}{Notes(passes.Table, passes.Row)}", true),
+        DeckResult.Short over => new DeckCheckLine(
+            kind, result, $"{what}: allowed up to {Text(over.Allowed)}, over by {Text(over.Over)} ({Cited(over.Code, over.Table, over.Row, over.Group)}). {advice}{over.Code.UnreviewedSentence}{Notes(over.Table, over.Row)}", false),
         _ => Other(kind, result, what),
     };
 
     static DeckCheckLine Other(DeckCheckKind kind, DeckResult result, string what) => result switch
     {
-        DeckResult.OutOfScope scope => new DeckCheckLine(kind, result, $"{what}: {scope.Explanation}", false),
+        DeckResult.OutOfScope scope => new DeckCheckLine(kind, result, $"{what}: {scope.Explanation}{scope.Code.UnreviewedSentence}", false),
         DeckResult.InputMissing missing => new DeckCheckLine(kind, result, $"{what}: {missing.Explanation}", false),
         _ => new DeckCheckLine(kind, result, $"{what}: {((DeckResult.NoData)result).Explanation}", false),
     };
 
-    /// <summary>"ZZ-DECK-JOIST row r.fir.2x8.16, synthetic p. 2 row 2x8 16".</summary>
-    public static string Cited(DeckTable table, DeckRow row) => $"{table.Designation} row {row.Id}, {row.Source.Location}";
+    /// <summary>
+    /// "ZZ-DECK-BEAM row r.2-2x10.10, synthetic p. 3"; with the species group the typed species was read as,
+    /// and for a guide's table the clause that says what the guide is not (deck-guide-pack §1.2, Decision 5):
+    /// "… — a guide on the 2015 IRC, not CT 2022's adopted IRC 2021; the IRC governs where they differ (p. 1)".
+    /// </summary>
+    public static string Cited(AdoptedCodeRef code, DeckTable table, DeckRow row, SpeciesGroup? group = null)
+    {
+        ArgumentNullException.ThrowIfNull(code);
+        ArgumentNullException.ThrowIfNull(table);
+        ArgumentNullException.ThrowIfNull(row);
+        return $"{table.Designation} row {row.Id}, {row.Source.Location}"
+               + (group is null ? string.Empty : $"; species group \"{group.Group}\", {group.Location}")
+               + (table.Guide is { } guide ? $" — {guide.Clause(code)}" : string.Empty);
+    }
 
     /// <summary>The table's footnotes that apply to this row, shown with the result.</summary>
     static string Notes(DeckTable table, DeckRow row)

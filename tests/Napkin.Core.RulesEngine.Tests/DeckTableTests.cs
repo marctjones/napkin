@@ -15,8 +15,9 @@ public class DeckTableTests
 
     static Length In(long whole, long numerator = 0, long denominator = 1) => Length.Inches(whole, numerator, denominator);
 
+    /// <summary>A joist request under the synthetic guide: its scope asks what the deck supports, the snow load and the deck's shape.</summary>
     static SpanRequest Joists(Length span, string? species = "zz-fir", string? supports = "zz-deck", string member = "2x8", long spacing = 16)
-        => new(member, span, supports, species, In(spacing), null);
+        => new(member, span, supports, species, In(spacing), null, GroundSnowLoad: 30, DeckLength: In(120), DeckWidth: In(144));
 
     [Fact]
     public void The_synthetic_deck_pack_loads_every_kind()
@@ -53,14 +54,18 @@ public class DeckTableTests
     [Trait("Feature", "DECK-002")]
     public void A_supports_or_spacing_the_table_has_no_row_for_is_out_of_scope_and_a_missing_species_is_asked_for()
     {
+        // The guide's table has no supports column: its scope limit s.loads answers for a porch deck.
         DeckResult.OutOfScope roof = Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckSpan(Deck(), SpanUse.DeckJoist, Joists(In(117), supports: "zz-deck-and-roof")));
-        Assert.Equal("Table ZZ-DECK-JOIST has no row for what the deck supports zz-deck-and-roof: get it engineered.", roof.Explanation);
+        Assert.Equal("Beyond the scope of ZZ GUIDE: \"SYNTHETIC: covers a deck carrying only its own loads.\" (ZZ GUIDE synthetic guide p. 2, item 8). Get it engineered.", roof.Explanation);
+        Assert.Equal(("s.loads", null), (roof.Limit!.Id, roof.Column));
 
-        Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckSpan(Deck(), SpanUse.DeckJoist, Joists(In(117), spacing: 24)));
+        DeckResult.OutOfScope wide = Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckSpan(Deck(), SpanUse.DeckJoist, Joists(In(117), spacing: 24)));
+        Assert.Equal((null, "spacing"), (wide.Limit, wide.Column));
 
         DeckResult.InputMissing species = Assert.IsType<DeckResult.InputMissing>(DeckEvaluator.CheckSpan(Deck(), SpanUse.DeckJoist, Joists(In(117), species: null)));
         Assert.Equal("species", species.Input);
-        Assert.IsType<DeckResult.InputMissing>(DeckEvaluator.CheckSpan(Deck(), SpanUse.DeckJoist, Joists(In(117), supports: null)));
+        DeckResult.InputMissing supports = Assert.IsType<DeckResult.InputMissing>(DeckEvaluator.CheckSpan(Deck(), SpanUse.DeckJoist, Joists(In(117), supports: null)));
+        Assert.Equal("Enter what the deck supports: ZZ GUIDE scope limit s.loads (ZZ GUIDE synthetic guide p. 2, item 8) depends on it.", supports.Explanation);
     }
 
     [Fact]
@@ -156,31 +161,31 @@ public class DeckLoaderTests
     }
 
     [Theory]
-    [InlineData("zz-deck-joist.json", "\"use\": \"deck-joist\"", "\"use\": \"deck-stair\"", "deck-stair")]
-    [InlineData("zz-deck-joist.json", "\"kind\": \"member-span\"", "\"kind\": \"deck-railing\"", "'deck-railing' is not a deck file kind")]
-    [InlineData("zz-deck-joist.json", "\"name\": \"spacing\"", "\"name\": \"height\"", "'height' is not an input this table can be asked")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"use\": \"deck-joist\"", "\"use\": \"deck-stair\"", "deck-stair")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"kind\": \"member-span\"", "\"kind\": \"deck-railing\"", "'deck-railing' is not a deck file kind")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"name\": \"spacing\"", "\"name\": \"height\"", "'height' is not an input this table can be asked")]
     [InlineData("zz-deck-footing.json", "\"band\": \"lower-bound\"", "\"band\": \"upper-bound\"", "'soilBearing' uses 'lower-bound' bands, not 'upper-bound'")]
     [InlineData("zz-deck-footing.json", "\"type\": \"sqft\"", "\"type\": \"psf\"", "'tributaryArea' is 'sqft', not 'psf'")]
     [InlineData("zz-deck-footing.json", "\"min\": 1500", "\"min\": 1000", "the 'soilBearing' bands start at 1500 psf but the column's domain declares min 1000 psf")]
     [InlineData("zz-deck-ledger.json", "\"encodedAs\": \"not-encoded\"", "\"encodedAs\": \"as-rows\"", "'not-encoded'")]
     [InlineData("zz-deck-ledger.json", "\"footnotes\": [\n        \"a\"", "\"footnotes\": [\n        \"q\"", "'q' is not one of the table's footnotes")]
-    [InlineData("zz-deck-joist.json", "\"member\": \"2x10\",\n      \"spacing\": \"12in\"", "\"member\": \"2x12\",\n      \"spacing\": \"12in\"", "'2x12' is not one of the column's values")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"member\": \"2x10\",\n      \"spacing\": \"12in\"", "\"member\": \"2x12\",\n      \"spacing\": \"12in\"", "'2x12' is not one of the column's values")]
     [InlineData("zz-deck-beam.json", "\"joistSpan\": \"16ft 0in\",\n      \"span\": \"4ft 3in\"", "\"joistSpan\": \"17ft 0in\",\n      \"span\": \"4ft 3in\"", "outside the column's domain")]
-    [InlineData("zz-deck-joist.json", "\"span\": \"11ft 1in\"", "\"span\": \"0in\"", "must be longer than zero")]
-    [InlineData("zz-deck-joist.json", "\"id\": \"r.fir.2x8.12\"", "\"id\": \"r.fir.2x8.16\"", "row id 'r.fir.2x8.16' is used 2 times")]
-    [InlineData("zz-deck-joist.json", "\"source\": \"zz-synth-base\"", "\"source\": \"nowhere\"", "nowhere")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"span\": \"11ft 1in\"", "\"span\": \"0in\"", "must be longer than zero")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"id\": \"r.fir.2x8.12\"", "\"id\": \"r.fir.2x8.16\"", "row id 'r.fir.2x8.16' is used 2 times")]
+    [InlineData("zz-deck-beam.json", "\"source\": \"zz-synth-base\"", "\"source\": \"nowhere\"", "nowhere")]
     [InlineData("zz-guard-stair.json", "\"triggerHeight\": \"28in\"", "\"triggerHeight\": \"0in\"", "must be longer than zero, or null")]
     [InlineData("zz-guard-stair.json", "\"handrailWhenRisersAtLeast\": 3", "\"handrailWhenRisersAtLeast\": 0", "handrailWhenRisersAtLeast")]
     [InlineData("zz-guard-stair.json", "\"section\": \"ZZ-GUARD.1\"", "\"section\": \"ZZ-GUARD.1\", \"extra\": 1", "extra: unknown field")]
     public void A_malformed_deck_file_is_refused_naming_its_fault(string file, string original, string replacement, string message)
-        => Assert.Contains(message, Refused(Edit($"{Layer}/{file}", original, replacement)), StringComparison.Ordinal);
+        => Assert.Contains(message, Refused(Edit(file.StartsWith("layers/", StringComparison.Ordinal) ? file : $"{Layer}/{file}", original, replacement)), StringComparison.Ordinal);
 
     [Fact]
     public void A_second_table_for_one_use_or_a_second_ledger_footing_or_guard_file_is_refused()
     {
         InMemoryPackSource twice = Deck();
-        twice.With($"{Layer}/zz-deck-joist-2.json", twice.Text($"{Layer}/zz-deck-joist.json").Replace("ZZ-DECK-JOIST", "ZZ-DECK-JOIST-2", StringComparison.Ordinal));
-        Assert.Contains("a second member-span table for 'deck-joist'", Refused(twice), StringComparison.Ordinal);
+        twice.With($"{Layer}/zz-deck-beam-2.json", twice.Text($"{Layer}/zz-deck-beam.json").Replace("ZZ-DECK-BEAM", "ZZ-DECK-BEAM-2", StringComparison.Ordinal));
+        Assert.Contains("a second member-span table for 'deck-beam'", Refused(twice), StringComparison.Ordinal);
 
         foreach ((string file, string message) in new[]
                  {
@@ -240,6 +245,7 @@ public class DeckLoaderTests
 public class DeckReaderEdgeTests
 {
     const string Layer = "layers/zz-deck-2099/deck";
+    const string GuideJoist = "layers/zz-guide-2099/deck/zz-guide-joist.json";
 
     static InMemoryPackSource Deck() => InMemoryPackSource.FromDirectory(Path.Combine(AppContext.BaseDirectory, "DeckPacks"));
 
@@ -255,34 +261,34 @@ public class DeckReaderEdgeTests
     }
 
     [Theory]
-    [InlineData("zz-deck-joist.json", "\"kind\": \"member-span\",", "", "kind: missing required field")]
-    [InlineData("zz-deck-joist.json", "\"inputs\": [\n    {", "\"inputs\": [\n    42, {", "must be a JSON object")]
-    [InlineData("zz-deck-joist.json", "\"zz-fir\"\n      ]", "\"zz-fir\", \"zz-fir\"\n      ]", "'zz-fir' is listed twice")]
-    [InlineData("zz-deck-joist.json", "\"name\": \"supports\",", "\"name\": \"species\",", "'species' is declared twice")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"kind\": \"member-span\",", "", "kind: missing required field")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"inputs\": [\n    {", "\"inputs\": [\n    42, {", "must be a JSON object")]
+    [InlineData("zz-deck-beam.json", "\"zz-fir\"\n      ]", "\"zz-fir\", \"zz-fir\"\n      ]", "'zz-fir' is listed twice")]
+    [InlineData("zz-deck-beam.json", "\"name\": \"member\",", "\"name\": \"species\",", "'species' is declared twice")]
     [InlineData("zz-deck-ledger.json", "\"min\": \"1in\",\n        \"max\": \"16ft 0in\"", "\"min\": \"17ft 0in\",\n        \"max\": \"16ft 0in\"", "is above max")]
-    [InlineData("zz-deck-joist.json", "\"footnotes\": [\n    {", "\"footnotes\": [\n    42, {", "must be a JSON object")]
-    [InlineData("zz-deck-joist.json", "\"rows\": [\n    {", "\"rows\": [\n    42, {", "must be a JSON object")]
-    [InlineData("zz-deck-joist.json", "\"spacing\": \"12in\",", "", "spacing: missing required field")]
-    [InlineData("zz-deck-joist.json", "\"span\": \"11ft 1in\"", "\"span\": 5", "span")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"footnotes\": [\n    {", "\"footnotes\": [\n    42, {", "must be a JSON object")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"rows\": [\n    {", "\"rows\": [\n    42, {", "must be a JSON object")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"spacing\": \"12in\",", "", "spacing: missing required field")]
+    [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"span\": \"11ft 1in\"", "\"span\": 5", "span")]
     [InlineData("zz-deck-ledger.json", "\"fastener\": \"zz-bolts, staggered\",", "", "fastener: missing required field")]
     [InlineData("zz-deck-footing.json", "\"footing\": \"zz 14 in square\",", "", "footing: missing required field")]
     [InlineData("zz-guard-stair.json", "\"location\": \"synthetic p. 7 guard\"", "\"place\": \"synthetic p. 7 guard\"", "location: missing required field")]
     [InlineData("zz-guard-stair.json", "\"minimumTread\": \"9in\"", "\"minimumTread\": 9", "minimumTread")]
     public void Each_is_refused_naming_its_fault(string file, string original, string replacement, string message)
-        => Assert.Contains(message, Edited($"{Layer}/{file}", original, replacement), StringComparison.Ordinal);
+        => Assert.Contains(message, Edited(file.StartsWith("layers/", StringComparison.Ordinal) ? file : $"{Layer}/{file}", original, replacement), StringComparison.Ordinal);
 
     [Fact]
     public void A_footnote_declared_twice_a_file_that_is_not_json_and_a_bad_frost_file_are_refused()
     {
         InMemoryPackSource twice = Deck();
-        string joist = twice.Text($"{Layer}/zz-deck-joist.json");
+        string joist = twice.Text(GuideJoist);
         int start = joist.IndexOf("\"footnotes\": [", StringComparison.Ordinal);
         int open = joist.IndexOf('{', start), close = joist.IndexOf('}', open);
         string note = joist[open..(close + 1)];
-        twice.With($"{Layer}/zz-deck-joist.json", joist.Insert(close + 1, ", " + note));
+        twice.With(GuideJoist, joist.Insert(close + 1, ", " + note));
         Assert.Contains("footnote 'a' is declared twice", Refused(twice), StringComparison.Ordinal);
 
-        Assert.NotEmpty(Refused(Deck().With($"{Layer}/zz-deck-joist.json", "{ not json")));
+        Assert.NotEmpty(Refused(Deck().With(GuideJoist, "{ not json")));
         Assert.NotEmpty(Refused(Deck().With("packs/us-zz-deck/frost.json", "{ not json")));
         Assert.Contains("kind: missing required field", Edited("packs/us-zz-deck/frost.json", "\"kind\": \"frost\",", ""), StringComparison.Ordinal);
         Assert.Contains("frostLineDepth: missing required field", Edited("packs/us-zz-deck/frost.json", "\"frostLineDepth\": \"3ft 6in\",", ""), StringComparison.Ordinal);
@@ -311,7 +317,7 @@ public class DeckReaderEdgeTests
     public void Every_input_given_the_joist_table_reads_only_its_own()
     {
         LoadedPack pack = Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "DeckPacks"), "us-zz-deck"));
-        SpanRequest everything = new("2x8", Length.Inches(117), "zz-deck", "zz-fir", Length.Inches(16), Length.Inches(117), GroundSnowLoad: 30, RoofLiveLoad: 20);
+        SpanRequest everything = new("2x8", Length.Inches(117), "zz-deck", "zz-fir", Length.Inches(16), Length.Inches(117), GroundSnowLoad: 30, RoofLiveLoad: 20, DeckLength: Length.Inches(120), DeckWidth: Length.Inches(144));
         Assert.IsType<DeckResult.Passes>(DeckEvaluator.CheckSpan(pack, SpanUse.DeckJoist, everything));
 
         SpanRequest nothing = new("2x8", Length.Inches(117), null, null, null, null);

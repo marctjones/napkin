@@ -27,6 +27,12 @@
   "layers": [
     "zz-deck-2099"
   ],
+  "guides": [
+    {
+      "id": "zz-guide-2099",
+      "notes": "SYNTHETIC: the deck joist table comes from the synthetic guide, not the base layer."
+    }
+  ],
   "sources": [
     {
       "id": "zz-synth-state",
