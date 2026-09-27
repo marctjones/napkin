@@ -5,11 +5,13 @@
 
 ## Data status: no real tables ship
 
-napkin contains **no building-code table values**. Whether transcribed IRC/state tables may be
-shipped is Marc's decision (DESIGN.md, design Decision 7) and is not made. The engine is tested
-on synthetic fixtures (`tests/Napkin.Core.RulesEngine.Tests/Fixtures`, `Golden/`, marked
-`SYNTHETIC TEST DATA - NOT CODE VALUES`) and on the shipped Connecticut pack described below. With
-no pack, or a pack without a table, the answer is `NoData` - napkin never guesses.
+napkin ships **no IRC header, bracing or base-layer table values**. Transcribed tables may ship when
+each is read from a primary or official source in the same task and cited beside the data (Marc,
+2026-09-25, #157; DESIGN.md §2.1), and only these do: Connecticut's Appendix AY (#210) and **DCA
+6-2015 Table 2**, the deck joist spans and overhangs (#41, below). The engine is tested on synthetic
+fixtures (`tests/Napkin.Core.RulesEngine.Tests/Fixtures`, `Golden/`, marked `SYNTHETIC TEST DATA - NOT
+CODE VALUES`) and on the shipped Connecticut pack described below, whose own golden files are in
+`packs/golden/`. With no pack, or a pack without a table, the answer is `NoData` - napkin never guesses.
 
 **`packs/` (repo root, shipped beside the executable)** holds the first real pack, **Connecticut
 2022** (`packs/packs/us-ct-2022`, on the 2021 IRC as amended; CT 2026 is not in force yet). It was
@@ -29,7 +31,16 @@ read from Connecticut's own document (2022 CSBC w/ Errata #1, ED October 1, 2022
   accept.
 - The base layer `irc-2021` is **empty** ("base tables not loaded"): fill it from your own copy of
   the IRC (Tables R602.7(1)-(3), R602.3, R602.10.3 ...). Until then `SizeHeader` returns `NoData`,
-  and `LoadedPack.StatusLabel` is `base tables not loaded` for a picker to show.
+  and `LoadedPack.StatusLabel` starts `base tables not loaded` for a picker to show.
+- **Revision 2** (#41, 2026-09-27) declares the guide layer `packs/layers/dca6-2015`: AWC's
+  *Prescriptive Residential Wood Deck Construction Guide* (DCA 6), a guide on the **2015** IRC, read
+  from AWC's PDF (URL and sha256 in its `layer.json`). It carries its two caveats (p. 1), its scope
+  (items 1, 2, 4, 8 and 9, p. 2; p. 8), its eight species (Table 1, p. 3) and **Table 2** (p. 4), all
+  36 joist rows with their allowable span and overhang, each note verbatim. The status label adds
+  `deck tables from DCA 6-2015, a guide`. Its golden file is
+  `packs/golden/us-ct-2022/dca6-table-2.golden.json`; the independent review checklist is
+  `docs/code-packs/reviews/us-ct-2022/dca6-table2.md`, unfilled until it is done, so every line says
+  UNREVIEWED.
 
 **Where the app looks for packs roots** (`PackLocations.All()`): `packs/` beside the executable, then
 the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application Support/napkin`, or
@@ -39,7 +50,8 @@ the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application
 
 **Project → Adopted code and site…** lists every pack found in those folders as "<shortName> —
 <baseCode>, in force <from>" with its id, revision, status and review state, for example "CT 2022
-— IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 1): base tables not loaded (UNREVIEWED)".
+— IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 2): base tables not loaded; deck tables from
+DCA 6-2015, a guide (UNREVIEWED)".
 A pack that fails to load is shown with its problems, not hidden. napkin never picks one: the
 choice is stored with the design (format 6), locked to a revision (with the date) or following
 the newest installed revision. The same window takes the site values; empty means not entered.
@@ -272,7 +284,7 @@ file one of four kinds, at most one of each (and one `member-span` table per `us
 
 | `kind` | inputs it may declare | outputs per row |
 |---|---|---|
-| `member-span`, `use: deck-joist` | `supports`, `species`, `member` (category, exact); `spacing` (length, exact) | `span` |
+| `member-span`, `use: deck-joist` | `supports`, `species`, `member` (category, exact); `spacing` (length, exact) | `span`, and `overhang` when the table declares `overhangLimit` |
 | `member-span`, `use: deck-beam` | `supports`, `species`, `member` ("(2) 2x10"); `joistSpan` (length, upper-bound) | `span` |
 | `member-span`, `use: rafter` | `species`, `member`; `spacing` (exact); `groundSnowLoad`, `roofLiveLoad` (psf, upper-bound) | `span` |
 | `deck-ledger` | `member`; `joistSpan` (upper-bound) | `fastener` (text as printed), `spacing` |
@@ -286,13 +298,26 @@ bands must start at the domain's `min`. Header tables refuse it. Every deck foot
 (`kind: frost`, a cited `frostLineDepth`), which the deck check offers as a suggestion, never
 applies.
 
+**Overhangs** (#41, deck-guide-pack §3.1). A deck-joist table whose source prints an allowable overhang
+gives every row an `overhang` length and declares, once, the cap the source puts on it as a fraction of
+the span: `"overhangLimit": { "fraction": "1/4", "of": "span", "location": "…" }` (DCA 6: "the lesser of
+allowable overhang, L_O, or one fourth the joist span, L/4", p. 3). All or none: a table with the cap
+gives every row its overhang, and a row with an overhang needs the cap; the fraction is a positive
+exact `"n/d"` of at most 1, `of` is `span`; no other kind or use may carry either.
+`DeckEvaluator.CheckCantilever(pack, joists, cantilever)` asks the joists' row (same scope, species
+group and lookup as the span check) and answers **Passes** or **Short** against the lesser of the row's
+overhang and the fraction of the actual joist span, compared exactly (the fraction of the span is
+rounded down to 1/1024″, which is exact for a verdict on a whole-unit cantilever). A joist table
+without `overhangLimit` does not cover an overhang: a cantilever under it is **Out of scope**
+(column `cantilever`). The deck's code check adds a **Cantilever** line whenever the deck has one.
+
 `DeckEvaluator.CheckSpan` answers **Passes** or **Short** (by how much), `SizeLedger` and `SizeFooting`
 **Sized** (the ledger with napkin's own fastener count, ⌈length ÷ spacing⌉ + 1), and every one of
 them **Out of scope** (citing the scope limit that held, or naming the column no row covers),
 **Input missing** or **No data** as the header check does. Every deck line that answers from a
 pack's data says `UNREVIEWED: values not yet checked against the source.` until the pack is signed
-off. The only tables are synthetic (`tests/Napkin.Modules.Building.Tests/CodePacks/deck`, NOT CODE
-VALUES); real rows are M10's (#40–#43).
+off. The synthetic tables are in `tests/Napkin.Modules.Building.Tests/CodePacks/deck` (NOT CODE VALUES);
+the one real table is DCA 6-2015 Table 2 under the Connecticut pack (above); the rest are M10's (#40–#43).
 
 ## Guide layers, scope limits and species groups (#238)
 
@@ -360,13 +385,19 @@ kind's own — `member`, `span` (the actual span), `spacing`, `joistSpan`, `roof
 multiplied) and `soilBearing` for a footing — plus a guide's scope inputs `supports`, `species`,
 `groundSnowLoad`, `deckLength`, `deckWidth`. `expect` is one of `passes { allowed }`, `short { allowed,
 over }`, `sized { text, spacing?, count? }` (each with the case's `row`), `outOfScope { limit }` or
-`outOfScope { column }`, `inputMissing { input }` or `noData {}`. Every row and every scope limit of the
-table **and its guide** needs a hand-authored case, so each table proves it applies the scope. The boundary
-pairs (each row's span at and 1/1024″ past its allowed span; each banded input at its bound and one step
+`outOfScope { column }`, `inputMissing { input }` or `noData {}`. A deck-joist case may add `cantilever`:
+it then asks the cantilever check, `span` being the actual joist span, and `allowed` is the lesser of
+the row's overhang and the cap. Every row and every scope limit of the
+table **and its guide** needs a hand-authored case, so each table proves it applies the scope; a row with
+an overhang also needs a hand-authored cantilever case whose `allowed` is the row's own overhang (ask on a
+span long enough that it governs), so the transcribed overhang is checked, not only the cap. The boundary
+pairs (each row's span at and 1/1024″ past its allowed span; each row's cantilever at and 1/1024″ past
+what it allows on its first cantilever case's span; each banded input at its bound and one step
 past; each `above`/`aboveInput` limit at its bound and one step over) are generated by
 `GoldenRunner.DeckBoundaries(pack, json)` from the rows and the file's own hand cases, and committed with
 `"generated": "boundary"`; a file whose committed pairs are not the generator's fails and prints them. The
-synthetic files are in `tests/Napkin.Modules.Building.Tests/CodePacks/deck/golden/`.
+synthetic files are in `tests/Napkin.Modules.Building.Tests/CodePacks/deck/golden/`; the shipped packs'
+are in `packs/golden/` and run with every test run.
 
 **Recompute**: `Recompute.DiffDeck(before, after)` over `DeckCheckKey(element, check)` —
 `PassToShort`, `ToShort`, `ToOutOfScope` (newly flagged), `ToNoAnswer` (no longer computable),

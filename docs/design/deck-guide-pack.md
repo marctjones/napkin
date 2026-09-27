@@ -26,6 +26,21 @@ panel's Supports box stays free text — offering the scope's `supports` values 
 the first real guide. The synthetic guide's snow limit is 77 psf, not DCA 6's number; no DCA 6 value
 and no change to the CT pack are in this slice.
 
+**As built in slice B1 (#41):** Table 2's designation is `"2"` and a guide's table is cited with the
+guide's name ("DCA 6-2015 Table 2 row r.sp.2x8.16, p. 4 …"), so the evaluator's own sentences read
+"Table 2 has no row …". The Cantilever line appears only when the deck has a cantilever; its result is
+a Passes/Short whose `Allowed` is min(L_O, ⌊L·¼⌋ in 1/1024″), exact for the verdict, and the line
+says both bounds. A deck golden case asks the cantilever by carrying `cantilever`; each row's overhang
+needs a hand case where L_O governs — three printed rows have L_O above L_J/4 (Southern Pine 2x12 at
+16", the Douglas Fir-Larch group's 2x12 at 24", the Redwood group's 2x10 at 24"), so their cases ask
+on a span of 4 × L_O. All
+seven notes are `not-encoded` with `appliesTo` where the superscript sits. The CT pack's `review`
+stays `unreviewed` (not §5's `in-review`), per the task. Bumping it to revision 2 relocked the two
+samples locked to revision 1 (they would otherwise resolve to no pack). The Supports offer (risk 9)
+is a line under the deck block listing the pack's supports words and the guide's species, never
+filled in; a `notIn` supports limit adds that anything else is beyond the guide's scope. The shipped
+packs' golden files live in `packs/golden/` and run with every test run.
+
 Design note written by Fable per [`PLAN.md`](../../PLAN.md) for Marc's decision of 2026-09-26 on
 #209, **"Decks only via DCA 6"**: the deck checks' real data comes from the American Wood
 Council's *Prescriptive Residential Wood Deck Construction Guide* (DCA 6), a free primary source,

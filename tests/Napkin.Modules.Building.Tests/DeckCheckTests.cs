@@ -8,8 +8,8 @@ namespace Napkin.Modules.Building.Tests;
 
 /// <summary>
 /// The deck's code checks (deck-and-porch §3, §11.2 tests 6–8) on §9's deck under the SYNTHETIC pack
-/// us-zz-deck (NOT CODE VALUES), and under the shipped Connecticut pack, which has no deck tables and
-/// offers only its cited frost depth.
+/// us-zz-deck (NOT CODE VALUES), and under the shipped Connecticut pack, whose only deck table is DCA
+/// 6-2015's Table 2 (#41; expected values typed from p. 4 of the PDF) and which offers its cited frost depth.
 /// </summary>
 public class DeckCheckTests
 {
@@ -18,7 +18,7 @@ public class DeckCheckTests
     static readonly CodePacks Synthetic = CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "CodePacks", "deck")]);
     static readonly CodePacks Shipped = CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "RealPacks")]);
     static readonly CodeChoice ZzDeck = new("us-zz-deck", 1, CodeMode.Locked, new DateOnly(2026, 9, 26));
-    static readonly CodeChoice Connecticut = new("us-ct-2022", 1, CodeMode.Locked, new DateOnly(2026, 9, 26));
+    static readonly CodeChoice Connecticut = new("us-ct-2022", 2, CodeMode.Locked, new DateOnly(2026, 9, 27));
 
     static Length In(long whole, long numerator = 0, long denominator = 1) => Length.Inches(whole, numerator, denominator);
 
@@ -64,7 +64,7 @@ public class DeckCheckTests
 
         // The joists come from the synthetic guide: the clause says what it is not, and the species is read as its group.
         Assert.Equal(
-            "Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": allowed up to 11'-1\" (ZZ-GUIDE-JOIST row r.fir.2x8.16, synthetic guide p. 3 row zz-fir 2x8 16; "
+            "Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": allowed up to 11'-1\" (ZZ GUIDE Table ZZ-GUIDE-JOIST row r.fir.2x8.16, synthetic guide p. 3 row zz-fir 2x8 16; "
             + "species group \"zz-fir, zz-hem\", synthetic guide p. 3, first row heading — a guide on the 2098 IRC, not ZZ DECK's adopted IRC 2099; the IRC governs where they differ (synthetic guide p. 1))."
             + Unreviewed + " Note a: SYNTHETIC footnote a: shown with results, not encoded.",
             Line(checks, DeckCheckKind.Joists).Text);
@@ -132,7 +132,7 @@ public class DeckCheckTests
         Assert.Contains("\"SYNTHETIC: a deck no longer out from the house than it is wide.\" (ZZ GUIDE synthetic guide p. 2, item 2)", deep.Text, StringComparison.Ordinal);
 
         // A species the guide covers reads as its printed group: zz-cedar's 2x8 at 16" allows 9'-7", 2" short of 9'-9".
-        Assert.Contains("allowed up to 9'-7\", over by 2\" (ZZ-GUIDE-JOIST row r.cedar.2x8.16, synthetic guide p. 3 row zz-cedar 2x8 16; species group \"zz-cedar\"",Line(Only(Drawing(Inputs() with { Species = "zz-cedar" })), DeckCheckKind.Joists).Text, StringComparison.Ordinal);
+        Assert.Contains("allowed up to 9'-7\", over by 2\" (ZZ GUIDE Table ZZ-GUIDE-JOIST row r.cedar.2x8.16, synthetic guide p. 3 row zz-cedar 2x8 16; species group \"zz-cedar\"",Line(Only(Drawing(Inputs() with { Species = "zz-cedar" })), DeckCheckKind.Joists).Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -161,15 +161,34 @@ public class DeckCheckTests
 
     [Fact]
     [Trait("Feature", "DECK-001")]
-    public void Under_the_shipped_Connecticut_pack_every_table_is_no_data_and_its_frost_depth_is_offered_with_its_citation()
+    public void Under_the_shipped_Connecticut_pack_the_joists_answer_from_DCA_6_the_rest_is_no_data_and_its_frost_depth_is_offered()
     {
-        DeckChecks checks = Only(Drawing(code: Connecticut, site: SiteValues.NotEntered with { SoilBearingPsf = 2000 }), Shipped);
-
+        // The note's worked example: 2x8 at 16" o.c., Southern Pine, supporting only the deck, 9'-9" of span. Table 2 (p. 4): 11'-10".
+        DeckInputs typed = Inputs() with { Supports = "deck", Species = "Southern Pine" };
+        DeckChecks answered = Only(Drawing(typed, code: Connecticut), Shipped);
+        DeckCheckLine joists = Line(answered, DeckCheckKind.Joists);
+        Assert.True(joists.Passing);
+        Assert.StartsWith(
+            "Joists 2x8 at 16\" o.c., Southern Pine, span 9'-9\": allowed up to 11'-10\" (DCA 6-2015 Table 2 row r.sp.2x8.16, p. 4, ",
+            joists.Text,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "species group \"Southern Pine\", p. 4, Table 2, Species column, first row heading — a guide on the 2015 IRC, not CT 2022's adopted IRC 2021; the IRC governs where they differ (p. 1))." + Unreviewed,
+            joists.Text,
+            StringComparison.Ordinal);
+        Assert.Contains(" Note 1: Assumes 40 psf live load, 10 psf dead load, No. 2 grade, and wet service conditions. Note 2: Assumes L/360 deflection.", joists.Text, StringComparison.Ordinal);
+        Assert.StartsWith("Deck checks under CT 2022 use DCA 6-2015 (Prescriptive Residential Wood Deck Construction Guide, Based on the 2015 International Residential Code, American Wood Council)", Assert.Single(answered.Guides), StringComparison.Ordinal);
+        Assert.All(answered.Lines.Where(line => line.Kind is DeckCheckKind.Beam or DeckCheckKind.Ledger or DeckCheckKind.Footing), line => Assert.IsType<DeckResult.NoData>(line.Result));
         Assert.Equal(
-            "Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": The loaded pack CT 2022 has no deck joist span, so napkin cannot check this. Nothing is guessed: add it from your copy of the code (docs/rules-engine.md).",
-            Line(checks, DeckCheckKind.Joists).Text);
-        Assert.All(checks.Lines.Where(line => line.Kind < DeckCheckKind.Frost), line => Assert.IsType<DeckResult.NoData>(line.Result));
-        Assert.Empty(checks.Guides);
+            "Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" carrying 9'-9\" of joists: The loaded pack CT 2022 has no deck beam span, so napkin cannot check this. Nothing is guessed: add it from your copy of the code (docs/rules-engine.md).",
+            Line(answered, DeckCheckKind.Beam).Text);
+
+        // Nothing typed about what the deck supports: DCA 6's scope asks (item 8, p. 2), and the panel offers its word.
+        DeckChecks untyped = Only(Drawing(typed with { Supports = null }, code: Connecticut), Shipped);
+        Assert.Equal("supports", Assert.IsType<DeckResult.InputMissing>(Line(untyped, DeckCheckKind.Joists).Result).Input);
+        Assert.Equal(["deck"], DeckCheck.SupportsOffered(Shipped.Loaded.Single()));
+
+        DeckChecks checks = Only(Drawing(code: Connecticut, site: SiteValues.NotEntered with { SoilBearingPsf = 2000 }), Shipped);
 
         // Connecticut's Table R301.2, p. 131: 42" — offered, never applied.
         FrostSuggestion offer = checks.Frost!;
@@ -198,14 +217,19 @@ public class DeckCheckTests
         Sketch ct = zz with { Code = Connecticut };
         ImmutableArray<DeckChecks> before = DeckCheck.Of(zz, both), after = DeckCheck.Of(ct, both);
 
+        // Connecticut has DCA 6's joist table, whose scope does not know the synthetic "zz-deck" (newly flagged),
+        // and no beam, ledger or footing table (no longer computable).
         DeckRecomputeReport lost = DeckCheck.Report(before, after);
-        Assert.Equal(["Joists", "Beam", "Ledger", "Footing"], lost.NoLongerComputable.Select(change => change.Key.Check));
+        Assert.Equal(["Beam", "Ledger", "Footing"], lost.NoLongerComputable.Select(change => change.Key.Check));
+        Assert.Equal(["Joists"], lost.NewlyFlagged.Select(change => change.Key.Check));
+        ImmutableArray<string> said = DeckCheck.Changes(before, after);
+        Assert.StartsWith("Deck 1, newly flagged: Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load", said[0], StringComparison.Ordinal);
         Assert.Equal(
-            "Deck 1, can no longer be checked: Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": The loaded pack CT 2022 has no deck joist span, so napkin cannot check this. "
+            "Deck 1, can no longer be checked: Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" carrying 9'-9\" of joists: The loaded pack CT 2022 has no deck beam span, so napkin cannot check this. "
             + "Nothing is guessed: add it from your copy of the code (docs/rules-engine.md).",
-            DeckCheck.Changes(before, after)[0]);
+            said[1]);
         Assert.Equal(
-            "Now checking against CT 2022 (IRC 2021, pack us-ct-2022 rev 1): every result recomputed; 4 changed, none newly flagged, 4 can no longer be computed.",
+            "Now checking against CT 2022 (IRC 2021, pack us-ct-2022 rev 2): every result recomputed; 4 changed, 1 newly flagged, 3 can no longer be computed.",
             CodeCheck.SwitchSummary(Assert.Single(both.Loaded, pack => pack.Manifest.Id == "us-ct-2022").Code, CodeCheck.Report([], []), BracingCheck.Report([], []), lost));
 
         // And back: every line answers again.
@@ -241,6 +265,61 @@ public class DeckCheckTests
         DeckChecks noSupports = After(box => box with { Deck = Inputs() with { Species = null, Supports = null } });
         Assert.Equal(DeckChangeKind.NoAnswerChanged, Assert.Single(DeckCheck.Report([noSpecies], [noSupports]).Changes).Kind);
         Assert.Empty(DeckCheck.Changes([noSpecies], [noSupports]));
+    }
+
+    [Fact]
+    [Trait("Feature", "DECK-002")]
+    public void A_cantilever_is_checked_against_the_lesser_of_the_rows_overhang_and_a_quarter_of_the_joist_span()
+    {
+        DeckInputs typed = Inputs() with { Supports = "deck", Species = "Southern Pine" };
+
+        // 1'-6" past the beam: the joists span 120 − 3 − 18 = 99" (8'-3"); Table 2's Southern Pine 2x8 at 16" allows
+        // an overhang of 2'-0" (p. 4) and a quarter of 8'-3" is 2'-0 3/4" (p. 3), so 2'-0" governs.
+        DeckCheckLine passes = Line(Only(Drawing(typed with { Cantilever = In(18) }, code: Connecticut), Shipped), DeckCheckKind.Cantilever);
+        Assert.True(passes.Passing);
+        Assert.StartsWith(
+            "Cantilever 1'-6\" past the beam: allowed up to 2'-0\", the lesser of the row's 2'-0\" and 1/4 of the 8'-3\" span, 2'-0 3/4\" (DCA 6-2015 Table 2 row r.sp.2x8.16, p. 4, ",
+            passes.Text,
+            StringComparison.Ordinal);
+        Assert.Contains("; the cap: JOIST SIZE, p. 3", passes.Text, StringComparison.Ordinal);
+        Assert.Contains(Unreviewed, passes.Text, StringComparison.Ordinal);
+
+        // 2'-3" past the beam: the joists span 90" (7'-6"); a quarter of it, 1'-10 1/2", governs; 4 1/2" over.
+        DeckCheckLine over = Line(Only(Drawing(typed with { Cantilever = In(27) }, code: Connecticut), Shipped), DeckCheckKind.Cantilever);
+        Assert.False(over.Passing);
+        Assert.StartsWith(
+            "Cantilever 2'-3\" past the beam: allowed up to 1'-10 1/2\", the lesser of the row's 2'-0\" and 1/4 of the 7'-6\" span, 1'-10 1/2\"; over by 4 1/2\" (DCA 6-2015 Table 2",
+            over.Text,
+            StringComparison.Ordinal);
+        Assert.Contains("Shorten the cantilever.", over.Text, StringComparison.Ordinal);
+
+        // No cantilever, no line; the synthetic guide's table prints no overhang, so a cantilever is out of its scope.
+        Assert.DoesNotContain(Only(Drawing(typed, code: Connecticut), Shipped).Lines, line => line.Kind == DeckCheckKind.Cantilever);
+        DeckCheckLine synthetic = Line(Only(Drawing(Inputs() with { Cantilever = In(18) })), DeckCheckKind.Cantilever);
+        Assert.Equal(
+            "Cantilever 1'-6\" past the beam: Table ZZ-GUIDE-JOIST does not cover an overhang, so a cantilever of 1'-6\" past the beam is not checked: get it engineered." + Unreviewed,
+            synthetic.Text);
+        Assert.Equal("Cantilever 1'-6\" past the beam: No adopted code is chosen, so napkin cannot check this. Choose one in Project → Adopted code and site.", Line(Only(Drawing(Inputs() with { Cantilever = In(18) }) with { Code = null }), DeckCheckKind.Cantilever).Text);
+    }
+
+    [Fact]
+    public void The_panel_is_offered_what_the_packs_tables_name_for_supports_and_species_and_nothing_is_filled_in()
+    {
+        LoadedPack ct = Shipped.Loaded.Single(), zz = Synthetic.Loaded.Single();
+
+        Assert.Equal(["deck"], DeckCheck.SupportsOffered(ct));
+        Assert.Equal(["Southern Pine", "Douglas Fir-Larch", "Hem-Fir", "Spruce-Pine-Fir", "Redwood", "Western Cedars", "Ponderosa Pine", "Red Pine"], DeckCheck.SpeciesOffered(ct));
+        Assert.Equal(
+            "CT 2022's deck tables name what a deck supports as: deck (anything else it carries is beyond the scope of DCA 6-2015, Table 2 note 1, p. 4; MINIMUM REQUIREMENTS & LIMITATIONS item 8, p. 2); "
+            + "and species as: Southern Pine, Douglas Fir-Larch, Hem-Fir, Spruce-Pine-Fir, Redwood, Western Cedars, Ponderosa Pine, Red Pine. "
+            + "Type one in each box; nothing is filled in for you.",
+            DeckCheck.InputsOffered(ct));
+
+        Assert.Equal(["zz-deck"], DeckCheck.SupportsOffered(zz));
+        Assert.Equal(["zz-fir", "zz-hem", "zz-cedar"], DeckCheck.SpeciesOffered(zz));
+        Assert.Empty(DeckCheck.SupportsOffered(null));
+        Assert.Empty(DeckCheck.SpeciesOffered(null));
+        Assert.Null(DeckCheck.InputsOffered(null));
     }
 
     [Fact]

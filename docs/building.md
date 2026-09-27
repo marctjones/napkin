@@ -290,7 +290,8 @@ Porch on a deck** is the finished example.
   **Roof** block; read the rafters, the cuts, the coverings, the rafter check and the **Sunroom test**.
 - **Buy it**: Ctrl/Cmd+Shift+L — the **Deck** and **Roof** sections, with the sunroom line under Roof.
 - Every check is a cited line, or says **No data** / out of scope and why. Under the shipped
-  Connecticut pack the deck and rafter tables are **No data** until the real tables land (#209).
+  Connecticut pack the joists (and their cantilever) answer from AWC's DCA 6-2015 Table 2, a guide
+  (below); the beam, ledger, footing and rafter tables are **No data** until they land (#40–#42, #209).
 
 ## A deck
 
@@ -321,8 +322,22 @@ and page. **Frost** is napkin's comparison of two typed values — the deck's fo
 site's frost depth — and the adopted code, when it prints a frost depth (Connecticut's Table
 R301.2, p. 131: 42"), is **offered** with its citation ("CT 2022 says 3'-6" … — use it?"), never
 applied until you press **Use it**. A bearing wall standing on a deck whose Supports is empty asks
-you to choose what the deck supports. Under the shipped Connecticut pack every table line is **No
-data**: its deck tables are M10's (#40–#42).
+you to choose what the deck supports. A deck with a **Cantilever** gets its own line: the overhang
+past the beam may be the lesser of the joist row's own overhang and the table's fraction of the joist
+span (DCA 6: L_O or L/4), both said, compared exactly; a table that prints no overhang says it does
+not cover one. Under the deck block, napkin lists the words the adopted pack's tables and guide use
+for **Supports** and **Species** — type one; nothing is filled in.
+
+**Under the shipped Connecticut pack** (revision 2) the joist table is **DCA 6-2015 Table 2** (p. 4),
+from the American Wood Council's *Prescriptive Residential Wood Deck Construction Guide*, a guide on
+the 2015 IRC — not Connecticut's adopted code (the 2021 IRC), and the guide says the IRC governs
+where they differ. The block opens with that paragraph, every joist line carries the short clause and
+**UNREVIEWED** until the transcription is independently checked, and the guide's scope is checked
+first: Supports must be `deck` (a porch roof on the deck is out of scope: get it engineered), the
+site's ground snow load at most 40 psf, and the deck no longer out from the house than it is wide.
+Species is one of the eight DCA 6 names (Southern Pine, Douglas Fir-Larch, Hem-Fir, Spruce-Pine-Fir,
+Redwood, Western Cedars, Ponderosa Pine, Red Pine), read as Table 2's printed group. The beam, ledger
+and footing lines are still **No data**: their tables are M10's next slices (#40–#42).
 
 **Guard and stair** (§4, napkin's layout, not a code detail). Tick **Guard** and every open edge gets
 posts at both ends of each run and evenly between (at most the typed spacing apart, a corner post

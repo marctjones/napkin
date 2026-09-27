@@ -32,6 +32,10 @@ public class ConnecticutPackTests
         Assert.Equal(new DateOnly(2022, 10, 1), pack.Manifest.Adoption.InForceFrom);
         Assert.Equal("w/ Errata #1, ED: October 1, 2022", pack.Manifest.Sources[0].Printing);
         Assert.Equal(ReviewStatus.Unreviewed, pack.Manifest.Review.Status);
+
+        // Revision 2 (#41) declares the DCA 6 guide for its deck tables; still unreviewed, so every line says so.
+        Assert.Equal(2, pack.Manifest.Revision);
+        Assert.Equal(" UNREVIEWED: values not yet checked against the source.", pack.Code.UnreviewedSentence);
     }
 
     [Fact]
@@ -40,7 +44,7 @@ public class ConnecticutPackTests
         LoadedPack pack = Assert.IsType<PackLoadResult.Loaded>(Assert.Single(PackCatalog.Discover(Root))).Pack;
         Assert.Equal("us-ct-2022", pack.Manifest.Id);
         Assert.False(pack.HasHeaderTables);
-        Assert.Equal("base tables not loaded", pack.StatusLabel);
+        Assert.Equal("base tables not loaded; deck tables from DCA 6-2015, a guide", pack.StatusLabel);
         Assert.Equal(string.Empty, Fx.Load("us-zz-state").StatusLabel);
     }
 

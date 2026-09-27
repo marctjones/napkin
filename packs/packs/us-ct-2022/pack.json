@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "notes": "Connecticut 2022 State Building Code. Only Connecticut's own amendments document was read; the IRC 2021 base tables are NOT loaded (see layers/irc-2021/README.md).",
+  "notes": "Connecticut 2022 State Building Code. Only Connecticut's own amendments document was read; the IRC 2021 base tables are NOT loaded (see layers/irc-2021/README.md). Revision 2 (2026-09-27, #41): the deck joist table comes from the guide AWC DCA 6-2015 (layers/dca6-2015), declared under guides.",
   "id": "us-ct-2022",
-  "revision": 1,
+  "revision": 2,
   "jurisdiction": {
     "country": "US",
     "state": "CT",
@@ -27,6 +27,12 @@
   "layers": [
     "irc-2021",
     "amendments"
+  ],
+  "guides": [
+    {
+      "id": "dca6-2015",
+      "notes": "Deck tables only. A guide, not Connecticut's adopted code: CT 2022 adopts the 2021 IRC; DCA 6 is based on the 2015 IRC and says the IRC governs where they differ. Remove this entry when the IRC 2021 R507 tables are transcribed into layers/irc-2021/deck."
+    }
   ],
   "sources": [
     {
