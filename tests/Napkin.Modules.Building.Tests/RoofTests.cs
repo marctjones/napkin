@@ -226,8 +226,8 @@ public class RoofTests
     [Trait("Feature", "ROOF-001")]
     public void The_porch_sample_frames_as_its_expectations_say()
     {
-        // Fixtures/porch-12x10: §9's roof on one bearing front wall with one 36 × 60 window, worked in its design file.
-        Sketch sketch = Assert.IsType<Loaded>(SceneReader.ReadFile(Path.Combine(AppContext.BaseDirectory, "Fixtures", "porch-12x10.scene.json"))).Sketch;
+        // samples/porch-12x10: §9's roof on one bearing front wall with one 36 × 60 window, worked in its design file.
+        Sketch sketch = Assert.IsType<Loaded>(SceneReader.ReadFile(Path.Combine(AppContext.BaseDirectory, "samples", "porch-12x10.scene.json"))).Sketch;
         Roof roof = Assert.Single(Roof.All(sketch));
         RoofFraming frame = Frame(sketch, roof);
 

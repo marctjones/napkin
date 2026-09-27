@@ -344,7 +344,7 @@
       "boardFeetUsed": "",
       "waste": "",
       "note": "sheets from the cut layout",
-      "derivation": "The top, 48\" x 16\" = 768 in², fits a 48\" x 96\" sheet (PS 1-19 §5.4) and is its only part: ceil(768 / 4608) = 1 sheet. By area, and so labelled a floor; no board feet for a panel."
+      "derivation": "Nested on sheets by the cut layout (sheetLayout below): the top, 48\" x 16\", is the only part and goes on one 48\" x 96\" sheet (PS 1-19 §5.4), so 1 sheet. The area floor agrees: 768 in² against 4608 in², ceil = 1. No board feet for a panel."
     }
   ],
   "shoppingListCsv": [
@@ -353,5 +353,40 @@
     "1x4,,\"1 × 12'-0\"\"\",\"Apron × 2, End rail × 2\",4.0,3.3,0.7,",
     "2x4,,\"1 × 14'-0\"\"\",\"Stretcher × 2, Leg × 4\",9.3,8.4,0.9,",
     "3/4 plywood,,\"1 sheet, 4'-0\"\" × 8'-0\"\"\",Top × 1,,,,sheets from the cut layout"
-  ]
+  ],
+  "sheetLayout": {
+    "kerfUnits": 128,
+    "derivation": "Sheet nesting (#26, docs/design/parts-and-cut-list.md §4.2), worked by hand with napkin's default 1/8 in kerf on the library's 48 x 96 in sheet (PS 1-19 §5.4). The top has no grain set, so its longer side lies along the sheet's 96 in.",
+    "panels": [
+      {
+        "material": "3/4 plywood",
+        "species": "",
+        "refused": 0,
+        "summary": "3/4 plywood: 1 sheet; 1 piece, waste 26.7 sq ft (83.3%) counting offcuts and kerf",
+        "sheets": [
+          {
+            "number": 1,
+            "longUnits": 98304,
+            "shortUnits": 49152,
+            "rips": 1,
+            "cuts": 2,
+            "wasteSquareUnits": 4026531840,
+            "strips": [
+              {
+                "yUnits": 0,
+                "widthUnits": 16384,
+                "crosscuts": 1,
+                "trims": 0,
+                "pieces": [
+                  { "label": "Top", "alongUnits": 49152, "acrossUnits": 16384, "turned": false, "xUnits": 0 }
+                ]
+              }
+            ],
+            "line": "Sheet 1: 3/4 plywood x 4 ft × 8 ft: strip 1, 16 in: Top 48 × 16 in | 2 cuts, kerf 1/8 in | offcut 26.7 sq ft",
+            "derivation": "The top, 48 x 16 (49152 x 16384): 48 along, 16 across. One strip 16 wide: 1 crosscut (48 < 96, an offcut remains), 1 rip (16 < 48): 2 cuts. Waste 4608 - 768 = 3840 in² x 1024² = 4026531840 square units; / 144 = 26.666... -> 26.7 sq ft; 3840 / 4608 = 83.333 % -> 83.3 %."
+          }
+        ]
+      }
+    ]
+  }
 }

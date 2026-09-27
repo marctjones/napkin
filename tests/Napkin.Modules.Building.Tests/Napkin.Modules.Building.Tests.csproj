@@ -37,7 +37,6 @@
        from disk by the loader path the app uses. -->
   <ItemGroup>
     <Content Include="CodePacks/**/*" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="Fixtures/**/*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\packs\**\*" Link="RealPacks\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
