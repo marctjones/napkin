@@ -80,9 +80,9 @@
   "supplies": [],
   "code": {
     "pack": "us-ct-2022",
-    "revision": 1,
+    "revision": 2,
     "mode": "locked",
-    "lockedOn": "2026-09-25"
+    "lockedOn": "2026-09-27"
   },
   "site": {
     "groundSnowLoad": null,

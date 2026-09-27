@@ -198,10 +198,10 @@ public class CodeCheckTests
         Assert.Equal(NoDataReason.NoPackSelected, none.Reason);
         Assert.Equal("No code selected: choose one under Project → Adopted code and site.", CodeCheck.Words(none, Library).Headline);
 
-        // The shipped Connecticut pack: its IRC base tables are not loaded (docs/rules-engine.md).
+        // The shipped Connecticut pack: its IRC base tables are not loaded (docs/rules-engine.md); its deck joist table is DCA 6's (#41).
         CodePacks shipped = CodePacks.Discover([RealPacks]);
         LoadedPack ct = Assert.Single(shipped.Loaded);
-        Assert.Equal("base tables not loaded", ct.StatusLabel);
+        Assert.Equal("base tables not loaded; deck tables from DCA 6-2015, a guide", ct.StatusLabel);
         Assert.Empty(CodeCheck.SupportsChoices(ct));
         HeaderResult.NoData empty = Assert.IsType<HeaderResult.NoData>(
             Check(sketch with { Code = new CodeChoice("us-ct-2022", 1, CodeMode.Following, null) }, shipped));

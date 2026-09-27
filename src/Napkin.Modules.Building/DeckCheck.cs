@@ -12,6 +12,9 @@ public enum DeckCheckKind
     /// <summary>The joists' span.</summary>
     Joists,
 
+    /// <summary>The joists' cantilever past the beam, when there is one (deck-guide-pack §3.1).</summary>
+    Cantilever,
+
     /// <summary>The beam's span between posts.</summary>
     Beam,
 
@@ -99,9 +102,16 @@ public static class DeckCheck
         // What a guide's scope may test (deck-guide-pack §2): Figure 5's length out from the house and
         // width along it, the site's ground snow load, what the deck supports and its species.
         DeckScopeInputs scope = new(inputs.Supports, inputs.Species, sketch.Site.GroundSnowLoadPsf, framing.Depth, framing.Width);
-        DeckResult joists = DeckEvaluator.CheckSpan(
-            pack, SpanUse.DeckJoist, new SpanRequest(member, framing.JoistSpan, inputs.Supports, inputs.Species, inputs.JoistSpacing, null, scope.GroundSnowLoad, null, scope.DeckLength, scope.DeckWidth));
+        SpanRequest joistRequest = new(member, framing.JoistSpan, inputs.Supports, inputs.Species, inputs.JoistSpacing, null, scope.GroundSnowLoad, null, scope.DeckLength, scope.DeckWidth);
+        DeckResult joists = DeckEvaluator.CheckSpan(pack, SpanUse.DeckJoist, joistRequest);
         lines.Add(Span(DeckCheckKind.Joists, joists, $"Joists {member} at {spacing} o.c.{Species(inputs)}, span {Text(framing.JoistSpan)}", "Use a deeper joist, closer spacing or another beam."));
+
+        // The cantilever past the beam, when there is one: the lesser of the row's overhang and the table's
+        // fraction of the joist span (deck-guide-pack §3.1).
+        if (inputs.Cantilever > Length.Zero)
+        {
+            lines.Add(CantileverLine(DeckEvaluator.CheckCantilever(pack, joistRequest, inputs.Cantilever), inputs.Cantilever, framing.JoistSpan));
+        }
 
         // The beam's clear span is exact but may fall between grid points: the table is asked about
         // the span rounded up, never down, and the sentence says ≈ when it was.
@@ -350,6 +360,99 @@ public static class DeckCheck
         return bearing is null ? null : $"{bearing.Name} (bearing) stands on this deck: choose what the deck supports.";
     }
 
+    /// <summary>
+    /// "Cantilever 1'-6" past the beam: allowed up to 2'-0", the lesser of the row's 2'-0" and 1/4 of the 9'-9"
+    /// span, 2'-5 1/4" (…)": the row's overhang and the table's cap both said, the cap exact or with ≈.
+    /// </summary>
+    static DeckCheckLine CantileverLine(DeckResult result, Length cantilever, Length span)
+    {
+        string what = $"Cantilever {Text(cantilever)} past the beam";
+        (DeckTable table, DeckRow row, Length allowed, SpeciesGroup? group, AdoptedCodeRef code)? answered = result switch
+        {
+            DeckResult.Passes p => (p.Table, p.Row, p.Allowed, p.Group, p.Code),
+            DeckResult.Short s => (s.Table, s.Row, s.Allowed, s.Group, s.Code),
+            _ => null,
+        };
+        if (answered is not { } a)
+        {
+            return Other(DeckCheckKind.Cantilever, result, what);
+        }
+
+        OverhangLimit cap = a.table.OverhangLimit!;
+        ExactFraction share = new(span.Units * cap.Fraction.Numerator, cap.Fraction.Denominator);
+        string lesser = $"the lesser of the row's {Text(a.row.Overhang!.Value)} and {cap.Fraction.Numerator}/{cap.Fraction.Denominator} of the {Text(span)} span, {DeckFrame.Words(share)}";
+        string cited = $"{Cited(a.code, a.table, a.row, a.group)}; the cap: {cap.Location}";
+        return result is DeckResult.Short over
+            ? new DeckCheckLine(
+                DeckCheckKind.Cantilever, result, $"{what}: allowed up to {Text(a.allowed)}, {lesser}; over by {Text(over.Over)} ({cited}). Shorten the cantilever.{a.code.UnreviewedSentence}{Notes(a.table, a.row)}", false)
+            : new DeckCheckLine(
+                DeckCheckKind.Cantilever, result, $"{what}: allowed up to {Text(a.allowed)}, {lesser} ({cited}).{a.code.UnreviewedSentence}{Notes(a.table, a.row)}", true);
+    }
+
+    /// <summary>
+    /// What the adopted pack's deck tables and their guides' scopes name for what a deck supports, in the
+    /// order they are declared (deck-guide-pack §2, risk 9): each supports column's values and each scope
+    /// limit's listed values. The deck panel offers them; the person still types one — nothing is filled in.
+    /// </summary>
+    public static ImmutableArray<string> SupportsOffered(LoadedPack? pack)
+    {
+        if (pack is null)
+        {
+            return [];
+        }
+
+        IEnumerable<string> columns = pack.Deck.Tables.SelectMany(table => table.Inputs.Where(column => column.Name == "supports").SelectMany(column => column.Values));
+        IEnumerable<string> limits = pack.Deck.Tables
+            .SelectMany(table => (table.Guide?.Limits ?? ValueList<ScopeLimit>.Empty).Concat(table.Limits))
+            .Where(limit => limit.When.Input == "supports")
+            .SelectMany(limit => limit.When.Values);
+        return [.. columns.Concat(limits).Distinct(StringComparer.Ordinal)];
+    }
+
+    /// <summary>
+    /// The species the adopted pack's deck tables and guides name (deck-guide-pack §3.6), in the order they are
+    /// declared: each guide's list, then any species a table's groups or species column names. Offered, never filled in.
+    /// </summary>
+    public static ImmutableArray<string> SpeciesOffered(LoadedPack? pack)
+    {
+        if (pack is null)
+        {
+            return [];
+        }
+
+        IEnumerable<string> guides = pack.Guides.SelectMany(guide => guide.Species);
+        IEnumerable<string> tables = pack.Deck.Tables.SelectMany(table => table.SpeciesGroups.Count > 0
+            ? table.SpeciesGroups.SelectMany(group => group.Species)
+            : table.Inputs.Where(column => column.Name == "species").SelectMany(column => column.Values));
+        return [.. guides.Concat(tables).Distinct(StringComparer.Ordinal)];
+    }
+
+    /// <summary>
+    /// The deck panel's line under the Supports and Species boxes: "CT 2022's deck tables name what a deck
+    /// supports as: deck. Species: Southern Pine, …. Type one; nothing is filled in." — null when the pack names neither.
+    /// </summary>
+    public static string? InputsOffered(LoadedPack? pack)
+    {
+        ImmutableArray<string> supports = SupportsOffered(pack), species = SpeciesOffered(pack);
+        if (pack is null || (supports.IsEmpty && species.IsEmpty))
+        {
+            return null;
+        }
+
+        List<string> said = [];
+        if (!supports.IsEmpty)
+        {
+            said.Add($"what a deck supports as: {string.Join(", ", supports)}");
+        }
+
+        if (!species.IsEmpty)
+        {
+            said.Add($"species as: {string.Join(", ", species)}");
+        }
+
+        return $"{pack.Manifest.Adoption.ShortName}'s deck tables name {string.Join("; and ", said)}. Type one in each box; nothing is filled in for you.";
+    }
+
     static DeckCheckLine Span(DeckCheckKind kind, DeckResult result, string what, string advice) => result switch
     {
         DeckResult.Passes passes => new DeckCheckLine(
@@ -367,16 +470,18 @@ public static class DeckCheck
     };
 
     /// <summary>
-    /// "ZZ-DECK-BEAM row r.2-2x10.10, synthetic p. 3"; with the species group the typed species was read as,
-    /// and for a guide's table the clause that says what the guide is not (deck-guide-pack §1.2, Decision 5):
-    /// "… — a guide on the 2015 IRC, not CT 2022's adopted IRC 2021; the IRC governs where they differ (p. 1)".
+    /// "ZZ-DECK-BEAM row r.2-2x10.10, synthetic p. 3"; a guide's table is named with the guide, "DCA 6-2015
+    /// Table 2 row r.sp.2x8.16, p. 4 …"; with the species group the typed species was read as, and for a guide's
+    /// table the clause that says what the guide is not (deck-guide-pack §1.2, Decision 5): "… — a guide on the
+    /// 2015 IRC, not CT 2022's adopted IRC 2021; the IRC governs where they differ (p. 1)".
     /// </summary>
     public static string Cited(AdoptedCodeRef code, DeckTable table, DeckRow row, SpeciesGroup? group = null)
     {
         ArgumentNullException.ThrowIfNull(code);
         ArgumentNullException.ThrowIfNull(table);
         ArgumentNullException.ThrowIfNull(row);
-        return $"{table.Designation} row {row.Id}, {row.Source.Location}"
+        string name = table.Guide is { } from ? $"{from.ShortName} Table {table.Designation}" : table.Designation;
+        return $"{name} row {row.Id}, {row.Source.Location}"
                + (group is null ? string.Empty : $"; species group \"{group.Group}\", {group.Location}")
                + (table.Guide is { } guide ? $" — {guide.Clause(code)}" : string.Empty);
     }
