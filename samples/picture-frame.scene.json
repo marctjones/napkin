@@ -1,5 +1,5 @@
 {
-  "formatVersion": 12,
+  "formatVersion": 16,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -38,10 +38,14 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": [
         {
           "kind": "cornerCut",
@@ -84,10 +88,14 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": [
         {
           "kind": "cornerCut",
@@ -130,10 +138,14 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": [
         {
           "kind": "cornerCut",
@@ -176,10 +188,14 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
       "cuts": [
         {
           "kind": "cornerCut",
@@ -207,6 +223,13 @@
     "frostDepth": null,
     "buildingWidth": null,
     "roofLiveLoad": null,
+    "soilBearing": null,
+    "north": 0,
+    "underlay": null,
     "source": null
+  },
+  "furniture": {
+    "kind": "none",
+    "anchored": false
   }
 }

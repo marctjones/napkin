@@ -315,6 +315,63 @@ public static class SamplesCommand
 
                 break;
 
+            case 13:
+                // Deck and porch (docs/design/deck-and-porch.md §7): every box says it is no deck,
+                // no roof and no opening's fill, and the site has no soil bearing value yet.
+                foreach (JsonNode? entity in Entities(root))
+                {
+                    if (entity is JsonObject box && (string?)box["type"] == "box")
+                    {
+                        EnsureNull(box, "deck");
+                        EnsureNull(box, "roof");
+                        EnsureNull(box, "opening");
+                    }
+                }
+
+                if (root["site"] is JsonObject site)
+                {
+                    EnsureNull(site, "soilBearing");
+                }
+
+                break;
+
+            case 14:
+                // Furniture marks (docs/design/furniture-checks.md §4.2, §9.1): no part is marked a
+                // drawer, and the design says nothing about what the piece is.
+                foreach (JsonNode? entity in Entities(root))
+                {
+                    if (entity?["part"] is JsonObject part)
+                    {
+                        EnsureNull(part, "drawer");
+                    }
+                }
+
+                if (root is JsonObject scene && !scene.ContainsKey("furniture"))
+                {
+                    scene["furniture"] = new JsonObject { ["kind"] = "none", ["anchored"] = false };
+                }
+
+                break;
+
+            case 15:
+                // A lot's boundary and north (docs/design/permit-set.md §5.2, §5.5): a new entity type
+                // only, and the site's north is the drawing's +Y until the person turns it.
+                if (root["site"] is JsonObject north && !north.ContainsKey("north"))
+                {
+                    north["north"] = 0;
+                }
+
+                break;
+
+            case 16:
+                // A survey underlay (docs/design/permit-set.md §5.4): no sample has one.
+                if (root["site"] is JsonObject underlay)
+                {
+                    EnsureNull(underlay, "underlay");
+                }
+
+                break;
+
             default:
                 throw new InvalidOperationException($"samples restamp does not know what format version {version} added.");
         }

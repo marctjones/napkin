@@ -480,6 +480,23 @@ public sealed class DesignEditor
     /// </summary>
     public void MarkSaved() => _savedSketch = _design.Sketch;
 
+    /// <summary>
+    /// Brings a survey image in under the site plan (permit-set §5.4): its bytes kept by their SHA-256,
+    /// and the site given its starting calibration, one undo step. Null and nothing changed when the
+    /// bytes are not a PNG or JPEG napkin can read the size of.
+    /// </summary>
+    public SurveyUnderlay? AddUnderlay(byte[] bytes, string name)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        if (Underlays.Default(bytes, name) is not { } underlay)
+        {
+            return null;
+        }
+
+        _design = _design with { Assets = _design.Assets.SetItem(underlay.Asset, bytes) };
+        return Apply(new SetSite(_design.Sketch.Site with { Underlay = underlay }), $"Put {name} under the site plan") is Succeeded ? underlay : null;
+    }
+
     /// <summary>Replaces the design with one from the history — an edit, not an open.</summary>
     void Restore(Design design)
     {
@@ -504,6 +521,7 @@ public sealed class DesignEditor
         Segment => $"the line {id}",
         Node => $"the point {id}",
         Note note => note.Name.Length > 0 ? note.Name : note.Text.Length > 0 ? $"the note \"{note.Text}\"" : "the note",
+        Boundary boundary => boundary.Name.Length > 0 ? boundary.Name : "the lot",
         _ => $"part {id}",
     };
 

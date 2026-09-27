@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "kind": "frost",
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "source": "zz-synth-state",
+  "location": "synthetic frost p. 1",
+  "frostLineDepth": "3ft 6in",
+  "footnotes": [
+    {
+      "id": "x",
+      "text": "SYNTHETIC: decks not supported by a dwelling are excepted (not encoded).",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ]
+}

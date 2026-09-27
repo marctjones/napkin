@@ -94,13 +94,16 @@ public partial class CodeWindow : Window
     /// <summary>The roof live load field (psf), asked for only when a table's footnote needs it.</summary>
     public TextBox RoofLiveLoadField => RoofLiveBox;
 
+    /// <summary>The soil bearing field (psf), for deck footings (#42).</summary>
+    public TextBox SoilBearingField => SoilBox;
+
     /// <summary>The building width field.</summary>
     public TextBox WidthField => WidthBox;
 
     /// <summary>The apply button for the site values.</summary>
     public Button ApplySiteControl => ApplySiteButton;
 
-    private IEnumerable<TextBox> SiteBoxes => [SnowBox, WindBox, SeismicBox, FrostBox, WidthBox, RoofLiveBox, SourceBox];
+    private IEnumerable<TextBox> SiteBoxes => [SnowBox, WindBox, SeismicBox, FrostBox, WidthBox, RoofLiveBox, SoilBox, SourceBox];
 
     /// <summary>
     /// A pack as the picker lists it (#19): "&lt;shortName&gt; — &lt;baseCode&gt;, in force &lt;from&gt;[ to
@@ -242,6 +245,7 @@ public partial class CodeWindow : Window
         WidthBox.Text = site.BuildingWidth is { } width ? width.Format(new FeetInchesFormat(16)).Text : string.Empty;
         RoofLiveBox.Text = site.RoofLiveLoadPsf?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
         SourceBox.Text = site.Source?.Text ?? string.Empty;
+        SoilBox.Text = site.SoilBearingPsf?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
         SiteError.IsVisible = false;
     }
 
@@ -315,6 +319,7 @@ public partial class CodeWindow : Window
         Length? frost = Distance(FrostBox.Text, "The frost depth", allowZero: true, wrong);
         Length? width = Distance(WidthBox.Text, "The building width", allowZero: false, wrong);
         int? roofLive = Whole(RoofLiveBox.Text, "The roof live load", "psf", wrong);
+        int? soil = Whole(SoilBox.Text, "The soil bearing value", "psf", wrong);
         string? seismic = string.IsNullOrWhiteSpace(SeismicBox.Text) ? null : SeismicBox.Text.Trim();
         string? source = string.IsNullOrWhiteSpace(SourceBox.Text) ? null : SourceBox.Text.Trim();
 
@@ -326,7 +331,7 @@ public partial class CodeWindow : Window
         }
 
         SiteSource? from = source is null ? null : new SiteSource(source, Design.Sketch.Site.Source?.Text == source ? Design.Sketch.Site.Source.On : Today());
-        SiteValues site = new(snow, wind, seismic, frost, width, roofLive, from);
+        SiteValues site = new(snow, wind, seismic, frost, width, roofLive, from) { SoilBearingPsf = soil };
         if (site != Design.Sketch.Site)
         {
             ApplyRequest?.Invoke(new SetSite(site), "Set the site values");

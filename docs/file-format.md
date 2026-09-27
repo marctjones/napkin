@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 12
+# The napkin project file — container version 2, scene format version 16
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -12,7 +12,9 @@ supported:
 | `*.napkin` | A zip container holding `manifest.json` and `scene.json` | `ProjectFile.Load` | `ProjectFile.Save` |
 | `*.scene.json` | One plain scene document, on its own | `SceneReader.Read` | `SceneWriter.Write` |
 
-The scene document is the same either way — the container wraps it, it does not change it. A file
+The app saves a new design as a `.napkin` project; a design opened from a `.scene.json` keeps
+saving there unless you choose Save As. The scene document is the same either way — the container
+wraps it, it does not change it. A file
 written by hand in a text editor, such as the three in [`samples/`](../samples), is a plain scene
 document and stays one.
 
@@ -25,7 +27,7 @@ document and stays one.
 2. **Exact version match, and no migration — on both stamps.** A project carries two version
    numbers, for two different things: `containerVersion` in `manifest.json` says what shape the
    container is, and `formatVersion` in `scene.json` says what a drawing means. The reader accepts
-   `"containerVersion": 1` and `"formatVersion": 12` and nothing else. A file from an older *or* a
+   `"containerVersion": 2` and `"formatVersion": 16` and nothing else. A file from an older *or* a
    newer version of either is refused before the scene is parsed, with a message naming both
    versions. napkin is a pre-1.0 beta indefinitely: breaking changes are always allowed, each
    stamp is bumped whenever its own layer changes meaning, and no migration code or compatibility
@@ -665,6 +667,100 @@ feet per gallon, `flooringBox`) are whole square feet greater than zero, or `nul
 `null` or two lengths greater than zero; `baseboardStick` and every `measured` length are greater
 than zero or `null`. An unknown text, a zero or negative coverage or length, or an unknown field is
 refused.
+
+### Deck, shed roof and opening fill
+
+Format version 13 ([`deck-and-porch.md`](./design/deck-and-porch.md) §7, #195). Every box carries
+`"deck"`, `"roof"` and `"opening"`, each `null` unless the box is one; the site carries
+`"soilBearing"` (whole psf or `null`). A deck or a roof is nothing else: a box with a deck or a roof
+and a non-null `part`, `wall`, `room`, `opening` or the other of the two is refused; an opening is
+not also a wall. No value here is a code number: every one is the person's, or napkin's labelled
+design default.
+
+```json
+"deck": { "joistDirection": "out", "joistSpacing": 16384, "joist": "2x8",
+          "beam": { "plies": 2, "lumber": "2x10" }, "post": "4x4", "postCount": 3,
+          "cantilever": 12288, "decking": "5/4x6", "deckingGap": 128, "blocking": true,
+          "supports": null, "species": null, "footingDepth": null,
+          "hardware": [ { "name": "Joist hanger, 2x8", "quantity": 10 } ],
+          "guard": null | { "height", "postSpacing", "balusterGap", "bottomClearance", "post", "rail", "cap", "baluster" },
+          "stair": null | { "edge": "south", "at", "width", "run", "risers": null, "stringers": 3, "stringer": "2x12", "treadBoards": 2 } },
+"roof": { "rafterSpacing": 16384, "rafter": "2x8", "ledger": "2x8", "overhang": 12288, "blocking": true,
+          "sheathing": null, "roofing": { "name": "…", "coverage": null, "waste": 0 },
+          "lowEnd": { "kind": "wall", "wall": "<a box id>" } | { "kind": "beam", "beam": { "plies", "lumber" }, "post", "postCount" } },
+"opening": { "fill": "glass" | "screen" | "solid" }
+```
+
+Refused: `joistDirection` other than `out` (`along` is reserved); a spacing, width, run, guard height
+or post spacing of 0 or less; a cantilever, gap, clearance, overhang, footing depth or `at` below 0;
+an empty lumber or roofing name; beam plies outside 1–3; a post count below 2, fewer than 2
+stringers or 2 risers, fewer than 1 tread board; an unknown edge, fill or low-end kind; a roofing
+coverage of 0 or less or a negative waste; a `lowEnd.wall` naming no box (a dangling reference). A
+roof's rise is its box's depth; its pitch is derived, never stored.
+
+### Furniture marks and a drawer mark
+
+Format version 14 ([`furniture-checks.md`](./design/furniture-checks.md) §4.2, §9.1, #218). Every
+part carries `"drawer"`: `null`, or the part is marked a drawer and says how far it opens. The drawer
+is that part's jointed group (every part joined to it), derived, never stored. The scene carries
+`"furniture"`: what the piece is, as the person said (napkin never detects it), and whether it is
+anchored to the wall.
+
+```json
+"drawer": null | { "extension": 14336 },
+"furniture": { "kind": "none" | "clothingStorage" | "bunkBed", "anchored": false }
+```
+
+Refused: an `extension` of 0 or less; an unknown `kind`; a non-boolean `anchored`; either field
+missing.
+
+### A lot's boundary and north
+
+Format version 15 ([`permit-set.md`](./design/permit-set.md) §5.2, §5.5, §6, #223). A `boundary`
+entity is a lot's property lines as the survey prints them: the point of beginning and at least
+three courses, each a quadrant bearing (`from` N or S, `angle` 0 to 324000 arcseconds, `toward` E or
+W) and a `distance`, with an optional setback labelled front, side or rear. The corners are derived,
+never stored. The site carries `north`: arcseconds clockwise from the drawing's +Y, 0 by default.
+
+```json
+{ "id": "…", "type": "boundary", "layer": "…", "name": "Lot", "phase": "existing",
+  "start": { "x": 0, "y": 0 },
+  "courses": [ { "bearing": { "from": "N", "angle": 0, "toward": "E" }, "distance": 614400,
+                 "setback": { "distance": 122880, "kind": "side" } | null }, … ] },
+"site": { …, "north": 0 }
+```
+
+Refused: an unknown `from`, `toward` or setback `kind`; an angle outside 0 to 324000; a distance
+or setback of 0 or less; fewer than three courses; an unknown field; `north` missing.
+
+### A survey underlay
+
+Format version 16 ([`permit-set.md`](./design/permit-set.md) §5.4, #224). The site carries
+`"underlay"`: `null`, or the survey image behind the site plan and its two-point calibration. The
+image is named by the SHA-256 of its bytes (64 lowercase hex digits); its `name` is the file it came
+from, for display only. `imageA` and `imageB` are whole pixels from the image's top-left, x right and
+y down. `worldA` and `worldB` are where those points are on the drawing, `distance` apart as typed.
+The image's placement is derived from these for drawing only.
+
+```json
+"underlay": null | { "asset": "<sha-256>", "name": "survey.png",
+                     "imageA": { "x": 10, "y": 20 }, "imageB": { "x": 410, "y": 20 },
+                     "worldA": { "x": 0, "y": 0 }, "worldB": { "x": 1228800, "y": 0 },
+                     "distance": 1228800 }
+```
+
+Refused: a hash that is not 64 lowercase hex digits; the same pixel or the same world point twice;
+a distance of 0 or less; an empty name; an unknown or missing field. A scene read on its own cannot
+check that the image it names is there; the container loader does (container version 2).
+
+### Container version 2: the underlay's image
+
+A `.napkin` container holds `manifest.json`, `scene.json` and, when the site has an underlay, its
+image as `assets/<sha256>.png` or `assets/<sha256>.jpg`, written after the scene. The loader checks
+the image against its name. The PNG or JPEG signature in its first bytes must match its extension,
+and the SHA-256 of its bytes must match the name. The scene and the images must agree: the image the
+underlay names must be there, and an image nothing refers to is refused. An image is read up to
+8 MiB (a labelled default; a scanned survey page is a few MB).
 
 ## An annotated example
 

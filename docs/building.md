@@ -273,6 +273,133 @@ per opening, and the line says to buy by area for square feet.
 unequal opposite sides or diagonals, or one diagonal whose square is not L² + W² (compared exactly),
 say "out of square"; the takeoff stays on the drawn size and says so. Nothing is redrawn.
 
+## Decks and porches: how to use it
+
+From [`design/deck-and-porch.md`](design/deck-and-porch.md), in one place; the finished example is
+`tests/Napkin.Modules.Building.Tests/Fixtures/porch-12x10.scene.json` (File → Open).
+
+- **Draw the house wall and mark it Existing** (Edit → Phase → Existing): a deck's ledger is the edge
+  that lies on an existing wall's face.
+- **Draw → Deck (Shift+D)** and drag out from that face. The Part panel's **Deck** block takes the
+  joists, beam, posts, decking, what it supports, the species and the footing depth; tick **Guard**
+  and **Stair**, and type the stair's **risers** when the adopted code gives no maximum riser.
+- **Enclose it with W**: a wall drawn inside the deck's outline stands on the decking. Say the front
+  wall is **Bearing**; put in windows with **Draw → Window** and screens with **Draw → Screen**, and
+  set any opening's **Fill**.
+- **Roof it: Draw → Porch roof (Shift+R)** and click the deck. Type the pitch as "5 in 12" in the
+  **Roof** block; read the rafters, the cuts, the coverings, the rafter check and the **Sunroom test**.
+- **Buy it**: Ctrl/Cmd+Shift+L — the **Deck** and **Roof** sections, with the sunroom line under Roof.
+- Every check is a cited line, or says **No data** / out of scope and why. Under the shipped
+  Connecticut pack the deck and rafter tables are **No data** until the real tables land (#209).
+
+## A deck
+
+A **deck is a box on the layer Deck** (or called "Deck", or carrying deck inputs): its plan outline
+is the deck, its depth the walking surface's height above grade — **Z = 0 is grade** in a deck
+drawing ([`deck-and-porch.md`](./design/deck-and-porch.md) §2). Its **ledger edge** is derived, never
+stored: the one edge lying on a long face of an **Existing** wall, its whole length on that face,
+judged from exact corners. No such edge says "not against a wall"; two say "against two walls: not
+modelled". The other edges are **open** until a wall stands on them at the deck's surface.
+
+The frame is derived every time (`DeckFrame.Of`): a ledger and a rim, each the deck's length along
+the house; joists out from the house at the typed spacing (faces at k·s while k·s + t fits, then an
+end joist), each D − 2t; one row of blocking at mid-span, a piece per bay; the beam's plies; the
+posts, each the deck's height less the decking, a joist and the beam (pier top at grade, a stated
+assumption); and the decking, the least number of boards whose widths and gaps cover the depth,
+with how much of the last board shows. The **beam span** between posts and a middle post's
+**tributary area** are kept as exact fractions for the code checks (slice E) and shown rounded, with
+≈ when they are not on the grid. Every piece becomes a cut-list row, so the shopping list buys
+decks as it buys walls.
+
+**The deck's code check** (`DeckCheck`, deck-and-porch §3) looks each piece up in the adopted
+code's deck tables ([rules-engine.md](rules-engine.md#deck-tables-198)): the joists' span, the
+beam's span between posts for the joists it carries, the ledger's fastening (with napkin's own
+count, ⌈length ÷ spacing⌉ + 1), and the footing under the most loaded post (a middle one with three
+or more posts, an end one with two) on the site's **soil bearing** value. Each line is exactly one
+of passes, short (by how much), sized, out of scope, input missing or no data, with its table, row
+and page. **Frost** is napkin's comparison of two typed values — the deck's footing depth and the
+site's frost depth — and the adopted code, when it prints a frost depth (Connecticut's Table
+R301.2, p. 131: 42"), is **offered** with its citation ("CT 2022 says 3'-6" … — use it?"), never
+applied until you press **Use it**. A bearing wall standing on a deck whose Supports is empty asks
+you to choose what the deck supports. Under the shipped Connecticut pack every table line is **No
+data**: its deck tables are M10's (#40–#42).
+
+**Guard and stair** (§4, napkin's layout, not a code detail). Tick **Guard** and every open edge gets
+posts at both ends of each run and evenly between (at most the typed spacing apart, a corner post
+shared), two rails and a cap per bay, and the fewest balusters giving a gap no wider than the typed
+one — the actual gaps, exact, are what the check reads. Tick **Stair** and it is laid out on the first
+open edge: the risers typed, or the fewest the adopted code's maximum riser allows; each rise exact
+(shown with ≈ when it is between sixteenths); the diagonal by integer square root, rounded up; and
+the stringer board the diagonal plus one tread, napkin's allowance, in one sentence to lay it out by.
+The pack's guard and stair provisions — when one is required, its height, its openings, the riser,
+tread, handrail and width — are each a cited line, or "not covered by this pack", or No data.
+
+**Screens and the 40 % line** (§5.2, §5.5). Every opening has a **fill** — glass, screen or solid —
+stored on it: **Draw → Window** starts glass, **Door** solid, and **Draw → Screen** places a window
+filled with screen; the panel's **Fill** changes any of them, and the frame does not change with it.
+Under a porch roof napkin works out the glazing ratio IRC 2021 §R202's "sunroom" definition turns on
+(read via UpCodes, docs/research/porch-rules.md): the glass openings in the walls standing on the
+deck, over those walls' gross area plus the triangle above each side wall and the roof's sloped area,
+to a tenth of a percent, and says which side of the 40 % line the drawing is on. It never
+classifies; a category is yours.
+
+**A shed porch roof** (§5.4, §9.5). **Draw → Porch roof** (**Shift+R**) and a click on a deck
+make the roof over the deck's outline, at napkin's starting 4 in 12. Its high end is at the ledger.
+Its low end is the wall standing on the deck's far edge; with no wall there, it is a (2) 2x10 beam
+on two 4x4 posts, 8'-0" above the decking. A wall drawn with **W** inside a deck's outline stands on
+the decking. The panel's **Roof** block takes the pitch typed as "5 in 12" (which sets the rise, on
+the grid) and the rafter, spacing, ledger, overhang, sheathing and roofing. It shows the rafters,
+the cuts, the coverings, the rafter check and the **Sunroom test**. The shopping list's **Roof**
+section buys the pieces, with the sunroom line under it. A roof is a box on the roof layer or with
+roof inputs. The box's depth out from the house is the run and its height is the rise, so its pitch is
+"5 in 12", or "≈ 4.96 in 12" when it is not a whole number. The high end is a ledger on the house.
+The low end is either a wall on the deck (napkin asks you to mark it bearing) or a beam on posts
+standing on the deck. From the typed rafter, ledger, spacing and overhang, napkin works out, all
+exactly:
+- the rafter length, by an integer square root;
+- the height above the plate;
+- the ledger's top above the low support;
+- the cuts, as one sentence to lay a rafter out by: the plumb cut, the birdsmouth distance and its
+  notch depth, and the tail;
+- the rafters, laid out like joists, and the blocking at the plate;
+- the sheathing sheets and roofing units by sloped area, with "a layout may need more".
+
+The rafters' horizontal span is checked against the adopted pack's rafter table at the site's
+ground snow load: passes, short, or No data. As with the deck, napkin does not know the house, so
+the panel asks you to check that the ledger clears the eave and any openings.
+
+## The site plan
+
+**Project → Site plan…** takes the lot's property lines as the survey prints them
+([`permit-set.md`](./design/permit-set.md) §5), one course per line: a bearing and a distance,
+`N 12°34'56" E 125.50'`, with an optional setback after it, `rear 30'`. It also takes the point of
+beginning (where the survey starts, on the drawing) and **north**, in degrees clockwise from the
+drawing's up; the bearings are measured from north. The corners are worked out from the courses and
+rounded once each. When the courses don't close, napkin says by how much and never adjusts them, as
+a survey reports its own closure.
+
+For each line the window says how far the structure (any new or existing wall, deck or roof) is
+from it, and compares that with the setback you typed: "Wall 1 to rear line 24'-8 1/2" (setback
+20'-0": clear)". Distances are shown with ≈ unless the line runs along the drawing's axes. Setbacks
+are zoning, not the building code: napkin compares only against what you type, and says nothing
+about whether the lot conforms. On the plan the lot is drawn on the **Site** layer, with each
+setback dashed inside its line and a north arrow at the point of beginning. This site plan is not
+a survey.
+
+**A survey image under the plan.** In the Site plan window, **Choose image…** puts a PNG or JPEG
+(up to 8 MB) behind the plan, half transparent. Nothing snaps to it and nothing is traced from it.
+To calibrate it:
+1. Type the real distance between two points you can find on the survey, like `100'`.
+2. Press **Calibrate**.
+3. Click those two points on the plan.
+
+The image is scaled and turned so they are that far apart. The window then says "Survey underlay:
+survey.png, calibrated to 100'-0" between two points. This site plan is not a survey."
+
+A design is saved as a **`.napkin` project** by default: the zip container, which carries the
+survey image beside the drawing. A `.scene.json` still saves the drawing, but not the image, and
+says so.
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code

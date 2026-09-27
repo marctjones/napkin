@@ -107,6 +107,16 @@ public sealed record SetCode(CodeChoice? Code) : Request;
 /// <param name="Site">The values, as the person now has them.</param>
 public sealed record SetSite(SiteValues Site) : Request;
 
+/// <summary>Replaces a boundary's point of beginning and courses (permit-set §5.2). Exact, moves nothing else.</summary>
+/// <param name="Id">The boundary.</param>
+/// <param name="Start">The point of beginning.</param>
+/// <param name="Courses">The courses, in the survey's order.</param>
+public sealed record SetBoundary(EntityId Id, Point2 Start, System.Collections.Immutable.ImmutableArray<Course> Courses) : Request;
+
+/// <summary>Replaces the design's furniture marks (furniture-checks §9.1). Exact, moves nothing.</summary>
+/// <param name="Marks">The marks, as the person now has them.</param>
+public sealed record SetFurnitureMarks(FurnitureMarks Marks) : Request;
+
 /// <summary>Sets what the person entered for a wall — what it supports, its stud spacing. Exact, moves nothing.</summary>
 /// <param name="Box">The wall's box.</param>
 /// <param name="Inputs">The inputs; <see langword="null"/>, or both fields null, for none.</param>
@@ -124,6 +134,21 @@ public sealed record SetPhase(EntityId Id, Phase Phase) : Request;
 /// <param name="Box">The room's box.</param>
 /// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>
 public sealed record SetRoomInputs(EntityId Box, RoomInputs? Inputs) : Request;
+
+/// <summary>Sets what fills an opening — glass, screen or solid (deck-and-porch §5.2). Exact, moves nothing.</summary>
+/// <param name="Box">The opening's box.</param>
+/// <param name="Fill">The fill, or <see langword="null"/> for none said.</param>
+public sealed record SetOpeningFill(EntityId Box, OpeningFill? Fill) : Request;
+
+/// <summary>Sets a deck's inputs (deck-and-porch §2.2). Exact, moves nothing.</summary>
+/// <param name="Box">The deck's box.</param>
+/// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>
+public sealed record SetDeckInputs(EntityId Box, DeckInputs? Inputs) : Request;
+
+/// <summary>Sets a shed roof's inputs (deck-and-porch §5.3). Exact, moves nothing: the rise is the box's depth.</summary>
+/// <param name="Box">The roof's box.</param>
+/// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>
+public sealed record SetRoofInputs(EntityId Box, RoofInputs? Inputs) : Request;
 
 /// <summary>Sets what a note says and the symbol it is drawn with. Exact, moves nothing.</summary>
 /// <param name="Id">The note.</param>

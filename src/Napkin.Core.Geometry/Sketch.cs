@@ -160,6 +160,9 @@ public sealed record Sketch(
     /// <summary>The site and hazard values the person typed; every field null until entered (format version 6).</summary>
     public SiteValues Site { get; init; } = SiteValues.NotEntered;
 
+    /// <summary>What the piece of furniture is and whether it is anchored, as the person said (format version 14).</summary>
+    public FurnitureMarks Furniture { get; init; } = FurnitureMarks.None;
+
     /// <summary>
     /// Relationships in id order — never in dictionary order — so that anything iterating them is
     /// reproducible (design &#xA7;4.4 step 3).
@@ -548,6 +551,10 @@ public sealed record Sketch(
                     // A note has no size and names nothing: nothing to check (renovation §7).
                     break;
 
+                case Boundary boundary when BoundaryRules.Refusal(boundary.Courses) is { } why:
+                    errors.Add(new ValidationError(ValidationErrorKind.NonPositiveSize, $"Boundary {boundary.Id}: {why}."));
+                    break;
+
                 case Segment segment:
                     RequireEntity<Node>(segment.Start, $"Segment {segment.Id} starts at", errors);
                     RequireEntity<Node>(segment.End, $"Segment {segment.Id} ends at", errors);
@@ -708,7 +715,8 @@ public sealed record Sketch(
                && FastenerChoices.SequenceEqual(other.FastenerChoices)
                && Supplies.SequenceEqual(other.Supplies)
                && Equals(Code, other.Code)
-               && Site.Equals(other.Site);
+               && Site.Equals(other.Site)
+               && Furniture.Equals(other.Furniture);
     }
 
     /// <inheritdoc/>

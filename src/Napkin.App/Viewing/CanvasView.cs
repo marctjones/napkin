@@ -136,6 +136,7 @@ public sealed class CanvasView : Control
     readonly WallTool _wall = new();
     readonly RectangleTool _room = new();
     OpeningKind _openingKind = OpeningKind.Window;
+    OpeningFill _openingFill = OpeningFill.Glass;
     EditTool _tool = EditTool.Select;
 
     Gesture _gesture = Gesture.None;
@@ -366,7 +367,7 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>Whether a press on the paper starts drawing rather than picking or panning.</summary>
-    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Note or EditTool.Strut;
+    bool DrawsOnPress => _tool is EditTool.Rectangle or EditTool.Stock or EditTool.Wall or EditTool.Opening or EditTool.Room or EditTool.Deck or EditTool.Roof or EditTool.Note or EditTool.Strut;
 
     /// <summary>
     /// The precision dimension labels are shown at. Fixed at 1/16&#x2033;; the per-project picker
@@ -696,6 +697,27 @@ public sealed class CanvasView : Control
             return;
         }
 
+        // Calibrating the survey image (permit-set §5.4): two clicks, the first point and the second.
+        if (_calibration is { } calibrate)
+        {
+            Point2 clicked = _view.ToWorld(position);
+            if (_calibrationFirst is not { } first)
+            {
+                _calibrationFirst = clicked;
+                _editor?.Say(EditSeverity.Hint, "Now click the second point on the survey image.");
+            }
+            else
+            {
+                _calibration = null;
+                _calibrationFirst = null;
+                calibrate(first, clicked);
+            }
+
+            e.Handled = true;
+            InvalidateVisual();
+            return;
+        }
+
         if (_editor is not { } editor)
         {
             BeginPan(e.Pointer, position);
@@ -732,6 +754,12 @@ public sealed class CanvasView : Control
             return;
         }
 
+        if (_tool == EditTool.Roof)
+        {
+            PlaceRoof(_view.ToWorld(position));
+            return;
+        }
+
         if (_tool == EditTool.Note)
         {
             PlaceNote(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
@@ -744,7 +772,7 @@ public sealed class CanvasView : Control
             return;
         }
 
-        if (_tool == EditTool.Room)
+        if (_tool is EditTool.Room or EditTool.Deck)
         {
             _room.Begin(SnapGrid.Snap(_view.ToWorld(position), SnapStepInches));
             _roomPressedAt = _view.ToWorld(position);
@@ -916,6 +944,10 @@ public sealed class CanvasView : Control
         else if (_wall.IsDrawing)
         {
             CompleteWall();
+        }
+        else if (_room.IsDrawing && _tool == EditTool.Deck)
+        {
+            CompleteDeck();
         }
         else if (_room.IsDrawing)
         {
@@ -1412,6 +1444,98 @@ public sealed class CanvasView : Control
 
     Point2 _roomPressedAt;
 
+    /// <summary>
+    /// Picks up the deck tool (deck-and-porch §8): the next drag draws a deck whose edges snap to an
+    /// existing wall's face; the edge on the face is the ledger.
+    /// </summary>
+    public void ArmDeck()
+    {
+        Tool = EditTool.Deck;
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+        _editor?.Say(EditSeverity.Hint, "Deck tool: drag the deck out from the face of an existing wall — that edge is the ledger. " + DeckTool.StartingWords);
+    }
+
+    void CompleteDeck()
+    {
+        if (_editor is not { } editor)
+        {
+            _room.Cancel();
+            return;
+        }
+
+        bool dragged = _room.TryRectangle(out Point2 anchor, out Length length, out Length width);
+        _room.Cancel();
+        if (!dragged)
+        {
+            editor.Say(EditSeverity.Hint, "Drag the deck out from the wall's face: a click alone draws nothing.");
+            InvalidateVisual();
+            return;
+        }
+
+        (anchor, length, width) = DeckTool.SnapToHouse(editor.Sketch, anchor, length, width, Length.FromInches(Math.Max(SnapStepInches, 1), Rounding.HalfToEven));
+        EntityId id = EntityId.New();
+        LayerId layer = editor.LayerNamed(DesignLayers.Deck, out Request? addLayer);
+        string name = editor.NextName("Deck");
+        const string what = "Drew a deck";
+        editor.BeginGesture(what);
+        if (editor.Apply(DeckTool.Request(layer, addLayer, id, name, anchor, length, width), what) is Succeeded)
+        {
+            editor.Select(id);
+            Deck deck = new(editor.Sketch.Find<Box>(id)!);
+            string ledger = deck.Ledger(editor.Sketch) is { Edge: { } edge } ? $"its {edge.ToString().ToLowerInvariant()} edge is the ledger" : new DeckRefusal(deck.Ledger(editor.Sketch).Problem!.Value, string.Empty).Text;
+            editor.Say(EditSeverity.Done, $"Drew {name}, {Label(length)} × {Label(width)}; {ledger} {DeckTool.StartingWords}");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+    }
+
+    /// <summary>Picks up the porch roof tool (deck-and-porch §8): the next click on a deck roofs it.</summary>
+    public void ArmRoof()
+    {
+        Tool = EditTool.Roof;
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+        _editor?.Say(EditSeverity.Hint, "Porch roof tool: click a deck — the roof covers it, high at the house, low on the wall at its far edge. " + RoofTool.StartingWords);
+    }
+
+    void PlaceRoof(Point2 at)
+    {
+        if (_editor is not { } editor)
+        {
+            return;
+        }
+
+        if (RoofTool.DeckAt(editor.Sketch, at) is not { } deck)
+        {
+            editor.Say(EditSeverity.Hint, "Click inside a deck to roof it.");
+            return;
+        }
+
+        EntityId id = EntityId.New();
+        LayerId layer = editor.LayerNamed(DesignLayers.Roof, out Request? addLayer);
+        string name = editor.NextName("Roof");
+        (Request? request, string? problem) = RoofTool.Request(editor.Sketch, deck, layer, addLayer, id, name);
+        if (request is null)
+        {
+            editor.Say(EditSeverity.Problem, problem!);
+            return;
+        }
+
+        const string what = "Drew a porch roof";
+        editor.BeginGesture(what);
+        if (editor.Apply(request, what) is Succeeded)
+        {
+            editor.Select(id);
+            string low = editor.Sketch.Find<Box>(id)!.Roof!.LowEnd is WallLowEnd wall ? $"low on {editor.NameOf(wall.Wall)}" : "low on a (2) 2x10 beam on 2 posts — no wall stands on the deck's far edge";
+            editor.Say(EditSeverity.Done, $"Drew {name} over {deck.Name}, high at the ledger, {low}. {RoofTool.StartingWords}");
+            Tool = EditTool.Select;
+        }
+
+        editor.EndGesture();
+        InvalidateVisual();
+    }
+
     /// <summary>A note was just put down: the window gives its words box the keyboard.</summary>
     public event EventHandler<EntityId>? NotePlaced;
 
@@ -1551,15 +1675,16 @@ public sealed class CanvasView : Control
     }
 
     /// <summary>Picks up the opening tool (#18): the next click on a wall puts a window or door in it.</summary>
-    public void ArmOpening(OpeningKind kind)
+    public void ArmOpening(OpeningKind kind, OpeningFill? fill = null)
     {
         _openingKind = kind;
+        _openingFill = fill ?? (kind == OpeningKind.Door ? OpeningFill.Solid : OpeningFill.Glass);
         Tool = EditTool.Opening;
         ToolChanged?.Invoke(this, EventArgs.Empty);
         _editor?.Say(EditSeverity.Hint, $"Click on a wall to put a {Word(kind)} in it.");
     }
 
-    static string Word(OpeningKind kind) => kind == OpeningKind.Door ? "door" : "window";
+    string Word(OpeningKind kind) => _openingFill == OpeningFill.Screen ? "screen" : kind == OpeningKind.Door ? "door" : "window";
 
     void CompleteWall()
     {
@@ -1571,7 +1696,7 @@ public sealed class CanvasView : Control
 
         EntityId id = EntityId.New();
         LayerId layer = editor.LayerNamed(DesignLayers.Wall, out Request? addLayer);
-        if (!_wall.TryComplete(layer, addLayer, id, editor.NextName("Wall"), out Request? request))
+        if (!_wall.TryComplete(layer, addLayer, id, editor.NextName("Wall"), out Request? request, editor.Sketch))
         {
             InvalidateVisual();
             editor.Say(EditSeverity.Hint, "Drag to draw a wall — its length is the way you drag. A click on its own makes nothing.");
@@ -1626,8 +1751,8 @@ public sealed class CanvasView : Control
 
             EntityId id = EntityId.New();
             LayerId layer = editor.LayerNamed(DesignLayers.Opening, out Request? addLayer);
-            string name = editor.NextName(_openingKind == OpeningKind.Door ? "Door" : "Window");
-            Request place = OpeningPlacement.Request(wall, layer, id, name, offset, width, sill, height);
+            string name = editor.NextName(_openingFill == OpeningFill.Screen ? "Screen" : _openingKind == OpeningKind.Door ? "Door" : "Window");
+            Request place = OpeningPlacement.Request(wall, layer, id, name, offset, width, sill, height, _openingFill);
             Request request = addLayer is null ? place : Batch.Of(addLayer, place);
 
             string what = $"Put a {Word(_openingKind)} in {wall.Name}";
@@ -2054,6 +2179,8 @@ public sealed class CanvasView : Control
             layer => layer.Id,
             layer => layer.Name);
 
+        DrawUnderlay(context, design);
+
         foreach (Entity entity in sketch.Entities.Values.OrderBy(item => item.Id))
         {
             string layerName = DesignLayers.StyleName(sketch, entity, layerNames);
@@ -2068,6 +2195,10 @@ public sealed class CanvasView : Control
 
                 case Note note:
                     DrawNote(context, palette, note);
+                    break;
+
+                case Boundary boundary:
+                    DrawBoundary(context, palette, boundary, sketch.Site.North, layerName);
                     break;
 
                 case Strut strut:
@@ -2833,6 +2964,116 @@ public sealed class CanvasView : Control
             rectangle.Center.X - (text.Width / 2),
             rectangle.Center.Y - (text.Height / 2) + lift));
         return true;
+    }
+
+    Action<Point2, Point2>? _calibration;
+    Point2? _calibrationFirst;
+    readonly Dictionary<string, Avalonia.Media.Imaging.Bitmap?> _underlayImages = new(StringComparer.Ordinal);
+
+    /// <summary>Takes the next two clicks on the plan as the survey image's calibration points (permit-set §5.4).</summary>
+    public void ArmCalibration(Action<Point2, Point2> done)
+    {
+        _calibration = done;
+        _calibrationFirst = null;
+        _editor?.Say(EditSeverity.Hint, "Click the first of two points on the survey image whose distance apart you typed.");
+    }
+
+    /// <summary>Whether the plan is waiting for calibration clicks.</summary>
+    public bool IsCalibrating => _calibration is not null;
+
+    /// <summary>
+    /// The survey image behind the plan (§5.4): placed by its calibration, pixels down and north up, for
+    /// drawing only. An image that will not decode is simply not drawn; the Site plan window says so.
+    /// </summary>
+    void DrawUnderlay(DrawingContext context, Design design)
+    {
+        if (design.Sketch.Site.Underlay is not { } underlay || !design.Assets.TryGetValue(underlay.Asset, out byte[]? bytes))
+        {
+            return;
+        }
+
+        if (!_underlayImages.TryGetValue(underlay.Asset, out Avalonia.Media.Imaging.Bitmap? bitmap))
+        {
+            try
+            {
+                bitmap = new Avalonia.Media.Imaging.Bitmap(new MemoryStream(bytes));
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or IOException or NotSupportedException)
+            {
+                bitmap = null;
+            }
+
+            _underlayImages[underlay.Asset] = bitmap;
+        }
+
+        if (bitmap is null)
+        {
+            return;
+        }
+
+        UnderlayPlacement placement = new(underlay);
+        double w = bitmap.PixelSize.Width, h = bitmap.PixelSize.Height;
+        Point Screen(double px, double py)
+        {
+            (double x, double y) = placement.ToWorld(px, py);
+            return _view.ToScreen(x / Length.UnitsPerInch, y / Length.UnitsPerInch);
+        }
+
+        Point origin = Screen(0, 0), across = Screen(w, 0), down = Screen(0, h);
+        Matrix map = new((across.X - origin.X) / w, (across.Y - origin.Y) / w, (down.X - origin.X) / h, (down.Y - origin.Y) / h, origin.X, origin.Y);
+        using (context.PushTransform(map))
+        using (context.PushOpacity(0.5))
+        {
+            context.DrawImage(bitmap, new Rect(0, 0, w, h));
+        }
+    }
+
+    /// <summary>
+    /// A lot (permit-set §5.2–§5.5): its property lines through the derived corners, each setback as a
+    /// dashed line offset inward, and a north arrow at the point of beginning. Drawing only, in double.
+    /// </summary>
+    void DrawBoundary(DrawingContext context, CanvasPalette palette, Boundary boundary, Angle north, string layerName)
+    {
+        ImmutableArray<Point2> corners = boundary.Corners(north);
+        for (int i = 0; i + 1 < corners.Length; i++)
+        {
+            DrawSegment(context, palette, layerName, corners[i], corners[i + 1]);
+        }
+
+        // Inward is to the left of each course when the corners run anticlockwise, to the right otherwise.
+        double area = 0;
+        for (int i = 0; i + 1 < corners.Length; i++)
+        {
+            area += ((double)corners[i].X.Units * corners[i + 1].Y.Units) - ((double)corners[i + 1].X.Units * corners[i].Y.Units);
+        }
+
+        double side = area >= 0 ? 1 : -1;
+        Pen dashed = new(new SolidColorBrush(palette.Dimension), 1) { DashStyle = new DashStyle([4, 4], 0) };
+        for (int i = 0; i < boundary.Courses.Length; i++)
+        {
+            if (boundary.Courses[i].Setback is not { } setback)
+            {
+                continue;
+            }
+
+            double ax = corners[i].X.Units, ay = corners[i].Y.Units, bx = corners[i + 1].X.Units, by = corners[i + 1].Y.Units;
+            double length = Math.Sqrt(((bx - ax) * (bx - ax)) + ((by - ay) * (by - ay)));
+            double nx = -(by - ay) / length * side * setback.Distance.Units, ny = (bx - ax) / length * side * setback.Distance.Units;
+            Point2 from = new(new Length((long)(ax + nx)), new Length((long)(ay + ny)));
+            Point2 to = new(new Length((long)(bx + nx)), new Length((long)(by + ny)));
+            context.DrawLine(dashed, _view.ToScreen(from), _view.ToScreen(to));
+        }
+
+        // North: an arrow 40 px long from the point of beginning, turned by north, and an N at its tip.
+        Point origin = _view.ToScreen(boundary.Start);
+        double radians = north.Arcseconds * Math.PI / 648000d;
+        Point tip = new(origin.X + (40 * Math.Sin(radians)), origin.Y - (40 * Math.Cos(radians)));
+        Pen arrow = new(new SolidColorBrush(palette.Dimension), 1.5);
+        context.DrawLine(arrow, origin, tip);
+        context.DrawLine(arrow, tip, new Point(tip.X - (6 * Math.Sin(radians - 0.5)), tip.Y + (6 * Math.Cos(radians - 0.5))));
+        context.DrawLine(arrow, tip, new Point(tip.X - (6 * Math.Sin(radians + 0.5)), tip.Y + (6 * Math.Cos(radians + 0.5))));
+        FormattedText label = Text("N", palette.Dimension);
+        context.DrawText(label, new Point(tip.X - (label.Width / 2), tip.Y - label.Height - 2));
     }
 
     void DrawSegment(

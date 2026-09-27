@@ -197,6 +197,10 @@ inputs `"side": null, "bearing": null, "header": null`, by `samples restamp`; ev
 meaning.** It added the `strut` entity and the `strutEnd`, `strutFace` and `strutEndFace`
 references, which no sample holds; every scene and expectation changed only its `formatVersion`.
 
+**Format version 13 (deck and porch, `docs/design/deck-and-porch.md` §7) changed no sample's
+meaning.** Every box gained `"deck": null`, `"roof": null` and `"opening": null`, and the site
+`"soilBearing": null`, by `samples restamp`.
+
 **A purely additive bump — a null field or an empty list, no sample's meaning changed, as every
 bump from version 5 on has been — no longer needs 15 scenes and 15 expectations rewritten by hand
 (#181).** Run

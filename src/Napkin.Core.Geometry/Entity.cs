@@ -148,6 +148,15 @@ public sealed record Box(
     /// </summary>
     public RoomInputs? Room { get; init; }
 
+    /// <summary>What the person entered for this box as a deck, or <see langword="null"/> (format version 13).</summary>
+    public DeckInputs? Deck { get; init; }
+
+    /// <summary>What the person entered for this box as a shed roof, or <see langword="null"/> (format version 13).</summary>
+    public RoofInputs? Roof { get; init; }
+
+    /// <summary>What fills this box as an opening — glass, screen or solid — or <see langword="null"/> when it is not one (format version 13).</summary>
+    public OpeningFill? Opening { get; init; }
+
     /// <summary>
     /// What has been cut off the blank, in site order. Empty for a plain rectangle
     /// (<c>docs/design/shaped-parts-model.md</c> §1.1).
@@ -307,6 +316,9 @@ public sealed record Box(
            && Part == other.Part
            && WallInputs == other.WallInputs
            && Room == other.Room
+           && Deck == other.Deck
+           && Roof == other.Roof
+           && Opening == other.Opening
            && _cuts.SequenceEqual(other._cuts);
 
     /// <inheritdoc/>
@@ -323,6 +335,9 @@ public sealed record Box(
         hash.Add(Part);
         hash.Add(WallInputs);
         hash.Add(Room);
+        hash.Add(Deck);
+        hash.Add(Roof);
+        hash.Add(Opening);
         foreach (Cut cut in _cuts)
         {
             hash.Add(cut);

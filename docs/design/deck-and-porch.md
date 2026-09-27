@@ -1,6 +1,6 @@
 # Deck and three-season porch: a deck on piers, light walls on it, and a shed roof to the house
 
-Status: **DRAFT awaiting Marc's sign-off.** Milestone **M11 Deck and three-season porch**
+Status: **Signed off by Marc 2026-09-26 with the recommended §13 decisions** (in chat: "Continue implementing napkin using reasonable recommendations"; recorded on #187). Scene format is **13**, not 11: #189 took 11 and #140 took 12. Milestone **M11 Deck and three-season porch**
 (umbrella #20, porch #187, research #188; the four deck pieces #40–#43 stay open as the real,
 cited data behind slices D–F). Slices A–J are #195–#204 (§10).
 

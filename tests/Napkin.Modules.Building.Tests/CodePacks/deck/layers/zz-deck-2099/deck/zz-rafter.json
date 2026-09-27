@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "kind": "member-span",
+  "use": "rafter",
+  "table": "ZZ-RAFTER",
+  "title": "SYNTHETIC RAFTER SPANS - NOT CODE VALUES",
+  "source": "zz-synth-base",
+  "location": "synthetic p. 2",
+  "inputs": [
+    {
+      "name": "species",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "zz-fir"
+      ]
+    },
+    {
+      "name": "member",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "2x8",
+        "2x10"
+      ]
+    },
+    {
+      "name": "spacing",
+      "type": "length",
+      "band": "exact"
+    },
+    {
+      "name": "groundSnowLoad",
+      "type": "psf",
+      "band": "upper-bound",
+      "domain": {
+        "min": 0,
+        "max": 50
+      }
+    }
+  ],
+  "footnotes": [
+    {
+      "id": "a",
+      "text": "SYNTHETIC footnote a: shown with results, not encoded.",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ],
+  "rows": [
+    {
+      "id": "r.2x8.30",
+      "species": "zz-fir",
+      "member": "2x8",
+      "spacing": "16in",
+      "groundSnowLoad": 30,
+      "span": "13ft 2in",
+      "location": "synthetic p. 4"
+    },
+    {
+      "id": "r.2x8.50",
+      "species": "zz-fir",
+      "member": "2x8",
+      "spacing": "16in",
+      "groundSnowLoad": 50,
+      "span": "11ft 4in",
+      "location": "synthetic p. 4"
+    },
+    {
+      "id": "r.2x10.30",
+      "species": "zz-fir",
+      "member": "2x10",
+      "spacing": "16in",
+      "groundSnowLoad": 30,
+      "span": "16ft 9in",
+      "location": "synthetic p. 4"
+    },
+    {
+      "id": "r.2x10.50",
+      "species": "zz-fir",
+      "member": "2x10",
+      "spacing": "16in",
+      "groundSnowLoad": 50,
+      "span": "14ft 5in",
+      "location": "synthetic p. 4"
+    }
+  ]
+}

@@ -18,6 +18,15 @@ public static class BuildingLayers
 
     /// <summary>The layer notes are drawn on (renovation-sketches §7).</summary>
     public const string Notes = "Notes";
+
+    /// <summary>The layer a deck is drawn on (deck-and-porch §2.1).</summary>
+    public const string Deck = "Deck";
+
+    /// <summary>The layer a porch roof is drawn on (deck-and-porch §5.3).</summary>
+    public const string Roof = "Roof";
+
+    /// <summary>The site plan's layer: property lines, setbacks and north (permit-set §5.1).</summary>
+    public const string Site = "Site";
 }
 
 /// <summary>Whether an opening is a window or a door.</summary>
@@ -121,6 +130,9 @@ public sealed record Opening(Box Box, Wall Wall, Length Offset, Length Sill)
 
     /// <summary>The top of the rough opening above the wall's bottom: where the header's underside is.</summary>
     public Length Top => Sill + Height;
+
+    /// <summary>What fills it (deck-and-porch §5.2): as stored, or — when nothing is said — glass in a window and solid in a door.</summary>
+    public OpeningFill Fill => Box.Opening ?? (Kind == OpeningKind.Door ? OpeningFill.Solid : OpeningFill.Glass);
 
     /// <summary>A door when it comes down to the wall's bottom, and a window otherwise.</summary>
     public OpeningKind Kind => Sill == Length.Zero ? OpeningKind.Door : OpeningKind.Window;

@@ -144,6 +144,12 @@ public static class SceneWriter
         WriteCode(writer, sketch.Code);
         WriteSite(writer, sketch.Site);
 
+        // The furniture marks (format version 14), always written.
+        writer.WriteStartObject(SceneNames.Furniture);
+        writer.WriteString(SceneNames.FurnitureKindName, SceneNames.Spell(SceneNames.FurnitureKinds, sketch.Furniture.Kind));
+        writer.WriteBoolean(SceneNames.Anchored, sketch.Furniture.Anchored);
+        writer.WriteEndObject();
+
         writer.WriteEndObject();
     }
 
@@ -174,6 +180,24 @@ public static class SceneWriter
         WriteOptionalNumber(writer, SceneNames.SiteFrostDepth, site.FrostDepth?.Units);
         WriteOptionalNumber(writer, SceneNames.SiteBuildingWidth, site.BuildingWidth?.Units);
         WriteOptionalNumber(writer, SceneNames.SiteRoofLiveLoad, site.RoofLiveLoadPsf);
+        WriteOptionalNumber(writer, SceneNames.SiteSoilBearing, site.SoilBearingPsf);
+        writer.WriteNumber(SceneNames.SiteNorth, site.North.Arcseconds);
+        if (site.Underlay is { } underlay)
+        {
+            writer.WriteStartObject(SceneNames.Underlay);
+            writer.WriteString(SceneNames.Asset, underlay.Asset);
+            writer.WriteString(SceneNames.Name, underlay.Name);
+            WritePixel(writer, SceneNames.ImageA, underlay.ImageA);
+            WritePixel(writer, SceneNames.ImageB, underlay.ImageB);
+            WritePoint(writer, SceneNames.WorldA, underlay.WorldA);
+            WritePoint(writer, SceneNames.WorldB, underlay.WorldB);
+            writer.WriteNumber(SceneNames.Distance, underlay.Distance.Units);
+            writer.WriteEndObject();
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.Underlay);
+        }
         if (site.Source is { } source)
         {
             writer.WriteStartObject(SceneNames.SiteSource);
@@ -186,6 +210,141 @@ public static class SceneWriter
             writer.WriteNull(SceneNames.SiteSource);
         }
 
+        writer.WriteEndObject();
+    }
+
+    /// <summary>A deck's inputs (format version 13), or <c>"deck": null</c>.</summary>
+    private static void WriteDeck(Utf8JsonWriter writer, DeckInputs? deck)
+    {
+        if (deck is null)
+        {
+            writer.WriteNull(SceneNames.Deck);
+            return;
+        }
+
+        writer.WriteStartObject(SceneNames.Deck);
+        writer.WriteString(SceneNames.JoistDirection, SceneNames.Spell(SceneNames.JoistDirections, deck.JoistDirection));
+        writer.WriteNumber(SceneNames.JoistSpacing, deck.JoistSpacing.Units);
+        writer.WriteString(SceneNames.Joist, deck.Joist);
+        WriteBeam(writer, SceneNames.Beam, deck.Beam);
+        writer.WriteString(SceneNames.Post, deck.Post);
+        writer.WriteNumber(SceneNames.PostCount, deck.PostCount);
+        writer.WriteNumber(SceneNames.Cantilever, deck.Cantilever.Units);
+        writer.WriteString(SceneNames.Decking, deck.Decking);
+        writer.WriteNumber(SceneNames.DeckingGap, deck.DeckingGap.Units);
+        writer.WriteBoolean(SceneNames.Blocking, deck.Blocking);
+        WriteOptionalText(writer, SceneNames.Supports, deck.Supports);
+        WriteOptionalText(writer, SceneNames.Species, deck.Species);
+        WriteOptionalNumber(writer, SceneNames.FootingDepth, deck.FootingDepth?.Units);
+        writer.WriteStartArray(SceneNames.Hardware);
+        foreach (HardwareItem item in deck.Hardware)
+        {
+            writer.WriteStartObject();
+            writer.WriteString(SceneNames.Name, item.Name);
+            writer.WriteNumber(SceneNames.Quantity, item.Quantity);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+        if (deck.Guard is { } guard)
+        {
+            writer.WriteStartObject(SceneNames.Guard);
+            writer.WriteNumber(SceneNames.Height, guard.Height.Units);
+            writer.WriteNumber(SceneNames.GuardPostSpacing, guard.PostSpacing.Units);
+            writer.WriteNumber(SceneNames.BalusterGap, guard.BalusterGap.Units);
+            writer.WriteNumber(SceneNames.BottomClearance, guard.BottomClearance.Units);
+            writer.WriteString(SceneNames.Post, guard.Post);
+            writer.WriteString(SceneNames.Rail, guard.Rail);
+            writer.WriteString(SceneNames.Cap, guard.Cap);
+            writer.WriteString(SceneNames.Baluster, guard.Baluster);
+            writer.WriteEndObject();
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.Guard);
+        }
+
+        if (deck.Stair is { } stair)
+        {
+            writer.WriteStartObject(SceneNames.Stair);
+            writer.WriteString(SceneNames.Edge, SceneNames.Spell(SceneNames.DeckEdges, stair.Edge));
+            writer.WriteNumber(SceneNames.At, stair.At.Units);
+            writer.WriteNumber(SceneNames.StairWidth, stair.Width.Units);
+            writer.WriteNumber(SceneNames.Run, stair.Run.Units);
+            WriteOptionalNumber(writer, SceneNames.Risers, stair.Risers);
+            writer.WriteNumber(SceneNames.Stringers, stair.Stringers);
+            writer.WriteString(SceneNames.Stringer, stair.Stringer);
+            writer.WriteNumber(SceneNames.TreadBoards, stair.TreadBoards);
+            writer.WriteEndObject();
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.Stair);
+        }
+
+        writer.WriteEndObject();
+    }
+
+    private static void WriteBeam(Utf8JsonWriter writer, string name, BeamSpec beam)
+    {
+        writer.WriteStartObject(name);
+        writer.WriteNumber(SceneNames.Plies, beam.Plies);
+        writer.WriteString(SceneNames.Lumber, beam.Lumber);
+        writer.WriteEndObject();
+    }
+
+    /// <summary>A shed roof's inputs (format version 13), or <c>"roof": null</c>. The rise is the box's depth.</summary>
+    private static void WriteRoof(Utf8JsonWriter writer, RoofInputs? roof)
+    {
+        if (roof is null)
+        {
+            writer.WriteNull(SceneNames.Roof);
+            return;
+        }
+
+        writer.WriteStartObject(SceneNames.Roof);
+        writer.WriteNumber(SceneNames.RafterSpacing, roof.RafterSpacing.Units);
+        writer.WriteString(SceneNames.Rafter, roof.Rafter);
+        writer.WriteString(SceneNames.Ledger, roof.Ledger);
+        writer.WriteNumber(SceneNames.Overhang, roof.Overhang.Units);
+        writer.WriteBoolean(SceneNames.Blocking, roof.Blocking);
+        WriteOptionalText(writer, SceneNames.Sheathing, roof.Sheathing);
+        writer.WriteStartObject(SceneNames.Roofing);
+        writer.WriteString(SceneNames.Name, roof.Roofing.Name);
+        WriteOptionalNumber(writer, SceneNames.Coverage, roof.Roofing.Coverage);
+        writer.WriteNumber(SceneNames.Waste, roof.Roofing.Waste);
+        writer.WriteEndObject();
+        writer.WriteStartObject(SceneNames.LowEnd);
+        switch (roof.LowEnd)
+        {
+            case WallLowEnd wall:
+                writer.WriteString(SceneNames.Kind, SceneNames.LowEndWall);
+                WriteId(writer, SceneNames.LowEndWall, wall.Wall.Value);
+                break;
+
+            case BeamLowEnd beam:
+                writer.WriteString(SceneNames.Kind, SceneNames.LowEndBeam);
+                WriteBeam(writer, SceneNames.Beam, beam.Beam);
+                writer.WriteString(SceneNames.Post, beam.Post);
+                writer.WriteNumber(SceneNames.PostCount, beam.PostCount);
+                break;
+        }
+
+        writer.WriteEndObject();
+        writer.WriteEndObject();
+    }
+
+    /// <summary>An opening's fill (format version 13), or <c>"opening": null</c> for a box that is not an opening.</summary>
+    private static void WriteOpening(Utf8JsonWriter writer, OpeningFill? fill)
+    {
+        if (fill is not { } value)
+        {
+            writer.WriteNull(SceneNames.Opening);
+            return;
+        }
+
+        writer.WriteStartObject(SceneNames.Opening);
+        writer.WriteString(SceneNames.Fill, SceneNames.Spell(SceneNames.Fills, value));
         writer.WriteEndObject();
     }
 
@@ -351,6 +510,36 @@ public static class SceneWriter
                 WritePoint(writer, SceneNames.Position, node.Position);
                 break;
 
+            case Boundary boundary:
+                WritePoint(writer, SceneNames.Start, boundary.Start);
+                writer.WriteStartArray(SceneNames.Courses);
+                foreach (Course course in boundary.Courses)
+                {
+                    writer.WriteStartObject();
+                    writer.WriteStartObject(SceneNames.BearingName);
+                    writer.WriteString(SceneNames.From, SceneNames.Spell(SceneNames.Meridians, course.Bearing.From));
+                    writer.WriteNumber(SceneNames.AngleName, course.Bearing.Angle.Arcseconds);
+                    writer.WriteString(SceneNames.Toward, SceneNames.Spell(SceneNames.Turns, course.Bearing.Toward));
+                    writer.WriteEndObject();
+                    writer.WriteNumber(SceneNames.Distance, course.Distance.Units);
+                    if (course.Setback is { } setback)
+                    {
+                        writer.WriteStartObject(SceneNames.SetbackName);
+                        writer.WriteNumber(SceneNames.Distance, setback.Distance.Units);
+                        writer.WriteString(SceneNames.Kind, SceneNames.Spell(SceneNames.SetbackKinds, setback.Kind));
+                        writer.WriteEndObject();
+                    }
+                    else
+                    {
+                        writer.WriteNull(SceneNames.SetbackName);
+                    }
+
+                    writer.WriteEndObject();
+                }
+
+                writer.WriteEndArray();
+                break;
+
             case Segment segment:
                 WriteId(writer, SceneNames.Start, segment.Start.Value);
                 WriteId(writer, SceneNames.End, segment.End.Value);
@@ -366,6 +555,9 @@ public static class SceneWriter
                 WritePart(writer, box.Part);
                 WriteWallInputs(writer, box.WallInputs);
                 WriteRoom(writer, box.Room);
+                WriteDeck(writer, box.Deck);
+                WriteRoof(writer, box.Roof);
+                WriteOpening(writer, box.Opening);
                 WriteCuts(writer, box.Cuts);
                 break;
 
@@ -464,6 +656,18 @@ public static class SceneWriter
         WriteOptionalText(writer, SceneNames.Grain, part.Grain is { } grain ? SceneNames.Of(grain) : null);
         WriteOptionalText(writer, SceneNames.ShowFace, part.ShowFace is { } face ? SceneNames.Of(face) : null);
 
+        // A drawer mark (format version 14), or "drawer": null.
+        if (part.Drawer is { } drawer)
+        {
+            writer.WriteStartObject(SceneNames.Drawer);
+            writer.WriteNumber(SceneNames.Extension, drawer.Extension.Units);
+            writer.WriteEndObject();
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.Drawer);
+        }
+
         writer.WriteEndObject();
     }
 
@@ -525,6 +729,7 @@ public static class SceneWriter
         Dimension => SceneNames.Dimension,
         Note => SceneNames.NoteType,
         Strut => SceneNames.StrutType,
+        Boundary => SceneNames.BoundaryType,
         _ => throw Unwritable(entity),
     };
 
@@ -840,6 +1045,14 @@ public static class SceneWriter
     // ---------------------------------------------------------------------------------------
     // Primitives
     // ---------------------------------------------------------------------------------------
+
+    private static void WritePixel(Utf8JsonWriter writer, string name, Pixel pixel)
+    {
+        writer.WriteStartObject(name);
+        writer.WriteNumber(SceneNames.X, pixel.X);
+        writer.WriteNumber(SceneNames.Y, pixel.Y);
+        writer.WriteEndObject();
+    }
 
     private static void WritePoint(Utf8JsonWriter writer, string name, Point2 point)
     {

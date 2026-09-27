@@ -178,7 +178,7 @@
       "title": "The project is a documented zip container",
       "acceptance": "A saved project opens with a standard zip tool and contains manifest.json, scene.json, a thumbnail and an assets directory, matching the format document committed in the repository.",
       "milestone": "M2",
-      "issue": 6,
+      "issue": 224,
       "kind": "unit"
     },
     {
@@ -233,6 +233,42 @@
       "acceptance": "The shipped data files load through the same reader the app uses, a malformed or duplicate entry fails the load with the file and entry named, and no code change is needed to add a nominal size.",
       "milestone": "M3",
       "issue": 7,
+      "kind": "unit"
+    },
+    {
+      "id": "MAT-006",
+      "area": "materials",
+      "title": "Wood species properties are cited per row and never guessed",
+      "acceptance": "The shipped species table carries specific gravity and bending E at 12 % moisture for each listed species exactly as the USDA Wood Handbook (FPL-GTR-282) Table 5–3b prints it, with the page per row and the table's footnotes; a part's species is picked from it or typed as free text, and free text is never matched to a row.",
+      "milestone": "M9",
+      "issue": 216,
+      "kind": "unit"
+    },
+    {
+      "id": "FURN-001",
+      "area": "furniture",
+      "title": "A shelf's sag is estimated from the Wood Handbook, with the load and limit the person's",
+      "acceptance": "A part lying flat and jointed by a dado or butt at both ends of one horizontal axis is a shelf; its sag is Wood Handbook Eq. 9-2 with Table 9-1 (uniform load, simply supported), E from Table 5–3b raised 10 % with G from Table 5–1 where it has a row, bending only with the printed E where it has none, doubled for the long term per chapter 5's creep sentence; the load starts at KCMA's 15 lb/sq ft, attributed; with no limit typed there is no verdict; a sheet good or an untabled species says why there is no estimate. A 3/4 x 11 1/4 northern red oak shelf spanning 36\" reads 0.0325\" now and 0.0651\" long-term.",
+      "milestone": "M9",
+      "issue": 217,
+      "kind": "unit"
+    },
+    {
+      "id": "FURN-002",
+      "area": "furniture",
+      "title": "A drawer is a marked part's jointed group, and the piece's kind is said, never detected",
+      "acceptance": "Parts joined to one another form a group, derived from the joints (on the DIY coffee table: the carcass and each drawer box); a part marked a drawer with how far it opens makes its group a drawer, a second mark in the same group is said and not read; the design says whether it is clothing storage, a bunk bed or neither, and whether it is anchored, in scene format 14.",
+      "milestone": "M9",
+      "issue": 218,
+      "kind": "unit"
+    },
+    {
+      "id": "FURN-003",
+      "area": "furniture",
+      "title": "A clothing storage unit's tip-over is estimated the way 88 FR 28405 describes ASTM F2057-23's tests",
+      "acceptance": "For a design said to be clothing storage, napkin gives three static margins about the front floor edge — every drawer open and filled at 8.5 lb/ft³; a 10 lbf pull at the highest handhold up to 56\"; 60 lb on the front edge of the worst open drawer with the unit tilted on a 0.43\" block — each 'stands, with N lb·in to spare' or 'tips, short by N lb·in', approximating the test as described and never 'complies'; weights are part volumes × Wood Handbook density (Eq. 4-14); any part without a density gives no margins and says which; the F2057-23 sec. 1.1 scope flag (27 in, 30 lb, 3.2 ft³) shows whether or not the design is marked; anchored units are estimated anyway and say so. The hand-worked oak chest reads 533.83, 275.98 and −163.91 lb·in.",
+      "milestone": "M9",
+      "issue": 219,
       "kind": "unit"
     },
     {
@@ -627,8 +663,8 @@
       "area": "site-plan",
       "title": "A survey underlay calibrates from two known points",
       "acceptance": "After placing an image, clicking two points a known distance apart and entering that distance, a measurement between those two points on the canvas reads the entered value.",
-      "milestone": "backlog",
-      "issue": 21,
+      "milestone": "M13",
+      "issue": 224,
       "kind": "unit"
     },
     {
@@ -636,8 +672,8 @@
       "area": "site-plan",
       "title": "Property lines and setbacks measure against structures",
       "acceptance": "Property lines and their setback offsets draw over the underlay, and the distance from a placed structure to each line is reported in feet, inches and fractions.",
-      "milestone": "backlog",
-      "issue": 21,
+      "milestone": "M13",
+      "issue": 223,
       "kind": "unit"
     },
     {
@@ -645,8 +681,17 @@
       "area": "site-plan",
       "title": "North arrow and sheet orientation are stored with the project",
       "acceptance": "The site plan's north direction is stored as an exact Angle in the project file and survives save and reopen.",
-      "milestone": "backlog",
-      "issue": 21,
+      "milestone": "M13",
+      "issue": 223,
+      "kind": "unit"
+    },
+    {
+      "id": "SITE-004",
+      "area": "site",
+      "title": "Property lines are entered as the survey's courses and their closure is reported, never adjusted",
+      "acceptance": "A boundary is a point of beginning and at least three courses, each a quadrant bearing (N/S, 0-90 degrees exact in arcseconds, E/W) and a distance as the survey prints them; corners are derived from the running sum and rounded to the grid once each; a 100' x 50' lot of right-angle courses closes exactly, and an open traverse reports its closure error; the boundary and the site's north round-trip in scene format 15.",
+      "milestone": "M13",
+      "issue": 223,
       "kind": "unit"
     },
     {
@@ -692,6 +737,42 @@
       "acceptance": "A framed deck produces a cut list and a materials list through the same code path as a furniture project, with framing and decking members resolved through the materials library.",
       "milestone": "backlog",
       "issue": 20,
+      "kind": "unit"
+    },
+    {
+      "id": "ROOF-001",
+      "area": "deck",
+      "title": "A shed porch roof's rafters are counted and cut to an exact length",
+      "acceptance": "A 144 x 120 roof box at 5 in 12 over the deck, 2x8 rafters at 16\" with a 2x8 ledger and a 12\" overhang, gives 10 rafters of exactly 141 3/8\" (the 12:5:13 triangle, no approximation); an inexact pitch rounds the hypotenuse up once to the grid and says so with an approximate sign; the rafter span is checked against the pack's rafter table at the site's ground snow load, or says what is missing.",
+      "milestone": "M11",
+      "issue": 202,
+      "kind": "unit"
+    },
+    {
+      "id": "ROOF-002",
+      "area": "deck",
+      "title": "The rafter's cuts and the ledger's height are stated exactly in plain words",
+      "acceptance": "For the 5 in 12 roof the height above plate is 6 19/48\", the ledger's top 55 37/48\" above the plates, and the cuts sentence gives the plumb cut at 5 and 12, the birdsmouth plumb line 10'-8 3/8\" along the top edge with a 3 1/2\" seat and a notch about 1 7/16\" deep, and the tail 1'-1\" further on.",
+      "milestone": "M11",
+      "issue": 202,
+      "kind": "unit"
+    },
+    {
+      "id": "ROOF-003",
+      "area": "deck",
+      "title": "Sheathing and roofing are counted from the roof's sloped area",
+      "acceptance": "The 144 x 141 3/8 slope is 141.4 sq ft: 5 sheets of 7/16 OSB (by area, with a note that a layout may need more) and 5 units of shingles at 33 sq ft a unit; with 10 % waste and no coverage typed it says 155.5 sq ft and asks for the coverage; a beam-and-posts low end lists the beam and posts with the posts' length.",
+      "milestone": "M11",
+      "issue": 202,
+      "kind": "unit"
+    },
+    {
+      "id": "ROOF-004",
+      "area": "deck",
+      "title": "The porch's glazing is measured against the 40 % sunroom line",
+      "acceptance": "The porch of the worked example is 10.4 % glass under its roof (walls gross, the side walls' rake triangles and the roof's sloped area, glass openings only), 25.5 % with every screen glass, and over the line only when glass exceeds 40 %; with no roof drawn it says to draw the roof first; the line cites IRC 2021 R202 and never classifies.",
+      "milestone": "M11",
+      "issue": 201,
       "kind": "unit"
     },
     {
@@ -1070,6 +1151,42 @@
       "acceptance": "With the shipped CT pack chosen, the site section offers a town picker; a typed building width stays; choosing Bloomfield with the pointer and the keyboard shows its values and where Connecticut prints them; Use these values sets ground snow load 30 psf, ultimate wind speed 120 mph and seismic design category B, keeps the width, fills the site fields and records the source as CT 2022, Bloomfield, Appendix AY p. 157.",
       "milestone": "backlog",
       "issue": 210,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DECK-01",
+      "area": "ui",
+      "title": "Drag a deck out from the house, type its posts and buy its frame",
+      "acceptance": "Window in an existing wall sample: Shift+D and a drag from the existing wall's south face out 8 ft draw Deck 1, 8'-0\" square and 3'-0\" above grade, its north edge the ledger; the panel's frame line reads 7 joists 2x8 at 16\" and a (2) 2x10 beam on 3 posts spanning 3'-6 3/4\"; typing 2 as the post count respans it to 7'-5\"; Ctrl/Cmd+Shift+L shows a Deck section with the deck's line and its 2x8 and 5/4x6 boards.",
+      "milestone": "M11",
+      "issue": 197,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-DECK-02",
+      "area": "ui",
+      "title": "Tick a deck's guard and stair and read them on the shopping list",
+      "acceptance": "With a deck drawn against the house, ticking Guard and Stair in the panel lays out the guard's posts and balusters and the stair; Ctrl/Cmd+Shift+L shows the Deck section with the guard's posts and balusters and the stair's stringers; changing the post count changes the beam's span sentence.",
+      "milestone": "M11",
+      "issue": 204,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PORCH-01",
+      "area": "ui",
+      "title": "Roof a deck, type its pitch, buy its rafters and undo it",
+      "acceptance": "With a 96 x 96 deck against the house, Shift+R and a click on the deck make Roof 1 at 4 in 12 on a (2) 2x10 beam 8'-0\" above the decking, and the Sunroom test says no wall stands on the deck; typing 5 in 12 in the pitch box sets a 3'-4\" rise and 7 rafters 2x8 of 9'-7 3/8\"; Ctrl/Cmd+Shift+L shows a Roof section buying 2x8, 2x10 and 4x4; Edit > Undo takes back the pitch, then the roof, and the deck stays.",
+      "milestone": "M11",
+      "issue": 203,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PORCH-02",
+      "area": "ui",
+      "title": "Build the worked example's porch end to end",
+      "acceptance": "From a new sheet: an existing house wall, a 12 x 10 deck against it, a front wall drawn with W on the deck's far edge (standing on the decking) and marked bearing, a window in it, then Draw > Porch roof on the deck and 5 in 12: the panel's rafter line reads 10 rafters of 11'-9 3/8\" and the roof's low end is the front wall; the shopping list's Roof section buys them.",
+      "milestone": "M11",
+      "issue": 204,
       "kind": "workflow"
     },
     {
@@ -1775,6 +1892,24 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-FURN-01",
+      "area": "ui",
+      "title": "Pick a part's species from the cited table, type one it does not have, and undo",
+      "acceptance": "Coffee table sample: select a leg; choosing Oak, northern red from the species picker with the pointer sets the leg's species and the panel says specific gravity 0.63 and bending E 1,820,000 lbf/in² at 12 % moisture with Table 5–3b p. 5–10; typing red oak and Enter keeps it as typed, clears the picker and says it is not interpreted; Edit > Undo puts northern red oak back.",
+      "milestone": "M9",
+      "issue": 216,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-FURN-02",
+      "area": "ui",
+      "title": "A drawer bottom's sag, estimated once it is solid oak, judged once a limit is typed",
+      "acceptance": "DIY coffee table with drawers: with Drawer bottom, A selected, the Shelf block says 1/4 plywood is a sheet good and is not estimated; clearing its stock and picking Oak, northern red gives about 0.03\" now and 0.06\" after years under KCMA's 15 lb/sq ft; typing a 1/8\" limit says within it; typing 40 lb/sq ft gives about 0.17\" after years, over it.",
+      "milestone": "M9",
+      "issue": 217,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-SET-01",
       "area": "ui",
       "title": "A setting changed from the View menu is kept by a new window",
@@ -1880,6 +2015,24 @@
       "acceptance": "Mark a wall Existing from the Edit menu, put a new window in it, then Demolish the wall from the panel with the keyboard: plan and 3D draw it faint, then long-dashed and crossed; the shopping list says only New is listed and counts the wall and its frame under Demolition; undo.",
       "milestone": "M8",
       "issue": 160,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SITE-01",
+      "area": "ui",
+      "title": "Type a lot as the survey prints it and read each line's distance from the house",
+      "acceptance": "On a new sheet with a 16 ft wall along y = 0, Project > Site plan opens a window; typing the point of beginning (-10', -25') and four courses (N 0 E 50' side 10', N 90 E 40' rear 20', S 0 E 50', N 90 W 40' front 25') and Apply adds the lot in one step: it closes, and the lines read 2'-0\" short of the 10'-0\" side setback by 8'-0\", 24'-8 1/2\" clear of the rear, 22'-0\" to line 3, and 25'-0\" clear of the front; a 91-degree bearing is refused by line and changes nothing; Edit > Undo takes the lot off.",
+      "milestone": "M13",
+      "issue": 223,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SITE-02",
+      "area": "ui",
+      "title": "Put a survey image under the plan, calibrate it by two clicks, save and reopen",
+      "acceptance": "On a new sheet, Project > Site plan takes a PNG (through the same seam the file picker's handler calls): it lies under the plan an inch a pixel from the origin, its bytes kept by SHA-256; typing 20' and Calibrate, then clicking two points on the plan 20\" apart, calibrates it so the image measures 20'-0\" between them and the window says 'Survey underlay: survey.png, calibrated to 20'-0\" between two points. This site plan is not a survey.'; Save offers Untitled.napkin, and reopening the project brings back the same calibration and the same image.",
+      "milestone": "M13",
+      "issue": 224,
       "kind": "workflow"
     }
   ]

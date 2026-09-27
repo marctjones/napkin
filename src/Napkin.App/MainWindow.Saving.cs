@@ -121,6 +121,11 @@ public partial class MainWindow
             return false;
         }
 
+        if (path.EndsWith(ProjectFile.Extension, StringComparison.OrdinalIgnoreCase))
+        {
+            return SaveProject(path);
+        }
+
         switch (SceneFileSaver.Save(path, Editor.Sketch))
         {
             case SceneSaved saved:
@@ -131,11 +136,35 @@ public partial class MainWindow
                 UpdateTitle();
                 Editor.Say(
                     EditSeverity.Done,
-                    $"Saved {fileName} in {System.IO.Path.GetDirectoryName(saved.Path)}.");
+                    $"Saved {fileName} in {System.IO.Path.GetDirectoryName(saved.Path)}."
+                    + (Editor.Sketch.Site.Underlay is { } underlay ? $" The survey image {underlay.Name} is not kept in a scene file: save as a .napkin project to keep it." : string.Empty));
                 return true;
 
             case SceneNotSaved refused:
                 Editor.Say(EditSeverity.Problem, "Not saved. " + string.Join(" ", refused.Problems));
+                return false;
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>Writes a .napkin project: the drawing and the survey image it names (container version 2).</summary>
+    bool SaveProject(string path)
+    {
+        switch (ProjectFile.Save(path, Editor.Sketch, assets: Editor.Design.Assets))
+        {
+            case Saved:
+                Editor.MarkSaved();
+                _documentPath = System.IO.Path.GetFullPath(path);
+                string fileName = System.IO.Path.GetFileName(path);
+                DesignText.Text = $"{fileName} — {_documentPath}";
+                UpdateTitle();
+                Editor.Say(EditSeverity.Done, $"Saved {fileName} in {System.IO.Path.GetDirectoryName(_documentPath)}.");
+                return true;
+
+            case NotSaved refused:
+                Editor.Say(EditSeverity.Problem, "Not saved. " + string.Join(" ", refused.Problems.Select(problem => problem.Message)));
                 return false;
 
             default:
@@ -166,8 +195,10 @@ public partial class MainWindow
             return System.IO.Path.GetFileName(path);
         }
 
+        // A new design is saved as a .napkin project (DESIGN.md §6.4), the file that can carry a survey
+        // image with it; a design opened from a file keeps that file's name and kind.
         string name = Editor.Design.Name;
-        return name.EndsWith(".json", StringComparison.OrdinalIgnoreCase) ? name : name + ".scene.json";
+        return name.EndsWith(".json", StringComparison.OrdinalIgnoreCase) || name.EndsWith(ProjectFile.Extension, StringComparison.OrdinalIgnoreCase) ? name : name + ProjectFile.Extension;
     }
 
     /// <summary>

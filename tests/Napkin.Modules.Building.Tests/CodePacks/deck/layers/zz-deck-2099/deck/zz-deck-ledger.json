@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "kind": "deck-ledger",
+  "table": "ZZ-DECK-LEDGER",
+  "title": "SYNTHETIC LEDGER FASTENING - NOT CODE VALUES",
+  "source": "zz-synth-base",
+  "location": "synthetic p. 2",
+  "inputs": [
+    {
+      "name": "member",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "2x8",
+        "2x10"
+      ]
+    },
+    {
+      "name": "joistSpan",
+      "type": "length",
+      "band": "upper-bound",
+      "domain": {
+        "min": "1in",
+        "max": "16ft 0in"
+      }
+    }
+  ],
+  "footnotes": [
+    {
+      "id": "a",
+      "text": "SYNTHETIC footnote a: shown with results, not encoded.",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ],
+  "rows": [
+    {
+      "id": "r.2x8.12",
+      "member": "2x8",
+      "joistSpan": "12ft 0in",
+      "fastener": "zz-bolts, staggered",
+      "spacing": "17in",
+      "location": "synthetic p. 5",
+      "footnotes": [
+        "a"
+      ]
+    },
+    {
+      "id": "r.2x8.16",
+      "member": "2x8",
+      "joistSpan": "16ft 0in",
+      "fastener": "zz-bolts, staggered",
+      "spacing": "11in",
+      "location": "synthetic p. 5",
+      "footnotes": [
+        "a"
+      ]
+    },
+    {
+      "id": "r.2x10.12",
+      "member": "2x10",
+      "joistSpan": "12ft 0in",
+      "fastener": "zz-bolts, staggered",
+      "spacing": "17in",
+      "location": "synthetic p. 5",
+      "footnotes": [
+        "a"
+      ]
+    },
+    {
+      "id": "r.2x10.16",
+      "member": "2x10",
+      "joistSpan": "16ft 0in",
+      "fastener": "zz-bolts, staggered",
+      "spacing": "11in",
+      "location": "synthetic p. 5",
+      "footnotes": [
+        "a"
+      ]
+    }
+  ]
+}

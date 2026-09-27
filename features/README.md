@@ -56,7 +56,7 @@ id across files.
   exactly three digits. Regular expression: `^[A-Z]{2,5}-\d{3}$`.
 - **GUI workflows: `GUI-<AREA>-<NN>`** — `GUI`, the workflow family, and exactly two digits.
   Regular expression: `^GUI-[A-Z]{2,6}-\d{2}$`. The families in `catalog.json` are `VIEW`, `DRAW`,
-  `CUT`, `CHECK`, `BRACE`, `JOIN`, `SET`, `RENO`, `SKETCH`, `PARTS`, `WALL`, `DIY` and `STRUT`.
+  `CUT`, `CHECK`, `BRACE`, `JOIN`, `SET`, `RENO`, `SKETCH`, `PARTS`, `WALL`, `DIY`, `STRUT` and `DECK`.
   `SHELL` belongs to `features/gui-shell.json` and `ASSEM` — parts turned and set against one
   another in the 3D view — to `features/assembly.json`; neither is used in `catalog.json`.
 - The area token in an id is a stable abbreviation and does not have to equal the `area` field —

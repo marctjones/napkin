@@ -160,6 +160,41 @@ public partial class MainWindow
 
     void OnCodeClicked(object? sender, RoutedEventArgs e) => OpenCode();
 
+    SitePlanWindow? _siteWindow;
+
+    /// <summary>The site plan window, when it is open.</summary>
+    public SitePlanWindow? SitePlanSite => _siteWindow;
+
+    /// <summary>Project → Site plan…, for the GUI suite.</summary>
+    public MenuItem SitePlanMenuEntry => SitePlanMenuItem;
+
+    /// <summary>Opens Project → Site plan (permit-set §5), or brings it forward.</summary>
+    public SitePlanWindow OpenSitePlan()
+    {
+        if (_siteWindow is null)
+        {
+            _siteWindow = new SitePlanWindow
+            {
+                ApplyRequest = (request, what) => Editor.Apply(request, what),
+                SiteLayer = () => (Editor.LayerNamed(BuildingLayers.Site, out Request? add), add),
+                AddUnderlay = (bytes, name) => Editor.AddUnderlay(bytes, name),
+                ArmCalibration = done =>
+                {
+                    Activate();
+                    DrawingCanvas.ArmCalibration(done);
+                },
+            };
+            _siteWindow.Closed += (_, _) => _siteWindow = null;
+        }
+
+        _siteWindow.ShowDesign(CurrentDesign);
+        _siteWindow.Show(this);
+        _siteWindow.Activate();
+        return _siteWindow;
+    }
+
+    void OnSitePlanClicked(object? sender, RoutedEventArgs e) => OpenSitePlan();
+
     /// <summary>Takes the results now on screen as the ones later changes are measured from.</summary>
     void ResetRecompute()
     {

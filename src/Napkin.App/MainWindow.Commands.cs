@@ -48,7 +48,13 @@ public partial class MainWindow
 
     void OnDoorToolClicked(object? sender, RoutedEventArgs e) => ArmOpening(OpeningKind.Door);
 
+    void OnScreenToolClicked(object? sender, RoutedEventArgs e) => ArmOpening(OpeningKind.Window, OpeningFill.Screen);
+
     void OnRoomToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.RoomTool);
+
+    void OnDeckToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.DeckTool);
+
+    void OnRoofToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.RoofTool);
 
     void OnNoteToolClicked(object? sender, RoutedEventArgs e) => Run(EditCommand.NoteTool);
 
@@ -91,6 +97,32 @@ public partial class MainWindow
         FocusDrawing();
     }
 
+    /// <summary>Picks up the deck tool (deck-and-porch §8); decks are drawn in the plan, so the plan comes forward.</summary>
+    public void ArmDeck()
+    {
+        if (!IsShowingPlan)
+        {
+            ShowView(DesignView.Top);
+        }
+
+        DrawingCanvas.ArmDeck();
+        UpdateToolButtons();
+        FocusDrawing();
+    }
+
+    /// <summary>Picks up the porch roof tool (deck-and-porch §8): a click on a deck in the plan roofs it.</summary>
+    public void ArmRoof()
+    {
+        if (!IsShowingPlan)
+        {
+            ShowView(DesignView.Top);
+        }
+
+        DrawingCanvas.ArmRoof();
+        UpdateToolButtons();
+        FocusDrawing();
+    }
+
     /// <summary>Picks up the room tool (renovation-sketches §8); rooms are drawn in the plan, so the plan comes forward.</summary>
     public void ArmRoom()
     {
@@ -125,14 +157,14 @@ public partial class MainWindow
     }
 
     /// <summary>Picks up the opening tool: the next click on a wall in the plan puts a window or door in it.</summary>
-    public void ArmOpening(OpeningKind kind)
+    public void ArmOpening(OpeningKind kind, OpeningFill? fill = null)
     {
         if (!IsShowingPlan)
         {
             ShowView(DesignView.Top);
         }
 
-        DrawingCanvas.ArmOpening(kind);
+        DrawingCanvas.ArmOpening(kind, fill);
         UpdateToolButtons();
         FocusDrawing();
     }
@@ -323,6 +355,14 @@ public partial class MainWindow
 
             case EditCommand.RoomTool:
                 ArmRoom();
+                return true;
+
+            case EditCommand.DeckTool:
+                ArmDeck();
+                return true;
+
+            case EditCommand.RoofTool:
+                ArmRoof();
                 return true;
 
             case EditCommand.NoteTool:
