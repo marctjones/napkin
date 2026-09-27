@@ -67,6 +67,11 @@ the finished wall.
     LGPL and would clear the license bar, but is a C++ library requiring native interop, which
     §11's .NET-native rule excludes. The first betas use direct geometry (§5.1); the solver is
     its own workstream (#28).
+- **Transcribed reference data (decided).** napkin may ship transcribed code tables (Marc,
+  2026-09-25, #157) and, by the same stance, the tables of AWC's *DCA 6* deck guide (Marc,
+  2026-09-27, [`docs/design/deck-guide-pack.md`](./docs/design/deck-guide-pack.md) decision 6). Each
+  table is read from the primary source in the task that writes it and cited beside the data
+  (CLAUDE.md, "Data and citations").
 
 ## 3. Target use cases (drawn from the actual project list)
 

@@ -1,6 +1,8 @@
 # The deck guide pack: DCA 6 under the Connecticut pack
 
-Status: **DRAFT awaiting Marc's sign-off.**
+Status: **Signed off by Marc 2026-09-27 with the recommended decisions (§8)**, including decision 6:
+shipping transcribed DCA 6 tables, cited to AWC's document, is within the #157 stance (recorded in
+[`DESIGN.md`](../../DESIGN.md) §2.1).
 
 Design note written by Fable per [`PLAN.md`](../../PLAN.md) for Marc's decision of 2026-09-26 on
 #209, **"Decks only via DCA 6"**: the deck checks' real data comes from the American Wood
