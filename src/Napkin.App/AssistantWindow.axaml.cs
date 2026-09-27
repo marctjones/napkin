@@ -3,17 +3,20 @@ using System.Globalization;
 
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 
 using Napkin.App.Settings;
 using Napkin.Assistant.LocalServer;
+using Napkin.Assistant.Mlx;
 
 namespace Napkin.App;
 
 /// <summary>
 /// <em>Assistant &#x2192; Where the model runs&#x2026;</em> (docs/design/llm-assistant.md &#xA7;8, issue
-/// #231): none, or a program on this machine at a loopback address; the models it reports, with the
-/// size, quantization and license it reports; a Test that asks for "ok"; napkin's memory rule; how
-/// to get a model; and the Ollama-cloud sentence.
+/// #231; the MLX choice, docs/design/mlx-runtime.md &#xA7;4.4, #241): none, a program on this machine
+/// at a loopback address, or a model run inside napkin by MLX on this Mac; the models a program
+/// reports, with the size, quantization and license it reports, or a folder's own; a Test that
+/// asks for "ok"; napkin's memory rule; how to get a model; and the Ollama-cloud sentence.
 /// </summary>
 /// <remarks>
 /// Not modal, like the code window. Nothing is saved until <em>Use these settings</em>; the owner
@@ -33,6 +36,7 @@ public partial class AssistantWindow : Window
     private readonly CancellationTokenSource _closing = new();
     private ImmutableArray<InstalledModel> _listed = [];
     private int _busy;
+    private bool _mlxProbed;
 
     /// <summary>An empty dialog, for the designer and for a test.</summary>
     public AssistantWindow()
@@ -49,6 +53,16 @@ public partial class AssistantWindow : Window
 
     /// <summary>How a local program is reached: null for napkin's own loopback-only handler; the GUI suite sets a stub.</summary>
     public HttpMessageHandler? Http { get; set; }
+
+    /// <summary>The MLX bridge Test uses: null for the real one (<see cref="NativeMlx"/>); the GUI suite sets a fake.</summary>
+    public INativeMlx? Mlx { get; set; }
+
+    /// <summary>
+    /// Why MLX cannot run in this process, or null when it can: <see cref="MlxAvailability.ForThisProcess"/>
+    /// by default. The GUI suite overrides it so the dialog's third radio is enabled on every CI
+    /// platform, not only Apple silicon (docs/design/mlx-runtime.md &#xA7;7.3).
+    /// </summary>
+    public Func<string?> MlxUnavailable { get; set; } = MlxAvailability.ForThisProcess;
 
     /// <summary>Saves the chosen settings and answers the whereabouts line the note will now show; set by the owner.</summary>
     public Func<AssistantSettings, string>? Apply { get; set; }
@@ -77,6 +91,27 @@ public partial class AssistantWindow : Window
 
     /// <summary>The local-program choice.</summary>
     public RadioButton LocalChoice => LocalRadio;
+
+    /// <summary>The MLX choice: "In napkin, on this Mac (MLX)".</summary>
+    public RadioButton MlxChoice => MlxRadio;
+
+    /// <summary>Why MLX is disabled, as shown; empty when it is available.</summary>
+    public string MlxUnavailableLine => MlxUnavailableText.IsVisible ? MlxUnavailableText.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The model folder field.</summary>
+    public TextBox MlxFolderField => MlxFolderBox;
+
+    /// <summary>What the folder says about itself, or the refusal naming what it is missing.</summary>
+    public string MlxFolderLine => MlxFolderText.IsVisible ? MlxFolderText.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The memory line, from the bridge's device probe.</summary>
+    public string MlxMemoryLine => MlxMemoryText.IsVisible ? MlxMemoryText.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The MLX Test button.</summary>
+    public Button MlxTest => MlxTestButton;
+
+    /// <summary>What the last MLX Test reported, or is reporting while loading, as shown.</summary>
+    public string MlxTestLine => MlxTestText.IsVisible ? MlxTestText.Text ?? string.Empty : string.Empty;
 
     /// <summary>The address field.</summary>
     public TextBox AddressField => AddressBox;
@@ -126,17 +161,82 @@ public partial class AssistantWindow : Window
         ArgumentNullException.ThrowIfNull(settings);
         NoneRadio.IsChecked = settings.Provider == AssistantProvider.None;
         LocalRadio.IsChecked = settings.Provider == AssistantProvider.LocalServer;
+        string? mlxRefusal = MlxUnavailable();
+        MlxRadio.IsEnabled = mlxRefusal is null;
+        Say(MlxUnavailableText, mlxRefusal);
+        MlxRadio.IsChecked = settings.Provider == AssistantProvider.Mlx;
         AddressBox.Text = settings.Endpoint ?? LocalEndpoint.OllamaDefault;
         ModelBox.Text = settings.Model ?? string.Empty;
+        MlxFolderBox.Text = settings.ModelFolder ?? string.Empty;
         TemperatureBox.Text = settings.Temperature.ToString(CultureInfo.InvariantCulture);
         LocalPanel.IsEnabled = LocalRadio.IsChecked == true;
+        MlxPanel.IsEnabled = MlxRadio.IsChecked == true && MlxRadio.IsEnabled;
+        TemperaturePanel.IsEnabled = LocalPanel.IsEnabled || MlxPanel.IsEnabled;
+        UpdateMlxFolderLine();
     }
 
-    private void OnProviderChanged(object? sender, RoutedEventArgs e) => LocalPanel.IsEnabled = LocalRadio.IsChecked == true;
+    private void OnProviderChanged(object? sender, RoutedEventArgs e)
+    {
+        LocalPanel.IsEnabled = LocalRadio.IsChecked == true;
+        MlxPanel.IsEnabled = MlxRadio.IsChecked == true && MlxRadio.IsEnabled;
+        TemperaturePanel.IsEnabled = LocalPanel.IsEnabled || MlxPanel.IsEnabled;
+        if (MlxPanel.IsEnabled && !_mlxProbed)
+        {
+            _mlxProbed = true;
+            _ = ProbeMlxDeviceAsync();
+        }
+    }
+
+    /// <summary>
+    /// Asks the bridge, off the UI thread since it dlopens the library, what this Mac's Metal device
+    /// and memory are, for the dialog's memory line (docs/design/mlx-runtime.md &#xA7;4.4). A refusal
+    /// (no Metal device, or the bridge would not load) is shown in its place.
+    /// </summary>
+    private async Task ProbeMlxDeviceAsync()
+    {
+        Say(MlxMemoryText, "Checking this Mac…");
+        MlxProbe probe = await Task.Run(() => MlxAvailability.Probe(Mlx ?? new NativeMlx())).ConfigureAwait(true);
+        Say(
+            MlxMemoryText,
+            probe.Device is { } device
+                ? string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"This Mac: {device.MemoryBytes / 1073741824.0:0.#} GiB memory, Metal recommends up to {device.RecommendedWorkingSetBytes / 1073741824.0:0.#} GiB for the GPU (Apple's number); a model's weights plus its working memory must fit (napkin's estimate).")
+                : probe.Refusal);
+    }
+
+    private void OnMlxFolderChanged(object? sender, Avalonia.Controls.TextChangedEventArgs e) => UpdateMlxFolderLine();
+
+    /// <summary>What the typed folder says about itself, or the refusal naming what is wrong with it.</summary>
+    private void UpdateMlxFolderLine() => Say(
+        MlxFolderText,
+        ModelFolder.TryParse(MlxFolderBox.Text, out ModelFolder? folder, out string? refusal) ? folder.Description : refusal);
+
+    private async void OnChooseMlxFolderClicked(object? sender, RoutedEventArgs e)
+    {
+        if (StorageProvider is not { CanOpen: true } storage)
+        {
+            return;
+        }
+
+        IReadOnlyList<IStorageFolder> chosen = await storage.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Choose the model folder",
+            AllowMultiple = false,
+        }).ConfigureAwait(true);
+        if (chosen.Count == 0 || chosen[0].TryGetLocalPath() is not { } path)
+        {
+            return;
+        }
+
+        MlxFolderBox.Text = path;
+    }
 
     private async void OnCheckClicked(object? sender, RoutedEventArgs e) => await CheckAsync().ConfigureAwait(true);
 
     private async void OnTestClicked(object? sender, RoutedEventArgs e) => await TestAsync().ConfigureAwait(true);
+
+    private async void OnMlxTestClicked(object? sender, RoutedEventArgs e) => await MlxTestAsync().ConfigureAwait(true);
 
     private void OnUseClicked(object? sender, RoutedEventArgs e) => UseSettings();
 
@@ -201,6 +301,54 @@ public partial class AssistantWindow : Window
         }
     }
 
+    /// <summary>
+    /// Loads the folder if need be and asks the model to reply "ok", the loading line polled while
+    /// the bridge reads the weights (docs/design/mlx-runtime.md &#xA7;4.4, &#xA7;7.3).
+    /// </summary>
+    public async Task MlxTestAsync()
+    {
+        if (!ModelFolder.TryParse(MlxFolderBox.Text, out ModelFolder? folder, out string? folderWhy))
+        {
+            Say(MlxTestText, folderWhy);
+            return;
+        }
+
+        if (Temperature(out string? temperatureWhy) is not { } temperature)
+        {
+            Say(MlxTestText, temperatureWhy);
+            return;
+        }
+
+        _busy++;
+        MlxModel model = new(Mlx ?? new NativeMlx(), folder, temperature);
+        Say(MlxTestText, model.LoadingLine ?? string.Create(CultureInfo.InvariantCulture, $"loading the model ({folder.WeightBytes / 1e9:0.0} GB)… 0 s"));
+        try
+        {
+            Task<TestResult> testTask = model.TestAsync(_closing.Token);
+            while (!testTask.IsCompleted)
+            {
+                if (model.LoadingLine is { } line)
+                {
+                    Say(MlxTestText, line);
+                }
+
+                await Task.WhenAny(testTask, Task.Delay(100)).ConfigureAwait(true);
+            }
+
+            TestResult result = await testTask.ConfigureAwait(true);
+            Say(MlxTestText, result.Line);
+        }
+        catch (OperationCanceledException)
+        {
+            // The dialog closed while the model was being asked.
+        }
+        finally
+        {
+            model.Dispose();
+            _busy--;
+        }
+    }
+
     /// <summary>Saves the choice through the owner, or says why it cannot be saved.</summary>
     public void UseSettings()
     {
@@ -210,9 +358,14 @@ public partial class AssistantWindow : Window
         {
             settings = new AssistantSettings(
                 AssistantProvider.None,
-                AddressBox.Text?.Trim() is { Length: > 0 } address ? address : LocalEndpoint.OllamaDefault,
-                ModelBox.Text?.Trim() is { Length: > 0 } name ? name : null,
-                Temperature(out _) ?? LocalServerModel.DefaultTemperature);
+                CurrentAddress(),
+                CurrentModelName(),
+                Temperature(out _) ?? LocalServerModel.DefaultTemperature,
+                CurrentMlxFolder());
+        }
+        else if (MlxRadio.IsChecked == true)
+        {
+            settings = MlxChosen(out why);
         }
         else
         {
@@ -228,6 +381,15 @@ public partial class AssistantWindow : Window
         string whereabouts = Apply?.Invoke(settings) ?? string.Empty;
         Say(SavedText, $"Saved. The note now ends: {whereabouts}");
     }
+
+    /// <summary>The typed address, or Ollama's default when nothing was typed.</summary>
+    private string CurrentAddress() => AddressBox.Text?.Trim() is { Length: > 0 } address ? address : LocalEndpoint.OllamaDefault;
+
+    /// <summary>The typed model name, or null.</summary>
+    private string? CurrentModelName() => ModelBox.Text?.Trim() is { Length: > 0 } name ? name : null;
+
+    /// <summary>The typed MLX folder, or null.</summary>
+    private string? CurrentMlxFolder() => MlxFolderBox.Text?.Trim() is { Length: > 0 } folder ? folder : null;
 
     /// <summary>Selecting a row fills the model's name; a model the program says is remote is not taken.</summary>
     private void OnModelChosen(object? sender, SelectionChangedEventArgs e)
@@ -271,7 +433,23 @@ public partial class AssistantWindow : Window
             return null;
         }
 
-        return new AssistantSettings(AssistantProvider.LocalServer, endpoint.ToString(), model, temperature);
+        return new AssistantSettings(AssistantProvider.LocalServer, endpoint.ToString(), model, temperature, CurrentMlxFolder());
+    }
+
+    /// <summary>The MLX settings the fields describe, or null with the reason.</summary>
+    private AssistantSettings? MlxChosen(out string? why)
+    {
+        if (!ModelFolder.TryParse(MlxFolderBox.Text, out ModelFolder? folder, out why))
+        {
+            return null;
+        }
+
+        if (Temperature(out why) is not { } temperature)
+        {
+            return null;
+        }
+
+        return new AssistantSettings(AssistantProvider.Mlx, CurrentAddress(), CurrentModelName(), temperature, folder.Path);
     }
 
     private double? Temperature(out string? why)

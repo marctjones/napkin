@@ -34,6 +34,8 @@
     <!-- The local runtime (docs/design/llm-assistant.md §2.4): the app is the only place a runtime
          assembly is referenced, through AssistantModels.FromSettings. -->
     <ProjectReference Include="..\Napkin.Assistant.LocalServer\Napkin.Assistant.LocalServer.csproj" />
+    <!-- The in-process MLX runtime (docs/design/mlx-runtime.md §4.3, #241): also only referenced here. -->
+    <ProjectReference Include="..\Napkin.Assistant.Mlx\Napkin.Assistant.Mlx.csproj" />
   </ItemGroup>
 
   <!-- The app's icon, and the design system's fonts (docs/third-party-notices.md). The three OFL

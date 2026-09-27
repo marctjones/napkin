@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 
 using Napkin.App.Viewing;
+using Napkin.Assistant.Mlx;
 using Napkin.Core.Geometry;
 using Napkin.Modules.Assistant;
 using Napkin.Modules.Building;
@@ -18,8 +19,8 @@ namespace Napkin.App;
 /// <summary>
 /// Ask and Explain this result (docs/design/llm-assistant.md &#xA7;2.4, &#xA7;8, &#xA7;10 slice B):
 /// the Assistant menu, Ctrl/Cmd+Shift+A, and the note on the sheet; and Where the model runs&#x2026;
-/// (slice C, #231), which chooses the model the note asks. Sketch from words is a later slice (E)
-/// and stays greyed out here.
+/// (slice C, #231; the MLX choice, docs/design/mlx-runtime.md #241), which chooses the model the
+/// note asks. Sketch from words is a later slice (E) and stays greyed out here.
 /// </summary>
 public partial class MainWindow
 {
@@ -35,6 +36,20 @@ public partial class MainWindow
     /// here, the <see cref="PackRoots"/> way, so no workflow opens a socket.
     /// </summary>
     public HttpMessageHandler? AssistantHttp { get; set; }
+
+    /// <summary>
+    /// The MLX bridge the assistant's in-process model uses: null for the real one
+    /// (<see cref="NativeMlx"/>). The GUI suite sets a fake here, the <see cref="AssistantHttp"/> way,
+    /// so no workflow loads the library (docs/design/mlx-runtime.md &#xA7;4.3).
+    /// </summary>
+    public INativeMlx? AssistantMlx { get; set; }
+
+    /// <summary>
+    /// Why MLX cannot run in this process, or null when it can:
+    /// <see cref="MlxAvailability.ForThisProcess"/> by default. The GUI suite overrides it so an MLX
+    /// workflow runs on every CI platform, not only Apple silicon (docs/design/mlx-runtime.md &#xA7;7.3).
+    /// </summary>
+    public Func<string?> AssistantMlxAvailable { get; set; } = MlxAvailability.ForThisProcess;
 
     /// <summary>The Where the model runs&#x2026; dialog, when it is open.</summary>
     public AssistantWindow? WhereModelRuns => _assistantWindow;
@@ -53,7 +68,13 @@ public partial class MainWindow
     {
         if (_assistantWindow is null)
         {
-            _assistantWindow = new AssistantWindow { Http = AssistantHttp, Apply = UseAssistantSettings };
+            _assistantWindow = new AssistantWindow
+            {
+                Http = AssistantHttp,
+                Mlx = AssistantMlx,
+                MlxUnavailable = AssistantMlxAvailable,
+                Apply = UseAssistantSettings,
+            };
             _assistantWindow.ShowSettings(Settings.Current.Assistant);
             _assistantWindow.Closed += (_, _) => _assistantWindow = null;
         }
@@ -77,7 +98,7 @@ public partial class MainWindow
         }
 
         IAssistantModel previous = AssistantModel;
-        AssistantModel = AssistantModels.FromSettings(Settings.Current, AssistantHttp);
+        AssistantModel = AssistantModels.FromSettings(Settings.Current, AssistantHttp, AssistantMlx, AssistantMlxAvailable);
         (previous as IDisposable)?.Dispose();
         return AssistantModel.Whereabouts;
     }
