@@ -1,6 +1,10 @@
 {
   "schema": 1,
   "coverage": {
+    "Napkin.Assistant.LocalServer": {
+      "line": 99.67,
+      "branch": 98.95
+    },
     "Napkin.Core.Geometry": {
       "line": 96.07,
       "branch": 92.56
@@ -39,7 +43,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 113,
+    "workflowsPassed": 114,
     "workflowIds": [
       "CVS-011",
       "CVS-012",
@@ -61,6 +65,7 @@
       "GUI-ASSEM-16",
       "GUI-AST-01",
       "GUI-AST-02",
+      "GUI-AST-06",
       "GUI-BRACE-01",
       "GUI-BRACE-02",
       "GUI-BRACE-03",
