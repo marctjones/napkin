@@ -228,13 +228,15 @@ public static class BracingCheck
             ? new CheckWords($"{n.Explanation} {CodeCheck.WhereToAddTables}", code.ToString(), string.Empty, string.Empty)
             : new CheckWords(n.Explanation, string.Empty, string.Empty, string.Empty);
 
+    /// <summary>The band trace, working and source behind a result, plus UNREVIEWED (design §13 Decision 5) until the pack is signed off.</summary>
     private static string Details(Citation citation, BracingWorking? working)
         => string.Join(
             "\n",
             citation.Trace.Select(match => $"How it was found: {match}")
                 .Concat(working?.Lines ?? [])
                 .Concat(citation.Footnotes.Select(note => $"Footnote {note.Id}: {note.Text}"))
-                .Append($"Source: {citation.Source.Title}, {citation.Source.Location} ({citation.Source.Url}, retrieved {citation.Source.RetrievedOn:yyyy-MM-dd})"));
+                .Append($"Source: {citation.Source.Title}, {citation.Source.Location} ({citation.Source.Url}, retrieved {citation.Source.RetrievedOn:yyyy-MM-dd})"))
+           + citation.Code.UnreviewedSentence;
 
     private static string Limit(string explanation)
     {
