@@ -35,7 +35,8 @@ wall — a different thing, §1), [`llm-assistant.md`](./llm-assistant.md) §1 a
 Open `samples/window-in-existing-wall`. Under **Project → Adopted code and site…** choose **CT 2022**,
 pick **Bloomfield** in the Town picker and press **Use these values** (ground snow load 30 psf and
 wind 120 mph, as Appendix AY p. 157 prints them; seismic B statewide, Table R301.2 p. 131 — the
-offer napkin already makes, #210), type the building width, close the window. Select **Window 1**.
+offer napkin already makes, #210), type the building width, leave the frost depth empty, close the
+window. Select **Window 1**.
 Its part panel's **Code check** block says what it says today:
 
 > The loaded pack CT 2022 has no header table for exterior-bearing walls, so napkin cannot size this
@@ -53,8 +54,9 @@ Press it. A small window opens, *Enter a header row — Window 1*, and says firs
 > verbatim text the pack already carries]*.
 
 Then **This opening**, read from the drawing and not editable: *Wall 1, exterior, bearing · header span
-3'-0" (the rough width) · ground snow load 30 psf · wind 120 mph · seismic B · frost 3'-6" · building
-width 24'-0" · roof live load not entered · under CT 2022 (pack us-ct-2022)*. Then the fields you fill:
+3'-0" (the rough width) · ground snow load 30 psf · wind 120 mph · seismic B · frost depth not entered ·
+building width 24'-0" · roof live load not entered · under CT 2022 (pack us-ct-2022)*. Then the fields
+you fill:
 
 - **What the wall supports**, typed as the table's column heading prints it (the pack has no table, so
   it has no list to offer).
@@ -74,8 +76,8 @@ prints — nothing here is a claim about the code):
 > ENTERED BY HAND — Marc, 2026-09-27, from «2021 IRC Table R602.7(1), p. N, row …» as adopted by
 > CT 2022. Typed from a copy of the code; not napkin's data, not reviewed by napkin.
 > ▸ How it was found: *Entered for: Wall 1 exterior bearing, supports «roof-ceiling», span 3'-0",
-> ground snow load 30 psf, wind 120 mph, seismic B, frost 3'-6", building width 24'-0", roof live load
-> not entered, under pack us-ct-2022.* Notes: «…».
+> ground snow load 30 psf, wind 120 mph, seismic B, frost depth not entered, building width 24'-0",
+> roof live load not entered, under pack us-ct-2022.* Notes: «…».
 > [ Edit row… ] [ Remove row ]
 
 The message bar says *"Header for Window 1 is now entered by hand: «(2) 2x10», «1» jack and «2» king
@@ -88,9 +90,10 @@ Now drag Window 1 six inches wider. The block goes back to **No data**, with a s
 > Enter the row for the new inputs, or remove it. [ Enter the row again… ] [ Remove row ]
 
 and the message bar says *"Header for Window 1: the row entered by hand no longer applies (span 3'-0"
-→ 3'-6"); No data."* Undo puts the window back; the row applies again and the bar says so. Change the
-adopted code to any other pack: the same, naming the code. Enter the ground snow load differently:
-the same, naming it.
+→ 3'-6"); No data."* Undo puts the window back; the row applies again and the bar says so. Choose
+another adopted code, if one is installed: the same, naming the code. Now type the frost depth, which
+was empty when the row was entered: the same, naming it — napkin does not know which site values the
+table used, so a value going from not entered to entered is a move too (§6.1).
 
 The day napkin's own CT 2022 pack gains Table R602.7(1) (#14), the block shows **napkin's** result, and
 under it: *"napkin now answers this from its own table. The row Marc entered on 2026-09-27 said
