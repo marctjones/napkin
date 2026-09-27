@@ -69,14 +69,19 @@ public class DeckCheckTests
             + Unreviewed + " Note a: SYNTHETIC footnote a: shown with results, not encoded.",
             Line(checks, DeckCheckKind.Joists).Text);
         Assert.StartsWith("Deck checks under ZZ DECK use ZZ GUIDE (SYNTHETIC DECK GUIDE - NOT A CODE, nobody (synthetic)), a guide based on the 2098 IRC", Assert.Single(checks.Guides), StringComparison.Ordinal);
-        // The beam span is measured post centre to post centre (deck-guide-pack Decision 8): (144 − 3 1/2) ÷ 2 = 70 1/4".
-        Assert.StartsWith("Beam (2) 2x10 on 3 posts, span 5'-10 1/4\" post centre to post centre, carrying 9'-9\" of joists: allowed up to 6'-10\" (ZZ-DECK-BEAM", Line(checks, DeckCheckKind.Beam).Text, StringComparison.Ordinal);
+        // The beam span L_B is measured face to face of posts (DCA 6 Figure 3, p. 7; #41): (144 − 3 × 3 1/2) ÷ 2 = 66 3/4".
+        Assert.StartsWith("Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" between post faces, carrying 9'-9\" of joists: allowed up to 6'-10\" (ZZ-DECK-BEAM", Line(checks, DeckCheckKind.Beam).Text, StringComparison.Ordinal);
         Assert.StartsWith(
             "Ledger to the house: zz-bolts, staggered, 1'-5\" on centre (ZZ-DECK-LEDGER row r.2x8.12, synthetic p. 5); 10 fasteners for a 12'-0\" ledger (⌈12'-0\" ÷ 1'-5\"⌉ + 1, napkin's count).",
             Line(checks, DeckCheckKind.Ledger).Text,
             StringComparison.Ordinal);
-        // A middle post carries 70 1/4 × 58 1/2 = 4109.625 sq in = 28.5 sq ft.
-        Assert.StartsWith("Footings: zz 15 in square for a middle post's 28.5 sq ft on 2000 psf (ZZ-DECK-FOOTING", Line(checks, DeckCheckKind.Footing).Text, StringComparison.Ordinal);
+        // A middle post carries, by DCA 6 Appendix B Eq. B-1 (pp. B1–B2), B_L 72" (its centreline to the deck's outside edge)
+        // × half of J_L 118 1/2" (ledger face to the rim's outside face) = 72 × 59 1/4 = 4266 sq in = 29.6 sq ft.
+        Assert.StartsWith(
+            "Footings: zz 15 in square for a middle post's 29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, post centreline to the deck's outside edge, "
+            + "× half the joists' 9'-10 1/2\", ledger face to the rim's outside face) on 2000 psf (ZZ-DECK-FOOTING",
+            Line(checks, DeckCheckKind.Footing).Text,
+            StringComparison.Ordinal);
         Assert.StartsWith("Frost: footings 3'-6\" below grade; frost line 3'-6\" (site value, Town building department). Note x: SYNTHETIC", Line(checks, DeckCheckKind.Frost).Text, StringComparison.Ordinal);
         Assert.All(checks.Lines.Where(line => line.Kind <= DeckCheckKind.Frost), line => Assert.True(line.Passing));
 
@@ -141,14 +146,21 @@ public class DeckCheckTests
     [Trait("Feature", "DECK-003")]
     public void Two_posts_put_the_footing_under_an_end_post_carrying_half_a_span()
     {
-        // Two posts: span 144 − 3 1/2 = 140 1/2″ centre to centre; an end post carries 70 1/4 × 58 1/2 = 4109.625 sq in = 28.5 sq ft.
+        // Two posts: an end post, DCA 6 Appendix B Eq. B-2 with no beam overhang (B_O = 0): half of B_L 144" (the deck's
+        // outside edge to outside edge) × half of J_L 118 1/2" = 72 × 59 1/4 = 4266 sq in = 29.6 sq ft.
         DeckCheckLine footing = Line(Only(Drawing(Inputs() with { PostCount = 2 })), DeckCheckKind.Footing);
 
-        Assert.StartsWith("Footings: zz 15 in square for an end post's 28.5 sq ft", footing.Text, StringComparison.Ordinal);
+        Assert.StartsWith(
+            "Footings: zz 15 in square for an end post's 29.6 sq ft (DCA 6 Appendix B Eq. B-2, pp. B1–B2: half the beam's 12'-0\", the deck's outside edge to outside edge, ",
+            footing.Text,
+            StringComparison.Ordinal);
 
-        // No soil bearing value: asked for.
+        // No soil bearing value: asked for, the area and its measure said.
         DeckCheckLine missing = Line(Only(Drawing(site: SiteValues.NotEntered with { FrostDepth = In(42) })), DeckCheckKind.Footing);
-        Assert.Equal("Footings (a middle post, 28.5 sq ft): Enter the soil bearing value: table ZZ-DECK-FOOTING bands on it.", missing.Text);
+        Assert.Equal(
+            "Footings for a middle post's 29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, post centreline to the deck's outside edge, "
+            + "× half the joists' 9'-10 1/2\", ledger face to the rim's outside face): Enter the soil bearing value: table ZZ-DECK-FOOTING bands on it.",
+            missing.Text);
     }
 
     [Fact]
@@ -183,11 +195,11 @@ public class DeckCheckTests
         Assert.All(answered.Lines.Where(line => line.Kind is DeckCheckKind.Ledger or DeckCheckKind.Footing), line => Assert.IsType<DeckResult.NoData>(line.Result));
 
         // The beam: (2) 2x10 Southern Pine carrying 9'-9" of joists is Table 3A's ≤ 10' column, 7'-9" (p. 6); its span
-        // post centre to post centre, (144 − 3 1/2) ÷ 2 = 70 1/4", passes.
+        // L_B between post faces (Figure 3, p. 7), (144 − 3 × 3 1/2) ÷ 2 = 66 3/4", passes.
         DeckCheckLine beam = Line(answered, DeckCheckKind.Beam);
         Assert.True(beam.Passing);
         Assert.StartsWith(
-            "Beam (2) 2x10 on 3 posts, span 5'-10 1/4\" post centre to post centre, carrying 9'-9\" of joists: allowed up to 7'-9\" "
+            "Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" between post faces, carrying 9'-9\" of joists: allowed up to 7'-9\" "
             + "(DCA 6-2015 Table 3A row r.sp.2-2x10.10, p. 6, row Southern Pine 2-2x10, joist span column 10'; species group \"Southern Pine\", p. 6, Table 3A, Species column, first row heading "
             + "— a guide on the 2015 IRC, not CT 2022's adopted IRC 2021; the IRC governs where they differ (p. 1))." + Unreviewed,
             beam.Text);
@@ -238,7 +250,7 @@ public class DeckCheckTests
         ImmutableArray<string> said = DeckCheck.Changes(before, after);
         Assert.StartsWith("Deck 1, newly flagged: Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load", said[0], StringComparison.Ordinal);
         Assert.StartsWith(
-            "Deck 1, newly flagged: Beam (2) 2x10 on 3 posts, span 5'-10 1/4\" post centre to post centre, carrying 9'-9\" of joists: Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load",
+            "Deck 1, newly flagged: Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" between post faces, carrying 9'-9\" of joists: Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load",
             said[1],
             StringComparison.Ordinal);
         Assert.Equal(

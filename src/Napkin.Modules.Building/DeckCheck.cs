@@ -113,15 +113,15 @@ public static class DeckCheck
             lines.Add(CantileverLine(DeckEvaluator.CheckCantilever(pack, joistRequest, inputs.Cantilever), inputs.Cantilever, framing.JoistSpan));
         }
 
-        // The beam's span, post centreline to post centreline as the source measures it (deck-guide-pack §3.2,
-        // Decision 8), is exact but may fall between grid points: the table is asked about the span rounded up,
-        // never down, and the sentence says ≈ when it was. The joists it carries are their span L (face of
-        // support to face of support), the column the beam table bands on.
+        // The beam's span, face to face of posts as the beam tables' source measures L_B (DCA 6 Figure 3, p. 7; #41),
+        // is exact but may fall between grid points: the table is asked about the span rounded up, never down, and
+        // the sentence says ≈ when it was. The joists it carries are their span L (face of support to face of
+        // support), the column the beam table bands on.
         Length beamSpan = new((long)((framing.BeamSpan.Numerator + framing.BeamSpan.Denominator - 1) / framing.BeamSpan.Denominator));
         string beamMember = $"({inputs.Beam.Plies}) {inputs.Beam.Lumber}";
         DeckResult beam = DeckEvaluator.CheckSpan(
             pack, SpanUse.DeckBeam, new SpanRequest(beamMember, beamSpan, inputs.Supports, inputs.Species, null, framing.JoistSpan, scope.GroundSnowLoad, null, scope.DeckLength, scope.DeckWidth));
-        lines.Add(Span(DeckCheckKind.Beam, beam, $"Beam {beamMember} on {inputs.PostCount} posts, span {framing.BeamSpanText} post centre to post centre, carrying {Text(framing.JoistSpan)} of joists", "Add a post, or use a deeper beam."));
+        lines.Add(Span(DeckCheckKind.Beam, beam, $"Beam {beamMember} on {inputs.PostCount} posts, span {framing.BeamSpanText} between post faces, carrying {Text(framing.JoistSpan)} of joists", "Add a post, or use a deeper beam."));
 
         DeckResult ledger = DeckEvaluator.SizeLedger(pack, member, framing.JoistSpan, framing.Width, scope);
         lines.Add(ledger is DeckResult.Sized sized
@@ -133,19 +133,17 @@ public static class DeckCheck
                 true)
             : Other(DeckCheckKind.Ledger, ledger, "Ledger"));
 
-        // The most loaded post: a middle one when there are three or more, otherwise an end post, which
-        // carries half a span.
-        bool middle = inputs.PostCount >= 3;
-        ExactFraction area = middle ? framing.TributaryArea : new ExactFraction(framing.TributaryArea.Numerator, framing.TributaryArea.Denominator * 2);
-        string which = middle ? "a middle post" : "an end post";
-        DeckResult footing = DeckEvaluator.SizeFooting(pack, area, sketch.Site.SoilBearingPsf, scope);
+        // The most loaded post — a middle one when there are three or more, otherwise an end post — and its
+        // tributary area as DCA 6 Appendix B measures it, which the sentence says (pp. B1–B2; #41).
+        DeckTributary tributary = framing.Tributary;
+        DeckResult footing = DeckEvaluator.SizeFooting(pack, tributary.Area, sketch.Site.SoilBearingPsf, scope);
         lines.Add(footing is DeckResult.Sized foot
             ? new DeckCheckLine(
                 DeckCheckKind.Footing,
                 footing,
-                $"Footings: {foot.Row.Text} for {which}'s {DeckFrame.SquareFeet(area)} on {sketch.Site.SoilBearingPsf} psf ({Cited(foot.Code, foot.Table, foot.Row)}).{foot.Code.UnreviewedSentence}{Notes(foot.Table, foot.Row)}",
+                $"Footings: {foot.Row.Text} for {tributary.Which}'s {tributary.Words} on {sketch.Site.SoilBearingPsf} psf ({Cited(foot.Code, foot.Table, foot.Row)}).{foot.Code.UnreviewedSentence}{Notes(foot.Table, foot.Row)}",
                 true)
-            : Other(DeckCheckKind.Footing, footing, $"Footings ({which}, {DeckFrame.SquareFeet(area)})"));
+            : Other(DeckCheckKind.Footing, footing, $"Footings for {tributary.Which}'s {tributary.Words}"));
 
         lines.Add(FrostLine(sketch, inputs, pack));
         lines.AddRange(GuardLines(sketch, framing, pack, library));

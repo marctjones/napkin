@@ -308,17 +308,25 @@ the house; joists out from the house at the typed spacing (faces at k·s while k
 end joist), each D − 2t; one row of blocking at mid-span, a piece per bay; the beam's plies; the
 posts, each the deck's height less the decking, a joist and the beam (pier top at grade, a stated
 assumption); and the decking, the least number of boards whose widths and gaps cover the depth,
-with how much of the last board shows. The **beam span**, measured post centreline to post centreline
-((W − post width) ÷ (posts − 1), the way the deck tables' source measures it), and a middle post's
-**tributary area** (that span × half the joist span plus the cantilever) are kept as exact fractions for
-the code checks (slice E) and shown rounded, with ≈ when they are not on the grid. Every piece becomes a cut-list row, so the shopping list buys
-decks as it buys walls.
+with how much of the last board shows. The **beam span** L_B is measured between post faces —
+(W − posts × post width) ÷ (posts − 1), the clear span DCA 6's Figure 3 (p. 7) dimensions for its beam
+tables; the beam ends flush with its end posts, so there is no overhang past an end post's outer face.
+The most loaded post's **tributary area** is measured as DCA 6 Appendix B does (pp. B1–B2; #41): a
+middle post (three or more posts) takes Eq. B-1, (½J_L + J_O) × B_L, and an end post (two posts) Eq. B-2,
+(½J_L + J_O) × ½B_L. With no beam overhang B_L runs from a post's centreline to the deck's outside edge
+(the whole width with two posts); J_L runs from the ledger face to the rim's outside face, or with a
+cantilever to the beam's centre, and J_O from there to the deck's edge. Both are kept as exact fractions
+for the code checks and shown rounded, with ≈ when they are not on the grid. Every piece becomes a
+cut-list row, so the shopping list buys decks as it buys walls.
 
 **The deck's code check** (`DeckCheck`, deck-and-porch §3) looks each piece up in the adopted
 code's deck tables ([rules-engine.md](rules-engine.md#deck-tables-198)): the joists' span, the
-beam's span post centre to post centre for the joists it carries, the ledger's fastening (with napkin's own
+beam's span between post faces for the joists it carries, the ledger's fastening (with napkin's own
 count, ⌈length ÷ spacing⌉ + 1), and the footing under the most loaded post (a middle one with three
-or more posts, an end one with two) on the site's **soil bearing** value. Each line is exactly one
+or more posts, an end one with two) on the site's **soil bearing** value, its line naming the area's
+equation and measures: "Footings: … for a middle post's 29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2:
+6'-0" of beam, post centreline to the deck's outside edge, × half the joists' 9'-10 1/2", ledger face to
+the rim's outside face) on 2000 psf (…)". Each line is exactly one
 of passes, short (by how much), sized, out of scope, input missing or no data, with its table, row
 and page. **Frost** is napkin's comparison of two typed values — the deck's footing depth and the
 site's frost depth — and the adopted code, when it prints a frost depth (Connecticut's Table
@@ -341,10 +349,11 @@ deck no longer out from the house than it is wide. Species is one of the eight D
 Pine, Douglas Fir-Larch, Hem-Fir, Spruce-Pine-Fir, Redwood, Western Cedars, Ponderosa Pine, Red Pine),
 read as each table's printed group (Table 2 prints three, Table 3A two). The beam is typed as plies
 and lumber — "(2) 2x10" is Table 3A's "2-2x10", "(1) 4x8" its "4x8" — and Table 3A prints no solid
-3x or 4x beam for Southern Pine. Its line reads the beam span post centre to post centre against the
-column for the joists it carries: "Beam (2) 2x10 on 3 posts, span 5'-10 1/4" post centre to post
-centre, carrying 9'-9" of joists: allowed up to 7'-9" (DCA 6-2015 Table 3A row r.sp.2-2x10.10, p. 6
-…)". The ledger and footing lines are still **No data**: their tables are M10's next slices (#40, #42).
+3x or 4x beam for Southern Pine. Its line reads the beam span between post faces, as Figure 3 (p. 7)
+dimensions Table 3A's L_B, against the column for the joists it carries: "Beam (2) 2x10 on 3 posts, span
+5'-6 3/4" between post faces, carrying 9'-9" of joists: allowed up to 7'-9" (DCA 6-2015 Table 3A row
+r.sp.2-2x10.10, p. 6 …)". The ledger and footing lines are still **No data**: their tables are M10's
+next slices (#40, #42).
 
 **Guard and stair** (§4, napkin's layout, not a code detail). Tick **Guard** and every open edge gets
 posts at both ends of each run and evenly between (at most the typed spacing apart, a corner post

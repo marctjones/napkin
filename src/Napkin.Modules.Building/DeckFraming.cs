@@ -10,8 +10,8 @@ namespace Napkin.Modules.Building;
 /// <summary>
 /// A deck's frame, derived every time from the box and its inputs (<c>docs/design/deck-and-porch.md</c>
 /// §2.3): ledger, joists, rim, blocking, beam, posts and decking, with the numbers the code checks
-/// read — the joist span, the beam span between post centres and a middle post's tributary area — kept
-/// exact.
+/// read — the joist span, the beam span between post faces and the most loaded post's tributary area —
+/// kept exact.
 /// </summary>
 /// <param name="Deck">The deck.</param>
 /// <param name="Ledger">The ledger's edge.</param>
@@ -20,15 +20,13 @@ namespace Napkin.Modules.Building;
 /// <param name="Joists">Each joist's near face, from the start of the ledger.</param>
 /// <param name="JoistSpan">The joists' clear span, ledger face to beam: D − 2t − cantilever.</param>
 /// <param name="BeamSpan">
-/// The beam span, post centreline to post centreline, in 1/1024″, exact: (W − post width) ÷ (posts − 1), the end
-/// posts flush with the deck's ends and the rest evenly between. Measured as the source defines it (deck-guide-pack
-/// §3.2, Decision 8: DCA 6 Appendix B, p. B2, "centerline of post to centerline of post"), one post width longer than
-/// the clear length between posts.
+/// The beam span L_B between adjacent posts, face to face, in 1/1024″, exact: (W − posts × post width) ÷ (posts − 1),
+/// the end posts flush with the deck's ends and the rest evenly between. Measured as DCA 6 measures the L_B of its beam
+/// tables (Figure 3, p. 7, dimensions it from one post's face to the next; p. 5: the beam "can extend past the post
+/// face up to L_B/4"; #41, Marc's decision of 2026-09-27). A beam's overhang past an end post runs from that post's
+/// outer face, and napkin's beam has none: it ends flush with its end posts' outer faces, so there is no L_B/4 to check.
 /// </param>
-/// <param name="TributaryArea">
-/// A middle post's tributary area, in square 1/1024″, exact: beam span (centre to centre) × (joist span ÷ 2 +
-/// cantilever). The joist side still runs to the beam's face; its centreline measure is slice B3's (deck-guide-pack §3.4).
-/// </param>
+/// <param name="Tributary">The most loaded post's tributary area, measured as DCA 6 Appendix B measures it (pp. B1–B2).</param>
 /// <param name="DeckingBoards">How many decking boards cover the depth.</param>
 /// <param name="LastBoardWidth">How much of the last board shows: "adjust the gaps or the overhang".</param>
 /// <param name="Pieces">Every piece, as boards to buy.</param>
@@ -40,16 +38,89 @@ public sealed record DeckFraming(
     ImmutableArray<Length> Joists,
     Length JoistSpan,
     ExactFraction BeamSpan,
-    ExactFraction TributaryArea,
+    DeckTributary Tributary,
     int DeckingBoards,
     Length LastBoardWidth,
     ImmutableArray<FramingPiece> Pieces)
 {
-    /// <summary>The beam span, post centre to post centre, in words, with ≈ when it is not on the grid: "5'-10 1/4\"".</summary>
+    /// <summary>The beam span, face to face of posts, in words, with ≈ when it is not on the grid: "5'-6 3/4\"".</summary>
     public string BeamSpanText => DeckFrame.Words(BeamSpan);
 
-    /// <summary>The tributary area in square feet to one decimal, as the panel shows it: "27.1 sq ft".</summary>
+    /// <summary>The most loaded post's tributary area, in square 1/1024″, exact.</summary>
+    public ExactFraction TributaryArea => Tributary.Area;
+
+    /// <summary>The tributary area in square feet to one decimal, as the panel shows it: "29.6 sq ft".</summary>
     public string TributaryAreaText => DeckFrame.SquareFeet(TributaryArea);
+}
+
+/// <summary>Which of DCA 6 Appendix B's two tributary-area equations a post takes (p. B1).</summary>
+public enum TributaryPost
+{
+    /// <summary>A centre post, Eq. B-1: (½J_L + J_O)(B_L) — a middle post, when the beam has three or more.</summary>
+    Centre,
+
+    /// <summary>A corner post, Eq. B-2: (½J_L + J_O)(½B_L + B_O) — an end post, the most loaded when the beam has two.</summary>
+    Corner,
+}
+
+/// <summary>
+/// The most loaded post's tributary area, measured exactly as DCA 6 Appendix B defines it (pp. B1–B2; #41, Marc's
+/// decision of 2026-09-27), for the footing check and slice B3's post and footing tables. Every length is in 1/1024″,
+/// exact. napkin's beam never overhangs its end posts, so the beam overhang B_O is zero, as p. B2 says: "If a center
+/// post or footing is being considered or no overhang exists, zero is entered into the equation B-1 or B-2 for B_O."
+/// </summary>
+/// <param name="Post">
+/// Which post: with three or more posts, the middle post beside an end post (its greater adjacent span is the end span,
+/// so no middle post carries more); with two, an end post.
+/// </param>
+/// <param name="BeamSpan">
+/// B_L, p. B2: "measured from either centerline of post to centerline of post, if there are overhangs, or to the outside
+/// edges of the deck, if there are no overhangs. For posts or footings being considered with two unequal, adjacent beam
+/// spans, the greater span shall be used." napkin's beam has no overhang, so an end span runs from the post's centreline
+/// to the deck's outside edge: with three or more posts, (W − post width) ÷ (posts − 1) + ½ post width, the greater of
+/// the middle post's two; with two posts the one span runs outside edge to outside edge, W.
+/// </param>
+/// <param name="JoistLength">
+/// J_L, p. B1: "from the ledger face to either the center point of the beam, if there is an overhang, or to the outside
+/// face of the rimboard if there is not an overhang." Without a cantilever D − t; with one, the ledger face to the beam's
+/// centre, the beam's outer face being the cantilever in from the rim's outer face (deck-and-porch §2.3).
+/// </param>
+/// <param name="JoistOverhang">
+/// J_O, p. B1: "measure[d] from the outside edge of the deck to the centerline of the beam … If no overhang exists, zero
+/// is entered". With a cantilever, the cantilever plus half the beam's thickness (its plies side by side).
+/// </param>
+public sealed record DeckTributary(TributaryPost Post, ExactFraction BeamSpan, ExactFraction JoistLength, ExactFraction JoistOverhang)
+{
+    /// <summary>The area, Eq. B-1 or Eq. B-2, in square 1/1024″, exact.</summary>
+    public ExactFraction Area => DeckFrame.Times(JoistSide, BeamSide);
+
+    /// <summary>"a middle post" or "an end post".</summary>
+    public string Which => Post == TributaryPost.Centre ? "a middle post" : "an end post";
+
+    /// <summary>
+    /// The area and how it was measured: "29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, post
+    /// centreline to the deck's outside edge, × half the joists' 9'-10 1/2\", ledger face to the rim's outside face)".
+    /// </summary>
+    public string Words
+    {
+        get
+        {
+            string beam = Post == TributaryPost.Centre
+                ? $"{DeckFrame.Words(BeamSpan)} of beam, post centreline to the deck's outside edge"
+                : $"half the beam's {DeckFrame.Words(BeamSpan)}, the deck's outside edge to outside edge";
+            string joists = JoistOverhang.Numerator == 0
+                ? $"half the joists' {DeckFrame.Words(JoistLength)}, ledger face to the rim's outside face"
+                : $"(half the joists' {DeckFrame.Words(JoistLength)}, ledger face to the beam's centre, + {DeckFrame.Words(JoistOverhang)}, the beam's centre to the deck's outside edge)";
+            string equation = Post == TributaryPost.Centre ? "B-1" : "B-2";
+            return $"{DeckFrame.SquareFeet(Area)} (DCA 6 Appendix B Eq. {equation}, pp. B1–B2: {beam}, × {joists})";
+        }
+    }
+
+    /// <summary>½J_L + J_O: how far out from the house the post's area reaches.</summary>
+    ExactFraction JoistSide => DeckFrame.Plus(DeckFrame.Half(JoistLength), JoistOverhang);
+
+    /// <summary>B_L for a centre post; ½B_L + B_O (zero) for a corner post: how far along the beam its area reaches.</summary>
+    ExactFraction BeamSide => Post == TributaryPost.Centre ? BeamSpan : DeckFrame.Half(BeamSpan);
 }
 
 /// <summary>A deck that cannot be framed, and why (the panel's words).</summary>
@@ -152,13 +223,51 @@ public static class DeckFrame
         Length last = d - (pitch * (boards - 1));
         pieces.Add(new FramingPiece(FramingRole.DeckingBoard, (int)boards, w, board));
 
-        // Post centreline to post centreline: the end posts' centres are half a post in from each end.
-        ExactFraction beamSpan = new(w.Units - (Int128)post.Width.Units, inputs.PostCount - 1);
-        ExactFraction depth = new(joistSpan.Units + (2 * (Int128)inputs.Cantilever.Units), 2);
-        ExactFraction area = new(beamSpan.Numerator * depth.Numerator, beamSpan.Denominator * depth.Denominator);
+        // L_B face to face of posts (DCA 6 Figure 3, p. 7): the n posts take n post widths of W, and the rest is n − 1
+        // equal clear spans.
+        int n = inputs.PostCount;
+        Int128 postWidth = post.Width.Units;
+        ExactFraction beamSpan = new(w.Units - (n * postWidth), n - 1);
+        DeckTributary tributary = Tributary(w, d, t, postWidth, n, inputs.Cantilever, inputs.Beam.Plies * (Int128)beam.Thickness.Units);
 
-        return (new DeckFraming(deck, edge, w, d, [.. joists], joistSpan, beamSpan, area, (int)boards, last, [.. pieces]), null);
+        return (new DeckFraming(deck, edge, w, d, [.. joists], joistSpan, beamSpan, tributary, (int)boards, last, [.. pieces]), null);
     }
+
+    /// <summary>
+    /// The most loaded post's tributary area as DCA 6 Appendix B measures it (pp. B1–B2; see <see cref="DeckTributary"/>):
+    /// B_L to post centrelines and the deck's outside edges, J_L to the beam's centre or the rim's outside face.
+    /// </summary>
+    static DeckTributary Tributary(Length w, Length d, Length t, Int128 postWidth, int posts, Length cantilever, Int128 beamThickness)
+    {
+        // No beam overhang: with two posts the one span runs outside edge to outside edge; with more, the middle post beside
+        // an end post takes the end span, from its centreline — half a post plus one centre-to-centre spacing in — to the edge.
+        (TributaryPost post, ExactFraction beamSpan) = posts == 2
+            ? (TributaryPost.Corner, ExactFraction.Whole(w.Units))
+            : (TributaryPost.Centre, new ExactFraction((2 * (w.Units - postWidth)) + (postWidth * (posts - 1)), 2 * (posts - 1)));
+
+        // Without a cantilever the joist length runs to the rim's outside face, D − t; with one, to the beam's centre (its
+        // outer face the cantilever in from the rim's outer face), and the joist overhang is the rest, out to the deck's edge.
+        if (cantilever == Length.Zero)
+        {
+            return new DeckTributary(post, beamSpan, ExactFraction.Whole((d - t).Units), ExactFraction.Whole(0));
+        }
+
+        return new DeckTributary(
+            post,
+            beamSpan,
+            new ExactFraction((2 * (Int128)(d - cantilever - t).Units) - beamThickness, 2),
+            new ExactFraction((2 * (Int128)cantilever.Units) + beamThickness, 2));
+    }
+
+    /// <summary>a + b, exact.</summary>
+    internal static ExactFraction Plus(ExactFraction a, ExactFraction b)
+        => new((a.Numerator * b.Denominator) + (b.Numerator * a.Denominator), a.Denominator * b.Denominator);
+
+    /// <summary>a × b, exact.</summary>
+    internal static ExactFraction Times(ExactFraction a, ExactFraction b) => new(a.Numerator * b.Numerator, a.Denominator * b.Denominator);
+
+    /// <summary>a ÷ 2, exact.</summary>
+    internal static ExactFraction Half(ExactFraction a) => new(a.Numerator, a.Denominator * 2);
 
     /// <summary>A deck's pieces as cut-list rows, "Deck 1 joist", so the shopping list buys them as a cut list's.</summary>
     public static ImmutableArray<CutListRow> CutRows(DeckFraming framing) => CutRows(framing, []);
