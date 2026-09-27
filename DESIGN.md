@@ -258,6 +258,9 @@ constants, and not copied verbatim from any single publisher's compiled table:
   Excise.Core's pen has no dash pattern or opacity yet (marctjones/excise#1851). Every page carries
   the project, scale, date, the adopted code and §7's disclaimer; the code check's results print
   with their citations and UNREVIEWED status exactly as the panels show them.*
+  *And for the cut-list side (#211): File → Print shop set writes the cut list, the cut layout's
+  boards and sheets drawn to one printed scale with pieces named and grain arrowed, and a label per
+  piece, every number the cut-list window's own text, on the same title-blocked pages.*
 
 ## 6. Software architecture
 
