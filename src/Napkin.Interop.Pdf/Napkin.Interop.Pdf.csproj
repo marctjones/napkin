@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Napkin.Modules.Editing\Napkin.Modules.Editing.csproj" />
+    <ProjectReference Include="..\Napkin.Modules.Building\Napkin.Modules.Building.csproj" />
+  </ItemGroup>
+
+  <!-- Excise.Core comes from vendor/excise, never nuget.org (nuget.config). The version names the
+       pushed excise commit it was packed from; tools/scripts/excise-pack.sh moves it. Its CSJ2K
+       dependency is pruned for every project (Directory.Build.targets says why); what remains is
+       BouncyCastle.Cryptography, MIT. -->
+  <ItemGroup>
+    <PackageReference Include="Excise.Core" Version="3.1.0-napkin.g9501059" />
+  </ItemGroup>
+
+  <!-- The sheet's typeface is the app's own IBM Plex Sans (OFL-1.1), linked from where the app keeps
+       it, embedded in the assembly, then subset into every PDF (SheetFonts). -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Napkin.App\Assets\Fonts\IBMPlexSans-Regular.ttf" LogicalName="Napkin.Interop.Pdf.Fonts.IBMPlexSans-Regular.ttf" Link="Fonts\IBMPlexSans-Regular.ttf" />
+    <EmbeddedResource Include="..\Napkin.App\Assets\Fonts\IBMPlexSans-Medium.ttf" LogicalName="Napkin.Interop.Pdf.Fonts.IBMPlexSans-Medium.ttf" Link="Fonts\IBMPlexSans-Medium.ttf" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

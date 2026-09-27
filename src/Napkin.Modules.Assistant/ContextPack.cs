@@ -43,9 +43,7 @@ public sealed class ContextPack
     public const int WordBudget = 6000;
 
     /// <summary>napkin's disclaimer (DESIGN.md §7), the pack's last item and the note's line under every answer.</summary>
-    public const string Disclaimer =
-        "napkin applies published prescriptive tables and is not a substitute for a licensed engineer, a permit office's review, "
-        + "or professional judgment about site-specific conditions the tables don't cover.";
+    public const string Disclaimer = ScopeDisclaimer.Text;
 
     private readonly Lazy<ImmutableHashSet<string>> _keys;
 

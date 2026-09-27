@@ -73,6 +73,8 @@ src/
   Napkin.Modules.Furniture    # parts, joinery, cut lists, materials lists
   Napkin.Modules.Building     # sites, walls, openings, decks — consumes the rules engine
   Napkin.Modules.Editing      # the editing model: design editor, undo, snapping, drawing tools
+  Napkin.Interop.Dxf          # the plan as DXF 2000 (ACadSharp)
+  Napkin.Interop.Pdf          # true-scale PDF sheets with title blocks (Excise.Core, vendor/excise)
   Napkin.App                  # Avalonia UI (Windows + macOS)
 tests/
   Napkin.Core.RulesEngine.Tests   # golden tests against each state's published adopted text
@@ -80,8 +82,8 @@ tests/
   ...                              # one test project per src/ assembly, plus Napkin.App.GuiTests
 ```
 
-DXF, SketchUp and PDF interop are parked (backlog), not yet in the tree — the three stub projects
-that once held their place were removed in Hardening (#182); they come back when that work starts.
+DXF export (`Napkin.Interop.Dxf`, #23) and PDF sheets (`Napkin.Interop.Pdf`, #25) are in the tree;
+SketchUp import was closed (#24).
 
 `Core.*` and `Modules.*` have no UI dependency — the rules engine in particular is meant to be
 testable and auditable independent of the app around it.

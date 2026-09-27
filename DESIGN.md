@@ -58,9 +58,15 @@ the finished wall.
   license permits — the goal is to never take on a dependency whose terms could constrain reuse
   of this project's own code, not merely to stay legally combinable.
   - Avalonia: MIT. Clears the bar.
-  - PDF export: **PdfSharp** (MIT), not QuestPDF — QuestPDF's "Community" license is
-    revenue-gated, not a clean permissive license, and would violate this policy the moment the
-    project (or a fork) crossed its threshold.
+  - PDF export: **Excise.Core** (MIT), the PDF library from `marctjones/excise`, developed in
+    parallel with napkin — Marc's decision on 2026-09-25, replacing the earlier pick of PdfSharp
+    (MIT, which also cleared this bar). It is not on nuget.org, so napkin vendors a nupkg packed from
+    a pushed excise commit (`vendor/excise`, `nuget.config`, `tools/scripts/excise-pack.sh`); its
+    JPEG 2000 dependency, CSJ2K, whose JJ2000 notice limits it to JPEG 2000-conforming products, is
+    pruned from napkin's build because napkin never decodes such an image
+    (`Directory.Build.targets`, `docs/third-party-notices.md`). QuestPDF stays excluded — its
+    "Community" license is revenue-gated, not a clean permissive license, and would violate this
+    policy the moment the project (or a fork) crossed its threshold.
   - DXF import/export: **netDxf** or **ACadSharp** (both MIT).
   - Constraint solver: see §5.1 and §11 — SolveSpace's own solver is GPL-3.0 and is excluded by
     this policy despite being license-*compatible* with AGPL. PlaneGCS (FreeCAD's derivative) is
@@ -245,6 +251,13 @@ constants, and not copied verbatim from any single publisher's compiled table:
   on 2026-09-26 (#215) and is withdrawn.*
 - **PDF export**: true-scale vector sheets for both the cut-list/materials side and the
   building/site-plan side, with title block.
+  *Implemented for the plan and elevations (#25): File → Export plan as PDF writes the on-screen
+  sheet — Top over Front, Right beside Front, third-angle — at one scale chosen from napkin's ratios
+  and printed in the title block, with **Excise.Core** (§2.1). Hidden edges are dashed as short
+  solid strokes and printed in the grey their on-screen opacity leaves on white paper, because
+  Excise.Core's pen has no dash pattern or opacity yet (marctjones/excise#1851). Every page carries
+  the project, scale, date, the adopted code and §7's disclaimer; the code check's results print
+  with their citations and UNREVIEWED status exactly as the panels show them.*
 
 ## 6. Software architecture
 

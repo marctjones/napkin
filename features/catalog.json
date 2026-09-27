@@ -798,7 +798,7 @@
       "area": "interop",
       "title": "PDF sheets are vector and true scale, with a title block",
       "acceptance": "A part 24in long measures 24in at the sheet's stated scale when measured in a PDF reader, the page contains vector path operators rather than an embedded raster image, and every sheet carries the project name, scale, date and the tool's disclaimer.",
-      "milestone": "backlog",
+      "milestone": "M12",
       "issue": 25,
       "kind": "unit"
     },

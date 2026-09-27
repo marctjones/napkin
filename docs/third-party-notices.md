@@ -18,6 +18,38 @@ Italic) and IBM Plex Sans (Regular, Medium, SemiBold), unmodified, from IBM's of
 - **Where they come from:** the design system repository, `marctjones/skepticalengineering-design`
   (`fonts/`), which carries the same license files.
 
+IBM Plex Sans Regular and Medium are also embedded, subset, in every PDF sheet napkin writes (#25;
+`src/Napkin.Interop.Pdf` links the same two files). The OFL's preamble says the requirement for the
+fonts to remain under it "does not apply to any document created using the fonts"
+(`LICENSE-IBM-Plex-sans.txt`).
+
+## Excise.Core (PDF sheets)
+
+napkin writes its PDF sheets (#25) with Excise.Core, the PDF library from
+[`marctjones/excise`](https://github.com/marctjones/excise). It is not published on nuget.org
+(excise's `Packaging.props`), so `vendor/excise/Excise.Core.3.1.0-napkin.g9501059.nupkg` is packed,
+unmodified, from the pushed commit `95010597c68c329bfb709383f6e2efb6abca003f` by
+`tools/scripts/excise-pack.sh`, and `nuget.config` restores `Excise.*` from that folder only. Read
+2026-09-27 at that commit:
+
+| Component | Version | Licence | Read from |
+|---|---|---|---|
+| Excise.Core | 3.1.0-napkin.g9501059 | MIT — "Copyright (c) 2025-2026 Marc Jones" | excise's `LICENSE`; the nupkg's nuspec declares `MIT` |
+| BouncyCastle.Cryptography (nuget.org) | 2.7.0 | MIT — "Copyright (c) 2000-2026 The Legion of the Bouncy Castle Inc." | the package's `LICENSE.md`; its nuspec declares `MIT` |
+
+**Excluded: CSJ2K 3.0.0.** Excise.Core's nuspec also names CSJ2K, a JPEG 2000 codec. Its nuspec
+declares only a licence URL (`http://www.opensource.org/licenses/bsd-license.php`, which now
+redirects to BSD-2-Clause), but its repository's licence file is the JJ2000 notice
+([`cureos/csj2k`](https://github.com/cureos/csj2k), `COPYRIGHT-JJ2000-5.1`), which grants no licence
+or right for products that do not conform to the JPEG 2000 standard. napkin does not take it:
+Excise.Core reaches CSJ2K only from its JPEG 2000 image decoder, which napkin never calls — it writes
+PDFs and reads back only its own, which hold no such image — so `Directory.Build.targets` prunes
+CSJ2K from every project's restore graph. It is never restored, built against or shipped, and
+`tests/Napkin.Interop.Pdf.Tests/ExciseBoundaryTests` holds that: no `CSJ2K*.dll` beside the build,
+and none loaded by writing a page and reading it back. Re-pinning Excise.Core means re-reading its
+`Excise.Core.csproj` and this table, and checking that CSJ2K is still reached only from JPEG 2000
+decoding.
+
 ## Skeptical Engineering design system
 
 `src/Napkin.App/Theme/` and `Assets/napkin*` are vendored from

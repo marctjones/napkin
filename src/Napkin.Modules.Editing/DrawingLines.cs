@@ -49,6 +49,12 @@ public static class DrawingLines
     static readonly LineStyle ThinLine = new(0.8, [], 1);
     static readonly LineStyle CentreLine = new(0.8, [12, 3, 3, 3], 1);
 
+    /// <summary>
+    /// The dashes of an outline whose layer's style is dashed — an opening, a cut rather than a part —
+    /// drawn in the visible line's weight: on, off, in the same units as <see cref="LineStyle.Pixels"/>.
+    /// </summary>
+    public static IReadOnlyList<double> DashedOutline { get; } = [4, 3];
+
     /// <summary>Every kind, in the table's order.</summary>
     public static IReadOnlyList<LineKind> All { get; } =
         [LineKind.Visible, LineKind.Hidden, LineKind.Dimension, LineKind.Extension, LineKind.Centre];
@@ -62,4 +68,39 @@ public static class DrawingLines
         LineKind.Centre => CentreLine,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Not a kind of line."),
     };
+}
+
+/// <summary>
+/// The marks a dimension is drawn with, in the units of <see cref="LineStyle.Pixels"/>: pixels on the
+/// screen, points on a PDF sheet (#25). The canvas and the sheet both draw with these, so a dimension
+/// looks one way wherever it is drawn.
+/// </summary>
+public static class DimensionMarks
+{
+    /// <summary>How long an arrowhead is, tip to back.</summary>
+    public const double ArrowLength = 9;
+
+    /// <summary>Half the width of an arrowhead at its back.</summary>
+    public const double ArrowHalfWidth = 2.75;
+
+    /// <summary>The gap between what is measured and the start of its extension line.</summary>
+    public const double ExtensionGap = 3;
+
+    /// <summary>How far an extension line runs past the dimension line.</summary>
+    public const double ExtensionOvershoot = 5;
+
+    /// <summary>
+    /// A dimension line shorter than this many arrowhead lengths has its arrowheads outside,
+    /// pointing in, with the line stubbed past each end — what a draughtsman does with a 1″ gap.
+    /// </summary>
+    public const double TightArrowheads = 3.5;
+
+    /// <summary>The size of a dimension's label text.</summary>
+    public const double LabelSize = 12;
+
+    /// <summary>How far the label's chip, which breaks the dimension line behind it, reaches past the text across and along.</summary>
+    public const double ChipPadAlong = 3;
+
+    /// <summary>How far the chip reaches past the text above and below it.</summary>
+    public const double ChipPadAcross = 1;
 }

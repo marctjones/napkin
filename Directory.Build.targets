@@ -1,0 +1,19 @@
+<Project>
+
+  <!-- CSJ2K is pruned from every project's restore graph (#25). Excise.Core (vendor/excise) declares
+       it as a dependency, but reaches it only from its JPEG 2000 decoder (JpxDecoder.TryDecodeManaged,
+       for rendering images inside PDFs someone else made). napkin only writes PDFs and reads back its
+       own, which carry no JPEG 2000 image, so nothing napkin runs ever loads CSJ2K: without it the
+       package is never restored, never copied beside the build and never shipped. It matters because
+       CSJ2K's nuspec names a BSD URL while its repository's licence file is the JJ2000 notice
+       (cureos/csj2k, COPYRIGHT-JJ2000-5.1), which grants no right outside JPEG 2000-conforming
+       products — a question DESIGN.md §2.1 does not have to answer for a package napkin does not take.
+       Pruning does not flow through project references, so it is set here, for every project, rather
+       than in Napkin.Interop.Pdf alone. tests/Napkin.Interop.Pdf.Tests/ExciseBoundaryTests holds it:
+       no CSJ2K beside the build, and none loaded by writing a page and reading it back.
+       docs/third-party-notices.md names it as excluded. -->
+  <ItemGroup>
+    <PrunePackageReference Include="CSJ2K" Version="3.0.0" />
+  </ItemGroup>
+
+</Project>

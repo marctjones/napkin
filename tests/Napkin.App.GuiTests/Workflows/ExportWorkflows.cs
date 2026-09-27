@@ -20,8 +20,8 @@ using Point = Avalonia.Point;
 namespace Napkin.App.GuiTests.Workflows;
 
 /// <summary>
-/// File → Export plan as DXF… (#23), driven the way a person drives it, and the file read back with
-/// the same library a CAD program would read it with.
+/// File → Export plan as DXF… (#23) and File → Export plan as PDF… (#25), driven the way a person
+/// drives them, and each file read back with a library a reader of that format would use.
 /// </summary>
 public class ExportWorkflows
 {
@@ -68,6 +68,62 @@ public class ExportWorkflows
 
         Directory.Delete(folder, recursive: true);
     });
+
+    [GuiWorkflow("GUI-SHELL-08")]
+    public void Export_the_coffee_table_as_a_PDF_sheet_and_again_with_hidden_edges_off() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        string folder = Directory.CreateTempSubdirectory("napkin-pdf-").FullName;
+        ScriptedExport picker = new(folder);
+        window.ExportPicker = picker;
+        window.Today = () => new DateOnly(2026, 9, 27);
+
+        OpenSample(app, window, "Coffee table");
+        ExportPdf(app, window);
+        app.Expect("the coffee table's sheet is one page at 1:12, titled, dated, disclaimed, its labels as the canvas reads them and its hidden edges dashed grey", () =>
+        {
+            Assert.Equal("Coffee table.pdf", picker.Suggested);
+            (string operators, string text) = ReadPdf(picker.Last!);
+            Assert.Contains("Coffee table", text, StringComparison.Ordinal);
+            Assert.Contains("Scale 1:12", text, StringComparison.Ordinal);
+            Assert.Contains("Date 2026-09-27", text, StringComparison.Ordinal);
+            Assert.Contains("Sheet 1 of 1", text, StringComparison.Ordinal);
+            Assert.Contains(Napkin.Core.RulesEngine.ScopeDisclaimer.Text, text, StringComparison.Ordinal);
+            Assert.All(window.Canvas.Measurements(), measurement => Assert.Contains(measurement.Label(window.Canvas.LabelFormat), text, StringComparison.Ordinal));
+            Assert.Contains("0.65 G\n1 w\n", operators, StringComparison.Ordinal);
+            Assert.StartsWith("Exported the plan and elevations as a PDF sheet at 1:12 to Coffee table.pdf", window.MessageOnScreen, StringComparison.Ordinal);
+        });
+
+        // Front, and H turns hidden edges off there; the sheet follows the choice.
+        app.Press(Key.D3);
+        app.Press(Key.H);
+        app.Expect("hidden edges are off", () => Assert.False(window.Settings.Current.ShowHiddenEdges));
+        ExportPdf(app, window);
+        app.Expect("the second sheet prints no hidden edge and still every visible one", () =>
+        {
+            (string operators, _) = ReadPdf(picker.Last!);
+            Assert.DoesNotContain("0.65 G", operators, StringComparison.Ordinal);
+            Assert.Contains("0 G\n1.4 w\n", operators, StringComparison.Ordinal);
+        });
+
+        Directory.Delete(folder, recursive: true);
+    });
+
+    static void ExportPdf(AppDriver app, MainWindow window)
+    {
+        app.Click(CentreOf(window, window.FileMenuItem));
+        app.Click(CentreOf(window, window.ExportPdfMenuEntry));
+    }
+
+    /// <summary>A PDF's one page read back as a reader reads it: its operators and its text.</summary>
+    static (string Operators, string Text) ReadPdf(string path)
+    {
+        Excise.Core.Document.PdfDocument document = Excise.Core.Document.PdfDocument.Open(File.ReadAllBytes(path));
+        Assert.Equal(1, document.PageCount);
+        return (
+            System.Text.Encoding.Latin1.GetString(document.Pages[0].GetContentStreamBytes()),
+            new Excise.Core.Text.TextExtractor(document.Pages[0]).ExtractText());
+    }
 
     static void Export(AppDriver app, MainWindow window)
     {
@@ -116,5 +172,7 @@ public class ExportWorkflows
             Last = Path.Combine(folder, suggestedName);
             return Task.FromResult<string?>(Last);
         }
+
+        public Task<string?> PickPdfDestinationAsync(string suggestedName) => PickDxfDestinationAsync(suggestedName);
     }
 }
