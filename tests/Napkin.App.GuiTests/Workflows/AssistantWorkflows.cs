@@ -185,7 +185,149 @@ public class AssistantWorkflows
             model: model);
     }
 
+    [GuiWorkflow("GUI-AST-06")]
+    public void Choose_a_model_on_this_machine_test_it_and_ask_it()
+    {
+        // A new sheet asks exactly the reference pack GUI-AST-02 builds; the answer cites its help item.
+        const string question = "what is ground snow load";
+        ContextPack referencePack = ContextPack.For(Napkin.Modules.Editing.NewSheet.Empty(), [], ContextChecks.None, [], question);
+        int helpItem = ItemNumbered(referencePack, item => item.Text == HelpSections.Find("docs/rules-engine.md", "In the app").ItemText);
+        string answer = $"Ground snow load is entered from the building department or the adopted code's own table, never guessed [{helpItem}].";
+
+        // Stands in for Ollama at 127.0.0.1:11434: nothing opens a socket, nothing loads a model.
+        OllamaStub ollama = new() { Answer = answer };
+        const string local = "Local: qwen3:4b-q4_K_M at 127.0.0.1:11434 — nothing leaves this machine.";
+
+        GuiWorkflow.Run(app =>
+        {
+            MainWindow window = (MainWindow)app.Target;
+            window.AssistantHttp = ollama;
+            NewSheet(app, window);
+
+            // Assistant → Where the model runs… (pointer).
+            app.Click(CentreOf(window, window.FindControl<MenuItem>("AssistantMenu")!));
+            app.Click(CentreOf(window, window.WhereModelRunsMenuEntry));
+            AssistantWindow dialog = window.WhereModelRuns ?? throw new InvalidOperationException("The dialog did not open.");
+            AppDriver where = AppDriver.Attach(dialog, "ast-06-where");
+            app.Expect("the dialog opens on None with Ollama's address, the five install lines, the memory line and the cloud sentence", () =>
+            {
+                Assert.True(dialog.NoneChoice.IsChecked);
+                Assert.Equal("http://127.0.0.1:11434", dialog.AddressField.Text);
+                Assert.Equal(Napkin.Assistant.LocalServer.Guidance.InstallLines, dialog.InstallTexts);
+                Assert.Contains("ollama pull qwen3:4b-q4_K_M", dialog.InstallTexts[1], StringComparison.Ordinal);
+                Assert.StartsWith("This machine has ", dialog.MemoryLine, StringComparison.Ordinal);
+                Assert.Contains("OLLAMA_NO_CLOUD=1", dialog.CloudLine, StringComparison.Ordinal);
+                Assert.Equal(ScriptedModel.NoModelWhereabouts, window.AssistantModel.Whereabouts);
+            });
+
+            // A program on this machine (pointer); another machine's address typed (keyboard) and checked (pointer).
+            where.Click(CentreOf(dialog, dialog.LocalChoice));
+            ReplaceText(where, dialog, dialog.AddressField, "http://192.168.1.5:11434");
+            where.Click(CentreOf(dialog, dialog.Check));
+            Until(() => !dialog.IsBusy);
+            app.Expect("another machine is refused in plain words, and nothing was sent anywhere", () =>
+            {
+                Assert.Equal("192.168.1.5 is not this machine. napkin only talks to a model on this machine: use 127.0.0.1, ::1 or localhost.", dialog.CheckLine);
+                Assert.Empty(ollama.Requests);
+                Assert.Empty(dialog.ModelRows);
+            });
+
+            // This machine's address, and Check: the models Ollama reports, as it reports them.
+            ReplaceText(where, dialog, dialog.AddressField, "http://127.0.0.1:11434");
+            where.Click(CentreOf(dialog, dialog.Check));
+            Until(() => !dialog.IsBusy);
+            where.WaitForIdle();
+            app.Expect("the list is what Ollama said — size, quantization, license — and the cloud model is marked, not asked about", () =>
+            {
+                Assert.Equal("Ollama at http://127.0.0.1:11434 has 2 models, as it reports them:", dialog.CheckLine);
+                Assert.StartsWith(
+                    "qwen3:4b-q4_K_M — 2.6 GB, 4.0B parameters, Q4_K_M, license: Apache License Version 2.0, January 2004, context 40,960 tokens",
+                    dialog.ModelRows[0],
+                    StringComparison.Ordinal);
+                Assert.Equal("gpt-oss:120b-cloud — runs at https://ollama.com:443, not on this machine; napkin will not use it", dialog.ModelRows[1]);
+                Assert.Equal(["/api/tags", "/api/show"], ollama.Requests.Select(request => request.Path));
+                Assert.Equal("""{"model":"qwen3:4b-q4_K_M"}""", ollama.Requests[1].Body);
+            });
+
+            // Pick the local model from the list, then Test (pointer).
+            dialog.ModelPicker.ScrollIntoView(0);
+            where.WaitForIdle();
+            where.Click(CentreOf(dialog, dialog.ModelPicker.ContainerFromIndex(0) ?? throw new InvalidOperationException("The row is not realised.")));
+            where.Click(CentreOf(dialog, dialog.Test));
+            Until(() => !dialog.IsBusy);
+            app.Expect("the name is filled from the list, and Test asked for ok and says how long it took", () =>
+            {
+                Assert.Equal("qwen3:4b-q4_K_M", dialog.ModelField.Text);
+                Assert.Matches(@"^qwen3:4b-q4_K_M replied in \d+\.\d s: “ok”\.$", dialog.TestLine);
+            });
+
+            // Use these settings (pointer): settings version 3 on disk, and the window asks the local model now.
+            where.Click(CentreOf(dialog, dialog.Use));
+            app.Expect("saved, and the note will say the model is local and nothing leaves this machine", () =>
+            {
+                Assert.Equal(
+                    new Napkin.App.Settings.AssistantSettings(Napkin.App.Settings.AssistantProvider.LocalServer, "http://127.0.0.1:11434", "qwen3:4b-q4_K_M", 0.2),
+                    new Napkin.App.Settings.SettingsStore(window.Settings.Location).Current.Assistant);
+                Assert.Equal(local, window.AssistantModel.Whereabouts);
+                Assert.Equal($"Saved. The note now ends: {local}", dialog.SavedLine);
+            });
+
+            // Back at the drawing: Ctrl/Cmd+Shift+A, the question, Enter (keyboard).
+            window.Activate();
+            app.Chord(Key.A, KeyModifiers.Shift);
+            app.Type(question);
+            app.Press(Key.Enter);
+            Until(() => !window.IsAssistantThinking);
+            app.Expect("the local model's answer is on the note with its From-napkin item and the local whereabouts line", () =>
+            {
+                Assert.Equal(answer, window.AssistantAnswerOnScreen);
+                Assert.Contains(referencePack.Item(helpItem)!.ToString(), window.AssistantReferenceTexts);
+                Assert.Equal(local, window.AssistantWhereaboutsOnScreen);
+            });
+
+            app.Expect("the question went to /api/chat exactly as the note says: stream and think off, the temperature, no format", () =>
+            {
+                string body = ollama.Requests.Last(request => request.Path == "/api/chat").Body!;
+                using System.Text.Json.JsonDocument sent = System.Text.Json.JsonDocument.Parse(body);
+                System.Text.Json.JsonElement root = sent.RootElement;
+                Assert.Equal("qwen3:4b-q4_K_M", root.GetProperty("model").GetString());
+                Assert.False(root.GetProperty("stream").GetBoolean());
+                Assert.False(root.GetProperty("think").GetBoolean());
+                Assert.Equal(0.2, root.GetProperty("options").GetProperty("temperature").GetDouble());
+                Assert.False(root.TryGetProperty("format", out _));
+                Assert.EndsWith($"Question: {question}", root.GetProperty("messages")[1].GetProperty("content").GetString(), StringComparison.Ordinal);
+            });
+
+            app.Press(Key.Escape);
+            app.Expect("Escape closes the note", () => Assert.False(window.IsAskingAssistant));
+        });
+    }
+
     // ---- Steps and fixtures ---------------------------------------------------------------
+
+    /// <summary>Clicks a text field, selects what is in it and types over it (pointer, keyboard).</summary>
+    static void ReplaceText(AppDriver driver, Visual root, TextBox field, string text)
+    {
+        driver.Click(CentreOf(root, field));
+        driver.Chord(Key.A);
+        driver.Type(text);
+    }
+
+    /// <summary>
+    /// Runs the UI thread's queued work until <paramref name="done"/> holds: the local runtime is
+    /// asynchronous even against a stub, and its reply comes back to the UI thread as queued work.
+    /// </summary>
+    static void Until(Func<bool> done)
+    {
+        DateTime stop = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (!done() && DateTime.UtcNow < stop)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(5);
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
 
     /// <summary>A blank sheet through the real shortcut, then a click clear of anything drawn (keyboard, pointer).</summary>
     static void NewSheet(AppDriver app, MainWindow window)

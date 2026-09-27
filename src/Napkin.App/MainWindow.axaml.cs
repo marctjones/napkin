@@ -359,9 +359,9 @@ public partial class MainWindow : Window
     /// <summary>
     /// The model the Assistant panel asks (docs/design/llm-assistant.md &#xA7;2.1, &#xA7;2.4): given
     /// by the caller, or built from settings by <see cref="AssistantModels.FromSettings"/> when none
-    /// was given.
+    /// was given — and built again from them whenever <em>Where the model runs&#x2026;</em> saves new ones.
     /// </summary>
-    public IAssistantModel AssistantModel { get; }
+    public IAssistantModel AssistantModel { get; private set; }
 
     /// <summary>The sample scene files the Samples menu offers, in menu order.</summary>
     public IReadOnlyList<IDesignSource> Samples { get; } = SampleFiles.All;

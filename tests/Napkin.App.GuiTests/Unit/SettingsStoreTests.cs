@@ -180,10 +180,75 @@ public sealed class SettingsStoreTests : IDisposable
 
         var again = new SettingsStore(FilePath);
         Assert.Null(again.Notice);
-        Assert.Equal(2, again.Current.Version);
+        Assert.Equal(UserSettings.CurrentVersion, again.Current.Version);
         Assert.Equal(OpenDesignsIn.Model, again.Current.OpenIn);
         Assert.Equal(view, again.Current.LastView);
         Assert.Contains($"\"LastView\": \"{view}\"", File.ReadAllText(FilePath), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-006")]
+    public void Version_3_keeps_where_the_assistants_model_runs_and_starts_with_none()
+    {
+        // docs/design/llm-assistant.md §7, §11.2: settings version 3 round-trips AssistantSettings.
+        Assert.Equal(3, UserSettings.CurrentVersion);
+        AssistantSettings fresh = new SettingsStore(FilePath).Current.Assistant;
+        Assert.Equal(new AssistantSettings(AssistantProvider.None, "http://127.0.0.1:11434", null, 0.2), fresh);
+
+        AssistantSettings local = new(AssistantProvider.LocalServer, "http://127.0.0.1:11434", "qwen3:4b-q4_K_M", 0.2);
+        new SettingsStore(FilePath).Update(s => s with { Assistant = local });
+
+        var again = new SettingsStore(FilePath);
+        Assert.Null(again.Notice);
+        Assert.Equal(local, again.Current.Assistant);
+        string written = File.ReadAllText(FilePath);
+        Assert.Contains("\"Version\": 3", written, StringComparison.Ordinal);
+        Assert.Contains("\"Provider\": \"LocalServer\"", written, StringComparison.Ordinal);
+        Assert.Contains("\"Model\": \"qwen3:4b-q4_K_M\"", written, StringComparison.Ordinal);
+        Assert.DoesNotContain("key", written, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-006")]
+    public void A_version_2_file_from_before_the_assistant_gives_the_defaults_and_a_notice()
+    {
+        // Exactly what a version-2 napkin wrote; beta policy: no converter, the defaults and one line.
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(FilePath, "{\"Version\":2,\"ShowRulers\":true,\"Theme\":\"Dark\",\"LastView\":\"Front\"}");
+
+        var store = new SettingsStore(FilePath);
+
+        Assert.Equal(new UserSettings(), store.Current);
+        Assert.Equal(AssistantSettings.None, store.Current.Assistant);
+        Assert.Equal("Settings file is version 2, which this napkin does not read; using defaults.", store.Notice);
+    }
+
+    [Theory]
+    [Trait("Feature", "AST-006")]
+    [InlineData(AssistantProvider.None, "http://127.0.0.1:11434", "qwen3:4b-q4_K_M", 0.2, null)]
+    [InlineData(AssistantProvider.LocalServer, "http://127.0.0.1:11434", null, 0.2, null)]
+    [InlineData(AssistantProvider.LocalServer, "http://127.0.0.1:11434", "  ", 0.2, null)]
+    [InlineData(AssistantProvider.LocalServer, "http://192.168.1.5:11434", "qwen3:4b-q4_K_M", 0.2, null)]
+    [InlineData(AssistantProvider.LocalServer, "http://127.0.0.1:11434", "qwen3:4b-q4_K_M", -1, null)]
+    [InlineData(AssistantProvider.LocalServer, "http://127.0.0.1:11434", "qwen3:4b-q4_K_M", 0.2, "Local: qwen3:4b-q4_K_M at 127.0.0.1:11434 — nothing leaves this machine.")]
+    [InlineData(AssistantProvider.LocalServer, "localhost:8080", "qwen3-4b", 0.7, "Local: qwen3-4b at localhost:8080 — nothing leaves this machine.")]
+    public void The_window_builds_a_local_model_only_from_a_loopback_address_and_a_name(
+        AssistantProvider provider, string endpoint, string? model, double temperature, string? whereabouts)
+    {
+        UserSettings settings = new() { Assistant = new AssistantSettings(provider, endpoint, model, temperature) };
+
+        Napkin.Modules.Assistant.IAssistantModel built = AssistantModels.FromSettings(settings);
+
+        Assert.Equal(whereabouts ?? Napkin.Modules.Assistant.ScriptedModel.NoModelWhereabouts, built.Whereabouts);
+        if (whereabouts is null)
+        {
+            Assert.True(Assert.IsType<Napkin.Modules.Assistant.ScriptedModel>(built).IsNone);
+        }
+        else
+        {
+            using var local = Assert.IsType<Napkin.Assistant.LocalServer.LocalServerModel>(built);
+            Assert.Equal(temperature, local.Temperature);
+        }
     }
 
     [Fact]

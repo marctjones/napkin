@@ -461,8 +461,8 @@
                 <Separator />
                 <MenuItem Name="WhereModelRunsMenuItem"
                           Header="_Where the model runs…"
-                          IsEnabled="False"
-                          ToolTip.Tip="Choose a local program or the Claude API, and see what is installed. Not yet built (#231)." />
+                          Click="OnWhereModelRunsClicked"
+                          ToolTip.Tip="Choose a program on this machine — Ollama, or llama.cpp's llama-server — see which models it has, and test one. napkin downloads nothing." />
             </MenuItem>
         </Menu>
 
