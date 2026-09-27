@@ -539,6 +539,9 @@ public partial class CutListWindow : Window
     /// <summary>The Deck section as CSV.</summary>
     public string DeckCsv => ShoppingListCsv.ToCsv(DeckTable.Sorted, _kerf);
 
+    /// <summary>The Furniture checks section's lines: the scope flag, then the tip-over estimate.</summary>
+    public string FurnitureChecksLines => FurnitureChecksSection.IsVisible ? FurnitureChecksText.Text ?? string.Empty : string.Empty;
+
     /// <summary>The Roof section's rows (deck-and-porch §8).</summary>
     public ShoppingListTable RoofRows => RoofTable;
 
@@ -692,6 +695,12 @@ public partial class CutListWindow : Window
         RoofNote.Text = string.Join(" ", roofNotes);
         SunroomLine.Text = string.Join(" ", sunroom);
         SunroomLine.IsVisible = sunroom.Count > 0;
+
+        // Furniture checks (furniture-checks §4): the scope flag always, the tip-over estimate when the design says clothing storage.
+        TipOverReport tipOver = TipOver.Of(sketch.After(), MaterialsLibrary.Shipped);
+        FurnitureChecksText.Text = string.Join("\n", new[] { tipOver.Scope }.Concat(tipOver.Lines.Select(line => line.Text)));
+        FurnitureChecksNotes.Text = string.Join(" ", tipOver.Notes);
+        FurnitureChecksSection.IsVisible = tipOver.Scope.Length > 0;
         BuildSizes(sketch);
         string supplies = SuppliesText(sketch);
         if (supplies != _suppliesBuiltFrom)
