@@ -11,19 +11,6 @@ using Napkin.Modules.Furniture;
 
 namespace Napkin.Modules.Assistant;
 
-/// <summary>Which of a box's three sizes a resize names, as the edit schema spells it.</summary>
-public enum EditedSize
-{
-    /// <summary>"width": the box's size along its own X, in the plan.</summary>
-    Width,
-
-    /// <summary>"height": the box's size along its own Y, in the plan.</summary>
-    Height,
-
-    /// <summary>"depth": the box's third size, along its own Z.</summary>
-    Depth,
-}
-
 /// <summary>
 /// One edit in words exactly as the model wrote it (docs/design/llm-assistant.md &#xA7;4.5): which
 /// part, as the context pack names it, and what to change — nothing read yet. Closed: exactly six
@@ -38,11 +25,14 @@ public abstract record PartEdit
     /// <summary>The part, as the model named it: <c>[n]</c> or the name the pack gives it.</summary>
     public string Part { get; }
 
-    /// <summary><c>resize</c>: one of the part's three sizes to a length, as typing it does.</summary>
+    /// <summary>
+    /// <c>resize</c>: one of the part's three finished sizes to a length, as typing it does — named
+    /// as the pack names them, its length, width or thickness, never a box axis the pack does not state.
+    /// </summary>
     /// <param name="Part">The part, as the model named it.</param>
-    /// <param name="Size">Which size.</param>
+    /// <param name="Dimension">Which size: its length, width or thickness.</param>
     /// <param name="Length">The new size, as feet-inch text.</param>
-    public sealed record Resize(string Part, EditedSize Size, string Length) : PartEdit(Part);
+    public sealed record Resize(string Part, PartDimension Dimension, string Length) : PartEdit(Part);
 
     /// <summary><c>move</c>: the part's south-west corner to a place in the plan, as the Part panel's position fields do.</summary>
     /// <param name="Part">The part, as the model named it.</param>
@@ -98,7 +88,7 @@ public sealed record EditProposal(ImmutableArray<PartEdit> Edits)
     /// edits, each exactly one of the six shapes, every field required, no other member. A test
     /// holds the two equal.
     /// </summary>
-    public const string Schema = """{"type":"object","properties":{"edits":{"type":"array","items":{"anyOf":[{"type":"object","properties":{"edit":{"const":"resize"},"part":{"type":"string"},"dimension":{"enum":["width","height","depth"]},"length":{"type":"string"}},"required":["edit","part","dimension","length"],"additionalProperties":false},{"type":"object","properties":{"edit":{"const":"move"},"part":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"}},"required":["edit","part","x","y"],"additionalProperties":false},{"type":"object","properties":{"edit":{"const":"rename"},"part":{"type":"string"},"name":{"type":"string"}},"required":["edit","part","name"],"additionalProperties":false},{"type":"object","properties":{"edit":{"const":"stock"},"part":{"type":"string"},"stock":{"type":"string"}},"required":["edit","part","stock"],"additionalProperties":false},{"type":"object","properties":{"edit":{"const":"quantity"},"part":{"type":"string"},"quantity":{"type":"integer"}},"required":["edit","part","quantity"],"additionalProperties":false},{"type":"object","properties":{"edit":{"const":"remove"},"part":{"type":"string"}},"required":["edit","part"],"additionalProperties":false}]}}},"required":["edits"],"additionalProperties":false}""";
+    public const string Schema = """{"type":"object","properties":{"edits":{"type":"array","items":{"anyOf":[{"type":"object","properties":{"edit":{"const":"resize"},"part":{"type":"string"},"dimension":{"enum":["length","width","thickness"]},"length":{"type":"string"}},"required":["edit","part","dimension","length"],"additionalProperties":false},{"type":"object","properties":{"edit":{"const":"move"},"part":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"}},"required":["edit","part","x","y"],"additionalProperties":false},{"type":"object","properties":{"edit":{"const":"rename"},"part":{"type":"string"},"name":{"type":"string"}},"required":["edit","part","name"],"additionalProperties":false},{"type":"object","properties":{"edit":{"const":"stock"},"part":{"type":"string"},"stock":{"type":"string"}},"required":["edit","part","stock"],"additionalProperties":false},{"type":"object","properties":{"edit":{"const":"quantity"},"part":{"type":"string"},"quantity":{"type":"integer"}},"required":["edit","part","quantity"],"additionalProperties":false},{"type":"object","properties":{"edit":{"const":"remove"},"part":{"type":"string"}},"required":["edit","part"],"additionalProperties":false}]}}},"required":["edits"],"additionalProperties":false}""";
 
     /// <summary>The undo step, and the gesture the accepted edits land in: "Assistant edit" (&#xA7;4.3).</summary>
     public const string What = "Assistant edit";
@@ -137,7 +127,7 @@ public sealed record EditProposal(ImmutableArray<PartEdit> Edits)
     /// Reads a reply strictly (&#xA7;4.3): a JSON object with exactly <c>edits</c>, a list; each edit
     /// an object whose <c>edit</c> is one of the six names and whose other members are exactly that
     /// edit's, every one a string but <c>quantity</c>, a whole number written as one, and
-    /// <c>dimension</c> one of width, height or depth. An edit napkin does not make, an unknown
+    /// <c>dimension</c> one of length, width or thickness. An edit napkin does not make, an unknown
     /// member, a missing one, a member written twice, a null or a value of the wrong kind refuses
     /// the whole reply; nothing is defaulted or guessed.
     /// </summary>
@@ -310,16 +300,18 @@ public sealed record EditProposal(ImmutableArray<PartEdit> Edits)
             return Change.Refused($"a size of {Written(value)}");
         }
 
-        (ParamRef size, Length now, PartDimension named) = resize.Size switch
-        {
-            EditedSize.Width => ((ParamRef)new BoxWidthRef(box.Id), box.Width, part.PlanAxes.X),
-            EditedSize.Height => (new BoxHeightRef(box.Id), box.Height, part.PlanAxes.Y),
-            _ => (new BoxDepthRef(box.Id), box.Depth, part.PlanAxes.OutOfPlane),
-        };
+        // The pack names a part's finished sizes, never the box's axes; its plan axes say which box
+        // size each one is — exactly one, so nothing is guessed. A leg standing up has its length on
+        // the box's depth; a top lying flat has its thickness there.
+        PlanAxes axes = part.PlanAxes;
+        (ParamRef size, Length now) =
+            resize.Dimension == axes.X ? ((ParamRef)new BoxWidthRef(box.Id), box.Width)
+            : resize.Dimension == axes.Y ? (new BoxHeightRef(box.Id), box.Height)
+            : (new BoxDepthRef(box.Id), box.Depth);
 
         // Typing a size on a rough part firms it: the size and the clearing of the mark, one request (sketch-mode §3.1).
         Request request = RoughEntry.Typed(sketch, box.Id, DimensionEntry.RequestFor(sketch, size, value));
-        return Change.To($"{SceneWords.Of(named).ToLowerInvariant()} {Written(now)} to {Written(value)}", request, part.Rough ? part with { Rough = false } : null);
+        return Change.To($"{SceneWords.Of(resize.Dimension).ToLowerInvariant()} {Written(now)} to {Written(value)}", request, part.Rough ? part with { Rough = false } : null);
     }
 
     /// <summary>
@@ -502,16 +494,16 @@ public sealed record EditProposal(ImmutableArray<PartEdit> Edits)
         switch (name)
         {
             case "resize":
-                EditedSize? size = Text("dimension") switch
+                PartDimension? dimension = Text("dimension") switch
                 {
-                    "width" => EditedSize.Width,
-                    "height" => EditedSize.Height,
-                    "depth" => EditedSize.Depth,
+                    "length" => PartDimension.Length,
+                    "width" => PartDimension.Width,
+                    "thickness" => PartDimension.Thickness,
                     _ => null,
                 };
-                if (size is not { } which)
+                if (dimension is not { } which)
                 {
-                    why = $"{where}: \"dimension\" is not width, height or depth";
+                    why = $"{where}: \"dimension\" is not length, width or thickness";
                     return false;
                 }
 

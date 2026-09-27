@@ -85,7 +85,7 @@ public class EditProposalTests
     {
         // GUI-AST-05's edit: "make it 18 inches tall" with the south-west leg selected. A leg stands
         // on its depth (coffee-table.design.md), which the pack calls its length.
-        EditorAndPlan made = OnCoffeeTable(Reply(Resize("[1]", "depth", "1'-6\"")), "Leg, south-west");
+        EditorAndPlan made = OnCoffeeTable(Reply(Resize("[1]", "length", "1'-6\"")), "Leg, south-west");
         Box leg = BoxNamed(made.Editor, "Leg, south-west");
         Assert.Equal(leg.Id, made.Pack.EntityAt(1));
         Assert.StartsWith("Selected: Leg, south-west — part, 1'-4 1/4\" long", made.Pack.Item(1)!.Text, StringComparison.Ordinal);
@@ -144,7 +144,7 @@ public class EditProposalTests
 
         // Two sizes of one rough part: both clear the mark to the same part, so both stand.
         ContextPack pack = ContextPack.For(editor.Design, [leg.Id], ContextChecks.None, [], "an edit");
-        ProposalPlan plan = PlanOf(Reply(Resize("Leg 1", "height", "18\""), Resize("[1]", "width", "3 1/2\"")), editor.Design, pack);
+        ProposalPlan plan = PlanOf(Reply(Resize("Leg 1", "length", "18\""), Resize("[1]", "width", "3 1/2\"")), editor.Design, pack);
 
         // A rough 4 x 16 plank's longer plan side (Y) is its length (sketch-mode §2.3).
         Assert.Equal(["Leg 1: length 1'-4\" to 1'-6\"", "Leg 1: width 4\" to 3 1/2\""], plan.Lines.Select(line => line.Sentence));
@@ -278,7 +278,7 @@ public class EditProposalTests
     public void Every_edit_in_one_acceptance_is_one_undo_step_and_the_unticked_do_not_land()
     {
         EditorAndPlan made = OnCoffeeTable(
-            Reply(Resize("Leg, south-west", "depth", "18\""), Rename("Apron, long, north", "Back apron"), Quantity("Top", 2)),
+            Reply(Resize("Leg, south-west", "length", "18\""), Rename("Apron, long, north", "Back apron"), Quantity("Top", 2)),
             "Leg, south-west");
 
         ProposalOutcome outcome = made.Plan.Accept(made.Editor, [made.Plan.Lines[0], made.Plan.Lines[1]], EditProposal.MessageLine);
@@ -412,7 +412,7 @@ public class EditProposalTests
     [InlineData("1.5 ft", "Leg, south-west: length 1'-4 1/4\" to 1'-6\"")]
     public void A_size_off_the_grid_is_refused_never_rounded(string length, string sentence)
     {
-        EditorAndPlan made = OnCoffeeTable(Reply(Resize("Leg, south-west", "depth", length)));
+        EditorAndPlan made = OnCoffeeTable(Reply(Resize("Leg, south-west", "length", length)));
         Assert.Equal(sentence, Assert.Single(made.Plan.Lines).Sentence);
     }
 
@@ -512,6 +512,38 @@ public class EditProposalTests
         }
 
         Assert.Equal(EditProposal.Members.Keys.Order(StringComparer.Ordinal), shapes.Select(shape => shape.GetProperty("properties").GetProperty("edit").GetProperty("const").GetString()!).Order(StringComparer.Ordinal));
+
+        // A resize names a size as the pack does — long, wide, thick — never a box axis the pack does not state.
+        JsonElement resize = shapes.Single(shape => shape.GetProperty("properties").GetProperty("edit").GetProperty("const").GetString() == "resize");
+        Assert.Equal(
+            ["length", "width", "thickness"],
+            resize.GetProperty("properties").GetProperty("dimension").GetProperty("enum").EnumerateArray().Select(name => name.GetString()));
+    }
+
+    [Trait("Feature", "AST-005")]
+    [Theory]
+    // The top lies flat, its length along X (coffee-table.scene.json's planAxes): 48", 24", 3/4".
+    [InlineData("Top", "length", "4'-6\"", "width", "Top: length 4'-0\" to 4'-6\"")]
+    [InlineData("Top", "width", "2'-6\"", "height", "Top: width 2'-0\" to 2'-6\"")]
+    [InlineData("Top", "thickness", "1\"", "depth", "Top: thickness 3/4\" to 1\"")]
+    // A leg stands up, its width along X and its thickness along Y: its length is the box's depth.
+    [InlineData("Leg, north-east", "width", "3\"", "width", "Leg, north-east: width 2 1/2\" to 3\"")]
+    [InlineData("Leg, north-east", "thickness", "3\"", "height", "Leg, north-east: thickness 2 1/2\" to 3\"")]
+    [InlineData("Leg, north-east", "length", "18\"", "depth", "Leg, north-east: length 1'-4 1/4\" to 1'-6\"")]
+    public void Each_of_a_parts_three_sizes_lands_on_exactly_the_box_size_its_plan_axes_say(string part, string dimension, string length, string boxSize, string sentence)
+    {
+        EditorAndPlan made = OnCoffeeTable(Reply(Resize(part, dimension, length)));
+        EntityId id = BoxNamed(made.Editor, part).Id;
+        ParamRef expected = boxSize switch
+        {
+            "width" => new BoxWidthRef(id),
+            "height" => new BoxHeightRef(id),
+            _ => new BoxDepthRef(id),
+        };
+
+        ProposalLine line = Assert.Single(made.Plan.Lines);
+        Assert.Equal(sentence, line.Sentence);
+        Assert.Equal(Shape(DimensionEntry.RequestFor(made.Editor.Sketch, expected, Length.Parse(length))), Shape(Only(line)));
     }
 
     [Trait("Feature", "AST-005")]
@@ -549,7 +581,7 @@ public class EditProposalTests
     public void Every_one_of_the_six_parses_to_its_own_edit()
     {
         EditProposal proposal = EditProposal.Parse(Reply(
-            Resize("[1]", "depth", "1'-6\""),
+            Resize("[1]", "length", "1'-6\""),
             Move("Top", "0", "1'"),
             Rename("Top", "Lid"),
             Stock("Top", "3/4 plywood"),
@@ -558,7 +590,7 @@ public class EditProposalTests
 
         Assert.Equal(
             [
-                new PartEdit.Resize("[1]", EditedSize.Depth, "1'-6\""),
+                new PartEdit.Resize("[1]", PartDimension.Length, "1'-6\""),
                 new PartEdit.Move("Top", "0", "1'"),
                 new PartEdit.Rename("Top", "Lid"),
                 new PartEdit.Stock("Top", "3/4 plywood"),
@@ -566,8 +598,8 @@ public class EditProposalTests
                 new PartEdit.Remove("[2]"),
             ],
             proposal.Edits);
-        Assert.Equal(EditedSize.Width, EditProposal.Parse(Reply(Resize("P", "width", "1")))!.Edits[0] is PartEdit.Resize { Size: var width } ? width : EditedSize.Depth);
-        Assert.Equal(EditedSize.Height, EditProposal.Parse(Reply(Resize("P", "height", "1")))!.Edits[0] is PartEdit.Resize { Size: var height } ? height : EditedSize.Depth);
+        Assert.Equal(new PartEdit.Resize("P", PartDimension.Width, "1"), Assert.Single(EditProposal.Parse(Reply(Resize("P", "width", "1")))!.Edits));
+        Assert.Equal(new PartEdit.Resize("P", PartDimension.Thickness, "1"), Assert.Single(EditProposal.Parse(Reply(Resize("P", "thickness", "1")))!.Edits));
         Assert.Equal("Top", proposal.Edits[1].Part);
         Assert.Empty(EditProposal.Parse("""{"edits":[]}""")!.Edits);
     }
@@ -593,8 +625,10 @@ public class EditProposalTests
     [InlineData("""{"edits":[{"edit":"rename","part":"Top"}]}""", "edit 1 has no \"name\"")]
     [InlineData("""{"edits":[{"edit":"remove","part":3}]}""", "edit 1: \"part\" is not text")]
     [InlineData("""{"edits":[{"edit":"move","part":"Top","x":0,"y":"0"}]}""", "edit 1: \"x\" is not text")]
-    [InlineData("""{"edits":[{"edit":"resize","part":"Top","dimension":"length","length":"1"}]}""", "edit 1: \"dimension\" is not width, height or depth")]
-    [InlineData("""{"edits":[{"edit":"resize","part":"Top","dimension":"Width","length":"1"}]}""", "edit 1: \"dimension\" is not width, height or depth")]
+    // A box's axes are not the pack's words for a part's sizes, so they are not the edit's either.
+    [InlineData("""{"edits":[{"edit":"resize","part":"Top","dimension":"depth","length":"1"}]}""", "edit 1: \"dimension\" is not length, width or thickness")]
+    [InlineData("""{"edits":[{"edit":"resize","part":"Top","dimension":"height","length":"1"}]}""", "edit 1: \"dimension\" is not length, width or thickness")]
+    [InlineData("""{"edits":[{"edit":"resize","part":"Top","dimension":"Width","length":"1"}]}""", "edit 1: \"dimension\" is not length, width or thickness")]
     [InlineData("""{"edits":[{"edit":"quantity","part":"Top","quantity":"2"}]}""", "edit 1: \"quantity\" is not a whole number")]
     [InlineData("""{"edits":[{"edit":"quantity","part":"Top","quantity":1.5}]}""", "edit 1: \"quantity\" is not a whole number")]
     [InlineData("""{"edits":[{"edit":"quantity","part":"Top","quantity":null}]}""", "edit 1: \"quantity\" is not a whole number")]

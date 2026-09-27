@@ -404,7 +404,7 @@ public class AssistantWorkflows
         const string it = "call it Apron 9";
         ScriptedModel model = new(
             ScriptedReply.Json(
-                """{"edits":[{"edit":"resize","part":"[1]","dimension":"depth","length":"1'-6\""},{"edit":"rename","part":"[1]","name":"Tall leg"}]}""",
+                """{"edits":[{"edit":"resize","part":"[1]","dimension":"length","length":"1'-6\""},{"edit":"rename","part":"[1]","name":"Tall leg"}]}""",
                 match: "18 inches"),
             ScriptedReply.Json(
                 """{"edits":[{"edit":"rename","part":"[1]","name":"Apron"},{"edit":"rename","part":"[2]","name":"Apron"}]}""",
