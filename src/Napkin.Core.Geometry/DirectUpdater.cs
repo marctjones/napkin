@@ -69,6 +69,7 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetCode code => new Solved(sketch with { Code = code.Code }, ChangeSet.Empty),
             SetSite site => new Solved(sketch with { Site = site.Site }, ChangeSet.Empty),
             SetFurnitureMarks marks => new Solved(sketch with { Furniture = marks.Marks }, ChangeSet.Empty),
+            SetBoundary boundary => ApplySetBoundary(sketch, boundary),
             SetWallInputs wall => ApplySetWallInputs(sketch, wall),
             SetPhase phase => sketch.Find(phase.Id) is { } phased
                 ? new Solved(sketch.WithEntity(phased with { Phase = phase.Phase }), ChangeSet.Empty with { Modified = [phase.Id] })
@@ -157,6 +158,11 @@ public sealed class DirectUpdater : IGeometryUpdater
         if (entity is Strut strut && StrutRefusal(strut) is { } broken)
         {
             return broken;
+        }
+
+        if (entity is Boundary boundary && BoundaryRules.Refusal(boundary.Courses) is not null)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
         }
 
         if (entity is Segment segment
@@ -396,6 +402,26 @@ public sealed class DirectUpdater : IGeometryUpdater
         }
 
         return new Solved(sketch.WithEntity(box with { Deck = request.Inputs }), ChangeSet.Empty with { Modified = [box.Id] });
+    }
+
+    private static UpdateResult ApplySetBoundary(Sketch sketch, SetBoundary request)
+    {
+        if (sketch.Find(request.Id) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Boundary boundary)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        if (BoundaryRules.Refusal(request.Courses) is not null)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        return new Solved(sketch.WithEntity(boundary with { Start = request.Start, Courses = request.Courses }), ChangeSet.Empty with { Modified = [boundary.Id] });
     }
 
     private static UpdateResult ApplySetRoofInputs(Sketch sketch, SetRoofInputs request)

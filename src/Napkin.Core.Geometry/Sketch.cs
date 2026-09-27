@@ -551,6 +551,10 @@ public sealed record Sketch(
                     // A note has no size and names nothing: nothing to check (renovation §7).
                     break;
 
+                case Boundary boundary when BoundaryRules.Refusal(boundary.Courses) is { } why:
+                    errors.Add(new ValidationError(ValidationErrorKind.NonPositiveSize, $"Boundary {boundary.Id}: {why}."));
+                    break;
+
                 case Segment segment:
                     RequireEntity<Node>(segment.Start, $"Segment {segment.Id} starts at", errors);
                     RequireEntity<Node>(segment.End, $"Segment {segment.Id} ends at", errors);
