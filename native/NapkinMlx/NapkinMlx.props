@@ -1,0 +1,25 @@
+<Project>
+
+  <!-- The MLX bridge beside the executable (docs/design/mlx-runtime.md §3.1, §3.3, §13.1 item 9),
+       for the two projects that load it: Napkin.App, and Napkin.Tools for `assistant mlx-smoke`.
+
+       tools/scripts/build-mlx.sh builds it into native/NapkinMlx/out/ — never dotnet build, never
+       the gate. Where that has run (an Apple silicon Mac with Xcode, or the release job that
+       downloads the bridge), the three files are copied to native/ beside the executable; anywhere
+       else the folder is absent, nothing is included, and MlxAvailability says MLX is not in this
+       build. The same commit builds everywhere.
+
+       All three travel together: MLX 0.31 loads its kernels only from the mlx.metallib beside the
+       dylib MLX is compiled into, and the dylib finds libswiftCompatibilitySpan.dylib through an
+       @loader_path rpath. Kept out of a single-file bundle for the same reason: a bundled native
+       library is extracted elsewhere at start-up, away from its neighbours. -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)out\libNapkinMlx.dylib')">
+    <Content Include="$(MSBuildThisFileDirectory)out\libNapkinMlx.dylib;$(MSBuildThisFileDirectory)out\mlx.metallib;$(MSBuildThisFileDirectory)out\libswiftCompatibilitySpan.dylib"
+             Link="native\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest"
+             ExcludeFromSingleFile="true"
+             Visible="false" />
+  </ItemGroup>
+
+</Project>

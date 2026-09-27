@@ -17,6 +17,13 @@
     <!-- `samples restamp` verifies its output with the real strict reader (#181) rather than a
          second, tool-only notion of "valid". -->
     <ProjectReference Include="..\..\src\Napkin.Core.Project\Napkin.Core.Project.csproj" />
+    <!-- `assistant mlx-smoke` (docs/design/mlx-runtime.md §7.4) runs napkin's own MLX runtime on the
+         real bridge: the only place outside the app that loads it, by hand, never in the gate. -->
+    <ProjectReference Include="..\..\src\Napkin.Assistant.Mlx\Napkin.Assistant.Mlx.csproj" />
   </ItemGroup>
+
+  <!-- The bridge beside this tool too, when built, so the smoke loads it exactly as the app does:
+       from native/ beside the executable. -->
+  <Import Project="..\..\native\NapkinMlx\NapkinMlx.props" />
 
 </Project>
