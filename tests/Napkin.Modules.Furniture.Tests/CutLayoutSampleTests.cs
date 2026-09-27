@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
@@ -73,5 +74,84 @@ public sealed class CutLayoutSampleTests
         PlannedBoard twoByTwo = Board(plan, "2x2");
         Assert.Equal(new Length(72 * 1024), twoByTwo.StockLength);
         Assert.Equal(Length.Inches(6, 1, 2), twoByTwo.Offcut);
+    }
+
+    /// <summary>
+    /// Each sheet of the sample's plywood against its <c>sheetLayout</c>, worked out by hand in the
+    /// sample's <c>expected.json</c> (strip by strip, piece by piece, with the arithmetic in each
+    /// sheet's <c>derivation</c>) — and the shopping list buys exactly those sheets.
+    /// </summary>
+    [Theory]
+    [InlineData("stocked-bench")]
+    [InlineData("diy-coffee-table-drawers")]
+    [Trait("Feature", "CUT-007")]
+    public void A_samples_sheets_are_the_ones_worked_out_by_hand(string fixture)
+    {
+        JsonElement expected;
+        using (FileStream stream = File.OpenRead(Path.Combine(ExpectedFixture.Directory, $"{fixture}.expected.json")))
+        {
+            expected = JsonDocument.Parse(stream).RootElement.GetProperty("sheetLayout").Clone();
+        }
+
+        LoadResult result = SceneReader.ReadFile(ExpectedFixture.ScenePath(fixture));
+        ImmutableArray<CutListRow> rows = CutList.Of(Assert.IsType<Loaded>(result).Sketch, MaterialsLibrary.Shipped);
+        Length kerf = new(expected.GetProperty("kerfUnits").GetInt64());
+        CutLayoutPlan plan = CutLayout.Of(rows, kerf);
+        ImmutableArray<CutLayoutRow> lines = CutLayout.Rows(plan);
+        ImmutableArray<string> summary = CutLayout.Summary(plan);
+        ImmutableArray<ShoppingListRow> shopping = ShoppingList.Of(rows, kerf);
+
+        JsonElement[] panels = [.. expected.GetProperty("panels").EnumerateArray()];
+        Assert.Equal(panels.Length, plan.Panels.Length);
+        for (int p = 0; p < panels.Length; p++)
+        {
+            PanelLayout layout = plan.Panels[p];
+            JsonElement panel = panels[p];
+            Assert.Equal(panel.GetProperty("material").GetString(), layout.Panel.Name);
+            Assert.Equal(panel.GetProperty("species").GetString(), layout.Species);
+            Assert.Equal(panel.GetProperty("refused").GetInt32(), layout.Refused.Length);
+            Assert.Contains(panel.GetProperty("summary").GetString(), summary);
+
+            JsonElement[] sheets = [.. panel.GetProperty("sheets").EnumerateArray()];
+            Assert.Equal(sheets.Length, layout.Sheets.Length);
+            Assert.Equal(sheets.Length, Assert.Single(shopping, row => row.Material == layout.Panel.Name && row.Species == layout.Species).Sheets);
+
+            for (int s = 0; s < sheets.Length; s++)
+            {
+                PlannedSheet sheet = layout.Sheets[s];
+                JsonElement want = sheets[s];
+                Assert.Equal(want.GetProperty("number").GetInt32(), sheet.Number);
+                Assert.Equal(want.GetProperty("longUnits").GetInt64(), sheet.Long.Units);
+                Assert.Equal(want.GetProperty("shortUnits").GetInt64(), sheet.Short.Units);
+                Assert.Equal(want.GetProperty("rips").GetInt32(), sheet.Rips);
+                Assert.Equal(want.GetProperty("cuts").GetInt32(), sheet.Cuts);
+                Assert.Equal((Int128)want.GetProperty("wasteSquareUnits").GetInt64(), sheet.WasteArea);
+                Assert.False(string.IsNullOrWhiteSpace(want.GetProperty("derivation").GetString()));
+
+                JsonElement[] strips = [.. want.GetProperty("strips").EnumerateArray()];
+                Assert.Equal(strips.Length, sheet.Strips.Length);
+                for (int t = 0; t < strips.Length; t++)
+                {
+                    SheetStrip strip = sheet.Strips[t];
+                    JsonElement wantStrip = strips[t];
+                    Assert.Equal(wantStrip.GetProperty("yUnits").GetInt64(), strip.Y.Units);
+                    Assert.Equal(wantStrip.GetProperty("widthUnits").GetInt64(), strip.Width.Units);
+                    Assert.Equal(wantStrip.GetProperty("crosscuts").GetInt32(), strip.Crosscuts);
+                    Assert.Equal(wantStrip.GetProperty("trims").GetInt32(), strip.Trims);
+                    Assert.Equal(
+                        wantStrip.GetProperty("pieces").EnumerateArray().Select(piece => (
+                            piece.GetProperty("label").GetString(),
+                            piece.GetProperty("alongUnits").GetInt64(),
+                            piece.GetProperty("acrossUnits").GetInt64(),
+                            piece.GetProperty("turned").GetBoolean(),
+                            piece.GetProperty("xUnits").GetInt64(),
+                            strip.Y.Units)),
+                        strip.Pieces.Select(piece => ((string?)piece.Label, piece.Along.Units, piece.Across.Units, piece.Turned, piece.X.Units, piece.Y.Units)));
+                }
+
+                CutLayoutRow line = Assert.Single(lines, row => ReferenceEquals(row.Sheet, sheet));
+                Assert.Equal(want.GetProperty("line").GetString(), CutLayout.Line(CutLayout.Fields(line)));
+            }
+        }
     }
 }

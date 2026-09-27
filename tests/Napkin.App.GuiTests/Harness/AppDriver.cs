@@ -34,6 +34,46 @@ public sealed class AppDriver : IGuiDriver
         Target = target;
         FrameNamePrefix = frameNamePrefix;
         Probe = new InputProbe(target);
+
+        // The pointer the window's input arrives on, noted from every move so a stale capture can be let go.
+        target.AddHandler(InputElement.PointerMovedEvent, (_, e) => _pointer = e.Pointer, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+    }
+
+    IPointer? _pointer;
+
+    /// <summary>The controls whose tooltip is open now, followed as tooltips open and close.</summary>
+    static readonly HashSet<Control> OpenToolTips = [];
+
+    static AppDriver() => ToolTip.IsOpenProperty.Changed.AddClassHandler<Control>((owner, change) =>
+    {
+        if (change.GetNewValue<bool>())
+        {
+            OpenToolTips.Add(owner);
+        }
+        else
+        {
+            OpenToolTips.Remove(owner);
+        }
+    });
+
+    /// <summary>
+    /// Clears what a real mouse would already have cleared before a press. A tooltip left open in the
+    /// window's overlay took the next press to dismiss itself, so the control under the pointer never saw
+    /// it (found on GUI-VIEW-14 once the Samples menu fit the window): headless time does not run the
+    /// tooltip's own close, and a real press closes it anyway. A capture held with the button up is let
+    /// go for the same reason. A drag in progress is never touched, because this runs before a press.
+    /// </summary>
+    void ReleaseStaleCapture()
+    {
+        foreach (Control owner in OpenToolTips.ToList())
+        {
+            ToolTip.SetIsOpen(owner, false);
+        }
+
+        if (_pointer?.Captured is not null)
+        {
+            _pointer.Capture(null);
+        }
     }
 
     /// <summary>Attaches a driver to a top level that is already constructed.</summary>
@@ -88,6 +128,7 @@ public sealed class AppDriver : IGuiDriver
     {
         var raw = ToRaw(modifiers);
         Target.MouseMove(point, raw);
+        ReleaseStaleCapture();
         Target.MouseDown(point, button, raw);
         Target.MouseUp(point, button, raw);
         Settle();
@@ -107,6 +148,7 @@ public sealed class AppDriver : IGuiDriver
     public void DoubleClick(Point point, MouseButton button = MouseButton.Left)
     {
         Target.MouseMove(point);
+        ReleaseStaleCapture();
         Target.MouseDown(point, button);
         Target.MouseUp(point, button);
         Target.MouseDown(point, button);
@@ -131,6 +173,7 @@ public sealed class AppDriver : IGuiDriver
         }
 
         Target.MouseMove(path[0]);
+        ReleaseStaleCapture();
         Target.MouseDown(path[0], MouseButton.Left);
         for (var i = 1; i < path.Length; i++)
         {
@@ -159,6 +202,7 @@ public sealed class AppDriver : IGuiDriver
 
         RawInputModifiers raw = ToRaw(modifiers);
         Target.MouseMove(path[0], raw);
+        ReleaseStaleCapture();
         Target.MouseDown(path[0], MouseButton.Left, raw);
         for (var i = 1; i < path.Length; i++)
         {
@@ -185,6 +229,7 @@ public sealed class AppDriver : IGuiDriver
     public void PressAt(Point point)
     {
         Target.MouseMove(point);
+        ReleaseStaleCapture();
         Target.MouseDown(point, MouseButton.Left);
         Settle();
         Record(GuiActionKind.Pointer, $"press at {Format(point)}");

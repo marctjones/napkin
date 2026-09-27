@@ -32,6 +32,7 @@ public class MenuLayoutWorkflows
 
         Open(app, window, "file", "FileMenu");
         Open(app, window, "file-samples", "FileMenu", "SamplesMenu");
+        Open(app, window, "file-samples-building", "FileMenu", "SamplesMenu", "SamplesBuildingMenu");
         Open(app, window, "edit", "EditMenu");
         Open(app, window, "draw", "DrawMenu");
         Open(app, window, "draw-walls", "DrawMenu", "WallsMenu");
@@ -66,16 +67,20 @@ public class MenuLayoutWorkflows
     /// Opens a menu and its submenus in turn by clicking each, checks that every item now showing
     /// lies inside the window, saves the frame, and closes the menu again with Escape.
     /// </summary>
+    /// <summary>A menu item by name: from the window's XAML, or, for one built in code, from the open menus.</summary>
+    static MenuItem Named(MainWindow window, string name)
+        => window.FindControl<MenuItem>(name) ?? window.GetVisualDescendants().OfType<MenuItem>().Single(item => item.Name == name);
+
     static void Open(AppDriver app, MainWindow window, string frame, params string[] path)
     {
         foreach (string name in path)
         {
-            app.Click(CentreOf(window, window.FindControl<MenuItem>(name)!));
+            app.Click(CentreOf(window, Named(window, name)));
         }
 
         app.Expect($"{string.Join(" → ", path)} fits in the window", () =>
         {
-            MenuItem last = window.FindControl<MenuItem>(path[^1])!;
+            MenuItem last = Named(window, path[^1]);
             Assert.True(last.IsSubMenuOpen, $"{path[^1]} did not open.");
             List<MenuItem> showing = [.. window.GetVisualDescendants().OfType<MenuItem>().Where(item => item.IsEffectivelyVisible)];
             Assert.NotEmpty(showing);
