@@ -291,13 +291,13 @@ happens whenever no grading rulebook has been read for that size — the bucket 
 feet and says "napkin has read no stock-length list for this size", and buys nothing. It does not
 fall back on a guess. That behaviour is why `StandardLengths` is empty rather than defaulted.
 
-*(Superseded by #26: sheets are now nested by `SheetLayout` — strips ripped along the sheet, crosscut within — and the shopping list buys the sheets it lays out, noted "sheets from the cut layout".)*
-
-**`PanelStock` — a two-dimensional problem, and #9 does not solve it.** Sheet nesting is its own
-issue (DESIGN.md §5.2, a bin-packing heuristic). #9 reports, per panel item, the total **area** of
-the parts cut from it, the sheet's area, and `ceil(parts area / sheet area)` sheets, labelled
-**"sheets by area — a nesting layout may need more"**. That number is a floor and says so. A part
-larger than a sheet in either dimension is reported the way an over-long board is.
+**`PanelStock` — a two-dimensional problem.** The shopping list does not count sheets itself: it
+asks the sheet layout (`SheetLayout`, #26, §4.2) and buys the sheets that layout uses, noted
+**"sheets from the cut layout"**, just as it buys the boards `CutLayout` plans. (#9 bought
+`ceil(parts area / sheet area)` and called it a floor; the layout's count is never below that floor
+and is sometimes above it — §4.2.) A part larger than the sheet either way is refused the way an
+over-long board is, and so is a part that would fit only turned against the grain set on it; both
+are named in the row's note and buy nothing.
 
 **`HardwoodStock`** — sold by the board foot in random widths, so there is nothing to bin-pack. The
 bucket reports board feet (§4.1) and no piece count.
@@ -332,6 +332,71 @@ thickness is what the cut list shows.
 
 Grouping: one row per (stock item, species), ordinal by stock name then species.
 
+### 4.2 Sheet goods: nesting (#26)
+
+`SheetLayout` (Furniture) lays each panel item's pieces out on its sheets. It is the one place that
+decides how many sheets a panel needs: the shopping list and the **Cut layout** tab both call it, so
+they cannot disagree.
+
+**The heuristic: guillotine strips, first-fit decreasing, napkin's own.** It works the way a table
+saw or track saw breaks down a sheet: rip strips along the sheet's long side, then crosscut pieces
+from each strip. Why this and not a tighter nest (max-rects, free-form):
+
+- Every cut runs edge to edge (a guillotine layout), so every layout it gives can be cut, in the
+  order it lists. A max-rects nest can pack tighter but can place a piece that no through-cut frees.
+- It reuses the board rule of §4 (#138) unchanged: a strip is a board, and the sheet's width is a
+  board the strips are ripped from. Kerf means the same thing on both tabs.
+- It is small, exact and deterministic, and napkin's own, so nothing new enters the dependency
+  gate (#2, DESIGN.md §2.1).
+
+It is not optimal. A person can often beat it by hand, and it is a plan, not a guarantee, the way
+the board layout is.
+
+**The rules.**
+
+1. **Orientation.** A piece with its grain set (#140) keeps its grain along the sheet's long side
+   and is never turned. napkin assumes a sheet's face grain runs its long way, and the layout's
+   statement says so. A piece with no grain set lies with its longer side along the sheet. It is
+   never turned just to fill a gap.
+2. **Order.** Widest across first, then longest, ties in cut-list order (a stable sort).
+3. **Placement.** Each piece goes in the first strip, on any open sheet, with length left for it
+   (the board rule along the strip). Failing that, it starts a new strip on the first sheet with
+   width left (the board rule across the sheet). Failing that, it starts a new sheet. A strip is as
+   wide as its first piece. Pieces arrive widest first, so every open strip is wide enough and only
+   its length is in question.
+4. **Cuts.** Crosscuts per strip and rips per sheet follow the board rule: *n* cuts when an offcut
+   remains, *n − 1* when the pieces and their kerfs exactly fill it. A piece narrower than its strip
+   takes one more rip (a trim).
+5. **Waste.** The sheet's area less its pieces' area, which counts offcuts and kerf together. It is
+   kept in `Int128` square 1/1024 in and shown in square feet to a tenth, rounded once at the end
+   (§4.1's rule).
+6. **Refusals.** A piece that fits no sheet either way is refused as too big. A piece that fits only
+   turned against its grain is refused for that reason. Neither buys a sheet.
+
+**Exact and deterministic.** Every size and every fit test is a `Length`; there are no doubles. The
+same rows and the same kerf give the same layout, sheet for sheet and piece for piece (tested).
+
+**Which count the shopping list buys: the layout's.** It is never less than the area floor
+`ceil(placed area / sheet area)`, because the pieces on a layout's sheets do not overlap, so their
+area cannot exceed the sheets' (`SheetLayoutTests` checks non-overlap, kerf spacing and the floor
+over many generated cut lists). It can be more: two 30 × 60 in panels are 3600 in² of a 4608 in²
+sheet, but a 30 in strip plus a kerf plus another 30 in strip is wider than 48 in, and 60 + 60 is
+longer than 96, so they need two sheets. The area count would have under-bought by one; the
+layout's count buys what the person will actually cut.
+
+**Where the numbers come from.** The sheet size is the library's `PanelStock.SheetWidth` and
+`SheetLength` (PS 1-19 §5.4 for plywood). The kerf is the person's setting (§4).
+
+**Checked against the samples.** `samples/stocked-bench.expected.json` and
+`samples/diy-coffee-table-drawers.expected.json` carry a `sheetLayout` worked out by hand: strips,
+piece positions, cuts, waste, and the line the tab shows. The coffee table's eight 1/2 plywood
+drawer parts take two 3 1/2 in strips on one sheet.
+
+**On screen and not yet.** The Cut layout tab lists each sheet as a line and draws it under the line
+at the boards' scale, with the pieces placed and the waste hatched. Not yet built: labels on the
+drawn pieces and the printed sheet diagram (#211, in the PDF of #25); turning an ungrained piece to
+fill a gap; and carrying offcuts from one sheet or panel to another.
+
 ---
 
 ## 5. Where every number comes from
@@ -348,6 +413,7 @@ Grouping: one row per (stock item, species), ordinal by stock name then species.
 | the stock's actual cross-section | `Napkin.Core.Materials`, cited per row to PS 20-20 Table 3 |
 | stock lengths available | `StockItem.StandardLengths`, cited to a grading agency's rulebook |
 | boards needed | first-fit decreasing over those lengths (§4 step 2) |
+| sheets needed | the sheet layout's strips on that sheet size (§4.2) |
 | board feet | PS 20-20 §2.2, on nominal sizes from the library |
 | sheet size | `PanelStock.SheetWidth`/`SheetLength`, cited to PS 1-19 §5.4 |
 
@@ -519,6 +585,11 @@ to buy and the waste (offcuts and kerf) in inches and as a percentage of the boa
 **Saw kerf** is the box at the top of the tab: type your blade's kerf as a length (`1/8`, `3/32"`,
 `0`) and press Enter or *Set*. Text that is not a length is refused with a message and changes
 nothing. The shopping list uses the same kerf, and napkin remembers it between runs.
-The lists show sheet goods as "counted by sheets, not nested": laying pieces out on a sheet is a later
-feature. The layout is a plan, not a guarantee: it does not know about knots, checks or defects.
-The file the tab exports is exactly the lines on screen, one row per board.
+Sheet goods are laid out too (§4.2). Each sheet is one line, for example
+`Sheet 1: 3/4 plywood x 4 ft × 8 ft: strip 1, 22 in: Top 42 × 22 in | 2 cuts, kerf 1/8 in | offcut 25.6 sq ft`,
+giving the strips in the order they are ripped, the pieces crosscut from each, the saw cuts, and the
+offcut (all of the sheet that is not a piece, kerf included). A drawing of the sheet sits under the
+line at the same scale as the boards: pieces where they lie, waste hatched. The summary gives each
+panel's sheets, pieces and waste.
+The layout is a plan, not a guarantee: it does not know about knots, checks or defects.
+The file the tab exports is exactly the lines on screen, one row per board or sheet.

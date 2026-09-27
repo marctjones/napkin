@@ -115,6 +115,10 @@ public static class SampleFiles
             "Basement room",
             "A 14'-0\" × 12'-0\" room inside four new walls, a door and a window — drywall, insulation, paint, flooring and baseboard by area."),
         new(
+            "porch-12x10.scene.json",
+            "Porch on a deck",
+            "A 12'-0\" × 10'-0\" deck against the house, a bearing front wall with a window, and a 5-in-12 shed roof of ten 2x8 rafters."),
+        new(
             "splayed-bench.scene.json",
             "Splayed bench",
             "A 3'-0\" seat on four 2x2 legs leaning out 7\" in 24\" — angled parts, one row of four mitred legs."),
@@ -133,6 +137,13 @@ public static class SampleFiles
     ];
 
     private static readonly string[] SceneSuffixes = [".scene.json", ".json"];
+
+    /// <summary>
+    /// The samples the menu groups under <strong>Samples → Building</strong>: past the ninth, so no
+    /// command-digit shortcut moves, and together they keep the Samples menu inside a 900 × 600 window.
+    /// </summary>
+    public static readonly ImmutableHashSet<string> BuildingFiles = ImmutableHashSet.Create(
+        StringComparer.OrdinalIgnoreCase, "window-in-existing-wall.scene.json", "basement-room.scene.json", "porch-12x10.scene.json");
 
     /// <summary>The samples, in menu order, that were actually found beside the executable.</summary>
     public static IReadOnlyList<FileDesignSource> All { get; } = Discover();

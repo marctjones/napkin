@@ -98,9 +98,94 @@ public sealed class CutLayoutBar : Control
 }
 
 /// <summary>
-/// The cut layout as it is read: one text line per board, the drawn bar under it, and the refusals
-/// (issue #138). The text of each line is <see cref="CutLayout.Line"/> of the very fields
-/// <see cref="CutLayout.ToCsv"/> writes, so the screen and the file cannot disagree.
+/// One drawn sheet of the cut layout (issue #26): the sheet with its long side across the screen,
+/// each piece where <see cref="SheetLayout"/> puts it, and everything that is not a piece — offcuts
+/// and kerf — hatched, as a board's offcut is.
+/// </summary>
+/// <remarks>
+/// Drawn to the same scale as the boards in its view, so an 8' sheet is as long as an 8' board.
+/// The pieces are not labelled here: the line above the drawing names them, strip by strip, in the
+/// order they lie. The printed diagram, with labels, is #211.
+/// </remarks>
+public sealed class CutLayoutSheet : Control
+{
+    private readonly PlannedSheet _sheet;
+    private readonly double _pixelsPerUnit;
+
+    /// <summary>A drawing of one sheet.</summary>
+    /// <param name="sheet">The sheet.</param>
+    /// <param name="pixelsPerUnit">The scale: pixels per 1/1024 inch, the same as the view's bars.</param>
+    public CutLayoutSheet(PlannedSheet sheet, double pixelsPerUnit)
+    {
+        ArgumentNullException.ThrowIfNull(sheet);
+        _sheet = sheet;
+        _pixelsPerUnit = pixelsPerUnit;
+        Width = (sheet.Long.Units * pixelsPerUnit) + 1;
+        Height = (sheet.Short.Units * pixelsPerUnit) + 1;
+        HorizontalAlignment = HorizontalAlignment.Left;
+    }
+
+    /// <summary>The sheet this draws.</summary>
+    public PlannedSheet Sheet => _sheet;
+
+    /// <inheritdoc/>
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == ThemeVariantScope.ActualThemeVariantProperty)
+        {
+            InvalidateVisual();
+        }
+    }
+
+    /// <inheritdoc/>
+    public override void Render(DrawingContext context)
+    {
+        base.Render(context);
+
+        EntityStyle style = CanvasPalette.For(ActualThemeVariant).StyleFor(DesignLayers.Parts);
+        IBrush fill = new SolidColorBrush(style.Fill);
+        Pen outline = new(new SolidColorBrush(style.Stroke), 1);
+        Pen hatch = new(new SolidColorBrush(style.Stroke, 0.55), 1);
+
+        Rect whole = new(0.5, 0.5, _sheet.Long.Units * _pixelsPerUnit, _sheet.Short.Units * _pixelsPerUnit);
+        Rect[] pieces =
+        [
+            .. _sheet.Pieces.Select(piece => new Rect(
+                whole.Left + (piece.X.Units * _pixelsPerUnit),
+                whole.Top + (piece.Y.Units * _pixelsPerUnit),
+                piece.Along.Units * _pixelsPerUnit,
+                piece.Across.Units * _pixelsPerUnit)),
+        ];
+
+        // The waste — the sheet less its pieces — hatched; the pieces' fill is translucent, so the
+        // hatch is clipped out of them rather than drawn under them.
+        GeometryGroup cut = new() { FillRule = FillRule.NonZero };
+        foreach (Rect piece in pieces)
+        {
+            cut.Children.Add(new RectangleGeometry(piece));
+        }
+
+        context.DrawRectangle(null, outline, whole);
+        using (context.PushGeometryClip(new CombinedGeometry(GeometryCombineMode.Exclude, new RectangleGeometry(whole), cut)))
+        {
+            for (double hx = whole.Left - whole.Height; hx < whole.Right; hx += 5)
+            {
+                context.DrawLine(hatch, new Point(hx, whole.Bottom), new Point(hx + whole.Height, whole.Top));
+            }
+        }
+
+        foreach (Rect piece in pieces)
+        {
+            context.DrawRectangle(fill, outline, piece);
+        }
+    }
+}
+
+/// <summary>
+/// The cut layout as it is read: one text line per board or sheet, the drawn bar or sheet under it,
+/// and the refusals (issues #138, #26). The text of each line is <see cref="CutLayout.Line"/> of the
+/// very fields <see cref="CutLayout.ToCsv"/> writes, so the screen and the file cannot disagree.
 /// </summary>
 public sealed class CutLayoutView : StackPanel
 {
@@ -130,12 +215,16 @@ public sealed class CutLayoutView : StackPanel
     /// <summary>The bars drawn, one per board, in order.</summary>
     public ImmutableArray<CutLayoutBar> Bars => [.. Children.OfType<CutLayoutBar>()];
 
+    /// <summary>The sheets drawn, one per sheet, in order.</summary>
+    public ImmutableArray<CutLayoutSheet> Sheets => [.. Children.OfType<CutLayoutSheet>()];
+
     private void Rebuild()
     {
         Children.Clear();
 
-        long longest = _rows.Where(row => row.Planned is not null).Select(row => row.Planned!.StockLength.Units).DefaultIfEmpty(1).Max();
-        double pixelsPerUnit = WidestBar / longest;
+        // One scale for boards and sheets alike, set by the longest of them.
+        long longest = _rows.Select(row => row.Planned?.StockLength.Units ?? row.Sheet?.Long.Units ?? 0).DefaultIfEmpty(0).Max();
+        double pixelsPerUnit = WidestBar / Math.Max(longest, 1);
 
         foreach (CutLayoutRow row in _rows)
         {
@@ -151,6 +240,10 @@ public sealed class CutLayoutView : StackPanel
             if (row.Planned is not null)
             {
                 Children.Add(new CutLayoutBar(row.Planned, pixelsPerUnit));
+            }
+            else if (row.Sheet is not null)
+            {
+                Children.Add(new CutLayoutSheet(row.Sheet, pixelsPerUnit));
             }
         }
     }
