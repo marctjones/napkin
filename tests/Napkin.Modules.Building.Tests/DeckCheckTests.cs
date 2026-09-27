@@ -64,13 +64,13 @@ public class DeckCheckTests
 
         // The joists come from the synthetic guide: the clause says what it is not, and the species is read as its group.
         Assert.Equal(
-            "Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": allowed up to 11'-1\" (ZZ GUIDE Table ZZ-GUIDE-JOIST row r.fir.2x8.16, synthetic guide p. 3 row zz-fir 2x8 16; "
+            "Joists 2x8 at 16\" o.c., zz-fir, span 9'-7 1/2\": allowed up to 11'-1\" (ZZ GUIDE Table ZZ-GUIDE-JOIST row r.fir.2x8.16, synthetic guide p. 3 row zz-fir 2x8 16; "
             + "species group \"zz-fir, zz-hem\", synthetic guide p. 3, first row heading — a guide on the 2098 IRC, not ZZ DECK's adopted IRC 2099; the IRC governs where they differ (synthetic guide p. 1))."
             + Unreviewed + " Note a: SYNTHETIC footnote a: shown with results, not encoded.",
             Line(checks, DeckCheckKind.Joists).Text);
         Assert.StartsWith("Deck checks under ZZ DECK use ZZ GUIDE (SYNTHETIC DECK GUIDE - NOT A CODE, nobody (synthetic)), a guide based on the 2098 IRC", Assert.Single(checks.Guides), StringComparison.Ordinal);
         // The beam span L_B is measured face to face of posts (DCA 6 Figure 3, p. 7; #41): (144 − 3 × 3 1/2) ÷ 2 = 66 3/4".
-        Assert.StartsWith("Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" between post faces, carrying 9'-9\" of joists: allowed up to 6'-10\" (ZZ-DECK-BEAM", Line(checks, DeckCheckKind.Beam).Text, StringComparison.Ordinal);
+        Assert.StartsWith("Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" between post faces, carrying 9'-7 1/2\" of joists: allowed up to 6'-10\" (ZZ-DECK-BEAM", Line(checks, DeckCheckKind.Beam).Text, StringComparison.Ordinal);
         Assert.StartsWith(
             "Ledger to the house: zz-bolts, staggered, 1'-5\" on centre (ZZ-DECK-LEDGER row r.2x8.12, synthetic p. 5); 10 fasteners for a 12'-0\" ledger (⌈12'-0\" ÷ 1'-5\"⌉ + 1, napkin's count).",
             Line(checks, DeckCheckKind.Ledger).Text,
@@ -115,11 +115,12 @@ public class DeckCheckTests
     [Trait("Feature", "DECK-002")]
     public void Longer_joists_are_over_by_the_difference_and_the_advice_is_general()
     {
-        // A 12'-6" deck, 13'-0" wide so the guide covers its shape: joists 150 − 3 = 147″ (12'-3"), allowed 11'-1": over by 1'-2".
+        // A 12'-6" deck, 13'-0" wide so the guide covers its shape: joists 150 − 1 1/2 − 3 (beam) = 145 1/2″ (12'-1 1/2"),
+        // allowed 11'-1": over by 1'-0 1/2".
         DeckCheckLine joists = Line(Only(Drawing(depth: 150, width: 156)), DeckCheckKind.Joists);
 
         Assert.False(joists.Passing);
-        Assert.Contains("span 12'-3\": allowed up to 11'-1\", over by 1'-2\"", joists.Text, StringComparison.Ordinal);
+        Assert.Contains("span 12'-1 1/2\": allowed up to 11'-1\", over by 1'-0 1/2\"", joists.Text, StringComparison.Ordinal);
         Assert.Contains("Use a deeper joist, closer spacing or another beam.", joists.Text, StringComparison.Ordinal);
     }
 
@@ -130,12 +131,12 @@ public class DeckCheckTests
         // The porch case (deck-and-porch decision 4): the guide's table has no supports column, and its scope answers.
         DeckCheckLine porch = Line(Only(Drawing(Inputs() with { Supports = "zz-deck-and-roof" })), DeckCheckKind.Joists);
         Assert.Equal(
-            "Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": Beyond the scope of ZZ GUIDE: \"SYNTHETIC: covers a deck carrying only its own loads.\" (ZZ GUIDE synthetic guide p. 2, item 8). Get it engineered." + Unreviewed,
+            "Joists 2x8 at 16\" o.c., zz-fir, span 9'-7 1/2\": Beyond the scope of ZZ GUIDE: \"SYNTHETIC: covers a deck carrying only its own loads.\" (ZZ GUIDE synthetic guide p. 2, item 8). Get it engineered." + Unreviewed,
             porch.Text);
         Assert.Equal("s.loads", Assert.IsType<DeckResult.OutOfScope>(porch.Result).Limit!.Id);
 
         DeckCheckLine species = Line(Only(Drawing(Inputs() with { Species = null })), DeckCheckKind.Joists);
-        Assert.Equal("Joists 2x8 at 16\" o.c., span 9'-9\": Enter the species: table ZZ-GUIDE-JOIST bands on it.", species.Text);
+        Assert.Equal("Joists 2x8 at 16\" o.c., span 9'-7 1/2\": Enter the species: table ZZ-GUIDE-JOIST bands on it.", species.Text);
         Assert.IsType<DeckResult.InputMissing>(species.Result);
     }
 
@@ -145,7 +146,7 @@ public class DeckCheckTests
     {
         DeckChecks snowless = Only(Drawing(site: Entered with { GroundSnowLoadPsf = null }));
         Assert.Equal(
-            "Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": Enter the ground snow load: ZZ GUIDE scope limit s.snow (ZZ GUIDE synthetic guide p. 2, item 9) depends on it.",
+            "Joists 2x8 at 16\" o.c., zz-fir, span 9'-7 1/2\": Enter the ground snow load: ZZ GUIDE scope limit s.snow (ZZ GUIDE synthetic guide p. 2, item 9) depends on it.",
             Line(snowless, DeckCheckKind.Joists).Text);
 
         // The base layer's beam has no guide, so no scope: it still answers.
@@ -156,8 +157,8 @@ public class DeckCheckTests
         Assert.Equal("s.shape", Assert.IsType<DeckResult.OutOfScope>(deep.Result).Limit!.Id);
         Assert.Contains("\"SYNTHETIC: a deck no longer out from the house than it is wide.\" (ZZ GUIDE synthetic guide p. 2, item 2)", deep.Text, StringComparison.Ordinal);
 
-        // A species the guide covers reads as its printed group: zz-cedar's 2x8 at 16" allows 9'-7", 2" short of 9'-9".
-        Assert.Contains("allowed up to 9'-7\", over by 2\" (ZZ GUIDE Table ZZ-GUIDE-JOIST row r.cedar.2x8.16, synthetic guide p. 3 row zz-cedar 2x8 16; species group \"zz-cedar\"",Line(Only(Drawing(Inputs() with { Species = "zz-cedar" })), DeckCheckKind.Joists).Text, StringComparison.Ordinal);
+        // A species the guide covers reads as its printed group: zz-cedar's 2x8 at 16" allows 9'-7", 1/2" short of 9'-7 1/2".
+        Assert.Contains("allowed up to 9'-7\", over by 1/2\" (ZZ GUIDE Table ZZ-GUIDE-JOIST row r.cedar.2x8.16, synthetic guide p. 3 row zz-cedar 2x8 16; species group \"zz-cedar\"",Line(Only(Drawing(Inputs() with { Species = "zz-cedar" })), DeckCheckKind.Joists).Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -248,13 +249,14 @@ public class DeckCheckTests
     [Trait("Feature", "DECK-001")]
     public void Under_the_shipped_Connecticut_pack_the_joists_answer_from_DCA_6_the_rest_is_no_data_and_its_frost_depth_is_offered()
     {
-        // The note's worked example: 2x8 at 16" o.c., Southern Pine, supporting only the deck, 9'-9" of span. Table 2 (p. 4): 11'-10".
+        // The note's worked example: 2x8 at 16" o.c., Southern Pine, supporting only the deck, 9'-7 1/2" of span
+        // (ledger face to the (2) 2x10 beam's near face: 120 − 1 1/2 − 3). Table 2 (p. 4): 11'-10".
         DeckInputs typed = Inputs() with { Supports = "deck", Species = "Southern Pine" };
         DeckChecks answered = Only(Drawing(typed, code: Connecticut), Shipped);
         DeckCheckLine joists = Line(answered, DeckCheckKind.Joists);
         Assert.True(joists.Passing);
         Assert.StartsWith(
-            "Joists 2x8 at 16\" o.c., Southern Pine, span 9'-9\": allowed up to 11'-10\" (DCA 6-2015 Table 2 row r.sp.2x8.16, p. 4, ",
+            "Joists 2x8 at 16\" o.c., Southern Pine, span 9'-7 1/2\": allowed up to 11'-10\" (DCA 6-2015 Table 2 row r.sp.2x8.16, p. 4, ",
             joists.Text,
             StringComparison.Ordinal);
         Assert.Contains(
@@ -325,12 +327,12 @@ public class DeckCheckTests
         Assert.EndsWith(" Note 4: Tributary area shall be multiplied by 1.25 at center posts with beams not spliced (continuous).", middleSix.Text, StringComparison.Ordinal);
         Assert.Equal(footing.Text, Line(sixes, DeckCheckKind.Footing).Text);
 
-        // The beam: (2) 2x10 Southern Pine carrying 9'-9" of joists is Table 3A's ≤ 10' column, 7'-9" (p. 6); its span
+        // The beam: (2) 2x10 Southern Pine carrying 9'-7 1/2" of joists is Table 3A's ≤ 10' column, 7'-9" (p. 6); its span
         // L_B between post faces (Figure 3, p. 7), (144 − 3 × 3 1/2) ÷ 2 = 66 3/4", passes.
         DeckCheckLine beam = Line(answered, DeckCheckKind.Beam);
         Assert.True(beam.Passing);
         Assert.StartsWith(
-            "Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" between post faces, carrying 9'-9\" of joists: allowed up to 7'-9\" "
+            "Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" between post faces, carrying 9'-7 1/2\" of joists: allowed up to 7'-9\" "
             + "(DCA 6-2015 Table 3A row r.sp.2-2x10.10, p. 6, row Southern Pine 2-2x10, joist span column 10'; species group \"Southern Pine\", p. 6, Table 3A, Species column, first row heading "
             + "— a guide on the 2015 IRC, not CT 2022's adopted IRC 2021; the IRC governs where they differ (p. 1))." + Unreviewed,
             beam.Text);
@@ -379,9 +381,9 @@ public class DeckCheckTests
         Assert.Equal(["Ledger"], lost.NoLongerComputable.Select(change => change.Key.Check));
         Assert.Equal(["Joists", "Beam", "EndPosts", "MiddlePosts", "Footing"], lost.NewlyFlagged.Select(change => change.Key.Check));
         ImmutableArray<string> said = DeckCheck.Changes(before, after);
-        Assert.StartsWith("Deck 1, newly flagged: Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load", said[0], StringComparison.Ordinal);
+        Assert.StartsWith("Deck 1, newly flagged: Joists 2x8 at 16\" o.c., zz-fir, span 9'-7 1/2\": Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load", said[0], StringComparison.Ordinal);
         Assert.StartsWith(
-            "Deck 1, newly flagged: Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" between post faces, carrying 9'-9\" of joists: Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load",
+            "Deck 1, newly flagged: Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" between post faces, carrying 9'-7 1/2\" of joists: Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load",
             said[1],
             StringComparison.Ordinal);
         Assert.StartsWith("Deck 1, newly flagged: End posts 4x4, 1'-6 1/2\" from grade to the beam's underside, zz-fir, each carrying 14.8 sq ft", said[2], StringComparison.Ordinal);
@@ -411,7 +413,7 @@ public class DeckCheckTests
         // zz-cedar's 2x8 at 16" allows 9'-7": the joists become short; the base layer's beam has no zz-cedar row.
         DeckChecks cedar = After(box => box with { Deck = Inputs() with { Species = "zz-cedar" } });
         ImmutableArray<string> flagged = DeckCheck.Changes(was, [cedar]);
-        Assert.StartsWith("Deck 1, newly flagged: Joists 2x8 at 16\" o.c., zz-cedar, span 9'-9\": allowed up to 9'-7\", over by 2\"", flagged[0], StringComparison.Ordinal);
+        Assert.StartsWith("Deck 1, newly flagged: Joists 2x8 at 16\" o.c., zz-cedar, span 9'-7 1/2\": allowed up to 9'-7\", over by 1/2\"", flagged[0], StringComparison.Ordinal);
         Assert.StartsWith("Deck 1, newly flagged: Beam (2) 2x10 on 3 posts", flagged[1], StringComparison.Ordinal);
 
         // The synthetic post tables have zz-cedar rows: the middle post's ≤ 80 row prints NP (flagged); the end posts read
@@ -423,7 +425,7 @@ public class DeckCheckTests
         Assert.All(DeckCheck.Changes([cedar], was).Where(said => !said.Contains("End posts", StringComparison.Ordinal)), said => Assert.StartsWith("Deck 1, now answered: ", said, StringComparison.Ordinal));
 
         // At 12" the joists answer from another row.
-        Assert.StartsWith("Deck 1, changed: Joists 2x8 at 12\" o.c., zz-fir, span 9'-9\": allowed up to 12'-7\"", Assert.Single(DeckCheck.Changes(was, [After(box => box with { Deck = Inputs() with { JoistSpacing = In(12) } })])), StringComparison.Ordinal);
+        Assert.StartsWith("Deck 1, changed: Joists 2x8 at 12\" o.c., zz-fir, span 9'-7 1/2\": allowed up to 12'-7\"", Assert.Single(DeckCheck.Changes(was, [After(box => box with { Deck = Inputs() with { JoistSpacing = In(12) } })])), StringComparison.Ordinal);
 
         // 6" deeper: the joists span 10'-3" in the same row (not said); the beam now carries more than 10'-0" of joists.
         DeckChecks deeper = After(box => box with { Anchor = new Point3(In(48), In(-126), Length.Zero), Height = In(126) });
@@ -443,22 +445,22 @@ public class DeckCheckTests
     {
         DeckInputs typed = Inputs() with { Supports = "deck", Species = "Southern Pine" };
 
-        // 1'-6" past the beam: the joists span 120 − 3 − 18 = 99" (8'-3"); Table 2's Southern Pine 2x8 at 16" allows
-        // an overhang of 2'-0" (p. 4) and a quarter of 8'-3" is 2'-0 3/4" (p. 3), so 2'-0" governs.
+        // 1'-6" past the beam: the joists span 120 − 1 1/2 − 3 (beam) − 18 = 97 1/2" (8'-1 1/2"); Table 2's Southern
+        // Pine 2x8 at 16" allows an overhang of 2'-0" (p. 4) and a quarter of 8'-1 1/2" is 2'-0 3/8" (p. 3), so 2'-0" governs.
         DeckCheckLine passes = Line(Only(Drawing(typed with { Cantilever = In(18) }, code: Connecticut), Shipped), DeckCheckKind.Cantilever);
         Assert.True(passes.Passing);
         Assert.StartsWith(
-            "Cantilever 1'-6\" past the beam: allowed up to 2'-0\", the lesser of the row's 2'-0\" and 1/4 of the 8'-3\" span, 2'-0 3/4\" (DCA 6-2015 Table 2 row r.sp.2x8.16, p. 4, ",
+            "Cantilever 1'-6\" past the beam: allowed up to 2'-0\", the lesser of the row's 2'-0\" and 1/4 of the 8'-1 1/2\" span, 2'-0 3/8\" (DCA 6-2015 Table 2 row r.sp.2x8.16, p. 4, ",
             passes.Text,
             StringComparison.Ordinal);
         Assert.Contains("; the cap: JOIST SIZE, p. 3", passes.Text, StringComparison.Ordinal);
         Assert.Contains(Unreviewed, passes.Text, StringComparison.Ordinal);
 
-        // 2'-3" past the beam: the joists span 90" (7'-6"); a quarter of it, 1'-10 1/2", governs; 4 1/2" over.
+        // 2'-3" past the beam: the joists span 120 − 1 1/2 − 3 − 27 = 88 1/2" (7'-4 1/2"); a quarter of it, 1'-10 1/8", governs; 4 7/8" over.
         DeckCheckLine over = Line(Only(Drawing(typed with { Cantilever = In(27) }, code: Connecticut), Shipped), DeckCheckKind.Cantilever);
         Assert.False(over.Passing);
         Assert.StartsWith(
-            "Cantilever 2'-3\" past the beam: allowed up to 1'-10 1/2\", the lesser of the row's 2'-0\" and 1/4 of the 7'-6\" span, 1'-10 1/2\"; over by 4 1/2\" (DCA 6-2015 Table 2",
+            "Cantilever 2'-3\" past the beam: allowed up to 1'-10 1/8\", the lesser of the row's 2'-0\" and 1/4 of the 7'-4 1/2\" span, 1'-10 1/8\"; over by 4 7/8\" (DCA 6-2015 Table 2",
             over.Text,
             StringComparison.Ordinal);
         Assert.Contains("Shorten the cantilever.", over.Text, StringComparison.Ordinal);

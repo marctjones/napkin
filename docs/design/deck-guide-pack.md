@@ -214,7 +214,7 @@ check** block opens with one line that says where the deck answers come from:
 
 Then every check answers with a real number and its page, and the same caveat in short:
 
-> Joists 2x8 at 16" o.c., Southern Pine, span 9'-9": allowed up to 11'-10" (DCA 6-2015 Table 2,
+> Joists 2x8 at 16" o.c., Southern Pine, span 9'-7 1/2": allowed up to 11'-10" (DCA 6-2015 Table 2,
 > p. 4 — a guide on the 2015 IRC, not CT 2022's adopted IRC 2021; the IRC governs where they
 > differ) — UNREVIEWED until the row-by-row review is signed off.
 
