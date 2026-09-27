@@ -44,6 +44,18 @@ public class DeckWorkflows
             // 96 wide: joists at 0 … 80 (six) and the end joist at 94 1/2; 3 posts: (96 − 10 1/2) ÷ 2 = 42 3/4″.
             Assert.StartsWith("Frame: ledger, 7 joists 2x8 at 16\", rim, (2) 2x10 beam on 3 posts spanning 3'-6 3/4\"", window.DeckFrameLine, StringComparison.Ordinal);
             Assert.Contains("its north edge is the ledger", window.MessageOnScreen, StringComparison.Ordinal);
+
+            // The sample is locked to CT 2022, whose deck joists come from DCA 6: the panel offers its words, filling in none.
+            Assert.StartsWith("CT 2022's deck tables name what a deck supports as: deck; and species as: Southern Pine,", window.DeckInputsOfferLine, StringComparison.Ordinal);
+            Assert.Null(deck.Deck!.Supports);
+        });
+
+        // Typed as DCA 6 names it, the joists' check moves on to the next thing its scope asks: the site's snow load (item 9, p. 2).
+        TypeInto(app, window, window.DeckControls.Supports, "deck");
+        app.Expect("with what the deck supports typed, the joists ask for the ground snow load", () =>
+        {
+            Assert.Equal("deck", window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Single(box => box.Deck is not null).Deck!.Supports);
+            Assert.Contains("Enter the ground snow load: DCA 6-2015 scope limit s.snow", window.DeckCheckLines, StringComparison.Ordinal);
         });
 
         // Two posts: 96 − 7 = 89″ between them.
@@ -59,11 +71,16 @@ public class DeckWorkflows
         {
             CutListWindow list = window.CutList!;
             Assert.True(list.IsShowingDeck);
-            Assert.StartsWith("Deck 1: ledger, 7 joists 2x8", list.DeckNoteText, StringComparison.Ordinal);
+            // Under CT 2022 the guide's paragraph is said once, first, then the deck's line.
+            Assert.StartsWith("Deck checks under CT 2022 use DCA 6-2015", list.DeckNoteText, StringComparison.Ordinal);
+            Assert.Contains(" Deck 1: ledger, 7 joists 2x8", list.DeckNoteText, StringComparison.Ordinal);
             Assert.Contains(list.DeckRows.Sorted, row => row.Material == "2x8");
             Assert.Contains(list.DeckRows.Sorted, row => row.Material == "5/4x6");
         });
-    });
+    }, packRoots: [Shipped]);
+
+    /// <summary>The shipped packs beside the app: the sample is locked to its Connecticut 2022 pack.</summary>
+    static readonly string Shipped = Path.Combine(AppContext.BaseDirectory, "packs");
 
     [GuiWorkflow("GUI-DECK-02")]
     public void Tick_a_decks_guard_and_stair_type_its_risers_and_buy_them() => GuiWorkflow.Run(app =>
