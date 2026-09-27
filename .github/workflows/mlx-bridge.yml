@@ -1,0 +1,161 @@
+name: MLX bridge
+
+# Builds napkin's MLX bridge (docs/design/mlx-runtime.md §3.6, issue #243): the Swift package in
+# native/NapkinMlx, over mlx-swift-lm, built by tools/scripts/build-mlx.sh with Xcode on a macOS
+# arm64 runner. It checks what was built and uploads the three files napkin ships in native/ beside
+# its executable on Apple silicon as the artifact `mlx-bridge`:
+#
+#   libNapkinMlx.dylib               the bridge (the C ABI of native/NapkinMlx/include/napkin_mlx.h)
+#   mlx.metallib                     MLX's Metal kernels, loaded from beside the dylib
+#   libswiftCompatibilitySpan.dylib  the Swift runtime's Span back-deployment library (Apple's)
+#
+# A reusable workflow, called by ci.yml (with the bridge's Swift tests) and by release.yml (whose
+# osx-arm64 build downloads the artifact from the same run). It is never part of `dotnet build`
+# or tools/scripts/gate.sh, and ci.yml's build-and-test does not wait for it (Decision 2): nothing
+# but this job needs Xcode.
+#
+# It never loads a model: MLX needs a Metal device, and "Nested-virtualization is not supported"
+# on the virtual arm64 macOS runners (GitHub's hosted-runner reference), so a model is run by a
+# person with `napkin-tools assistant mlx-smoke --model <folder>`, never here (mlx-runtime.md §7.4).
+#
+# Nothing here signs anything (DESIGN.md §6.6): the dylib keeps the linker's ad-hoc signature and
+# the Span library keeps Apple's. tests/Napkin.Tools.Tests/ReleaseWorkflowTests.cs holds this file
+# to release.yml's no-signing rules, since a release runs it.
+
+on:
+  workflow_call:
+    inputs:
+      test:
+        description: Also build and run the bridge's model-free Swift tests (build-mlx.sh --test).
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  # Chosen explicitly, so that a new default Xcode on the image is a deliberate change here.
+  # mlx-swift 0.31.6 declares swift-tools-version 6.3, and "Xcode 26.6 includes Swift 6.3"
+  # (Apple, Xcode 26.6 release notes). The macos-26-arm64 image lists Xcode 26.6 (17F113) at this
+  # path as its default (actions/runner-images, images/macos/macos-26-arm64-Readme.md, image
+  # 20260907.0351.1, read 2026-09-27). The bridge has only been built with Xcode 27.0 on a Mac;
+  # if 26.6 cannot build it, the `xcode-27` runner label (a public preview) is the alternative.
+  XCODE_APP: /Applications/Xcode_26.6.app
+
+jobs:
+  build:
+    name: Build and check (macOS arm64)
+    # macos-latest is the macOS 26 arm64 image (actions/runner-images README, read 2026-09-27).
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo xcode-select -s "$XCODE_APP"
+          xcodebuild -version
+          echo "machine: $(uname -m)"
+
+      # Since Xcode 26 the Metal Toolchain is an optional component: "To build your Metal apps,
+      # download and install the optional Metal Toolchain", with `xcodebuild -downloadComponent
+      # metalToolchain` (Apple, Downloading and installing additional Xcode components). The image
+      # maintainers said they would pre-install it for release versions of Xcode 26
+      # (actions/runner-images#13080, closed 2025-11-28); the image's README does not list it, so
+      # this checks and downloads it only if it is missing.
+      - name: Metal Toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Read whole, not piped into `grep -q`: under pipefail a grep that stops early can fail
+          # the pipe and send an installed toolchain to the download.
+          status=$(xcodebuild -showComponent MetalToolchain 2>&1 || true)
+          if [[ "$status" == *"Status: installed"* ]]; then
+            echo "The Metal Toolchain is installed for this Xcode."
+          else
+            echo "$status"
+            echo "The Metal Toolchain is missing for this Xcode: downloading it."
+            xcodebuild -downloadComponent MetalToolchain
+          fi
+          xcodebuild -showComponent MetalToolchain
+
+      # build-mlx.sh refuses early with the command to run if the toolchain is missing, asserts that
+      # the dylib exports exactly the eight functions of napkin_mlx.h, and refuses a signing
+      # authority on the dylib. The Swift tests need no model and no GPU; the one that needs Metal
+      # skips itself without it.
+      - name: Build the bridge
+        shell: bash
+        env:
+          RUN_TESTS: ${{ inputs.test }}
+        run: |
+          set -euo pipefail
+          if [ "$RUN_TESTS" = "true" ]; then
+            tools/scripts/build-mlx.sh --test
+          else
+            tools/scripts/build-mlx.sh
+          fi
+
+      # What the release will put in native/, checked once more on the files themselves: all three
+      # are there, the dylib is arm64 and exports exactly the header's eight functions, it carries
+      # the linker's ad-hoc signature and no certificate authority, and the Span library carries
+      # Apple's own signature, intact.
+      - name: Check the three files
+        shell: bash
+        run: |
+          set -euo pipefail
+          out=native/NapkinMlx/out
+          for file in libNapkinMlx.dylib mlx.metallib libswiftCompatibilitySpan.dylib; do
+            test -s "$out/$file" || { echo "::error::build-mlx.sh did not produce $out/$file."; exit 1; }
+            printf '%12s  %s\n' "$(stat -f %z "$out/$file")" "$file"
+          done
+
+          bridge="$out/libNapkinMlx.dylib"
+          arch=$(lipo -archs "$bridge")
+          [ "$arch" = "arm64" ] || { echo "::error::libNapkinMlx.dylib is '$arch', expected arm64 only."; exit 1; }
+
+          expected="_napkin_mlx_abi_version _napkin_mlx_device _napkin_mlx_generate _napkin_mlx_init _napkin_mlx_load _napkin_mlx_result_free _napkin_mlx_string_free _napkin_mlx_unload"
+          exported=$(nm -gU "$bridge" | awk '{print $3}' | grep -E '^_napkin_mlx_' | sort | tr '\n' ' ' | sed 's/ $//')
+          echo "exports: $exported"
+          [ "$exported" = "$expected" ] || { echo "::error::libNapkinMlx.dylib exports '$exported', expected '$expected'."; exit 1; }
+
+          echo "dependencies outside the OS:"
+          otool -L "$bridge" | tail -n +3 | awk '{print $1}' | grep -vE '^/System/Library/|^/usr/lib/' || true
+
+          codesign -dvv "$bridge" > bridge-signature.txt 2>&1 || true
+          cat bridge-signature.txt
+          if grep -Eq '^Authority=|Developer ID' bridge-signature.txt; then
+            echo "::error::libNapkinMlx.dylib carries a certificate authority. napkin does no Developer ID signing (DESIGN.md §6.6)."
+            exit 1
+          fi
+          grep -q '^Signature=adhoc' bridge-signature.txt || { echo "::error::libNapkinMlx.dylib has no ad-hoc signature; arm64 code does not load without one (DESIGN.md §6.6)."; exit 1; }
+          codesign --verify --strict --verbose=2 "$bridge"
+
+          span="$out/libswiftCompatibilitySpan.dylib"
+          codesign -dvv "$span" > span-signature.txt 2>&1 || true
+          cat span-signature.txt
+          codesign --verify --strict --verbose=2 -R="anchor apple" "$span" \
+            || { echo "::error::libswiftCompatibilitySpan.dylib is not Apple's, intact (it must be copied from Xcode unmodified)."; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mlx-bridge
+          # Several paths: the artifact's root is their common folder, so it holds the three files.
+          path: |
+            native/NapkinMlx/out/libNapkinMlx.dylib
+            native/NapkinMlx/out/mlx.metallib
+            native/NapkinMlx/out/libswiftCompatibilitySpan.dylib
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload the build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlx-bridge-logs
+          path: |
+            native/NapkinMlx/.derived/build-mlx.log
+            native/NapkinMlx/.derived/test-mlx.log
+          if-no-files-found: ignore
+          retention-days: 14

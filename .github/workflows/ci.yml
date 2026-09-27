@@ -98,3 +98,14 @@ jobs:
             artifacts/gui-metrics.json
           if-no-files-found: ignore
           retention-days: 14
+
+  # The MLX bridge (docs/design/mlx-runtime.md §3.6, #243): a separate job that builds the Swift
+  # bridge with Xcode on a macOS arm64 runner, runs its model-free Swift tests, checks its exports
+  # and signatures, and uploads the three files napkin ships beside the executable on Apple
+  # silicon. build-and-test neither waits for it nor needs Xcode (Decision 2): the .NET build
+  # includes the bridge only where build-mlx.sh has run.
+  mlx-bridge:
+    name: MLX bridge
+    uses: ./.github/workflows/mlx-bridge.yml
+    with:
+      test: true

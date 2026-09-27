@@ -17,6 +17,9 @@ internal static class ReleaseWorkflowRules
     public const string WorkflowPath = ".github/workflows/release.yml";
     public const string CiWorkflowPath = ".github/workflows/ci.yml";
 
+    /// <summary>The reusable workflow that builds the MLX bridge; release.yml runs it (#243).</summary>
+    public const string BridgeWorkflowPath = ".github/workflows/mlx-bridge.yml";
+
     /// <summary>Reads a repository file, with line endings normalised to LF.</summary>
     public static string Read(string relativePath)
     {
@@ -43,8 +46,46 @@ internal static class ReleaseWorkflowRules
         CheckPreRelease(joined, violations);
         CheckNoSigning(joined, violations);
         CheckAdHocSignatureIsAsserted(code, violations);
+        CheckMlxBridgeIsShippedAndChecked(code, violations);
         CheckPermissions(code, violations);
         CheckTriggers(code, violations);
+        CheckActions(code, ciWorkflow is null ? null : WithoutComments(ciWorkflow), violations);
+        return violations;
+    }
+
+    /// <summary>
+    /// Every rule the MLX bridge's reusable workflow breaks; empty when it keeps them all. A release
+    /// runs it, so it is held to the same no-signing rule and the same actions rule as release.yml,
+    /// with read-only permissions, and it must keep asserting the dylib's ad-hoc signature.
+    /// </summary>
+    /// <param name="bridgeWorkflow">mlx-bridge.yml's text.</param>
+    /// <param name="ciWorkflow">ci.yml's text, for the actions' major versions.</param>
+    public static IReadOnlyList<string> BridgeViolations(string bridgeWorkflow, string? ciWorkflow = null)
+    {
+        var violations = new List<string>();
+        var code = WithoutComments(bridgeWorkflow);
+        var joined = Regex.Replace(code, @"\\\n[ \t]*", " ");
+
+        CheckNoSigning(joined, violations);
+        CheckAdHocSignatureIsAsserted(code, violations);
+
+        var jobsAt = Regex.Match(code, @"(?m)^jobs:\s*$");
+        var head = jobsAt.Success ? code[..jobsAt.Index] : code;
+        if (!Regex.IsMatch(head, @"(?m)^permissions:\s*\n\s+contents:\s*read\s*$") || HasWrite(code))
+        {
+            violations.Add("mlx-bridge.yml's permissions are not exactly `contents: read`: building the bridge writes nothing to the repository.");
+        }
+
+        if (!Regex.IsMatch(head, @"(?m)^  workflow_call:"))
+        {
+            violations.Add("mlx-bridge.yml is not a reusable workflow (`on: workflow_call`): ci.yml and release.yml both run it.");
+        }
+
+        if (!Regex.IsMatch(code, @"name:\s*mlx-bridge\s*$", RegexOptions.Multiline))
+        {
+            violations.Add("mlx-bridge.yml no longer uploads the `mlx-bridge` artifact the osx-arm64 release build downloads.");
+        }
+
         CheckActions(code, ciWorkflow is null ? null : WithoutComments(ciWorkflow), violations);
         return violations;
     }
@@ -167,6 +208,42 @@ internal static class ReleaseWorkflowRules
         if (!code.Contains("Authority=", StringComparison.Ordinal))
         {
             violations.Add("The macOS build no longer asserts there is no `Authority=` (Developer ID) on the binaries (REL-003).");
+        }
+    }
+
+    // -- the MLX bridge in the osx-arm64 zip (#243; docs/design/mlx-runtime.md §3.5, §3.6) ----
+
+    private static void CheckMlxBridgeIsShippedAndChecked(string code, List<string> violations)
+    {
+        if (!Regex.IsMatch(code, @"(?m)^\s+uses:\s*\./\.github/workflows/mlx-bridge\.yml\s*$"))
+        {
+            violations.Add("No job runs ./.github/workflows/mlx-bridge.yml: the osx-arm64 zip would ship without the MLX bridge.");
+        }
+
+        if (!Regex.IsMatch(code, @"(?m)^\s+name:\s*mlx-bridge\s*\n\s+path:\s*native/NapkinMlx/out\s*$"))
+        {
+            violations.Add("The osx-arm64 build no longer downloads the `mlx-bridge` artifact into native/NapkinMlx/out, where NapkinMlx.props includes it in the publish.");
+        }
+
+        if (!code.Contains("/libNapkinMlx.dylib", StringComparison.Ordinal)
+            || !Regex.IsMatch(code, @"codesign\s+-dvv\s+""\$bridge"""))
+        {
+            violations.Add("The signature check no longer inspects native/libNapkinMlx.dylib with `codesign -dvv` (mlx-runtime.md §3.5).");
+        }
+
+        if (!Regex.IsMatch(code, @"grep\s+-q\s+'\^Signature=adhoc'\s+bridge-signature\.txt"))
+        {
+            violations.Add("The signature check no longer asserts `Signature=adhoc` on native/libNapkinMlx.dylib (mlx-runtime.md §3.5).");
+        }
+
+        if (!Regex.IsMatch(code, @"grep\s+-Eq\s+'\^Authority=\|Developer ID'\s+bridge-signature\.txt"))
+        {
+            violations.Add("The signature check no longer refuses an `Authority=` (Developer ID) on native/libNapkinMlx.dylib (mlx-runtime.md §3.5).");
+        }
+
+        if (!code.Contains("-R=\"anchor apple\"", StringComparison.Ordinal))
+        {
+            violations.Add("The signature check no longer requires native/libswiftCompatibilitySpan.dylib to be Apple's own signed file (`-R=\"anchor apple\"`).");
         }
     }
 
