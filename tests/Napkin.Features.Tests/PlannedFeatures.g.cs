@@ -78,12 +78,6 @@ public class PlannedFeatures
     {
     }
 
-    [Fact(Skip = "planned: IOP-003 — PDF sheets are vector and true scale, with a title block")]
-    [Trait("Feature", "IOP-003")]
-    public void IOP_003()
-    {
-    }
-
     [Fact(Skip = "planned: PKG-001 — Self-contained builds start on a clean machine")]
     [Trait("Feature", "PKG-001")]
     public void PKG_001()
