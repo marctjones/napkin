@@ -226,6 +226,7 @@ public class DeckLoaderTests
     [InlineData("zz-deck-post-center.json", "\"note\": \"b\",", "\"note\": \"a\",", "note 'a' is the factor, so it is not also one of the table's footnotes")]
     [InlineData("zz-deck-post-center.json", "\"text\": \"SYNTHETIC note b: a centre post's area under a continuous beam is multiplied by 3/2.\",", "\"text\": \" \",", "centerPostFactor.text: blank")]
     [InlineData("zz-deck-post-center.json", "\"location\": \"synthetic p. 9 note b\"", "\"place\": \"synthetic p. 9 note b\"", "centerPostFactor.location: missing required field")]
+    [InlineData("zz-deck-post-center.json", "\"location\": \"synthetic p. 9 note b\"", "\"location\": \" \"", "centerPostFactor.location: blank")]
     [InlineData("zz-deck-post-center.json", "\"centerPostFactor\": {", "\"centerPostFactor\": 5, \"x\": {", "centerPostFactor: must be a JSON object")]
     [InlineData("zz-deck-post-corner.json", "\"position\": \"corner\",", "\"position\": \"corner\", \"centerPostFactor\": { \"note\": \"b\", \"text\": \"t\", \"multiply\": \"3/2\", \"location\": \"l\" },", "only a deck-footing table or a deck-post table for 'center' posts multiplies a centre post's tributary area; this deck-post table may not declare one")]
     [InlineData("zz-deck-ledger.json", "\"kind\": \"deck-ledger\",", "\"kind\": \"deck-ledger\", \"centerPostFactor\": { \"note\": \"b\", \"text\": \"t\", \"multiply\": \"3/2\", \"location\": \"l\" },", "this deck-ledger table may not declare one")]

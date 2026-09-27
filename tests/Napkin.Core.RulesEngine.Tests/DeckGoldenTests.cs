@@ -98,6 +98,21 @@ public class DeckGoldenTests
     }
 
     [Fact]
+    public void An_area_bound_the_factor_does_not_divide_into_whole_1024ths_of_a_foot_generates_no_pair()
+    {
+        // Under the synthetic 3/2 every band ÷ 3/2 is exact (12288 = 2^12 × 3); under 7/5 none of 20, 40, 80 is, so the
+        // two area pairs of each of the eight rows first asked under a continuous beam drop out, and only those: 44 − 16.
+        InMemoryPackSource source = InMemoryPackSource.FromDirectory(Fx.DeckRoot);
+        const string Center = "layers/zz-deck-2099/deck/zz-deck-post-center.json";
+        source.With(Center, source.Text(Center).Replace("\"multiply\": \"3/2\"", "\"multiply\": \"7/5\"", StringComparison.Ordinal));
+        LoadedPack sevenFifths = Fx.Loaded(PackLoader.Load(source, "us-zz-deck"));
+        string golden = Golden("zz-deck-post-center.golden.json");
+
+        ValueList<string> exact = GoldenRunner.DeckBoundaries(((PackLoadResult.Loaded)Pack).Pack, golden), skipped = GoldenRunner.DeckBoundaries(sevenFifths, golden);
+        Assert.Equal((44, 28), (exact.Count, skipped.Count));
+    }
+
+    [Fact]
     public void A_stale_or_missing_boundary_pair_fails_the_file_and_the_generators_pairs_are_printed()
     {
         string json = Golden("zz-deck-ledger.golden.json");

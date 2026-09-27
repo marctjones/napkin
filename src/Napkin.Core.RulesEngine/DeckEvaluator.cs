@@ -13,8 +13,9 @@ public abstract record DeckResult
     }
 
     /// <summary>
-    /// For a post or footing lookup, the tributary area it was asked with and, when the table's centre-post factor
-    /// applied, the factor and the area looked up (deck-guide-pack §3.4); null for the other lookups.
+    /// For a post or footing lookup that reached its table's rows, the tributary area it was asked with and, when the
+    /// table's centre-post factor applied, the factor and the area looked up (deck-guide-pack §3.4); null for the other
+    /// lookups and for an input missing, so two answers that say the same are the same.
     /// </summary>
     public AreaAsked? Area { get; init; }
 
@@ -298,7 +299,8 @@ public static class DeckEvaluator
         return Lookup(pack.Code, table, inputs) switch
         {
             (DeckRow row, _) => new DeckResult.Sized(pack.Code, table, row, null) { Area = asked },
-            (_, DeckResult other) => other with { Area = asked },
+            (_, DeckResult.OutOfScope scope) => scope with { Area = asked },
+            (_, DeckResult other) => other,
         };
     }
 
@@ -341,7 +343,7 @@ public static class DeckEvaluator
         (DeckRow? found, DeckResult? other) = Lookup(pack.Code, table, inputs);
         if (other is not null)
         {
-            return other with { Area = asked };
+            return other is DeckResult.OutOfScope scope ? scope with { Area = asked } : other;
         }
 
         DeckRow row = found!;
