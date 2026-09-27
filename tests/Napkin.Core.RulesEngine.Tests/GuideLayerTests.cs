@@ -59,10 +59,16 @@ public class GuideLayerTests
     public void The_picker_says_where_the_deck_tables_come_from_and_a_pack_without_a_guide_is_unchanged()
     {
         Assert.Equal("deck tables from ZZ GUIDE, a guide", Deck().StatusLabel);
+
+        // The shipped Connecticut pack declares DCA 6 for its deck tables (#41): both clauses.
         LoadedPack ct = Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "RealPacks"), "us-ct-2022"));
-        Assert.Equal(LoadedPack.BaseTablesNotLoaded, ct.StatusLabel);
-        Assert.Empty(ct.Guides);
-        Assert.Empty(ct.Manifest.Guides);
+        Assert.Equal("base tables not loaded; deck tables from DCA 6-2015, a guide", ct.StatusLabel);
+        Assert.Equal("dca6-2015", Assert.Single(ct.Guides).Id);
+        Assert.Equal("dca6-2015", Assert.Single(ct.Manifest.Guides).Id);
+
+        // A pack without a guide is unchanged.
+        Assert.Empty(Fx.Load("us-zz-state").Guides);
+        Assert.Equal(string.Empty, Fx.Load("us-zz-state").StatusLabel);
 
         // No header table and a guide: both clauses.
         InMemoryPackSource source = InMemoryPackSource.FromDirectory(Root).Without("layers/zz-deck-2099/tables/zz-deck-header.json");
