@@ -181,6 +181,7 @@ public static class SceneWriter
         WriteOptionalNumber(writer, SceneNames.SiteBuildingWidth, site.BuildingWidth?.Units);
         WriteOptionalNumber(writer, SceneNames.SiteRoofLiveLoad, site.RoofLiveLoadPsf);
         WriteOptionalNumber(writer, SceneNames.SiteSoilBearing, site.SoilBearingPsf);
+        writer.WriteNumber(SceneNames.SiteNorth, site.North.Arcseconds);
         if (site.Source is { } source)
         {
             writer.WriteStartObject(SceneNames.SiteSource);
@@ -493,6 +494,36 @@ public static class SceneWriter
                 WritePoint(writer, SceneNames.Position, node.Position);
                 break;
 
+            case Boundary boundary:
+                WritePoint(writer, SceneNames.Start, boundary.Start);
+                writer.WriteStartArray(SceneNames.Courses);
+                foreach (Course course in boundary.Courses)
+                {
+                    writer.WriteStartObject();
+                    writer.WriteStartObject(SceneNames.BearingName);
+                    writer.WriteString(SceneNames.From, SceneNames.Spell(SceneNames.Meridians, course.Bearing.From));
+                    writer.WriteNumber(SceneNames.AngleName, course.Bearing.Angle.Arcseconds);
+                    writer.WriteString(SceneNames.Toward, SceneNames.Spell(SceneNames.Turns, course.Bearing.Toward));
+                    writer.WriteEndObject();
+                    writer.WriteNumber(SceneNames.Distance, course.Distance.Units);
+                    if (course.Setback is { } setback)
+                    {
+                        writer.WriteStartObject(SceneNames.SetbackName);
+                        writer.WriteNumber(SceneNames.Distance, setback.Distance.Units);
+                        writer.WriteString(SceneNames.Kind, SceneNames.Spell(SceneNames.SetbackKinds, setback.Kind));
+                        writer.WriteEndObject();
+                    }
+                    else
+                    {
+                        writer.WriteNull(SceneNames.SetbackName);
+                    }
+
+                    writer.WriteEndObject();
+                }
+
+                writer.WriteEndArray();
+                break;
+
             case Segment segment:
                 WriteId(writer, SceneNames.Start, segment.Start.Value);
                 WriteId(writer, SceneNames.End, segment.End.Value);
@@ -682,6 +713,7 @@ public static class SceneWriter
         Dimension => SceneNames.Dimension,
         Note => SceneNames.NoteType,
         Strut => SceneNames.StrutType,
+        Boundary => SceneNames.BoundaryType,
         _ => throw Unwritable(entity),
     };
 

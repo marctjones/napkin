@@ -672,8 +672,8 @@
       "area": "site-plan",
       "title": "Property lines and setbacks measure against structures",
       "acceptance": "Property lines and their setback offsets draw over the underlay, and the distance from a placed structure to each line is reported in feet, inches and fractions.",
-      "milestone": "backlog",
-      "issue": 21,
+      "milestone": "M13",
+      "issue": 223,
       "kind": "unit"
     },
     {
@@ -681,8 +681,17 @@
       "area": "site-plan",
       "title": "North arrow and sheet orientation are stored with the project",
       "acceptance": "The site plan's north direction is stored as an exact Angle in the project file and survives save and reopen.",
-      "milestone": "backlog",
-      "issue": 21,
+      "milestone": "M13",
+      "issue": 223,
+      "kind": "unit"
+    },
+    {
+      "id": "SITE-004",
+      "area": "site",
+      "title": "Property lines are entered as the survey's courses and their closure is reported, never adjusted",
+      "acceptance": "A boundary is a point of beginning and at least three courses, each a quadrant bearing (N/S, 0-90 degrees exact in arcseconds, E/W) and a distance as the survey prints them; corners are derived from the running sum and rounded to the grid once each; a 100' x 50' lot of right-angle courses closes exactly, and an open traverse reports its closure error; the boundary and the site's north round-trip in scene format 15.",
+      "milestone": "M13",
+      "issue": 223,
       "kind": "unit"
     },
     {

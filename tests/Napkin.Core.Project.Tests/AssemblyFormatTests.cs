@@ -23,7 +23,7 @@ public sealed class AssemblyFormatTests
     /// </summary>
     private const string TwoBoxesInSpace = """
         {
-          "formatVersion": 14,
+          "formatVersion": 15,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -42,7 +42,7 @@ public sealed class AssemblyFormatTests
               "drives": null,
               "placement": { "offset": 2048, "side": "south" } }
           ],
-          "fastenerChoices": [], "supplies": [], "code": null, "furniture": { "kind": "none", "anchored": false }, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
+          "fastenerChoices": [], "supplies": [], "code": null, "furniture": { "kind": "none", "anchored": false }, "site": { "north": 0, "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "flush",
               "a": { "kind": "feature", "box": "0192f1a0-0000-4000-8000-00000000000a", "faces": ["east"] },
@@ -220,10 +220,10 @@ public sealed class AssemblyFormatTests
     public void A_version_4_file_is_now_too_old_to_open()
     {
         LoadProblem problem = Scenes.RefuseWith(
-            Scenes.OneBox.With("\"formatVersion\": 14", "\"formatVersion\": 4"),
+            Scenes.OneBox.With("\"formatVersion\": 15", "\"formatVersion\": 4"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 4",
-            "format version 14");
+            "format version 15");
 
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }

@@ -19,7 +19,7 @@ public class BuildingFormatTests
 
     private const string Filled = $$"""
         {
-          "formatVersion": 14,
+          "formatVersion": 15,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -32,7 +32,7 @@ public class BuildingFormatTests
           "fastenerChoices": [],
           "supplies": [],
           "code": { "pack": "us-zz-test", "revision": 2, "mode": "locked", "lockedOn": "2026-09-25" },
-          "furniture": { "kind": "none", "anchored": false }, "site": { "groundSnowLoad": 30, "ultimateWindSpeed": 115, "seismicDesignCategory": "B", "frostDepth": 43008,
+          "furniture": { "kind": "none", "anchored": false }, "site": { "north": 0, "groundSnowLoad": 30, "ultimateWindSpeed": 115, "seismicDesignCategory": "B", "frostDepth": 43008,
                     "buildingWidth": 294912, "roofLiveLoad": 20, "soilBearing": null, "source": { "text": "Town office, by phone", "on": "2026-09-24" } }
         }
         """;
@@ -101,6 +101,7 @@ public class BuildingFormatTests
         string text = SceneWriter.WriteToText(sketch);
         Assert.Contains("\"code\": null", text, StringComparison.Ordinal);
         Assert.Contains("\"groundSnowLoad\": null", text, StringComparison.Ordinal);
+        Assert.Contains("\"north\": 0", text, StringComparison.Ordinal);
         Assert.Contains("\"wall\": null", text, StringComparison.Ordinal);
     }
 
@@ -119,10 +120,10 @@ public class BuildingFormatTests
     {
         // A version-5 file had no code, site or wall fields; it is refused for its version alone.
         string version5 = Scenes.OneBox
-            .With("\"formatVersion\": 14", "\"formatVersion\": 5")
+            .With("\"formatVersion\": 15", "\"formatVersion\": 5")
             .With("\"wall\": null, ", string.Empty);
 
-        LoadProblem problem = Scenes.RefuseWith(version5, LoadProblemKind.UnsupportedFormatVersion, "format version 5", "format version 14");
+        LoadProblem problem = Scenes.RefuseWith(version5, LoadProblemKind.UnsupportedFormatVersion, "format version 5", "format version 15");
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }
 
@@ -131,9 +132,9 @@ public class BuildingFormatTests
     public void A_version_7_file_is_refused_with_the_unsupported_version_message()
     {
         // A version-7 file had no bracing on a wall; it is refused for its version alone, no converter.
-        string version7 = Scenes.OneBox.With("\"formatVersion\": 14", "\"formatVersion\": 7");
+        string version7 = Scenes.OneBox.With("\"formatVersion\": 15", "\"formatVersion\": 7");
 
-        LoadProblem problem = Scenes.RefuseWith(version7, LoadProblemKind.UnsupportedFormatVersion, "format version 7", "format version 14");
+        LoadProblem problem = Scenes.RefuseWith(version7, LoadProblemKind.UnsupportedFormatVersion, "format version 7", "format version 15");
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }
 
@@ -144,7 +145,7 @@ public class BuildingFormatTests
     [InlineData("\"mode\": \"locked\"", "\"mode\": \"frozen\"", LoadProblemKind.UnknownValue, "mode")]
     [InlineData("\"lockedOn\": \"2026-09-25\"", "\"lockedOn\": null", LoadProblemKind.InvalidValue, "lockedOn")]
     [InlineData("\"lockedOn\": \"2026-09-25\"", "\"lockedOn\": \"25/09/2026\"", LoadProblemKind.InvalidValue, "lockedOn")]
-    [InlineData("\"groundSnowLoad\": 30", "\"groundSnowLoad\": -1", LoadProblemKind.InvalidValue, "groundSnowLoad")]
+    [InlineData("\"north\": 0, \"groundSnowLoad\": 30", "\"north\": 0, \"groundSnowLoad\": -1", LoadProblemKind.InvalidValue, "groundSnowLoad")]
     [InlineData("\"ultimateWindSpeed\": 115", "\"ultimateWindSpeed\": -5", LoadProblemKind.InvalidValue, "ultimateWindSpeed")]
     [InlineData("\"seismicDesignCategory\": \"B\"", "\"seismicDesignCategory\": \"\"", LoadProblemKind.InvalidValue, "seismicDesignCategory")]
     [InlineData("\"frostDepth\": 43008", "\"frostDepth\": -1", LoadProblemKind.InvalidValue, "frostDepth")]
@@ -160,7 +161,7 @@ public class BuildingFormatTests
     [InlineData("\"bracing\": [ {", "\"bracing\": [ { \"from\": null, \"to\": \"0192f1a0-0000-4000-8000-0000000000ff\", \"method\": \"other\" }, {", LoadProblemKind.InvalidValue, "bracing/1")]
     [InlineData("\"studSpacing\": 24576", "\"studSpacing\": 0", LoadProblemKind.InvalidValue, "studSpacing")]
     [InlineData("\"supports\": \"test-roof\"", "\"supports\": \"\"", LoadProblemKind.InvalidValue, "supports")]
-    [InlineData("\"groundSnowLoad\": 30", "\"groundSnowLoad\": 30.0", LoadProblemKind.NotAnInteger, "groundSnowLoad")]
+    [InlineData("\"north\": 0, \"groundSnowLoad\": 30", "\"north\": 0, \"groundSnowLoad\": 30.0", LoadProblemKind.NotAnInteger, "groundSnowLoad")]
     [InlineData("\"supplies\": [],", "\"supplies\": [], \"wind\": 5,", LoadProblemKind.UnknownField, "wind")]
     [InlineData("\"furniture\": { \"kind\": \"none\", \"anchored\": false }, \"site\": {", "\"furniture\": { \"kind\": \"none\", \"anchored\": false }, \"site\": { \"snow\": 1,", LoadProblemKind.UnknownField, "snow")]
     [InlineData("\"code\": { \"pack\": \"us-zz-test\", \"revision\": 2, \"mode\": \"locked\", \"lockedOn\": \"2026-09-25\" },", "", LoadProblemKind.MissingField, "code")]

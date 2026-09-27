@@ -1,5 +1,5 @@
 {
-  "formatVersion": 14,
+  "formatVersion": 15,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -290,6 +290,7 @@
     "buildingWidth": null,
     "roofLiveLoad": null,
     "soilBearing": null,
+    "north": 0,
     "source": null
   },
   "furniture": {

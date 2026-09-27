@@ -308,6 +308,7 @@ internal sealed class SceneBinder
                 SceneNames.Box => ReadBox(fields, new EntityId(entityId), new LayerId(layerId)),
                 SceneNames.Dimension => ReadDimension(fields, new EntityId(entityId), new LayerId(layerId)),
                 SceneNames.NoteType => ReadNote(fields, new EntityId(entityId), new LayerId(layerId)),
+                SceneNames.BoundaryType => ReadBoundary(fields, new EntityId(entityId), new LayerId(layerId)),
                 SceneNames.StrutType => ReadStrut(fields, new EntityId(entityId), new LayerId(layerId)),
                 _ => UnknownType(fields, type),
             };
@@ -371,6 +372,70 @@ internal sealed class SceneBinder
     /// A note (format version 10): a position, its words and a symbol. The words may be empty only
     /// when there is a symbol to draw.
     /// </summary>
+    /// <summary>A lot's boundary (format version 15): its point of beginning and its courses as the survey prints them.</summary>
+    private Entity? ReadBoundary(JsonFields fields, EntityId id, LayerId layer)
+    {
+        int before = problems.Count;
+        Point2? start = ReadPoint(fields, SceneNames.Start);
+        ImmutableArray<Course>.Builder courses = ImmutableArray.CreateBuilder<Course>();
+        foreach ((JsonElement element, string path) in ReadArray(fields, SceneNames.Courses))
+        {
+            JsonFields? course = ReadFields(element, path, "a course");
+            if (course is null)
+            {
+                continue;
+            }
+
+            JsonFields? bearing = ReadObject(course, SceneNames.BearingName);
+            NorthSouth? from = bearing is null ? null : ReadEnum(bearing, SceneNames.From, SceneNames.Meridians, "meridian");
+            long? angle = bearing is null ? null : ReadInteger(bearing, SceneNames.AngleName);
+            EastWest? toward = bearing is null ? null : ReadEnum(bearing, SceneNames.Toward, SceneNames.Turns, "turn");
+            if (bearing is not null)
+            {
+                RejectUnknownFields(bearing);
+            }
+
+            long? distance = ReadInteger(course, SceneNames.Distance);
+            (bool setbackRead, Setback? setback) = ReadNullable(course, SceneNames.SetbackName, ReadSetback);
+            RejectUnknownFields(course);
+            if (angle is < 0 or > 324000)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{path}/{SceneNames.BearingName}/{SceneNames.AngleName}", "A bearing's angle is from 0° to 90°: 0 to 324000 arcseconds.");
+            }
+            else if (distance is <= 0)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{path}/{SceneNames.Distance}", "A course is longer than zero.");
+            }
+            else if (from is { } f && angle is { } a && toward is { } t && distance is { } d && setbackRead)
+            {
+                courses.Add(new Course(new Bearing(f, new Angle(a), t), new Length(d), setback));
+            }
+        }
+
+        RejectUnknownFields(fields);
+        if (problems.Count == before && courses.Count < 3)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.Courses}", "A lot's boundary has at least three courses.");
+        }
+
+        return problems.Count == before && start is { } s ? new Boundary(id, layer, s, courses.ToImmutable()) : null;
+    }
+
+    /// <summary>A course's setback: a distance longer than zero and what it is called.</summary>
+    private Setback? ReadSetback(JsonFields fields)
+    {
+        long? distance = ReadInteger(fields, SceneNames.Distance);
+        SetbackKind? kind = ReadEnum(fields, SceneNames.Kind, SceneNames.SetbackKinds, "setback kind");
+        RejectUnknownFields(fields);
+        if (distance is <= 0)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.Distance}", "A setback is longer than zero.");
+            return null;
+        }
+
+        return distance is { } d && kind is { } k ? new Setback(new Length(d), k) : null;
+    }
+
     private Entity? ReadNote(JsonFields fields, EntityId id, LayerId layer)
     {
         Point2? position = ReadPoint(fields, SceneNames.Position);
@@ -1028,6 +1093,7 @@ internal sealed class SceneBinder
         (bool widthRead, long? width) = ReadIntegerOrNull(fields, SceneNames.SiteBuildingWidth);
         (bool liveRead, long? live) = ReadIntegerOrNull(fields, SceneNames.SiteRoofLiveLoad);
         (bool bearingRead, long? bearing) = ReadIntegerOrNull(fields, SceneNames.SiteSoilBearing);
+        long? north = ReadInteger(fields, SceneNames.SiteNorth);
         (bool sourceRead, SiteSource? source) = ReadSiteSource(fields);
         RejectUnknownFields(fields);
         if (problems.Count > before || !snowRead || !windRead || !sdcRead || !frostRead || !widthRead || !liveRead || !bearingRead || !sourceRead)
@@ -1083,6 +1149,7 @@ internal sealed class SceneBinder
                 source)
             {
                 SoilBearingPsf = (int?)bearing,
+                North = new Angle(north ?? 0),
             };
     }
 
