@@ -106,6 +106,34 @@ public class AnswerGuardTests
 
     [Fact]
     [Trait("Feature", "AST-003")]
+    public void A_help_item_supports_only_a_designation_never_a_size_count_or_length()
+    {
+        // Carry-over from slice A (#229, issue #230 comment 2026-09-27, decided option (b)):
+        // building.md's "The code check on an opening" section is added to the pack for every
+        // sized, out-of-scope or not-checked header and carries the worked example "Header (2)
+        // 2x10, 1 jack stud and 2 king studs each side." Without this rule, that example's own
+        // numbers would let an answer claim (2) 2x10 for a header napkin sized differently, because
+        // the guard would find the token — in the help text, never in what napkin computed.
+        HelpSection section = HelpSections.Find("docs/building.md", "The code check on an opening");
+        Assert.Contains("2x10", section.Text, StringComparison.Ordinal);
+        ContextPack pack = ContextPack.Of(
+        [
+            (ContextKind.Check, "Header check, Window 1: Sized: (2) 2x8, 1 jack stud and 1 king stud each side, per R602.7(1)."),
+            (ContextKind.Help, section.ItemText),
+        ]);
+
+        // The header napkin actually sized: every number is the check result's own [1].
+        Kept("The header is (2) 2x8, 1 jack stud and 1 king stud each side, per R602.7(1) [1].", pack);
+
+        // 2x10 is only in the help item's worked example [2]; it never stands for the header napkin sized.
+        Refused("A header like this is usually (2) 2x10 [2].", pack, "2x10");
+
+        // A designation in a help item still stands (§9.1's good answer relies on exactly this).
+        Kept("The header table is R602.7(1) [2].", pack);
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-003")]
     public void A_percentage_stands_only_as_a_percentage()
     {
         ContextPack pack = Pack("Waste 15%, 15 boards.");

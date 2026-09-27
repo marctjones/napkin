@@ -72,6 +72,16 @@ public sealed record GuardedAnswer(ImmutableArray<GuardedSentence> Sentences)
 /// line break; so <c>R602.7(1)</c> and <c>3.5</c> stay whole. Item references written after the full
 /// stop, "… empty. [4]", belong to the sentence before them.
 /// </para>
+/// <para>
+/// A help item supports only a table or section designation, never a size, count or length (§14
+/// item 13, decided option (b), issue #230): building.md's "The code check on an opening" section
+/// is added to the pack for every sized, out-of-scope or not-checked header and carries the worked
+/// example "Header (2) 2x10, 1 jack stud and 2 king studs each side.", so without this rule an
+/// answer could claim <c>(2) 2x10</c> for a header napkin sized differently and the guard would find
+/// it — in the help text, not in what napkin computed. A designation from a help item still stands
+/// (§9.1's good answer cites <c>R602.7(1)</c> from a help item); every other number must come from
+/// the project's own items — the design, the site, the code, a check result or a list row.
+/// </para>
 /// </remarks>
 public static class AnswerGuard
 {
@@ -83,7 +93,7 @@ public static class AnswerGuard
         ArgumentNullException.ThrowIfNull(answer);
         ArgumentNullException.ThrowIfNull(pack);
 
-        ImmutableHashSet<string> given = pack.Keys;
+        ImmutableHashSet<string> given = SupportedKeys(pack);
         List<GuardedSentence> sentences = [];
         foreach ((string text, string separator) in Sentences(answer))
         {
@@ -216,6 +226,31 @@ public static class AnswerGuard
     {
         string rest = System.Text.RegularExpressions.Regex.Replace(text, @"\[\s*\d+(?:\s*,\s*\d+)*\s*\]", string.Empty);
         return rest.Length < text.Length && rest.All(c => char.IsWhiteSpace(c) || c is '.' or ',' or ';');
+    }
+
+    /// <summary>
+    /// The keys a sentence may cite: every key from a project item, and only a designation's key
+    /// from a help item (see the class remarks). A key still counts when it also occurs in a
+    /// project item, however many help items carry it too.
+    /// </summary>
+    /// <param name="pack">The context pack.</param>
+    private static ImmutableHashSet<string> SupportedKeys(ContextPack pack)
+    {
+        HashSet<string> keys = [];
+        foreach (ContextItem item in pack.Items)
+        {
+            foreach (string key in NumberTokens.KeysIn(item.Text))
+            {
+                if (item.Kind == ContextKind.Help && !key.StartsWith(NumberTokens.DesignationPrefix, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                keys.Add(key);
+            }
+        }
+
+        return [.. keys];
     }
 
     private static string Listed(List<string> items) => items.Count switch

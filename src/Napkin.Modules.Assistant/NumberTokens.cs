@@ -47,6 +47,14 @@ public readonly record struct NumberToken(string Text, string Key);
 /// </remarks>
 public static partial class NumberTokens
 {
+    /// <summary>
+    /// The prefix a table or section designation's key starts with (<c>R602.7(1)</c>, <c>§R507</c>):
+    /// the only kind of number token a help item may support in <see cref="AnswerGuard"/> (§14 item
+    /// 13, decided option (b), issue #230) — a help section's own worked example (building.md's
+    /// "Header (2) 2x10 …") must never stand in for a size, count or length napkin actually computed.
+    /// </summary>
+    public const string DesignationPrefix = "D:";
+
     private const string Mark = """(?:"|″|”|“|\s*(?:inches|inch|in)\b)""";
     private const string Fraction = @"(?:\.\d+|\s*-?\s*\d+/\d+|/\d+)";
     private const string Before = @"(?<![A-Za-z0-9./])";
@@ -191,7 +199,7 @@ public static partial class NumberTokens
         string text = match.Value.Trim();
         if (match.Groups["des"].Success)
         {
-            return "D:" + Squeeze(text).Replace("§", string.Empty, StringComparison.Ordinal).ToUpperInvariant();
+            return DesignationPrefix + Squeeze(text).Replace("§", string.Empty, StringComparison.Ordinal).ToUpperInvariant();
         }
 
         if (match.Groups["lum"].Success)
