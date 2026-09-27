@@ -37,7 +37,7 @@ public class PermitPaperTests
         Assert.Equal(expected.Lines, set.Elevation!.Lines);
         Assert.Equal(expected.Dimensions.Select(dimension => dimension.Label), set.Elevation.Dimensions.Select(dimension => dimension.Label));
         Assert.Equal(PermitItems.Of(porch, CodePacks.None, Napkin.Core.Materials.MaterialsLibrary.Shipped).Select(item => item.What), set.Permit.Items.Select(item => item.What));
-        Assert.Equal($"{ScopeDisclaimer.Text} {DeckSetPdf.NotASurvey}", set.Permit.Title.Disclaimer);
+        Assert.Equal($"{ScopeDisclaimer.Text} {PermitSheets.NotASurvey}", set.Permit.Title.Disclaimer);
         Assert.Equal(SheetPaper.Tabloid, set.Permit.Paper);
 
         // Printed, every sheet says it is not a complete set: with no code, nothing is sized.
@@ -47,6 +47,38 @@ public class PermitPaperTests
         Assert.All(
             Enumerable.Range(0, document.PageCount),
             page => Assert.Contains("NOT A COMPLETE PERMIT SET", new Excise.Core.Text.TextExtractor(document.Pages[page]).ExtractText(TestContext.Current.CancellationToken), StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [Trait("Feature", "PERMIT-003")]
+    public void The_window_set_carries_the_plan_and_the_elevation_facing_the_wall_as_the_locked_views_draw_them()
+    {
+        // The window sample's wall runs east–west, so its elevation is Front.
+        Sketch sketch = SampleExpectations.Sample("window-in-existing-wall").Load().Sketch;
+        Assert.Equal(StandardView.Front, PermitPaper.ElevationForOpening(sketch, CodePacks.None));
+        Assert.Equal(StandardView.Front, PermitPaper.ElevationForOpening(Sketch.Empty, CodePacks.None));
+
+        WindowSet set = PermitPaper.WindowSet(sketch, "Window", new DateOnly(2026, 9, 27), new FeetInchesFormat(16), CodePacks.None, SheetPaper.Letter, hiddenEdges: true);
+        Assert.Equal(PaperSheet.View(sketch, StandardView.Top, new FeetInchesFormat(16), hiddenEdges: true).Lines, set.Plan!.Lines);
+        Assert.Equal(PaperSheet.View(sketch, StandardView.Front, new FeetInchesFormat(16), hiddenEdges: true).Lines, set.Elevation!.Lines);
+        Assert.Equal($"{ScopeDisclaimer.Text} {PermitSheets.NotASurvey}", set.Permit.Title.Disclaimer);
+    }
+
+    [Fact]
+    public void A_wall_running_north_south_is_seen_from_the_right()
+    {
+        LayerId wallLayer = LayerId.New(), openingLayer = LayerId.New();
+        Box wall = new(EntityId.New(), wallLayer, new Point3(Length.Inches(6), Length.Zero, Length.Zero), Length.Inches(144), Length.Inches(6), Length.Inches(96), BoxFace.Top, Angle.Degrees(90))
+        {
+            Name = "Wall 1",
+        };
+        Box window = new(EntityId.New(), openingLayer, new Point3(Length.Inches(6), Length.Inches(24), Length.Inches(36)), Length.Inches(36), Length.Inches(6), Length.Inches(42), BoxFace.Top, Angle.Degrees(90))
+        {
+            Name = "Window 1",
+        };
+        Sketch sketch = Sketch.Empty.WithLayer(new Layer(wallLayer, BuildingLayers.Wall)).WithLayer(new Layer(openingLayer, BuildingLayers.Opening)).WithEntity(wall).WithEntity(window);
+        Assert.Single(CodeCheck.Of(sketch, CodePacks.None));
+        Assert.Equal(StandardView.Right, PermitPaper.ElevationForOpening(sketch, CodePacks.None));
     }
 
     [Theory]

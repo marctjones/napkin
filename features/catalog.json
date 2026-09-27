@@ -713,6 +713,15 @@
       "kind": "unit"
     },
     {
+      "id": "PERMIT-003",
+      "area": "permit",
+      "title": "A window or door move's permit set draws its site plan, plan, elevation and header details",
+      "acceptance": "A design with an opening in a wall and no deck prints S1, A1 (the plan as the Top view draws it, each opening's width and position in its wall and the wall's length), A2 (the view facing the wall, each opening's sill and head), S3 (a block per opening, four to a sheet: the header's size with its jacks and kings, a blank rule where napkin has no answer, or the person's own choice on a wall said not to bear, and the check's lines), then C1 and, when anything is not sized, W1.",
+      "milestone": "M13",
+      "issue": 227,
+      "kind": "unit"
+    },
+    {
       "id": "DECK-001",
       "area": "deck",
       "title": "Ledger attachment is sized from the project's pack",
@@ -1673,6 +1682,15 @@
       "acceptance": "Porch on a deck from File > Samples > Building, then File > Print permit set on Tabloid: the file offered is Porch on a deck permit set.pdf, 17 × 11 in, reading S1, A2 (Front), S2 and S3 for Deck 1, then C1 and W1, every sheet saying the site plan is not a survey and that the set is not complete, and the message bar says the paper; Ctrl/Cmd+N and File > Print permit set on Letter says a permit set needs a deck and asks for no file.",
       "milestone": "M13",
       "issue": 226,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PERMIT-02",
+      "area": "ui",
+      "title": "Print a window move's permit set",
+      "acceptance": "Window in an existing wall from File > Samples > Building, 3 for Front, then File > Print permit set on Letter: the file offered is Window in an existing wall permit set.pdf, on Letter, reading S1, A1 Plan: Top, A2 Elevation: Front, S3 Details and C1 in order, every sheet saying the site plan is not a survey, and the message bar says it printed the window and door set.",
+      "milestone": "M13",
+      "issue": 227,
       "kind": "workflow"
     },
     {

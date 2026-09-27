@@ -61,7 +61,7 @@ public class DeckSetPdfTests
     static DeckSet Set(Sketch sketch, DrawingView? elevation = null, SheetPaper? paper = null)
     {
         PermitSet permit = new(
-            new TitleBlock("Deck", Day, SheetNotes.CodeLine(sketch, Packs), $"{ScopeDisclaimer.Text} {DeckSetPdf.NotASurvey}"),
+            new TitleBlock("Deck", Day, SheetNotes.CodeLine(sketch, Packs), $"{ScopeDisclaimer.Text} {PermitSheets.NotASurvey}"),
             new FeetInchesFormat(16),
             paper ?? SheetPaper.Letter,
             PermitItems.Of(sketch, Packs, MaterialsLibrary.Shipped));
@@ -91,7 +91,7 @@ public class DeckSetPdfTests
             Assert.Contains(titles[page], read.Text[page], StringComparison.Ordinal);
         }
 
-        Assert.All(read.Text, text => Assert.Contains(DeckSetPdf.NotASurvey, text, StringComparison.Ordinal));
+        Assert.All(read.Text, text => Assert.Contains(PermitSheets.NotASurvey, text, StringComparison.Ordinal));
         Assert.Contains("the decking is 3'-0\" above grade", read.Text[1], StringComparison.Ordinal);
     }
 
@@ -137,7 +137,7 @@ public class DeckSetPdfTests
         Assert.DoesNotContain(Squash("Joists: 2x8 at"), read.Letters[s2], StringComparison.Ordinal);
         Assert.Contains("Joists:", read.Text[s2], StringComparison.Ordinal);
         MatchCollection rules = Regex.Matches(read.Operators[s2], @"0 G\n0\.8 w\n(\S+) (\S+) m\n(\S+) \2 l\nS");
-        Assert.Contains(rules, rule => Math.Abs(double.Parse(rule.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture) - double.Parse(rule.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) - DeckSetPdf.SizeBlank) < 1e-6);
+        Assert.Contains(rules, rule => Math.Abs(double.Parse(rule.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture) - double.Parse(rule.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) - PermitSheets.SizeBlank) < 1e-6);
         Assert.All(read.Text, text => Assert.Contains("NOT A COMPLETE PERMIT SET", text, StringComparison.Ordinal));
         Assert.Contains(read.Text, text => text.Contains(PermitSetPdf.Worksheet, StringComparison.Ordinal));
     }
@@ -178,9 +178,9 @@ public class DeckSetPdfTests
     {
         DrawingExtent thousand = new(0, 0, 1000, 10);
         // 150 pt for 1000": 0.15 pt/in — under every architect scale; 1:480 (1" = 40') is 0.15.
-        Assert.Equal(new SheetScale(480, ScaleWords.Engineer), DeckSetPdf.Fit(SheetScale.Architect, thousand, new PageRect(0, 0, 150, 500)));
+        Assert.Equal(new SheetScale(480, ScaleWords.Engineer), PermitSheets.Fit(SheetScale.Architect, thousand, new PageRect(0, 0, 150, 500)));
         // 10 pt for 1000": 0.01 pt/in — under every engineer scale too: 1:96 halved until it fits, 1:12288.
-        Assert.Equal(new SheetScale(12288), DeckSetPdf.Fit(SheetScale.Architect, thousand, new PageRect(0, 0, 10, 500)));
+        Assert.Equal(new SheetScale(12288), PermitSheets.Fit(SheetScale.Architect, thousand, new PageRect(0, 0, 10, 500)));
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public class DeckSetPdfTests
     public void Without_a_lot_the_site_plan_says_so_and_draws_the_footprints()
     {
         ReadBack read = Read(Set(Design()));
-        Assert.Contains(Squash(DeckSetPdf.NoBoundary), read.Letters[0], StringComparison.Ordinal);
+        Assert.Contains(Squash(PermitSheets.NoBoundary), read.Letters[0], StringComparison.Ordinal);
         Assert.Contains("1.4 w", read.Operators[0], StringComparison.Ordinal);
     }
 
@@ -232,9 +232,9 @@ public class DeckSetPdfTests
     public void A_north_turned_site_turns_its_arrow_and_the_inward_offset_follows_the_lot_s_turn()
     {
         // Anticlockwise, the inside of a line is on its left: the offset of (0,0)→(10,0) by 2 is (0,2)→(10,2).
-        Assert.Equal((new PagePoint(0, 2), new PagePoint(10, 2)), DeckSetPdf.Inward(new PagePoint(0, 0), new PagePoint(10, 0), 2, clockwise: false));
-        Assert.Equal((new PagePoint(0, -2), new PagePoint(10, -2)), DeckSetPdf.Inward(new PagePoint(0, 0), new PagePoint(10, 0), 2, clockwise: true));
-        Assert.True(DeckSetPdf.SignedArea([Point2.Origin, new Point2(In(10), Length.Zero), new Point2(In(10), In(10))]) > 0);
+        Assert.Equal((new PagePoint(0, 2), new PagePoint(10, 2)), PermitSheets.Inward(new PagePoint(0, 0), new PagePoint(10, 0), 2, clockwise: false));
+        Assert.Equal((new PagePoint(0, -2), new PagePoint(10, -2)), PermitSheets.Inward(new PagePoint(0, 0), new PagePoint(10, 0), 2, clockwise: true));
+        Assert.True(PermitSheets.SignedArea([Point2.Origin, new Point2(In(10), Length.Zero), new Point2(In(10), In(10))]) > 0);
 
         Sketch turned = Design() with { Site = Design().Site with { North = Angle.Degrees(90) } };
         Assert.Contains("N", Read(Set(turned)).Text[0], StringComparison.Ordinal);

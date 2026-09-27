@@ -102,7 +102,7 @@
                 <MenuItem Name="PermitLetterMenuItem"
                           Header="Print permit set on _Letter…"
                           Click="OnPrintPermitLetterClicked"
-                          ToolTip.Tip="Write a deck's permit set as a PDF on Letter paper: S1 site plan, A2 elevation, S2 framing plan and S3 details, then C1, every code result with its citation, and W1, a worksheet for anything napkin could not size." />
+                          ToolTip.Tip="Write the permit set as a PDF on Letter paper — for a deck: S1 site plan, A2 elevation, S2 framing plan, S3 details; for a window or door in a wall: S1, A1 plan, A2 elevation, S3 header details — then C1, every code result with its citation, and W1, a worksheet for anything napkin could not size." />
                 <MenuItem Name="PermitTabloidMenuItem"
                           Header="Print permit set on _Tabloid…"
                           Click="OnPrintPermitTabloidClicked"
