@@ -310,7 +310,8 @@ public class DeckCheckTests
         Assert.Equal(["deck"], DeckCheck.SupportsOffered(ct));
         Assert.Equal(["Southern Pine", "Douglas Fir-Larch", "Hem-Fir", "Spruce-Pine-Fir", "Redwood", "Western Cedars", "Ponderosa Pine", "Red Pine"], DeckCheck.SpeciesOffered(ct));
         Assert.Equal(
-            "CT 2022's deck tables name what a deck supports as: deck; and species as: Southern Pine, Douglas Fir-Larch, Hem-Fir, Spruce-Pine-Fir, Redwood, Western Cedars, Ponderosa Pine, Red Pine. "
+            "CT 2022's deck tables name what a deck supports as: deck (anything else it carries is beyond the scope of DCA 6-2015, Table 2 note 1, p. 4; MINIMUM REQUIREMENTS & LIMITATIONS item 8, p. 2); "
+            + "and species as: Southern Pine, Douglas Fir-Larch, Hem-Fir, Spruce-Pine-Fir, Redwood, Western Cedars, Ponderosa Pine, Red Pine. "
             + "Type one in each box; nothing is filled in for you.",
             DeckCheck.InputsOffered(ct));
 

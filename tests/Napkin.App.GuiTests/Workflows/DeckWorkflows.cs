@@ -46,7 +46,8 @@ public class DeckWorkflows
             Assert.Contains("its north edge is the ledger", window.MessageOnScreen, StringComparison.Ordinal);
 
             // The sample is locked to CT 2022, whose deck joists come from DCA 6: the panel offers its words, filling in none.
-            Assert.StartsWith("CT 2022's deck tables name what a deck supports as: deck; and species as: Southern Pine,", window.DeckInputsOfferLine, StringComparison.Ordinal);
+            Assert.StartsWith("CT 2022's deck tables name what a deck supports as: deck (anything else it carries is beyond the scope of DCA 6-2015", window.DeckInputsOfferLine, StringComparison.Ordinal);
+            Assert.Contains("and species as: Southern Pine,", window.DeckInputsOfferLine, StringComparison.Ordinal);
             Assert.Null(deck.Deck!.Supports);
         });
 

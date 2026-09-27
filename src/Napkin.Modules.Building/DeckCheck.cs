@@ -439,10 +439,16 @@ public static class DeckCheck
             return null;
         }
 
+        // A guide's scope that names the only values it covers says so: anything else is beyond it (§2).
+        string beyond = string.Concat(pack.Deck.Tables
+            .Where(table => table.Guide is not null)
+            .SelectMany(table => table.Guide!.Limits.Where(limit => limit.When is { Input: "supports", Form: ScopeForm.NotIn }).Select(limit => (table.Guide!, limit)))
+            .Distinct()
+            .Select(pair => $" (anything else it carries is beyond the scope of {pair.Item1.ShortName}, {pair.limit.Location})"));
         List<string> said = [];
         if (!supports.IsEmpty)
         {
-            said.Add($"what a deck supports as: {string.Join(", ", supports)}");
+            said.Add($"what a deck supports as: {string.Join(", ", supports)}{beyond}");
         }
 
         if (!species.IsEmpty)
