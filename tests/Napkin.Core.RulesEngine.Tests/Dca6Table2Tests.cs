@@ -53,7 +53,11 @@ public class Dca6Table2Tests
         Assert.Equal((ScopeForm.NotIn, "deck"), (guide.Limits[0].When.Form, Assert.Single(guide.Limits[0].When.Values)));
         Assert.Equal((ScopeForm.Above, CellValue.Whole(ColumnType.Psf, 40)), (guide.Limits[1].When.Form, guide.Limits[1].When.Value!.Value));
         Assert.Equal((ScopeForm.AboveInput, "deckLength", "deckWidth"), (guide.Limits[2].When.Form, guide.Limits[2].When.Input, guide.Limits[2].When.OtherInput));
-        Assert.Equal(["n.single", "n.stairs", "n.materials", "n.beam-span", "n.beam-sides"], guide.Notes.Select(note => note.Id));
+        Assert.Equal(["n.single", "n.stairs", "n.post-size", "n.materials", "n.beam-span", "n.beam-sides"], guide.Notes.Select(note => note.Id));
+
+        // Item 3, p. 2, shown once at the top of the block; Tables B1 and B2 enforce it, citing p. 10 (#42).
+        Assert.Equal("Minimum post size is 6x6 nominal and maximum post height shall be in accordance with Table 4.", guide.Notes[2].Text);
+        Assert.Contains("\"Minimum post size is 6x6 nominal and maximum post height shall be in accordance with Table 4.\" (MINIMUM REQUIREMENTS & LIMITATIONS item 3, p. 2)", guide.Paragraph(Ct().Code), StringComparison.Ordinal);
 
         // Table 1, p. 3 and Table 2, p. 4 (Table 1 abbreviates Spruce-Pine-Fir as SPF).
         Assert.Equal(["Southern Pine", "Douglas Fir-Larch", "Hem-Fir", "Spruce-Pine-Fir", "Redwood", "Western Cedars", "Ponderosa Pine", "Red Pine"], guide.Species);
