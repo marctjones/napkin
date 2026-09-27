@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The runtime that talks to a program the person installed on this machine — Ollama, or
+       llama.cpp's llama-server — over loopback HTTP (docs/design/llm-assistant.md §2.2, §5.2, §6.1,
+       issue #231). The Napkin.Interop.Dxf pattern: one outside protocol, its own coverage floor.
+       No package dependency: HttpClient and System.Text.Json are the BCL. No native code and no
+       model runtime: the model runs in the other program's process. Avalonia-free. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Napkin.Modules.Assistant\Napkin.Modules.Assistant.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
