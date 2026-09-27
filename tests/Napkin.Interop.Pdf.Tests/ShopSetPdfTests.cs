@@ -162,6 +162,73 @@ public class ShopSetPdfTests
         Assert.Equal("3/4 plywood", top.Material);
     }
 
+    [Theory]
+    [Trait("Feature", "CUT-024")]
+    [InlineData("coffee-table")]
+    [InlineData("stocked-bench")]
+    [InlineData("diy-coffee-table-drawers")]
+    public void Labels_name_and_group_the_parts_as_the_cut_list_and_the_Parts_view_do(string sample)
+    {
+        ShopSet set = Set(Sample(sample));
+        Assert.Equal(
+            PartsSheet.Of(set.Rows).SelectMany(cell => Enumerable.Repeat(cell.Row.Label, cell.Count)),
+            set.Labels.Select(label => label.Part));
+    }
+
+    /// <summary>A 2x4 part of a length, flat, one piece, named: a box at the origin.</summary>
+    static Box Stick(int index, string name, long inches, string stock = "2x4") => Box.AsDrawn(
+            new EntityId(Guid.ParseExact($"20000000-0000-4000-8000-{index:d12}", "D")),
+            LayerId.Default,
+            Point2.Origin,
+            Length.Inches(inches),
+            Length.Inches(3, 1, 2),
+            Length.Inches(1, 1, 2),
+            Angle.Zero) with
+    {
+        Name = name,
+        Part = new Part(stock, null, 1, new PlanAxes(PartDimension.Length, PartDimension.Width)),
+    };
+
+    [Fact]
+    [Trait("Feature", "CUT-024")]
+    public void A_long_list_runs_onto_more_pages_with_its_header_and_a_piece_no_board_holds_says_so()
+    {
+        // Forty sticks 10″ to 49″ long: forty rows, more than one page holds, and forty labels, two
+        // pages of 3 × 8. A 400″ stick is longer than any stocked 2x4, so no board is bought for it.
+        Sketch sketch = Sketch.Empty;
+        for (int i = 0; i < 40; i++)
+        {
+            sketch = sketch.WithEntity(Stick(i, $"Stick {i + 1}", 10 + i));
+        }
+
+        sketch = sketch.WithEntity(Stick(40, "Mast", 400));
+        ShopSet set = Set(sketch);
+        ReadBack read = Read(set);
+        int cutListPages = read.Text.Count(text => text.Contains(ShopSetPdf.CutListTitle, StringComparison.Ordinal));
+        Assert.True(cutListPages >= 2, $"{cutListPages} cut-list page(s)");
+        Assert.All(
+            read.Text.Where(text => text.Contains(ShopSetPdf.CutListTitle, StringComparison.Ordinal)),
+            text => Assert.Contains("LabelQtyLengthWidthThickness", Squash(text), StringComparison.Ordinal));
+        Assert.Equal(2, read.Text.Count(text => text.Contains(ShopSetPdf.LabelsTitle, StringComparison.Ordinal)));
+
+        ShopLabel mast = Assert.Single(set.Labels, label => label.Part == "Mast");
+        Assert.Equal($"no board: {ShoppingList.NothingHolds} it", mast.From);
+        Assert.Contains(Squash($"Mast 400 in: {ShoppingList.NothingHolds} it, so none is bought"), string.Concat(read.Letters), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_piece_the_layout_does_not_lay_out_says_so_on_its_label()
+    {
+        // Hardwood is sold by the board foot in random widths, and the layout leaves it out; its
+        // label says it is not in the layout, and the layout's notes say why.
+        MaterialsLibrary library = MaterialsLibrary.Shipped;
+        string? hardwood = library.Items.OfType<HardwoodStock>().Select(stock => stock.Name).FirstOrDefault();
+        Assert.NotNull(hardwood);
+        ShopSet set = Set(Sketch.Empty.WithEntity(Stick(0, "Shelf", 30, hardwood)));
+        Assert.Equal(ShopSet.NotLaidOut, Assert.Single(set.Labels).From);
+        Assert.Contains(Squash("hardwood: sold by the board foot in random widths, not laid out"), string.Concat(Read(set).Letters), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void A_design_with_nothing_to_cut_is_one_page_saying_why()
     {
