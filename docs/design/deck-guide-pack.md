@@ -173,6 +173,8 @@ a 6x6, and a 4x6 case is added. The CT pack goes to revision 5 and the two sampl
 the limit and the reading above for the reviewer to confirm, and all three the new revision and scope note. napkin's
 deck tool still starts a deck on 4x4 posts, so a new deck under CT shows both post lines out of scope until they are
 typed as 6x6: whether the starting value should change is Marc's call.
+*(Decided: `DeckTool.StartingInputs`'s post now starts at 6x6 — a UX default change, not new data, so a new deck's
+post lines resolve under CT instead of starting Out of scope.)*
 
 Design note written by Fable per [`PLAN.md`](../../PLAN.md) for Marc's decision of 2026-09-26 on
 #209, **"Decks only via DCA 6"**: the deck checks' real data comes from the American Wood
@@ -212,7 +214,7 @@ check** block opens with one line that says where the deck answers come from:
 
 Then every check answers with a real number and its page, and the same caveat in short:
 
-> Joists 2x8 at 16" o.c., Southern Pine, span 9'-9": allowed up to 11'-10" (DCA 6-2015 Table 2,
+> Joists 2x8 at 16" o.c., Southern Pine, span 9'-7 1/2": allowed up to 11'-10" (DCA 6-2015 Table 2,
 > p. 4 — a guide on the 2015 IRC, not CT 2022's adopted IRC 2021; the IRC governs where they
 > differ) — UNREVIEWED until the row-by-row review is signed off.
 

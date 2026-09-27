@@ -256,13 +256,15 @@ carries); a `rafter` table's add `groundSnowLoad` (`upper-bound`) and may add `r
 declared, exactly as headers ask for a roof live load only when a footnote needs it.
 
 **The request** is the deck's (or roof's) typed member, spacing, species and Supports, and the
-**actual span** from the drawing — the joists' `D − 2t`, the beam's clear span between posts, the
+**actual span** from the drawing — the joists' `D − t − the beam's own thickness (plies × a ply's
+thickness) − cantilever`, ledger face to the beam's near face (corrected so a multi-ply beam's full
+thickness counts, not one ply's, as `D − 2t` read), the beam's clear span between posts, the
 rafters' horizontal run from the ledger face to the outer face of the plate (§5.3). **The result**
 (`SpanResult`, shaped like `BracingResult`):
 
-- **Passes**: "Joists 2x8 at 16" o.c., zz-fir, span 9'-9": allowed up to 11'-1" (ZZ-DECK-JOIST
+- **Passes**: "Joists 2x8 at 16" o.c., zz-fir, span 9'-7 1/2": allowed up to 11'-1" (ZZ-DECK-JOIST
   row r.fir.2x8.16, p. …)." with the citation line and the row's footnotes.
-- **Short**: "Joists 2x8 … span 12'-3": allowed up to 11'-1", **over by 1'-2"** (row …). Use a
+- **Short**: "Joists 2x8 … span 12'-1 1/2": allowed up to 11'-1", **over by 1'-0 1/2"** (row …). Use a
   deeper joist, closer spacing or another beam." Never a member suggestion beyond that sentence.
 - **Out of scope**: a Supports or species value the table has no row for ("this table has no row
   for a deck carrying a roof-bearing wall: get it engineered"), a spacing not in the table, a limit
@@ -683,8 +685,9 @@ implementer**; one hand pass): 2x8: each 144" alone on a 12' (nothing else fits 
 **3 × 12', 10 × 10' = 136 lineal ft, 181.3 board feet**. 2x10: **2 × 12'**, 40.0 board feet. 4x4:
 3 × 18 1/2 + 2 kerfs = 55 3/4" → **1 × 6'**, 8.0 board feet.
 
-**Checks** (synthetic): joists 2x8 at 16", zz-fir, span 9'-9": passes (row); beam (2) 2x10 span
-5'-6 3/4" between post faces for a joist span of 9'-9": passes; ledger as above; footing at 29.6 sq ft and 2000 psf:
+**Checks** (synthetic): joists 2x8 at 16", zz-fir, span 9'-7 1/2" (ledger face to the (2) 2x10 beam's
+near face: 120 − 1 1/2 − 3): passes (row); beam (2) 2x10 span
+5'-6 3/4" between post faces for a joist span of 9'-7 1/2": passes; ledger as above; footing at 29.6 sq ft and 2000 psf:
 "zz 15 in square" (row); frost 42" of 42": passes; guard: 36" is above the synthetic 28" trigger
 and three edges are open → required.
 

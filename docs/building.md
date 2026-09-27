@@ -359,7 +359,7 @@ read as each table's printed group (Table 2 prints three, Table 3A two). The bea
 and lumber — "(2) 2x10" is Table 3A's "2-2x10", "(1) 4x8" its "4x8" — and Table 3A prints no solid
 3x or 4x beam for Southern Pine. Its line reads the beam span between post faces, as Figure 3 (p. 7)
 dimensions Table 3A's L_B, against the column for the joists it carries: "Beam (2) 2x10 on 3 posts, span
-5'-6 3/4" between post faces, carrying 9'-9" of joists: allowed up to 7'-9" (DCA 6-2015 Table 3A row
+5'-6 3/4" between post faces, carrying 9'-7 1/2" of joists: allowed up to 7'-9" (DCA 6-2015 Table 3A row
 r.sp.2-2x10.10, p. 6 …)". The posts: DCA 6 says "All deck post sizes shall be 6x6 (nominal) or larger"
 (p. 10; item 3, p. 2, shown in the block's opening paragraph), and Tables B1 and B2 check it before they are
 read, so a post under 6x6 nominal — the worked example's 4x4s, a 4x6, a 2x4 — is **out of scope** citing p. 10:
