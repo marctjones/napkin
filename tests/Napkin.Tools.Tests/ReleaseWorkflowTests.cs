@@ -183,6 +183,80 @@ public class ReleaseWorkflowTests
         Assert.Contains("GNU Affero General Public License", workflow);
     }
 
+    // -- the MLX bridge (#243; docs/design/mlx-runtime.md §3.5, §3.6) -------------------------
+
+    private static string BridgeWorkflow() => ReleaseWorkflowRules.Read(ReleaseWorkflowRules.BridgeWorkflowPath);
+
+    private static IReadOnlyList<string> BridgeViolations(string bridgeWorkflow) =>
+        ReleaseWorkflowRules.BridgeViolations(bridgeWorkflow, ReleaseWorkflowRules.Read(ReleaseWorkflowRules.CiWorkflowPath));
+
+    /// <summary>Adds one step, as a shell command, at the end of the bridge workflow's only job.</summary>
+    private static string WithBridgeStep(string command) =>
+        BridgeWorkflow().TrimEnd('\n') + "\n      - run: " + command + "\n";
+
+    [Fact]
+    [Trait("Feature", "REL-002")]
+    public void The_bridge_workflow_keeps_every_rule()
+    {
+        Assert.Empty(BridgeViolations(BridgeWorkflow()));
+    }
+
+    [Theory]
+    [InlineData("codesign --force --sign \"Developer ID Application: Someone (ABCDE12345)\" native/NapkinMlx/out/libNapkinMlx.dylib")]
+    [InlineData("codesign -fs 3F5A0C9B7E native/NapkinMlx/out/libNapkinMlx.dylib")]
+    [InlineData("xcrun notarytool submit native/NapkinMlx/out/libNapkinMlx.dylib --wait")]
+    [InlineData("security import cert.p12 -k build.keychain")]
+    [InlineData("codesign --remove-signature native/NapkinMlx/out/libNapkinMlx.dylib")]
+    [InlineData("install_name_tool -id @rpath/libNapkinMlx.dylib native/NapkinMlx/out/libNapkinMlx.dylib")]
+    public void A_signing_notarization_or_signature_stripping_step_in_the_bridge_workflow_fails_the_check(string command)
+    {
+        Assert.NotEmpty(BridgeViolations(WithBridgeStep(command)));
+    }
+
+    [Fact]
+    public void The_bridge_workflow_may_not_write_or_stop_being_reusable_or_stop_uploading()
+    {
+        var bridge = BridgeWorkflow();
+
+        AssertViolation(BridgeViolations(Mutate(bridge, "permissions:\n  contents: read\n", "permissions:\n  contents: write\n")), "contents: read");
+        AssertViolation(BridgeViolations(Mutate(bridge, "  workflow_call:\n", "  workflow_dispatch:\n")), "workflow_call");
+        AssertViolation(BridgeViolations(Mutate(bridge, "name: mlx-bridge\n", "name: something-else\n")), "`mlx-bridge` artifact");
+        AssertViolation(BridgeViolations(Mutate(bridge, "Signature=adhoc", "Signature=whatever")), "Signature=adhoc");
+        AssertViolation(BridgeViolations(Mutate(bridge, "actions/upload-artifact@v4", "actions/upload-artifact@v3")), "same major version");
+    }
+
+    [Fact]
+    public void The_osx_arm64_zip_ships_the_bridge_from_the_bridge_workflow()
+    {
+        var workflow = Workflow();
+
+        Assert.Contains("needs: [version, mlx-bridge]", workflow);
+        Assert.Contains("if: matrix.rid == 'osx-arm64'", workflow);
+        Assert.Contains("cp native/NOTICES.txt \"$dest/native/NOTICES.txt\"", workflow);
+        Assert.Contains("native/NOTICES.txt here, and docs/third-party-notices.md in the source.", workflow);
+        AssertViolation(
+            Violations(Mutate(workflow, "uses: ./.github/workflows/mlx-bridge.yml", "uses: ./.github/workflows/other.yml")),
+            "mlx-bridge.yml");
+        AssertViolation(
+            Violations(Mutate(workflow, "path: native/NapkinMlx/out\n", "path: somewhere/else\n")),
+            "native/NapkinMlx/out");
+    }
+
+    [Fact]
+    public void Dropping_any_part_of_the_bridges_signature_check_fails_the_check()
+    {
+        var workflow = Workflow();
+
+        AssertViolation(Violations(Mutate(workflow, "codesign -dvv \"$bridge\"", "ls -l \"$bridge\"")), "codesign -dvv");
+        AssertViolation(
+            Violations(Mutate(workflow, "grep -q '^Signature=adhoc' bridge-signature.txt", "true")),
+            "`Signature=adhoc` on native/libNapkinMlx.dylib");
+        AssertViolation(
+            Violations(Mutate(workflow, "grep -Eq '^Authority=|Developer ID' bridge-signature.txt", "false")),
+            "`Authority=` (Developer ID) on native/libNapkinMlx.dylib");
+        AssertViolation(Violations(Mutate(workflow, "-R=\"anchor apple\"", "")), "anchor apple");
+    }
+
     [Fact]
     public void The_workflow_builds_the_three_runtime_identifiers_self_contained_and_unsigned_by_us()
     {

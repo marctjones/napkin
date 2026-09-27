@@ -38,7 +38,9 @@ if ! xcodebuild -version >/dev/null 2>&1; then
   echo "xcodebuild is not available: install Xcode 26.4 or later and run  sudo xcode-select -s /Applications/Xcode.app"
   exit 2
 fi
-if ! xcodebuild -showComponent MetalToolchain 2>/dev/null | grep -q 'Status: installed'; then
+# Read whole, not piped into `grep -q`: under pipefail a grep that stops early can fail the pipe.
+metal_status=$(xcodebuild -showComponent MetalToolchain 2>/dev/null)
+if [[ "$metal_status" != *"Status: installed"* ]]; then
   echo "The Metal Toolchain is missing: run  xcodebuild -downloadComponent MetalToolchain"
   exit 2
 fi
