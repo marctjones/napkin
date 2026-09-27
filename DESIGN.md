@@ -576,6 +576,15 @@ code locking demonstrable rather than merely designed, which is why it arrives a
 - **No code signing and no notarization**, on either platform. See §6.6 for the first-run
   documentation this requires.
 
+### LLM runtime: native code allowed (decided 2026-09-27)
+
+- The .NET-native rule below is the **solver's**. Marc decided on 2026-09-27 (#237) that the
+  assistant's model runtime may run in napkin's process with native code: first **MLX on Apple
+  silicon** through a Swift bridge over mlx-swift-lm
+  ([`docs/design/mlx-runtime.md`](./docs/design/mlx-runtime.md)), later LLamaSharp for Windows. The
+  loopback runtime (Ollama or llama-server, #231) stays as an option. Dependencies still follow
+  §2.1.
+
 ### Constraint solver: wanted, .NET-native, a separate workstream off the critical path
 
 - **napkin will get a geometric constraint solver**, because furniture with angled or curved

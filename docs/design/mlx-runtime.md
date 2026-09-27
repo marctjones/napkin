@@ -1,8 +1,8 @@
 # The in-process MLX runtime: a Swift bridge over mlx-swift-lm, called from napkin on a Mac
 
-Status: **DRAFT awaiting Marc's sign-off.** Milestone **M14 Assistant (local LLM)**; issue #237
+Status: **Signed off by Marc 2026-09-27 with the recommended decisions (§12).** Milestone **M14 Assistant (local LLM)**; issue #237
 (slice I of [`llm-assistant.md`](./llm-assistant.md)); umbrella #228. Slices A–E of this note are
-filed as **#239–#243** (§9) and none starts until the note is signed off.
+filed as **#239–#243** (§9), to be built in order.
 
 Design note written by Fable per [`PLAN.md`](../../PLAN.md) for Marc's decision of 2026-09-27 on
 #237: napkin runs the model **in its own process**, **MLX on the Mac first**; DESIGN.md §11's
