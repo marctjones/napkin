@@ -157,6 +157,7 @@ public partial class MainWindow : Window
         WireDeck();
         WireRoof();
         WireSpecies();
+        WireShelf();
         WireNotes();
         WireStruts();
         DrawingCanvas.CommandRequested += (_, request) => request.Handled = Run(request.Command);
@@ -304,6 +305,12 @@ public partial class MainWindow : Window
             {
                 // And a roof's.
                 ApplyRoof();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && e.Source is TextBox shelfBox && (shelfBox == ShelfLoadBox || shelfBox == ShelfLimitBox))
+            {
+                // A shelf's load and limit are the person's settings, not the part's.
+                ApplyShelf();
                 e.Handled = true;
             }
             else if (e.Key == Key.Enter && e.Source is TextBox box

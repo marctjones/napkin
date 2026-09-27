@@ -19,7 +19,8 @@
       "specificGravity12": "0.41",
       "modulusOfElasticity12Psi": 1380000,
       "page": "5–9",
-      "tableRow": "Alder, red"
+      "tableRow": "Alder, red",
+      "elasticRatios": null
     },
     {
       "name": "Ash, white",
@@ -27,7 +28,12 @@
       "specificGravity12": "0.60",
       "modulusOfElasticity12Psi": 1740000,
       "page": "5–9",
-      "tableRow": "Ash / White"
+      "tableRow": "Ash / White",
+      "elasticRatios": {
+        "tableRow": "Ash, white",
+        "glrOverEl": "0.109",
+        "gltOverEl": "0.077"
+      }
     },
     {
       "name": "Basswood, American",
@@ -35,7 +41,12 @@
       "specificGravity12": "0.37",
       "modulusOfElasticity12Psi": 1460000,
       "page": "5–9",
-      "tableRow": "Basswood, American"
+      "tableRow": "Basswood, American",
+      "elasticRatios": {
+        "tableRow": "Basswood",
+        "glrOverEl": "0.056",
+        "gltOverEl": "0.046"
+      }
     },
     {
       "name": "Birch, yellow",
@@ -43,7 +54,12 @@
       "specificGravity12": "0.62",
       "modulusOfElasticity12Psi": 2010000,
       "page": "5–9",
-      "tableRow": "Birch / Yellow"
+      "tableRow": "Birch / Yellow",
+      "elasticRatios": {
+        "tableRow": "Birch, yellow",
+        "glrOverEl": "0.074",
+        "gltOverEl": "0.068"
+      }
     },
     {
       "name": "Cherry, black",
@@ -51,7 +67,12 @@
       "specificGravity12": "0.50",
       "modulusOfElasticity12Psi": 1490000,
       "page": "5–9",
-      "tableRow": "Cherry, black"
+      "tableRow": "Cherry, black",
+      "elasticRatios": {
+        "tableRow": "Cherry, black",
+        "glrOverEl": "0.147",
+        "gltOverEl": "0.097"
+      }
     },
     {
       "name": "Maple, red (soft maple)",
@@ -59,7 +80,12 @@
       "specificGravity12": "0.54",
       "modulusOfElasticity12Psi": 1640000,
       "page": "5–10",
-      "tableRow": "Maple / Red"
+      "tableRow": "Maple / Red",
+      "elasticRatios": {
+        "tableRow": "Maple, red",
+        "glrOverEl": "0.133",
+        "gltOverEl": "0.074"
+      }
     },
     {
       "name": "Maple, sugar (hard maple)",
@@ -67,7 +93,12 @@
       "specificGravity12": "0.63",
       "modulusOfElasticity12Psi": 1830000,
       "page": "5–10",
-      "tableRow": "Maple / Sugar"
+      "tableRow": "Maple / Sugar",
+      "elasticRatios": {
+        "tableRow": "Maple, sugar",
+        "glrOverEl": "0.111",
+        "gltOverEl": "0.063"
+      }
     },
     {
       "name": "Oak, northern red",
@@ -75,7 +106,12 @@
       "specificGravity12": "0.63",
       "modulusOfElasticity12Psi": 1820000,
       "page": "5–10",
-      "tableRow": "Oak, red / Northern red"
+      "tableRow": "Oak, red / Northern red",
+      "elasticRatios": {
+        "tableRow": "Oak, red",
+        "glrOverEl": "0.089",
+        "gltOverEl": "0.081"
+      }
     },
     {
       "name": "Oak, white",
@@ -83,7 +119,12 @@
       "specificGravity12": "0.68",
       "modulusOfElasticity12Psi": 1780000,
       "page": "5–11",
-      "tableRow": "Oak, white / White"
+      "tableRow": "Oak, white / White",
+      "elasticRatios": {
+        "tableRow": "Oak, white",
+        "glrOverEl": "0.086",
+        "gltOverEl": null
+      }
     },
     {
       "name": "Walnut, black",
@@ -91,7 +132,12 @@
       "specificGravity12": "0.55",
       "modulusOfElasticity12Psi": 1680000,
       "page": "5–11",
-      "tableRow": "Walnut, Black"
+      "tableRow": "Walnut, Black",
+      "elasticRatios": {
+        "tableRow": "Walnut, black",
+        "glrOverEl": "0.085",
+        "gltOverEl": "0.062"
+      }
     },
     {
       "name": "Yellow-poplar",
@@ -99,7 +145,12 @@
       "specificGravity12": "0.42",
       "modulusOfElasticity12Psi": 1580000,
       "page": "5–11",
-      "tableRow": "Yellow-poplar"
+      "tableRow": "Yellow-poplar",
+      "elasticRatios": {
+        "tableRow": "Yellow-poplar",
+        "glrOverEl": "0.075",
+        "gltOverEl": "0.069"
+      }
     },
     {
       "name": "Cedar, western red",
@@ -107,7 +158,12 @@
       "specificGravity12": "0.32",
       "modulusOfElasticity12Psi": 1110000,
       "page": "5–12",
-      "tableRow": "Cedar—con. / Western redcedar"
+      "tableRow": "Cedar—con. / Western redcedar",
+      "elasticRatios": {
+        "tableRow": "Cedar, western red",
+        "glrOverEl": "0.087",
+        "gltOverEl": "0.086"
+      }
     },
     {
       "name": "Douglas-fir, Coast",
@@ -115,7 +171,12 @@
       "specificGravity12": "0.48",
       "modulusOfElasticity12Psi": 1950000,
       "page": "5–12",
-      "tableRow": "Douglas-fir / Coast"
+      "tableRow": "Douglas-fir / Coast",
+      "elasticRatios": {
+        "tableRow": "Douglas-fir",
+        "glrOverEl": "0.064",
+        "gltOverEl": "0.078"
+      }
     },
     {
       "name": "Fir, balsam",
@@ -123,7 +184,8 @@
       "specificGravity12": "0.35",
       "modulusOfElasticity12Psi": 1450000,
       "page": "5–12",
-      "tableRow": "Fir / Balsam"
+      "tableRow": "Fir / Balsam",
+      "elasticRatios": null
     },
     {
       "name": "Hemlock, western",
@@ -131,7 +193,12 @@
       "specificGravity12": "0.45",
       "modulusOfElasticity12Psi": 1630000,
       "page": "5–12",
-      "tableRow": "Hemlock / Western"
+      "tableRow": "Hemlock / Western",
+      "elasticRatios": {
+        "tableRow": "Hemlock, western",
+        "glrOverEl": "0.038",
+        "gltOverEl": "0.032"
+      }
     },
     {
       "name": "Pine, eastern white",
@@ -139,7 +206,8 @@
       "specificGravity12": "0.35",
       "modulusOfElasticity12Psi": 1240000,
       "page": "5–12",
-      "tableRow": "Pine / Eastern white"
+      "tableRow": "Pine / Eastern white",
+      "elasticRatios": null
     },
     {
       "name": "Pine, loblolly",
@@ -147,7 +215,12 @@
       "specificGravity12": "0.51",
       "modulusOfElasticity12Psi": 1790000,
       "page": "5–12",
-      "tableRow": "Pine / Loblolly"
+      "tableRow": "Pine / Loblolly",
+      "elasticRatios": {
+        "tableRow": "Pine / Loblolly",
+        "glrOverEl": "0.082",
+        "gltOverEl": "0.081"
+      }
     },
     {
       "name": "Pine, longleaf",
@@ -155,7 +228,12 @@
       "specificGravity12": "0.59",
       "modulusOfElasticity12Psi": 1980000,
       "page": "5–12",
-      "tableRow": "Pine / Longleaf"
+      "tableRow": "Pine / Longleaf",
+      "elasticRatios": {
+        "tableRow": "Pine / Longleaf",
+        "glrOverEl": "0.071",
+        "gltOverEl": "0.060"
+      }
     },
     {
       "name": "Pine, ponderosa",
@@ -163,7 +241,12 @@
       "specificGravity12": "0.40",
       "modulusOfElasticity12Psi": 1290000,
       "page": "5–13",
-      "tableRow": "Pine—con. / Ponderosa"
+      "tableRow": "Pine—con. / Ponderosa",
+      "elasticRatios": {
+        "tableRow": "Pine / Ponderosa",
+        "glrOverEl": "0.138",
+        "gltOverEl": "0.115"
+      }
     },
     {
       "name": "Pine, shortleaf",
@@ -171,7 +254,8 @@
       "specificGravity12": "0.51",
       "modulusOfElasticity12Psi": 1750000,
       "page": "5–13",
-      "tableRow": "Pine—con. / Shortleaf"
+      "tableRow": "Pine—con. / Shortleaf",
+      "elasticRatios": null
     },
     {
       "name": "Pine, slash",
@@ -179,7 +263,12 @@
       "specificGravity12": "0.59",
       "modulusOfElasticity12Psi": 1980000,
       "page": "5–13",
-      "tableRow": "Pine—con. / Slash"
+      "tableRow": "Pine—con. / Slash",
+      "elasticRatios": {
+        "tableRow": "Pine / Slash",
+        "glrOverEl": "0.055",
+        "gltOverEl": "0.053"
+      }
     },
     {
       "name": "Redwood, young-growth",
@@ -187,7 +276,12 @@
       "specificGravity12": "0.35",
       "modulusOfElasticity12Psi": 1100000,
       "page": "5–13",
-      "tableRow": "Redwood / Young-growth"
+      "tableRow": "Redwood / Young-growth",
+      "elasticRatios": {
+        "tableRow": "Redwood",
+        "glrOverEl": "0.066",
+        "gltOverEl": "0.077"
+      }
     },
     {
       "name": "Spruce, black",
@@ -195,7 +289,8 @@
       "specificGravity12": "0.42",
       "modulusOfElasticity12Psi": 1610000,
       "page": "5–13",
-      "tableRow": "Spruce / Black"
+      "tableRow": "Spruce / Black",
+      "elasticRatios": null
     },
     {
       "name": "Spruce, Engelmann",
@@ -203,7 +298,12 @@
       "specificGravity12": "0.35",
       "modulusOfElasticity12Psi": 1300000,
       "page": "5–13",
-      "tableRow": "Spruce / Engelmann"
+      "tableRow": "Spruce / Engelmann",
+      "elasticRatios": {
+        "tableRow": "Spruce, Engelmann",
+        "glrOverEl": "0.124",
+        "gltOverEl": "0.120"
+      }
     },
     {
       "name": "Spruce, red",
@@ -211,7 +311,8 @@
       "specificGravity12": "0.40",
       "modulusOfElasticity12Psi": 1660000,
       "page": "5–13",
-      "tableRow": "Spruce / Red"
+      "tableRow": "Spruce / Red",
+      "elasticRatios": null
     },
     {
       "name": "Spruce, white",
@@ -219,7 +320,16 @@
       "specificGravity12": "0.36",
       "modulusOfElasticity12Psi": 1430000,
       "page": "5–13",
-      "tableRow": "Spruce / White"
+      "tableRow": "Spruce / White",
+      "elasticRatios": null
     }
-  ]
+  ],
+  "elasticRatiosCitation": {
+    "standard": "Wood Handbook: Wood as an Engineering Material (2021), chapter 5",
+    "publisher": "USDA Forest Service, Forest Products Laboratory",
+    "designation": "FPL-GTR-282",
+    "where": "Table 5–1, \"Elastic ratios for various species at approximately 12% moisture content\", p. 5–2: columns GLR/EL and GLT/EL. A row broader than the species (\"Oak, red\", \"Douglas-fir\", \"Redwood\", \"Basswood\") is applied to it and named in elasticRatios.tableRow. Species with no row carry null.",
+    "url": "https://www.fpl.fs.usda.gov/documnts/fplgtr/fplgtr282/chapter_05_fpl_gtr282.pdf",
+    "retrieved": "2026-09-26"
+  }
 }

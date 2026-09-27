@@ -113,6 +113,7 @@ public partial class MainWindow
             ShowRoom(box);
             ShowDeck(box);
             ShowRoof(box);
+            ShowShelf(box);
             ShowOpeningFill(box);
         }
         finally
@@ -173,6 +174,7 @@ public partial class MainWindow
             ShowRoom(box);
             ShowDeck(box);
             ShowRoof(box);
+            ShowShelf(box);
             ShowOpeningFill(box);
         }
         finally
