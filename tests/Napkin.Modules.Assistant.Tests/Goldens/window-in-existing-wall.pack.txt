@@ -1,0 +1,8 @@
+[1] Selected: Window 1 — window in Wall 1, glass, 3'-0" wide, 4'-0" tall, sill 3'-0", new.
+[2] Wall 1 — wall, existing, exterior, bearing, supports not chosen, stud spacing not entered, 12'-0" long, 8'-0" tall, 3 1/2" thick.
+[3] Site: ground snow load not entered; ultimate wind speed not entered; seismic design category not entered; frost depth not entered; building width not entered; roof live load not entered; soil bearing not entered.
+[4] Adopted code: Checking against CT 2022 (IRC 2021), pack us-ct-2022 rev 1 — UNREVIEWED: values not yet checked against the source. Its base tables are not loaded: no header can be sized until they are (docs/rules-engine.md says how to add them). Locked on 2026-09-25 to pack us-ct-2022 revision 1.
+[5] Header check, Window 1: The loaded pack CT 2022 has no header table for exterior-bearing walls, so napkin cannot size this header. Nothing is guessed: add the table to the pack directory from your copy of the code (docs/rules-engine.md).
+[6] {help:docs/rules-engine.md#Data status: no real tables ship}
+[7] {help:docs/rules-engine.md#In the app}
+[8] napkin applies published prescriptive tables and is not a substitute for a licensed engineer, a permit office's review, or professional judgment about site-specific conditions the tables don't cover.

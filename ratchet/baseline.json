@@ -21,6 +21,10 @@
       "line": 100,
       "branch": 100
     },
+    "Napkin.Modules.Assistant": {
+      "line": 99.85,
+      "branch": 95.68
+    },
     "Napkin.Modules.Building": {
       "line": 100,
       "branch": 99.82

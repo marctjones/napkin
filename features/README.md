@@ -16,6 +16,7 @@ that comes from the test suite rather than from a status report.
 | `features/catalog.json` | the planner — everything below |
 | `features/gui-shell.json` | the GUI-automation workstream (#33): the `GUI-SHELL-*` shell workflows |
 | `features/assembly.json` | the 3D view (`docs/design/assembly-model.md` §9.3): the `GUI-ASSEM-*` workflows |
+| `features/assistant.json` | the assistant (`docs/design/llm-assistant.md` §10, M14): the `AST-*` features |
 
 Add a new file rather than editing someone else's; the tool merges them and fails on a duplicate
 id across files.
@@ -43,10 +44,10 @@ id across files.
 |---|---|
 | `schema` | `1`. Bumped when the shape of a feature entry changes; per the beta policy there is no migration, so the tool accepts exactly the version it knows. |
 | `id` | Unique across every `features/*.json`. See the ID rules below. |
-| `area` | One of `geometry`, `project-file`, `materials`, `furniture`, `ui`, `rules-engine`, `code-packs`, `building`, `deck`, `site-plan`, `interop`, `packaging`, `release`, `solver`, `gui-shell`. Mirrors the `area/*` labels where one exists, so the scorecard can group the way the issue tracker does. |
+| `area` | One of `geometry`, `project-file`, `materials`, `furniture`, `ui`, `rules-engine`, `code-packs`, `building`, `deck`, `site-plan`, `interop`, `packaging`, `release`, `solver`, `gui-shell`, `assistant`. Mirrors the `area/*` labels where one exists, so the scorecard can group the way the issue tracker does. |
 | `title` | A short noun phrase. What the feature is, not how it is built. |
 | `acceptance` | **One sentence, concrete enough to become a test**: it names the inputs and the observable result. See "Writing an acceptance sentence" below. |
-| `milestone` | `M1` … `M13`, or `backlog` — the milestone by the end of which the feature is expected to pass. See `PLAN.md`. |
+| `milestone` | `M1` … `M14`, or `backlog` — the milestone by the end of which the feature is expected to pass. See `PLAN.md`. |
 | `issue` | The issue number that delivers the feature, or `null` while no issue exists for it yet. One issue may deliver many features; a feature belongs to exactly one issue. |
 | `kind` | `unit`, `golden` or `workflow`. See below. |
 
@@ -66,7 +67,7 @@ id across files.
   because test traits and old CI runs refer to it.
 
 Area tokens in use: `GEO`, `PRJ`, `MAT`, `CUT`, `CVS`, `RUL`, `CODE`, `BLD`, `SITE`, `DECK`,
-`IOP`, `PKG`, `REL`, `SOLV`.
+`IOP`, `PKG`, `REL`, `SOLV`, `AST`.
 
 ## Kinds
 
