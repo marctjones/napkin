@@ -193,13 +193,14 @@ public class ShopSetPdfTests
     [Trait("Feature", "CUT-024")]
     public void Species_rough_rows_small_pieces_and_refused_sheet_pieces_print_as_the_window_says_them()
     {
-        // A fir 2x4 and a rough one; a plywood panel with its grain set across, 30 × 2 (too thin for
-        // its name, and its arrow drawn on its middle); one 100 × 50, larger than any sheet; one
-        // 90 × 40 with its grain set along its width, which fits only turned, against that grain.
+        // A fir 2x4 and a rough one; a grained birch slat 30 × 1 (too thin for its name, its arrow drawn
+        // on its middle) and a grained dowel block 4 × 3 (too short for its name or a full arrow); one 100 × 50, larger than
+        // any sheet; one 90 × 40 with its grain set along its width, which fits only turned, against it.
         Sketch sketch = Sketch.Empty
             .WithEntity(Stick(0, "Rail", 30, species: "zz-fir"))
             .WithEntity(Stick(1, "Brace", 20, rough: true))
-            .WithEntity(Stick(2, "Slat", 30, "3/4 plywood", wide: 2, species: "zz-birch", grain: PartDimension.Length))
+            .WithEntity(Stick(2, "Slat", 30, "3/4 plywood", wide: 1, species: "zz-birch", grain: PartDimension.Length))
+            .WithEntity(Stick(5, "Dowel block", 4, "3/4 plywood", wide: 3, grain: PartDimension.Length))
             .WithEntity(Stick(3, "Tabletop", 100, "3/4 plywood", wide: 50))
             .WithEntity(Stick(4, "Door", 90, "3/4 plywood", wide: 40, grain: PartDimension.Width));
         ShopSet set = ShopSet.Of(sketch, MaterialsLibrary.Shipped, Length.Zero, new TitleBlock("Odd", Day, null), Format);

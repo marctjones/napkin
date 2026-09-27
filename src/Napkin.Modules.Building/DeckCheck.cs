@@ -45,7 +45,16 @@ public enum DeckCheckKind
 /// <param name="Result">The engine's result, or null for the frost comparison.</param>
 /// <param name="Text">The sentence the panel shows.</param>
 /// <param name="Passing">Whether the line passes or is sized; false for short, out of scope, missing or no data.</param>
-public sealed record DeckCheckLine(DeckCheckKind Kind, DeckResult? Result, string Text, bool Passing);
+public sealed record DeckCheckLine(DeckCheckKind Kind, DeckResult? Result, string Text, bool Passing)
+{
+    /// <summary>
+    /// Whether napkin could give no answer at all: an input not entered, or a provision the pack does not
+    /// have — as against an answer that passes or falls short. Said of the lines napkin writes itself
+    /// (<see cref="Result"/> null); an engine result says it by its kind. A permit set counts these as not
+    /// sized (docs/design/permit-set.md §3).
+    /// </summary>
+    public bool Unanswered { get; init; }
+}
 
 /// <summary>A cited frost depth the adopted code offers, for the person to accept into the site value (§3.4).</summary>
 /// <param name="Depth">The frost line depth.</param>
@@ -275,12 +284,12 @@ public static class DeckCheck
         string notes = pack?.Frost is { } provision ? string.Concat(provision.Footnotes.Select(note => $" Note {note.Id}: {note.Text}")) : string.Empty;
         if (inputs.FootingDepth is not { } footing)
         {
-            return new DeckCheckLine(DeckCheckKind.Frost, null, "Frost: enter how deep the footings go below grade in the deck panel.", false);
+            return new DeckCheckLine(DeckCheckKind.Frost, null, "Frost: enter how deep the footings go below grade in the deck panel.", false) { Unanswered = true };
         }
 
         if (sketch.Site.FrostDepth is not { } frost)
         {
-            return new DeckCheckLine(DeckCheckKind.Frost, null, "Frost: enter the site's frost depth (Project → Adopted code and site).", false);
+            return new DeckCheckLine(DeckCheckKind.Frost, null, "Frost: enter the site's frost depth (Project → Adopted code and site).", false) { Unanswered = true };
         }
 
         string source = sketch.Site.Source is { } from ? $" (site value, {from.Text})" : " (site value)";
@@ -300,7 +309,7 @@ public static class DeckCheck
             if (inputs.Guard is not null || open > 0)
             {
                 string why = pack is null ? "no adopted code is chosen" : $"the loaded pack {pack.Manifest.Adoption.ShortName} has no guard provisions";
-                yield return new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard: {why}, so napkin cannot say whether one is required. Nothing is guessed.", false);
+                yield return new DeckCheckLine(DeckCheckKind.Guard, null, $"Guard: {why}, so napkin cannot say whether one is required. Nothing is guessed.", false) { Unanswered = true };
             }
 
             yield break;
@@ -322,7 +331,7 @@ public static class DeckCheck
         }
         else
         {
-            yield return new DeckCheckLine(DeckCheckKind.Guard, null, $"When a guard is required is not covered by this pack ({cite}).", false);
+            yield return new DeckCheckLine(DeckCheckKind.Guard, null, $"When a guard is required is not covered by this pack ({cite}).", false) { Unanswered = true };
         }
 
         if (inputs.Guard is not { } typed)
@@ -364,7 +373,7 @@ public static class DeckCheck
         (StairLayout? layout, string? problem) = StairFraming.Of(framing, pack, library);
         if (layout is null)
         {
-            yield return new DeckCheckLine(DeckCheckKind.Stair, null, $"Stair: {problem}", false);
+            yield return new DeckCheckLine(DeckCheckKind.Stair, null, $"Stair: {problem}", false) { Unanswered = true };
             yield break;
         }
 
@@ -375,7 +384,10 @@ public static class DeckCheck
                 DeckCheckKind.Stair,
                 null,
                 $"Stair: {(pack is null ? "no adopted code is chosen" : $"the loaded pack {pack.Manifest.Adoption.ShortName} has no stair provisions")}, so napkin cannot check the risers, treads or handrail. Nothing is guessed.",
-                false);
+                false)
+            {
+                Unanswered = true,
+            };
             yield break;
         }
 

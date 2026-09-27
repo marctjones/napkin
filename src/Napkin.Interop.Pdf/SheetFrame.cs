@@ -29,6 +29,22 @@ public readonly record struct PageRect(double Left, double Bottom, double Width,
         new(Left + all, Bottom + all, Math.Max(Width - (2 * all), 0), Math.Max(Height - (2 * all) - top, 0));
 }
 
+/// <summary>The paper a set is printed on, landscape.</summary>
+/// <param name="Name">What the person chooses it by.</param>
+/// <param name="Size">Its size, landscape, in points.</param>
+public sealed record SheetPaper(string Name, PageSize Size)
+{
+    /// <summary>US Letter, 11 × 8 1/2 in landscape: Excise.Core's <see cref="PageSize.Letter"/>.</summary>
+    public static SheetPaper Letter { get; } = new("Letter", PageSize.Letter.Landscape());
+
+    /// <summary>
+    /// Tabloid, 17 × 11 in landscape: "11-inch by 17-inch (279.4 mm by 431.8 mm)", the least paper San
+    /// Francisco's building department takes plans on (sf.gov, "Building project plans for full permits",
+    /// read 2026-09-27); docs/design/permit-set.md §4 offers Letter or Tabloid.
+    /// </summary>
+    public static SheetPaper Tabloid { get; } = new("Tabloid", new PageSize(17 * SheetScale.PointsPerPaperInch, 11 * SheetScale.PointsPerPaperInch));
+}
+
 /// <summary>
 /// Where things go on every page of a set (#25, and the sets built on it): the page, the title block's
 /// box along its foot — as tall as its small print needs, the same on every page — and the drawing
@@ -39,9 +55,6 @@ public readonly record struct PageRect(double Left, double Bottom, double Width,
 /// <param name="DrawingArea">What the title block leaves.</param>
 public sealed record SheetFrame(PageSize Page, PageRect TitleBlock, PageRect DrawingArea)
 {
-    /// <summary>The page every set is printed on today: US Letter, landscape (Excise.Core's <see cref="PageSize.Letter"/>).</summary>
-    public static readonly PageSize Letter = PageSize.Letter.Landscape();
-
     /// <summary>The empty border round every page, in points: half an inch.</summary>
     public const double Margin = 36;
 
@@ -66,20 +79,25 @@ public sealed record SheetFrame(PageSize Page, PageRect TitleBlock, PageRect Dra
     /// <summary>The height of the title block's first row: the project name, the scale, the date and the sheet.</summary>
     const double TitleRow = 34;
 
-    /// <summary>The frame for a title block on a Letter page.</summary>
+    /// <summary>The height of the band a banner takes across the top of the title block.</summary>
+    public const double BannerBand = 18;
+
+    /// <summary>The frame for a title block on a page of the given paper, Letter unless said.</summary>
     /// <param name="title">What the title block says.</param>
-    public static SheetFrame For(TitleBlock title)
+    /// <param name="paper">The paper; Letter when null.</param>
+    public static SheetFrame For(TitleBlock title, SheetPaper? paper = null)
     {
         ArgumentNullException.ThrowIfNull(title);
-        return For(title, SheetFonts.Load());
+        return For(title, SheetFonts.Load(), paper);
     }
 
-    internal static SheetFrame For(TitleBlock title, SheetFonts fonts)
+    internal static SheetFrame For(TitleBlock title, SheetFonts fonts, SheetPaper? paper = null)
     {
-        PageSize page = Letter;
+        PageSize page = (paper ?? SheetPaper.Letter).Size;
         double inner = page.Width - (2 * Margin) - (2 * CellPad);
         double smallLines = SmallPrintLines(title, fonts, inner).Count;
-        PageRect box = new(Margin, Margin, page.Width - (2 * Margin), TitleRow + (2 * CellPad) + (smallLines * SmallPrint * Leading));
+        double banner = title.Banner is null ? 0 : BannerBand;
+        PageRect box = new(Margin, Margin, page.Width - (2 * Margin), banner + TitleRow + (2 * CellPad) + (smallLines * SmallPrint * Leading));
         PageRect area = new(Margin, box.Top + TitleGap, page.Width - (2 * Margin), page.Height - Margin - (box.Top + TitleGap));
         return new SheetFrame(page, box, area);
     }
@@ -114,6 +132,16 @@ public sealed record SheetFrame(PageSize Page, PageRect TitleBlock, PageRect Dra
     {
         PageRect box = TitleBlock;
         LineStyle rule = DrawingLines.Of(LineKind.Dimension);
+        if (title.Banner is { } banner)
+        {
+            // Across the top of the title block, in the heavy line's weight, so no sheet of the set can
+            // be taken for complete (docs/design/permit-set.md §3).
+            PageRect band = new(box.Left, box.Top - BannerBand, box.Width, BannerBand);
+            ink.Rectangle(band, DrawingLines.Of(LineKind.Visible));
+            ink.Text(banner, ink.Fonts.Medium(10), band.Left + CellPad, band.Bottom + 5);
+            box = box with { Height = box.Height - BannerBand };
+        }
+
         double rowBottom = box.Top - TitleRow - (2 * CellPad);
         double scaleLeft = box.Left + (box.Width * 0.5), dateLeft = box.Left + (box.Width * 0.75);
 
@@ -189,19 +217,21 @@ public sealed record SheetFrame(PageSize Page, PageRect TitleBlock, PageRect Dra
     }
 }
 
-/// <summary>A line of text at its baseline, in the font it is set in.</summary>
+/// <summary>A line of text at its baseline, in the font it is set in, and a blank to write on after it.</summary>
 /// <param name="Text">The text.</param>
 /// <param name="Font">Its font and size.</param>
 /// <param name="X">Where its baseline starts.</param>
 /// <param name="Y">Its baseline.</param>
-internal readonly record struct PlacedText(string Text, PdfFont Font, double X, double Y);
+/// <param name="Blank">How long a rule to leave after the text for a hand to write on; 0 for none.</param>
+internal readonly record struct PlacedText(string Text, PdfFont Font, double X, double Y, double Blank = 0);
 
-/// <summary>One paragraph of flowing text: what it says, in what, how far in, and the space before it.</summary>
+/// <summary>One paragraph of flowing text: what it says, in what, how far in, the space before it, and a blank after it.</summary>
 /// <param name="Text">What it says; wrapped to fit.</param>
 /// <param name="Font">Its font and size.</param>
 /// <param name="Indent">How far in from the area's left edge.</param>
 /// <param name="Before">Extra space above it, unless it starts an area.</param>
-internal readonly record struct FlowItem(string Text, PdfFont Font, double Indent = 0, double Before = 0);
+/// <param name="Blank">How long a rule to leave after its last line; 0 for none.</param>
+internal readonly record struct FlowItem(string Text, PdfFont Font, double Indent = 0, double Before = 0, double Blank = 0);
 
 /// <summary>Text laid out down an area and on into further ones: notes, statements, anything that reads down a page.</summary>
 internal static class TextFlow
@@ -224,8 +254,10 @@ internal static class TextFlow
         foreach (FlowItem item in items)
         {
             double before = item.Before;
-            foreach (string line in SheetFrame.Wrap(item.Text, item.Font, area.Width - item.Indent))
+            IReadOnlyList<string> lines = SheetFrame.Wrap(item.Text, item.Font, area.Width - item.Indent - item.Blank);
+            for (int i = 0; i < lines.Count; i++)
             {
+                string line = lines[i];
                 double baseline = y - (page.Count == 0 ? 0 : before) - item.Font.Size;
                 if (baseline < area.Bottom && page.Count > 0)
                 {
@@ -235,7 +267,7 @@ internal static class TextFlow
                     baseline = area.Top - item.Font.Size;
                 }
 
-                page.Add(new PlacedText(line, item.Font, area.Left + item.Indent, baseline));
+                page.Add(new PlacedText(line, item.Font, area.Left + item.Indent, baseline, i == lines.Count - 1 ? item.Blank : 0));
                 y = baseline - (item.Font.Size * (SheetFrame.Leading - 1));
                 before = 0;
             }

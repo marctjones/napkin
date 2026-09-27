@@ -205,6 +205,26 @@ or not a PNG or JPEG. No field is optional, as always.
 | **D** | Deck set: S1, A2, S2, S3, C1 | C, M11 (B–F) |
 | **E** | Window set: S1, A1, A2, S3, C1 | C |
 
+**Slice C as built (#225).** `Napkin.Interop.Pdf`: `PermitSetPdf` draws a set's sheets in #211's
+frame (`SheetFrame`, `SheetSet`), each titled by its number ("A2 Elevation"), then **C1** and, when
+anything is not sized, **W1**. `SheetPaper.Letter` is Excise.Core's; `SheetPaper.Tabloid` is 17 × 11 in,
+the "11-inch by 17-inch (279.4 mm by 431.8 mm)" San Francisco's building department takes plans on
+(sf.gov, *Building project plans for full permits*, read 2026-09-27). `SheetScale.Architect` and
+`SheetScale.Engineer` are the scales USFA/FEMA's *Using Engineer and Architect Scales* lists (p. 2,
+read 2026-09-27): 1 1/2" to 3/32" to the foot, and 1" = 10' to 60'; each prints as the rule reads it.
+`PermitItems` classes every result sized, not sized or not checked (a wall said not to bear), in the
+panels' words, and gives each unsized one its lookup: the adopted code and table, and the inputs
+already known. The banner is `TitleBlock.Banner`, a band across every title block; blanks are
+`SheetInk.Blank`, thin rules to write on. A deck line napkin writes itself when it cannot answer
+carries `DeckCheckLine.Unanswered`. No menu item yet: the sets that use it are D and E.
+
+*Open for Marc (not decided here), from two cities outside the §1 research, read 2026-09-27:* San
+Francisco asks for text "a minimum text size of 1/8 inch tall when printed" (sf.gov, *Building project
+plans for full permits*); Seattle's SDCI Tip 106 asks for "Minimum Font Size: 10 pt", a scale "clearly
+specified and graphically depicted", and a minimum scale of 1/4" = 1' for single-family projects. The
+sheets' small print is 7–9 pt and they print no graphic scale bar. The Connecticut towns read for §1
+state none of these.
+
 ## 9. Decisions for Marc
 
 Each has the default I recommend, so a "yes" is enough.

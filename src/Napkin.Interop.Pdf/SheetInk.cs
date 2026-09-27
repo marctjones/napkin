@@ -81,14 +81,25 @@ internal sealed class SheetInk(PdfGraphics graphics, SheetFonts fonts)
     public void CentredText(string text, PdfFont font, double x, double y) =>
         graphics.DrawString(text, font, PdfBrush.Black, x, y, TextAlignment.Center);
 
-    /// <summary>Text laid out beforehand, line by line.</summary>
+    /// <summary>Text laid out beforehand, line by line, each with the blank it leaves after it.</summary>
     public void Text(IEnumerable<PlacedText> lines)
     {
         foreach (PlacedText line in lines)
         {
             Text(line.Text, line.Font, line.X, line.Y);
+            if (line.Blank > 0)
+            {
+                Blank(line.X + line.Font.MeasureWidth(line.Text) + 4, line.Y, line.Blank);
+            }
         }
     }
+
+    /// <summary>
+    /// A blank to write a value on by hand: a thin rule on the baseline, <paramref name="width"/> long
+    /// (docs/design/permit-set.md §3.1: never filled in by napkin, on screen or off).
+    /// </summary>
+    public void Blank(double x, double baseline, double width) =>
+        Line(new(x, baseline - 1.5), new(x + width, baseline - 1.5), DrawingLines.Of(LineKind.Dimension), null);
 
     static PdfPen Pen(LineStyle style) => new(PdfColor.FromGray(PaperGrey(style.Opacity)), style.Pixels);
 }
