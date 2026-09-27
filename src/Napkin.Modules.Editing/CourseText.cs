@@ -17,6 +17,41 @@ public static partial class CourseText
     [GeneratedRegex("""^\s*(?<ns>[NnSs])\s*(?<d>\d{1,2})\s*(?:°|-|\s)\s*(?:(?<m>\d{1,2})\s*(?:'|-|\s)\s*(?:(?<s>\d{1,2})\s*"?\s*)?)?(?<ew>[EeWw])\s+(?<rest>.+?)\s*$""")]
     private static partial Regex CourseLine();
 
+    [GeneratedRegex("""^\s*(?<d>\d{1,3})\s*(?:°|-|\s)?\s*(?:(?<m>\d{1,2})\s*(?:'|-|\s)?\s*(?:(?<s>\d{1,2})\s*"?\s*)?)?$""")]
+    private static partial Regex NorthAngle();
+
+    /// <summary>
+    /// North as the person types it (permit-set §5.5): degrees clockwise from the drawing's +Y, with
+    /// optional minutes and seconds — "0", "12°30'", "12 30 15" — from 0 up to but not including 360°.
+    /// </summary>
+    public static bool TryParseNorth(string? text, out Angle north)
+    {
+        north = Angle.Zero;
+        Match match = NorthAngle().Match(text ?? string.Empty);
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        long degrees = long.Parse(match.Groups["d"].Value, CultureInfo.InvariantCulture);
+        long minutes = match.Groups["m"].Success ? long.Parse(match.Groups["m"].Value, CultureInfo.InvariantCulture) : 0;
+        long seconds = match.Groups["s"].Success ? long.Parse(match.Groups["s"].Value, CultureInfo.InvariantCulture) : 0;
+        if (degrees >= 360 || minutes > 59 || seconds > 59)
+        {
+            return false;
+        }
+
+        north = Angle.Degrees(degrees, minutes, seconds);
+        return true;
+    }
+
+    /// <summary>North in the same form it is typed: "12°30'00"".</summary>
+    public static string NorthWords(Angle north)
+    {
+        long seconds = north.Arcseconds;
+        return $"{seconds / 3600}°{seconds / 60 % 60:00}'{seconds % 60:00}\"";
+    }
+
     [GeneratedRegex(@"^(?<distance>.+?)(?:\s+(?<kind>front|side|rear)\s+(?<setback>.+))?$", RegexOptions.IgnoreCase)]
     private static partial Regex DistanceAndSetback();
 

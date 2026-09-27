@@ -56,4 +56,25 @@ public class CourseTextTests
         Assert.True(CourseText.TryParse(null, out ImmutableArray<Course> courses, out _));
         Assert.True(courses.IsEmpty);
     }
+
+    [Theory]
+    [InlineData("0", 0, 0, 0)]
+    [InlineData("12°30'", 12, 30, 0)]
+    [InlineData(" 12 30 15 ", 12, 30, 15)]
+    [InlineData("359-59-59", 359, 59, 59)]
+    public void North_reads_as_degrees_minutes_and_seconds(string typed, long d, long m, long s)
+    {
+        Assert.True(CourseText.TryParseNorth(typed, out Angle north));
+        Assert.Equal(Angle.Degrees(d, m, s), north);
+        Assert.True(CourseText.TryParseNorth(CourseText.NorthWords(north), out Angle again));
+        Assert.Equal(north, again);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("north")]
+    [InlineData("360")]
+    [InlineData("12 60")]
+    [InlineData("12 30 60")]
+    public void North_that_does_not_read_is_refused(string? typed) => Assert.False(CourseText.TryParseNorth(typed, out _));
 }

@@ -45,6 +45,10 @@ public static class SketchExtents
                     bounds = bounds.Including(note.Position);
                     break;
 
+                case Boundary boundary:
+                    bounds = bounds.Including([.. boundary.Corners(sketch.Site.North)]);
+                    break;
+
                 // An angled part's plan outline, which is where its ends and its thickness reach.
                 case Strut strut:
                     foreach ((double x, double y) in StrutSolid.PlanOutline(strut))

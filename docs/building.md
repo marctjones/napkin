@@ -368,6 +368,24 @@ The rafters' horizontal span is checked against the adopted pack's rafter table 
 ground snow load: passes, short, or No data. As with the deck, napkin does not know the house, so
 the panel asks you to check that the ledger clears the eave and any openings.
 
+## The site plan
+
+**Project → Site plan…** takes the lot's property lines as the survey prints them
+([`permit-set.md`](./design/permit-set.md) §5), one course per line: a bearing and a distance,
+`N 12°34'56" E 125.50'`, with an optional setback after it, `rear 30'`. It also takes the point of
+beginning (where the survey starts, on the drawing) and **north**, in degrees clockwise from the
+drawing's up; the bearings are measured from north. The corners are worked out from the courses and
+rounded once each. When the courses don't close, napkin says by how much and never adjusts them, as
+a survey reports its own closure.
+
+For each line the window says how far the structure (any new or existing wall, deck or roof) is
+from it, and compares that with the setback you typed: "Wall 1 to rear line 24'-8 1/2" (setback
+20'-0": clear)". Distances are shown with ≈ unless the line runs along the drawing's axes. Setbacks
+are zoning, not the building code: napkin compares only against what you type, and says nothing
+about whether the lot conforms. On the plan the lot is drawn on the **Site** layer, with each
+setback dashed inside its line and a north arrow at the point of beginning. This site plan is not
+a survey.
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code
