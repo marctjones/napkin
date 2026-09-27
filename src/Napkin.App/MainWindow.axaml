@@ -1391,6 +1391,18 @@
                                           ToolTip.Tip="The species napkin has cited properties for (USDA Wood Handbook, Table 5–3b). Anything else can be typed; napkin never interprets typed text." />
                             </Grid>
                             <TextBlock Name="SpeciesReadout" FontSize="10" Opacity="0.8" TextWrapping="Wrap" AutomationProperties.Name="Species properties" />
+                            <!-- Shelf sag (furniture-checks §3): an estimate for a part its joints make a shelf. -->
+                            <StackPanel Name="ShelfFields" Spacing="4" IsVisible="False">
+                                <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="4">
+                                    <TextBlock Text="Load lb/sq ft" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBox Name="ShelfLoadBox" Grid.Column="1" FontSize="11" MinWidth="0" Padding="4,2" AutomationProperties.Name="Shelf load"
+                                             ToolTip.Tip="What the shelf carries, lb/sq ft. Starts at KCMA's shelf test load, 15 (kcma.org)." />
+                                    <TextBlock Grid.Column="2" Text="Limit" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBox Name="ShelfLimitBox" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" PlaceholderText="none" AutomationProperties.Name="Shelf sag limit"
+                                             ToolTip.Tip="The long-term sag you will accept, like 1/8&quot;. No source gives a default, so there is none: with it empty napkin shows the estimate without a verdict." />
+                                </Grid>
+                                <TextBlock Name="ShelfSagText" FontSize="10" TextWrapping="Wrap" AutomationProperties.Name="Shelf sag" />
+                            </StackPanel>
                             <!-- Grain and show face (#140): said or not, never assumed. -->
                             <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="4">
                                 <TextBlock Text="Grain" FontSize="11" VerticalAlignment="Center" />

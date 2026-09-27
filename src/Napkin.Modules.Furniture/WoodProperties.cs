@@ -14,7 +14,21 @@ namespace Napkin.Modules.Furniture;
 /// <param name="ModulusOfElasticityPsi">Static bending E at 12 % MC in lbf/in², as printed (10⁶ lbf/in² × 1,000,000).</param>
 /// <param name="Page">The page the row is printed on: "5–10".</param>
 /// <param name="TableRow">The table's own row label, to find it again.</param>
-public sealed record WoodSpecies(string Name, string Group, decimal SpecificGravity, long ModulusOfElasticityPsi, string Page, string TableRow);
+/// <param name="Ratios">Table 5–1's shear-modulus ratios for it, or null when that table has no row.</param>
+public sealed record WoodSpecies(string Name, string Group, decimal SpecificGravity, long ModulusOfElasticityPsi, string Page, string TableRow, ElasticRatios? Ratios = null);
+
+/// <summary>A species' shear moduli over its true bending E, from the Wood Handbook's Table 5–1 (p. 5–2).</summary>
+/// <param name="TableRow">The row used, which may be broader than the species ("Oak, red").</param>
+/// <param name="GlrOverEl">G_LR / E_L.</param>
+/// <param name="GltOverEl">G_LT / E_L, or null where the table prints a dash.</param>
+public sealed record ElasticRatios(string TableRow, decimal GlrOverEl, decimal? GltOverEl)
+{
+    /// <summary>
+    /// The smaller ratio printed: a shelf's grain orientation is not drawn, and the smaller shear
+    /// modulus gives the larger sag, so the estimate errs toward more sag.
+    /// </summary>
+    public decimal Least => GltOverEl is { } lt ? Math.Min(GlrOverEl, lt) : GlrOverEl;
+}
 
 /// <summary>
 /// The cited species table the furniture checks read (<c>Data/wood-properties.json</c>). A species
@@ -66,6 +80,15 @@ public sealed class WoodProperties
             : $"\"{typed}\" is not in napkin's species table: kept as typed and never interpreted, so a check that needs the species will say it is missing.";
     }
 
+    static decimal Number(string text) => decimal.Parse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
+
+    static ElasticRatios? Ratios(JsonElement ratios) => ratios.ValueKind == JsonValueKind.Null
+        ? null
+        : new ElasticRatios(
+            ratios.GetProperty("tableRow").GetString()!,
+            Number(ratios.GetProperty("glrOverEl").GetString()!),
+            ratios.GetProperty("gltOverEl").GetString() is { } lt ? Number(lt) : null);
+
     static WoodProperties Load()
     {
         using Stream stream = typeof(WoodProperties).Assembly.GetManifestResourceStream("Napkin.Modules.Furniture.Data.wood-properties.json")
@@ -82,7 +105,8 @@ public sealed class WoodProperties
                 decimal.Parse(entry.GetProperty("specificGravity12").GetString()!, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture),
                 entry.GetProperty("modulusOfElasticity12Psi").GetInt64(),
                 entry.GetProperty("page").GetString()!,
-                entry.GetProperty("tableRow").GetString()!)),
+                entry.GetProperty("tableRow").GetString()!,
+                Ratios(entry.GetProperty("elasticRatios")))),
         ];
         return new WoodProperties(species, source, citation.GetProperty("where").GetString()!);
     }

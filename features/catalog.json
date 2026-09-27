@@ -245,6 +245,15 @@
       "kind": "unit"
     },
     {
+      "id": "FURN-001",
+      "area": "furniture",
+      "title": "A shelf's sag is estimated from the Wood Handbook, with the load and limit the person's",
+      "acceptance": "A part lying flat and jointed by a dado or butt at both ends of one horizontal axis is a shelf; its sag is Wood Handbook Eq. 9-2 with Table 9-1 (uniform load, simply supported), E from Table 5–3b raised 10 % with G from Table 5–1 where it has a row, bending only with the printed E where it has none, doubled for the long term per chapter 5's creep sentence; the load starts at KCMA's 15 lb/sq ft, attributed; with no limit typed there is no verdict; a sheet good or an untabled species says why there is no estimate. A 3/4 x 11 1/4 northern red oak shelf spanning 36\" reads 0.0325\" now and 0.0651\" long-term.",
+      "milestone": "M9",
+      "issue": 217,
+      "kind": "unit"
+    },
+    {
       "id": "CUT-001",
       "area": "furniture",
       "title": "A part resolves its stock through the materials library",
@@ -1862,6 +1871,15 @@
       "acceptance": "Coffee table sample: select a leg; choosing Oak, northern red from the species picker with the pointer sets the leg's species and the panel says specific gravity 0.63 and bending E 1,820,000 lbf/in² at 12 % moisture with Table 5–3b p. 5–10; typing red oak and Enter keeps it as typed, clears the picker and says it is not interpreted; Edit > Undo puts northern red oak back.",
       "milestone": "M9",
       "issue": 216,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-FURN-02",
+      "area": "ui",
+      "title": "A drawer bottom's sag, estimated once it is solid oak, judged once a limit is typed",
+      "acceptance": "DIY coffee table with drawers: with Drawer bottom, A selected, the Shelf block says 1/4 plywood is a sheet good and is not estimated; clearing its stock and picking Oak, northern red gives about 0.03\" now and 0.06\" after years under KCMA's 15 lb/sq ft; typing a 1/8\" limit says within it; typing 40 lb/sq ft gives about 0.17\" after years, over it.",
+      "milestone": "M9",
+      "issue": 217,
       "kind": "workflow"
     },
     {

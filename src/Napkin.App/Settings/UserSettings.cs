@@ -91,6 +91,15 @@ public sealed record UserSettings
     public Napkin.Core.Geometry.Length SawKerf { get; init; } = Napkin.Modules.Furniture.CutLayout.DefaultKerf;
 
     /// <summary>
+    /// The load a shelf's sag is estimated under, lb/sq ft (furniture-checks §3): KCMA's shelf test
+    /// load until the person types another.
+    /// </summary>
+    public decimal ShelfLoadPsf { get; init; } = Napkin.Modules.Furniture.ShelfSag.KcmaLoadPsf;
+
+    /// <summary>The long-term sag the person will accept, or null: no default, so no verdict until one is typed (§9.2).</summary>
+    public Napkin.Core.Geometry.Length? ShelfSagLimit { get; init; }
+
+    /// <summary>
     /// Whether the standard views (Bottom–Right) draw the edges a nearer part hides, as light dashes
     /// (docs/design/standard-views.md §2.3). On unless the person turns it off.
     /// </summary>
