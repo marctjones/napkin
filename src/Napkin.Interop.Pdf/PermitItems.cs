@@ -149,7 +149,7 @@ public static class PermitItems
     /// <summary>The adopted code a lookup is in, as a result cites it, or why there is none.</summary>
     static string CodeName(CodeResolution code) => code.Pack is { } pack
         ? $"{pack.Code.ShortName} ({pack.Code.BaseCode}), pack {pack.Code.PackId} rev {pack.Code.Revision.ToString(CultureInfo.InvariantCulture)}"
-        : code.Problem ?? CodeCheck.NoCodeSelectedText;
+        : code.Problem!;
 
     static string Site(Sketch sketch) => string.Join(
         "; ",

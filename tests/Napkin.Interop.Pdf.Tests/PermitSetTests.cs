@@ -181,6 +181,64 @@ public class PermitSetTests
     }
 
     [Fact]
+    [Trait("Feature", "PERMIT-001")]
+    public void Under_a_bracing_pack_a_short_wall_line_is_an_answer_and_a_missing_wind_speed_is_looked_up_in_its_section()
+    {
+        // us-zz-brace-a has wall-bracing provisions (ZZ-BRACE.1) and no header table.
+        CodePacks brace = CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "CodePacks", "brace")]);
+        Sketch sketch = Wall() with { Code = new CodeChoice("us-zz-brace-a", 1, CodeMode.Locked, new DateOnly(2026, 9, 25)) };
+
+        Sketch windy = sketch with { Site = sketch.Site with { UltimateWindSpeedMph = 90, SeismicDesignCategory = "C" } };
+        IReadOnlyList<PermitItem> answered = PermitItems.Of(windy, brace, MaterialsLibrary.Shipped);
+        Assert.Equal(PermitStatus.Sized, Assert.Single(answered, item => item.What == "Wall 1: bracing").Status);
+        PermitItem header = Assert.Single(answered, item => item.What == "Window 1: header");
+        Assert.Equal(PermitStatus.NotSized, header.Status);
+        Assert.Contains(", which has no header table for this wall. Known:", header.Lookup, StringComparison.Ordinal);
+        Assert.EndsWith("ground snow load 30 psf; ultimate wind speed 90 mph; seismic design category C.", header.Lookup, StringComparison.Ordinal);
+
+        PermitItem missing = Assert.Single(PermitItems.Of(sketch, brace, MaterialsLibrary.Shipped), item => item.What == "Wall 1: bracing");
+        Assert.Equal(PermitStatus.NotSized, missing.Status);
+        Assert.StartsWith("Look up: ZZ BRACE A (IRC 2099), pack us-zz-brace-a rev 1, Section ZZ-BRACE.1. Known: Wall 1, wall line 12'-0\"", missing.Lookup, StringComparison.Ordinal);
+
+        // With no snow load entered, the lookup says so.
+        Assert.Contains("ground snow load: not entered;", PermitItems.Of(Wall(supports: null, snow: null), One, MaterialsLibrary.Shipped)[0].Lookup, StringComparison.Ordinal);
+
+        // With no code chosen, neither lookup names a table or a section.
+        IReadOnlyList<PermitItem> none = PermitItems.Of(Wall() with { Code = null }, One, MaterialsLibrary.Shipped);
+        Assert.All(none, item => Assert.StartsWith($"Look up: {CodeCheck.NoCodeSelectedText}. Known:", item.Lookup, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_header_whose_wall_does_not_say_its_side_or_is_interior_says_so_in_its_lookup()
+    {
+        Sketch sketch = Wall();
+        Box wall = sketch.Entities.Values.OfType<Box>().Single(box => box.Name == "Wall 1");
+        PermitItem unsaid = PermitItems.Of(sketch.WithEntity(wall with { WallInputs = null }), One, MaterialsLibrary.Shipped)[0];
+        Assert.Equal(PermitStatus.NotSized, unsaid.Status);
+        Assert.Contains("Known: Wall 1, side not said, bearing;", unsaid.Lookup, StringComparison.Ordinal);
+
+        // An interior bearing wall asks for the interior table, which us-zz-frame does not have.
+        PermitItem interior = PermitItems.Of(sketch.WithEntity(wall with { WallInputs = wall.WallInputs! with { Side = WallSide.Interior } }), One, MaterialsLibrary.Shipped)[0];
+        Assert.Equal(PermitStatus.NotSized, interior.Status);
+        Assert.Contains("which has no header table for this wall. Known: Wall 1, interior, bearing;", interior.Lookup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "PERMIT-001")]
+    public void One_unsized_item_is_said_in_the_singular_and_a_not_checked_opening_is_listed_as_such()
+    {
+        PermitItem one = new("Window 1: header", PermitStatus.NotSized, ["Not checked: …"], "Look up: …");
+        Assert.Equal("NOT A COMPLETE PERMIT SET — 1 item is not sized; see C1 and W1", PermitItems.Banner([one]));
+
+        PermitSet set = Set(Wall(bearing: false));
+        using MemoryStream stream = new();
+        PermitSetPdf.Write(set, stream);
+        ReadBack read = ReadBack.Open(stream.ToArray());
+        Assert.Contains(Squash("Window 1: header — not checked"), read.Letters[0], StringComparison.Ordinal);
+        Assert.Equal(PermitSetPdf.Document(set).PageCount, read.Text.Count);
+    }
+
+    [Fact]
     public void A_deck_line_napkin_cannot_answer_is_not_sized_and_one_it_answers_is()
     {
         // The synthetic deck, its footing depth not entered: the frost line is not answered.
@@ -210,6 +268,24 @@ public class PermitSetTests
         Assert.StartsWith("Look up: ZZ DECK", frost.Lookup, StringComparison.Ordinal);
         Assert.Contains("Known: Deck 1 12'-0\" × 10'-0\", 3'-0\" above grade; joists 2x8 at 1'-4\"", frost.Lookup, StringComparison.Ordinal);
         Assert.Contains(items, item => item.What == "Deck 1: joists" && item.Status == PermitStatus.Sized);
+
+        // Past the guide's snow scope (above 77 psf), the joists are out of scope: looked up in their table.
+        PermitItem scope = Assert.Single(PermitItems.Of(sketch with { Site = sketch.Site with { GroundSnowLoadPsf = 80 } }, packs, MaterialsLibrary.Shipped), item => item.What == "Deck 1: joists");
+        Assert.Equal(PermitStatus.NotSized, scope.Status);
+        Assert.Contains("ZZ-GUIDE-JOIST", scope.Lookup, StringComparison.Ordinal);
+
+        // With no species typed, the joists wait for it.
+        PermitItem species = Assert.Single(PermitItems.Of(sketch.WithEntity(deck with { Deck = inputs with { Species = null } }), packs, MaterialsLibrary.Shipped), item => item.What == "Deck 1: joists");
+        Assert.Equal(PermitStatus.NotSized, species.Status);
+        Assert.Contains(", once ", species.Lookup, StringComparison.Ordinal);
+        Assert.Contains("species not chosen", species.Lookup, StringComparison.Ordinal);
+
+        // With no supports typed, the lookup says so too.
+        Assert.Contains("supports not chosen", Assert.Single(PermitItems.Of(sketch.WithEntity(deck with { Deck = inputs with { Supports = null } }), packs, MaterialsLibrary.Shipped), item => item.What == "Deck 1: joists").Lookup, StringComparison.Ordinal);
+
+        // A box on the deck layer with nothing typed for its frame: known only by its size.
+        PermitItem bare = Assert.Single(PermitItems.Of(sketch.WithEntity(deck with { Deck = null }), packs, MaterialsLibrary.Shipped), item => item.What == "Deck 1: frame");
+        Assert.EndsWith("Known: Deck 1 12'-0\" × 10'-0\", 3'-0\" above grade.", bare.Lookup, StringComparison.Ordinal);
 
         // Unframed: one unsized item, the refusal.
         Sketch unframed = sketch.WithEntity(deck with { Deck = inputs with { Joist = "zz-nothing" } });
