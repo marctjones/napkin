@@ -133,6 +133,17 @@ public class SheetNotesTests
             note.Lines);
         Assert.Contains(note.Lines, line => line.Contains(AdoptedCodeRef.UnreviewedText, StringComparison.Ordinal));
 
+        // A bearing wall standing on a deck that does not say what it supports: the panel's note prints last.
+        Box porchWall = new(EntityId.New(), wallLayer, new Point3(In(60), In(-60), In(36)), In(96), Length.Inches(3, 1, 2), In(96), BoxFace.Top, Angle.Zero)
+        {
+            Name = "Porch wall",
+            WallInputs = new WallInputs(null, null) { Side = WallSide.Exterior, Bearing = true },
+        };
+        Sketch carrying = sketch.WithEntity(deck with { Deck = inputs with { Supports = null } }).WithEntity(porchWall);
+        DeckChecks noted = Assert.Single(DeckCheck.Of(carrying, packs, Library));
+        Assert.NotNull(noted.SupportsNote);
+        Assert.Equal(noted.SupportsNote, Assert.Single(SheetNotes.Of(carrying, packs, Library), note => note.Heading == "Deck 1").Lines[^1]);
+
         // A deck with no frame says why instead, as the panel does.
         Sketch unframed = sketch.WithEntity(deck with { Deck = inputs with { Joist = "zz-nothing" } });
         DeckChecks refused = Assert.Single(DeckCheck.Of(unframed, packs, Library));

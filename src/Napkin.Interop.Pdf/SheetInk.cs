@@ -45,10 +45,6 @@ internal sealed class SheetInk(PdfGraphics graphics, SheetFonts fonts)
     public void Rectangle(PageRect rect, LineStyle style) =>
         graphics.DrawRectangle(rect.Left, rect.Bottom, rect.Width, rect.Height, null, Pen(style));
 
-    /// <summary>A filled rectangle, no outline, in a grey (0 black, 1 white).</summary>
-    public void Fill(PageRect rect, double grey) =>
-        graphics.DrawRectangle(rect.Left, rect.Bottom, rect.Width, rect.Height, new PdfBrush(PdfColor.FromGray(grey)));
-
     /// <summary>A filled arrowhead with its tip at <paramref name="tip"/>, pointing along <paramref name="pointing"/> (a unit vector).</summary>
     public void Arrowhead(PagePoint tip, (double X, double Y) pointing)
     {

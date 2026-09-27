@@ -168,8 +168,9 @@ public sealed record SheetFrame(PageSize Page, PageRect TitleBlock, PageRect Dra
             current = word;
             while (current.Length > 1 && font.MeasureWidth(current) > width)
             {
+                // The whole word does not fit, so this stops before its last character.
                 int fits = 1;
-                while (fits < current.Length && font.MeasureWidth(current[..(fits + 1)]) <= width)
+                while (font.MeasureWidth(current[..(fits + 1)]) <= width)
                 {
                     fits++;
                 }

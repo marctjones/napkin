@@ -175,19 +175,50 @@ public class ShopSetPdfTests
             set.Labels.Select(label => label.Part));
     }
 
-    /// <summary>A 2x4 part of a length, flat, one piece, named: a box at the origin.</summary>
-    static Box Stick(int index, string name, long inches, string stock = "2x4") => Box.AsDrawn(
+    /// <summary>A part of a length and width, flat, one piece, named: a box at the origin.</summary>
+    static Box Stick(int index, string name, long inches, string stock = "2x4", long wide = 0, string? species = null, bool rough = false, PartDimension? grain = null) => Box.AsDrawn(
             new EntityId(Guid.ParseExact($"20000000-0000-4000-8000-{index:d12}", "D")),
             LayerId.Default,
             Point2.Origin,
             Length.Inches(inches),
-            Length.Inches(3, 1, 2),
+            wide == 0 ? Length.Inches(3, 1, 2) : Length.Inches(wide),
             Length.Inches(1, 1, 2),
             Angle.Zero) with
     {
         Name = name,
-        Part = new Part(stock, null, 1, new PlanAxes(PartDimension.Length, PartDimension.Width)),
+        Part = new Part(stock, species, 1, new PlanAxes(PartDimension.Length, PartDimension.Width)) { Rough = rough, Grain = grain },
     };
+
+    [Fact]
+    [Trait("Feature", "CUT-024")]
+    public void Species_rough_rows_small_pieces_and_refused_sheet_pieces_print_as_the_window_says_them()
+    {
+        // A fir 2x4 and a rough one; a plywood panel with its grain set across, 30 × 2 (too thin for
+        // its name, and its arrow drawn on its middle); one 100 × 50, larger than any sheet; one
+        // 90 × 40 with its grain set along its width, which fits only turned, against that grain.
+        Sketch sketch = Sketch.Empty
+            .WithEntity(Stick(0, "Rail", 30, species: "zz-fir"))
+            .WithEntity(Stick(1, "Brace", 20, rough: true))
+            .WithEntity(Stick(2, "Slat", 30, "3/4 plywood", wide: 2, species: "zz-birch", grain: PartDimension.Length))
+            .WithEntity(Stick(3, "Tabletop", 100, "3/4 plywood", wide: 50))
+            .WithEntity(Stick(4, "Door", 90, "3/4 plywood", wide: 40, grain: PartDimension.Width));
+        ShopSet set = ShopSet.Of(sketch, MaterialsLibrary.Shipped, Length.Zero, new TitleBlock("Odd", Day, null), Format);
+        ReadBack read = Read(set);
+        string letters = string.Concat(read.Letters);
+
+        Assert.Equal("Board 1: 2x4 (zz-fir) × 6 ft", Assert.Single(set.Labels, label => label.Part == "Rail").From);
+        Assert.Equal("Sheet 1: 3/4 plywood (zz-birch)", Assert.Single(set.Labels, label => label.Part == "Slat").From);
+        Assert.Equal($"no sheet: {ShoppingList.NothingHolds} it", Assert.Single(set.Labels, label => label.Part == "Tabletop").From);
+        Assert.Equal("no sheet: it fits only turned, against its grain", Assert.Single(set.Labels, label => label.Part == "Door").From);
+
+        Assert.Contains(Squash(CutList.RoughFooter(set.Rows)!), letters, StringComparison.Ordinal);
+        Assert.Contains(Squash(CutListCsv.Statement(set.Rows)), letters, StringComparison.Ordinal);
+        Assert.Contains("yes", read.Text[0], StringComparison.Ordinal);
+
+        // No kerf, so no kerf mark: only the pieces' 1 pt outlines and the hatch, no 2 pt stroke.
+        Assert.DoesNotContain("\n2 w\n", string.Concat(read.Operators), StringComparison.Ordinal);
+        Assert.Contains("grain", string.Concat(read.Text.Select(text => text.Replace("grain set", string.Empty, StringComparison.Ordinal))), StringComparison.Ordinal);
+    }
 
     [Fact]
     [Trait("Feature", "CUT-024")]
