@@ -245,6 +245,32 @@ public class EditProposalTests
 
     [Trait("Feature", "AST-005")]
     [Fact]
+    public void Stock_refused_where_one_stock_is_near_names_that_one()
+    {
+        // A part cut exactly to one lumber item's section that no other item is within an inch of —
+        // found in the library at run time, never typed here.
+        (LumberStock lumber, StockItem only) = Library.Items.OfType<LumberStock>()
+            .Select(item => (Item: item, Near: StockSuggestion.For(new FinishedSize(Length.Inches(24), item.Width, item.Thickness), Library)))
+            .Where(candidate => candidate.Near.Length == 1)
+            .Select(candidate => (candidate.Item, candidate.Near[0]))
+            .First();
+
+        DesignEditor editor = new();
+        Box beam = Box.AsDrawn(EntityId.New(), editor.LayerForNewParts(), Point2.Origin, Length.Inches(24), lumber.Width, lumber.Thickness, Angle.Zero) with
+        {
+            Name = "Beam",
+            Part = new Part(null, null, 1, new PlanAxes(PartDimension.Length, PartDimension.Width)),
+        };
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(new AddEntity(beam), "draw"));
+
+        ProposalPlan plan = PlanOf(Reply(Stock("Beam", "no such stock")), editor.Design, ContextPack.For(editor.Design, [], ContextChecks.None, [], "q"));
+        Assert.Equal(
+            $"Beam: refused, \"no such stock\" is not in napkin's materials library; nearest for this part's sizes: {only.Name}",
+            Assert.Single(plan.Lines).Sentence);
+    }
+
+    [Trait("Feature", "AST-005")]
+    [Fact]
     public void Quantity_is_SetPart_with_the_new_count_and_less_than_one_is_refused()
     {
         EditorAndPlan made = OnCoffeeTable(Reply(Quantity("Apron, short, west", 2), Quantity("Apron, short, east", 0), Quantity("Top", -3)));
@@ -386,6 +412,52 @@ public class EditProposalTests
                 "\"[x]\": refused, no part in the design is called that",
             ],
             plan.Lines.Select(line => line.Sentence));
+    }
+
+    [Trait("Feature", "AST-005")]
+    [Fact]
+    public void A_dimension_named_by_its_item_and_an_item_number_too_big_to_read_are_refused()
+    {
+        // coffee-table's six dimensions are in the pack as lines of their own; one is not a part.
+        Design design = CoffeeTable();
+        ContextPack pack = PackFor(design);
+        ContextItem dimension = pack.Items.First(item => pack.EntityAt(item.N) is { } id && design.Sketch.Find(id) is Dimension);
+
+        ProposalPlan plan = PlanOf(Reply(Remove($"[{dimension.N}]"), Remove("[99999999999]")), design, pack);
+
+        Assert.Equal(
+            [
+                $"{DesignWords.NameOf(design, pack.EntityAt(dimension.N)!.Value)}: refused, it is not a part",
+                "\"[99999999999]\": refused, no part in the design is called that",
+            ],
+            plan.Lines.Select(line => line.Sentence));
+    }
+
+    [Trait("Feature", "AST-005")]
+    [Theory]
+    // napkin reads a box by one of these names as a building object whatever it carries
+    // (Wall.Reads, the rule DesignWords follows too): the assistant does not edit it as a part.
+    [InlineData("Wall")]
+    [InlineData("Opening")]
+    [InlineData("Room")]
+    [InlineData("Deck")]
+    [InlineData("Roof")]
+    public void A_box_napkin_reads_as_a_building_object_is_not_a_part_even_carrying_one(string name)
+    {
+        DesignEditor editor = new();
+        Box box = Box.AsDrawn(EntityId.New(), editor.LayerForNewParts(), Point2.Origin, Length.Inches(24), Length.Inches(4), Length.Inches(1), Angle.Zero) with
+        {
+            Name = name,
+            Part = new Part(null, null, 1, new PlanAxes(PartDimension.Length, PartDimension.Width)),
+        };
+        Assert.IsAssignableFrom<Succeeded>(editor.Apply(new AddEntity(box), "draw"));
+        Assert.False(EditProposal.IsPart(editor.Sketch, editor.Sketch.Find<Box>(box.Id)!));
+
+        ProposalPlan plan = PlanOf(Reply(Remove("[1]")), editor.Design, ContextPack.For(editor.Design, [box.Id], ContextChecks.None, [], "q"));
+
+        Assert.Equal($"{DesignWords.NameOf(editor.Design, box.Id)}: refused, it is not a part", Assert.Single(plan.Lines).Sentence);
+        Assert.Throws<ArgumentNullException>(() => EditProposal.IsPart(null!, box));
+        Assert.Throws<ArgumentNullException>(() => EditProposal.IsPart(editor.Sketch, null!));
     }
 
     [Trait("Feature", "AST-005")]
