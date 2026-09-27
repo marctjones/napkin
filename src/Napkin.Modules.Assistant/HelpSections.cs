@@ -58,6 +58,7 @@ public static partial class HelpSections
         "docs/shortcuts.md",
         "docs/viewer.md",
         "docs/first-run.md",
+        "docs/assistant.md",
     ];
 
     /// <summary>

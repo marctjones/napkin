@@ -21,6 +21,7 @@
     <EmbeddedResource Include="..\..\docs\shortcuts.md" LogicalName="Napkin.Modules.Assistant.Help.shortcuts.md" Link="Help\shortcuts.md" />
     <EmbeddedResource Include="..\..\docs\viewer.md" LogicalName="Napkin.Modules.Assistant.Help.viewer.md" Link="Help\viewer.md" />
     <EmbeddedResource Include="..\..\docs\first-run.md" LogicalName="Napkin.Modules.Assistant.Help.first-run.md" Link="Help\first-run.md" />
+    <EmbeddedResource Include="..\..\docs\assistant.md" LogicalName="Napkin.Modules.Assistant.Help.assistant.md" Link="Help\assistant.md" />
   </ItemGroup>
 
   <!-- The system prompts as committed text, one file per task (§4.1), embedded so a test can assert them. -->
