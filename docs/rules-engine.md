@@ -8,7 +8,7 @@
 napkin ships **no IRC header, bracing or base-layer table values**. Transcribed tables may ship when
 each is read from a primary or official source in the same task and cited beside the data (Marc,
 2026-09-25, #157; DESIGN.md §2.1), and only these do: Connecticut's Appendix AY (#210) and **DCA
-6-2015 Table 2**, the deck joist spans and overhangs (#41, below). The engine is tested on synthetic
+6-2015 Tables 2 and 3A**, the deck joist spans and overhangs and the deck beam spans (#41, below). The engine is tested on synthetic
 fixtures (`tests/Napkin.Core.RulesEngine.Tests/Fixtures`, `Golden/`, marked `SYNTHETIC TEST DATA - NOT
 CODE VALUES`) and on the shipped Connecticut pack described below, whose own golden files are in
 `packs/golden/`. With no pack, or a pack without a table, the answer is `NoData` - napkin never guesses.
@@ -39,8 +39,16 @@ read from Connecticut's own document (2022 CSBC w/ Errata #1, ED October 1, 2022
   36 joist rows with their allowable span and overhang, each note verbatim. The status label adds
   `deck tables from DCA 6-2015, a guide`. Its golden file is
   `packs/golden/us-ct-2022/dca6-table-2.golden.json`; the independent review checklist is
-  `docs/code-packs/reviews/us-ct-2022/dca6-table2.md`, unfilled until it is done, so every line says
-  UNREVIEWED.
+  `docs/code-packs/reviews/us-ct-2022/dca6-table2.md` (reviewed clean, #41 C1).
+- **Revision 3** (#41 slice B2, 2026-09-27) adds the guide's **Table 3A** (p. 6; the document has a
+  second "Table 3A", joist hanger capacity on p. 9, which is not this one): dimension-lumber deck beam
+  spans L_B, 168 rows — Southern Pine's eight built-up sizes and the other seven species' twelve printed
+  sizes, a two-name cell ("3x8 or 2-2x8") being two rows citing the same cell — by joist span L in
+  upper-bound bands of 6' to 18', each note verbatim; and two scope notes from p. 5 (the beam may extend
+  L_B/4 past the post face; joists do not frame in from opposite sides). Table 3B (glulam) is not
+  transcribed. Golden file `packs/golden/us-ct-2022/dca6-table-3a.golden.json`; checklist
+  `docs/code-packs/reviews/us-ct-2022/dca6-table3a.md`, unfilled until the independent review is done.
+  `review.status` is pack-wide and stays `unreviewed`, so every line says UNREVIEWED.
 
 **Where the app looks for packs roots** (`PackLocations.All()`): `packs/` beside the executable, then
 the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application Support/napkin`, or
@@ -50,7 +58,7 @@ the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application
 
 **Project → Adopted code and site…** lists every pack found in those folders as "<shortName> —
 <baseCode>, in force <from>" with its id, revision, status and review state, for example "CT 2022
-— IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 2): base tables not loaded; deck tables from
+— IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 3): base tables not loaded; deck tables from
 DCA 6-2015, a guide (UNREVIEWED)".
 A pack that fails to load is shown with its problems, not hidden. napkin never picks one: the
 choice is stored with the design (format 6), locked to a revision (with the date) or following
@@ -311,13 +319,21 @@ rounded down to 1/1024″, which is exact for a verdict on a whole-unit cantilev
 without `overhangLimit` does not cover an overhang: a cantilever under it is **Out of scope**
 (column `cantilever`). The deck's code check adds a **Cantilever** line whenever the deck has one.
 
+**Beams** (#41 slice B2, deck-guide-pack §3.2). A `deck-beam` table's `member` is napkin's name for the
+beam, plies and nominal size ("(2) 2x10", "(1) 4x8"); a printed "2-2x10" is `(2) 2x10`, and a cell printed
+with two sizes is two rows citing the same cell. Its `joistSpan` column bands on the joists' span L as the
+joist table defines it (face of support to face of support). The deck check asks it about the **beam span
+post centreline to post centreline** — `DeckFraming.BeamSpan`, (deck width − post width) ÷ (posts − 1),
+exact, the source's own measure (DCA 6 Appendix B, p. B2; Decision 8 of the design note) — and the line
+says "post centre to post centre".
+
 `DeckEvaluator.CheckSpan` answers **Passes** or **Short** (by how much), `SizeLedger` and `SizeFooting`
 **Sized** (the ledger with napkin's own fastener count, ⌈length ÷ spacing⌉ + 1), and every one of
 them **Out of scope** (citing the scope limit that held, or naming the column no row covers),
 **Input missing** or **No data** as the header check does. Every deck line that answers from a
 pack's data says `UNREVIEWED: values not yet checked against the source.` until the pack is signed
 off. The synthetic tables are in `tests/Napkin.Modules.Building.Tests/CodePacks/deck` (NOT CODE VALUES);
-the one real table is DCA 6-2015 Table 2 under the Connecticut pack (above); the rest are M10's (#40–#43).
+the real tables are DCA 6-2015 Tables 2 and 3A under the Connecticut pack (above); the rest are M10's (#40, #42, #43).
 
 ## Guide layers, scope limits and species groups (#238)
 

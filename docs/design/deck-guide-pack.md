@@ -41,6 +41,31 @@ is a line under the deck block listing the pack's supports words and the guide's
 filled in; a `notIn` supports limit adds that anything else is beyond the guide's scope. The shipped
 packs' golden files live in `packs/golden/` and run with every test run.
 
+**As built in slice B2 (#41):** Table 3A's designation is `"3A"`, its location `"p. 6"`; 168 rows as
+§3.6 counted, ids `r.sp.2-2x10.10` and `r.dfl-rw.3x8.10` / `r.dfl-rw.2-2x8.10` (group, printed size,
+joist-span column in feet), members in napkin's form, the `joistSpan` column upper-bound with max 18'
+and, since the page prints no lower bound, napkin's smallest length as its min. Notes 1 and 4 sit on the
+title's L_B and the Size heading, so apply to the table; notes 2 and 3 sit on species in the second
+group's heading and ride on its 112 rows (B1's precedent for a note on some of a group's species). p. 5's
+two beam sentences — "can extend past the post face up to LB/4 as shown in Figure 3" and "Joists shall
+not frame in from opposite sides of the same beam" — are guide scope notes `n.beam-span` and
+`n.beam-sides`, so the paragraph at the top of the block shows them. The golden's per-row expectations
+were written from the PDF's text layer while the pack's rows were typed from the 300-dpi render, so the
+run cross-checks the two readings. `DeckFraming.BeamSpan` is (W − post width) ÷ (posts − 1), and the
+tributary area's beam factor follows it (its joist factor is B3's); the beam line says "post centre to
+post centre", the frame line "between post centres". The Table 3A lookup's joist-span input is
+unchanged: its column is p. 3's L, face of support to face of support. The CT pack goes to revision 3,
+`review` still `unreviewed`; the two locked samples follow.
+**A finding for Marc and the reviewer, not resolved here:** read at 600 dpi, Figure 3 (p. 7) draws the
+arrowheads of its "beam span (L_B)" and "L_B/4 max. overhang" dimensions to the **faces** of the posts,
+not to a centreline, and p. 5 says the beam "can extend past the post face up to LB/4". The main body
+therefore reads as face-to-face; only Appendix B (p. B2, Figure B3), written for the tributary area of
+posts and footings, measures "from either centerline of post to centerline of post". §3.2 above read
+Figure 3 as between post lines. Decision 8 is implemented as signed off (centre to centre, the longer and
+so the conservative measure: a beam that passes face to face by less than one post width is now short);
+the checklist asks the reviewer to confirm the figure, and whether Table 3A's L_B is face to face is
+Marc's call to revisit.
+
 Design note written by Fable per [`PLAN.md`](../../PLAN.md) for Marc's decision of 2026-09-26 on
 #209, **"Decks only via DCA 6"**: the deck checks' real data comes from the American Wood
 Council's *Prescriptive Residential Wood Deck Construction Guide* (DCA 6), a free primary source,

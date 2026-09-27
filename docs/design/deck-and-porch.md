@@ -177,7 +177,9 @@ unchanged. With `t` the joist stock's thickness (1 1/2"), `W` the deck's length 
 - **Posts**: `n` pieces, one at each end of the beam and the rest evenly between; each
   `Depth − decking thickness − joist width − beam width` long (pier top at grade: a design
   assumption the panel states; a typed "pier top above grade" is a one-line follow-up if wanted).
-  **Beam span** = the clear length between adjacent posts, `(W − n·postWidth) / (n − 1)`, exact.
+  **Beam span** = post centreline to post centreline, `(W − postWidth) / (n − 1)`, exact — as the
+  deck tables' source measures it (deck-guide-pack §3.2, Decision 8, since #41 slice B2; it was the
+  clear length between posts, `(W − n·postWidth) / (n − 1)`, one post width shorter).
 - **Blocking**: one row at mid-span, one piece per bay between adjacent joists, each the bay's
   clear width (`s − t`, and the odd last bay its own width).
 - **Decking**: boards across the joists, each `W` long; count `n` = the least with
@@ -649,14 +651,16 @@ depth 42", snow 30 psf, wind 115 mph, SDC B, roof live load 20 psf.
 - **Joists**: positions 0, 16, … 128 (nine; 128 + 1 1/2 ≤ 144, 144 is not), end joist at 142 1/2:
   **10 joists 2x8 × 117"** (120 − 3). Bays: 8 × 14 1/2" and the last 142 1/2 − 129 1/2 = 13".
 - **Ledger** 1 × 144" 2x8; **rim** 1 × 144" 2x8; **blocking** 8 × 14 1/2" + 1 × 13" 2x8.
-- **Beam** 2 × 144" 2x10; **beam span** (144 − 3 × 3 1/2) ÷ 2 = **66 3/4"** clear.
+- **Beam** 2 × 144" 2x10; **beam span** post centre to post centre (144 − 3 1/2) ÷ 2 = **70 1/4"**
+  (the clear 66 3/4" between posts plus one post width; #41 slice B2).
 - **Posts** 3 × 4x4, each 36 − 1 − 7 1/4 − 9 1/4 = **18 1/2"**.
 - **Decking**: n with 5 1/2 n + 1/8 (n − 1) ≥ 120 → 5 5/8 n ≥ 120 1/8 → n ≥ 21.36 → **22 boards
   × 144"**, the 22nd covering 120 − 118 − 1/8 = **1 7/8"** ("adjust the gaps or the overhang").
   Listed as 22 boards 12'-0", no stock length read (#155).
 - **Ledger fasteners** (synthetic row: zz-bolts staggered at 17"): ⌈144 ÷ 17⌉ + 1 = **10**.
-- **Tributary area**, middle post: 66 3/4" × (117 ÷ 2 = 58 1/2") = 3904.875 sq in = **27.1 sq ft**
-  (shown to one decimal; the table's band reads the exact value).
+- **Tributary area**, middle post: 70 1/4" × (117 ÷ 2 = 58 1/2") = 4109.625 sq in = **28.5 sq ft**
+  (shown to one decimal; the table's band reads the exact value). The joist side still runs to the
+  beam's face; its centreline measure is deck-guide-pack slice B3's.
 
 Pieces: 2x8 — 2 × 144, 10 × 117, 8 × 14 1/2, 1 × 13 (21 pieces); 2x10 — 2 × 144; 4x4 — 3 × 18 1/2.
 
@@ -667,7 +671,7 @@ implementer**; one hand pass): 2x8: each 144" alone on a 12' (nothing else fits 
 3 × 18 1/2 + 2 kerfs = 55 3/4" → **1 × 6'**, 8.0 board feet.
 
 **Checks** (synthetic): joists 2x8 at 16", zz-fir, span 9'-9": passes (row); beam (2) 2x10 span
-5'-6 3/4" for a joist span of 9'-9": passes; ledger as above; footing at 27.1 sq ft and 2000 psf:
+5'-10 1/4" post centre to post centre for a joist span of 9'-9": passes; ledger as above; footing at 28.5 sq ft and 2000 psf:
 "zz 15 in square" (row); frost 42" of 42": passes; guard: 36" is above the synthetic 28" trigger
 and three edges are open → required.
 
@@ -824,7 +828,7 @@ Building (`Napkin.Modules.Building.Tests`):
 7. `DECK-002` joists and beam: passes, over by 1'-2" (a 12'-6" deck: joists 12'-3"), out of scope for Supports
    `zz-deck-and-roof` when the table lacks the row, input missing for species; the rafter use
    with snow 30 and with snow not entered.
-8. `DECK-003` footing: 27.1 sq ft at 2000 psf → the row; 1999 psf takes the lower column; below the
+8. `DECK-003` footing: 28.5 sq ft at 2000 psf → the row; 1999 psf takes the lower column; below the
    lowest column → out of scope; frost 42 of 42 passes, 41 short by 1", missing site value named;
    the CT suggestion's text is exactly Table R301.2's value and citation.
 9. `DECK-004` guard: 8 posts, the three bay clears, 11/13/7 balusters and the three gaps of §9.3;
