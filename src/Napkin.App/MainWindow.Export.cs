@@ -138,6 +138,72 @@ public partial class MainWindow
         return true;
     }
 
+    /// <summary>The Print permit set on Letter menu entry.</summary>
+    public Avalonia.Controls.MenuItem PermitLetterMenuEntry => PermitLetterMenuItem;
+
+    /// <summary>The Print permit set on Tabloid menu entry.</summary>
+    public Avalonia.Controls.MenuItem PermitTabloidMenuEntry => PermitTabloidMenuItem;
+
+    void OnPrintPermitLetterClicked(object? sender, RoutedEventArgs e) => _ = PrintPermitSetAsync(SheetPaper.Letter);
+
+    void OnPrintPermitTabloidClicked(object? sender, RoutedEventArgs e) => _ = PrintPermitSetAsync(SheetPaper.Tabloid);
+
+    /// <summary>What the message bar says when a design has nothing a permit set napkin makes is about.</summary>
+    public const string NothingToPermit = "Not printed — a permit set needs a deck to show: draw one with Draw → Deck first.";
+
+    /// <summary>
+    /// Asks where, writes the design's permit set there on the chosen paper (#226: a deck's S1, A2, S2,
+    /// S3, C1 and W1), and says what happened — and when anything is not sized, that the set says so.
+    /// </summary>
+    /// <param name="paper">Letter or Tabloid.</param>
+    /// <returns>Whether a file was written.</returns>
+    public async Task<bool> PrintPermitSetAsync(SheetPaper paper)
+    {
+        ArgumentNullException.ThrowIfNull(paper);
+        if (Napkin.Modules.Building.Deck.All(Editor.Sketch).IsEmpty)
+        {
+            Editor.Say(EditSeverity.Hint, NothingToPermit);
+            return false;
+        }
+
+        string name = ExportName();
+        string? path;
+        try
+        {
+            path = await ExportPicker.PickPdfDestinationAsync(name + " permit set.pdf").ConfigureAwait(true);
+        }
+        catch (Exception exception) when (ProjectFile.IsFileException(exception))
+        {
+            Editor.Say(EditSeverity.Problem, $"Not printed: {exception.Message}");
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            Editor.Say(EditSeverity.Hint, "Not printed — no file was chosen, so nothing was written.");
+            return false;
+        }
+
+        DeckSet set = PermitPaper.DeckSet(Editor.Sketch, name, Today(), Editor.LabelFormat, Packs, paper, Settings.Current.ShowHiddenEdges);
+        Excise.Core.Document.PdfDocument document = DeckSetPdf.Document(set);
+        try
+        {
+            using FileStream file = File.Create(path);
+            document.Save(file);
+        }
+        catch (Exception exception) when (ProjectFile.IsFileException(exception))
+        {
+            Editor.Say(EditSeverity.Problem, $"Not printed: {exception.Message}");
+            return false;
+        }
+
+        string incomplete = PermitItems.Banner(set.Permit.Items) is { } banner ? $" {banner}." : string.Empty;
+        Editor.Say(
+            EditSeverity.Done,
+            $"Printed the deck's permit set, {document.PageCount} sheets on {paper.Name}, to {Path.GetFileName(path)} in {Path.GetDirectoryName(path)}.{incomplete}");
+        return true;
+    }
+
     /// <summary>Asks where, writes the plan there, and says what happened.</summary>
     /// <returns>Whether a file was written.</returns>
     public async Task<bool> ExportDxfAsync()

@@ -150,6 +150,47 @@ public class ExportWorkflows
         Directory.Delete(folder, recursive: true);
     });
 
+    [GuiWorkflow("GUI-PERMIT-01")]
+    public void Print_the_porchs_deck_permit_set_on_Tabloid_and_be_told_a_new_sheet_has_nothing_to_permit() => GuiWorkflow.Run(app =>
+    {
+        MainWindow window = (MainWindow)app.Target;
+        string folder = Directory.CreateTempSubdirectory("napkin-permit-").FullName;
+        ScriptedExport picker = new(folder);
+        window.ExportPicker = picker;
+        window.Today = () => new DateOnly(2026, 9, 27);
+
+        OpenSample(app, window, "Porch on a deck");
+        app.Click(CentreOf(window, window.FileMenuItem));
+        app.Click(CentreOf(window, window.PermitTabloidMenuEntry));
+        app.Expect("the porch's deck set is S1, A2, S2, S3, C1 and W1 on Tabloid, each titled, disclaimed and marked incomplete", () =>
+        {
+            Assert.Equal("Porch on a deck permit set.pdf", picker.Suggested);
+            Excise.Core.Document.PdfDocument document = Excise.Core.Document.PdfDocument.Open(File.ReadAllBytes(picker.Last!));
+            string[] pages = [.. Enumerable.Range(0, document.PageCount).Select(i => new Excise.Core.Text.TextExtractor(document.Pages[i]).ExtractText())];
+            Assert.Equal((1224.0, 792.0), (document.Pages[0].Width, document.Pages[0].Height));
+            string[] titles = ["S1 Site plan", "A2 Elevation: Front", "S2 Framing plan: Deck 1", "S3 Details: Deck 1", PermitSetPdf.CodePage, PermitSetPdf.Worksheet];
+            Assert.All(titles, title => Assert.Contains(pages, page => page.Contains(title, StringComparison.Ordinal)));
+            Assert.All(pages, page => Assert.Contains(DeckSetPdf.NotASurvey, page, StringComparison.Ordinal));
+            Assert.All(pages, page => Assert.Contains("NOT A COMPLETE PERMIT SET", page, StringComparison.Ordinal));
+            Assert.Contains("Printed the deck's permit set", window.MessageOnScreen, StringComparison.Ordinal);
+            Assert.Contains("on Tabloid", window.MessageOnScreen, StringComparison.Ordinal);
+        });
+
+        // A new sheet has no deck: nothing is printed, and the message says why.
+        app.Chord(Key.N);
+        app.Click(new Point(450, 320));
+        string? before = picker.Last;
+        app.Click(CentreOf(window, window.FileMenuItem));
+        app.Click(CentreOf(window, window.PermitLetterMenuEntry));
+        app.Expect("a new sheet is told a permit set needs a deck, and no file is asked for", () =>
+        {
+            Assert.Equal(MainWindow.NothingToPermit, window.MessageOnScreen);
+            Assert.Equal(before, picker.Last);
+        });
+
+        Directory.Delete(folder, recursive: true);
+    });
+
     static string Squash(string text) => System.Text.RegularExpressions.Regex.Replace(text, @"\s+", string.Empty);
 
     static void PrintShopSet(AppDriver app, MainWindow window)
@@ -190,6 +231,11 @@ public class ExportWorkflows
     {
         app.Click(CentreOf(window, window.FileMenuItem));
         app.Click(CentreOf(window, window.SamplesMenuItem));
+        if (!window.GetVisualDescendants().OfType<MenuItem>().Any(candidate => (candidate.Header as string) == sample))
+        {
+            app.Click(CentreOf(window, window.SamplesBuildingMenuItem!));
+        }
+
         MenuItem item = window.GetVisualDescendants().OfType<MenuItem>().Single(candidate => (candidate.Header as string) == sample);
         app.Click(CentreOf(window, item));
     }

@@ -61,6 +61,7 @@ internal sealed class SheetInk(PdfGraphics graphics, SheetFonts fonts)
     public void Label(string text, PagePoint centre, bool vertical)
     {
         PdfFont font = Fonts.Regular(DimensionMarks.LabelSize);
+        text = SheetFonts.Printable(text, font);
         double width = font.MeasureWidth(text), height = font.Ascender + font.Descender;
         graphics.SaveState();
         graphics.Transform(vertical ? 0 : 1, vertical ? 1 : 0, vertical ? -1 : 0, vertical ? 0 : 1, centre.X, centre.Y);
@@ -75,11 +76,11 @@ internal sealed class SheetInk(PdfGraphics graphics, SheetFonts fonts)
     }
 
     /// <summary>A line of text with its baseline starting at a point.</summary>
-    public void Text(string text, PdfFont font, double x, double y) => graphics.DrawString(text, font, PdfBrush.Black, x, y);
+    public void Text(string text, PdfFont font, double x, double y) => graphics.DrawString(SheetFonts.Printable(text, font), font, PdfBrush.Black, x, y);
 
     /// <summary>A line of text centred on a point along its baseline.</summary>
     public void CentredText(string text, PdfFont font, double x, double y) =>
-        graphics.DrawString(text, font, PdfBrush.Black, x, y, TextAlignment.Center);
+        graphics.DrawString(SheetFonts.Printable(text, font), font, PdfBrush.Black, x, y, TextAlignment.Center);
 
     /// <summary>Text laid out beforehand, line by line, each with the blank it leaves after it.</summary>
     public void Text(IEnumerable<PlacedText> lines)

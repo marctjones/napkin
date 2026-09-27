@@ -5,6 +5,11 @@ Scope: napkin issue #212 step 1. All sources are town-published pages/PDFs found
 search and fetched directly (WebFetch or curl+pdftotext for PDFs that WebFetch could not
 render as text).
 
+**Narrowed 2026-09-27, per Marc's direction:** napkin's permit set targets typical Connecticut
+requirements, read from **Bloomfield and Simsbury only**. The other towns this pass first read
+(West Hartford, Glastonbury, Wethersfield, Danbury, Manchester, Greenwich, Fairfield) are dropped
+from this record, and no other town or state is to be researched for the permit set.
+
 ---
 
 ## 1. Bloomfield, CT
@@ -59,55 +64,7 @@ lower-confidence paraphrase from that fetch, not a direct quote from a document 
 
 ---
 
-## 2. West Hartford, CT
-
-Source (deck): "DECK INFORMATION" PDF —
-https://resources.finalsite.net/images/v1592936492/westhartfordctgov/cusgo6siz57xbk1h75ru/DeckPermitInformation06-2020.pdf
-(linked from https://www.westhartfordct.gov/town-departments/building/resources,
-"Forms & Informational Handouts"). Retrieved and read via pdftotext 2026-09-26 (WebFetch
-could not parse the PDF's text layer; content below is from direct pdftotext extraction).
-
-Section II, "PERMIT APPLICATION DOCUMENTS — Please submit the following":
-1. Building/Zoning application.
-2. **Two copies** of the **Plot plan** with proposed deck drawn to scale (contact Zoning
-   Dept., 860-561-5555).
-3. **Two copies** of the **Deck Floor plan**, drawn to scale, showing: deck size; size and
-   spacing of floor joists; size and type of decking material; size, type, location and
-   spacing of posts; size and type of beams; post-to-beam attachment details (top and base
-   connectors); ledger-to-house attachment detail, including flashing type.
-4. **Two copies** of the **Elevation drawing**, drawn to scale, showing: height of structure
-   from grade; size and depth of footings; guard and handrail height and spacing (if any);
-   stairwell rise/run and guard/handrail height (if any); any utilities (e.g. overhead
-   wires).
-5. Insurance info (contractor's workers' comp or 7B waiver; HIC license if contractor-built).
-6. Permit fee per the town's fee chart.
-
-The document also cites egress requirements verbatim for a door added to a new deck (2018
-CT State Building Code R311.4.2 egress door dimensions; R311.3 landing requirements;
-R311.3.2 floor elevation for other exterior doors), relevant to napkin's window/door
-question when a deck adds a new exterior door.
-
-No scale value or paper size is specified beyond "drawn to scale" / "to scale." No explicit
-statement of when a licensed design professional is required in this document. A surveyed
-plot plan is explicitly required (2 copies).
-
-Source (general "requires a permit" list): search-engine summary of
-https://www.westhartfordct.gov/town-departments/building/permits (page fetched but WebFetch
-could not extract the specific window/door section; the page states generally that a permit
-is required to "alter a building by cutting a portion of a wall ... or change any required
-means of entering or exiting" — this is a paraphrase from the fetch, not a verified direct
-quote of the window/door-specific text, and I could not confirm a document listing drawing
-requirements specifically for window/door enlargement on this town's site in this pass).
-Flagging as a gap: **no West Hartford window/door-enlargement checklist located.**
-
-Also found via search summary (not independently re-fetched with full text in this pass):
-zoning permits only apply to small unattached decks (≤200 sq ft, ≤30" above grade, not
-attached to dwelling, not serving an exit door); anything larger goes through the Building
-Department. Source: same westhartfordct.gov building resources page per search snippet.
-
----
-
-## 3. Simsbury, CT
+## 2. Simsbury, CT
 
 Source: "DECK GUIDELINES" PDF —
 https://ct-simsbury.civicplus.com/DocumentCenter/View/1315/Deck-Guide (also mirrored at
@@ -136,132 +93,9 @@ dimensions, stairway width (31-1/2" one handrail / 27" two handrails / 36" above
 height), handrail height (34"-38"). These are code citations reproduced by the town, not
 independent town rules — noted as "Above tables from IRC2015" in the source document.
 
-No scale/paper-size spec found in this document. No explicit copy-count for deck submittals
-(only "Two copies" language appears in West Hartford's, not Simsbury's, document). A plot
-plan is required; no explicit statement of when a licensed design professional is required
+No scale/paper-size spec found in this document. No explicit copy-count for deck submittals. A
+plot plan is required; no explicit statement of when a licensed design professional is required
 beyond the general "signed by owner or licensed contractor" line.
-
----
-
-## 4. Glastonbury, CT
-
-Source: https://www.glastonburyct.gov/departments/department-directory-a-h/building-inspection-zoning/applying-for-a-building-permit
-— **fetch failed**: original www.glastonbury-ct.gov URL redirected (301) to
-www.glastonburyct.gov, and the redirected URL returned **HTTP 403 Forbidden** to WebFetch
-(retrieved/attempted 2026-09-26). No further direct-URL retry succeeded in this session; I
-did not substitute general knowledge for the blocked content.
-
-What is known only via search-engine summary (not independently verified against the primary
-document, so treat as low-confidence pending a re-fetch by another tool/session):
-- For new construction, "4 copies of a building plot plan certified A-2 by a Professional
-  Engineer or Land Surveyor" are required (paraphrase from search snippet of the
-  glastonbury-ct.gov permit page).
-- All permit applications, including complex ones such as decks, must be submitted online
-  via OpenGov ViewPoint; hard-copy applications/plans are not accepted (paraphrase from
-  search snippet).
-- Fee schedule: $34.26 per first $1,000 of value, $17.26 per additional $1,000 (paraphrase
-  from search snippet).
-- Deck-ledger and footing code citations attributed to Glastonbury in search snippets (42"
-  min footing depth in CT frost zones; ledger not supported on stone/masonry veneer unless
-  designed by a design professional or an approved listed fastening method used) could not
-  be traced to a specific fetched Glastonbury document in this session — **do not treat as
-  confirmed town-specific text**; these read as generic CT/IRC provisions that may have been
-  paraphrased from a search engine's AI summary rather than the town's own page.
-- **No Glastonbury-specific deck guide PDF was found** (a targeted search for one turned up
-  only Simsbury's and Danbury's, not Glastonbury's).
-
-**Overall: Glastonbury should be treated as largely unread this pass** — the town's page
-was blocked, and nothing here should be cited to the user as a confirmed Glastonbury
-requirement beyond "the town requires a permit for decks and directs applicants to an online
-portal," which is as far as the redirect chain got before the 403.
-
----
-
-## 5. Wethersfield, CT (bonus — not on the suggested list but has a strong published plot-plan spec)
-
-Source: "Building Permits — Minimum Plot Plan Requirements" PDF, Town of Wethersfield
-Engineering Department — https://www.wethersfieldct.gov/DocumentCenter/View/299/Plot-Plan-Requirements-PDF
-(dated 04/01/24 at the foot). Retrieved and read via pdftotext 2026-09-26.
-
-Applies when a Certificate of Occupancy (residential zone) or Certificate of Approval
-(in-ground pool/detached garage) is required. Key requirements, quoted/paraphrased:
-- **2 copies**, on a **24"x36" sheet**, at a **scale of 1"=20' (1"=40' maximum)**.
-- Plot plans must be "prepared, signed and sealed by a land surveyor licensed in the State
-  of Connecticut," to **Class A-2 and T-2 standards of accuracy** for boundaries and
-  topography respectively, per Reg. Conn. State Agencies §20-300b and the CT Association of
-  Land Surveyors' 1996 survey/map standards. Horizontal datum NAD 83, vertical NAVD 88
-  (Geoid 12B).
-- Minimum content (17 items), notably: title block (title/date incl. revisions, address,
-  lot/subdivision, owner, surveyor/engineer); surveyor's (and PE's, if applicable) seal and
-  signature; wetlands/FEMA flood-zone limits; all boundary dimensions/bearings; **front,
-  side, rear building setback lines with labels**; easements with dimensions/labels;
-  existing/proposed topography at 1' contour intervals (min. 50' beyond the work area);
-  **limits of existing/proposed buildings and accessory structures with perimeter
-  dimensions and finished floor elevations, explicitly including "top/bottom of in-ground
-  pools and associated walks, patios, decks, etc."**; driveways, sidewalks, curbs, fences,
-  utility connections; retaining walls; drainage systems incl. foundation drains/roof
-  leaders; tree lines/clearing limits; erosion controls; soil stockpile area; 2+ survey
-  monuments/iron pins; benchmark; legend/location map/north arrow/references.
-
-This is the most detailed A-2 plot-plan specification found in this research pass and is a
-strong reference for what "plot plan" means concretely in the Hartford-area CT context, even
-though Wethersfield was not on the requested town list.
-
----
-
-## 6. Danbury, CT (bonus — has its own deck-detail sheet, comparable to Simsbury's)
-
-Source: "General Deck Guide for Residential 1 & 2 Family Dwellings," Town of Danbury —
-https://www.danbury-ct.gov/DocumentCenter/View/4377/Residential-Deck-Guide. Retrieved and
-read via pdftotext 2026-09-26. States it applies the 2021 IRC (via 2022 CT State Building
-Code) Deck Section 504.
-
-"List of items that must be shown on submitted drawings for a proposed deck," verbatim
-list: a detailed, dimensioned drawing of the proposed deck; material type/size/spans for
-beams and joists; footing size, depth and spacing (**42" min. depth**); footing size/depth
-at bottom of stairs (**12" min. depth**); ledger-to-house bolt pattern (size, vertical and
-horizontal spacing); deck-post size and connections at beam and pier; joist-to-beam and
-joist-to-ledger connections; lateral-load connection detail (min. 2 per deck section);
-solid blocking above the beam between joists if cantilevered; decking material detail.
-
-Guard-rail section: 36" min. finished height above deck; 34" min. on open stair sides
-(measured vertically from nosing); grip-rail size ≤2-1/4"; picket spacing <4" (no 4" sphere
-passage); details required if rails are composite/manufactured.
-
-Stair section: 36" min. width; stringer count and size (usually 2x12) to be specified;
-connection detail from stairs to deck and stringers to footing; riser height 8-1/4" max;
-tread depth 9" min.
-
-Explicitly labeled a "general guide," not a complete design; cites decks.com and ICC/UpCodes
-as references, and disclaims that it does not set aside actual code requirements — i.e. this
-is Danbury's own typical-deck-detail sheet in the same spirit as a DCA-6-style guide, but
-does not itself cite AWC DCA 6 by name. No AWC DCA 6 reference was found being cited by name
-on any of the five town sources actually read in this session (Bloomfield, West Hartford,
-Simsbury, Wethersfield, Danbury); Simsbury's document instead reproduces 2015 IRC tables
-directly rather than pointing to DCA 6.
-
----
-
-## 7. Manchester, Greenwich, Fairfield, CT — searched, no usable primary-source drawing
-   checklist retrieved
-
-- **Manchester**: Search results point to the Building Inspection Division
-  (https://www.manchesterct.gov/Government/Departments/Public-Works/Building-Inspection-Division)
-  and an FAQ page, but no deck- or window-specific checklist/PDF surfaced in search, and I
-  did not fetch a page whose text confirmed drawing requirements. **Gap — nothing usable
-  found for Manchester.**
-- **Greenwich**: https://www.greenwichct.gov/2816/Residential-Buildings-1-2-Family and
-  https://www.greenwichct.gov/1339/Permit-Application-Process describe process (Additions
-  and Alterations Permit Application, department sign-off sheet, Worker's Comp Affidavit)
-  but the search summary did not surface a specific drawing/plan-content checklist for decks
-  or window/door work, and these pages were not independently re-fetched with full text in
-  this session. **Gap — process found, drawing-content checklist not found/confirmed.**
-- **Fairfield**: https://fairfieldct.gov/service/building_department/building_permits/building_permit_application.php
-  was fetched directly; it states applicants must upload "Plans" among other documents
-  (HIC license, insurance certificate, owner certification/contract) via citysquared.com,
-  but the fetched page text did not specify what the plans must contain for a deck or for a
-  window/door change. **Gap — Fairfield names "Plans" as a required upload but does not
-  publish (on this page) what a deck or window/door plan set must show.**
 
 ---
 
@@ -269,77 +103,34 @@ directly rather than pointing to DCA 6.
 
 ### Recurring drawing sheets
 
-**For decks**, the following sheets recur across every town whose deck-specific document was
-actually read (Bloomfield's worksheet, West Hartford's Deck Information PDF, Simsbury's Deck
-Guidelines, and — as an additional data point — Danbury's Residential Deck Guide):
+**For decks**, both towns' deck documents (Bloomfield's framing worksheet, Simsbury's Deck
+Guidelines) ask for:
 
-1. **Plot plan / site plan** showing the deck's location and dimensions, scaled, on the lot.
-   Required explicitly by West Hartford (2 copies), Simsbury ("plot plan showing deck scaled
-   with stairs"), and implied by Bloomfield's general checklist (certified plot plan for any
-   non-interior work). Wethersfield's plot-plan spec (though general-purpose, not
-   deck-specific) is the most detailed found and explicitly lists decks among the structures
-   whose perimeter dimensions and finish elevations must appear on the plot plan.
-2. **A dimensioned deck/floor framing plan** showing: deck size; joist size and spacing;
-   beam size/number; post size, spacing, and connections; decking material. Asked for by
-   Bloomfield (framing worksheet), West Hartford (Deck Floor Plan), Simsbury (building plans
-   list), and Danbury (detailed dimensioned drawing + member sizes/spans).
-3. **An elevation/detail sheet** covering: height above grade; footing size and depth (all
-   towns that specified a number used **42" minimum**, matching CT frost depth — Simsbury and
-   Danbury both state this explicitly); ledger-to-house attachment and flashing (West
-   Hartford, Simsbury, Danbury all call this out individually); guard/handrail height and
-   spacing (36" min. finished height and a 4" max. sphere rule recur in Simsbury's IRC-table
-   reproduction and Danbury's guide); stair rise/run, tread depth (9" min.) and riser height
-   (8-1/4" max.), again consistent between Simsbury and Danbury.
+1. **A plot plan** showing the deck on the lot: Simsbury's "plot plan showing deck scaled with
+   stairs"; Bloomfield's general checklist asks for a certified plot plan for any non-interior
+   work.
+2. **A framing plan**: deck size; joist size and spacing; beam size and number; post size and
+   spacing; decking material — Bloomfield's worksheet and Simsbury's building-plans list.
+3. **Elevation and detail information**: height above grade (Simsbury; Bloomfield asks whether
+   any part is over 30" above grade); footing size and depth (Simsbury: 42" minimum for frost;
+   Bloomfield: pier size and depth); ledger attachment and flashing (Simsbury); guard height and
+   baluster spacing and a stair's handrail (Bloomfield's worksheet; Simsbury reproduces the IRC
+   2015 guard and stair provisions).
 
-Two towns (Simsbury, Danbury) supply their **own typical-deck-detail/guidance sheet**
-enumerating exactly what must appear on the drawings, rather than pointing to a standard
-document like AWC DCA 6 by name — no town among the five actually read cited DCA 6 directly,
-though Simsbury's document reproduces 2015 IRC deck tables verbatim as its technical backing.
+Neither town cites AWC DCA 6 by name; Simsbury's document reproduces 2015 IRC deck tables as its
+technical backing.
 
-**For enlarging/relocating a window or door in an exterior wall**, the published record is
-much thinner. No town in this pass (Bloomfield, West Hartford, Simsbury, Glastonbury,
-Manchester, Greenwich, Fairfield) publishes a **window/door-specific** drawing checklist
-comparable to their deck guides. The only concrete requirement found is Bloomfield's general
-"New House and Addition Checklist," which would apply to any exterior-wall alteration: a
-certified plot plan, plus a "complete set of legible building plans" and "engineering
-details for structural elements such as floors, headers, and roof trusses" — i.e., for a
-window/door enlargement, the header/opening framing is the structural element a town expects
-to see engineered, but no town's document specifies exactly what a window/door "floor plan +
-elevation + header detail" sheet must show, the way the deck guides do for joists/footings/
-guards. West Hartford's Deck Information PDF does supply exact 2018 CT State Building Code
-citations for an **egress door added on a new deck** (R311.4.2 door dimensions, R311.3
-landing rules, R311.3.2 floor-elevation rules) — useful for napkin's door-in-exterior-wall
-case, but it is deck-context, not a general window/door-enlargement checklist.
+**For enlarging or relocating a window or door in an exterior wall**, neither town publishes a
+window/door-specific drawing checklist. Bloomfield's general "New House and Addition Checklist"
+would apply to any exterior-wall alteration: a certified plot plan, a "complete set of legible
+building plans" and "engineering details for structural elements such as floors, headers, and
+roof trusses" — for a window or door enlargement, the header is the structural element the town
+expects to see.
 
-### Where towns differ / where nothing was published
+### What neither town states
 
-- **Copy count**: only West Hartford states an explicit number (2 copies of each of 3 sheets
-  for decks). Simsbury and Bloomfield do not state a copy count in the documents read.
-- **Scale/paper size**: only Wethersfield's general plot-plan spec states a concrete scale
-  (1"=20', max 1"=40') and sheet size (24"x36"); none of the deck guides read state a scale
-  or paper-size rule.
-- **Licensed design professional**: no town's deck document states a clear trigger (e.g. "a
-  PE stamp is required if X"); the closest is the (unverified, search-summary-only)
-  Glastonbury note that ledgers on stone/masonry veneer need a design professional unless an
-  approved fastening system is used, and Bloomfield's checklist implying engineering
-  is needed for the structural elements it lists. Plot plans specifically: Wethersfield
-  and (per search summary only) Glastonbury require a licensed land surveyor's/PE's seal;
-  West Hartford and Simsbury's documents don't state a licensure requirement for the plot
-  plan itself, just that one must be submitted.
-- **Plot plan / A-2 survey requirement**: explicitly required by West Hartford (surveyed) and
-  Simsbury (property plot plan) for decks; Bloomfield requires a "certified plot plan" for
-  any exterior/non-interior work; Wethersfield's is explicitly A-2/T-2 class but is
-  triggered by Certificate of Occupancy/Approval, not stated as deck-specific;
-  Glastonbury's A-2-certified, 4-copy claim is unverified (search-summary only, primary page
-  blocked).
-- **Nothing published**: Manchester, Greenwich and Fairfield did not yield a fetchable
-  document specifying deck or window/door drawing content in this session — Fairfield
-  confirms "Plans" are required but not what they must show; Manchester and Greenwich only
-  yielded process pages. Glastonbury's own page could not be fetched at all (403).
-- Window/door enlargement checklists are essentially **absent from the published record**
-  across every town checked — this is a genuine content gap, not just an artifact of this
-  search, and is itself a useful finding for napkin's design note: towns publish detailed
-  deck guidance but not equivalent window/door guidance, so a plan-set feature for that work
-  type may need to synthesize from the general "addition/alteration" checklist plus IRC
-  header/opening and egress provisions rather than from a town-published, work-type-specific
-  list.
+- **Copy count**: neither document read states one.
+- **Scale or paper size**: neither states a scale or a sheet size.
+- **Licensed design professional**: neither deck document states a trigger; Bloomfield's
+  checklist implies engineering for the structural elements it lists, and asks for a *certified*
+  plot plan.

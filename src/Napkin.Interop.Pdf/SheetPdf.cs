@@ -204,7 +204,7 @@ public static class SheetPdf
     }
 
     /// <summary>A view: its caption, its hidden edges, its visible edges, then its dimensions.</summary>
-    static void DrawView(SheetInk ink, ViewPlacement placement, SheetScale scale)
+    internal static void DrawView(SheetInk ink, ViewPlacement placement, SheetScale scale)
     {
         ink.Text(placement.View.Name, ink.Fonts.Regular(CaptionSize), placement.Pane.Left + 8, placement.Pane.Top - 6 - CaptionSize);
         PagePoint At(DrawingPoint point) => placement.ToPage(point, scale);
@@ -229,7 +229,7 @@ public static class SheetPdf
     /// pointing in, when the line is too short for them — and the label on a white chip that breaks
     /// the line, reading up the page when the line runs up it.
     /// </summary>
-    static void DrawDimension(SheetInk ink, (PagePoint From, PagePoint To) measured, (PagePoint From, PagePoint To) line, string label)
+    internal static void DrawDimension(SheetInk ink, (PagePoint From, PagePoint To) measured, (PagePoint From, PagePoint To) line, string label)
     {
         (double X, double Y) along = (line.To.X - line.From.X, line.To.Y - line.From.Y);
         double length = Math.Sqrt((along.X * along.X) + (along.Y * along.Y));

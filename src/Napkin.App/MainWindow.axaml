@@ -99,6 +99,14 @@
                           Header="Print _shop set…"
                           Click="OnPrintShopSetClicked"
                           ToolTip.Tip="Write the shop set as a PDF to print: the cut list, every board and sheet of the cut layout drawn to scale with its pieces named, and a label for each piece saying what it is and what it is cut from." />
+                <MenuItem Name="PermitLetterMenuItem"
+                          Header="Print permit set on _Letter…"
+                          Click="OnPrintPermitLetterClicked"
+                          ToolTip.Tip="Write a deck's permit set as a PDF on Letter paper: S1 site plan, A2 elevation, S2 framing plan and S3 details, then C1, every code result with its citation, and W1, a worksheet for anything napkin could not size." />
+                <MenuItem Name="PermitTabloidMenuItem"
+                          Header="Print permit set on _Tabloid…"
+                          Click="OnPrintPermitTabloidClicked"
+                          ToolTip.Tip="The same permit set on Tabloid (11 × 17 in) paper, for larger drawings." />
                 <Separator />
                 <MenuItem Name="ExitMenuItem" Header="E_xit" Click="OnExitClicked" />
             </MenuItem>

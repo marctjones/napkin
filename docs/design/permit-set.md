@@ -16,6 +16,12 @@ note or to the sheet's template.
 
 ## 1. What the research says a set is
 
+*Narrowed 2026-09-27 (Marc): the research now rests on **Bloomfield and Simsbury only**
+([`../research/permit-sets.md`](../research/permit-sets.md)). The three deck drawings below stand on
+those two towns' documents. Statements here that came from towns since dropped no longer bear on
+napkin: West Hartford's copy count, Danbury's and West Hartford's item lists, and Wethersfield's
+plot-plan scale and sheet size (§4, §9.4 mention it only to set it aside).*
+
 **Deck.** Every town whose deck guide was read asks for three drawings:
 
 1. **A plot plan** with the deck drawn to scale on the lot. West Hartford and Simsbury ask for
@@ -208,8 +214,8 @@ or not a PNG or JPEG. No field is optional, as always.
 **Slice C as built (#225).** `Napkin.Interop.Pdf`: `PermitSetPdf` draws a set's sheets in #211's
 frame (`SheetFrame`, `SheetSet`), each titled by its number ("A2 Elevation"), then **C1** and, when
 anything is not sized, **W1**. `SheetPaper.Letter` is Excise.Core's; `SheetPaper.Tabloid` is 17 × 11 in,
-the "11-inch by 17-inch (279.4 mm by 431.8 mm)" San Francisco's building department takes plans on
-(sf.gov, *Building project plans for full permits*, read 2026-09-27). `SheetScale.Architect` and
+"11 inches by 17 inches", "ANSI B under the ANSI/ASME Y14.1 standard" (Ricoh USA's glossary, *11x17
+paper*, read 2026-09-27; the standard itself is not free to read). `SheetScale.Architect` and
 `SheetScale.Engineer` are the scales USFA/FEMA's *Using Engineer and Architect Scales* lists (p. 2,
 read 2026-09-27): 1 1/2" to 3/32" to the foot, and 1" = 10' to 60'; each prints as the rule reads it.
 `PermitItems` classes every result sized, not sized or not checked (a wall said not to bear), in the
@@ -218,12 +224,22 @@ already known. The banner is `TitleBlock.Banner`, a band across every title bloc
 `SheetInk.Blank`, thin rules to write on. A deck line napkin writes itself when it cannot answer
 carries `DeckCheckLine.Unanswered`. No menu item yet: the sets that use it are D and E.
 
-*Open for Marc (not decided here), from two cities outside the §1 research, read 2026-09-27:* San
-Francisco asks for text "a minimum text size of 1/8 inch tall when printed" (sf.gov, *Building project
-plans for full permits*); Seattle's SDCI Tip 106 asks for "Minimum Font Size: 10 pt", a scale "clearly
-specified and graphically depicted", and a minimum scale of 1/4" = 1' for single-family projects. The
-sheets' small print is 7–9 pt and they print no graphic scale bar. The Connecticut towns read for §1
-state none of these.
+**Slice D as built (#226).** `DeckSetPdf`: **S1** draws the lot's courses as `SitePlan` lays them, each
+setback offset inward in the centre line's chain, the footprints of the New and Existing walls, decks
+and roofs, and a north arrow, with each numbered line's distance and setback, the closure and the
+zoning note at the side — or says how to enter a lot when there is none — at the largest architect
+or engineer scale that fits. **A2** is the standard view facing the deck's open side (the side away
+from its ledger), built by the app from the locked view's own calls, with each deck's height above
+grade and its guard and stair lines. **S2** draws `DeckFrame`'s frame with the house at the top:
+ledger, rim, every joist, the blocking row, and the beam and posts dashed beneath; width and depth
+dimensioned. **S3** holds the ledger, footing and frost, guard and stair blocks. On S2, S3 and A2
+each member prints its size, or a blank rule when its check has no answer, and its check's lines.
+**File → Print permit set on Letter… / on Tabloid…** prints it for a design with a deck. IBM Plex has no
+⌈ ⌉, so the ledger count's brackets print as "ceil(" and ")".
+
+**Decided (Marc, 2026-09-27): the permit set targets typical Connecticut requirements only** — the
+towns of §1. Other jurisdictions' specific asks (text-size minimums, a mandatory graphic scale bar and
+the like) are out of scope; the sheets keep their text sizes and print the scale as a ratio and in words.
 
 ## 9. Decisions for Marc
 

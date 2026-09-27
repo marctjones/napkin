@@ -73,6 +73,18 @@ public class SheetPartsTests
     }
 
     [Fact]
+    public void A_character_the_font_has_no_glyph_for_is_said_on_paper_never_dropped()
+    {
+        // IBM Plex has no ceiling brackets: the deck ledger's "⌈W ÷ s⌉ + 1" prints as ceil( … ); a
+        // character with no substitute prints its code point.
+        Excise.Core.Graphics.PdfFont plex = SheetFonts.Load().Regular(8);
+        Assert.Equal("(ceil(12'-0\" ÷ 1'-4\") + 1)", SheetFonts.Printable("(⌈12'-0\" ÷ 1'-4\"⌉ + 1)", plex));
+        Assert.Equal("a [U+2603] b", SheetFonts.Printable("a ☃ b", plex));
+        Assert.Equal("2'-0\" ≈ ×", SheetFonts.Printable("2'-0\" ≈ ×", plex));
+        Assert.Equal(["ceil(3)"], SheetFrame.Wrap("⌈3⌉", plex, 500));
+    }
+
+    [Fact]
     public void Text_wraps_at_spaces_and_a_word_too_long_for_the_line_is_broken()
     {
         Excise.Core.Graphics.PdfFont font = Excise.Core.Graphics.PdfFont.Courier(10); // 6 pt a character
