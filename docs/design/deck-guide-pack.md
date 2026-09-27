@@ -369,27 +369,29 @@ the same elevation as the footing of the house foundation" (p. 11).
 
 ### 3.5 Guards and stairs (pp. 19–22) → `deck-guard-stair` (#43)
 
-The provisions file's fields, each with the page and figure the value is printed in (the numbers
-live in figures, so `location` must say "Figure 27, p. 20", and the transcriber reads the
-rendered page): guard `triggerHeight` from "All decks greater than 30" above grade are required
-to have a guard [R312.1]" (p. 19) — napkin's `Height > trigger` matches "greater than";
-`minimumHeight` and `maximumOpening` from Figure 24 (p. 19: "36" minimum", "openings shall not
-allow the passage of a 4" diameter sphere"); stair `maximumRiser`, `minimumTread` and
-`maximumRiserDifference` from Figure 27 (p. 20: "7-3/4" maximum riser", "10" minimum tread
-width", "shall not deviate from one another by more than 3/8""); `minimumWidth` from "Stairs
-shall be a minimum of 36" in width" (p. 20); `handrailWhenRisersAtLeast` from "All stairs with 4
-or more risers shall have a handrail on at least one side" (p. 22). Every value goes in with its
-IRC 2015 section in the text as DCA 6 brackets it.
+The provisions file's fields and where each value is printed. The numbers live in figures, so a
+`location` must say "Figure 27, p. 20", and the transcriber reads the rendered page. The one
+sample: guard `triggerHeight` comes from the sentence "All decks greater than 30" above grade are
+required to have a guard [R312.1]" (p. 19), and napkin's `Height > trigger` matches "greater
+than". The rest, by location only:
+
+| Field | Where printed |
+|---|---|
+| guard `minimumHeight`, `maximumOpening` | Figure 24, p. 19: the height callout and the sphere rule |
+| stair `maximumRiser`, `minimumTread`, `maximumRiserDifference` | Figure 27, p. 20 |
+| stair `minimumWidth` | p. 20, text [R311.7] |
+| stair `handrailWhenRisersAtLeast` | p. 22, text [R311.7.8] |
+
+Each value goes in with the IRC 2015 section DCA 6 brackets beside it.
 
 **Not covered by the file today, listed so the person knows** (each `null` prints "not covered
-by this pack"; the small ones are optional fields for Marc, §8.7): guard posts 4x4 minimum at
-6'-0" maximum spacing and a 2x8 minimum rim (Figure 24, p. 19; p. 19 text); stringers 2x12
-minimum and their maximum spans, 6'-0" cut and 13'-3" solid (p. 20; Figure 28, p. 21); at least
-three cut stringers when only cut stringers are used (p. 20); an intermediate landing when the
-total rise exceeds 12'-0" (p. 20); the stair guard's own rules (Figure 30, p. 21); handrail height
-34"–38" and grip shapes (p. 22); Table 6's minimum tread boards by species (p. 21); the stair
-footing at 12" or the frost line (p. 22). napkin's stair does not know cut from solid stringers,
-so the span limits would need a typed kind first.
+by this pack"; the small ones are optional fields for Marc, §8.7): the guard post's minimum size
+and maximum spacing and the rim minimum (Figure 24 and text, p. 19); the stringer's minimum size
+and the maximum stringer spans, cut and solid (p. 20; Figure 28, p. 21); the minimum count of
+cut stringers (p. 20); the intermediate-landing rule by total rise (p. 20); the stair guard's own
+rules (Figure 30, p. 21); handrail height and grip shapes (p. 22); Table 6's minimum tread boards
+by species (p. 21); the stair footing depth (p. 22). napkin's stair does not know cut from solid
+stringers, so the span limits would need a typed kind first.
 
 ### 3.6 Species: one typed value, three ways of grouping
 
@@ -484,7 +486,7 @@ collision points.
 
 | Slice | What | Issue | Model | Tests |
 |---|---|---|---|---|
-| **A** | §4 items 1–4 on the **synthetic** pack: `us-zz-deck` gains a guide layer `zz-guide-2099` (NOT CODE VALUES) carrying a scope limit on `supports`, a snow limit, a `speciesGroups` table and the joist table moved under it; the CT pack's `guides` entry with an empty guide (loads, No data, the picker clause shows); deck golden runner and `Recompute` deck diffs; `docs/rules-engine.md` | new, §7 | Opus (loader strictness, as #198) | goldens for every synthetic row and limit; the conflict rule; a guide without a `supports` limit refused; the caveat clause on every deck line; the porch's Supports → Out of scope citing the limit; recompute to No data on switch |
+| **A** | §4 items 1–4 on the **synthetic** pack: `us-zz-deck` gains a guide layer `zz-guide-2099` (NOT CODE VALUES) carrying a scope limit on `supports`, a snow limit, a `speciesGroups` table and the joist table moved under it; the CT pack's `guides` entry with an empty guide (loads, No data, the picker clause shows); deck golden runner and `Recompute` deck diffs; `docs/rules-engine.md` | #238 | Opus (loader strictness, as #198) | goldens for every synthetic row and limit; the conflict rule; a guide without a `supports` limit refused; the caveat clause on every deck line; the porch's Supports → Out of scope citing the limit; recompute to No data on switch |
 | **B1** | Table 2 → `deck-joist` with `overhang`/`overhangLimit`; the Cantilever line | #41 | Opus | 36 goldens + boundaries; the worked example's 9'-9" joists |
 | **B2** | Table 3A (p. 6) → `deck-beam`; beam span centre-to-centre | #41 | Opus | 168 goldens + boundaries; a two-name cell's two rows |
 | **B3** | Table B3 → `deck-footing` (three outputs, `centerPostFactor`, centreline tributary area); Tables B1/B2 → `deck-post`; the Posts line | #42 | Opus | 100 + 500 goldens incl. NP rows (25 areas × 5 groups × 2 posts × 2 positions); the ×1.25 sentence; below 1,500 psf → Out of scope |
@@ -499,9 +501,11 @@ paths are untouched throughout.
 
 ## 7. Risks
 
-1. **The guide's values may not be the adopted code's.** IRC 2018 and 2021 revised R507; DCA 6 is
-   on 2015. The caveat on every line is the mitigation, and the guide entry is removed the day the
-   IRC 2021 R507 tables are transcribed (#14's path). This note does not claim what changed.
+1. **The guide's values may not be the adopted code's.** DCA 6 is based on the 2015 IRC (cover;
+   References, p. 24); CT 2022 adopts the 2021 IRC (`pack.json`). Whether and how the deck
+   provisions differ between those editions was not read for this note and is not claimed. The
+   caveat on every line is the mitigation, and the guide entry is removed the day the IRC 2021
+   deck tables are transcribed (#14's path).
 2. **Ground snow load stands in for deck snow load** (§2). Conservative; a Decision.
 3. **Two derivations were subtly off** against this source: the beam span (clear vs centreline)
    and the tributary area (faces vs centrelines). Both are fixed in B2/B3; the synthetic goldens
@@ -549,11 +553,13 @@ Each in plain words with the default I recommend, so a "yes" is enough.
    stance you took on 2026-09-25 for code tables, and record it in DESIGN.md §2.1** (as
    rules-engine-model §13.7 asked). Recommended: confirm before slice B1 starts; slice A ships no
    DCA 6 value.
-7. **Which of the small guard and stair extras go in:** guard post maximum spacing (6'-0"),
-   stringer minimum (2x12), and the landing rule (12'-0" total rise). Recommended: the first two,
-   as two fields; the stringer span limits and the stair guard wait for a typed cut/solid kind.
+7. **Which of the small guard and stair extras go in:** the guard post's maximum spacing, the
+   stringer's minimum size, and the landing rule by total rise (§3.5). Recommended: the first
+   two, as two fields; the stringer span limits and the stair guard wait for a typed cut/solid
+   kind.
 8. **Beam span and tributary area are measured the way the source defines them (post and beam
    centrelines), and the sentences say so.** Recommended: yes; the current face-to-face numbers
    under-count.
-9. **Opus transcribes, Fable reviews** (PLAN.md's rule), although #40–#43 carry `model/sonnet`.
-   Recommended: yes; the labels predate the rule's reasoning.
+9. **Opus transcribes, Fable reviews.** PLAN.md's table has Opus implementing #40–#43 with a
+   Fable review against the source, while the four issues carry `model/sonnet`; the two disagree.
+   Recommended: PLAN.md's rule, for the independence it argues.
