@@ -393,6 +393,153 @@ public class AssistantWorkflows
         Assert.Equal(1, part.Quantity);
     }
 
+    [GuiWorkflow("GUI-AST-05")]
+    public void Edit_in_words_make_a_leg_18_inches_tall_undo_it_then_a_name_matching_two_parts_is_refused()
+    {
+        // The model is asked with the leg selected, so the leg is the pack's [1]; its scripted reply
+        // over-reaches with a rename the person leaves out. "these" names the two aprons, selected, as
+        // [1] (south, the lower id) and [2]; after they are both called Apron, "Apron" names two parts.
+        const string tall = "make it 18 inches tall";
+        const string both = "call these Apron";
+        const string it = "call it Apron 9";
+        ScriptedModel model = new(
+            ScriptedReply.Json(
+                """{"edits":[{"edit":"resize","part":"[1]","dimension":"depth","length":"1'-6\""},{"edit":"rename","part":"[1]","name":"Tall leg"}]}""",
+                match: "18 inches"),
+            ScriptedReply.Json(
+                """{"edits":[{"edit":"rename","part":"[1]","name":"Apron"},{"edit":"rename","part":"[2]","name":"Apron"}]}""",
+                match: "these Apron"),
+            ScriptedReply.Json("""{"edits":[{"edit":"rename","part":"Apron","name":"Apron 9"}]}""", match: "Apron 9"));
+
+        // coffee-table.design.md: each leg is 16 1/4" long, standing on its depth.
+        Length legLength = Length.Inches(16, 1, 4);
+
+        GuiWorkflow.Run(
+            app =>
+            {
+                MainWindow window = (MainWindow)app.Target;
+                OpenSample(app, window, "Coffee table");
+                Box leg = BoxNamed(window, "Leg, south-west");
+                Box south = BoxNamed(window, "Apron, long, south");
+                Box north = BoxNamed(window, "Apron, long, north");
+
+                // Select the south-west leg (pointer), then Ctrl/Cmd+Shift+A, the words, Enter (keyboard).
+                app.Click(OnPlan(window, leg.Center.XY));
+                app.Expect("the leg is selected", () => Assert.Equal(leg.Id, window.Editor.OnlySelected));
+                app.Chord(Key.A, KeyModifiers.Shift);
+                app.Type(tall);
+                app.Press(Key.Enter);
+
+                app.Expect("the question went as an edit, and the sheet lists both lines, ticked, with nothing changed yet", () =>
+                {
+                    Assert.Equal(AssistantTask.Edit, window.LastAssistantTask);
+                    ModelRequest asked = Assert.Single(model.Requests);
+                    Assert.Equal(AssistantPrompts.Edit, asked.System);
+                    Assert.Equal(EditProposal.Schema, asked.Schema);
+                    Assert.Equal(tall, asked.Question);
+                    Assert.Equal(leg.Id, window.LastAssistantPack!.EntityAt(1));
+
+                    Assert.True(window.IsProposingEdits);
+                    Assert.Equal(
+                        ["Leg, south-west: length 1'-4 1/4\" to 1'-6\"", "Leg, south-west: rename to \"Tall leg\""],
+                        window.AssistantProposalLineTexts);
+                    Assert.All(window.AssistantProposalTicks, tick => Assert.True(tick.IsChecked));
+                    Assert.Equal("Apply", window.AssistantProposalDraw.Content);
+                    Assert.Equal(legLength, BoxNamed(window, "Leg, south-west").Depth);
+                    Assert.Equal(0, window.Editor.History.UndoCount);
+                });
+
+                // Leave the rename out: its tick, with the pointer. Enter applies the resize alone (keyboard).
+                app.Click(CentreOf(window, window.AssistantProposalTicks[1]));
+                app.Expect("the rename is unticked", () =>
+                    Assert.Equal([true, false], window.AssistantProposalTicks.Select(tick => tick.IsChecked == true)));
+                app.Press(Key.Enter);
+
+                app.Expect("the leg is exactly 18\" long, a ParamValue on its depth driving it, one undo step, the name kept", () =>
+                {
+                    Box tallLeg = window.CurrentDesign!.Sketch.Find<Box>(leg.Id)!;
+                    Assert.Equal(Length.Inches(18), tallLeg.Depth);
+                    Assert.Equal("Leg, south-west", tallLeg.Name);
+                    RelationshipId driving = Assert.IsType<RelationshipId>(
+                        Napkin.Modules.Editing.DimensionEntry.DrivingRelationship(window.CurrentDesign!.Sketch, new BoxDepthRef(leg.Id)));
+                    Assert.Equal(
+                        Length.Inches(18),
+                        window.CurrentDesign!.Sketch.RelationshipsInOrder.OfType<ParamValue>().Single(value => value.Id == driving).Value);
+                    Assert.Equal(legLength, BoxNamed(window, "Leg, north-east").Depth);
+
+                    Assert.Equal(1, window.Editor.History.UndoCount);
+                    Assert.Equal("Assistant edit", window.Editor.History.UndoWhat);
+                    Assert.Equal("Assistant edit: made 1 edit.", window.Editor.LastMessage!.Text);
+                    Assert.Equal("Made 1 edit.", window.AssistantAnswerOnScreen);
+                    Assert.False(window.IsProposingEdits);
+                });
+
+                // One undo restores the leg; redo puts the 18" back (keyboard).
+                app.Chord(Key.Z);
+                app.Expect("Ctrl+Z restores the leg's 16 1/4\" and nothing states its depth", () =>
+                {
+                    Assert.Equal(legLength, window.CurrentDesign!.Sketch.Find<Box>(leg.Id)!.Depth);
+                    Assert.Null(Napkin.Modules.Editing.DimensionEntry.DrivingRelationship(window.CurrentDesign!.Sketch, new BoxDepthRef(leg.Id)));
+                    Assert.Equal("Undone: Assistant edit.", window.Editor.LastMessage!.Text);
+                });
+                app.Chord(Key.Y);
+                app.Expect("Ctrl+Y makes it 18\" again", () =>
+                    Assert.Equal(Length.Inches(18), window.CurrentDesign!.Sketch.Find<Box>(leg.Id)!.Depth));
+
+                // Select both long aprons (pointer, Shift-click), then ask to call them Apron (pointer to the box, keyboard).
+                app.Click(OnPlan(window, south.Center.XY));
+                app.Click(OnPlan(window, north.Center.XY), MouseButton.Left, KeyModifiers.Shift);
+                app.Expect("both long aprons are selected", () =>
+                    Assert.Equal(new[] { south.Id, north.Id }.Order(), window.Editor.Selection.Order()));
+                app.Click(CentreOf(window, window.AssistantQuestionField));
+                app.Chord(Key.A);
+                app.Type(both);
+                app.Press(Key.Enter);
+                app.Expect("two rename lines, one per apron", () =>
+                    Assert.Equal(
+                        ["Apron, long, south: rename to \"Apron\"", "Apron, long, north: rename to \"Apron\""],
+                        window.AssistantProposalLineTexts));
+
+                // The Apply button has the keyboard: Enter renames both as one undo step.
+                app.Press(Key.Enter);
+                app.Expect("both aprons are called Apron, one more undo step", () =>
+                {
+                    Assert.Equal("Apron", window.CurrentDesign!.Sketch.Find<Box>(south.Id)!.Name);
+                    Assert.Equal("Apron", window.CurrentDesign!.Sketch.Find<Box>(north.Id)!.Name);
+                    Assert.Equal(2, window.Editor.History.UndoCount);
+                    Assert.Equal("Made 2 edits.", window.AssistantAnswerOnScreen);
+                });
+
+                // "call it Apron 9" with the two still selected: the reply's "Apron" names both, so it is refused.
+                app.Click(CentreOf(window, window.AssistantQuestionField));
+                app.Chord(Key.A);
+                app.Type(it);
+                app.Press(Key.Enter);
+                app.Expect("one refused line naming both by their items, its tick off and not to be turned on, and nothing renamed", () =>
+                {
+                    Assert.Equal(["\"Apron\": refused, 2 parts are called that: [1] and [2]"], window.AssistantProposalLineTexts);
+                    Assert.Equal(south.Id, window.LastAssistantPack!.EntityAt(1));
+                    Assert.Equal(north.Id, window.LastAssistantPack!.EntityAt(2));
+                    CheckBox tick = Assert.Single(window.AssistantProposalTicks);
+                    Assert.False(tick.IsChecked);
+                    Assert.False(tick.IsEnabled);
+                    Assert.Equal("Apron", window.CurrentDesign!.Sketch.Find<Box>(south.Id)!.Name);
+                    Assert.Equal("Apron", window.CurrentDesign!.Sketch.Find<Box>(north.Id)!.Name);
+                });
+
+                // Enter with nothing ticked changes nothing and leaves no undo step (keyboard); Escape closes the note.
+                app.Press(Key.Enter);
+                app.Expect("nothing changed and no undo step was added", () =>
+                {
+                    Assert.Equal(2, window.Editor.History.UndoCount);
+                    Assert.Equal("Changed nothing.", window.AssistantAnswerOnScreen);
+                });
+                app.Press(Key.Escape);
+                app.Expect("Escape closes the note", () => Assert.False(window.IsAskingAssistant));
+            },
+            model: model);
+    }
+
     [GuiWorkflow("GUI-AST-06")]
     public void Choose_a_model_on_this_machine_test_it_and_ask_it()
     {
