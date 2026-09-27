@@ -46,19 +46,44 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
                 <TextBlock Name="MemoryText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" AutomationProperties.Name="Memory" />
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <Grid ColumnDefinitions="Auto,*">
                     <TextBlock Text="Model" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
                     <TextBox Grid.Column="1" Name="ModelBox" FontSize="12" PlaceholderText="qwen3:4b-q4_K_M" AutomationProperties.Name="Model" />
-                    <TextBlock Grid.Column="2" Text="Temperature" FontSize="12" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <TextBox Grid.Column="3" Name="TemperatureBox" FontSize="12" Width="60" AutomationProperties.Name="Temperature" />
                 </Grid>
-                <TextBlock Name="TemperatureHintText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button Name="TestButton" Content="Test" FontSize="12" Click="OnTestClicked"
                             ToolTip.Tip="Ask the model to reply &quot;ok&quot; and say how long the round trip took. Nothing about the design is sent." />
                     <TextBlock Name="TestText" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" IsVisible="False" AutomationProperties.Name="Test result" />
                 </StackPanel>
             </StackPanel>
+
+            <RadioButton Name="MlxRadio" GroupName="Provider" FontSize="12"
+                         Content="In napkin, on this Mac (MLX)"
+                         IsCheckedChanged="OnProviderChanged" />
+            <TextBlock Name="MlxUnavailableText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" Margin="22,0,0,0"
+                       IsVisible="False" AutomationProperties.Name="Why MLX is not available" />
+
+            <StackPanel Name="MlxPanel" Spacing="6" Margin="22,0,0,0">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <TextBlock Text="Model folder" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBox Grid.Column="1" Name="MlxFolderBox" FontSize="12" TextChanged="OnMlxFolderChanged" AutomationProperties.Name="Model folder" />
+                    <Button Grid.Column="2" Name="MlxChooseButton" Content="Choose…" FontSize="12" Margin="8,0,0,0" Click="OnChooseMlxFolderClicked"
+                            ToolTip.Tip="Choose a folder holding config.json, tokenizer.json and *.safetensors weights, as mlx-community publishes them." />
+                </Grid>
+                <TextBlock Name="MlxFolderText" FontSize="11" TextWrapping="Wrap" IsVisible="False" AutomationProperties.Name="What the folder holds" />
+                <TextBlock Name="MlxMemoryText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" IsVisible="False" AutomationProperties.Name="This Mac" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Name="MlxTestButton" Content="Test" FontSize="12" Click="OnMlxTestClicked"
+                            ToolTip.Tip="Load the model and ask it to reply &quot;ok&quot;. Nothing about the design is sent." />
+                    <TextBlock Name="MlxTestText" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" IsVisible="False" AutomationProperties.Name="MLX test result" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Name="TemperaturePanel" Orientation="Horizontal" Spacing="8" Margin="22,0,0,0">
+                <TextBlock Text="Temperature" FontSize="12" VerticalAlignment="Center" />
+                <TextBox Name="TemperatureBox" FontSize="12" Width="60" AutomationProperties.Name="Temperature" />
+            </StackPanel>
+            <TextBlock Name="TemperatureHintText" FontSize="11" Opacity="0.8" TextWrapping="Wrap" Margin="22,0,0,0" />
 
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Name="UseButton" Content="Use these settings" FontSize="12" Click="OnUseClicked" />

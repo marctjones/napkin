@@ -99,6 +99,15 @@
       "milestone": "M14",
       "issue": 231,
       "kind": "workflow"
+    },
+    {
+      "id": "GUI-AST-07",
+      "area": "assistant",
+      "title": "Choose MLX on this Mac, test it and ask it",
+      "acceptance": "With a fake bridge under the window and an availability seam forcing MLX available, Assistant → Where the model runs… enables the third radio, choosing it and typing a model folder shows the folder's own words, Test shows a loading line naming the weight size while the fake bridge \"loads\" and then reports the round trip of an \"ok\", Use these settings writes settings version 4 with the Mlx provider and the folder and the window's model becomes the MLX one, and a question asked with Ctrl/Cmd+Shift+A is answered on the note with the in-napkin whereabouts line naming the folder.",
+      "milestone": "M14",
+      "issue": 241,
+      "kind": "workflow"
     }
   ]
 }

@@ -342,7 +342,7 @@ public class AssistantWorkflows
             app.Expect("saved, and the note will say the model is local and nothing leaves this machine", () =>
             {
                 Assert.Equal(
-                    new Napkin.App.Settings.AssistantSettings(Napkin.App.Settings.AssistantProvider.LocalServer, "http://127.0.0.1:11434", "qwen3:4b-q4_K_M", 0.2),
+                    new Napkin.App.Settings.AssistantSettings(Napkin.App.Settings.AssistantProvider.LocalServer, "http://127.0.0.1:11434", "qwen3:4b-q4_K_M", 0.2, null),
                     new Napkin.App.Settings.SettingsStore(window.Settings.Location).Current.Assistant);
                 Assert.Equal(local, window.AssistantModel.Whereabouts);
                 Assert.Equal($"Saved. The note now ends: {local}", dialog.SavedLine);
@@ -377,6 +377,99 @@ public class AssistantWorkflows
             app.Press(Key.Escape);
             app.Expect("Escape closes the note", () => Assert.False(window.IsAskingAssistant));
         });
+    }
+
+    [GuiWorkflow("GUI-AST-07")]
+    public void Choose_mlx_on_this_mac_test_it_and_ask_it()
+    {
+        // The same reference pack GUI-AST-02 and GUI-AST-06 build for a new sheet.
+        const string question = "what is ground snow load";
+        ContextPack referencePack = ContextPack.For(Napkin.Modules.Editing.NewSheet.Empty(), [], ContextChecks.None, [], question);
+        int helpItem = ItemNumbered(referencePack, item => item.Text == HelpSections.Find("docs/rules-engine.md", "In the app").ItemText);
+        string answer = $"Ground snow load is entered from the building department or the adopted code's own table, never guessed [{helpItem}].";
+
+        // A model folder with exactly the three files ModelFolder requires, and one weight file, so
+        // it parses without a real model ever being read (nothing here loads weights or needs Metal).
+        string folder = Path.Combine(Path.GetTempPath(), "napkin-gui-mlx-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "config.json"), """{"model_type":"qwen3","quantization":{"bits":4,"group_size":64}}""");
+        File.WriteAllText(Path.Combine(folder, "tokenizer.json"), "{}");
+        File.WriteAllText(Path.Combine(folder, "tokenizer_config.json"), """{"tokenizer_class":"Qwen2Tokenizer"}""");
+        File.WriteAllBytes(Path.Combine(folder, "model.safetensors"), new byte[1024]);
+        string whereabouts = $"In napkin (MLX): {Path.GetFileName(folder)} from {folder} — nothing leaves this machine.";
+
+        // Stands in for the Swift bridge: nothing here dlopens a library. A short load delay gives
+        // the workflow a real window to observe the loading line before Test's "ok" arrives.
+        Napkin.Assistant.Mlx.FakeNativeMlx mlx = new(
+            Napkin.Assistant.Mlx.FakeMlxReply.Answer("ok"),
+            Napkin.Assistant.Mlx.FakeMlxReply.Answer(answer))
+        {
+            LoadDelay = TimeSpan.FromMilliseconds(300),
+        };
+
+        try
+        {
+            GuiWorkflow.Run(app =>
+            {
+                MainWindow window = (MainWindow)app.Target;
+                window.AssistantMlx = mlx;
+                window.AssistantMlxAvailable = () => null;
+                NewSheet(app, window);
+
+                // Assistant → Where the model runs… (pointer).
+                app.Click(CentreOf(window, window.FindControl<MenuItem>("AssistantMenu")!));
+                app.Click(CentreOf(window, window.WhereModelRunsMenuEntry));
+                AssistantWindow dialog = window.WhereModelRuns ?? throw new InvalidOperationException("The dialog did not open.");
+                AppDriver where = AppDriver.Attach(dialog, "ast-07-where");
+                app.Expect("the third radio is enabled: this seam reports MLX available", () => Assert.True(dialog.MlxChoice.IsEnabled));
+
+                // The third radio (pointer), the folder typed (keyboard) instead of driving the platform's own picker.
+                where.Click(CentreOf(dialog, dialog.MlxChoice));
+                ReplaceText(where, dialog, dialog.MlxFolderField, folder);
+                app.Expect("the folder's own words are shown", () => Assert.Contains("qwen3", dialog.MlxFolderLine, StringComparison.Ordinal));
+
+                // Test (pointer): the loading line shows while the fake "reads the weights", then the reply.
+                where.Click(CentreOf(dialog, dialog.MlxTest));
+                Until(() => dialog.MlxTestLine.StartsWith("loading", StringComparison.Ordinal));
+                app.Expect("the loading line names the weight size", () => Assert.Contains("GB", dialog.MlxTestLine, StringComparison.Ordinal));
+                Until(() => !dialog.IsBusy);
+                app.Expect("Test loaded the model and asked for ok", () =>
+                    Assert.Matches(@"^.+ loaded in \d+\.\d s and replied in \d+\.\d s: “ok”\.$", dialog.MlxTestLine));
+
+                // Use these settings (pointer): settings version 4 on disk with the Mlx provider and the folder.
+                where.Click(CentreOf(dialog, dialog.Use));
+                app.Expect("saved with the folder, and the note will say the model runs in napkin", () =>
+                {
+                    Napkin.App.Settings.SettingsStore store = new(window.Settings.Location);
+                    Assert.Equal(4, store.Current.Version);
+                    Assert.Equal(
+                        new Napkin.App.Settings.AssistantSettings(Napkin.App.Settings.AssistantProvider.Mlx, "http://127.0.0.1:11434", null, 0.2, folder),
+                        store.Current.Assistant);
+                    Assert.Equal(whereabouts, window.AssistantModel.Whereabouts);
+                    Assert.Equal($"Saved. The note now ends: {whereabouts}", dialog.SavedLine);
+                });
+
+                // Back at the drawing: Ctrl/Cmd+Shift+A, the question, Enter (keyboard).
+                window.Activate();
+                app.Chord(Key.A, KeyModifiers.Shift);
+                app.Type(question);
+                app.Press(Key.Enter);
+                Until(() => !window.IsAssistantThinking);
+                app.Expect("the MLX model's answer is on the note with its From-napkin item and the whereabouts line", () =>
+                {
+                    Assert.Equal(answer, window.AssistantAnswerOnScreen);
+                    Assert.Contains(referencePack.Item(helpItem)!.ToString(), window.AssistantReferenceTexts);
+                    Assert.Equal(whereabouts, window.AssistantWhereaboutsOnScreen);
+                });
+
+                app.Press(Key.Escape);
+                app.Expect("Escape closes the note", () => Assert.False(window.IsAskingAssistant));
+            });
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
     // ---- Steps and fixtures ---------------------------------------------------------------

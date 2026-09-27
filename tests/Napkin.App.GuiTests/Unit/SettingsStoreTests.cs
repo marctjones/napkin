@@ -188,24 +188,34 @@ public sealed class SettingsStoreTests : IDisposable
 
     [Fact]
     [Trait("Feature", "AST-006")]
-    public void Version_3_keeps_where_the_assistants_model_runs_and_starts_with_none()
+    public void Version_4_keeps_where_the_assistants_model_runs_and_starts_with_none()
     {
-        // docs/design/llm-assistant.md §7, §11.2: settings version 3 round-trips AssistantSettings.
-        Assert.Equal(3, UserSettings.CurrentVersion);
+        // docs/design/llm-assistant.md §7, §11.2, docs/design/mlx-runtime.md §4.2, §12 decision 7:
+        // settings version 4 round-trips AssistantSettings, now including Mlx and ModelFolder.
+        Assert.Equal(4, UserSettings.CurrentVersion);
         AssistantSettings fresh = new SettingsStore(FilePath).Current.Assistant;
-        Assert.Equal(new AssistantSettings(AssistantProvider.None, "http://127.0.0.1:11434", null, 0.2), fresh);
+        Assert.Equal(new AssistantSettings(AssistantProvider.None, "http://127.0.0.1:11434", null, 0.2, null), fresh);
 
-        AssistantSettings local = new(AssistantProvider.LocalServer, "http://127.0.0.1:11434", "qwen3:4b-q4_K_M", 0.2);
+        AssistantSettings local = new(AssistantProvider.LocalServer, "http://127.0.0.1:11434", "qwen3:4b-q4_K_M", 0.2, null);
         new SettingsStore(FilePath).Update(s => s with { Assistant = local });
 
         var again = new SettingsStore(FilePath);
         Assert.Null(again.Notice);
         Assert.Equal(local, again.Current.Assistant);
         string written = File.ReadAllText(FilePath);
-        Assert.Contains("\"Version\": 3", written, StringComparison.Ordinal);
+        Assert.Contains("\"Version\": 4", written, StringComparison.Ordinal);
         Assert.Contains("\"Provider\": \"LocalServer\"", written, StringComparison.Ordinal);
         Assert.Contains("\"Model\": \"qwen3:4b-q4_K_M\"", written, StringComparison.Ordinal);
         Assert.DoesNotContain("key", written, StringComparison.OrdinalIgnoreCase);
+
+        AssistantSettings mlx = new(AssistantProvider.Mlx, null, null, 0.2, "/Users/marc/Library/Application Support/napkin/models/mlx-community--Qwen3-4B-4bit--4dcb3d101c2a");
+        new SettingsStore(FilePath).Update(s => s with { Assistant = mlx });
+        var againMlx = new SettingsStore(FilePath);
+        Assert.Null(againMlx.Notice);
+        Assert.Equal(mlx, againMlx.Current.Assistant);
+        string writtenMlx = File.ReadAllText(FilePath);
+        Assert.Contains("\"Provider\": \"Mlx\"", writtenMlx, StringComparison.Ordinal);
+        Assert.Contains("\"ModelFolder\": \"/Users/marc/Library/Application Support/napkin/models/mlx-community--Qwen3-4B-4bit--4dcb3d101c2a\"", writtenMlx, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -223,6 +233,25 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Equal("Settings file is version 2, which this napkin does not read; using defaults.", store.Notice);
     }
 
+    [Fact]
+    [Trait("Feature", "AST-006")]
+    public void A_version_3_file_from_before_mlx_gives_the_defaults_and_a_notice()
+    {
+        // Exactly what slice C's LocalServer napkin (settings version 3) wrote; beta policy: no
+        // converter, the defaults and one line — the same pattern the version-2 test above holds
+        // for settings version 3 now that version 4 adds Mlx and ModelFolder (mlx-runtime.md §4.2).
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(
+            FilePath,
+            "{\"Version\":3,\"Assistant\":{\"Provider\":\"LocalServer\",\"Endpoint\":\"http://127.0.0.1:11434\",\"Model\":\"qwen3:4b-q4_K_M\",\"Temperature\":0.2}}");
+
+        var store = new SettingsStore(FilePath);
+
+        Assert.Equal(new UserSettings(), store.Current);
+        Assert.Equal(AssistantSettings.None, store.Current.Assistant);
+        Assert.Equal("Settings file is version 3, which this napkin does not read; using defaults.", store.Notice);
+    }
+
     [Theory]
     [Trait("Feature", "AST-006")]
     [InlineData(AssistantProvider.None, "http://127.0.0.1:11434", "qwen3:4b-q4_K_M", 0.2, null)]
@@ -235,7 +264,7 @@ public sealed class SettingsStoreTests : IDisposable
     public void The_window_builds_a_local_model_only_from_a_loopback_address_and_a_name(
         AssistantProvider provider, string endpoint, string? model, double temperature, string? whereabouts)
     {
-        UserSettings settings = new() { Assistant = new AssistantSettings(provider, endpoint, model, temperature) };
+        UserSettings settings = new() { Assistant = new AssistantSettings(provider, endpoint, model, temperature, null) };
 
         Napkin.Modules.Assistant.IAssistantModel built = AssistantModels.FromSettings(settings);
 
@@ -249,6 +278,37 @@ public sealed class SettingsStoreTests : IDisposable
             using var local = Assert.IsType<Napkin.Assistant.LocalServer.LocalServerModel>(built);
             Assert.Equal(temperature, local.Temperature);
         }
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-006")]
+    public void The_window_builds_an_mlx_model_only_when_available_and_the_folder_parses()
+    {
+        // docs/design/mlx-runtime.md §4.3: FromSettings gains the Mlx case with the injected seams,
+        // through a fake bridge and no native library — never a partial model.
+        string folder = Path.Combine(_dir, "mlx-model");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "config.json"), "{\"model_type\":\"qwen3\"}");
+        File.WriteAllText(Path.Combine(folder, "tokenizer.json"), "{}");
+        File.WriteAllText(Path.Combine(folder, "tokenizer_config.json"), "{\"tokenizer_class\":\"Qwen2Tokenizer\"}");
+        File.WriteAllBytes(Path.Combine(folder, "model.safetensors"), [0, 1, 2]);
+
+        UserSettings whenUnavailable = new() { Assistant = new AssistantSettings(AssistantProvider.Mlx, null, null, 0.2, folder) };
+        Napkin.Modules.Assistant.IAssistantModel refusedByPlatform = AssistantModels.FromSettings(
+            whenUnavailable, mlx: new Napkin.Assistant.Mlx.FakeNativeMlx(), mlxAvailable: () => Napkin.Assistant.Mlx.MlxAvailability.NotAppleSilicon);
+        Assert.True(Assert.IsType<Napkin.Modules.Assistant.ScriptedModel>(refusedByPlatform).IsNone);
+
+        UserSettings badFolder = new() { Assistant = new AssistantSettings(AssistantProvider.Mlx, null, null, 0.2, Path.Combine(_dir, "does-not-exist")) };
+        Napkin.Modules.Assistant.IAssistantModel refusedByFolder = AssistantModels.FromSettings(
+            badFolder, mlx: new Napkin.Assistant.Mlx.FakeNativeMlx(), mlxAvailable: () => null);
+        Assert.True(Assert.IsType<Napkin.Modules.Assistant.ScriptedModel>(refusedByFolder).IsNone);
+
+        UserSettings settings = new() { Assistant = new AssistantSettings(AssistantProvider.Mlx, null, null, 0.2, folder) };
+        Napkin.Modules.Assistant.IAssistantModel built = AssistantModels.FromSettings(
+            settings, mlx: new Napkin.Assistant.Mlx.FakeNativeMlx(), mlxAvailable: () => null);
+        using var mlxModel = Assert.IsType<Napkin.Assistant.Mlx.MlxModel>(built);
+        Assert.Equal(0.2, mlxModel.Temperature);
+        Assert.Equal(folder, mlxModel.Folder.Path);
     }
 
     [Fact]
