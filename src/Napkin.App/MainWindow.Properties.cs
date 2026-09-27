@@ -206,6 +206,7 @@ public partial class MainWindow
         QuantityBox.Text = part.Quantity.ToString(CultureInfo.InvariantCulture);
         StockBox.Text = part.Stock ?? string.Empty;
         SpeciesBox.Text = part.Species ?? string.Empty;
+        ShowSpecies(part.Species);
         RoughCheck.IsChecked = part.Rough;
         GrainBox.SelectedIndex = part.Grain is { } grain ? 1 + (int)grain : 0;
         ShowFaceBox.SelectedIndex = part.ShowFace is { } shows ? 1 + Array.IndexOf(ShowFaceChoices, shows) : 0;
