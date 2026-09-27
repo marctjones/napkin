@@ -1614,21 +1614,22 @@
                              AcceptsReturn="False"
                              TextWrapping="Wrap"
                              MaxHeight="54"
-                             PlaceholderText="Ask a question about the design or result on screen…"
+                             PlaceholderText="Ask about the design on screen, or say how to change the selected parts…"
                              AutomationProperties.Name="Question" />
                     <TextBlock Name="AssistantThinkingText" FontSize="11" IsVisible="False" FontStyle="Italic" />
                     <TextBlock Name="AssistantAnswerText" FontSize="12" TextWrapping="Wrap" IsVisible="False" />
-                    <!-- Sketch from words (llm-assistant.md §4.3–§4.4, §8): the proposal sheet in Firm
-                         up's shape — a tick per line, all ticked; a line napkin refused says why and
-                         has no tick to give; Enter draws the ticked planks as one undo step, "Assistant
-                         sketch"; the message line reports a refusal in the updater's words. -->
+                    <!-- Sketch from words and Edit in words (llm-assistant.md §4.3–§4.5, §8): the
+                         proposal sheet in Firm up's shape — a tick per line, all ticked; a line napkin
+                         refused says why and has no tick to give; Enter lands the ticked lines as one
+                         undo step, "Assistant sketch" or "Assistant edit"; the message line reports a
+                         refusal in the updater's words. -->
                     <ScrollViewer Name="AssistantProposal" IsVisible="False" MaxHeight="300"
                                   VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Name="AssistantProposalLines" Spacing="2" Margin="0,0,14,0" />
                     </ScrollViewer>
                     <TextBlock Name="AssistantProposalMessageText" FontSize="11" IsVisible="False" TextWrapping="Wrap" />
                     <Grid Name="AssistantProposalButtons" IsVisible="False" ColumnDefinitions="*,Auto,Auto">
-                        <TextBlock Text="Enter to draw · Esc to cancel" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                        <TextBlock Name="AssistantProposalHintText" Text="Enter to draw · Esc to cancel" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
                         <Button Name="AssistantProposalCancelButton" Grid.Column="1" Content="Cancel" FontSize="12" Padding="10,3" Margin="0,0,6,0" />
                         <Button Name="AssistantProposalOkButton" Grid.Column="2" Content="Draw" FontSize="12" Padding="10,3"
                                 AutomationProperties.Name="Draw the ticked planks" />

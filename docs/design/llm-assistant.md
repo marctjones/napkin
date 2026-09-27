@@ -1455,3 +1455,114 @@ the Enter/Escape handling, the stale message), which reads only a `ProposalPlan`
 sketch's closing and message lines — F adds an `AssistantTask.Edit` branch in `AskAssistant` and a
 render beside `RenderSketchReply`, and its own closing line. F's rule for a length is the opposite
 of this slice's: refuse on `wasRounded`, never snap (§4.3, §4.5).
+
+## 19. As built: slice F (#234), and where it departs from this note
+
+`EditProposal.cs` (the edits, `PartEdit`, and the plan) and `StrictJson.cs` in
+`Napkin.Modules.Assistant`, `ContextPack.EntityAt`, and the Ask box's edit path in
+`MainWindow.Assistant.cs`. What differs from §4.3, §4.5, §8, §11 and the issue, and why:
+
+1. **What makes a question an edit: the selection.** The Ask box puts its question as an edit — the
+   edit prompt and `EditProposal.Schema` through `ModelRequest.ForProposal` — when the selection
+   holds a furniture part (`EditProposal.IsPart`: a box with a `Part` that is not a wall, opening,
+   room, deck or roof), and as a question otherwise, exactly as before. §8's menu has no Edit item
+   and "How to use it" says *the Ask box, with parts selected*; and because a runtime constrains a
+   proposal to its schema, the choice has to be made before asking — it cannot be read off the
+   reply. **The cost, for Marc:** a question asked with a part selected is answered *"The assistant
+   proposed no edits. To ask a question instead, select nothing and ask again."* (the prompt now
+   tells the model a question gets no edits). The alternatives are an *Edit in words…* menu item
+   (the Sketch pattern) or a second, text request when the edits come back empty; neither was
+   built. GUI-AST-01–03 and -06–08 select no part and are unchanged; *Explain this result* is only
+   enabled for a check result, never a part, so it always asks.
+2. **A resize names the size as the pack does — length, width or thickness — not width, height or
+   depth.** §4.5's three are the box's axes, but the pack (`DesignWords`) writes a part's finished
+   sizes (*"1'-4 1/4" long, 2 1/2" wide, 2 1/2" thick"*) and never its axes, so a model told
+   width/height/depth could only guess that a standing leg's length is its box depth — the feature
+   would fail by construction. The schema's `dimension` is `["length","width","thickness"]`,
+   changed in `Schemas.swift` in the same commit (the file says E and F own these schemas) and held
+   byte for byte by a test; the part's `PlanAxes` maps each to exactly one of `BoxWidthRef`,
+   `BoxHeightRef` and `BoxDepthRef`, so nothing is guessed. It is §4.5's own rule, *as the pack
+   names it*, applied to sizes.
+3. **The six, as built**, each the request the panel already makes:
+   - `resize` → `RoughEntry.Typed(sketch, box, DimensionEntry.RequestFor(sketch, size, value))`, the
+     canvas dimension field's own path: `AddRelationship(ParamValue)` where nothing states the size,
+     `SetParameter` on the one that does, and on a rough part the `SetPart` clearing the mark in the
+     same batch. The length is read by `Length.TryParse` and refused when the parser had to round it
+     (*"18.005" is not a size napkin can hold exactly"*), when it is not a length (*"its new size is
+     not a length napkin reads"*) or when it is zero or less (*"a size of 0""*).
+   - `move` (part, x, y) → the Part panel's typed place: `SetPosition(box, anchor + ((x, y, low.Z) −
+     low))`, `low` the south-west-bottom corner of its extent (`SpaceSnapResolver.Extent`), its
+     height kept. Negative is legal, as in the panel; a rounded one is refused (*"… is not a place
+     napkin can hold exactly"*). The pack states no positions, so a model can only move a part to a
+     place the person said.
+   - `rename` → `SetName(box, name)`, trimmed; an empty name is refused.
+   - `stock` → `StockAssignment.RequestsFor(sketch, box, part with { Stock = item.Name }, item)` for a
+     name `MaterialsLibrary.TryFind` finds — the lookup the Part panel's stock field uses, which
+     forgives "2 x 4", "×" and an inch mark (napkin's spelling rule, not a guess) — storing the
+     library's printed name. Otherwise refused: *"\"oak butcher block\" is not in napkin's materials
+     library; nearest for this part's sizes: A, B or C"*, the three from `StockSuggestion.For(part
+     .SizeOn(box))`, or *"…; nothing in it is near this part's sizes"*. **A stock edit does not clear
+     rough**, as §4.5's table and the Part panel's stock field do not; Firm up's stock line does
+     (sketch-mode §3.3). For Marc: one `Rough = false` would make it Firm up's.
+   - `quantity` → `SetPart(box, part with { Quantity = n })`; less than 1 is refused (*"a quantity of
+     0, not at least 1"*) before `Part`'s guard would throw. No upper limit, as the panel has none.
+   - `remove` → `RemoveEntity(box)`.
+4. **Naming a part.** Exactly `[n]` for a design line of the pack — `ContextPack.EntityAt(n)`, new:
+   the pack keeps which entity each Selection or Entity item says (none for `ContextPack.Of`) — or
+   exactly a name the pack gives an entity (`DesignWords.NameOf`), trimmed, letter case ignored.
+   Refused: *"\"Apron 7\": refused, no part in the design is called that"*; *"[5]: refused, [5] is
+   not a part in the design"*; two or more, *"\"Apron\": refused, 2 parts are called that: [1] and
+   [2]"* — named by item number, because their names are the same; something that is not a
+   furniture part, *"Wall 1: refused, it is not a part"*. A named part need not be selected:
+   *"make the legs 16 inches tall"* with one leg selected may propose all four, each ticked by the
+   person.
+5. **Two lines that set what one part is.** Stock, quantity and a resize's rough-clearing each put
+   a whole `Part`; a second, different one for the same part, made from the part as it was, would
+   silently put the first one's field back. The later line is refused: *"…: refused, another line
+   already changes what this part is; ask for this once that has landed"*. Two resizes of one rough
+   part clear it to the same part, so both stand. Not in the note; found while building.
+6. **The lines verbatim.** *"Leg, south-west: length 1'-4 1/4" to 1'-6""* — the size in the pack's
+   word, from what it is to what it becomes, feet and inches at the 1/1024″ grid so the line says
+   exactly what accepting it states — *"…: move to x 2", y 3""*, *"…: rename to \"Apron 9\""*,
+   *"Top: stock 3/4 plywood"*, *"…: quantity 1 to 2"*, *"…: remove"*; a refusal *"Label: refused,
+   reason"*. The closing line *"Made 2 edits."* (*"Changed nothing."*), the message bar *"Assistant
+   edit: made 2 edits."* (*"Assistant edit: changed nothing."*), the undo step *"Assistant edit"*.
+   The sheet's button reads *Apply* and its hint *"Enter to apply · Esc to cancel"*; the Ask box's
+   placeholder says it takes a change to the selected parts too.
+7. **The parser** reads exactly `{"edits": [...]}`, each edit's `edit` one of the six (ordinal) and
+   then exactly that edit's members, each of its kind; anything else — an edit outside the set
+   (`joint`, `flush`, `phase`), an unknown or missing member, a member twice, a quantity that is not
+   a whole-number literal — refuses the whole reply with the sketch's *"The assistant's reply was not
+   a proposal napkin could read."* `SketchProposal`'s member check moved to `StrictJson` for both.
+   `PartEdit` is closed (a private constructor; a reflection test holds it to six).
+8. **The prompt** is slice A's `Prompts/edit.txt` (the issue's `edit.md`) with two changes: the
+   resize names length, width or thickness *as the context names them*, and one sentence — a
+   question rather than a change gets no edits.
+9. **Tests.** `EditProposalTests` (`AST-005`, now claimed): each of the six against the request the
+   panel's own code makes on `samples/coffee-table` (fresh relationship ids set aside); the leg made
+   exactly 18″ by a `ParamValue` on its depth as one undo step, and undone; a size already stated is
+   `SetParameter` on its owner; a rough plank's resize carries the rough-clearing `SetPart`; each
+   finished size lands on the box size its plan axes say; the rounding, reading, naming, stock,
+   quantity and same-part refusals; a line the updater refuses (a leg width an `EqualParam` already
+   holds) reported while the rest land; the stale rule; the schema byte for byte; the six. **GUI-AST-05**
+   (`AssistantWorkflows.cs`): open *Coffee table* (pointer); click the south-west leg; Ctrl/Cmd+Shift+A,
+   *"make it 18 inches tall"*, Enter — the model was asked with the edit prompt and schema, and the
+   sheet lists the length line and a scripted over-reaching rename, both ticked, nothing changed;
+   untick the rename (pointer); Enter — the leg is exactly 18″, a `ParamValue` on its depth drives
+   it, its name kept, one undo step "Assistant edit", *"Made 1 edit."*; Ctrl/Cmd+Z restores 16 1/4″
+   with nothing stating the depth; Ctrl/Cmd+Y; click the south long apron and Shift-click the north;
+   *"call these Apron"* — two rename lines — Enter renames both as one more undo step; *"call it
+   Apron 9"* — one refused line naming both by item number, its tick off and disabled; Enter changes
+   nothing and adds no undo step; Escape closes the note.
+
+**What slice G (#235) takes from here.** To score an edit case offline, build the pack with
+`ContextPack.For` (not `Of`, which names no entity, so every `[n]` would be refused), put the
+question as `ModelRequest.ForProposal(AssistantPrompts.Edit, pack, question, EditProposal.Schema)` —
+the app does so exactly when the selection holds a part — then `EditProposal.TryParse` (its `why`
+says what did not parse) and `Plan(design, pack, MaterialsLibrary.Shipped)`; a case's checks are
+the plan's line count, refused count and each line's requests. The cases this slice could not
+measure without a model, and the eval should: a *tall* or *long* request on a standing leg (does
+the model say `length`?); a stock said loosely (*"three-quarter ply"*) against the library's
+*"3/4 plywood"*; *"call it …"* with two selected (does the model name both by `[n]`, or one
+ambiguous name?); and a plain question asked with a part selected (does it return no edits, as
+the prompt now asks?).

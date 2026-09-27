@@ -110,6 +110,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-AST-05",
+      "area": "assistant",
+      "title": "Edit in words: make a leg 18 inches tall, undo it, then a name matching two parts is refused",
+      "acceptance": "On samples/coffee-table with the south-west leg selected, asking Ctrl/Cmd+Shift+A \"make it 18 inches tall\" puts the question as an edit (the edit prompt and schema) and lists the scripted reply's two lines on the proposal sheet, ticked, with nothing changed; unticking the rename with the pointer and pressing Enter makes the leg exactly 18 inches long with a ParamValue on its depth driving it, the name kept, as one undo step named \"Assistant edit\"; Ctrl/Cmd+Z restores 16 1/4 inches with nothing stating the depth and Ctrl/Cmd+Y makes it 18 again; with both long aprons selected by Shift-click, \"call these Apron\" lists two rename lines and Enter renames both as one more undo step; \"call it Apron 9\" with the two still selected shows one refused line naming both by their item numbers, its tick off and disabled, and Enter changes nothing and adds no undo step; Escape closes the note.",
+      "milestone": "M14",
+      "issue": 234,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-AST-06",
       "area": "assistant",
       "title": "Choose a model on this machine, test it and ask it",
