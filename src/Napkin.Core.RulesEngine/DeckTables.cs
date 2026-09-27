@@ -33,7 +33,24 @@ public sealed record DeckRow(
     string Text,
     Length Spacing,
     SourceRef Source,
-    ValueList<string> Footnotes);
+    ValueList<string> Footnotes)
+{
+    /// <summary>
+    /// A deck-joist row's allowed overhang past the beam (DCA 6's L_O, deck-guide-pack §3.1), when its table
+    /// prints one; null otherwise. The cantilever may be the lesser of this and the table's
+    /// <see cref="DeckTable.OverhangLimit"/> of the actual span.
+    /// </summary>
+    public Length? Overhang { get; init; }
+}
+
+/// <summary>
+/// The cap a joist table puts on the overhang as a fraction of the joist span (deck-guide-pack §3.1):
+/// DCA 6's "the lesser of allowable overhang, L_O, or one fourth the joist span, L/4". Declared once by
+/// the table, cited, and applied exactly — never divided into a rounded length.
+/// </summary>
+/// <param name="Fraction">The fraction of the span, "1/4".</param>
+/// <param name="Location">Where the rule is printed.</param>
+public sealed record OverhangLimit(ExactFraction Fraction, string Location);
 
 /// <summary>A deck table: a joist, beam or rafter span table, the ledger table, or the footing table.</summary>
 /// <param name="Kind">The file's kind.</param>
@@ -65,6 +82,12 @@ public sealed record DeckTable(
 
     /// <summary>The pack file it was read from, for a load problem that names two files.</summary>
     public string File { get; init; } = string.Empty;
+
+    /// <summary>
+    /// A deck-joist table's cap on the overhang as a fraction of the span, declared exactly when its rows
+    /// carry <see cref="DeckRow.Overhang"/>; null for a table that does not cover an overhang.
+    /// </summary>
+    public OverhangLimit? OverhangLimit { get; init; }
 
     /// <summary>Which layer a citation names: the base layer's model code, or a guide.</summary>
     public CitationLayer Layer => Guide is null ? CitationLayer.ModelCode : CitationLayer.Guide;
@@ -314,16 +337,19 @@ internal static class DeckReader
         List<ScopeLimit> limits = ScopeReader.ReadLimits(root, "limits", required: false, ids, problems);
         List<SpeciesGroup> groups = ReadSpeciesGroups(root, problems);
         CheckSpeciesGroups(root.Where, inputs.FirstOrDefault(column => column.Name == "species"), groups, guide, problems);
+        bool declaresCap = root.Has("overhangLimit");
+        OverhangLimit? overhangLimit = ReadOverhangLimit(root, kind, use, problems);
         List<DeckRow> rows = [];
         IReadOnlyList<JsonElement>? items = root.Array("rows", minItems: 1);
         for (int i = 0; items is not null && doc is not null && i < items.Count; i++)
         {
-            if (ReadRow(items[i], root.Child($"rows[{i}]"), root.Where, kind, inputs, footnotes, doc, problems) is { } row)
+            if (ReadRow(items[i], root.Child($"rows[{i}]"), root.Where, kind, use, inputs, footnotes, doc, problems) is { } row)
             {
                 rows.Add(row);
             }
         }
 
+        CheckOverhangs(root.Where, declaresCap, rows, problems);
         root.Done();
         if (problems.Count > before || designation is null || title is null || doc is null || location is null)
         {
@@ -342,7 +368,67 @@ internal static class DeckReader
             {
                 Limits = limits.ToValueList(),
                 SpeciesGroups = groups.ToValueList(),
+                OverhangLimit = overhangLimit,
             };
+    }
+
+    /// <summary>
+    /// A deck-joist table's <c>overhangLimit</c> (deck-guide-pack §3.1), <c>{ "fraction": "1/4", "of": "span",
+    /// "location": … }</c>: the fraction a positive exact "n/d" of at most 1. No other table has one.
+    /// </summary>
+    static OverhangLimit? ReadOverhangLimit(JsonObj root, string kind, SpanUse? use, ProblemList problems)
+    {
+        if (!root.Has("overhangLimit"))
+        {
+            return null;
+        }
+
+        if (kind != MemberSpanKind || use != SpanUse.DeckJoist)
+        {
+            root.MarkUsed("overhangLimit");
+            problems.Add(root.Where, "overhangLimit: only a deck-joist table's rows carry an overhang, so only it declares the overhang's cap.");
+            return null;
+        }
+
+        if (root.Obj("overhangLimit") is not { } o)
+        {
+            return null;
+        }
+
+        int before = problems.Count;
+        string? text = o.String("fraction");
+        ExactFraction? fraction = text is null ? null : BracingReader.ParseFraction(text);
+        if (text is not null && (fraction is not { } f || f.Numerator > f.Denominator))
+        {
+            problems.Add(o.Where, $"{o.Child("fraction")}: '{text}' is not a positive exact fraction of the span, written \"n/d\" with whole numbers and at most 1.");
+        }
+
+        string? of = o.String("of");
+        if (of is not null && of != "span")
+        {
+            problems.Add(o.Where, $"{o.Child("of")}: '{of}': an overhang is capped as a fraction of the joist 'span', the one quantity napkin supplies.");
+        }
+
+        string? location = o.String("location");
+        o.Done();
+        return problems.Count > before || fraction is null || location is null ? null : new OverhangLimit(fraction.Value, location);
+    }
+
+    /// <summary>
+    /// Overhangs are all or none: under an <c>overhangLimit</c> every row prints its overhang, and a row's
+    /// overhang needs the table's cap, since the allowed overhang is the lesser of the two (§3.1).
+    /// </summary>
+    static void CheckOverhangs(Where where, bool declaresCap, List<DeckRow> rows, ProblemList problems)
+    {
+        List<string> without = [.. rows.Where(row => row.Overhang is null).Select(row => row.Id)];
+        if (declaresCap && without.Count > 0)
+        {
+            problems.Add(where, $"rows {string.Join(", ", without)}: a table with an overhangLimit gives every row its overhang.");
+        }
+        else if (!declaresCap && without.Count < rows.Count)
+        {
+            problems.Add(where, "overhangLimit: the rows carry an overhang, so the table declares the cap on it as a fraction of the span (\"fraction\", \"of\": \"span\", \"location\").");
+        }
     }
 
     /// <summary>A table's printed species groups (deck-guide-pack §3.6), each with its species and where it is printed.</summary>
@@ -564,7 +650,7 @@ internal static class DeckReader
     }
 
     static DeckRow? ReadRow(
-        JsonElement element, string path, Where where, string kind, List<InputColumn> inputs, List<Footnote> footnotes, SourceDocument doc, ProblemList problems)
+        JsonElement element, string path, Where where, string kind, SpanUse? use, List<InputColumn> inputs, List<Footnote> footnotes, SourceDocument doc, ProblemList problems)
     {
         JsonObj? r = JsonObj.Create(element, path, where, problems);
         if (r is null)
@@ -598,11 +684,22 @@ internal static class DeckReader
         }
 
         Length span = Length.Zero, spacing = Length.Zero;
+        Length? overhang = null;
         string text = string.Empty;
         switch (kind)
         {
             case MemberSpanKind:
                 span = Positive(r, "span", problems) ?? Length.Zero;
+                if (r.Has("overhang") && use != SpanUse.DeckJoist)
+                {
+                    r.MarkUsed("overhang");
+                    problems.Add(r.Where, $"{r.Child("overhang")}: only a deck-joist row carries an overhang.");
+                }
+                else if (r.Has("overhang"))
+                {
+                    overhang = Positive(r, "overhang", problems);
+                }
+
                 break;
             case LedgerKind:
                 text = r.String("fastener") ?? string.Empty;
@@ -632,7 +729,7 @@ internal static class DeckReader
         r.Done();
         return problems.Count > before || id is null || location is null
             ? null
-            : new DeckRow(id, cells.ToImmutable(), span, text, spacing, TableTyper.SourceOf(doc, location), listed.ToValueList());
+            : new DeckRow(id, cells.ToImmutable(), span, text, spacing, TableTyper.SourceOf(doc, location), listed.ToValueList()) { Overhang = overhang };
     }
 
     static Length? Positive(JsonObj o, string name, ProblemList problems)

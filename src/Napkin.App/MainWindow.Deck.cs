@@ -25,6 +25,9 @@ public partial class MainWindow
     /// <summary>The deck's code check lines as the panel shows them.</summary>
     public string DeckCheckLines => DeckFields.IsVisible ? DeckCheckText.Text ?? string.Empty : string.Empty;
 
+    /// <summary>What the pack names for Supports and Species, offered under the boxes; empty when it names neither.</summary>
+    public string DeckInputsOfferLine => DeckInputsOffer.IsVisible ? DeckInputsOffer.Text ?? string.Empty : string.Empty;
+
     /// <summary>The adopted code's frost depth offered, or empty.</summary>
     public string DeckFrostOfferLine => DeckFrostOffer.IsVisible ? DeckFrostOfferText.Text ?? string.Empty : string.Empty;
 
@@ -156,7 +159,13 @@ public partial class MainWindow
             ? $"Frame: {DeckTool.FrameLine(framing)}."
             : refusal!.Text;
 
-        DeckChecks checks = DeckCheck.For(Editor.Sketch.After(), deck, Packs.Resolve(Editor.Sketch.Code).Pack, MaterialsLibrary.Shipped);
+        LoadedPack? pack = Packs.Resolve(Editor.Sketch.Code).Pack;
+        DeckChecks checks = DeckCheck.For(Editor.Sketch.After(), deck, pack, MaterialsLibrary.Shipped);
+
+        // What the pack names for Supports and Species, to type — never filled in (deck-guide-pack §2, risk 9).
+        string? offered = DeckCheck.InputsOffered(pack);
+        DeckInputsOffer.Text = offered ?? string.Empty;
+        DeckInputsOffer.IsVisible = offered is not null;
         // A guide the answers come from is said once, at the top of the block (deck-guide-pack §1.2, Decision 5).
         DeckCheckText.Text = string.Join("\n", checks.Guides.Concat(checks.Lines.Select(line => line.Text)));
         DeckSupportsNote.Text = checks.SupportsNote ?? string.Empty;

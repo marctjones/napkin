@@ -24,6 +24,9 @@ internal static class Fx
     /// <summary>The deck packs root: us-zz-deck and its synthetic guide, and their golden files (SYNTHETIC, NOT CODE VALUES).</summary>
     public static string DeckRoot => Path.Combine(AppContext.BaseDirectory, "DeckPacks");
 
+    /// <summary>The real shipped packs root (packs/ at the repo root, copied to RealPacks/), with its golden files — real values, cited.</summary>
+    public static string RealRoot => Path.Combine(AppContext.BaseDirectory, "RealPacks");
+
     public static InMemoryPackSource Source() => InMemoryPackSource.FromDirectory(Root);
 
     public static LoadedPack Load(string id) => Loaded(PackLoader.Load(Root, id));

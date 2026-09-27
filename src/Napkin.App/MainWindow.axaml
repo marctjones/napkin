@@ -1340,6 +1340,10 @@
                                 <TextBlock Grid.Row="5" Grid.Column="2" Text="Species" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,2" />
                                 <TextBox Name="DeckSpeciesBox" Grid.Row="5" Grid.Column="3" FontSize="11" MinWidth="0" Padding="4,2" Margin="0,0,6,2" AutomationProperties.Name="Species" />
                             </Grid>
+                            <!-- What the adopted pack's deck tables and guide scope name for Supports and Species
+                                 (deck-guide-pack §2, risk 9): offered to type, never filled in. -->
+                            <TextBlock Name="DeckInputsOffer" FontSize="10" TextWrapping="Wrap" IsVisible="False"
+                                       AutomationProperties.Name="Deck inputs offered" />
                             <CheckBox Name="DeckBlockingCheck" Content="Blocking at mid-span" FontSize="11"
                                       IsCheckedChanged="OnDeckTicked" AutomationProperties.Name="Blocking" />
                             <StackPanel Orientation="Horizontal" Spacing="10">
