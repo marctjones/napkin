@@ -704,6 +704,15 @@
       "kind": "unit"
     },
     {
+      "id": "PERMIT-002",
+      "area": "permit",
+      "title": "A deck's permit set draws its site plan, elevation, framing plan and details at standard scales",
+      "acceptance": "A design with a deck prints S1 (the lot's courses, setbacks drawn inward, the footprints, a north arrow, each line's distance against its setback, and that the site plan is not a survey), A2 (the standard view facing the deck's open side as its locked view draws it, with heights above grade), S2 (ledger, rim, joists, blocking, the beam and posts hidden beneath, width and depth dimensioned) and S3 (ledger attachment, footings and frost, guard, stair), each at the largest architect (or, for a site, engineer) scale that fits and printed in its title block; every member's size is its check's answer or, when the check has none, a blank rule where the size would be with the note beneath; then C1 and, when anything is not sized, W1.",
+      "milestone": "M13",
+      "issue": 226,
+      "kind": "unit"
+    },
+    {
       "id": "DECK-001",
       "area": "deck",
       "title": "Ledger attachment is sized from the project's pack",
@@ -1655,6 +1664,15 @@
       "acceptance": "Stocked bench from File > Samples, then File > Print shop set: the file offered is Stocked bench shop set.pdf, and it reads back as the cut list with every row's cells as the window shows them, the cut layout's boards and sheet with their lines, and one label per piece, every page with the title block and the disclaimer; the message bar says how many pages and where it went; a new sheet (Ctrl/Cmd+N) prints one page saying there is nothing to cut.",
       "milestone": "M12",
       "issue": 211,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-PERMIT-01",
+      "area": "ui",
+      "title": "Print a deck's permit set",
+      "acceptance": "Porch on a deck from File > Samples > Building, then File > Print permit set on Tabloid: the file offered is Porch on a deck permit set.pdf, 17 × 11 in, reading S1, A2 (Front), S2 and S3 for Deck 1, then C1 and W1, every sheet saying the site plan is not a survey and that the set is not complete, and the message bar says the paper; Ctrl/Cmd+N and File > Print permit set on Letter says a permit set needs a deck and asks for no file.",
+      "milestone": "M13",
+      "issue": 226,
       "kind": "workflow"
     },
     {
