@@ -1058,7 +1058,10 @@ Toolchain 32023.921).
    the toolchain's copy (`…/usr/lib/swift-6.2/macosx/`, Apple-signed, 188,320 bytes) into `out/`.
    Not tried on a macOS 14 or 15 machine (none here). **So `out/` holds three files napkin ships, not
    two**: slice B's conditional `Content` items and slice E's packaging carry all three — or Marc
-   raises the floor to macOS 26 and the file disappears (a decision, not taken here).
+   raises the floor to macOS 26 and the file disappears (a decision, not taken here). §3.5's release
+   check must tell them apart: `Signature=adhoc` and no `Authority=` hold for `libNapkinMlx.dylib`
+   only; the Span library is Apple's, signed `Authority=Software Signing` / Apple Root CA
+   (`codesign -dvv`), and is expected to stay so. napkin still signs nothing.
 10. **Transitive packages the note did not list** (all read, §13.3): `EventSource` (mattt, MIT),
     linked through swift-huggingface; `swift-asn1` (Apache-2.0), resolved but not linked;
     `swift-argument-parser` (Apache-2.0), built only for mlx-swift's `CudaBuild` build-tool plugin
@@ -1202,5 +1205,10 @@ build time and sizes (§13.4); `MLX_VERSION` at 0.31.6 is 0.31.1; swift-syntax s
 dlpack's upstream licence; `metal-cpp`, `fmt`, `json` licences; napkin's two schemas (as written in
 §13.2 item 4) compile under xgrammar v0.1.30. Still unverified: whether a test process linking MLX
 starts on a GitHub runner without a GPU (the MLX test skips there; the rest never touch MLX's
-device); the macOS 14–15 load path (item 9); the runner image's Metal Toolchain; memory and speed
-with weights (§13.4, pending); the Swift runtime compatibility library's licence text.
+device); the macOS 14–15 load path (§13.1 item 9); the runner image's Metal Toolchain; memory and
+speed with weights (§13.4, pending); the Swift runtime compatibility library's licence text.
+Inferred from the code, not shown by a run: that an MLX error inside the plain generation loop,
+after mlx-swift-lm hops to its `GenerationWorker` executor, still reaches the bridge's `withError`
+(the test covers a synchronous error only); that Xcode 26.4 is enough (`build-mlx.sh` repeats §1.2's
+secondary-source floor; only 27.0 was used); and that `xcodebuild test`'s time-out was this
+sandboxed session's XPC and not the package — on an ordinary Mac it may just work.
