@@ -45,7 +45,8 @@ public sealed record ModelRequest(string System, string Context, string Question
 
     /// <summary>
     /// A request for a proposal: JSON that validates against <paramref name="schema"/> — for Sketch
-    /// from words, <see cref="SketchProposal.Schema"/> (§4.3, §4.4).
+    /// from words, <see cref="SketchProposal.Schema"/> (§4.3, §4.4); for Edit in words,
+    /// <see cref="EditProposal.Schema"/> (§4.5).
     /// </summary>
     public static ModelRequest ForProposal(string system, ContextPack pack, string question, string schema)
     {

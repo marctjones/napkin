@@ -47,9 +47,13 @@ public sealed class ContextPack
 
     private readonly Lazy<ImmutableHashSet<string>> _keys;
 
-    private ContextPack(ImmutableArray<ContextItem> items)
+    /// <summary>Which entity each design line is about, by item number: what an edit's <c>[n]</c> names.</summary>
+    private readonly ImmutableDictionary<int, EntityId> _entities;
+
+    private ContextPack(ImmutableArray<ContextItem> items, ImmutableDictionary<int, EntityId>? entities = null)
     {
         Items = items;
+        _entities = entities ?? ImmutableDictionary<int, EntityId>.Empty;
         Text = string.Join("\n", items.Select(item => item.ToString()));
         Words = items.Sum(item => CountWords(item.Text));
         _keys = new Lazy<ImmutableHashSet<string>>(() => [.. Items.SelectMany(item => NumberTokens.KeysIn(item.Text))]);
@@ -70,6 +74,15 @@ public sealed class ContextPack
     /// <summary>Item <paramref name="n"/>, or null when there is none.</summary>
     /// <param name="n">The item's number, from 1.</param>
     public ContextItem? Item(int n) => n >= 1 && n <= Items.Length ? Items[n - 1] : null;
+
+    /// <summary>
+    /// The entity item <paramref name="n"/> says in words — a selected entity or any other — or
+    /// null when that item is not one (a relationship, the site, a check, a list row, help), when
+    /// there is no such item, or when the pack was made with <see cref="Of"/>: how an edit in words
+    /// that names a part by its <c>[n]</c> is read back to the part (&#xA7;4.5).
+    /// </summary>
+    /// <param name="n">The item's number, from 1.</param>
+    public EntityId? EntityAt(int n) => _entities.TryGetValue(n, out EntityId id) ? id : null;
 
     /// <summary>A pack of exactly these items, numbered in order: for a caller that has its own.</summary>
     /// <param name="items">The items' kinds and texts.</param>
@@ -111,13 +124,16 @@ public sealed class ContextPack
         Sketch sketch = design.Sketch;
         HashSet<EntityId> selected = [.. selection.Where(id => sketch.Find(id) is not null)];
 
-        // The project on screen (§3.1): never cut.
+        // The project on screen (§3.1): never cut. The design lines come first, so their numbers
+        // are their places in this list, whatever is cut further down.
         List<(ContextKind Kind, string Text)> fixedItems = [];
+        ImmutableDictionary<int, EntityId>.Builder entities = ImmutableDictionary.CreateBuilder<int, EntityId>();
         foreach (Entity entity in sketch.Entities.Values.Where(e => selected.Contains(e.Id)).OrderBy(e => e.Id))
         {
             if (DesignWords.Line(design, entity) is { } line)
             {
                 fixedItems.Add((ContextKind.Selection, "Selected: " + line));
+                entities.Add(fixedItems.Count, entity.Id);
             }
         }
 
@@ -126,6 +142,7 @@ public sealed class ContextPack
             if (DesignWords.Line(design, entity) is { } line)
             {
                 fixedItems.Add((ContextKind.Entity, line));
+                entities.Add(fixedItems.Count, entity.Id);
             }
         }
 
@@ -213,13 +230,14 @@ public sealed class ContextPack
             }
         }
 
-        return Of(
+        (ContextKind Kind, string Text)[] all =
         [
             .. fixedItems,
             .. listItems,
             .. help.Select(section => (ContextKind.Help, section.ItemText)),
             (ContextKind.Disclaimer, Disclaimer),
-        ]);
+        ];
+        return new ContextPack([.. all.Select((item, i) => new ContextItem(i + 1, item.Kind, item.Text))], entities.ToImmutable());
     }
 
     /// <summary>The site values as entered, each field or "not entered" (§3.1).</summary>

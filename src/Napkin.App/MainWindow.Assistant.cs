@@ -13,9 +13,12 @@ using Avalonia.Threading;
 using Napkin.App.Viewing;
 using Napkin.Assistant.Mlx;
 using Napkin.Core.Geometry;
+using Napkin.Core.Materials;
 using Napkin.Modules.Assistant;
 using Napkin.Modules.Building;
 using Napkin.Modules.Editing;
+
+using Design = Napkin.Modules.Editing.Design;
 
 namespace Napkin.App;
 
@@ -23,9 +26,12 @@ namespace Napkin.App;
 /// Ask and Explain this result (docs/design/llm-assistant.md &#xA7;2.4, &#xA7;8, &#xA7;10 slice B):
 /// the Assistant menu, Ctrl/Cmd+Shift+A, and the note on the sheet; Where the model runs&#x2026;
 /// (slice C, #231; the MLX choice, docs/design/mlx-runtime.md #241), which chooses the model the
-/// note asks; and Sketch from words&#x2026; (slice E, #233), whose reply is a proposal sheet on the
+/// note asks; Sketch from words&#x2026; (slice E, #233), whose reply is a proposal sheet on the
 /// same note in Firm up's shape — a tick per rough plank, Enter draws the ticked ones as one undo
-/// step, "Assistant sketch", and F firms them up as if they had been drawn by hand.
+/// step, "Assistant sketch", and F firms them up as if they had been drawn by hand; and Edit in
+/// words (slice F, #234): a question asked with a part selected is put as an edit, and its reply is
+/// the same sheet, a tick per edit, each the request the panel makes for it, landed as one undo step,
+/// "Assistant edit".
 /// </summary>
 public partial class MainWindow
 {
@@ -174,8 +180,17 @@ public partial class MainWindow
     /// <summary>What the note is doing: answering (Ask, Explain) or sketching (Sketch from words).</summary>
     public AssistantTask AssistantNoteTask => _assistantTask;
 
-    /// <summary>Whether a proposal sheet is up on the note, waiting for Enter.</summary>
-    public bool IsProposingSketch => _assistantPlan is not null;
+    /// <summary>
+    /// What the last question was put as: <see cref="AssistantTask.Edit"/> when it was asked in the
+    /// Ask box with a part selected (Edit in words, §4.5), otherwise the note's own task.
+    /// </summary>
+    public AssistantTask? LastAssistantTask { get; private set; }
+
+    /// <summary>Whether a sketch's proposal sheet is up on the note, waiting for Enter.</summary>
+    public bool IsProposingSketch => _assistantPlan?.What == SketchProposal.What;
+
+    /// <summary>Whether an edit's proposal sheet is up on the note, waiting for Enter.</summary>
+    public bool IsProposingEdits => _assistantPlan?.What == EditProposal.What;
 
     /// <summary>The proposal sheet's ticks, one per line in the reply's order; a refused line's is off and cannot be ticked.</summary>
     public IReadOnlyList<CheckBox> AssistantProposalTicks => [.. _assistantProposalLines.Select(line => line.Tick)];
@@ -186,7 +201,7 @@ public partial class MainWindow
     /// <summary>The proposal sheet's message line: a refusal in the updater's words, or the stale rule's sentence; empty when none.</summary>
     public string AssistantProposalMessage => AssistantProposalMessageText.IsVisible ? AssistantProposalMessageText.Text ?? string.Empty : string.Empty;
 
-    /// <summary>The proposal sheet's Draw button.</summary>
+    /// <summary>The proposal sheet's Draw button — Apply, on an edit's sheet.</summary>
     public Button AssistantProposalDraw => AssistantProposalOkButton;
 
     void WireAssistant()
@@ -265,7 +280,7 @@ public partial class MainWindow
             AssistantTitle.Text = sketching ? "Sketch from words" : "Assistant";
             AssistantQuestionBox.PlaceholderText = sketching
                 ? "Describe a piece of furniture; rough planks are proposed for you to tick…"
-                : "Ask a question about the design or result on screen…";
+                : "Ask about the design on screen, or say how to change the selected parts…";
             AssistantHintText.Text = sketching ? "Enter to sketch · Esc to cancel or close" : "Enter to ask · Esc to cancel or close";
             AssistantPanel.IsVisible = true;
             AssistantQuestionBox.Text = string.Empty;
@@ -404,18 +419,25 @@ public partial class MainWindow
         CancellationTokenSource cancel = new();
         _assistantCancel = cancel;
         int generation = ++_assistantGeneration;
-        AssistantTask task = _assistantTask;
+
+        // Edit in words is the Ask box with parts selected (§4.5, "How to use it"): the question is
+        // put as an edit, and its reply is a proposal for the sheet rather than an answer.
+        AssistantTask task = _assistantTask == AssistantTask.Ask && SelectionHasParts ? AssistantTask.Edit : _assistantTask;
+        LastAssistantTask = task;
 
         ContextPack pack = BuildAssistantPack(question);
         LastAssistantPack = pack;
 
-        // A sketch is planned against the design as it is now, not as it is when the reply comes:
+        // A proposal is planned against the design as it is now, not as it is when the reply comes:
         // the person may draw meanwhile, and then the plan is stale and refused (§4.3).
-        Sketch askedAbout = Editor.Sketch;
+        Design askedAbout = Editor.Design;
         LayerId layer = Editor.LayerForNewParts();
-        ModelRequest request = task == AssistantTask.Sketch
-            ? ModelRequest.ForProposal(AssistantPrompts.Sketch, pack, question, SketchProposal.Schema)
-            : ModelRequest.ForAnswer(AssistantPrompts.Ask, pack, question);
+        ModelRequest request = task switch
+        {
+            AssistantTask.Sketch => ModelRequest.ForProposal(AssistantPrompts.Sketch, pack, question, SketchProposal.Schema),
+            AssistantTask.Edit => ModelRequest.ForProposal(AssistantPrompts.Edit, pack, question, EditProposal.Schema),
+            _ => ModelRequest.ForAnswer(AssistantPrompts.Ask, pack, question),
+        };
         ClearAssistantAnswer();
         ShowAssistantThinking(true);
 
@@ -437,15 +459,27 @@ public partial class MainWindow
         }
 
         ShowAssistantThinking(false);
-        if (task == AssistantTask.Sketch)
+        switch (task)
         {
-            RenderSketchReply(reply, askedAbout, layer);
-        }
-        else
-        {
-            RenderAssistantReply(reply, pack);
+            case AssistantTask.Sketch:
+                RenderSketchReply(reply, askedAbout.Sketch, layer);
+                break;
+
+            case AssistantTask.Edit:
+                RenderEditReply(reply, askedAbout, pack);
+                break;
+
+            default:
+                RenderAssistantReply(reply, pack);
+                break;
         }
     }
+
+    /// <summary>
+    /// Whether the selection holds a furniture part (<see cref="EditProposal.IsPart"/>): then the Ask
+    /// box puts its question as an edit of it (§4.5).
+    /// </summary>
+    bool SelectionHasParts => Editor.Selection.Any(id => Editor.Sketch.Find<Box>(id) is { } box && EditProposal.IsPart(Editor.Sketch, box));
 
     void ShowAssistantThinking(bool thinking)
     {
@@ -598,14 +632,60 @@ public partial class MainWindow
     }
 
     /// <summary>
+    /// An edit reply (&#xA7;4.3, &#xA7;4.5): a document napkin reads becomes the proposal sheet, planned
+    /// against the design and the pack the question was asked with — a part named <c>[n]</c> is the
+    /// pack's item n — and anything else is one line, the runtime's refusal in its words or napkin's
+    /// "not a proposal", and nothing else happens.
+    /// </summary>
+    void RenderEditReply(ModelReply reply, Design askedAbout, ContextPack pack)
+    {
+        switch (reply)
+        {
+            case ModelReply.Json json when EditProposal.Parse(json.Document) is { } proposal:
+            {
+                ProposalPlan plan = proposal.Plan(askedAbout, pack, MaterialsLibrary.Shipped);
+                if (plan.Lines.IsEmpty)
+                {
+                    ShowAssistantLine(EditProposal.NoEdits);
+                }
+                else if (!plan.IsFor(Editor.Sketch))
+                {
+                    ShowAssistantProposalMessage(ProposalPlan.StaleText);
+                }
+                else
+                {
+                    ShowAssistantProposal(plan);
+                }
+
+                break;
+            }
+
+            case ModelReply.Refused refused:
+                ShowAssistantLine(refused.Reason);
+                break;
+
+            default:
+                ShowAssistantLine(EditProposal.Unreadable);
+                break;
+        }
+
+        ShowAssistantFooter();
+    }
+
+    /// <summary>
     /// The proposal sheet, in Firm up's shape (<see cref="FirmUpPanel"/>): a tick per line, all
     /// ticked; a line napkin refused is shown with its reason in the pencil colour and a tick that is
-    /// off and cannot be turned on. The Draw button has the keyboard, so Enter draws.
+    /// off and cannot be turned on. The Draw (or, for edits, Apply) button has the keyboard, so Enter
+    /// lands the ticked lines.
     /// </summary>
     void ShowAssistantProposal(ProposalPlan plan)
     {
         EndAssistantProposal();
         _assistantPlan = plan;
+        bool editing = plan.What == EditProposal.What;
+        AssistantProposalOkButton.Content = editing ? "Apply" : "Draw";
+        AutomationProperties.SetName(AssistantProposalOkButton, editing ? "Apply the ticked edits" : "Draw the ticked planks");
+        AssistantProposalHintText.Text = editing ? "Enter to apply · Esc to cancel" : "Enter to draw · Esc to cancel";
         CanvasPalette palette = CanvasPalette.For(ActualThemeVariant);
         foreach (ProposalLine line in plan.Lines)
         {
@@ -660,12 +740,12 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Draws the ticked planks (&#xA7;4.3): one gesture, one undo step "Assistant sketch", the message
-    /// bar saying how many. A plan made against a design that has since changed is refused whole and
-    /// the sheet goes; a line the updater refused is reported on the message line in its words while
-    /// the rest land, and the sheet stays with every tick off, as Firm up's does. Once everything
-    /// ticked has landed the note says so and points at Firm up, and the drawing has the keyboard so
-    /// F, and undo, reach it.
+    /// Lands the ticked lines (&#xA7;4.3): one gesture, one undo step — "Assistant sketch" for planks,
+    /// "Assistant edit" for edits — the message bar saying how many. A plan made against a design that
+    /// has since changed is refused whole and the sheet goes; a line the updater refused is reported
+    /// on the message line in its words while the rest land, and the sheet stays with every tick off,
+    /// as Firm up's does. Once everything ticked has landed the note says so (a sketch's line points at
+    /// Firm up), and the drawing has the keyboard so F, and undo, reach it.
     /// </summary>
     void AcceptAssistantProposal()
     {
@@ -674,10 +754,11 @@ public partial class MainWindow
             return;
         }
 
+        bool editing = plan.What == EditProposal.What;
         ProposalOutcome outcome = plan.Accept(
             Editor,
             _assistantProposalLines.Where(line => line.Tick.IsChecked == true).Select(line => line.Line),
-            SketchProposal.MessageLine);
+            editing ? EditProposal.MessageLine : SketchProposal.MessageLine);
 
         if (outcome.Stale)
         {
@@ -698,7 +779,7 @@ public partial class MainWindow
         }
 
         EndAssistantProposal();
-        ShowAssistantLine(SketchProposal.ClosingLine(outcome.Landed));
+        ShowAssistantLine(editing ? EditProposal.ClosingLine(outcome.Landed) : SketchProposal.ClosingLine(outcome.Landed));
         FocusDrawing();
     }
 }

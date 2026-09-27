@@ -108,7 +108,7 @@ public sealed record SketchProposal(ImmutableArray<SketchPart> Parts, string Not
 
         using (json)
         {
-            if (!TryMembers(json.RootElement, ["parts", "note"], "the reply", out Dictionary<string, JsonElement>? root, out why))
+            if (!StrictJson.TryMembers(json.RootElement, ["parts", "note"], "the reply", out Dictionary<string, JsonElement>? root, out why))
             {
                 return false;
             }
@@ -265,7 +265,7 @@ public sealed record SketchProposal(ImmutableArray<SketchPart> Parts, string Not
     static bool TryPart(JsonElement element, string where, [NotNullWhen(true)] out SketchPart? part, [NotNullWhen(false)] out string? why)
     {
         part = null;
-        if (!TryMembers(element, PartMembers, where, out Dictionary<string, JsonElement>? members, out why))
+        if (!StrictJson.TryMembers(element, PartMembers, where, out Dictionary<string, JsonElement>? members, out why))
         {
             return false;
         }
@@ -293,48 +293,6 @@ public sealed record SketchProposal(ImmutableArray<SketchPart> Parts, string Not
             members["x"].GetString()!,
             members["y"].GetString()!,
             quantity);
-        return true;
-    }
-
-    /// <summary>An object's members, when it has exactly <paramref name="expected"/>, each once.</summary>
-    static bool TryMembers(
-        JsonElement element,
-        string[] expected,
-        string where,
-        [NotNullWhen(true)] out Dictionary<string, JsonElement>? members,
-        [NotNullWhen(false)] out string? why)
-    {
-        members = null;
-        if (element.ValueKind != JsonValueKind.Object)
-        {
-            why = $"{where} is not an object";
-            return false;
-        }
-
-        Dictionary<string, JsonElement> found = new(StringComparer.Ordinal);
-        foreach (JsonProperty property in element.EnumerateObject())
-        {
-            if (!expected.Contains(property.Name, StringComparer.Ordinal))
-            {
-                why = $"{where} has a member napkin does not know: \"{property.Name}\"";
-                return false;
-            }
-
-            if (!found.TryAdd(property.Name, property.Value))
-            {
-                why = $"{where} has \"{property.Name}\" twice";
-                return false;
-            }
-        }
-
-        if (expected.FirstOrDefault(name => !found.ContainsKey(name)) is { } missing)
-        {
-            why = $"{where} has no \"{missing}\"";
-            return false;
-        }
-
-        members = found;
-        why = null;
         return true;
     }
 }
