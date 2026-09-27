@@ -118,18 +118,24 @@ public class AnswerGuardTests
         Assert.Contains("2x10", section.Text, StringComparison.Ordinal);
         ContextPack pack = ContextPack.Of(
         [
-            (ContextKind.Check, "Header check, Window 1: Sized: (2) 2x8, 1 jack stud and 1 king stud each side, per R602.7(1)."),
+            (ContextKind.Check, "Header check, Window 1: Sized: (2) 2x8, 1 jack stud and 1 king stud each side."),
             (ContextKind.Help, section.ItemText),
         ]);
 
         // The header napkin actually sized: every number is the check result's own [1].
-        Kept("The header is (2) 2x8, 1 jack stud and 1 king stud each side, per R602.7(1) [1].", pack);
+        Kept("The header is (2) 2x8, 1 jack stud and 1 king stud each side [1].", pack);
 
         // 2x10 is only in the help item's worked example [2]; it never stands for the header napkin sized.
         Refused("A header like this is usually (2) 2x10 [2].", pack, "2x10");
 
-        // A designation in a help item still stands (§9.1's good answer relies on exactly this).
-        Kept("The header table is R602.7(1) [2].", pack);
+        // A designation from a help item alone still stands (§9.1's good answer relies on exactly
+        // this): the check item here carries no designation at all, so [2] is the only source.
+        ContextPack designationOnlyInHelp = ContextPack.Of(
+        [
+            (ContextKind.Check, "Header check, Window 1: Sized: (2) 2x8."),
+            (ContextKind.Help, "Help, docs/rules-engine.md \"Data status\": the header table is R602.7(1)."),
+        ]);
+        Kept("The header table is R602.7(1) [2].", designationOnlyInHelp);
     }
 
     [Fact]
