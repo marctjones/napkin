@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "notes": "DCA 6-2015 Table B1, Post Heights Based on Tributary Area for Corner Posts (Appendix B, p. B3), transcribed 2026-09-27 (#42 slice B3) from the PDF in the guide's sources, read from the page rendered at 500 dpi in four crops and checked against the text extraction; both agree on all 250 cells. Appendix B offers Tables B1 through B3 'As an alternative to Table 4' (p. B2); napkin uses them for its end posts, the corner posts of Figure B1 (p. B1). Each row is one printed cell: a species group heading × the 6x6 or 4x4 Post Height (ft.) column × a Tributary Area (sq. ft.) row, an upper-bound band of the area (the page prints no lower bound; the domain's min, 1 sq ft, is napkin's). A height is whole feet as printed; a cell printed NP is 'notPermitted': true and is answered Out of scope quoting NP (the page does not expand it). Species groups are the five headings as printed; 'SPF' is the guide's Spruce-Pine-Fir, which note 2, whose superscript sits on SPF, spells 'spruce-pine-fir'. Notes 1 and 3 sit on the title's 'Based', so apply to every row; note 2 sits on Douglas Fir-Larch, Hem-Fir and SPF in the headings, so rides on the rows of their three groups. Every note is verbatim and shown with results (not-encoded). Not yet reviewed: docs/code-packs/reviews/us-ct-2022/dca6-tableB1.md.",
+  "notes": "DCA 6-2015 Table B1, Post Heights Based on Tributary Area for Corner Posts (Appendix B, p. B3), transcribed 2026-09-27 (#42 slice B3) from the PDF in the guide's sources, read from the page rendered at 500 dpi in four crops and checked against the text extraction; both agree on all 250 cells. Appendix B offers Tables B1 through B3 'As an alternative to Table 4' (p. B2); napkin uses them for its end posts, the corner posts of Figure B1 (p. B1). Each row is one printed cell: a species group heading × the 6x6 or 4x4 Post Height (ft.) column × a Tributary Area (sq. ft.) row, an upper-bound band of the area (the page prints no lower bound; the domain's min, 1 sq ft, is napkin's). A height is whole feet as printed; a cell printed NP is 'notPermitted': true and is answered Out of scope quoting NP (the page does not expand it). Species groups are the five headings as printed; 'SPF' is the guide's Spruce-Pine-Fir, which note 2, whose superscript sits on SPF, spells 'spruce-pine-fir'. Notes 1 and 3 sit on the title's 'Based', so apply to every row; note 2 sits on Douglas Fir-Larch, Hem-Fir and SPF in the headings, so rides on the rows of their three groups. Every note is verbatim and shown with results (not-encoded). Not yet reviewed: docs/code-packs/reviews/us-ct-2022/dca6-tableB1.md. Limit t.post-size (#42, 2026-09-27) is the opening clause of p. 10's first sentence, verbatim, 'All deck post sizes shall be 6x6 (nominal) or larger' (POST REQUIREMENTS; MINIMUM REQUIREMENTS & LIMITATIONS item 3, p. 2, says 'Minimum post size is 6x6 nominal', the guide's scope note n.post-size), tried before the lookup, so a 4x4 post is Out of scope citing p. 10 and never reaches its column. Appendix B is offered as 'an alternative to the assumptions of Table 4 Post Height for 6x6 and Footings Sizes for all Posts' (p. B1) and 'As an alternative to Table 4' for post height and footing size (p. B2), not to the minimum post size; the 4x4 column stays as printed (the commentary, C2 item 3 and C7, places a 4x4 post under alternative methods a building official approves). The limit lists the sizes 6x6 nominal or larger in both dimensions, 6x6, 6x8 and 8x8: every such name in napkin's materials library (src/Napkin.Core.Materials/data/softwood-lumber.json), the only place a deck post's name can come from (the frame refuses any other). So every smaller size, 4x4, 4x6, 2x4 or 5/4x6 alike, is refused; a 6x8 or 8x8 passes the limit and has no column here.",
   "kind": "deck-post",
   "position": "corner",
   "table": "B1",
@@ -77,6 +77,21 @@
         "Spruce-Pine-Fir"
       ],
       "location": "p. B3, Table B1, the 6x6 and 4x4 Post Height (ft.) columns' species heading Ponderosa Pine, Red Pine, SPF (printed with note 2 on SPF)"
+    }
+  ],
+  "limits": [
+    {
+      "id": "t.post-size",
+      "when": {
+        "input": "member",
+        "notIn": [
+          "6x6",
+          "6x8",
+          "8x8"
+        ]
+      },
+      "text": "All deck post sizes shall be 6x6 (nominal) or larger",
+      "location": "POST REQUIREMENTS, p. 10"
     }
   ],
   "footnotes": [
