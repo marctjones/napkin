@@ -177,6 +177,12 @@ public partial class MainWindow
             {
                 ApplyRequest = (request, what) => Editor.Apply(request, what),
                 SiteLayer = () => (Editor.LayerNamed(BuildingLayers.Site, out Request? add), add),
+                AddUnderlay = (bytes, name) => Editor.AddUnderlay(bytes, name),
+                ArmCalibration = done =>
+                {
+                    Activate();
+                    DrawingCanvas.ArmCalibration(done);
+                },
             };
             _siteWindow.Closed += (_, _) => _siteWindow = null;
         }

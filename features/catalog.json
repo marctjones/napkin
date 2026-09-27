@@ -178,7 +178,7 @@
       "title": "The project is a documented zip container",
       "acceptance": "A saved project opens with a standard zip tool and contains manifest.json, scene.json, a thumbnail and an assets directory, matching the format document committed in the repository.",
       "milestone": "M2",
-      "issue": 6,
+      "issue": 224,
       "kind": "unit"
     },
     {
@@ -663,8 +663,8 @@
       "area": "site-plan",
       "title": "A survey underlay calibrates from two known points",
       "acceptance": "After placing an image, clicking two points a known distance apart and entering that distance, a measurement between those two points on the canvas reads the entered value.",
-      "milestone": "backlog",
-      "issue": 21,
+      "milestone": "M13",
+      "issue": 224,
       "kind": "unit"
     },
     {
@@ -2024,6 +2024,15 @@
       "acceptance": "On a new sheet with a 16 ft wall along y = 0, Project > Site plan opens a window; typing the point of beginning (-10', -25') and four courses (N 0 E 50' side 10', N 90 E 40' rear 20', S 0 E 50', N 90 W 40' front 25') and Apply adds the lot in one step: it closes, and the lines read 2'-0\" short of the 10'-0\" side setback by 8'-0\", 24'-8 1/2\" clear of the rear, 22'-0\" to line 3, and 25'-0\" clear of the front; a 91-degree bearing is refused by line and changes nothing; Edit > Undo takes the lot off.",
       "milestone": "M13",
       "issue": 223,
+      "kind": "workflow"
+    },
+    {
+      "id": "GUI-SITE-02",
+      "area": "ui",
+      "title": "Put a survey image under the plan, calibrate it by two clicks, save and reopen",
+      "acceptance": "On a new sheet, Project > Site plan takes a PNG (through the same seam the file picker's handler calls): it lies under the plan an inch a pixel from the origin, its bytes kept by SHA-256; typing 20' and Calibrate, then clicking two points on the plan 20\" apart, calibrates it so the image measures 20'-0\" between them and the window says 'Survey underlay: survey.png, calibrated to 20'-0\" between two points. This site plan is not a survey.'; Save offers Untitled.napkin, and reopening the project brings back the same calibration and the same image.",
+      "milestone": "M13",
+      "issue": 224,
       "kind": "workflow"
     }
   ]

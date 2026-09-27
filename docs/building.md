@@ -386,6 +386,20 @@ about whether the lot conforms. On the plan the lot is drawn on the **Site** lay
 setback dashed inside its line and a north arrow at the point of beginning. This site plan is not
 a survey.
 
+**A survey image under the plan.** In the Site plan window, **Choose image…** puts a PNG or JPEG
+(up to 8 MB) behind the plan, half transparent. Nothing snaps to it and nothing is traced from it.
+To calibrate it:
+1. Type the real distance between two points you can find on the survey, like `100'`.
+2. Press **Calibrate**.
+3. Click those two points on the plan.
+
+The image is scaled and turned so they are that far apart. The window then says "Survey underlay:
+survey.png, calibrated to 100'-0" between two points. This site plan is not a survey."
+
+A design with a survey image is saved as a **`.napkin` project**, the zip container that carries
+the image beside the drawing; Save offers that name. A `.scene.json` still saves the drawing, but
+not the image, and says so.
+
 ## Where it shows
 
 - The part panel, with a wall or an opening selected: what it is, its sizes, an opening's code
