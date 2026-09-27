@@ -30,8 +30,9 @@ The deck guide note's risk 8 recorded that "AWC's terms of use were not read for
 were read for this one, because every serious header candidate turned out to be an AWC document.
 
 **Source:** https://awc.org/about/end-user-license-agreement/ — the page the 2018 WFCM publication
-page links as "End User License Agreement". Retrieved 2026-09-27 through the WebFetch tool in two
-passes (the page is behind a Cloudflare challenge that blocks `curl`); the tool returned short
+page links as "End User License Agreement". Retrieved 2026-09-27 through the WebFetch tool in three
+passes — a summary, then two asking for verbatim clauses (the page is behind a Cloudflare challenge
+that blocks `curl`); the tool returned short
 verbatim fragments and summaries, so **Marc should read the page himself** before relying on any
 wording below. Fragments as returned, capitals as on the page:
 
@@ -55,7 +56,8 @@ are legal readings that are Marc's, not this note's. **It bears on the landed DC
 #42) as much as on anything proposed here**, so it is reported first and separately. Each AWC PDF
 read for this note also carries its own notice — the 140 mph guide's is "No part of this publication
 may be reproduced, distributed, or transmitted in any form or by any means … without express written
-permission of the American Wood Council" (p. ii) — the same posture DCA 6's cover took.
+permission of the American Wood Council" (the unnumbered title-page verso, before the page marked
+"i") — the same posture DCA 6's cover took.
 
 Because of the AI sentence, this session **stopped extracting text from AWC PDFs** once the EULA
 was read (§3, WFCM 2018). Before it was read, this session had already extracted the text of the
@@ -92,7 +94,7 @@ Free PDFs on AWC's media host, one per wind zone; three were read:
 returned redirect to these `web-media.awc.org` files.)
 
 The 140 mph guide is "Copyright © 2015 by American Wood Council … First Web Version: November 2015,
-ISBN 978-1-940383-29-3", "Based on the 2015 WFCM" (p. ii). It has a header table — **Table 11,
+ISBN 978-1-940383-29-3", "Based on the 2015 WFCM" (title-page verso). It has a header table — **Table 11,
 Headers in Loadbearing Exterior Walls** (p. 17), by header span in feet with a minimum header size,
 full-height studs at each end and uplift and lateral connection loads — but the document itself says
 it is not a gravity header table:
@@ -273,8 +275,8 @@ check it against the real row later — is real. What honestly serves it:
    answer will be labelled as the table's worst case, not your site's" — is the over-engineering mode
    Marc described, built on real cited rows, generic across any table input, refusing (Out of scope)
    when even the heaviest band does not reach the span. It is not a new pack and needs no new source;
-   it is a small design once #14 exists, and it would apply to a DCA 6 deck table today (the snow
-   limit, say) if anyone wanted it there. Not designed here: the task was a pack.
+   it is a small design once #14 exists, for tables that band on a site value (R602.7(1)'s snow and
+   width columns; the WFCM's 3.22 series). Not designed here: the task was a pack.
 3. **If Marc, having read §1, accepts the WFCM under the DCA 6 stance**, the honest feature is a
    **WFCM header guide layer** through #238's machinery — `guides` entry, scope limits, a header
    table kind, the caveat clause on every line, answered on the wall's real inputs and labelled a
@@ -289,7 +291,8 @@ check it against the real row later — is real. What honestly serves it:
   text was not extracted (§1). The scope statement of the standard and the header tables' footnotes
   are therefore not quoted here.
 - The 115 mph and 150 mph guides' Table 11 were not compared line by line with the 140 mph guide's;
-  the 140 mph guide's text was read in full for the header question.
+  the 140 mph guide was read for the header question (front matter, scope, §4.2, Table 11 and
+  searches of its text), not cover to cover.
 - No issue was filed and no design note written: deliverable (b) of the task. The orchestrator
   should decide whether §1 becomes an issue against the DCA 6 stance (recommended) and whether this
   research note lands (it is `docs/research/`, like `diy-alternatives.md`, not a design).
