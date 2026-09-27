@@ -52,7 +52,7 @@ public class GuideLayerTests
         Assert.Equal(CitationLayer.ModelCode, pack.Deck.Ledger!.Layer);
         Assert.Null(pack.Deck.GuardStair!.Guide);
         Assert.Equal("layers/zz-deck-2099/deck/zz-guard-stair.json", pack.Deck.GuardStair.File);
-        Assert.Equal(["ZZ-GUIDE-JOIST", "ZZ-DECK-BEAM", "ZZ-RAFTER", "ZZ-DECK-LEDGER", "ZZ-DECK-FOOTING"], pack.Deck.Tables.Select(table => table.Designation));
+        Assert.Equal(["ZZ-GUIDE-JOIST", "ZZ-DECK-BEAM", "ZZ-RAFTER", "ZZ-DECK-LEDGER", "ZZ-DECK-FOOTING", "ZZ-DECK-POST-CORNER", "ZZ-DECK-POST-CENTER"], pack.Deck.Tables.Select(table => table.Designation));
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public class GuideLayerTests
 
         LoadedPack pack = Fx.Loaded(PackLoader.Load(source, "us-zz-deck"));
         DeckScopeInputs deck = new("zz-deck", "zz-fir", 30, In(120), In(144));
-        ExactFraction area = new((Int128)In(60).Units * In(60).Units, 1);
+        PostArea area = new(new ExactFraction((Int128)In(60).Units * In(60).Units, 1), PostPosition.Corner, ContinuousBeam: false);
 
         Assert.Equal("supports", Assert.IsType<DeckResult.InputMissing>(DeckEvaluator.SizeLedger(pack, "2x8", In(117), In(144))).Input);
         Assert.IsType<DeckResult.Sized>(DeckEvaluator.SizeLedger(pack, "2x8", In(117), In(144), deck));

@@ -32,7 +32,7 @@ public class DeckGoldenTests
     [Trait("Feature", "RUL-004")]
     public void Every_synthetic_deck_golden_file_passes_and_its_boundaries_are_the_generators()
     {
-        foreach (string name in new[] { "zz-guide-joist.golden.json", "zz-deck-beam.golden.json", "zz-rafter.golden.json", "zz-deck-ledger.golden.json", "zz-deck-footing.golden.json" })
+        foreach (string name in new[] { "zz-guide-joist.golden.json", "zz-deck-beam.golden.json", "zz-rafter.golden.json", "zz-deck-ledger.golden.json", "zz-deck-footing.golden.json", "zz-deck-post-corner.golden.json", "zz-deck-post-center.golden.json" })
         {
             GoldenFileResult result = Run(Golden(name));
             Assert.True(result.Passed, result.ToString());
@@ -54,7 +54,11 @@ public class DeckGoldenTests
     [InlineData("zz-deck-ledger.golden.json", "\"spacing\": \"17in\", \"count\": 10", "\"spacing\": \"17in\", \"count\": 11", "expected zz-bolts, staggered, 1'-5\", 11; got zz-bolts, staggered, 1'-5\", 10")]
     [InlineData("zz-deck-ledger.golden.json", "\"expect\": { \"outOfScope\": { \"column\": \"member\" } }", "\"expect\": { \"sized\": { \"text\": \"zz-bolts\" } }", "a sized case names the row it expects")]
     [InlineData("zz-deck-footing.golden.json", "\"row\": \"r.20.2000\", \"location\"", "\"row\": \"r.20.1500\", \"location\"", "sized, but from row 'r.20.2000', expected 'r.20.1500'")]
-    [InlineData("zz-deck-footing.golden.json", "\"expect\": { \"sized\": { \"text\": \"zz 14 in square\" } }", "\"expect\": { \"sized\": { \"text\": \"zz 99 in square\" } }", "expected zz 99 in square; got zz 14 in square")]
+    [InlineData("zz-deck-footing.golden.json", "\"expect\": { \"sized\": { \"round\": \"16in\", \"square\": \"14in\", \"thickness\": \"6in\" } }", "\"expect\": { \"sized\": { \"round\": \"16in\", \"square\": \"99in\", \"thickness\": \"6in\" } }", "expected 1ft 4in round, 8ft 3in square, 6in thick; got 1ft 4in round, 1ft 2in square, 6in thick")]
+    [InlineData("zz-deck-post-corner.golden.json", "\"expect\": { \"outOfScope\": { \"notPermitted\": true } }", "\"expect\": { \"passes\": { \"allowed\": \"1ft 0in\" } }", "expected passes from row 'r.cedar.4x4.80'; got OutOfScope")]
+    [InlineData("zz-deck-post-corner.golden.json", "{ \"row\": \"r.cedar.4x4.80\", \"location\"", "{ \"row\": \"r.cedar.4x4.40\", \"location\"", "NP, but from row 'r.cedar.4x4.80', expected 'r.cedar.4x4.40'")]
+    [InlineData("zz-deck-post-corner.golden.json", "\"expect\": { \"outOfScope\": { \"column\": \"post\" } }", "\"expect\": { \"outOfScope\": { \"column\": \"species\" } }", "out of scope for post, expected species")]
+    [InlineData("zz-deck-post-corner.golden.json", "\"expect\": { \"short\": { \"allowed\": \"4ft 0in\", \"over\": \"1in\" } }", "\"expect\": { \"outOfScope\": { \"notPermitted\": true } }", "expected out of scope, row 'r.fir.4x4.40' printing NP; got Short")]
     [InlineData("zz-deck-footing.golden.json", "\"expect\": { \"inputMissing\": { \"input\": \"soilBearing\" } }", "\"expect\": { \"sized\": { \"text\": \"zz 14 in square\" } }", "a sized case names the row it expects")]
     public void A_wrong_expectation_fails_and_says_why(string name, string original, string replacement, string detail)
         => Assert.Contains(detail, Run(Edited(name, original, replacement)).ToString(), StringComparison.Ordinal);
@@ -84,6 +88,16 @@ public class DeckGoldenTests
     }
 
     [Fact]
+    public void A_centre_post_factor_that_no_hand_case_exercises_fails_the_file()
+    {
+        // Every hand case on a spliced beam: the table's factor is never applied, so the file does not prove it.
+        string json = Golden("zz-deck-post-center.golden.json").Replace("\"continuousBeam\": true", "\"continuousBeam\": false", StringComparison.Ordinal);
+        Assert.Contains(
+            Run(json).Problems,
+            problem => problem.Contains("the centre-post factor of table ZZ-DECK-POST-CENTER (note b) is exercised by no hand-authored golden case naming its row", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void A_stale_or_missing_boundary_pair_fails_the_file_and_the_generators_pairs_are_printed()
     {
         string json = Golden("zz-deck-ledger.golden.json");
@@ -96,7 +110,7 @@ public class DeckGoldenTests
 
     [Theory]
     [InlineData("zz-guide-joist.golden.json", "\"expect\": { \"passes\": { \"allowed\": \"12ft 7in\" } }", "\"expect\": { \"passes\": { \"allowed\": \"12ft 7in\" }, \"noData\": {} }", "expect: exactly one of passes, short, sized, outOfScope, inputMissing, noData")]
-    [InlineData("zz-guide-joist.golden.json", "\"expect\": { \"outOfScope\": { \"limit\": \"s.loads\" } }", "\"expect\": { \"outOfScope\": { \"limit\": \"s.loads\", \"column\": \"supports\" } }", "exactly one of limit (a scope limit's id) or column")]
+    [InlineData("zz-guide-joist.golden.json", "\"expect\": { \"outOfScope\": { \"limit\": \"s.loads\" } }", "\"expect\": { \"outOfScope\": { \"limit\": \"s.loads\", \"column\": \"supports\" } }", "exactly one of limit (a scope limit's id), column (the input no row covers) or notPermitted: true")]
     [InlineData("zz-guide-joist.golden.json", "\"span\": \"11ft 0in\" }", "\"span\": \"11ft 0in\", \"ledgerLength\": \"1in\" }", "ledgerLength: unknown field")]
     [InlineData("zz-guide-joist.golden.json", "\"span\": \"11ft 0in\" }", "\"spam\": \"11ft 0in\" }", "span: missing required field")]
     [InlineData("zz-deck-footing.golden.json", "\"tributaryArea\": 15,", "\"tributaryArea\": [\"1ft 0in\"],", "whole square feet, or two lengths whose product is the area")]
@@ -109,10 +123,18 @@ public class DeckGoldenTests
     [InlineData("zz-deck-ledger.golden.json", "\"inputs\": { \"member\": \"2x12\", \"joistSpan\": \"9ft 9in\", \"ledgerLength\": \"12ft 0in\" },", "", "inputs: missing required field")]
     [InlineData("zz-deck-ledger.golden.json", "\"expect\": { \"outOfScope\": { \"column\": \"member\" } }", "\"hope\": {}", "expect: missing required field")]
     [InlineData("zz-deck-ledger.golden.json", "\"expect\": { \"outOfScope\": { \"column\": \"member\" } }", "\"expect\": { \"outOfScope\": 5 }", "must be a JSON object")]
-    [InlineData("zz-deck-footing.golden.json", "\"inputs\": { \"tributaryArea\": 20 },", "\"inputs\": { \"soilBearing\": 20 },", "tributaryArea: missing required field")]
+    [InlineData("zz-deck-footing.golden.json", "\"inputs\": { \"tributaryArea\": 20, \"position\": \"corner\" },", "\"inputs\": { \"soilBearing\": 20, \"position\": \"corner\" },", "tributaryArea: missing required field")]
+    [InlineData("zz-deck-footing.golden.json", "\"inputs\": { \"tributaryArea\": 20, \"position\": \"corner\" },", "\"inputs\": { \"tributaryArea\": 20 },", "position: missing required field")]
+    [InlineData("zz-deck-footing.golden.json", "\"inputs\": { \"tributaryArea\": 20, \"position\": \"corner\" },", "\"inputs\": { \"tributaryArea\": 20, \"position\": \"edge\" },", "'edge'")]
+    [InlineData("zz-deck-post-center.golden.json", "\"tributaryArea\": 12, \"continuousBeam\": true,", "\"tributaryArea\": 12, \"continuousBeam\": \"yes\",", "continuousBeam: true or false")]
+    [InlineData("zz-deck-post-corner.golden.json", "\"tributaryArea\": 40, \"height\": \"4ft 1in\" },", "\"tributaryArea\": 40 },", "height: missing required field")]
+    [InlineData("zz-deck-post-corner.golden.json", "\"expect\": { \"outOfScope\": { \"notPermitted\": true } }", "\"expect\": { \"outOfScope\": { \"notPermitted\": false } }", "notPermitted: true, when the row's cell prints NP")]
+    [InlineData("zz-deck-post-corner.golden.json", "\"expect\": { \"outOfScope\": { \"notPermitted\": true } }", "\"expect\": { \"outOfScope\": { \"notPermitted\": true, \"column\": \"post\" } }", "exactly one of limit")]
+    [InlineData("zz-deck-post-corner.golden.json", "\"post\": \"8x8\", \"tributaryArea\": 20, \"height\": \"1ft 0in\" },\n      \"expect\": { \"outOfScope\": { \"column\": \"post\" } }", "\"post\": \"8x8\", \"tributaryArea\": 20, \"height\": \"1ft 0in\" },\n      \"expect\": { \"outOfScope\": { \"notPermitted\": true } }", "an outOfScope notPermitted case names the row it expects")]
     [InlineData("zz-deck-beam.golden.json", "\"expect\": { \"passes\": { \"allowed\": \"5ft 7in\" } }", "\"expect\": { \"passes\": {} }", "allowed: missing required field")]
     [InlineData("zz-deck-beam.golden.json", "\"expect\": { \"short\": { \"allowed\": \"4ft 3in\", \"over\": \"3in\" } }", "\"expect\": { \"short\": { \"allowed\": \"4ft 3in\" } }", "over: missing required field")]
-    [InlineData("zz-deck-footing.golden.json", "\"expect\": { \"sized\": { \"text\": \"zz 14 in square\" } }", "\"expect\": { \"sized\": {} }", "text: missing required field")]
+    [InlineData("zz-deck-footing.golden.json", "\"expect\": { \"sized\": { \"round\": \"16in\", \"square\": \"14in\", \"thickness\": \"6in\" } }", "\"expect\": { \"sized\": {} }", "text: missing required field")]
+    [InlineData("zz-deck-footing.golden.json", "\"expect\": { \"sized\": { \"round\": \"16in\", \"square\": \"14in\", \"thickness\": \"6in\" } }", "\"expect\": { \"sized\": { \"round\": \"16in\", \"square\": \"14in\" } }", "thickness: a footing case expects all three of round, square and thickness")]
     [InlineData("zz-deck-footing.golden.json", "\"expect\": { \"inputMissing\": { \"input\": \"soilBearing\" } }", "\"expect\": { \"inputMissing\": {} }", "input: missing required field")]
     public void A_malformed_case_is_a_problem_of_the_file(string name, string original, string replacement, string message)
         => Assert.Contains(message, Run(Edited(name, original, replacement)).ToString(), StringComparison.Ordinal);

@@ -113,18 +113,61 @@ public class DeckTableTests
     public void The_footing_takes_the_largest_bearing_column_at_most_the_sites()
     {
         // The worked example's middle post, DCA 6 Appendix B Eq. B-1: 72" × 59 1/4" = 4266 sq in = 29.6 sq ft (≤ 40) on
-        // 2000 psf: "zz 15 in square".
-        ExactFraction area = new((Int128)In(72).Units * In(59, 1, 4).Units, 1);
-        Assert.Equal("zz 15 in square", Assert.IsType<DeckResult.Sized>(DeckEvaluator.SizeFooting(Deck(), area, 2000)).Row.Text);
+        // 2000 psf: 17" round or 15" square, 7" thick. The synthetic table declares no centre-post factor, so a
+        // continuous beam does not multiply it.
+        PostArea area = new(new ExactFraction((Int128)In(72).Units * In(59, 1, 4).Units, 1), PostPosition.Center, ContinuousBeam: true);
+        DeckResult.Sized sized = Assert.IsType<DeckResult.Sized>(DeckEvaluator.SizeFooting(Deck(), area, 2000));
+        Assert.Equal(new FootingSize(In(17), In(15), In(7)), sized.Row.Footing);
+        Assert.Equal(new AreaAsked(area.Area, null, area.Area), sized.Area);
 
-        // 1999 psf is never rounded up to the 2000 column: the 1500 one, "zz 18 in square".
-        Assert.Equal("zz 18 in square", Assert.IsType<DeckResult.Sized>(DeckEvaluator.SizeFooting(Deck(), area, 1999)).Row.Text);
-        Assert.Equal("zz 13 in square", Assert.IsType<DeckResult.Sized>(DeckEvaluator.SizeFooting(Deck(), area, 3500)).Row.Text);
+        // 1999 psf is never rounded up to the 2000 column: the 1500 one, 18" square.
+        Assert.Equal(In(18), Assert.IsType<DeckResult.Sized>(DeckEvaluator.SizeFooting(Deck(), area, 1999)).Row.Footing!.Square);
+        Assert.Equal(In(13), Assert.IsType<DeckResult.Sized>(DeckEvaluator.SizeFooting(Deck(), area, 3500)).Row.Footing!.Square);
 
         DeckResult.OutOfScope soft = Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.SizeFooting(Deck(), area, 1400));
         Assert.Contains("below the lowest band of table ZZ-DECK-FOOTING (1500 psf)", soft.Explanation, StringComparison.Ordinal);
-        Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.SizeFooting(Deck(), new ExactFraction((Int128)81 * 144 * 1024 * 1024, 1), 2000));
-        Assert.Equal("soilBearing", Assert.IsType<DeckResult.InputMissing>(DeckEvaluator.SizeFooting(Deck(), area, null)).Input);
+        Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.SizeFooting(Deck(), area with { Area = new ExactFraction((Int128)81 * 144 * 1024 * 1024, 1) }, 2000));
+        DeckResult.InputMissing soil = Assert.IsType<DeckResult.InputMissing>(DeckEvaluator.SizeFooting(Deck(), area, null));
+        Assert.Equal("soilBearing", soil.Input);
+        Assert.Equal(
+            "Enter the site's soil bearing value, from the building department or a soils report, in Project → Adopted code and site: table ZZ-DECK-FOOTING bands on it.",
+            soil.Explanation);
+    }
+
+    [Fact]
+    [Trait("Feature", "DECK-003")]
+    public void A_post_is_checked_against_its_positions_table_and_a_centre_post_under_a_continuous_beam_is_multiplied()
+    {
+        // The worked example's end post, Eq. B-2: 36" × 59 1/4" = 2133 sq in = 14.8 sq ft, a zz-fir 4x4 1'-6 1/2" high:
+        // the corner table's ≤ 20 sq ft row, 6'-0".
+        PostArea end = new(new ExactFraction((Int128)In(36).Units * In(59, 1, 4).Units, 1), PostPosition.Corner, ContinuousBeam: true);
+        DeckResult.Passes corner = Assert.IsType<DeckResult.Passes>(DeckEvaluator.CheckPost(Deck(), new PostRequest("4x4", In(18, 1, 2), "zz-fir", end)));
+        Assert.Equal(("ZZ-DECK-POST-CORNER", "r.fir.4x4.20", In(72)), (corner.Table.Designation, corner.Row.Id, corner.Allowed));
+        Assert.Null(corner.Area!.Factor);
+
+        // The middle post, Eq. B-1: 29.6 sq ft × the synthetic factor 3/2 = 44.4 sq ft: the centre table's ≤ 80 row, 7'-0".
+        PostArea middle = new(new ExactFraction((Int128)In(72).Units * In(59, 1, 4).Units, 1), PostPosition.Center, ContinuousBeam: true);
+        DeckResult.Passes center = Assert.IsType<DeckResult.Passes>(DeckEvaluator.CheckPost(Deck(), new PostRequest("4x4", In(18, 1, 2), "zz-fir", middle)));
+        Assert.Equal(("ZZ-DECK-POST-CENTER", "r.fir.4x4.80", In(84)), (center.Table.Designation, center.Row.Id, center.Allowed));
+        Assert.Equal(("b", new ExactFraction((Int128)In(72).Units * In(59, 1, 4).Units * 3, 2)), (center.Area!.Factor!.Note, center.Area.Looked));
+
+        // A spliced beam is not multiplied: 29.6 sq ft, the ≤ 40 row, 8'-0"; 8'-1" is 1" over.
+        DeckResult.Short spliced = Assert.IsType<DeckResult.Short>(DeckEvaluator.CheckPost(Deck(), new PostRequest("4x4", In(97), "zz-fir", middle with { ContinuousBeam = false })));
+        Assert.Equal(("r.fir.4x4.40", In(1)), (spliced.Row.Id, spliced.Over));
+
+        // A cell printed NP is out of scope, citing the row; the sentence quotes NP as printed.
+        DeckResult.OutOfScope np = Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckPost(Deck(), new PostRequest("4x4", In(12), "zz-cedar", middle)));
+        Assert.Equal(("r.cedar.4x4.80", true, null, null), (np.Row!.Id, np.Row.NotPermitted, np.Limit, np.Column));
+        Assert.Equal("Table ZZ-DECK-POST-CENTER prints NP, no height, for a 4x4 post of zz-cedar carrying up to 80 sq ft (row r.cedar.4x4.80, synthetic p. 9 row zz-cedar 4x4 80): get it engineered.", np.Explanation);
+
+        // No such post, no species, and a pack without a post table.
+        Assert.Equal("post", Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckPost(Deck(), new PostRequest("8x8", In(12), "zz-fir", end))).Column);
+        Assert.Equal("species", Assert.IsType<DeckResult.InputMissing>(DeckEvaluator.CheckPost(Deck(), new PostRequest("4x4", In(12), null, end))).Input);
+        LoadedPack ct = Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "BracePacks"), "us-zz-brace-a"));
+        Assert.StartsWith("The loaded pack", Assert.IsType<DeckResult.NoData>(DeckEvaluator.CheckPost(ct, new PostRequest("4x4", In(12), "zz-fir", end))).Explanation, StringComparison.Ordinal);
+        Assert.Equal(
+            ["1.25", "2", "5/3", "0.5", "-0.75"],
+            new[] { new ExactFraction(5, 4), ExactFraction.Whole(2), new ExactFraction(5, 3), new ExactFraction(1, 2), new ExactFraction(-3, 4) }.Select(factor => new CenterPostFactor("4", factor, "t", "l").Words));
     }
 
     [Fact]
@@ -137,7 +180,7 @@ public class DeckTableTests
             "The loaded pack CT 2022 has no rafter span, so napkin cannot check this. Nothing is guessed: add it from your copy of the code (docs/rules-engine.md).",
             Assert.IsType<DeckResult.NoData>(DeckEvaluator.CheckSpan(ct, SpanUse.Rafter, new SpanRequest("2x8", In(117), null, "Southern Pine", In(16), null, 30))).Explanation);
         Assert.IsType<DeckResult.NoData>(DeckEvaluator.SizeLedger(ct, "2x8", In(117), In(144)));
-        Assert.IsType<DeckResult.NoData>(DeckEvaluator.SizeFooting(ct, ExactFraction.Whole(1), 2000));
+        Assert.IsType<DeckResult.NoData>(DeckEvaluator.SizeFooting(Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "BracePacks"), "us-zz-brace-a")), new PostArea(ExactFraction.Whole(1), PostPosition.Corner, false), 2000));
         Assert.Equal(["deck joist span", "deck beam span", "rafter span"], new[] { SpanUse.DeckJoist, SpanUse.DeckBeam, SpanUse.Rafter }.Select(DeckEvaluator.Words));
         Assert.Equal("what the deck supports", DeckEvaluator.Spoken("supports"));
         Assert.Equal("member", DeckEvaluator.Spoken("member"));
@@ -179,6 +222,14 @@ public class DeckLoaderTests
     [InlineData("zz-guard-stair.json", "\"triggerHeight\": \"28in\"", "\"triggerHeight\": \"0in\"", "must be longer than zero, or null")]
     [InlineData("zz-guard-stair.json", "\"handrailWhenRisersAtLeast\": 3", "\"handrailWhenRisersAtLeast\": 0", "handrailWhenRisersAtLeast")]
     [InlineData("zz-guard-stair.json", "\"section\": \"ZZ-GUARD.1\"", "\"section\": \"ZZ-GUARD.1\", \"extra\": 1", "extra: unknown field")]
+    [InlineData("zz-deck-post-center.json", "\"multiply\": \"3/2\",", "\"multiply\": \"1.5\",", "'1.5' is not a positive exact fraction")]
+    [InlineData("zz-deck-post-center.json", "\"note\": \"b\",", "\"note\": \"a\",", "note 'a' is the factor, so it is not also one of the table's footnotes")]
+    [InlineData("zz-deck-post-center.json", "\"text\": \"SYNTHETIC note b: a centre post's area under a continuous beam is multiplied by 3/2.\",", "\"text\": \" \",", "centerPostFactor.text: blank")]
+    [InlineData("zz-deck-post-center.json", "\"location\": \"synthetic p. 9 note b\"", "\"place\": \"synthetic p. 9 note b\"", "centerPostFactor.location: missing required field")]
+    [InlineData("zz-deck-post-center.json", "\"centerPostFactor\": {", "\"centerPostFactor\": 5, \"x\": {", "centerPostFactor: must be a JSON object")]
+    [InlineData("zz-deck-post-corner.json", "\"position\": \"corner\",", "\"position\": \"corner\", \"centerPostFactor\": { \"note\": \"b\", \"text\": \"t\", \"multiply\": \"3/2\", \"location\": \"l\" },", "only a deck-footing table or a deck-post table for 'center' posts multiplies a centre post's tributary area; this deck-post table may not declare one")]
+    [InlineData("zz-deck-ledger.json", "\"kind\": \"deck-ledger\",", "\"kind\": \"deck-ledger\", \"centerPostFactor\": { \"note\": \"b\", \"text\": \"t\", \"multiply\": \"3/2\", \"location\": \"l\" },", "this deck-ledger table may not declare one")]
+    [InlineData("zz-deck-footing.json", "\"kind\": \"deck-footing\",", "\"kind\": \"deck-footing\", \"position\": \"corner\",", "position: unknown field")]
     public void A_malformed_deck_file_is_refused_naming_its_fault(string file, string original, string replacement, string message)
         => Assert.Contains(message, Refused(Edit(file.StartsWith("layers/", StringComparison.Ordinal) ? file : $"{Layer}/{file}", original, replacement)), StringComparison.Ordinal);
 
@@ -193,6 +244,7 @@ public class DeckLoaderTests
                  {
                      ("zz-deck-ledger.json", "a second deck-ledger table"),
                      ("zz-deck-footing.json", "a second deck-footing table"),
+                     ("zz-deck-post-corner.json", "a second deck-post table for 'corner' posts"),
                      ("zz-guard-stair.json", "a second deck-guard-stair file"),
                  })
         {
@@ -233,11 +285,13 @@ public class DeckLoaderTests
     [Fact]
     public void A_pack_whose_base_layer_has_no_deck_files_has_only_its_guides_deck_tables()
     {
-        // Connecticut's base layer irc-2021 has no deck/ directory; its deck tables are DCA 6's Tables 2 and 3A (#41).
+        // Connecticut's base layer irc-2021 has no deck/ directory; its deck tables are DCA 6's Tables 2 and 3A (#41) and
+        // Appendix B's B1, B2 and B3 (#42).
         LoadedPack ct = Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "RealPacks"), "us-ct-2022"));
         Assert.Equal([SpanUse.DeckJoist, SpanUse.DeckBeam], ct.Deck.Spans.Keys.Order());
-        Assert.All(ct.Deck.Spans.Values, table => Assert.Equal("dca6-2015", table.Guide!.Id));
-        Assert.Equal((null, null, null), (ct.Deck.Ledger, ct.Deck.Footing, ct.Deck.GuardStair));
+        Assert.All(ct.Deck.Tables, table => Assert.Equal("dca6-2015", table.Guide!.Id));
+        Assert.Equal(["2", "3A", "B3", "B1", "B2"], ct.Deck.Tables.Select(table => table.Designation));
+        Assert.Equal((null, null), (ct.Deck.Ledger, ct.Deck.GuardStair));
         Assert.Empty(DeckProvisions.None.Spans);
         Assert.NotNull(ct.Frost);
         Assert.Equal("1500 psf", CellValue.Whole(ColumnType.Psf, 1500).ToString());
@@ -275,7 +329,15 @@ public class DeckReaderEdgeTests
     [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"spacing\": \"12in\",", "", "spacing: missing required field")]
     [InlineData("layers/zz-guide-2099/deck/zz-guide-joist.json", "\"span\": \"11ft 1in\"", "\"span\": 5", "span")]
     [InlineData("zz-deck-ledger.json", "\"fastener\": \"zz-bolts, staggered\",", "", "fastener: missing required field")]
-    [InlineData("zz-deck-footing.json", "\"footing\": \"zz 14 in square\",", "", "footing: missing required field")]
+    [InlineData("zz-deck-footing.json", "\"round\": \"16in\",", "", "round: missing required field")]
+    [InlineData("zz-deck-footing.json", "\"thickness\": \"6in\",", "\"thickness\": \"0in\",", "thickness: must be longer than zero")]
+    [InlineData("zz-deck-post-corner.json", "\"height\": \"6ft 0in\",", "\"height\": \"6ft 0in\", \"notPermitted\": true,", "a deck-post row has exactly one of 'height' (the printed post height) or 'notPermitted': true")]
+    [InlineData("zz-deck-post-corner.json", "\"height\": \"6ft 0in\",", "", "a deck-post row has exactly one of 'height'")]
+    [InlineData("zz-deck-post-corner.json", "\"notPermitted\": true,", "\"notPermitted\": false,", "is true when the cell prints NP; a cell with a height writes 'height' instead")]
+    [InlineData("zz-deck-post-corner.json", "\"height\": \"6ft 0in\",", "\"height\": \"0in\",", "height: must be longer than zero")]
+    [InlineData("zz-deck-post-corner.json", "\"position\": \"corner\",", "\"position\": \"edge\",", "'edge'")]
+    [InlineData("zz-deck-post-corner.json", "\"position\": \"corner\",", "", "position: missing required field")]
+    [InlineData("zz-deck-post-corner.json", "\"name\": \"post\",", "\"name\": \"member\",", "'member' is not an input this table can be asked")]
     [InlineData("zz-guard-stair.json", "\"location\": \"synthetic p. 7 guard\"", "\"place\": \"synthetic p. 7 guard\"", "location: missing required field")]
     [InlineData("zz-guard-stair.json", "\"minimumTread\": \"9in\"", "\"minimumTread\": 9", "minimumTread")]
     public void Each_is_refused_naming_its_fault(string file, string original, string replacement, string message)

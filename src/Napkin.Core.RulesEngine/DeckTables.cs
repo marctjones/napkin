@@ -18,11 +18,71 @@ public enum SpanUse
     Rafter,
 }
 
+/// <summary>
+/// Which post a post-height or footing lookup is about (DCA 6 Appendix B, Figure B1, p. B1; deck-guide-pack §3.4):
+/// a corner post, whose area is Eq. B-2's, or a centre post, whose area is Eq. B-1's.
+/// </summary>
+public enum PostPosition
+{
+    /// <summary>A corner post: napkin's end post (Table B1).</summary>
+    Corner,
+
+    /// <summary>A centre post: napkin's middle post, when the beam has three or more (Table B2).</summary>
+    Center,
+}
+
+/// <summary>A footing row's three outputs as the table prints them (deck-guide-pack §3.4): round diameter, square side, thickness.</summary>
+/// <param name="Round">The round footing's diameter.</param>
+/// <param name="Square">The square footing's side.</param>
+/// <param name="Thickness">The footing's thickness.</param>
+public sealed record FootingSize(Length Round, Length Square, Length Thickness);
+
+/// <summary>
+/// A table's declared factor on a centre post's tributary area (deck-guide-pack §3.4, §4 item 7): DCA 6's "Tributary
+/// area shall be multiplied by 1.25 at center posts with beams not spliced (continuous)" (Table B2 note 4, p. B4;
+/// Table B3 note 2, p. B5). An operation, not a footnote: the evaluator multiplies a centre post's area under a
+/// continuous beam by it, exactly, before the lookup, and the answer says so. Declared by a footing table or a
+/// centre post table only; the note it encodes is carried here, verbatim, not among the table's footnotes.
+/// </summary>
+/// <param name="Note">The note's number as printed.</param>
+/// <param name="Multiply">The factor, an exact fraction ("5/4").</param>
+/// <param name="Text">The note, verbatim.</param>
+/// <param name="Location">Where the note is printed and where its superscript sits.</param>
+public sealed record CenterPostFactor(string Note, ExactFraction Multiply, string Text, string Location)
+{
+    /// <summary>The factor as a sentence says it: "1.25" when it is a terminating decimal, otherwise "5/3".</summary>
+    public string Words => Decimal(Multiply);
+
+    /// <summary>An exact fraction as a terminating decimal when it is one ("1.25"), otherwise "n/d".</summary>
+    internal static string Decimal(ExactFraction value)
+    {
+        Int128 d = value.Denominator;
+        int places = 0;
+        Int128 scale = 1;
+        while (d % 2 == 0 || d % 5 == 0)
+        {
+            d = d % 2 == 0 ? d / 2 : d / 5;
+            places++;
+            scale *= 10;
+        }
+
+        if (d != 1)
+        {
+            return value.ToString();
+        }
+
+        Int128 scaled = value.Numerator * scale / value.Denominator;
+        string digits = Int128.Abs(scaled).ToString(System.Globalization.CultureInfo.InvariantCulture).PadLeft(places + 1, '0');
+        string sign = scaled < 0 ? "-" : string.Empty;
+        return places == 0 ? sign + digits : $"{sign}{digits[..^places]}.{digits[^places..]}";
+    }
+}
+
 /// <summary>One row of a deck table: its id, its value in each input column, its outputs and where it is printed.</summary>
 /// <param name="Id">The row's id.</param>
 /// <param name="Inputs">Its value in each input column.</param>
 /// <param name="Span">A member-span row's allowed span; otherwise zero.</param>
-/// <param name="Text">A ledger row's fastener, or a footing row's footing, as printed; otherwise empty.</param>
+/// <param name="Text">A ledger row's fastener as printed; otherwise empty.</param>
 /// <param name="Spacing">A ledger row's fastener spacing; otherwise zero.</param>
 /// <param name="Source">Where the row is printed.</param>
 /// <param name="Footnotes">The ids of the footnotes the row lists.</param>
@@ -41,6 +101,18 @@ public sealed record DeckRow(
     /// <see cref="DeckTable.OverhangLimit"/> of the actual span.
     /// </summary>
     public Length? Overhang { get; init; }
+
+    /// <summary>A deck-post row's maximum post height (deck-guide-pack §3.4); null for another kind or a row printed NP.</summary>
+    public Length? Height { get; init; }
+
+    /// <summary>
+    /// A deck-post row whose cell prints "NP" instead of a height (<c>"notPermitted": true</c>): a post there is
+    /// answered Out of scope, citing the row, and the sentence quotes "NP" as printed — the page does not expand it.
+    /// </summary>
+    public bool NotPermitted { get; init; }
+
+    /// <summary>A deck-footing row's round, square and thickness (deck-guide-pack §3.4); null for another kind.</summary>
+    public FootingSize? Footing { get; init; }
 }
 
 /// <summary>
@@ -52,7 +124,7 @@ public sealed record DeckRow(
 /// <param name="Location">Where the rule is printed.</param>
 public sealed record OverhangLimit(ExactFraction Fraction, string Location);
 
-/// <summary>A deck table: a joist, beam or rafter span table, the ledger table, or the footing table.</summary>
+/// <summary>A deck table: a joist, beam or rafter span table, the ledger table, the footing table, or a post-height table.</summary>
 /// <param name="Kind">The file's kind.</param>
 /// <param name="Use">A member-span table's use; null for the others.</param>
 /// <param name="Designation">The table's designation, as a citation prints it.</param>
@@ -88,6 +160,15 @@ public sealed record DeckTable(
     /// carry <see cref="DeckRow.Overhang"/>; null for a table that does not cover an overhang.
     /// </summary>
     public OverhangLimit? OverhangLimit { get; init; }
+
+    /// <summary>A deck-post table's position, corner or centre, as a span table's use keys it; null for another kind.</summary>
+    public PostPosition? Position { get; init; }
+
+    /// <summary>
+    /// The factor on a centre post's tributary area under a continuous beam that a footing or centre post table declares
+    /// (DCA 6 Table B2 note 4, Table B3 note 2); null when it declares none.
+    /// </summary>
+    public CenterPostFactor? CenterPostFactor { get; init; }
 
     /// <summary>Which layer a citation names: the base layer's model code, or a guide.</summary>
     public CitationLayer Layer => Guide is null ? CitationLayer.ModelCode : CitationLayer.Guide;
@@ -126,9 +207,14 @@ public sealed record DeckProvisions(
     /// <summary>No deck tables at all.</summary>
     public static readonly DeckProvisions None = new(ImmutableDictionary<SpanUse, DeckTable>.Empty, null, null, null);
 
-    /// <summary>Every deck table, in kind order: the span tables by use, the ledger, the footing.</summary>
+    /// <summary>The post-height tables by position (deck-guide-pack §3.4): a corner table and a centre table, each optional.</summary>
+    public ImmutableDictionary<PostPosition, DeckTable> Posts { get; init; } = ImmutableDictionary<PostPosition, DeckTable>.Empty;
+
+    /// <summary>Every deck table, in kind order: the span tables by use, the ledger, the footing, the post tables by position.</summary>
     public IEnumerable<DeckTable> Tables
-        => Spans.OrderBy(pair => pair.Key).Select(pair => pair.Value).Concat(new[] { Ledger, Footing }.OfType<DeckTable>());
+        => Spans.OrderBy(pair => pair.Key).Select(pair => pair.Value)
+            .Concat(new[] { Ledger, Footing }.OfType<DeckTable>())
+            .Concat(Posts.OrderBy(pair => pair.Key).Select(pair => pair.Value));
 }
 
 /// <summary>
@@ -141,6 +227,7 @@ internal static class DeckReader
     public const string MemberSpanKind = "member-span";
     public const string LedgerKind = "deck-ledger";
     public const string FootingKind = "deck-footing";
+    public const string PostKind = "deck-post";
     public const string GuardStairKind = "deck-guard-stair";
     public const string FrostKind = "frost";
 
@@ -150,6 +237,15 @@ internal static class DeckReader
         ["deck-beam"] = SpanUse.DeckBeam,
         ["rafter"] = SpanUse.Rafter,
     };
+
+    static readonly IReadOnlyDictionary<string, PostPosition> Positions = new Dictionary<string, PostPosition>(StringComparer.Ordinal)
+    {
+        ["corner"] = PostPosition.Corner,
+        ["center"] = PostPosition.Center,
+    };
+
+    /// <summary>"corner" or "center", as a deck-post file names its position.</summary>
+    public static string PositionName(PostPosition position) => Positions.First(pair => pair.Value == position).Key;
 
     /// <summary>The inputs each kind (and span use) may declare, with their type and band.</summary>
     static IReadOnlyDictionary<string, (ColumnType Type, BandKind Band)> Allowed(string kind, SpanUse? use) => (kind, use) switch
@@ -181,6 +277,12 @@ internal static class DeckReader
             ["member"] = (ColumnType.Enum, BandKind.Exact),
             ["joistSpan"] = (ColumnType.Length, BandKind.UpperBound),
         },
+        (PostKind, _) => new Dictionary<string, (ColumnType, BandKind)>
+        {
+            ["species"] = (ColumnType.Enum, BandKind.Exact),
+            ["post"] = (ColumnType.Enum, BandKind.Exact),
+            ["tributaryArea"] = (ColumnType.SquareFeet, BandKind.UpperBound),
+        },
         _ => new Dictionary<string, (ColumnType, BandKind)>
         {
             ["tributaryArea"] = (ColumnType.SquareFeet, BandKind.UpperBound),
@@ -195,6 +297,7 @@ internal static class DeckReader
     public static DeckProvisions Read(IPackSource source, string directory, IReadOnlyDictionary<string, SourceDocument> sources, ProblemList problems, DeckGuide? guide = null)
     {
         Dictionary<SpanUse, DeckTable> spans = [];
+        Dictionary<PostPosition, DeckTable> posts = [];
         DeckTable? ledger = null, footing = null;
         GuardStairProvisions? guardStair = null;
         foreach (string name in source.ListFiles(directory).Where(name => name.EndsWith(".json", StringComparison.Ordinal)))
@@ -211,7 +314,7 @@ internal static class DeckReader
                 string? kind = root.String("kind");
                 switch (kind)
                 {
-                    case MemberSpanKind or LedgerKind or FootingKind:
+                    case MemberSpanKind or LedgerKind or FootingKind or PostKind:
                         if (ReadTable(root, kind, sources, guide, problems) is not { } read)
                         {
                             break;
@@ -221,12 +324,14 @@ internal static class DeckReader
                         bool twice = kind switch
                         {
                             MemberSpanKind => !spans.TryAdd(table.Use!.Value, table),
+                            PostKind => !posts.TryAdd(table.Position!.Value, table),
                             LedgerKind => ledger is not null,
                             _ => footing is not null,
                         };
                         if (twice)
                         {
-                            problems.Add(root.Where, $"a second {kind}{(table.Use is { } u ? $" table for '{UseName(u)}'" : " table")}: a layer has one of each.");
+                            string which = table.Use is { } u ? $" table for '{UseName(u)}'" : table.Position is { } p ? $" table for '{PositionName(p)}' posts" : " table";
+                            problems.Add(root.Where, $"a second {kind}{which}: a layer has one of each.");
                         }
                         else if (kind == LedgerKind)
                         {
@@ -255,7 +360,7 @@ internal static class DeckReader
                         break;
 
                     default:
-                        problems.Add(root.Where, $"kind: '{kind}' is not a deck file kind; they are: {MemberSpanKind}, {LedgerKind}, {FootingKind}, {GuardStairKind}.");
+                        problems.Add(root.Where, $"kind: '{kind}' is not a deck file kind; they are: {MemberSpanKind}, {LedgerKind}, {FootingKind}, {PostKind}, {GuardStairKind}.");
                         foreach (string field in root.Names.ToList())
                         {
                             root.MarkUsed(field);
@@ -266,7 +371,7 @@ internal static class DeckReader
             }
         }
 
-        return new DeckProvisions(spans.ToImmutableDictionary(), ledger, footing, guardStair);
+        return new DeckProvisions(spans.ToImmutableDictionary(), ledger, footing, guardStair) { Posts = posts.ToImmutableDictionary() };
     }
 
     /// <summary>
@@ -302,11 +407,23 @@ internal static class DeckReader
             problems.Add(where, Clash($"a {GuardStairKind} file", a.File, b.File));
         }
 
+        Dictionary<PostPosition, DeckTable> posts = new(into.Posts);
+        foreach ((PostPosition position, DeckTable table) in guide.Posts.OrderBy(pair => pair.Key))
+        {
+            if (!posts.TryAdd(position, table))
+            {
+                problems.Add(where, Clash($"a {PostKind} table for '{PositionName(position)}' posts", posts[position].File, table.File));
+            }
+        }
+
         return new DeckProvisions(
             spans.ToImmutableDictionary(),
             One(into.Ledger, guide.Ledger, LedgerKind),
             One(into.Footing, guide.Footing, FootingKind),
-            into.GuardStair ?? guide.GuardStair);
+            into.GuardStair ?? guide.GuardStair)
+        {
+            Posts = posts.ToImmutableDictionary(),
+        };
     }
 
     public static string UseName(SpanUse use) => Uses.First(pair => pair.Value == use).Key;
@@ -315,9 +432,14 @@ internal static class DeckReader
     {
         int before = problems.Count;
         SpanUse? use = null;
+        PostPosition? position = null;
         if (kind == MemberSpanKind)
         {
             use = root.Enum("use", Uses);
+        }
+        else if (kind == PostKind)
+        {
+            position = root.Enum("position", Positions);
         }
 
         string? designation = root.String("table");
@@ -339,6 +461,7 @@ internal static class DeckReader
         CheckSpeciesGroups(root.Where, inputs.FirstOrDefault(column => column.Name == "species"), groups, guide, problems);
         bool declaresCap = root.Has("overhangLimit");
         OverhangLimit? overhangLimit = ReadOverhangLimit(root, kind, use, problems);
+        CenterPostFactor? factor = ReadCenterPostFactor(root, kind, position, footnotes, problems);
         List<DeckRow> rows = [];
         IReadOnlyList<JsonElement>? items = root.Array("rows", minItems: 1);
         for (int i = 0; items is not null && doc is not null && i < items.Count; i++)
@@ -369,7 +492,61 @@ internal static class DeckReader
                 Limits = limits.ToValueList(),
                 SpeciesGroups = groups.ToValueList(),
                 OverhangLimit = overhangLimit,
+                Position = position,
+                CenterPostFactor = factor,
             };
+    }
+
+    /// <summary>
+    /// A footing or centre post table's <c>centerPostFactor</c> (deck-guide-pack §3.4): <c>{ "note": "2", "text": …,
+    /// "multiply": "5/4", "location": … }</c>, the multiplier a positive exact "n/d", the note verbatim and not also one of
+    /// the table's footnotes. A corner post table, or any other kind, declares none: a corner post's area is not multiplied.
+    /// </summary>
+    static CenterPostFactor? ReadCenterPostFactor(JsonObj root, string kind, PostPosition? position, List<Footnote> footnotes, ProblemList problems)
+    {
+        if (!root.Has("centerPostFactor"))
+        {
+            return null;
+        }
+
+        if (kind != FootingKind && !(kind == PostKind && position == PostPosition.Center))
+        {
+            root.MarkUsed("centerPostFactor");
+            problems.Add(root.Where, $"centerPostFactor: only a {FootingKind} table or a {PostKind} table for 'center' posts multiplies a centre post's tributary area; this {kind} table may not declare one.");
+            return null;
+        }
+
+        if (root.Obj("centerPostFactor") is not { } o)
+        {
+            return null;
+        }
+
+        int before = problems.Count;
+        string? note = o.String("note");
+        if (note is not null && footnotes.Any(footnote => footnote.Id == note))
+        {
+            problems.Add(o.Where, $"{o.Child("note")}: note '{note}' is the factor, so it is not also one of the table's footnotes.");
+        }
+
+        string? multiply = o.String("multiply");
+        ExactFraction? fraction = multiply is null ? null : BracingReader.ParseFraction(multiply);
+        if (multiply is not null && fraction is null)
+        {
+            problems.Add(o.Where, $"{o.Child("multiply")}: '{multiply}' is not a positive exact fraction written \"n\" or \"n/d\" with whole numbers.");
+        }
+
+        string? text = o.String("text");
+        string? location = o.String("location");
+        foreach ((string field, string? value) in new[] { ("text", text), ("location", location) })
+        {
+            if (value is not null && string.IsNullOrWhiteSpace(value))
+            {
+                problems.Add(o.Where, $"{o.Child(field)}: blank; the factor carries its note verbatim and where it is printed.");
+            }
+        }
+
+        o.Done();
+        return problems.Count > before || note is null || fraction is null || text is null || location is null ? null : new CenterPostFactor(note, fraction.Value, text, location);
     }
 
     /// <summary>
@@ -684,7 +861,9 @@ internal static class DeckReader
         }
 
         Length span = Length.Zero, spacing = Length.Zero;
-        Length? overhang = null;
+        Length? overhang = null, height = null;
+        bool notPermitted = false;
+        FootingSize? footing = null;
         string text = string.Empty;
         switch (kind)
         {
@@ -705,9 +884,34 @@ internal static class DeckReader
                 text = r.String("fastener") ?? string.Empty;
                 spacing = Positive(r, "spacing", problems) ?? Length.Zero;
                 break;
-            default:
-                text = r.String("footing") ?? string.Empty;
+            case PostKind:
+                // A cell prints a height or "NP": exactly one of the two, and "NP" is written notPermitted: true.
+                if (r.Has("height") == r.Has("notPermitted"))
+                {
+                    r.MarkUsed("height");
+                    r.MarkUsed("notPermitted");
+                    problems.Add(r.Where, $"{r.Path}: a deck-post row has exactly one of 'height' (the printed post height) or 'notPermitted': true (the cell prints NP).");
+                }
+                else if (r.Has("height"))
+                {
+                    height = Positive(r, "height", problems);
+                }
+                else if (r.Get("notPermitted") is { ValueKind: JsonValueKind.True })
+                {
+                    notPermitted = true;
+                }
+                else
+                {
+                    problems.Add(r.Where, $"{r.Child("notPermitted")}: is true when the cell prints NP; a cell with a height writes 'height' instead.");
+                }
+
                 break;
+            default:
+            {
+                Length? round = Positive(r, "round", problems), square = Positive(r, "square", problems), thickness = Positive(r, "thickness", problems);
+                footing = round is { } a && square is { } b && thickness is { } c ? new FootingSize(a, b, c) : null;
+                break;
+            }
         }
 
         string? location = r.String("location");
@@ -729,7 +933,13 @@ internal static class DeckReader
         r.Done();
         return problems.Count > before || id is null || location is null
             ? null
-            : new DeckRow(id, cells.ToImmutable(), span, text, spacing, TableTyper.SourceOf(doc, location), listed.ToValueList()) { Overhang = overhang };
+            : new DeckRow(id, cells.ToImmutable(), span, text, spacing, TableTyper.SourceOf(doc, location), listed.ToValueList())
+            {
+                Overhang = overhang,
+                Height = height,
+                NotPermitted = notPermitted,
+                Footing = footing,
+            };
     }
 
     static Length? Positive(JsonObj o, string name, ProblemList problems)

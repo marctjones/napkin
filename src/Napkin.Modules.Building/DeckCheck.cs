@@ -21,6 +21,12 @@ public enum DeckCheckKind
     /// <summary>The ledger's fastening to the house.</summary>
     Ledger,
 
+    /// <summary>The end posts' height against the corner post table (deck-guide-pack §3.4).</summary>
+    EndPosts,
+
+    /// <summary>The middle posts' height against the centre post table, when the beam has three or more posts.</summary>
+    MiddlePosts,
+
     /// <summary>The footing under the most loaded post.</summary>
     Footing,
 
@@ -133,17 +139,28 @@ public static class DeckCheck
                 true)
             : Other(DeckCheckKind.Ledger, ledger, "Ledger"));
 
+        // The posts (deck-guide-pack §3.4): the end posts are corner posts and the middle posts centre posts, each checked
+        // for its height, grade to the beam's underside, against its table with its own tributary area. napkin's beam is
+        // one piece the deck's width long (the frame buys its plies so), so it is continuous over every middle post: the
+        // centre-post factor a table declares applies, the larger area and so the conservative reading.
+        lines.Add(PostLine(DeckCheckKind.EndPosts, pack, inputs, framing, framing.EndPost, scope));
+        if (framing.MiddlePost is { } middle)
+        {
+            lines.Add(PostLine(DeckCheckKind.MiddlePosts, pack, inputs, framing, middle, scope));
+        }
+
         // The most loaded post — a middle one when there are three or more, otherwise an end post — and its
-        // tributary area as DCA 6 Appendix B measures it, which the sentence says (pp. B1–B2; #41).
+        // tributary area as DCA 6 Appendix B measures it, which the sentence says (pp. B1–B2; #41); every footing is sized for it.
         DeckTributary tributary = framing.Tributary;
-        DeckResult footing = DeckEvaluator.SizeFooting(pack, tributary.Area, sketch.Site.SoilBearingPsf, scope);
-        lines.Add(footing is DeckResult.Sized foot
+        DeckResult footing = DeckEvaluator.SizeFooting(pack, new PostArea(tributary.Area, tributary.Position, ContinuousBeam: true), sketch.Site.SoilBearingPsf, scope);
+        string carried = $"{tributary.Which}'s {tributary.Words}{Factor(footing)}";
+        lines.Add(footing is DeckResult.Sized { Row.Footing: { } size } foot
             ? new DeckCheckLine(
                 DeckCheckKind.Footing,
                 footing,
-                $"Footings: {foot.Row.Text} for {tributary.Which}'s {tributary.Words} on {sketch.Site.SoilBearingPsf} psf ({Cited(foot.Code, foot.Table, foot.Row)}).{foot.Code.UnreviewedSentence}{Notes(foot.Table, foot.Row)}",
+                $"Footings: {Size(size)} for {carried}, on {sketch.Site.SoilBearingPsf} psf ({Cited(foot.Code, foot.Table, foot.Row)}).{foot.Code.UnreviewedSentence}{Notes(foot.Table, foot.Row)}{FactorNote(foot)}",
                 true)
-            : Other(DeckCheckKind.Footing, footing, $"Footings for {tributary.Which}'s {tributary.Words}"));
+            : Other(DeckCheckKind.Footing, footing, $"Footings for {carried}"));
 
         lines.Add(FrostLine(sketch, inputs, pack));
         lines.AddRange(GuardLines(sketch, framing, pack, library));
@@ -187,6 +204,67 @@ public static class DeckCheck
             _ => "changed",
         };
         return $"{checks.Deck.Name}, {said}: {checks.Lines.First(line => line.Kind.ToString() == change.Key.Check).Text}";
+    }
+
+    /// <summary>
+    /// "End posts 4x4, 1'-6 1/2\" from grade to the beam's underside, Southern Pine, each carrying 14.8 sq ft (…): allowed up
+    /// to 6'-0\" (DCA 6-2015 Table B1 row …)": a post line, its height and area said, its table's answer cited
+    /// (deck-guide-pack §3.4). An NP row is out of scope, quoting "NP" as the page prints it.
+    /// </summary>
+    static DeckCheckLine PostLine(DeckCheckKind kind, LoadedPack? pack, DeckInputs inputs, DeckFraming framing, DeckTributary tributary, DeckScopeInputs scope)
+    {
+        DeckResult result = DeckEvaluator.CheckPost(
+            pack, new PostRequest(inputs.Post, framing.PostLength, inputs.Species, new PostArea(tributary.Area, tributary.Position, ContinuousBeam: true)), scope);
+        int middles = inputs.PostCount - 2;
+        string who = kind == DeckCheckKind.EndPosts
+            ? $"End posts {inputs.Post}, {Text(framing.PostLength)} from grade to the beam's underside{Species(inputs)}, each carrying"
+            : $"Middle post{(middles == 1 ? string.Empty : "s")} {inputs.Post}, {Text(framing.PostLength)} from grade to the beam's underside{Species(inputs)}, {(middles == 1 ? "carrying" : "the most loaded carrying")}";
+        string what = $"{who} {tributary.Words}{Factor(result)}";
+        return result switch
+        {
+            DeckResult.Passes passes => new DeckCheckLine(
+                kind, result, $"{what}: allowed up to {Text(passes.Allowed)} ({Cited(passes.Code, passes.Table, passes.Row, passes.Group)}).{passes.Code.UnreviewedSentence}{Notes(passes.Table, passes.Row)}{FactorNote(result)}", true),
+            DeckResult.Short over => new DeckCheckLine(
+                kind,
+                result,
+                $"{what}: allowed up to {Text(over.Allowed)}, over by {Text(over.Over)} ({Cited(over.Code, over.Table, over.Row, over.Group)}). Use a larger post, or more posts so each carries less."
+                + $"{over.Code.UnreviewedSentence}{Notes(over.Table, over.Row)}{FactorNote(result)}",
+                false),
+            DeckResult.OutOfScope { Row: { } np } printed => new DeckCheckLine(
+                kind, result, $"{what}: {printed.Explanation}{printed.Code.UnreviewedSentence}{Notes(printed.Table, np)}{FactorNote(result)}", false),
+            _ => Other(kind, result, what),
+        };
+    }
+
+    /// <summary>" × 1.25, a centre post under a continuous beam (DCA 6-2015 Table B3 note 2, p. B5) = 37.0 sq ft" when the table's factor applied.</summary>
+    static string Factor(DeckResult result)
+    {
+        if (result.Area is not { Factor: { } factor } area)
+        {
+            return string.Empty;
+        }
+
+        string guide = result switch
+        {
+            DeckResult.Passes p => Prefix(p.Table),
+            DeckResult.Short s => Prefix(s.Table),
+            DeckResult.Sized z => Prefix(z.Table),
+            DeckResult.OutOfScope o => Prefix(o.Table),
+            _ => string.Empty,
+        };
+        return $" × {factor.Words}, a centre post under a continuous beam ({guide}{factor.Location}) = {DeckFrame.SquareFeet(area.Looked)}";
+
+        static string Prefix(DeckTable table) => table.Guide is { } from ? $"{from.ShortName} " : string.Empty;
+    }
+
+    /// <summary>The applied factor's note, verbatim, after the table's own notes: " Note 2: Tributary area shall be multiplied …".</summary>
+    static string FactorNote(DeckResult result) => result.Area?.Factor is { } factor ? $" Note {factor.Note}: {factor.Text}" : string.Empty;
+
+    /// <summary>"16\" round or 15\" square, 6\" thick": a footing row's three outputs.</summary>
+    static string Size(FootingSize size)
+    {
+        LengthFormat inches = new InchesOnlyFormat(16);
+        return $"{size.Round.Format(inches).Text} round or {size.Square.Format(inches).Text} square, {size.Thickness.Format(inches).Text} thick";
     }
 
     /// <summary>The footing depth against the site's frost depth: two typed values, compared exactly.</summary>
