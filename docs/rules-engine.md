@@ -3,7 +3,7 @@
 `Napkin.Core.RulesEngine` sizes a wall-opening header and checks a wall line's bracing from an
 **adopted-code pack**, and cites the edition, table or section and row every answer came from. Design: [`design/rules-engine-model.md`](design/rules-engine-model.md).
 
-## Data status: what real tables ship
+## Data status: no real tables ship
 
 napkin ships **no IRC header, bracing or base-layer table values**. Transcribed tables may ship when
 each is read from a primary or official source in the same task and cited beside the data (Marc,
