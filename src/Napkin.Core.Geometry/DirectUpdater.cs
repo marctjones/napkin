@@ -67,12 +67,25 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetFastenerChoices choices => new Solved(sketch with { FastenerChoices = choices.Choices }, ChangeSet.Empty),
             SetSupplies supplies => new Solved(sketch with { Supplies = supplies.Supplies }, ChangeSet.Empty),
             SetCode code => new Solved(sketch with { Code = code.Code }, ChangeSet.Empty),
-            SetSite site => new Solved(sketch with { Site = site.Site }, ChangeSet.Empty),
+            SetSite site => site.Site.Underlay is { } underlay && SurveyUnderlayRules.Refusal(underlay) is not null
+                ? new Rejected(RejectionReason.NonPositiveSize)
+                : new Solved(sketch with { Site = site.Site }, ChangeSet.Empty),
+            SetFurnitureMarks marks => new Solved(sketch with { Furniture = marks.Marks }, ChangeSet.Empty),
+            SetBoundary boundary => ApplySetBoundary(sketch, boundary),
             SetWallInputs wall => ApplySetWallInputs(sketch, wall),
             SetPhase phase => sketch.Find(phase.Id) is { } phased
                 ? new Solved(sketch.WithEntity(phased with { Phase = phase.Phase }), ChangeSet.Empty with { Modified = [phase.Id] })
                 : new Rejected(RejectionReason.UnknownEntity),
             SetRoomInputs room => ApplySetRoomInputs(sketch, room),
+            SetDeckInputs deck => ApplySetDeckInputs(sketch, deck),
+            SetRoofInputs roof => ApplySetRoofInputs(sketch, roof),
+            SetOpeningFill fill => sketch.Find(fill.Box) switch
+            {
+                Box box when box.WallInputs is null && box.Deck is null && box.Roof is null => new Solved(sketch.WithEntity(box with { Opening = fill.Fill }), ChangeSet.Empty with { Modified = [box.Id] }),
+                Box => new Rejected(RejectionReason.DanglingReference),
+                null => new Rejected(RejectionReason.UnknownEntity),
+                _ => new Rejected(RejectionReason.DanglingReference),
+            },
             SetStrutCuts cuts => ApplySetStrutCuts(sketch, cuts),
             SetNote note => sketch.Find(note.Id) switch
             {
@@ -147,6 +160,11 @@ public sealed class DirectUpdater : IGeometryUpdater
         if (entity is Strut strut && StrutRefusal(strut) is { } broken)
         {
             return broken;
+        }
+
+        if (entity is Boundary boundary && BoundaryRules.Refusal(boundary.Courses) is not null)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
         }
 
         if (entity is Segment segment
@@ -368,11 +386,77 @@ public sealed class DirectUpdater : IGeometryUpdater
         return new Solved(sketch.WithEntity(box with { Room = request.Inputs }), ChangeSet.Empty with { Modified = [box.Id] });
     }
 
+    private static UpdateResult ApplySetDeckInputs(Sketch sketch, SetDeckInputs request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        if (request.Inputs is { } deck && DeckRules.Refusal(deck) is not null)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        return new Solved(sketch.WithEntity(box with { Deck = request.Inputs }), ChangeSet.Empty with { Modified = [box.Id] });
+    }
+
+    private static UpdateResult ApplySetBoundary(Sketch sketch, SetBoundary request)
+    {
+        if (sketch.Find(request.Id) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Boundary boundary)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        if (BoundaryRules.Refusal(request.Courses) is not null)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        return new Solved(sketch.WithEntity(boundary with { Start = request.Start, Courses = request.Courses }), ChangeSet.Empty with { Modified = [boundary.Id] });
+    }
+
+    private static UpdateResult ApplySetRoofInputs(Sketch sketch, SetRoofInputs request)
+    {
+        if (sketch.Find(request.Box) is not { } entity)
+        {
+            return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        if (entity is not Box box)
+        {
+            return new Rejected(RejectionReason.DanglingReference);
+        }
+
+        if (request.Inputs is { } roof && RoofRules.Refusal(roof) is not null)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
+        }
+
+        return new Solved(sketch.WithEntity(box with { Roof = request.Inputs }), ChangeSet.Empty with { Modified = [box.Id] });
+    }
+
     private static UpdateResult ApplySetPart(Sketch sketch, SetPart request)
     {
         if (sketch.Find(request.Box) is not { } entity)
         {
             return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        // A drawer opens some distance: a mark with none is a mistake (furniture-checks §4.2).
+        if (request.Part?.Drawer is { } drawer && drawer.Extension <= Length.Zero)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
         }
 
         // A strut is a piece somebody cuts too, its derived dimension named length or width

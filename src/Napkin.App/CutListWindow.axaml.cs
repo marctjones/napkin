@@ -8,6 +8,7 @@ using Design = Napkin.Modules.Editing.Design;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
+using Napkin.Core.RulesEngine;
 using Napkin.Modules.Building;
 using Napkin.Modules.Furniture;
 
@@ -526,6 +527,36 @@ public partial class CutListWindow : Window
     /// <summary>The framing section as a CSV file would carry it, in the order on screen.</summary>
     public string FramingCsv => ShoppingListCsv.ToCsv(FramingTable.Sorted, _kerf);
 
+    /// <summary>The Deck section's rows (deck-and-porch §2.4).</summary>
+    public ShoppingListTable DeckRows => DeckTable;
+
+    /// <summary>Whether the Deck section is showing.</summary>
+    public bool IsShowingDeck => DeckSection.IsVisible;
+
+    /// <summary>What the Deck section says about each deck.</summary>
+    public string DeckNoteText => DeckNote.Text ?? string.Empty;
+
+    /// <summary>The Deck section as CSV.</summary>
+    public string DeckCsv => ShoppingListCsv.ToCsv(DeckTable.Sorted, _kerf);
+
+    /// <summary>The Furniture checks section's lines: the scope flag, then the tip-over estimate.</summary>
+    public string FurnitureChecksLines => FurnitureChecksSection.IsVisible ? FurnitureChecksText.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The Roof section's rows (deck-and-porch §8).</summary>
+    public ShoppingListTable RoofRows => RoofTable;
+
+    /// <summary>Whether the Roof section is showing.</summary>
+    public bool IsShowingRoof => RoofSection.IsVisible;
+
+    /// <summary>What the Roof section says about each roof: its rafters, cuts, coverings and check.</summary>
+    public string RoofNoteText => RoofNote.Text ?? string.Empty;
+
+    /// <summary>The sunroom test's line under the Roof section.</summary>
+    public string SunroomText => SunroomLine.Text ?? string.Empty;
+
+    /// <summary>The Roof section as CSV.</summary>
+    public string RoofCsv => ShoppingListCsv.ToCsv(RoofTable.Sorted, _kerf);
+
     /// <summary>The tab that shows the shopping list, for the GUI suite to click.</summary>
     public TabItem ShoppingListTabItem => ShoppingListTab;
 
@@ -603,6 +634,73 @@ public partial class CutListWindow : Window
               + (walls.Any(wall => !wall.Problems.IsEmpty && !wall.Pieces.IsEmpty) ? " Some openings could not be framed; the drawing's panel says why." : string.Empty)
               + string.Concat(diffs.Where(diff => diff.FromExisting && diff.Changes).Select(diff => $" {diff.Wall.Name} is existing: only its new pieces are bought ({diff.Sentence}), {diff.Assumption}."))
               + CodeCheckNote(sketch, checks);
+        // Each deck's frame, from the building as it will be (deck-and-porch §2.4).
+        List<(DeckFraming Framing, string Name)> decks = [];
+        List<string> deckNotes = [];
+        foreach (Deck deck in Deck.All(sketch.After()).Where(deck => deck.Box.Phase == Phase.New))
+        {
+            (DeckFraming? framing, DeckRefusal? refusal) = DeckFrame.Of(sketch.After(), deck, MaterialsLibrary.Shipped);
+            if (framing is not null)
+            {
+                decks.Add((framing, deck.Name));
+                deckNotes.Add($"{deck.Name}: {Napkin.Modules.Editing.DeckTool.FrameLine(framing)}.");
+                deckNotes.AddRange(DeckCheck.For(sketch.After(), deck, Packs.Resolve(sketch.Code).Pack, MaterialsLibrary.Shipped).Lines.Select(line => line.Text));
+            }
+            else
+            {
+                deckNotes.Add($"{deck.Name}: {refusal!.Text}");
+            }
+        }
+
+        LoadedPack? deckPack = Packs.Resolve(sketch.Code).Pack;
+        DeckTable.Rows = ShoppingList.Of(
+            [
+                .. decks.SelectMany(deck => DeckFrame.CutRows(
+                    deck.Framing,
+                    [
+                        .. GuardFraming.Of(sketch.After(), deck.Framing, MaterialsLibrary.Shipped)?.Pieces ?? [],
+                        .. StairFraming.Of(deck.Framing, deckPack, MaterialsLibrary.Shipped).Layout?.Pieces ?? [],
+                    ])),
+            ],
+            _kerf);
+        DeckSection.IsVisible = deckNotes.Count > 0;
+        DeckNote.Text = string.Join(" ", deckNotes)
+                        + (decks.Count > 0 ? " Decking is listed by the board; napkin has read no stock-length list for decking (#155)." : string.Empty);
+
+        // Each porch roof's frame and coverings, and the sunroom test under it (deck-and-porch §8).
+        List<RoofFraming> roofs = [];
+        List<string> roofNotes = [];
+        List<string> sunroom = [];
+        foreach (Roof roof in Roof.All(sketch.After()).Where(roof => roof.Box.Phase == Phase.New && roof.Box.Roof is not null))
+        {
+            (RoofFraming? framing, string? problem) = RoofFrame.Of(sketch.After(), roof, MaterialsLibrary.Shipped);
+            if (framing is null)
+            {
+                roofNotes.Add($"{roof.Name}: {problem}");
+                continue;
+            }
+
+            roofs.Add(framing);
+            roofNotes.Add($"{roof.Name}: {framing.Line}. {framing.Cuts}");
+            roofNotes.AddRange(framing.Coverings);
+            roofNotes.Add(RoofCheck.Rafters(sketch.After(), framing, deckPack).Text);
+            if (Glazing.Of(sketch.After(), framing.Deck, roof.Box.Height, roof.Box.Depth, framing.SlopedArea) is { } ratio)
+            {
+                sunroom.Add($"{roof.Name}: {ratio.Text}");
+            }
+        }
+
+        RoofTable.Rows = ShoppingList.Of([.. roofs.SelectMany(framing => RoofFrame.CutRows(framing))], _kerf);
+        RoofSection.IsVisible = roofNotes.Count > 0;
+        RoofNote.Text = string.Join(" ", roofNotes);
+        SunroomLine.Text = string.Join(" ", sunroom);
+        SunroomLine.IsVisible = sunroom.Count > 0;
+
+        // Furniture checks (furniture-checks §4): the scope flag always, the tip-over estimate when the design says clothing storage.
+        TipOverReport tipOver = TipOver.Of(sketch.After(), MaterialsLibrary.Shipped);
+        FurnitureChecksText.Text = string.Join("\n", new[] { tipOver.Scope }.Concat(tipOver.Lines.Select(line => line.Text)));
+        FurnitureChecksNotes.Text = string.Join(" ", tipOver.Notes);
+        FurnitureChecksSection.IsVisible = tipOver.Scope.Length > 0;
         BuildSizes(sketch);
         string supplies = SuppliesText(sketch);
         if (supplies != _suppliesBuiltFrom)

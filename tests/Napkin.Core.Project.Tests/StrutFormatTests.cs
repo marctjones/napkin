@@ -20,20 +20,20 @@ public class StrutFormatTests
     // width meeting it at the top: run 7″, rise 24″, 2x2 stock.
     private static readonly string Scene = $$"""
         {
-          "formatVersion": 12,
+          "formatVersion": 16,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "{{Layer}}", "name": "Default" } ],
           "entities": [
             { "id": "{{SeatId}}", "type": "box", "layer": "{{Layer}}", "name": "Seat", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 24576 }, "width": 36864, "height": 12288, "depth": 768, "faceUp": "top", "rotation": 0,
-              "part": null, "wall": null, "room": null, "cuts": [] },
+              "part": null, "wall": null, "room": null, "deck": null, "roof": null, "opening": null, "cuts": [] },
             { "id": "{{LegId}}", "type": "strut", "layer": "{{Layer}}", "name": "Leg, south-west", "phase": "new",
               "from": { "x": 4096, "y": -4096, "z": 0 },
               "to": { "x": 4096, "y": 3072, "z": 24576 },
               "fromCut": "z", "toCut": "z",
               "reference": "z",
               "height": 1536, "depth": 1536,
-              "part": { "stock": "2x2", "species": null, "quantity": 1, "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false, "grain": null, "showFace": null } },
+              "part": { "stock": "2x2", "species": null, "quantity": 1, "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false, "grain": null, "showFace": null, "drawer": null } },
             { "id": "{{TwinId}}", "type": "strut", "layer": "{{Layer}}", "name": "", "phase": "existing",
               "from": { "x": 4096, "y": 10240, "z": 0 },
               "to": { "x": 4096, "y": 3072, "z": 24576 },
@@ -42,7 +42,7 @@ public class StrutFormatTests
               "height": 1536, "depth": 768,
               "part": null }
           ],
-          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
+          "fastenerChoices": [], "supplies": [], "code": null, "furniture": { "kind": "none", "anchored": false }, "site": { "north": 0, "underlay": null, "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-00000000001a", "kind": "axisDistance",
               "from": { "kind": "feature", "box": "{{SeatId}}", "faces": ["bottom"] },
@@ -114,7 +114,7 @@ public class StrutFormatTests
             .With(
                 "\"entities\": [",
                 "\"entities\": [ "
-                + $$"""{ "id": "{{StretcherId}}", "type": "box", "layer": "{{Layer}}", "name": "Stretcher", "phase": "new", "anchor": { "x": 4864, "y": 0, "z": 6144 }, "width": 6144, "height": 768, "depth": 3584, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "cuts": [] },""")
+                + $$"""{ "id": "{{StretcherId}}", "type": "box", "layer": "{{Layer}}", "name": "Stretcher", "phase": "new", "anchor": { "x": 4864, "y": 0, "z": 6144 }, "width": 6144, "height": 768, "depth": 3584, "faceUp": "top", "rotation": 0, "part": null, "wall": null, "room": null, "deck": null, "roof": null, "opening": null, "cuts": [] },""")
             .With(
                 "\"relationships\": [",
                 "\"relationships\": [ "
@@ -204,7 +204,7 @@ public class StrutFormatTests
     public void A_parts_grain_and_show_face_round_trip_and_an_unknown_one_is_refused()
     {
         // Format version 12 (#140): each a name or null.
-        string said = Scene.With("\"rough\": false, \"grain\": null, \"showFace\": null", "\"rough\": false, \"grain\": \"length\", \"showFace\": \"top\"");
+        string said = Scene.With("\"rough\": false, \"grain\": null, \"showFace\": null, \"drawer\": null", "\"rough\": false, \"grain\": \"length\", \"showFace\": \"top\", \"drawer\": null");
         Sketch sketch = Scenes.Accept(said);
         Part part = sketch.Find<Strut>(Leg)!.Part!;
         Assert.Equal((PartDimension.Length, BoxFace.Top), (part.Grain!.Value, part.ShowFace!.Value));
@@ -260,9 +260,9 @@ public class StrutFormatTests
     public void A_version_10_file_is_refused_naming_both_versions()
     {
         Scenes.RefuseWith(
-            Scene.With("\"formatVersion\": 12", "\"formatVersion\": 10"),
+            Scene.With("\"formatVersion\": 16", "\"formatVersion\": 10"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 10",
-            "format version 12");
+            "format version 16");
     }
 }

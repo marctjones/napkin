@@ -49,6 +49,18 @@ public sealed record SiteValues(
     int? RoofLiveLoadPsf,
     SiteSource? Source)
 {
+    /// <summary>The soil bearing value, whole psf (format version 13, #42); null until entered.</summary>
+    public int? SoilBearingPsf { get; init; }
+
+    /// <summary>
+    /// North, as an exact angle from the drawing's +Y axis, clockwise (format version 15, permit-set §5.5):
+    /// the direction a survey's bearings are measured from. Zero until the person turns it.
+    /// </summary>
+    public Angle North { get; init; } = Angle.Zero;
+
+    /// <summary>The survey image behind the site plan and how it is calibrated (format version 16, permit-set §5.4), or null.</summary>
+    public SurveyUnderlay? Underlay { get; init; }
+
     /// <summary>Nothing entered yet: a new design's site.</summary>
     public static readonly SiteValues NotEntered = new(null, null, null, null, null, null, null);
 }

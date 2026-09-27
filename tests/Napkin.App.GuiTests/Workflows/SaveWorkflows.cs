@@ -63,7 +63,7 @@ public class SaveWorkflows
 
         app.Expect("the design went to the file that was chosen, and the title is that file's, clean", () =>
         {
-            Assert.Equal(["Untitled.scene.json"], files.SuggestedNames);
+            Assert.Equal(["Untitled.napkin"], files.SuggestedNames);
             Assert.True(File.Exists(path));
             Assert.Equal(Path.GetFullPath(path), window.DocumentPath);
             Assert.False(window.HasUnsavedChanges);

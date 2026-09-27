@@ -19,7 +19,7 @@ public class RenovationFormatTests
               "part": null,
               "wall": { "supports": null, "studSpacing": null, "bracing": null, "side": "exterior", "bearing": false,
                         "header": { "plies": 2, "lumber": "2x6" } },
-              "room": null, "cuts": [] }
+              "room": null, "deck": null, "roof": null, "opening": null, "cuts": [] }
         """;
 
     private const string Room = """
@@ -33,7 +33,7 @@ public class RenovationFormatTests
                         "flooring": true, "flooringWaste": 10, "flooringBox": 20,
                         "baseboard": true, "baseboardStick": 98304,
                         "measured": { "south": 172032, "north": 173056, "east": null, "west": null, "diagonal1": 225280, "diagonal2": null } },
-              "cuts": [] }
+              "deck": null, "roof": null, "opening": null, "cuts": [] }
         """;
 
     private const string NoteEntity = """
@@ -43,7 +43,7 @@ public class RenovationFormatTests
 
     private static readonly string Scene = $$"""
         {
-          "formatVersion": 12,
+          "formatVersion": 16,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "{{Layer}}", "name": "Default" } ],
           "entities": [
@@ -51,7 +51,7 @@ public class RenovationFormatTests
         {{Room}},
         {{NoteEntity}}
           ],
-          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "source": null },
+          "fastenerChoices": [], "supplies": [], "code": null, "furniture": { "kind": "none", "anchored": false }, "site": { "north": 0, "underlay": null, "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
           "relationships": []
         }
         """;
@@ -167,7 +167,7 @@ public class RenovationFormatTests
             "not also a part or a wall");
 
         Scenes.RefuseWith(
-            Scene.With("\"part\": null, \"wall\": null,", "\"part\": { \"stock\": null, \"species\": null, \"quantity\": 1, \"planAxes\": { \"x\": \"length\", \"y\": \"width\" }, \"hardware\": [], \"rough\": false, \"grain\": null, \"showFace\": null }, \"wall\": null,"),
+            Scene.With("\"part\": null, \"wall\": null,", "\"part\": { \"stock\": null, \"species\": null, \"quantity\": 1, \"planAxes\": { \"x\": \"length\", \"y\": \"width\" }, \"hardware\": [], \"rough\": false, \"grain\": null, \"showFace\": null, \"drawer\": null }, \"wall\": null,"),
             LoadProblemKind.InvalidValue,
             "room");
     }
@@ -193,9 +193,9 @@ public class RenovationFormatTests
     public void A_version_9_file_is_refused_naming_both_versions()
     {
         Scenes.RefuseWith(
-            Scene.With("\"formatVersion\": 12", "\"formatVersion\": 9"),
+            Scene.With("\"formatVersion\": 16", "\"formatVersion\": 9"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 9",
-            "format version 12");
+            "format version 16");
     }
 }

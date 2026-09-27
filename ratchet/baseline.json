@@ -26,8 +26,8 @@
       "branch": 99.82
     },
     "Napkin.Modules.Editing": {
-      "line": 98.14,
-      "branch": 93.72
+      "line": 98.23,
+      "branch": 94.15
     },
     "Napkin.Modules.Furniture": {
       "line": 100,
@@ -35,7 +35,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 103,
+    "workflowsPassed": 111,
     "workflowIds": [
       "CVS-011",
       "CVS-012",
@@ -75,6 +75,8 @@
       "GUI-CUT-09",
       "GUI-CUT-10",
       "GUI-CUT-11",
+      "GUI-DECK-01",
+      "GUI-DECK-02",
       "GUI-DIY-01",
       "GUI-DRAW-01",
       "GUI-DRAW-02",
@@ -86,6 +88,8 @@
       "GUI-DRAW-08",
       "GUI-DRAW-09",
       "GUI-DRAW-10",
+      "GUI-FURN-01",
+      "GUI-FURN-02",
       "GUI-JOIN-01",
       "GUI-JOIN-02",
       "GUI-JOIN-03",
@@ -97,6 +101,8 @@
       "GUI-PARTS-02",
       "GUI-PARTS-03",
       "GUI-PARTS-04",
+      "GUI-PORCH-01",
+      "GUI-PORCH-02",
       "GUI-RENO-01",
       "GUI-RENO-02",
       "GUI-RENO-03",
@@ -116,6 +122,8 @@
       "GUI-SHELL-05",
       "GUI-SHELL-06",
       "GUI-SHELL-07",
+      "GUI-SITE-01",
+      "GUI-SITE-02",
       "GUI-SKETCH-01",
       "GUI-SKETCH-02",
       "GUI-SKETCH-03",

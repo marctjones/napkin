@@ -42,6 +42,8 @@ public class KeyMapTests
         { KeyName.R, None, EditCommand.RectangleTool },
         { KeyName.W, None, EditCommand.WallTool },
         { KeyName.W, Shift, EditCommand.RoomTool },
+        { KeyName.D, Shift, EditCommand.DeckTool },
+        { KeyName.R, Shift, EditCommand.RoofTool },
         { KeyName.N, Shift, EditCommand.NoteTool },
         { KeyName.L, None, EditCommand.StrutTool },
         { KeyName.C, None, EditCommand.Shape },
@@ -190,9 +192,8 @@ public class KeyMapTests
 
     [Theory]
     [InlineData(KeyName.R, KeyMods.Alt)]
-    [InlineData(KeyName.R, KeyMods.Shift)]
     [InlineData(KeyName.R, KeyMods.Command)]
-    [InlineData(KeyName.D, KeyMods.Shift)]
+    [InlineData(KeyName.D, KeyMods.Alt)]
     [InlineData(KeyName.P, KeyMods.Shift)]
     [InlineData(KeyName.Q, KeyMods.Shift)]
     [InlineData(KeyName.O, KeyMods.Shift)]

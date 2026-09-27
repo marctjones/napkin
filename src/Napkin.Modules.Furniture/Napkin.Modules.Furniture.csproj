@@ -6,6 +6,12 @@
     <ProjectReference Include="..\Napkin.Core.Project\Napkin.Core.Project.csproj" />
   </ItemGroup>
 
+  <!-- Cited data the furniture checks read (docs/design/furniture-checks.md §7a), embedded like the
+       materials tables so the app never copies a data folder around. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Data/*.json" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

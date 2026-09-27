@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "kind": "frost",
+  "notes": "Connecticut's frost line depth (#199): the value and citation ct-overlay-data.json already records from TABLE R301.2 (p. 131), and the two R403.1.4.1 exceptions that concern decks, verbatim from pp. 144-145 of the same document (sha256 in pack.json, re-read 2026-09-26). napkin offers the depth as a suggestion the person accepts; it never applies it.",
+  "source": "ct-csbc-2022",
+  "location": "TABLE R301.2 CLIMATIC AND GEOGRAPHIC DESIGN CRITERIA (Amd), p. 131 (document footer 'Page - 131')",
+  "frostLineDepth": "3ft 6in",
+  "footnotes": [
+    {
+      "id": "R403.1.4.1 exc. 3",
+      "text": "Decks and ramps not supported by a dwelling need not be provided with footings that extend below the frost line. (CT R403.1.4.1 Exception 3, p. 145)",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    },
+    {
+      "id": "R403.1.4.1 exc. 4",
+      "text": "The footing for the grade-level termination of stairs or ramps attached to decks or landings, whether the deck or landing is supported by a dwelling or not, shall only be required to be placed at least 12 inches (305 mm) below the undisturbed ground surface in accordance with Section R403.1.4. (CT R403.1.4.1 Exception 4, p. 145)",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ]
+}

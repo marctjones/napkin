@@ -74,7 +74,8 @@ public sealed class FileDesignSource : IDesignSource
         LoadResult result;
         try
         {
-            result = SceneReader.ReadFile(Path);
+            // A .napkin project is the container, which can carry the survey image; anything else is a plain scene.
+            result = Path.EndsWith(ProjectFile.Extension, StringComparison.OrdinalIgnoreCase) ? ProjectFile.Load(Path) : SceneReader.ReadFile(Path);
         }
         catch (Exception exception) when (ProjectFile.IsFileException(exception))
         {
@@ -91,6 +92,7 @@ public sealed class FileDesignSource : IDesignSource
         return result switch
         {
             Loaded loaded => Design.Named(Name, loaded.Sketch),
+            LoadedProject project => Design.Named(Name, project.Sketch) with { Assets = project.Contents.Assets },
             Refused refused => throw new DesignLoadException(
                 refused.Summary,
                 refused.Problems.Select(problem => problem.ToString())),
@@ -146,6 +148,13 @@ public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicke
         MimeTypes = ["application/json"],
     };
 
+    /// <summary>napkin projects: the zip container that carries a survey image beside the drawing (container version 2).</summary>
+    public static FilePickerFileType ProjectFiles { get; } = new("napkin projects")
+    {
+        Patterns = ["*.napkin"],
+        MimeTypes = ["application/zip"],
+    };
+
     /// <inheritdoc/>
     public async Task<string?> PickSceneFileAsync()
     {
@@ -159,7 +168,7 @@ public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicke
         {
             Title = "Open a napkin design",
             AllowMultiple = false,
-            FileTypeFilter = [SceneFiles],
+            FileTypeFilter = [ProjectFiles, SceneFiles],
         }).ConfigureAwait(true);
 
         // A provider that hands back something with no local path — a cloud item on a phone, say —
@@ -181,8 +190,8 @@ public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicke
         {
             Title = "Save this napkin design",
             SuggestedFileName = suggestedName,
-            DefaultExtension = "scene.json",
-            FileTypeChoices = [SceneFiles],
+            DefaultExtension = "napkin",
+            FileTypeChoices = [ProjectFiles, SceneFiles],
             ShowOverwritePrompt = true,
         }).ConfigureAwait(true);
 

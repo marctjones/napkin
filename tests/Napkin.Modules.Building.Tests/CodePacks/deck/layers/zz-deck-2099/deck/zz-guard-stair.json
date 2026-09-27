@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES",
+  "kind": "deck-guard-stair",
+  "section": "ZZ-GUARD.1",
+  "source": "zz-synth-base",
+  "location": "synthetic p. 7",
+  "guard": {
+    "triggerHeight": "28in",
+    "minimumHeight": "34in",
+    "maximumOpening": "5in",
+    "location": "synthetic p. 7 guard"
+  },
+  "stair": {
+    "maximumRiser": "8-1/4in",
+    "minimumTread": "9in",
+    "maximumRiserDifference": "1/2in",
+    "handrailWhenRisersAtLeast": 3,
+    "minimumWidth": "32in",
+    "location": "synthetic p. 7 stair"
+  },
+  "footnotes": [
+    {
+      "id": "a",
+      "text": "SYNTHETIC footnote a: shown with results, not encoded.",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ]
+}

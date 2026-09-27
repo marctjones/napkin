@@ -47,6 +47,7 @@ internal sealed class SceneBinder
         ImmutableList<SupplyLine> supplies = ReadSupplies(document);
         (bool codeRead, CodeChoice? code) = ReadCode(document);
         SiteValues? site = ReadSite(document);
+        FurnitureMarks? furniture = ReadFurniture(document);
         RejectUnknownFields(document);
 
         if (problems.Count > 0)
@@ -72,6 +73,7 @@ internal sealed class SceneBinder
             Supplies = supplies,
             Code = codeRead ? code : null,
             Site = site ?? SiteValues.NotEntered,
+            Furniture = furniture ?? FurnitureMarks.None,
         };
 
         ValidationResult validation = sketch.Validate();
@@ -306,6 +308,7 @@ internal sealed class SceneBinder
                 SceneNames.Box => ReadBox(fields, new EntityId(entityId), new LayerId(layerId)),
                 SceneNames.Dimension => ReadDimension(fields, new EntityId(entityId), new LayerId(layerId)),
                 SceneNames.NoteType => ReadNote(fields, new EntityId(entityId), new LayerId(layerId)),
+                SceneNames.BoundaryType => ReadBoundary(fields, new EntityId(entityId), new LayerId(layerId)),
                 SceneNames.StrutType => ReadStrut(fields, new EntityId(entityId), new LayerId(layerId)),
                 _ => UnknownType(fields, type),
             };
@@ -369,6 +372,70 @@ internal sealed class SceneBinder
     /// A note (format version 10): a position, its words and a symbol. The words may be empty only
     /// when there is a symbol to draw.
     /// </summary>
+    /// <summary>A lot's boundary (format version 15): its point of beginning and its courses as the survey prints them.</summary>
+    private Entity? ReadBoundary(JsonFields fields, EntityId id, LayerId layer)
+    {
+        int before = problems.Count;
+        Point2? start = ReadPoint(fields, SceneNames.Start);
+        ImmutableArray<Course>.Builder courses = ImmutableArray.CreateBuilder<Course>();
+        foreach ((JsonElement element, string path) in ReadArray(fields, SceneNames.Courses))
+        {
+            JsonFields? course = ReadFields(element, path, "a course");
+            if (course is null)
+            {
+                continue;
+            }
+
+            JsonFields? bearing = ReadObject(course, SceneNames.BearingName);
+            NorthSouth? from = bearing is null ? null : ReadEnum(bearing, SceneNames.From, SceneNames.Meridians, "meridian");
+            long? angle = bearing is null ? null : ReadInteger(bearing, SceneNames.AngleName);
+            EastWest? toward = bearing is null ? null : ReadEnum(bearing, SceneNames.Toward, SceneNames.Turns, "turn");
+            if (bearing is not null)
+            {
+                RejectUnknownFields(bearing);
+            }
+
+            long? distance = ReadInteger(course, SceneNames.Distance);
+            (bool setbackRead, Setback? setback) = ReadNullable(course, SceneNames.SetbackName, ReadSetback);
+            RejectUnknownFields(course);
+            if (angle is < 0 or > 324000)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{path}/{SceneNames.BearingName}/{SceneNames.AngleName}", "A bearing's angle is from 0° to 90°: 0 to 324000 arcseconds.");
+            }
+            else if (distance is <= 0)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{path}/{SceneNames.Distance}", "A course is longer than zero.");
+            }
+            else if (from is { } f && angle is { } a && toward is { } t && distance is { } d && setbackRead)
+            {
+                courses.Add(new Course(new Bearing(f, new Angle(a), t), new Length(d), setback));
+            }
+        }
+
+        RejectUnknownFields(fields);
+        if (problems.Count == before && courses.Count < 3)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.Courses}", "A lot's boundary has at least three courses.");
+        }
+
+        return problems.Count == before && start is { } s ? new Boundary(id, layer, s, courses.ToImmutable()) : null;
+    }
+
+    /// <summary>A course's setback: a distance longer than zero and what it is called.</summary>
+    private Setback? ReadSetback(JsonFields fields)
+    {
+        long? distance = ReadInteger(fields, SceneNames.Distance);
+        SetbackKind? kind = ReadEnum(fields, SceneNames.Kind, SceneNames.SetbackKinds, "setback kind");
+        RejectUnknownFields(fields);
+        if (distance is <= 0)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.Distance}", "A setback is longer than zero.");
+            return null;
+        }
+
+        return distance is { } d && kind is { } k ? new Setback(new Length(d), k) : null;
+    }
+
     private Entity? ReadNote(JsonFields fields, EntityId id, LayerId layer)
     {
         Point2? position = ReadPoint(fields, SceneNames.Position);
@@ -423,7 +490,31 @@ internal sealed class SceneBinder
         (bool partRead, Part? part) = ReadPart(fields);
         (bool wallRead, WallInputs? wall) = ReadWallInputs(fields);
         (bool roomRead, RoomInputs? room) = ReadRoom(fields);
+        (bool deckRead, DeckInputs? deck) = ReadNullable(fields, SceneNames.Deck, ReadDeck);
+        (bool roofRead, RoofInputs? roof) = ReadNullable(fields, SceneNames.Roof, ReadRoof);
+        (bool openingRead, OpeningFill? opening) = ReadOpening(fields);
         (bool cutsRead, ImmutableList<Cut> cuts) = ReadCuts(fields);
+
+        // A deck or a roof is a framed structure of its own, never also a part, wall, room or opening;
+        // an opening is not also a wall (format version 13, deck-and-porch §7).
+        foreach ((string name, bool present) in new[] { (SceneNames.Deck, deck is not null), (SceneNames.Roof, roof is not null) })
+        {
+            if (present && (part is not null || wall is not null || room is not null || opening is not null || (deck is not null && roof is not null)))
+            {
+                Add(
+                    LoadProblemKind.InvalidValue,
+                    $"{fields.Path}/{name}",
+                    $"A box that is a {name} is nothing else: its \"part\", \"wall\", \"room\", \"opening\" and the other of \"deck\" and \"roof\" must be null.");
+                deckRead = roofRead = false;
+                break;
+            }
+        }
+
+        if (opening is not null && wall is not null)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.Opening}", "A box that is an opening is not also a wall: its \"wall\" must be null.");
+            openingRead = false;
+        }
 
         if (room is not null && (part is not null || wall is not null))
         {
@@ -450,12 +541,15 @@ internal sealed class SceneBinder
         }
 
         return anchor is { } corner && width is { } wide && height is { } tall && depth is { } deep
-            && faceUp is { } up && rotation is { } turn && partRead && wallRead && roomRead && cutsRead
+            && faceUp is { } up && rotation is { } turn && partRead && wallRead && roomRead && deckRead && roofRead && openingRead && cutsRead
             ? new Box(id, layer, corner, new Length(wide), new Length(tall), new Length(deep), up, new Angle(turn))
             {
                 Part = part,
                 WallInputs = wall,
                 Room = room,
+                Deck = deck,
+                Roof = roof,
+                Opening = opening,
                 Cuts = cuts,
             }
             : null;
@@ -741,6 +835,7 @@ internal sealed class SceneBinder
         bool? rough = ReadBoolean(part, SceneNames.Rough);
         (bool grainRead, string? grainText) = ReadTextOrNull(part, SceneNames.Grain);
         (bool showRead, string? showText) = ReadTextOrNull(part, SceneNames.ShowFace);
+        (bool drawerRead, DrawerMark? drawer) = ReadNullable(part, SceneNames.Drawer, ReadDrawer);
         RejectUnknownFields(part);
 
         // Grain and show face (format version 12, #140): each a name or null for unsaid.
@@ -784,8 +879,8 @@ internal sealed class SceneBinder
         // A part's third dimension is its box's depth, which the box stores (format version 4,
         // assembly-model §1.2). A version-3 part's "outOfPlane" is therefore an unknown field here,
         // refused like any other, rather than a second copy of a number the box already holds.
-        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes && hardware is not null && rough is { } isRough && grainRead && showRead
-            ? (true, new Part(stock, species, (int)pieces, axes) { Hardware = hardware, Rough = isRough, Grain = grain, ShowFace = showFace })
+        return stockRead && speciesRead && quantity is { } pieces && planAxes is { } axes && hardware is not null && rough is { } isRough && grainRead && showRead && drawerRead
+            ? (true, new Part(stock, species, (int)pieces, axes) { Hardware = hardware, Rough = isRough, Grain = grain, ShowFace = showFace, Drawer = drawer })
             : (false, null);
     }
 
@@ -948,6 +1043,84 @@ internal sealed class SceneBinder
     }
 
     /// <summary>The site values (format version 7): every field present, each a value or null for "not entered".</summary>
+    /// <summary>A part's drawer mark (format version 14): how far it opens, longer than zero.</summary>
+    private DrawerMark? ReadDrawer(JsonFields fields)
+    {
+        long? extension = ReadInteger(fields, SceneNames.Extension);
+        RejectUnknownFields(fields);
+        if (extension is not { } units)
+        {
+            return null;
+        }
+
+        if (units <= 0)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.Extension}", "A drawer opens some distance: its extension is longer than zero.");
+            return null;
+        }
+
+        return new DrawerMark(new Length(units));
+    }
+
+    /// <summary>The design's furniture marks (format version 14): what the piece is, and whether it is anchored.</summary>
+    private FurnitureMarks? ReadFurniture(JsonFields document)
+    {
+        JsonFields? fields = ReadObject(document, SceneNames.Furniture);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        FurnitureKind? kind = ReadEnum(fields, SceneNames.FurnitureKindName, SceneNames.FurnitureKinds, "furniture kind");
+        bool? anchored = ReadBoolean(fields, SceneNames.Anchored);
+        RejectUnknownFields(fields);
+        return kind is { } k && anchored is { } a ? new FurnitureMarks(k, a) : null;
+    }
+
+    /// <summary>
+    /// A survey underlay (format version 16, permit-set §5.4). On its own a scene cannot check that the
+    /// image it names is there; the container loader does.
+    /// </summary>
+    private SurveyUnderlay? ReadUnderlay(JsonFields fields)
+    {
+        int before = problems.Count;
+        string? asset = ReadText(fields, SceneNames.Asset);
+        string? name = ReadText(fields, SceneNames.Name);
+        Pixel? imageA = ReadPixel(fields, SceneNames.ImageA);
+        Pixel? imageB = ReadPixel(fields, SceneNames.ImageB);
+        Point2? worldA = ReadPoint(fields, SceneNames.WorldA);
+        Point2? worldB = ReadPoint(fields, SceneNames.WorldB);
+        long? distance = ReadInteger(fields, SceneNames.Distance);
+        RejectUnknownFields(fields);
+        if (problems.Count > before || asset is null || name is null || imageA is not { } a || imageB is not { } b || worldA is not { } wa || worldB is not { } wb || distance is not { } d)
+        {
+            return null;
+        }
+
+        SurveyUnderlay underlay = new(asset, a, b, wa, wb, new Length(d), name);
+        if (SurveyUnderlayRules.Refusal(underlay) is { } why)
+        {
+            Add(LoadProblemKind.InvalidValue, fields.Path, $"The survey underlay is refused: {why}.");
+            return null;
+        }
+
+        return underlay;
+    }
+
+    private Pixel? ReadPixel(JsonFields parent, string name)
+    {
+        JsonFields? fields = ReadObject(parent, name);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        long? x = ReadInteger(fields, SceneNames.X);
+        long? y = ReadInteger(fields, SceneNames.Y);
+        RejectUnknownFields(fields);
+        return x is { } px && y is { } py ? new Pixel(px, py) : null;
+    }
+
     private SiteValues? ReadSite(JsonFields document)
     {
         JsonFields? fields = ReadObject(document, SceneNames.Site);
@@ -963,9 +1136,12 @@ internal sealed class SceneBinder
         (bool frostRead, long? frost) = ReadIntegerOrNull(fields, SceneNames.SiteFrostDepth);
         (bool widthRead, long? width) = ReadIntegerOrNull(fields, SceneNames.SiteBuildingWidth);
         (bool liveRead, long? live) = ReadIntegerOrNull(fields, SceneNames.SiteRoofLiveLoad);
+        (bool bearingRead, long? bearing) = ReadIntegerOrNull(fields, SceneNames.SiteSoilBearing);
+        long? north = ReadInteger(fields, SceneNames.SiteNorth);
+        (bool underlayRead, SurveyUnderlay? underlay) = ReadNullable(fields, SceneNames.Underlay, ReadUnderlay);
         (bool sourceRead, SiteSource? source) = ReadSiteSource(fields);
         RejectUnknownFields(fields);
-        if (problems.Count > before || !snowRead || !windRead || !sdcRead || !frostRead || !widthRead || !liveRead || !sourceRead)
+        if (problems.Count > before || !snowRead || !windRead || !sdcRead || !frostRead || !widthRead || !liveRead || !bearingRead || !sourceRead)
         {
             return null;
         }
@@ -991,6 +1167,11 @@ internal sealed class SceneBinder
             Refuse(SceneNames.SiteRoofLiveLoad, "A roof live load is a whole number of psf, not negative, or null when not entered.");
         }
 
+        if (bearing is < 0 or > int.MaxValue)
+        {
+            Refuse(SceneNames.SiteSoilBearing, "A soil bearing value is a whole number of psf, not negative, or null when not entered.");
+        }
+
         if (frost is < 0)
         {
             Refuse(SceneNames.SiteFrostDepth, "A frost depth is not negative, or null when not entered.");
@@ -1010,7 +1191,12 @@ internal sealed class SceneBinder
                 frost is { } f ? new Length(f) : null,
                 width is { } w ? new Length(w) : null,
                 (int?)live,
-                source);
+                source)
+            {
+                SoilBearingPsf = (int?)bearing,
+                North = new Angle(north ?? 0),
+                Underlay = underlayRead ? underlay : null,
+            };
     }
 
     private (bool Read, SiteSource? Source) ReadSiteSource(JsonFields site)
@@ -1151,6 +1337,276 @@ internal sealed class SceneBinder
         }
 
         return problems.Count == before && plies is { } n && lumber is not null ? (true, new TypedHeader((int)n, lumber)) : (false, null);
+    }
+
+    /// <summary>A field that is an object or <c>null</c>: whether it read without a problem, and what it read.</summary>
+    private (bool Read, T? Value) ReadNullable<T>(JsonFields box, string name, Func<JsonFields, T?> read)
+        where T : class
+    {
+        JsonElement? element = Take(box, name);
+        if (element is not { } value)
+        {
+            return (false, null);
+        }
+
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return (true, null);
+        }
+
+        JsonFields? fields = ReadFields(value, $"{box.Path}/{name}", $"\"{name}\"");
+        if (fields is null)
+        {
+            return (false, null);
+        }
+
+        int before = problems.Count;
+        T? read1 = read(fields);
+        return problems.Count == before && read1 is not null ? (true, read1) : (false, null);
+    }
+
+    /// <summary>A length greater than zero, or a problem naming what it is.</summary>
+    private Length? PositiveLength(JsonFields fields, string name, string what)
+    {
+        long? units = ReadInteger(fields, name);
+        if (units is <= 0)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", $"{what} is longer than zero.");
+            return null;
+        }
+
+        return units is { } u ? new Length(u) : null;
+    }
+
+    /// <summary>A length of zero or more, or a problem naming what it is.</summary>
+    private Length? NonNegativeLength(JsonFields fields, string name, string what)
+    {
+        long? units = ReadInteger(fields, name);
+        if (units is < 0)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", $"{what} is zero or more.");
+            return null;
+        }
+
+        return units is { } u ? new Length(u) : null;
+    }
+
+    /// <summary>Text that is not empty (a lumber name), or a problem.</summary>
+    private string? Named(JsonFields fields, string name, string what)
+    {
+        string? text = ReadText(fields, name);
+        if (text is { Length: 0 })
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", $"{what} is named; this one is empty.");
+            return null;
+        }
+
+        return text;
+    }
+
+    /// <summary>A whole number at least <paramref name="least"/>, or a problem.</summary>
+    private int? AtLeast(JsonFields fields, string name, long least, string what)
+    {
+        long? number = ReadInteger(fields, name);
+        if (number is { } n && (n < least || n > int.MaxValue))
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", $"{what} is at least {least}; this one says {n}.");
+            return null;
+        }
+
+        return (int?)number;
+    }
+
+    private BeamSpec? ReadBeam(JsonFields parent)
+    {
+        JsonFields? fields = ReadObject(parent, SceneNames.Beam);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        long? plies = ReadInteger(fields, SceneNames.Plies);
+        string? lumber = Named(fields, SceneNames.Lumber, "A beam's lumber");
+        RejectUnknownFields(fields);
+        if (plies is { } p && (p < 1 || p > 3))
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.Plies}", $"A beam has 1 to 3 plies; this one says {p}.");
+            return null;
+        }
+
+        return plies is { } count && lumber is not null ? new BeamSpec((int)count, lumber) : null;
+    }
+
+    /// <summary>A deck's inputs (format version 13, deck-and-porch §7).</summary>
+    private DeckInputs? ReadDeck(JsonFields fields)
+    {
+        int before = problems.Count;
+        string? direction = ReadText(fields, SceneNames.JoistDirection);
+        Length? spacing = PositiveLength(fields, SceneNames.JoistSpacing, "A joist spacing");
+        string? joist = Named(fields, SceneNames.Joist, "A joist");
+        BeamSpec? beam = ReadBeam(fields);
+        string? post = Named(fields, SceneNames.Post, "A post");
+        int? posts = AtLeast(fields, SceneNames.PostCount, 2, "A deck's post count");
+        Length? cantilever = NonNegativeLength(fields, SceneNames.Cantilever, "A cantilever");
+        string? decking = Named(fields, SceneNames.Decking, "Decking");
+        Length? gap = NonNegativeLength(fields, SceneNames.DeckingGap, "A decking gap");
+        bool? blocking = ReadBoolean(fields, SceneNames.Blocking);
+        (bool supportsRead, string? supports) = ReadTextOrNull(fields, SceneNames.Supports);
+        (bool speciesRead, string? species) = ReadTextOrNull(fields, SceneNames.Species);
+        (bool footingRead, long? footing) = ReadIntegerOrNull(fields, SceneNames.FootingDepth);
+        ImmutableList<HardwareItem>? hardware = ReadHardware(fields);
+        (bool guardRead, GuardInputs? guard) = ReadNullable(fields, SceneNames.Guard, ReadGuard);
+        (bool stairRead, StairInputs? stair) = ReadNullable(fields, SceneNames.Stair, ReadStair);
+        RejectUnknownFields(fields);
+
+        if (direction is not null && direction != SceneNames.Spell(SceneNames.JoistDirections, JoistDirection.Out))
+        {
+            Add(
+                LoadProblemKind.InvalidValue,
+                $"{fields.Path}/{SceneNames.JoistDirection}",
+                $"\"{direction}\" is not a joist direction napkin builds: only \"out\" (joists along the house need two beams; not in this version).");
+        }
+
+        if (footing is < 0)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.FootingDepth}", "A footing depth is zero or more, or null when not entered.");
+        }
+
+        return problems.Count > before || !supportsRead || !speciesRead || !footingRead || !guardRead || !stairRead
+               || spacing is not { } s || joist is null || beam is null || post is null || posts is not { } n
+               || cantilever is not { } c || decking is null || gap is not { } g || blocking is not { } b || hardware is null
+            ? null
+            : new DeckInputs(JoistDirection.Out, s, joist, beam, post, n, c, decking, g, b, supports, species, footing is { } f ? new Length(f) : null, guard, stair)
+            {
+                Hardware = hardware,
+            };
+    }
+
+    private GuardInputs? ReadGuard(JsonFields fields)
+    {
+        Length? height = PositiveLength(fields, SceneNames.Height, "A guard's height");
+        Length? spacing = PositiveLength(fields, SceneNames.GuardPostSpacing, "A guard's post spacing");
+        Length? gap = NonNegativeLength(fields, SceneNames.BalusterGap, "A baluster gap");
+        Length? clearance = NonNegativeLength(fields, SceneNames.BottomClearance, "A guard's bottom clearance");
+        string? post = Named(fields, SceneNames.Post, "A guard post");
+        string? rail = Named(fields, SceneNames.Rail, "A guard rail");
+        string? cap = Named(fields, SceneNames.Cap, "A guard cap");
+        string? baluster = Named(fields, SceneNames.Baluster, "A baluster");
+        RejectUnknownFields(fields);
+        return height is { } h && spacing is { } s && gap is { } g && clearance is { } c && post is not null && rail is not null && cap is not null && baluster is not null
+            ? new GuardInputs(h, s, g, c, post, rail, cap, baluster)
+            : null;
+    }
+
+    private StairInputs? ReadStair(JsonFields fields)
+    {
+        DeckEdge? edge = ReadEnum(fields, SceneNames.Edge, SceneNames.DeckEdges, "deck edge");
+        Length? at = NonNegativeLength(fields, SceneNames.At, "Where a stair starts along its edge");
+        Length? width = PositiveLength(fields, SceneNames.StairWidth, "A stair's width");
+        Length? run = PositiveLength(fields, SceneNames.Run, "A stair's run");
+        (bool risersRead, long? risers) = ReadIntegerOrNull(fields, SceneNames.Risers);
+        int? stringers = AtLeast(fields, SceneNames.Stringers, 2, "A stair's stringer count");
+        string? stringer = Named(fields, SceneNames.Stringer, "A stringer");
+        int? boards = AtLeast(fields, SceneNames.TreadBoards, 1, "A tread's board count");
+        RejectUnknownFields(fields);
+        if (risers is < 2)
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.Risers}", "A stair has at least 2 risers, or null for napkin to work them out.");
+            return null;
+        }
+
+        return risersRead && edge is { } e && at is { } a && width is { } w && run is { } r && stringers is { } n && stringer is not null && boards is { } t
+            ? new StairInputs(e, a, w, r, (int?)risers, n, stringer, t)
+            : null;
+    }
+
+    /// <summary>A shed roof's inputs (format version 13, deck-and-porch §7).</summary>
+    private RoofInputs? ReadRoof(JsonFields fields)
+    {
+        int before = problems.Count;
+        Length? spacing = PositiveLength(fields, SceneNames.RafterSpacing, "A rafter spacing");
+        string? rafter = Named(fields, SceneNames.Rafter, "A rafter");
+        string? ledger = Named(fields, SceneNames.Ledger, "A ledger");
+        Length? overhang = NonNegativeLength(fields, SceneNames.Overhang, "An overhang");
+        bool? blocking = ReadBoolean(fields, SceneNames.Blocking);
+        (bool sheathingRead, string? sheathing) = ReadTextOrNull(fields, SceneNames.Sheathing);
+        Roofing? roofing = null;
+        if (ReadObject(fields, SceneNames.Roofing) is { } covering)
+        {
+            string? name = Named(covering, SceneNames.Name, "Roofing");
+            (bool coverageRead, long? coverage) = ReadIntegerOrNull(covering, SceneNames.Coverage);
+            long? waste = ReadInteger(covering, SceneNames.Waste);
+            RejectUnknownFields(covering);
+            if (coverage is <= 0)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{covering.Path}/{SceneNames.Coverage}", "A roofing coverage is more than zero square feet, or null when not typed.");
+            }
+            else if (waste is < 0)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{covering.Path}/{SceneNames.Waste}", "A waste allowance is a whole percent, zero or more.");
+            }
+            else if (name is not null && coverageRead && waste is { } w)
+            {
+                roofing = new Roofing(name, (int?)coverage, (int)w);
+            }
+        }
+
+        RoofLowEnd? low = null;
+        if (ReadObject(fields, SceneNames.LowEnd) is { } end)
+        {
+            string? kind = ReadText(end, SceneNames.Kind);
+            if (kind == SceneNames.LowEndWall)
+            {
+                low = ReadEntityReference(end, SceneNames.LowEndWall, typeof(Box)) is { } wall ? new WallLowEnd(wall) : null;
+            }
+            else if (kind == SceneNames.LowEndBeam)
+            {
+                BeamSpec? beam = ReadBeam(end);
+                string? post = Named(end, SceneNames.Post, "A post");
+                int? posts = AtLeast(end, SceneNames.PostCount, 2, "A roof beam's post count");
+                low = beam is not null && post is not null && posts is { } n ? new BeamLowEnd(beam, post, n) : null;
+            }
+            else if (kind is not null)
+            {
+                Add(
+                    LoadProblemKind.InvalidValue,
+                    $"{end.Path}/{SceneNames.Kind}",
+                    $"\"{kind}\" is not a roof's low end. The low ends are: {SceneNames.List(SceneNames.LowEndWall, SceneNames.LowEndBeam)}.");
+            }
+
+            RejectUnknownFields(end);
+        }
+
+        RejectUnknownFields(fields);
+        return problems.Count > before || !sheathingRead || spacing is not { } s || rafter is null || ledger is null
+               || overhang is not { } o || blocking is not { } b || roofing is null || low is null
+            ? null
+            : new RoofInputs(s, rafter, ledger, o, b, sheathing, roofing, low);
+    }
+
+    /// <summary>An opening's fill (format version 13), or <c>"opening": null</c>.</summary>
+    private (bool Read, OpeningFill? Fill) ReadOpening(JsonFields box)
+    {
+        JsonElement? element = Take(box, SceneNames.Opening);
+        if (element is not { } value)
+        {
+            return (false, null);
+        }
+
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return (true, null);
+        }
+
+        JsonFields? fields = ReadFields(value, $"{box.Path}/{SceneNames.Opening}", $"\"{SceneNames.Opening}\"");
+        if (fields is null)
+        {
+            return (false, null);
+        }
+
+        OpeningFill? fill = ReadEnum(fields, SceneNames.Fill, SceneNames.Fills, "fill");
+        RejectUnknownFields(fields);
+        return fill is { } f ? (true, f) : (false, null);
     }
 
     /// <summary>A room's finishes and measurements (format version 10), or <c>"room": null</c>.</summary>

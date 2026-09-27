@@ -47,7 +47,7 @@ public sealed record AdoptedCode(string Pack, int Revision);
 public sealed record ProjectManifest(int ContainerVersion, string AppVersion, AdoptedCode? AdoptedCode)
 {
     /// <summary>The container version this build writes, and the only one it reads.</summary>
-    public const int CurrentContainerVersion = 1;
+    public const int CurrentContainerVersion = 2;
 
     /// <summary>The manifest this build writes for a project that has not chosen an adopted code.</summary>
     public static ProjectManifest Current => new(CurrentContainerVersion, BuildVersion, null);
@@ -86,7 +86,11 @@ public sealed record ProjectManifest(int ContainerVersion, string AppVersion, Ad
 /// <param name="Sketch">The drawing.</param>
 /// <param name="Manifest">What the container says about itself.</param>
 /// <param name="SceneStamp">What the scene body says about itself.</param>
-public sealed record ProjectContents(Sketch Sketch, ProjectManifest Manifest, FormatStamp SceneStamp);
+public sealed record ProjectContents(Sketch Sketch, ProjectManifest Manifest, FormatStamp SceneStamp)
+{
+    /// <summary>The images the container carried (container version 2), by their SHA-256.</summary>
+    public System.Collections.Immutable.ImmutableDictionary<string, byte[]> Assets { get; init; } = System.Collections.Immutable.ImmutableDictionary<string, byte[]>.Empty;
+}
 
 /// <summary>Every name <c>manifest.json</c> uses, in one place, read and written from here.</summary>
 internal static class ManifestNames

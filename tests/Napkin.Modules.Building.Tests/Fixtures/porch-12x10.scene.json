@@ -1,0 +1,228 @@
+{
+  "formatVersion": 16,
+  "units": {
+    "length": "inch/1024",
+    "angle": "arcsecond"
+  },
+  "layers": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Default"
+    },
+    {
+      "id": "71000000-0000-4000-8000-000000000001",
+      "name": "Wall"
+    },
+    {
+      "id": "71000000-0000-4000-8000-000000000002",
+      "name": "Opening"
+    },
+    {
+      "id": "71000000-0000-4000-8000-000000000003",
+      "name": "Deck"
+    },
+    {
+      "id": "71000000-0000-4000-8000-000000000004",
+      "name": "Roof"
+    }
+  ],
+  "entities": [
+    {
+      "id": "72000000-0000-4000-8000-000000000001",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000001",
+      "name": "House",
+      "phase": "existing",
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "width": 245760,
+      "height": 5632,
+      "depth": 196608,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": {
+        "supports": null,
+        "studSpacing": null,
+        "bracing": null,
+        "side": "exterior",
+        "bearing": true,
+        "header": null
+      },
+      "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
+      "cuts": []
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000002",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000003",
+      "name": "Deck 1",
+      "phase": "new",
+      "anchor": {
+        "x": 49152,
+        "y": -122880,
+        "z": 0
+      },
+      "width": 147456,
+      "height": 122880,
+      "depth": 36864,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": null,
+      "room": null,
+      "deck": {
+        "joistDirection": "out",
+        "joistSpacing": 16384,
+        "joist": "2x8",
+        "beam": {
+          "plies": 2,
+          "lumber": "2x10"
+        },
+        "post": "4x4",
+        "postCount": 3,
+        "cantilever": 0,
+        "decking": "5/4x6",
+        "deckingGap": 128,
+        "blocking": true,
+        "supports": null,
+        "species": null,
+        "footingDepth": null,
+        "hardware": [],
+        "guard": null,
+        "stair": null
+      },
+      "roof": null,
+      "opening": null,
+      "cuts": []
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000003",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000001",
+      "name": "Front",
+      "phase": "new",
+      "anchor": {
+        "x": 49152,
+        "y": -122880,
+        "z": 36864
+      },
+      "width": 147456,
+      "height": 3584,
+      "depth": 98304,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": {
+        "supports": null,
+        "studSpacing": null,
+        "bracing": null,
+        "side": "exterior",
+        "bearing": true,
+        "header": null
+      },
+      "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": null,
+      "cuts": []
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000004",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000002",
+      "name": "Window 1",
+      "phase": "new",
+      "anchor": {
+        "x": 104448,
+        "y": -122880,
+        "z": 61440
+      },
+      "width": 36864,
+      "height": 3584,
+      "depth": 61440,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": null,
+      "room": null,
+      "deck": null,
+      "roof": null,
+      "opening": {
+        "fill": "glass"
+      },
+      "cuts": []
+    },
+    {
+      "id": "72000000-0000-4000-8000-000000000005",
+      "type": "box",
+      "layer": "71000000-0000-4000-8000-000000000004",
+      "name": "Roof 1",
+      "phase": "new",
+      "anchor": {
+        "x": 49152,
+        "y": -122880,
+        "z": 135168
+      },
+      "width": 147456,
+      "height": 122880,
+      "depth": 51200,
+      "faceUp": "top",
+      "rotation": 0,
+      "part": null,
+      "wall": null,
+      "room": null,
+      "deck": null,
+      "roof": {
+        "rafterSpacing": 16384,
+        "rafter": "2x8",
+        "ledger": "2x8",
+        "overhang": 12288,
+        "blocking": true,
+        "sheathing": "7/16 osb",
+        "roofing": {
+          "name": "asphalt shingles",
+          "coverage": 33,
+          "waste": 0
+        },
+        "lowEnd": {
+          "kind": "wall",
+          "wall": "72000000-0000-4000-8000-000000000003"
+        }
+      },
+      "opening": null,
+      "cuts": []
+    }
+  ],
+  "relationships": [],
+  "fastenerChoices": [],
+  "supplies": [],
+  "code": {
+    "pack": "us-ct-2022",
+    "revision": 1,
+    "mode": "locked",
+    "lockedOn": "2026-09-26"
+  },
+  "site": {
+    "groundSnowLoad": null,
+    "ultimateWindSpeed": null,
+    "seismicDesignCategory": null,
+    "frostDepth": null,
+    "buildingWidth": null,
+    "roofLiveLoad": null,
+    "soilBearing": null,
+    "source": null,
+    "north": 0,
+    "underlay": null
+  },
+  "furniture": {
+    "kind": "none",
+    "anchored": false
+  }
+}

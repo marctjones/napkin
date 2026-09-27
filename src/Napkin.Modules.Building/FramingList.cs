@@ -35,6 +35,48 @@ public enum FramingRole
 
     /// <summary>A short stud between a sized header and the top plates, on the layout.</summary>
     CrippleAbove,
+
+    /// <summary>A deck's ledger, against the house (deck-and-porch §2.3).</summary>
+    Ledger,
+
+    /// <summary>A deck joist, running out from the ledger.</summary>
+    Joist,
+
+    /// <summary>The deck's rim joist, at the outer edge.</summary>
+    RimJoist,
+
+    /// <summary>A block between two joists, in the row at mid-span.</summary>
+    Blocking,
+
+    /// <summary>One ply of the deck's beam.</summary>
+    Beam,
+
+    /// <summary>A post under the beam.</summary>
+    Post,
+
+    /// <summary>A decking board.</summary>
+    DeckingBoard,
+
+    /// <summary>A guard post, bolted to the rim (deck-and-porch §4.1).</summary>
+    GuardPost,
+
+    /// <summary>A guard rail, on edge, one of two per bay.</summary>
+    GuardRail,
+
+    /// <summary>A guard cap, one per run.</summary>
+    GuardCap,
+
+    /// <summary>A baluster.</summary>
+    Baluster,
+
+    /// <summary>A stair stringer (§4.2).</summary>
+    Stringer,
+
+    /// <summary>A stair tread board.</summary>
+    Tread,
+
+    /// <summary>A rafter of a shed roof (§5.4).</summary>
+    Rafter,
 }
 
 /// <summary>One kind of piece in a wall's frame: how many, how long, and out of what.</summary>
@@ -407,6 +449,20 @@ public static class FramingList
             FramingRole.RoughSill => "rough sill",
             FramingRole.CrippleBelow => "cripple below",
             FramingRole.CrippleAbove => "cripple above",
+            FramingRole.Ledger => "ledger",
+            FramingRole.Joist => "joist",
+            FramingRole.RimJoist => "rim joist",
+            FramingRole.Blocking => "block",
+            FramingRole.Beam => "beam ply",
+            FramingRole.Post => "post",
+            FramingRole.DeckingBoard => "decking board",
+            FramingRole.GuardPost => "guard post",
+            FramingRole.GuardRail => "guard rail",
+            FramingRole.GuardCap => "guard cap",
+            FramingRole.Baluster => "baluster",
+            FramingRole.Stringer => "stringer",
+            FramingRole.Tread => "tread board",
+            FramingRole.Rafter => "rafter",
             _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Not a framing role."),
         };
 
@@ -414,6 +470,7 @@ public static class FramingList
         {
             "cripple below" => "cripples below",
             "cripple above" => "cripples above",
+            "beam ply" => "beam plies",
             _ => one + "s",
         };
     }

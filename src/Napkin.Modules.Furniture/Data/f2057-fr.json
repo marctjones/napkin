@@ -1,0 +1,52 @@
+{
+  "tableVersion": 1,
+  "kind": "clothing-storage-stability",
+  "id": "astm-f2057-23-as-restated-88-fr-28403",
+  "title": "ASTM F2057-23's scope and stability tests, as the CPSC's direct final rule restates them",
+  "citation": {
+    "designation": "88 FR 28403 (2023-08997)",
+    "standard": "Consumer Product Safety Commission, Safety Standard for Clothing Storage Units, direct final rule, 16 CFR part 1261, Federal Register vol. 88 no. 86, May 4, 2023",
+    "publisher": "Office of the Federal Register, via govinfo.gov",
+    "where": "Scope, quoting ASTM F2057-23 sec. 1.1, p. 28404; the three stability tests, sec. 9.2.1-9.2.3 as described, p. 28405; the regulation, 16 CFR 1261.2, p. 28408. napkin has not read ASTM F2057-23 itself (it is incorporated by reference and sold by ASTM): every value here is the Federal Register's restatement, and napkin's estimate 'approximates F2057-23 as described at 88 FR 28405', never 'complies'.",
+    "url": "https://www.govinfo.gov/content/pkg/FR-2023-05-04/pdf/2023-08997.pdf",
+    "retrieved": "2026-09-27"
+  },
+  "scope": {
+    "heightIn": "27",
+    "massLb": "30",
+    "enclosedStorageFt3": "3.2",
+    "page": "28404",
+    "quote": "freestanding clothing storage units, including but not limited to chests, chests of drawers, drawer chests, armoires, [chifforobes], bureaus, door chests, and dressers, which are 27 in. (686 mm) or greater in height, 30 lb (13.6 kg) or greater in mass, and contain 3.2 ft 3 (90.6 dm3) or greater of enclosed storage volume."
+  },
+  "simulatedClothingLoad": {
+    "section": "9.2.1",
+    "page": "28405",
+    "fillDensityLbPerFt3": "8.5",
+    "fillWhenExtendedFraction": "0.5",
+    "quote": "a test conducted on a hard, level, and flat test surface with extendible elements and doors open and, if 50 percent or more of the storage volume is extended, the unit is to be filled with a ‘‘simulated clothing load.’’ The fill weight in extendible elements is calculated using a density of 8.5 pounds per cubic foot of volume"
+  },
+  "horizontalForce": {
+    "section": "9.2.2",
+    "page": "28405",
+    "forceLbf": "10",
+    "maxHandholdHeightIn": "56",
+    "quote": "applies a 10-pound horizontal force over a period of at least 5 seconds at a ‘‘handhold’’ not to exceed a 56-inch height, and then holds the force for at least 10 seconds."
+  },
+  "childWeightOnCarpet": {
+    "section": "9.2.3",
+    "page": "28405",
+    "weightLb": "60",
+    "tiltBlockIn": "0.43",
+    "quote": "uses 60 pounds of weight placed on the edge of an open drawer or pull-out shelf, while the CSU is tilted forward using a 0.43 inch test block to simulate placement on a carpeted surface, with all doors and extendible elements open."
+  },
+  "woodDensity": {
+    "standard": "Wood Handbook: Wood as an Engineering Material (2021), chapter 4, Moisture Relations and Physical Properties of Wood",
+    "designation": "FPL-GTR-282",
+    "publisher": "USDA Forest Service, Forest Products Laboratory",
+    "where": "Eq. (4-14), p. 4-12: rho_x = rho_w G_x (1 + x/100); rho_w = 62.43 lb ft-3, p. 4-11. With x = 12 and G_12 from Table 5-3b, a species' density at 12 % MC is 62.43 x G_12 x 1.12 lb/ft3.",
+    "waterDensityLbPerFt3": "62.43",
+    "moisturePercent": "12",
+    "url": "https://www.fpl.fs.usda.gov/documnts/fplgtr/fplgtr282/chapter_04_fpl_gtr282.pdf",
+    "retrieved": "2026-09-27"
+  }
+}

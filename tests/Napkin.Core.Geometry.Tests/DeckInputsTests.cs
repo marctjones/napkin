@@ -1,0 +1,195 @@
+using Napkin.Core.Geometry;
+
+namespace Napkin.Core.Geometry.Tests;
+
+/// <summary>
+/// The deck, roof and opening fill a box carries (format version 13, deck-and-porch §7) are part of its
+/// value: two boxes differing only in one of them are different boxes, and a deck's hardware list
+/// compares by its items, not by reference.
+/// </summary>
+public class DeckInputsTests
+{
+    static DeckInputs Deck() => new(
+        JoistDirection.Out, Length.Inches(16), "2x8", new BeamSpec(2, "2x10"), "4x4", 3, Length.Zero, "5/4x6", Length.Inches(0, 1, 8), true,
+        null, null, null, null, null)
+    {
+        Hardware = [new HardwareItem("Joist hanger", 10)],
+    };
+
+    static RoofInputs Roof() => new(Length.Inches(16), "2x8", "2x8", Length.Inches(12), true, null, new Roofing("Shingles", null, 0), new WallLowEnd(new EntityId(Guid.Empty)));
+
+    static Box Plain() => new(new EntityId(new Guid("00000000-0000-4000-8000-000000000001")), LayerId.Default, Point3.Origin, Length.Inches(144), Length.Inches(120), Length.Inches(36), BoxFace.Top, Angle.Zero);
+
+    [Fact]
+    public void Two_decks_with_equal_fields_and_equal_hardware_items_are_equal()
+    {
+        DeckInputs a = Deck(), b = Deck();
+
+        Assert.NotSame(a.Hardware, b.Hardware);
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        Assert.False(a.Equals(null));
+    }
+
+    public static TheoryData<DeckInputs> Changed => new()
+    {
+        // A direction M11 does not build yet, cast, so the comparison is exercised both ways.
+        Deck() with { JoistDirection = (JoistDirection)1 },
+        Deck() with { JoistSpacing = Length.Inches(12) },
+        Deck() with { Joist = "2x10" },
+        Deck() with { Beam = new BeamSpec(3, "2x10") },
+        Deck() with { Post = "6x6" },
+        Deck() with { PostCount = 4 },
+        Deck() with { Cantilever = Length.Inches(12) },
+        Deck() with { Decking = "5/4x4" },
+        Deck() with { DeckingGap = Length.Zero },
+        Deck() with { Blocking = false },
+        Deck() with { Supports = "zz-deck" },
+        Deck() with { Species = "zz-fir" },
+        Deck() with { FootingDepth = Length.Inches(42) },
+        Deck() with { Guard = new GuardInputs(Length.Inches(36), Length.Inches(72), Length.Inches(3), Length.Inches(3), "4x4", "2x4", "2x6", "2x2") },
+        Deck() with { Stair = new StairInputs(DeckEdge.South, Length.Zero, Length.Inches(36), Length.Inches(10), null, 3, "2x12", 2) },
+        Deck() with { Hardware = [new HardwareItem("Joist hanger", 12)] },
+    };
+
+    [Theory]
+    [MemberData(nameof(Changed))]
+    public void A_deck_differing_in_any_one_input_is_a_different_deck(DeckInputs changed)
+        => Assert.NotEqual(Deck(), changed);
+
+    [Fact]
+    public void A_boxs_deck_roof_and_opening_are_part_of_its_value()
+    {
+        Box plain = Plain();
+
+        foreach (Box changed in new[] { plain with { Deck = Deck() }, plain with { Roof = Roof() }, plain with { Opening = OpeningFill.Screen } })
+        {
+            Assert.NotEqual(plain, changed);
+            Assert.NotEqual(plain.GetHashCode(), changed.GetHashCode());
+        }
+
+        Assert.Equal(plain with { Deck = Deck() }, plain with { Deck = Deck() });
+        Assert.Equal((plain with { Roof = Roof() }).GetHashCode(), (plain with { Roof = Roof() }).GetHashCode());
+    }
+
+    [Fact]
+    public void A_roofs_low_end_is_a_wall_or_a_beam_on_posts()
+    {
+        Assert.NotEqual(Roof(), Roof() with { LowEnd = new BeamLowEnd(new BeamSpec(2, "2x10"), "4x4", 2) });
+        Assert.Equal(new BeamLowEnd(new BeamSpec(2, "2x10"), "4x4", 2), new BeamLowEnd(new BeamSpec(2, "2x10"), "4x4", 2));
+    }
+}
+
+/// <summary>Setting a deck's inputs through the updater (deck-and-porch §8): one undo step, refused when the inputs break §7's rules.</summary>
+public class SetDeckInputsTests
+{
+    static readonly IGeometryUpdater Updater = DirectUpdater.Instance;
+
+    static DeckInputs Deck() => new(
+        JoistDirection.Out, Length.Inches(16), "2x8", new BeamSpec(2, "2x10"), "4x4", 3, Length.Zero, "5/4x6", Length.Inches(0, 1, 8), true,
+        null, null, null, null, null);
+
+    [Fact]
+    public void A_decks_inputs_are_set_and_cleared_and_bad_ones_refused()
+    {
+        SketchBuilder builder = new();
+        EntityId deck = builder.AddBox(0, 0, 144, 120);
+
+        Solved set = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new SetDeckInputs(deck, Deck())));
+        Assert.Equal(Deck(), set.Sketch.Find<Box>(deck)!.Deck);
+        Assert.Null(Assert.IsType<Solved>(Updater.Apply(set.Sketch, new SetDeckInputs(deck, null))).Sketch.Find<Box>(deck)!.Deck);
+        Assert.Null(DeckRules.Refusal(Deck()));
+
+        foreach (DeckInputs bad in new[]
+                 {
+                     Deck() with { JoistSpacing = Length.Zero },
+                     Deck() with { Beam = new BeamSpec(0, "2x10") },
+                     Deck() with { Beam = new BeamSpec(4, "2x10") },
+                     Deck() with { PostCount = 1 },
+                     Deck() with { Cantilever = new Length(-1) },
+                     Deck() with { DeckingGap = new Length(-1) },
+                     Deck() with { FootingDepth = new Length(-1) },
+                     Deck() with { Joist = " " },
+                     Deck() with { Beam = new BeamSpec(2, "") },
+                     Deck() with { Post = "" },
+                     Deck() with { Decking = "" },
+                 })
+        {
+            Assert.NotNull(DeckRules.Refusal(bad));
+            Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetDeckInputs(deck, bad)));
+        }
+
+        Assert.Equal(RejectionReason.UnknownEntity, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetDeckInputs(EntityId.New(), Deck()))).Reason);
+        EntityId node = builder.AddNode(0, 0);
+        Assert.Equal(RejectionReason.DanglingReference, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetDeckInputs(node, Deck()))).Reason);
+    }
+}
+
+/// <summary>Setting a roof's inputs through the updater (deck-and-porch §5.3): one undo step, refused when the inputs break §7's rules.</summary>
+public class SetRoofInputsTests
+{
+    static readonly IGeometryUpdater Updater = DirectUpdater.Instance;
+
+    static readonly BeamLowEnd Beam = new(new BeamSpec(2, "2x10"), "4x4", 2);
+
+    static RoofInputs Roof() => new(Length.Inches(16), "2x8", "2x8", Length.Inches(12), true, "7/16 osb", new Roofing("shingles", 33, 0), new WallLowEnd(EntityId.New()));
+
+    [Fact]
+    public void A_roofs_inputs_are_set_and_cleared_and_bad_ones_refused()
+    {
+        SketchBuilder builder = new();
+        EntityId roof = builder.AddBox(0, 0, 144, 120);
+        RoofInputs inputs = Roof();
+
+        Solved set = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new SetRoofInputs(roof, inputs)));
+        Assert.Equal(inputs, set.Sketch.Find<Box>(roof)!.Roof);
+        Assert.Null(Assert.IsType<Solved>(Updater.Apply(set.Sketch, new SetRoofInputs(roof, null))).Sketch.Find<Box>(roof)!.Roof);
+        Assert.Null(RoofRules.Refusal(inputs));
+        Assert.Null(RoofRules.Refusal(inputs with { LowEnd = Beam, Overhang = Length.Zero, Roofing = new Roofing("metal", null, 10) }));
+
+        foreach ((RoofInputs bad, string why) in new[]
+                 {
+                     (inputs with { RafterSpacing = Length.Zero }, "a rafter spacing is longer than zero"),
+                     (inputs with { Overhang = new Length(-1) }, "an overhang is zero or more"),
+                     (inputs with { Roofing = new Roofing("shingles", 33, -1) }, "a roofing waste is zero or more and a coverage more than zero"),
+                     (inputs with { Roofing = new Roofing("shingles", 0, 0) }, "a roofing waste is zero or more and a coverage more than zero"),
+                     (inputs with { LowEnd = Beam with { Beam = new BeamSpec(0, "2x10") } }, "a porch beam has 1 to 3 plies on at least 2 posts"),
+                     (inputs with { LowEnd = Beam with { Beam = new BeamSpec(4, "2x10") } }, "a porch beam has 1 to 3 plies on at least 2 posts"),
+                     (inputs with { LowEnd = Beam with { PostCount = 1 } }, "a porch beam has 1 to 3 plies on at least 2 posts"),
+                     (inputs with { Rafter = " " }, "every lumber and the roofing is named"),
+                     (inputs with { Roofing = new Roofing("", null, 0) }, "every lumber and the roofing is named"),
+                     (inputs with { LowEnd = Beam with { Post = "" } }, "every lumber and the roofing is named"),
+                 })
+        {
+            Assert.Equal(why, RoofRules.Refusal(bad));
+            Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetRoofInputs(roof, bad)));
+        }
+
+        Assert.Equal(RejectionReason.UnknownEntity, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetRoofInputs(EntityId.New(), inputs))).Reason);
+        EntityId node = builder.AddNode(0, 0);
+        Assert.Equal(RejectionReason.DanglingReference, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetRoofInputs(node, inputs))).Reason);
+    }
+}
+
+/// <summary>Setting an opening's fill (deck-and-porch §5.2): exact, one step, never on a wall, deck or roof.</summary>
+public class SetOpeningFillTests
+{
+    static readonly IGeometryUpdater Updater = DirectUpdater.Instance;
+
+    [Fact]
+    public void A_fill_is_set_and_cleared_and_refused_where_it_cannot_be()
+    {
+        SketchBuilder builder = new();
+        EntityId opening = builder.AddBox(0, 0, 36, 4);
+
+        Solved set = Assert.IsType<Solved>(Updater.Apply(builder.Sketch, new SetOpeningFill(opening, OpeningFill.Screen)));
+        Assert.Equal(OpeningFill.Screen, set.Sketch.Find<Box>(opening)!.Opening);
+        Assert.Null(Assert.IsType<Solved>(Updater.Apply(set.Sketch, new SetOpeningFill(opening, null))).Sketch.Find<Box>(opening)!.Opening);
+
+        Sketch wall = builder.Sketch.WithEntity(builder.BoxOf(opening) with { WallInputs = new WallInputs("roof", null) });
+        Assert.IsType<Rejected>(Updater.Apply(wall, new SetOpeningFill(opening, OpeningFill.Glass)));
+        Assert.Equal(RejectionReason.UnknownEntity, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetOpeningFill(EntityId.New(), OpeningFill.Glass))).Reason);
+        EntityId node = builder.AddNode(0, 0);
+        Assert.Equal(RejectionReason.DanglingReference, Assert.IsType<Rejected>(Updater.Apply(builder.Sketch, new SetOpeningFill(node, OpeningFill.Glass))).Reason);
+    }
+}

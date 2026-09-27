@@ -382,6 +382,7 @@ public class FramingListTests
     [InlineData(FramingRole.RoughSill, "rough sill", "rough sills")]
     [InlineData(FramingRole.CrippleBelow, "cripple below", "cripples below")]
     [InlineData(FramingRole.CrippleAbove, "cripple above", "cripples above")]
+    [InlineData(FramingRole.Rafter, "rafter", "rafters")]
     public void EveryRoleHasAName(FramingRole role, string one, string many)
     {
         Assert.Equal(one, FramingList.Label(role, 1));
