@@ -13,6 +13,9 @@ its **Appendix B Tables B1–B3**, deck post heights and footing sizes (#42, bel
 fixtures (`tests/Napkin.Core.RulesEngine.Tests/Fixtures`, `Golden/`, marked `SYNTHETIC TEST DATA - NOT
 CODE VALUES`) and on the shipped Connecticut pack described below, whose own golden files are in
 `packs/golden/`. With no pack, or a pack without a table, the answer is `NoData` - napkin never guesses.
+A header's Sized/Out of scope and a wall line's Passes/Fails/Out of scope results carry `UNREVIEWED:
+values not yet checked against the source` in their citation, details and short forms until the
+adopted pack is signed off (§13 Decision 5; #255), the same as the deck lines described below.
 
 **`packs/` (repo root, shipped beside the executable)** holds the first real pack, **Connecticut
 2022** (`packs/packs/us-ct-2022`, on the 2021 IRC as amended; CT 2026 is not in force yet). It was

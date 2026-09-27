@@ -17,12 +17,16 @@ public sealed record AdoptedCodeRef(
     public const string UnreviewedText = "UNREVIEWED: values not yet checked against the source";
 
     /// <summary>"CT 2022 (IRC 2021), pack us-ct-2022 rev 1", plus "UNREVIEWED" until signed off (design §13 Decision 5).</summary>
-    public override string ToString()
-        => $"{ShortName} ({BaseCode}), pack {PackId} rev {Revision}"
-           + (Review == ReviewStatus.SignedOff ? string.Empty : $" — {UnreviewedText}");
+    public override string ToString() => $"{ShortName} ({BaseCode}), pack {PackId} rev {Revision}{UnreviewedFragment}";
 
     /// <summary>" UNREVIEWED: values not yet checked against the source." until the pack is signed off; empty after.</summary>
     public string UnreviewedSentence => Review == ReviewStatus.SignedOff ? string.Empty : $" {UnreviewedText}.";
+
+    /// <summary>
+    /// " — UNREVIEWED: values not yet checked against the source", with no closing period, for
+    /// embedding inside a sentence that supplies its own terminal punctuation; empty once signed off.
+    /// </summary>
+    public string UnreviewedFragment => Review == ReviewStatus.SignedOff ? string.Empty : $" — {UnreviewedText}";
 }
 
 /// <summary>How one input landed in its band: the "show your work" line (design §2, §4.2).</summary>
@@ -111,7 +115,14 @@ public sealed record Citation(
     InterpolationTrace? Interpolation = null,
     bool IsSection = false)
 {
-    /// <summary>"IRC 2021 Table X row Y, as adopted by CT 2022 — source, location".</summary>
+    /// <summary>
+    /// "IRC 2021 Table X row Y, as adopted by CT 2022 — source, location", plus "UNREVIEWED: values
+    /// not yet checked against the source" until the adopted pack is signed off (design §13 Decision
+    /// 5): every consumer that builds a result's citation line from this — <c>HeaderResult.Sized</c>,
+    /// <c>HeaderResult.OutOfScope</c>, <c>BracingResult.Passes/Fails/OutOfScope</c> and the part
+    /// panel's citation line — carries the label the same way deck lines already do, appended last so
+    /// a "Limit: " prefix or a <c>StartsWith</c> on the citation's head still holds.
+    /// </summary>
     public override string ToString()
     {
         string what = IsSection ? "Section" : "Table";
@@ -123,6 +134,6 @@ public sealed record Citation(
             _ => $"{what} {Table} of a guide, not {Code.ShortName}'s adopted {Code.BaseCode}",
         };
         string row = RowId is null ? string.Empty : $" row {RowId}";
-        return $"{layer}{row} ({RowLabel}); {Source.Title}, {Source.Printing}, {Source.Location}";
+        return $"{layer}{row} ({RowLabel}); {Source.Title}, {Source.Printing}, {Source.Location}{Code.UnreviewedSentence}";
     }
 }
