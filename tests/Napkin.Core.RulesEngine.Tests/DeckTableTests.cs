@@ -130,11 +130,11 @@ public class DeckTableTests
     public void Without_a_code_or_a_table_the_answer_is_no_data()
     {
         Assert.StartsWith("No adopted code is chosen", Assert.IsType<DeckResult.NoData>(DeckEvaluator.CheckSpan(null, SpanUse.DeckJoist, Joists(In(117)))).Explanation, StringComparison.Ordinal);
-        // The shipped Connecticut pack has DCA 6's joist table (#41) and no beam, ledger or footing table yet.
+        // The shipped Connecticut pack has DCA 6's joist and beam tables (#41) and no rafter, ledger or footing table yet.
         LoadedPack ct = Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "RealPacks"), "us-ct-2022"));
         Assert.Equal(
-            "The loaded pack CT 2022 has no deck beam span, so napkin cannot check this. Nothing is guessed: add it from your copy of the code (docs/rules-engine.md).",
-            Assert.IsType<DeckResult.NoData>(DeckEvaluator.CheckSpan(ct, SpanUse.DeckBeam, new SpanRequest("(2) 2x10", In(66), "deck", "Southern Pine", null, In(117)))).Explanation);
+            "The loaded pack CT 2022 has no rafter span, so napkin cannot check this. Nothing is guessed: add it from your copy of the code (docs/rules-engine.md).",
+            Assert.IsType<DeckResult.NoData>(DeckEvaluator.CheckSpan(ct, SpanUse.Rafter, new SpanRequest("2x8", In(117), null, "Southern Pine", In(16), null, 30))).Explanation);
         Assert.IsType<DeckResult.NoData>(DeckEvaluator.SizeLedger(ct, "2x8", In(117), In(144)));
         Assert.IsType<DeckResult.NoData>(DeckEvaluator.SizeFooting(ct, ExactFraction.Whole(1), 2000));
         Assert.Equal(["deck joist span", "deck beam span", "rafter span"], new[] { SpanUse.DeckJoist, SpanUse.DeckBeam, SpanUse.Rafter }.Select(DeckEvaluator.Words));
@@ -232,10 +232,10 @@ public class DeckLoaderTests
     [Fact]
     public void A_pack_whose_base_layer_has_no_deck_files_has_only_its_guides_deck_tables()
     {
-        // Connecticut's base layer irc-2021 has no deck/ directory; its one deck table is DCA 6's Table 2 (#41).
+        // Connecticut's base layer irc-2021 has no deck/ directory; its deck tables are DCA 6's Tables 2 and 3A (#41).
         LoadedPack ct = Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "RealPacks"), "us-ct-2022"));
-        Assert.Equal([SpanUse.DeckJoist], ct.Deck.Spans.Keys);
-        Assert.Equal("dca6-2015", ct.Deck.Spans[SpanUse.DeckJoist].Guide!.Id);
+        Assert.Equal([SpanUse.DeckJoist, SpanUse.DeckBeam], ct.Deck.Spans.Keys.Order());
+        Assert.All(ct.Deck.Spans.Values, table => Assert.Equal("dca6-2015", table.Guide!.Id));
         Assert.Equal((null, null, null), (ct.Deck.Ledger, ct.Deck.Footing, ct.Deck.GuardStair));
         Assert.Empty(DeckProvisions.None.Spans);
         Assert.NotNull(ct.Frost);
