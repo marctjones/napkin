@@ -79,41 +79,78 @@ public class DeckFramingTests
         Assert.Equal((22, In(144)), (Piece(frame, FramingRole.DeckingBoard).Quantity, Piece(frame, FramingRole.DeckingBoard).Length));
         Assert.Equal((22, In(1, 7, 8)), (frame.DeckingBoards, frame.LastBoardWidth));
 
-        // Beam span post centreline to post centreline (DCA 6 p. B2; deck-guide-pack Decision 8): the end posts'
-        // centres are 1 3/4″ in from each end, so (144 − 3 1/2) ÷ 2 = 70 1/4″ exactly — the clear 66 3/4″ between
-        // posts plus one post width. Tributary area 70 1/4 × 58 1/2 = 4109.625 sq in = 28.54 sq ft, shown 28.5.
-        Assert.Equal(ExactFraction.Whole(In(70, 1, 4).Units), frame.BeamSpan);
-        Assert.Equal("5'-10 1/4\"", frame.BeamSpanText);
-        Assert.Equal(new ExactFraction((Int128)In(70, 1, 4).Units * In(58, 1, 2).Units, 1), frame.TributaryArea);
-        Assert.Equal("28.5 sq ft", frame.TributaryAreaText);
+        // Beam span L_B face to face of posts (DCA 6 Figure 3, p. 7; #41): three 3 1/2″ posts take 10 1/2″ of the
+        // 144″, and the two clear spans share the rest: (144 − 3 × 3 1/2) ÷ 2 = 133 1/2 ÷ 2 = 66 3/4″ exactly.
+        Assert.Equal(ExactFraction.Whole(In(66, 3, 4).Units), frame.BeamSpan);
+        Assert.Equal("5'-6 3/4\"", frame.BeamSpanText);
         Assert.Equal(In(117), frame.JoistSpan);
-    }
 
-    [Theory]
-    [Trait("Feature", "DECK-005")]
-    // Two posts: centre to centre 144 − 3 1/2 = 140 1/2″.
-    [InlineData(2, (140 * 1024) + 512, 1)]
-    // Four posts: (144 − 3 1/2) ÷ 3 = 46 5/6″ — not on the grid, kept exact; shown to the nearest 1/16″, 46 13/16″.
-    [InlineData(4, (140 * 1024) + 512, 3)]
-    public void The_beam_span_between_post_centres_is_exact_for_any_count(int posts, long numerator, long denominator)
-    {
-        DeckFraming frame = Frame(Drawing(House(), DeckBox(Inputs(posts))));
-
-        Assert.Equal(new ExactFraction(numerator, denominator), frame.BeamSpan);
-        Assert.Equal(denominator == 1 ? "11'-8 1/2\"" : "≈3'-10 13/16\"", frame.BeamSpanText);
+        // Tributary area, DCA 6 Appendix B (pp. B1–B2), Eq. B-1 for the middle post: no beam overhang, so B_L runs from
+        // its centreline (at 3 1/2 ÷ 2 + (144 − 3 1/2) ÷ 2 = 1 3/4 + 70 1/4 = 72″) to the deck's outside edge, 72″ each
+        // way; no cantilever, so J_L runs from the ledger face (1 1/2″ out) to the rim's outside face (120″ out),
+        // 118 1/2″, and J_O = 0. A = (118 1/2 ÷ 2 + 0) × 72 = 59 1/4 × 72 = 4266 sq in = 29.625 sq ft, shown 29.6.
+        DeckTributary tributary = frame.Tributary;
+        Assert.Equal(TributaryPost.Centre, tributary.Post);
+        Assert.Equal(ExactFraction.Whole(In(72).Units), tributary.BeamSpan);
+        Assert.Equal((ExactFraction.Whole(In(118, 1, 2).Units), ExactFraction.Whole(0)), (tributary.JoistLength, tributary.JoistOverhang));
+        Assert.Equal(new ExactFraction((Int128)In(59, 1, 4).Units * In(72).Units, 1), frame.TributaryArea);
+        Assert.Equal("29.6 sq ft", frame.TributaryAreaText);
+        Assert.Equal(
+            "29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, post centreline to the deck's outside edge, × half the joists' 9'-10 1/2\", ledger face to the rim's outside face)",
+            tributary.Words);
     }
 
     [Fact]
     [Trait("Feature", "DECK-005")]
-    public void A_cantilever_shortens_the_joist_span_and_moves_load_onto_the_beam()
+    public void The_beam_span_between_post_faces_and_the_tributary_area_are_exact_for_two_and_four_posts()
     {
-        // 12″ cantilever: joist span 117 − 12 = 105″; tributary depth 105 ÷ 2 + 12 = 64 1/2″; area 70 1/4 × 64 1/2
-        // = 4531.125 sq in = 31.47 sq ft, shown 31.5.
+        // Two posts: L_B = 144 − 2 × 3 1/2 = 137″. The most loaded post is an end post, Eq. B-2: with no overhang the one
+        // span runs outside edge to outside edge, B_L = 144″, and B_O = 0, so A = 59 1/4 × (144 ÷ 2 + 0) = 59 1/4 × 72
+        // = 4266 sq in = 29.6 sq ft — each end post carries half the deck.
+        DeckFraming two = Frame(Drawing(House(), DeckBox(Inputs(2))));
+        Assert.Equal(ExactFraction.Whole(In(137).Units), two.BeamSpan);
+        Assert.Equal("11'-5\"", two.BeamSpanText);
+        Assert.Equal((TributaryPost.Corner, ExactFraction.Whole(In(144).Units)), (two.Tributary.Post, two.Tributary.BeamSpan));
+        Assert.Equal(new ExactFraction((Int128)In(59, 1, 4).Units * In(72).Units, 1), two.TributaryArea);
+        Assert.Equal(
+            "29.6 sq ft (DCA 6 Appendix B Eq. B-2, pp. B1–B2: half the beam's 12'-0\", the deck's outside edge to outside edge, × half the joists' 9'-10 1/2\", ledger face to the rim's outside face)",
+            two.Tributary.Words);
+
+        // Four posts: L_B = (144 − 4 × 3 1/2) ÷ 3 = 130 ÷ 3 = 43 1/3″ — not on the grid, kept exact (133120/3 in 1/1024″);
+        // shown to the nearest 1/16″, 43 5/16″. The posts' centres are (144 − 3 1/2) ÷ 3 = 46 5/6″ apart, so the middle post
+        // beside an end has spans of 1 3/4 + 46 5/6 = 48 7/12″ (to the deck's edge) and 46 5/6″ (to the next centre); the
+        // greater is B_L (p. B2). A = 59 1/4 × 48 7/12 = 2878.5625 sq in = 19.99 sq ft, shown 20.0.
+        DeckFraming four = Frame(Drawing(House(), DeckBox(Inputs(4))));
+        Assert.Equal(new ExactFraction(130 * 1024, 3), four.BeamSpan);
+        Assert.Equal("≈3'-7 5/16\"", four.BeamSpanText);
+        Assert.Equal((TributaryPost.Centre, new ExactFraction(((48 * 12) + 7) * 1024, 12)), (four.Tributary.Post, four.Tributary.BeamSpan));
+        Assert.Equal(new ExactFraction((Int128)In(59, 1, 4).Units * ((48 * 12) + 7) * 1024, 12), four.TributaryArea);
+        Assert.Equal("20.0 sq ft", four.TributaryAreaText);
+        Assert.StartsWith("20.0 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: ≈4'-0 9/16\" of beam, post centreline", four.Tributary.Words, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Feature", "DECK-005")]
+    public void A_cantilever_shortens_the_joist_span_and_measures_the_joists_to_the_beams_centre()
+    {
+        // 12″ cantilever: joist span 117 − 12 = 105″. The (2) 2x10 beam is 3″ thick, its outer face 12″ in from the rim's
+        // outer face, so its centre is 120 − 12 − 1 1/2 = 106 1/2″ out: J_L = 106 1/2 − 1 1/2 = 105″ (ledger face to the
+        // beam's centre, p. B1) and J_O = 120 − 106 1/2 = 13 1/2″. A = (105 ÷ 2 + 13 1/2) × 72 = 66 × 72 = 4752 sq in = 33.0 sq ft.
         DeckFraming frame = Frame(Drawing(House(), DeckBox(Inputs(cantilever: In(12)))));
 
         Assert.Equal(In(105), frame.JoistSpan);
-        Assert.Equal(new ExactFraction((Int128)In(70, 1, 4).Units * In(64, 1, 2).Units, 1), frame.TributaryArea);
-        Assert.Equal("31.5 sq ft", frame.TributaryAreaText);
+        Assert.Equal((ExactFraction.Whole(In(105).Units), ExactFraction.Whole(In(13, 1, 2).Units)), (frame.Tributary.JoistLength, frame.Tributary.JoistOverhang));
+        Assert.Equal(new ExactFraction((Int128)In(66).Units * In(72).Units, 1), frame.TributaryArea);
+        Assert.Equal(
+            "33.0 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, post centreline to the deck's outside edge, × (half the joists' 8'-9\", ledger face to the beam's centre, + 1'-1 1/2\", the beam's centre to the deck's outside edge))",
+            frame.Tributary.Words);
+
+        // A (3) 2x10 beam is 4 1/2″ thick: its centre is 120 − 12 − 2 1/4 = 105 3/4″ out, J_L = 104 1/4″, J_O = 14 1/4″;
+        // A = (52 1/8 + 14 1/4) × 72 = 66 3/8 × 72 = 4779 sq in = 33.19 sq ft, shown 33.2.
+        DeckFraming three = Frame(Drawing(House(), DeckBox(Inputs(cantilever: In(12)) with { Beam = new BeamSpec(3, "2x10") })));
+        Assert.Equal((ExactFraction.Whole(In(104, 1, 4).Units), ExactFraction.Whole(In(14, 1, 4).Units)), (three.Tributary.JoistLength, three.Tributary.JoistOverhang));
+        Assert.Equal(new ExactFraction((Int128)In(66, 3, 8).Units * In(72).Units, 1), three.TributaryArea);
+        Assert.Equal("33.2 sq ft", three.TributaryAreaText);
     }
 
     [Fact]

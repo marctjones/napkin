@@ -41,8 +41,8 @@ public class DeckWorkflows
             Assert.True(window.IsShowingDeck);
             Assert.StartsWith("Deck 1: 8'-0\" × 8'-0\", 3'-0\" above grade", window.DeckHeadlineText, StringComparison.Ordinal);
 
-            // 96 wide: joists at 0 … 80 (six) and the end joist at 94 1/2; 3 posts, post centre to post centre: (96 − 3 1/2) ÷ 2 = 46 1/4″.
-            Assert.StartsWith("Frame: ledger, 7 joists 2x8 at 16\", rim, (2) 2x10 beam on 3 posts spanning 3'-10 1/4\" between post centres", window.DeckFrameLine, StringComparison.Ordinal);
+            // 96 wide: joists at 0 … 80 (six) and the end joist at 94 1/2; 3 posts, face to face of posts: (96 − 3 × 3 1/2) ÷ 2 = 42 3/4″.
+            Assert.StartsWith("Frame: ledger, 7 joists 2x8 at 16\", rim, (2) 2x10 beam on 3 posts spanning 3'-6 3/4\" between post faces", window.DeckFrameLine, StringComparison.Ordinal);
             Assert.Contains("its north edge is the ledger", window.MessageOnScreen, StringComparison.Ordinal);
 
             // The sample is locked to CT 2022, whose deck joists come from DCA 6: the panel offers its words, filling in none.
@@ -59,12 +59,12 @@ public class DeckWorkflows
             Assert.Contains("Enter the ground snow load: DCA 6-2015 scope limit s.snow", window.DeckCheckLines, StringComparison.Ordinal);
         });
 
-        // Two posts: 96 − 3 1/2 = 92 1/2″ between their centres.
+        // Two posts: 96 − 2 × 3 1/2 = 89″ between their faces.
         TypeInto(app, window, window.DeckControls.PostCount, "2");
-        app.Expect("with two posts the beam spans 7'-8 1/2\"", () =>
+        app.Expect("with two posts the beam spans 7'-5\"", () =>
         {
             Assert.Equal(2, window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Single(box => box.Deck is not null).Deck!.PostCount);
-            Assert.Contains("on 2 posts spanning 7'-8 1/2\" between post centres", window.DeckFrameLine, StringComparison.Ordinal);
+            Assert.Contains("on 2 posts spanning 7'-5\" between post faces", window.DeckFrameLine, StringComparison.Ordinal);
         });
 
         app.Chord(Key.L, KeyModifiers.Shift);
@@ -127,13 +127,13 @@ public class DeckWorkflows
             }
         });
 
-        // Two posts respan the beam: 96 − 3 1/2 = 92 1/2″ between their centres.
+        // Two posts respan the beam: 96 − 2 × 3 1/2 = 89″ between their faces.
         window.CutList!.Close();
         window.Activate();
         TypeInto(app, window, window.DeckControls.PostCount, "2");
-        app.Expect("with two posts the beam spans 7'-8 1/2\" and the guard and stair stay", () =>
+        app.Expect("with two posts the beam spans 7'-5\" and the guard and stair stay", () =>
         {
-            Assert.Contains("on 2 posts spanning 7'-8 1/2\" between post centres", window.DeckFrameLine, StringComparison.Ordinal);
+            Assert.Contains("on 2 posts spanning 7'-5\" between post faces", window.DeckFrameLine, StringComparison.Ordinal);
             Assert.Contains("Stair: Lay out 5 risers of", window.DeckCheckLines, StringComparison.Ordinal);
         });
     });
