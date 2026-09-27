@@ -32,7 +32,7 @@ states a code value, a lumber size, a span or a load.
 versions, licences, toolchain, the C ABI); §2 structured output; §3 build and packaging; §4 the
 .NET side; §5 models; §6 the consented download; §7 tests; §8 risks; §9 slices; §10 try it;
 §11 unverified; §12 decisions for Marc; §13 as built in A (#239); §14 as built in B (#240);
-§15 as built in C (#241).
+§15 as built in C (#241); §16 as built in D (#242).
 
 ---
 
@@ -1519,3 +1519,186 @@ belt-and-braces regression coverage, not something the ratchet would have requir
 - The GUI suite's stub `HttpMessageHandler` pattern (`MainWindow.AssistantHttp`) is already exactly
   what slice D's `GUI-AST-08` needs for the download's own HTTP traffic — no new seam required there,
   only a catalog whose URLs the stub can match.
+
+---
+
+## 16. As built in D (#242), and where it departs from this note
+
+`src/Napkin.Assistant.Mlx/ModelCatalog.cs` (`ModelCatalog`, `CatalogModel`, `CatalogFile`),
+`src/Napkin.Assistant.Mlx/ModelDownload.cs` (`ModelDownload`, `DownloadProgress`, `DownloadResult`),
+two changes to `ModelFolder.cs`, `src/Napkin.App/DownloadSheet.axaml(.cs)`, the *Download…* button
+and the memory line in `AssistantWindow.axaml(.cs)`, two seams in `MainWindow.Assistant.cs`;
+`tests/Napkin.Assistant.Mlx.Tests/{ModelCatalogTests,ModelDownloadTests,HubStub}.cs` and two
+`ModelFolderTests` (feature `AST-008`); `GUI-AST-08` with its own `HubStub`. No test opens a socket,
+and nothing in this slice fetched a model's weights.
+
+### 16.1 The catalog, re-read from the Hub on 2026-09-27 (11:52 UTC)
+
+For each pinned commit: `GET https://huggingface.co/api/models/<repo>/tree/<commit>` (every file, its
+size, and each LFS file's `lfs.oid` = SHA-256); `GET …/api/models/<repo>/revision/<commit>?blobs=true`
+(`sha` equal to the commit; `cardData.license` and `cardData.license_link`); a `HEAD` on each LFS
+file's resolve URL (`x-linked-size`, `x-linked-etag` = the SHA-256, `x-repo-commit` = the commit,
+`302` to `us.aws.cdn.hf.co`, `accept-ranges: bytes`) — the weights were never fetched; and every
+other listed file fetched from `…/resolve/<commit>/<file>` (`x-repo-commit` checked), hashed with
+SHA-256, and its git blob SHA-1 computed too, which equals the tree's `oid` for every one. The
+loader's patterns were read from mlx-swift-lm at the pinned `ee673d6a…`
+(`Libraries/MLXLMCommon/ModelFactory.swift`: `tokenizerDownloadPatterns = ["*.json", "*.jinja"]`,
+`modelDownloadPatterns = ["*.safetensors"] + tokenizerDownloadPatterns`).
+
+| Repo | Commit | Files napkin fetches | Total bytes | Card licence | `license_link` |
+|---|---|---|---|---|---|
+| mlx-community/Qwen3-4B-4bit (default) | `4dcb3d101c2a062e5c1d4bb173588c54ea6c4d25` | 8 | 2,277,297,903 | `apache-2.0` | `https://huggingface.co/Qwen/Qwen3-4B/blob/main/LICENSE` |
+| mlx-community/Qwen3-4B-Instruct-2507-4bit | `50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b` | 10 | 2,277,297,844 | `apache-2.0` | `https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507/blob/main/LICENSE` |
+| mlx-community/Phi-4-mini-instruct-4bit | `ac1c269cb4222a4e136a3d09edad301056c1f36a` | 8 (not its three `.py`) | 2,177,574,851 | `mit` | `https://huggingface.co/microsoft/Phi-4-mini-instruct/resolve/main/LICENSE` |
+
+**Every file's name, size and SHA-256 equals §6.1's tables; no value differed.** The goldens in
+`ModelCatalogTests` are those values, hand-checked against these reads.
+
+Two wire facts §6.2 did not spell out, both handled: a non-LFS file answers **`307` with a relative
+`Location`** (`/api/resolve-cache/models/<repo>/<commit>/<file>?…&etag="<git blob sha>"`, on
+huggingface.co itself), so napkin resolves a relative redirect against the URL that gave it; and the
+Hub's *"Downloading behind a proxy or firewall"* section of
+[models-downloading](https://huggingface.co/docs/hub/en/models-downloading) lists **nine** hosts —
+`huggingface.co`, `cas-server.xethub.hf.co`, `cas-server.xethub-eu.hf.co`, `transfer.xethub.hf.co`,
+`transfer.xethub-eu.hf.co`, `us.aws.cdn.hf.co`, `us.gcp.cdn.hf.co`, `cdn-lfs-us-1.hf.co`,
+`cdn-lfs-eu-1.hf.co` — *"Downloads follow HTTP redirects from huggingface.co to these hostnames"*.
+Those nine are `ModelDownload.AllowedHosts`, matched exactly, over HTTPS, on the default port.
+
+**The real wire, checked once by hand** (a throw-away program, not committed): `ModelDownload`'s own
+per-file fetch over `ModelDownload.CreateHandler()` for `config.json` (the relative `307`, 937 bytes)
+and `tokenizer.json` (11,422,654 bytes, LFS: `302` to the CDN), cancelled at about 3.0 MB and run
+again — the CDN answered the `Range` with `206` and napkin appended (the report after the resume
+read 3,017,793 bytes where the part held 3,001,409), and both files passed their SHA-256. The
+staging folder was refused as a model folder. No `.safetensors` file was requested.
+
+### 16.2 `ModelDownload`: the safety properties, and the test that holds each
+
+| Property | Test (`ModelDownloadTests` unless named) |
+|---|---|
+| Nothing is sent, and nothing is made on disk, unless `RunAsync` is told the person consented; `false` throws before any request | `NothingIsSentOrMadeWithoutConsent` |
+| Every file is asked for at `https://huggingface.co/<repo>/resolve/<commit>/<file>`; a commit must be 40 hex digits, so `main` cannot be written into the catalog | `EveryFileComesFromItsPinnedUrl…`, `ModelCatalogTests.OnlyAFullCommitIsPinned` |
+| Only the loader's files: `*.safetensors`, `*.json`, `*.jinja`, a plain name, never `.py` | `ModelCatalogTests.AFileOutsideTheLoadersPatternsIsNotACatalogFile`, `…EveryEntryHasTheShapeADownloadNeeds` |
+| Redirects are napkin's code, not the handler's: relative ones against their own URL; only HTTPS, the default port, a listed host; at most five; anything else refused naming where | `RedirectsAreFollowedToTheHubsDocumentedHosts…`, `ARedirectAnywhereElseIsRefusedNamingWhere` (another host, `http`, another port, a look-alike, a scheme-relative URL), `ARedirectThatSaysNowhereIsRefused`, `RedirectsAreFollowedAtMostFiveTimes`, `OnlyHttpsToAnAllowedHostOnItsOwnPortIsSent` |
+| napkin's handler follows no redirect, decompresses nothing (the hash is of the bytes as published), uses no proxy | `NapkinsHandlerFollowsNoRedirectDecompressesNothingAndUsesNoProxy` |
+| Resume: `Range: bytes=<part length>-` on **every hop** (the CDN's too); a `206` is appended only if its `Content-Range` starts there; a `200` starts the file again; what had arrived is hashed first | `AResumeAsksForTheRestOnEveryHopAndAppendsIt`, `AWholeAnswerToAResumeStartsTheFileAgain`, `APartialAnswerFromAnywhereButWhereTheFileStoppedIsRefused`, `APartialAnswerToAFreshRequestIsRefused` |
+| A declared length other than what is left is refused before a byte is written; more bytes than the catalog's are never written (the part is deleted) | `AnAnswerOfTheWrongLengthIsRefusedBeforeAByteIsWritten`, `MoreBytesThanTheCatalogListsAreNeverWritten` |
+| A short file is refused on size and kept, so the next run resumes it | `AShortFileIsRefusedOnSizeAndKeptSoTheNextRunResumesIt` |
+| A file whose SHA-256 differs is deleted and refused, naming it and both hashes | `AFileWhoseHashDiffersIsDeletedAndRefusedNamingItAndBothHashes` |
+| Cancel stops at the next read and leaves what arrived; nothing else is touched | `CancelLeavesWhatArrivedAndNothingElse` |
+| A network or disk failure is a sentence, and what arrived is kept | `ANetworkOrDiskFailureIsSaidAndWhatArrivedIsKept`, `AConnectionThatFailsIsSaid`, `AnyOtherAnswerIsRefusedWithItsStatus`, `ARefusalFromTheContentServerNamesIt` |
+| Files are assembled in `<folder>.downloading`, which `ModelFolder` refuses even when every file the bridge needs has landed; the rename to `<folder>` is the last step | `APartialDownloadNeverParsesAsAModelFolder`, `ModelFolderTests.ADownloadNapkinHasNotFinishedIsNotAModelFolder`, `EveryFileComesFromItsPinnedUrl…` |
+| A file that passed on an earlier run is hashed again and not fetched; if it changed since, it is fetched again | `AFileThatAlreadyPassedIsCheckedAgainAndNotFetched`, `AFileThatPassedButChangedSinceIsFetchedAgain`, `APartLongerThanTheFileStartsAgain`, `AWholePartIsCheckedWithoutARequest` |
+| Something already at the destination is never touched and nothing is sent; a whole download needs no request | `AFolderAlreadyAtTheDestinationIsNotTouched`, `AFileAtTheDestinationIsNotTouched`, `AWholeDownloadNeedsNoRequest`, `WholeMeansEveryFileAtItsSize` |
+
+`Napkin.Assistant.Mlx` stays at **100 % line and 100 % branch** with the two new files in it; no floor
+moved.
+
+### 16.3 The dialog and the sheet, exactly as built
+
+- **Download…** sits under the folder line: *"Download Qwen3-4B-4bit (2.28 GB, apache-2.0)…"* — the
+  licence as the card writes it — or **Downloaded**, disabled, when every catalog file is in the
+  folder at its size (checked when the dialog opens, when MLX is chosen, and after a download or the
+  sheet closing). The dialog offers the default model only; the other two entries are data.
+- **The sheet** (`DownloadSheet`, a `UserControl` laid over the page, which is disabled under it):
+  the title; *"Repository mlx-community/Qwen3-4B-4bit, at commit 4dcb3d10… — a fixed commit, never a
+  branch that can move."*; *"8 files, 2,277,297,903 bytes (2.28 GB), each checked against its SHA-256
+  as it lands:"*; one mono, selectable, scrollable row per file — name and bytes, `SHA-256 <64 hex>`,
+  the exact URL (decision 11); the licence line with the `license_link`; the model card at the
+  commit (`…/blob/<commit>/README.md`) as a `HyperlinkButton`; *"Into: <full path> (the folder
+  appears only when every file has passed)"*; §6.3's network sentence; the unticked box **Download
+  these files from huggingface.co**; **Cancel** and **Download** (enabled only by the box); then a
+  progress bar and *"config.json (6 of 8): 937 bytes of 937 bytes; 2.28 GB of 2.28 GB in all"*, and
+  the result line.
+- The download runs on `Task.Run`; the UI thread polls the latest report every 100 ms (the loop
+  `MlxTestAsync` uses — a `Progress<T>` would post through a synchronization context the headless
+  suite does not prove). On success the folder box is filled with the new folder, so its line
+  (*"qwen3, 4-bit (group 64), licence: apache-2.0"*, the catalog's licence) and the memory line follow.
+- **Models live in `models/` beside the settings file** (`MainWindow.AssistantModelsDirectory`):
+  `~/Library/Application Support/napkin/models/` for the person's own settings, and each workflow's
+  throw-away settings folder under the GUI suite, which deletes it.
+- **The memory line** now names the model that would run and its weights — the folder's when the box
+  parses, else the download's: *"This Mac: 24 GiB memory, Metal recommends up to 17.8 GiB for the GPU
+  (Apple's number). Qwen3-4B-4bit needs 2.26 GB for its weights plus its working memory (napkin's
+  estimate)."*, with *" — too big for this machine by napkin's rule"* when `Guidance.TooBig` says so.
+  This closes §15.6 deviation 2.
+
+### 16.4 GUI-AST-08, exactly as built
+
+A catalog entry with the real default's repository, commit, licence and eight file names, and small
+fake bytes whose SHA-256 the workflow computes, served by a stub Hub under `AssistantHttp` (the two
+LFS names by `302` to the CDN host, the rest directly; `vocab.json` first served with one byte
+flipped). Steps: a new sheet (Ctrl/Cmd+N, a click); *Assistant → Where the model runs…* (two clicks);
+the MLX radio (click) — Download… names the model, size and licence, the memory line weighs its
+weights, nothing sent; **Download…** (click) — the sheet's title, repository line, files line, all
+eight rows verbatim, licence, card link, destination and network sentence, the box unticked,
+Download disabled, **no request**; Download with the box unticked (click) — nothing; tick (click) —
+Download enabled; Download (click) — *"vocab.json did not match its SHA-256: the catalog says …, the
+bytes that arrived hash to …. napkin deleted them."*, no folder, the box cleared, every request a
+pinned URL or the CDN; the stub put right, tick and Download again (two clicks) — *"Downloaded and
+checked: 8 files."*, the bar at 100, the progress at the eighth file, the folder box filled with the
+new folder and described with the catalog's licence, every file's bytes on disk, no `.downloading`
+left, and only the six files that had not passed requested this time; Escape (keyboard) — the sheet
+closed, Download… reads **Downloaded**, disabled; Use these settings (click) — settings name the
+folder and the whereabouts line; Ctrl/Cmd+Shift+A, the question, Enter (keyboard) — the fake bridge
+loaded exactly that folder and the answer is on the note with the in-napkin whereabouts; Escape.
+`tools/scripts/gui-ratchet.sh` raised the workflow floor by this one workflow; no coverage floor moved.
+
+### 16.5 Departures, gathered — and two choices for Marc
+
+1. **No proxy (`UseProxy = false`) — Marc's to overrule.** It keeps the sheet's sentence (*"napkin
+   will connect to huggingface.co and its content servers … and for nothing else"*) literally true,
+   as `LoopbackHttp` does for its own reason. The cost: behind a proxy that is the only way out, the
+   download fails with the connection's words, and the person fetches the folder some other way and
+   uses **Choose…**. The alternative — honour the system proxy — works behind corporate proxies (TLS
+   is still end to end with huggingface.co and every file is still hash-checked) but makes the
+   sentence false for those people.
+2. **No time limit (`HttpClient.Timeout` infinite) — Marc's to overrule.** With
+   `ResponseHeadersRead` the default 100 s would cover only the headers, and its expiry is an
+   `OperationCanceledException` indistinguishable from the person's Cancel. A stalled download
+   therefore waits, with its progress line standing still, until the person presses Cancel.
+3. The allow-list is the Hub's **nine** documented hosts (§16.1), not the two §6.2 names; none of the
+   Xet hosts was seen in a redirect on 2026-09-27.
+4. **Refusals keep or delete, by what they mean**: a short file, a network or disk failure, a non-`200`
+   answer, a `206` from the wrong place, and a declared length that is wrong keep the `.part` to
+   resume (or never wrote to it); too many bytes and a wrong SHA-256 delete it. §6.2 said only that a
+   mismatch deletes and a short body refuses.
+5. **Verified files stay in `.downloading` across runs**, and are hashed again on the next run rather
+   than trusted by size, so a refusal of the third file does not cost the first two.
+6. **`.downloading` is refused by `ModelFolder`** — napkin's own check, first, before the bridge's six
+   (whose words and order `FakeNativeMlxTests` still holds to `Bridge.swift`). Without it the staging
+   folder would parse as soon as the four files the bridge needs had landed.
+7. **A folder napkin's download named shows the catalog's licence**, ahead of any `README.md`
+   (§4.4); any other folder keeps §14.1 item 8's rule.
+8. **Consent is per attempt**: the box clears after every download, whatever its end, and is disabled
+   after a success (Cancel then reads **Close**). **Cancel while running stops the download and
+   leaves the sheet up** with *"Stopped. What had arrived is kept in <staging>, so Download carries on
+   from there."*; Escape and closing the dialog close the sheet and stop it.
+9. The licence is shown **as the card writes it** (`apache-2.0`, `mit`), not re-spelled as SPDX, in
+   the button, the sheet and the folder line alike.
+10. **The probe's refusal now wins over the device numbers** in the memory line. §14.3 says the refusal
+    is shown when Metal is missing; slice C showed the device figures whenever the bridge returned a
+    device, even one reporting no Metal.
+11. **The dialog is 60 px taller** (720 → 780) so the page with the new row still fits: GUI-AST-06
+    clicks *Use these settings* where it is laid out, without scrolling.
+12. **`AssistantHttp` carries downloads under the GUI suite**; in the app it is null and
+    `ModelDownload` builds its own handler (`CreateHandler`), so the loopback handler and the
+    download's never mix. One new seam, `MainWindow.AssistantDownloadModel`, lets a workflow offer
+    its own small catalog entry.
+13. The *Downloaded* state checks sizes only (the hashes were checked when the files landed, and the
+    folder has its name only after they all passed); hashing 2.3 GB each time the dialog opens was
+    not worth it.
+14. **GUI-AST-07's expected whereabouts line is now built as the line is** (`ModelFolder.HomeRelative`
+    of the folder), in the same file as GUI-AST-08. On `windows-latest` the temp folder is under the
+    profile, so the line reads `~\AppData\Local\Temp\…`, and CI on `main` after C's landing (run
+    36317059058) failed on exactly that; macOS's temp folder is not under the home folder, which is
+    why the local gate passed. GUI-AST-08 builds its expectation the same way.
+
+### 16.6 Not verified
+
+- A whole download of any model's weights — never run: the consent rule applies to whoever builds
+  napkin too. The weights' `302`, `x-linked-size`, `x-linked-etag` and `accept-ranges` were read by
+  `HEAD`; the `206` resume was seen on `tokenizer.json`'s CDN answer only (§16.1).
+- A redirect to a Xet host (`cas-server…`, `transfer…`) — allowed because the Hub lists them, never
+  seen.
+- Behaviour behind a proxy, on a slow or flaky link, or with a full disk (the disk error is a sentence
+  by the same path as a network one, tested with a thrown `IOException`, not a real full disk).

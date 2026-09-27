@@ -37,6 +37,9 @@ public partial class AssistantWindow : Window
     private ImmutableArray<InstalledModel> _listed = [];
     private int _busy;
     private bool _mlxProbed;
+    private MlxProbe? _mlxProbe;
+    private CatalogModel _downloadModel = ModelCatalog.Default;
+    private string _modelsDirectory = ModelCatalog.ModelsDirectory(SettingsStore.ConfigDirectory());
 
     /// <summary>An empty dialog, for the designer and for a test.</summary>
     public AssistantWindow()
@@ -47,12 +50,66 @@ public partial class AssistantWindow : Window
         InstallLines.ItemsSource = Guidance.InstallLines;
         CloudText.Text = Guidance.CloudSentence;
         MemoryText.Text = Guidance.MemoryLine(MachineMemory);
-        Closed += (_, _) => _closing.Cancel();
+        Sheet.Downloaded += (_, folder) =>
+        {
+            MlxFolderBox.Text = folder;
+            UpdateDownloadButton();
+        };
+        Sheet.Dismissed += (_, _) =>
+        {
+            Page.IsEnabled = true;
+            UpdateDownloadButton();
+        };
+        AddHandler(KeyDownEvent, OnSheetKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        Closed += (_, _) =>
+        {
+            _closing.Cancel();
+            Sheet.Close();
+        };
         ShowSettings(AssistantSettings.None);
     }
 
-    /// <summary>How a local program is reached: null for napkin's own loopback-only handler; the GUI suite sets a stub.</summary>
+    /// <summary>
+    /// How a local program is reached and how a model is downloaded: null for napkin's own handlers
+    /// (the loopback-only one, and <see cref="ModelDownload.CreateHandler"/>); the GUI suite sets a
+    /// stub. A download's redirect and host rules are napkin's code, not the handler's, so they hold
+    /// under a stub too.
+    /// </summary>
     public HttpMessageHandler? Http { get; set; }
+
+    /// <summary>The model Download… offers: <see cref="ModelCatalog.Default"/> unless a test says otherwise.</summary>
+    public CatalogModel DownloadModel
+    {
+        get => _downloadModel;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            _downloadModel = value;
+            UpdateDownloadButton();
+            UpdateMlxMemoryLine();
+        }
+    }
+
+    /// <summary>Where downloaded models live (decision 5): <c>&lt;config&gt;/models</c>; the owner sets it beside its settings file.</summary>
+    public string ModelsDirectory
+    {
+        get => _modelsDirectory;
+        set
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(value);
+            _modelsDirectory = value;
+            UpdateDownloadButton();
+        }
+    }
+
+    /// <summary>The Download… button: "Download Qwen3-4B-4bit (2.28 GB, apache-2.0)…", or "Downloaded", disabled, once the folder is whole.</summary>
+    public Button MlxDownload => MlxDownloadButton;
+
+    /// <summary>The consent sheet.</summary>
+    public DownloadSheet ConsentSheet => Sheet;
+
+    /// <summary>Whether the consent sheet is up.</summary>
+    public bool IsConsentSheetOpen => Sheet.IsVisible;
 
     /// <summary>The MLX bridge Test uses: null for the real one (<see cref="NativeMlx"/>); the GUI suite sets a fake.</summary>
     public INativeMlx? Mlx { get; set; }
@@ -173,6 +230,7 @@ public partial class AssistantWindow : Window
         MlxPanel.IsEnabled = MlxRadio.IsChecked == true && MlxRadio.IsEnabled;
         TemperaturePanel.IsEnabled = LocalPanel.IsEnabled || MlxPanel.IsEnabled;
         UpdateMlxFolderLine();
+        UpdateDownloadButton();
     }
 
     private void OnProviderChanged(object? sender, RoutedEventArgs e)
@@ -180,10 +238,51 @@ public partial class AssistantWindow : Window
         LocalPanel.IsEnabled = LocalRadio.IsChecked == true;
         MlxPanel.IsEnabled = MlxRadio.IsChecked == true && MlxRadio.IsEnabled;
         TemperaturePanel.IsEnabled = LocalPanel.IsEnabled || MlxPanel.IsEnabled;
+        if (MlxPanel.IsEnabled)
+        {
+            UpdateDownloadButton();
+        }
+
         if (MlxPanel.IsEnabled && !_mlxProbed)
         {
             _mlxProbed = true;
             _ = ProbeMlxDeviceAsync();
+        }
+    }
+
+    /// <summary>
+    /// Download… reads "Downloaded" and is disabled when the catalog model's folder is already whole
+    /// under <see cref="ModelsDirectory"/> (every file at its size); otherwise it names the model,
+    /// its size and its licence. Deleting the folder in Finder brings it back.
+    /// </summary>
+    private void UpdateDownloadButton()
+    {
+        bool whole = new ModelDownload(DownloadModel, ModelsDirectory, Http).IsComplete;
+        MlxDownloadButton.Content = whole
+            ? "Downloaded"
+            : $"Download {DownloadModel.Name} ({ModelCatalog.Size(DownloadModel.TotalBytes)}, {DownloadModel.Licence})…";
+        MlxDownloadButton.IsEnabled = !whole;
+    }
+
+    private void OnMlxDownloadClicked(object? sender, RoutedEventArgs e) => OpenConsentSheet();
+
+    /// <summary>
+    /// Lays the consent sheet over the page for the catalog model (&#xA7;6.3). Sends nothing: only the
+    /// sheet's Download, with its box ticked, starts a download.
+    /// </summary>
+    public void OpenConsentSheet()
+    {
+        Page.IsEnabled = false;
+        Sheet.Open(new ModelDownload(DownloadModel, ModelsDirectory, Http));
+    }
+
+    /// <summary>Escape puts the sheet away (stopping a download), before anything on the page sees the key.</summary>
+    private void OnSheetKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key == Avalonia.Input.Key.Escape && Sheet.IsVisible)
+        {
+            Sheet.Close();
+            e.Handled = true;
         }
     }
 
@@ -195,17 +294,44 @@ public partial class AssistantWindow : Window
     private async Task ProbeMlxDeviceAsync()
     {
         Say(MlxMemoryText, "Checking this Mac…");
-        MlxProbe probe = await Task.Run(() => MlxAvailability.Probe(Mlx ?? new NativeMlx())).ConfigureAwait(true);
-        Say(
-            MlxMemoryText,
-            probe.Device is { } device
-                ? string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"This Mac: {device.MemoryBytes / 1073741824.0:0.#} GiB memory, Metal recommends up to {device.RecommendedWorkingSetBytes / 1073741824.0:0.#} GiB for the GPU (Apple's number); a model's weights plus its working memory must fit (napkin's estimate).")
-                : probe.Refusal);
+        _mlxProbe = await Task.Run(() => MlxAvailability.Probe(Mlx ?? new NativeMlx())).ConfigureAwait(true);
+        UpdateMlxMemoryLine();
     }
 
-    private void OnMlxFolderChanged(object? sender, Avalonia.Controls.TextChangedEventArgs e) => UpdateMlxFolderLine();
+    /// <summary>
+    /// The memory line (&#xA7;4.4): this Mac's memory and Metal's figure, and the weights of the model
+    /// that would run — the typed folder's when it parses, else the download's — with napkin's own
+    /// "too big" rule, labelled as napkin's. The probe's refusal in its place when MLX cannot run.
+    /// </summary>
+    private void UpdateMlxMemoryLine()
+    {
+        if (_mlxProbe is not { } probe)
+        {
+            return;
+        }
+
+        if (probe.Refusal is not null || probe.Device is not { } device)
+        {
+            Say(MlxMemoryText, probe.Refusal);
+            return;
+        }
+
+        (string name, long weights) = ModelFolder.TryParse(MlxFolderBox.Text, out ModelFolder? folder, out _)
+            ? (folder.DisplayName, folder.WeightBytes)
+            : (DownloadModel.Name, DownloadModel.WeightBytes);
+        string fit = Guidance.TooBig(weights, (long)device.MemoryBytes) ? $" — {Guidance.TooBigWords}" : string.Empty;
+        Say(
+            MlxMemoryText,
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"This Mac: {device.MemoryBytes / 1073741824.0:0.#} GiB memory, Metal recommends up to {device.RecommendedWorkingSetBytes / 1073741824.0:0.#} GiB for the GPU (Apple's number). {name} needs {ModelCatalog.Size(weights)} for its weights plus its working memory (napkin's estimate){fit}."));
+    }
+
+    private void OnMlxFolderChanged(object? sender, Avalonia.Controls.TextChangedEventArgs e)
+    {
+        UpdateMlxFolderLine();
+        UpdateMlxMemoryLine();
+    }
 
     /// <summary>What the typed folder says about itself, or the refusal naming what is wrong with it.</summary>
     private void UpdateMlxFolderLine() => Say(

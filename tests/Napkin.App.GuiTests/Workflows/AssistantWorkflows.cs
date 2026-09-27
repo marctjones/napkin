@@ -7,6 +7,7 @@ using Avalonia.Input;
 using Avalonia.VisualTree;
 
 using Napkin.App.GuiTests.Harness;
+using Napkin.Assistant.Mlx;
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
 using Napkin.Core.Project;
@@ -396,7 +397,9 @@ public class AssistantWorkflows
         File.WriteAllText(Path.Combine(folder, "tokenizer.json"), "{}");
         File.WriteAllText(Path.Combine(folder, "tokenizer_config.json"), """{"tokenizer_class":"Qwen2Tokenizer"}""");
         File.WriteAllBytes(Path.Combine(folder, "model.safetensors"), new byte[1024]);
-        string whereabouts = $"In napkin (MLX): {Path.GetFileName(folder)} from {folder} — nothing leaves this machine.";
+        // The folder as the whereabouts line writes it: under the home folder it is "~/…" (on Windows
+        // the temp folder is under the profile; on macOS it is not), so the expectation is built the same way.
+        string whereabouts = $"In napkin (MLX): {Path.GetFileName(folder)} from {HomeRelative(folder)} — nothing leaves this machine.";
 
         // Stands in for the Swift bridge: nothing here dlopens a library. A short load delay gives
         // the workflow a real window to observe the loading line before Test's "ok" arrives.
@@ -471,6 +474,195 @@ public class AssistantWorkflows
             Directory.Delete(folder, recursive: true);
         }
     }
+
+    [GuiWorkflow("GUI-AST-08")]
+    public void Download_a_model_only_after_consent_each_file_checked_against_its_sha256()
+    {
+        // The real default's repository, commit, licence and eight file names, with small fake bytes
+        // whose SHA-256 this test computes: the URLs are the pinned ones and the folder napkin makes
+        // is the real one's name, but nothing here serves or reads a real model.
+        CatalogModel real = ModelCatalog.Default;
+        Dictionary<string, byte[]> bytes = new()
+        {
+            ["model.safetensors"] = [.. Enumerable.Range(0, 100_000).Select(i => (byte)(i * 7 % 251))],
+            ["tokenizer.json"] = "{\"model\": {\"type\": \"BPE\"}}"u8.ToArray(),
+            ["vocab.json"] = "{\"a\": 0, \"b\": 1}"u8.ToArray(),
+            ["model.safetensors.index.json"] = "{\"weight_map\": {}}"u8.ToArray(),
+            ["tokenizer_config.json"] = "{\"tokenizer_class\": \"Qwen2Tokenizer\"}"u8.ToArray(),
+            ["config.json"] = "{\"model_type\": \"qwen3\", \"quantization\": {\"bits\": 4, \"group_size\": 64}}"u8.ToArray(),
+            ["added_tokens.json"] = "{}"u8.ToArray(),
+            ["special_tokens_map.json"] = "{\"eos_token\": \"x\"}"u8.ToArray(),
+        };
+        CatalogModel catalog = new(
+            real.Repo,
+            real.Commit,
+            real.Licence,
+            real.LicenceLink,
+            real.Files.Select(file => new CatalogFile(file.Name, bytes[file.Name].Length, Sha256(bytes[file.Name]))));
+        using HubStub hub = new(catalog, bytes);
+        hub.Corrupt("vocab.json");
+
+        // The downloaded folder then answers a question through the fake bridge, as GUI-AST-07's does.
+        const string question = "what is ground snow load";
+        ContextPack referencePack = ContextPack.For(Napkin.Modules.Editing.NewSheet.Empty(), [], ContextChecks.None, [], question);
+        int helpItem = ItemNumbered(referencePack, item => item.Text == HelpSections.Find("docs/rules-engine.md", "In the app").ItemText);
+        string answer = $"Ground snow load is entered from the building department or the adopted code's own table, never guessed [{helpItem}].";
+        FakeNativeMlx mlx = new(FakeMlxReply.Answer(answer));
+
+        // Every request must be a pinned resolve URL of this catalog, or the CDN it redirected to.
+        void OnlyPinnedUrls()
+        {
+            HashSet<Uri> pinned = [.. catalog.Files.Select(catalog.FileUrl)];
+            Assert.All(hub.Requests, url => Assert.True(
+                pinned.Contains(url) || url.GetLeftPart(UriPartial.Authority) == HubStub.Cdn,
+                $"{url} is neither a pinned URL nor the content server"));
+        }
+
+        GuiWorkflow.Run(app =>
+        {
+            MainWindow window = (MainWindow)app.Target;
+            window.AssistantHttp = hub;
+            window.AssistantMlx = mlx;
+            window.AssistantMlxAvailable = () => null;
+            window.AssistantDownloadModel = catalog;
+            string destination = Path.Combine(window.AssistantModelsDirectory, "mlx-community--Qwen3-4B-4bit--4dcb3d101c2a");
+            NewSheet(app, window);
+
+            // Assistant → Where the model runs… (pointer), the MLX choice (pointer).
+            app.Click(CentreOf(window, window.FindControl<MenuItem>("AssistantMenu")!));
+            app.Click(CentreOf(window, window.WhereModelRunsMenuEntry));
+            AssistantWindow dialog = window.WhereModelRuns ?? throw new InvalidOperationException("The dialog did not open.");
+            AppDriver where = AppDriver.Attach(dialog, "ast-08-where");
+            where.Click(CentreOf(dialog, dialog.MlxChoice));
+            Until(() => dialog.MlxMemoryLine.StartsWith("This Mac", StringComparison.Ordinal));
+            app.Expect("Download… names the model, its size and its card's licence, and the memory line weighs its weights", () =>
+            {
+                Assert.True(dialog.MlxDownload.IsEnabled);
+                Assert.Equal($"Download Qwen3-4B-4bit ({ModelCatalog.Size(catalog.TotalBytes)}, apache-2.0)…", dialog.MlxDownload.Content);
+                Assert.Equal(
+                    "This Mac: 24 GiB memory, Metal recommends up to 17 GiB for the GPU (Apple's number). Qwen3-4B-4bit needs 100,000 bytes for its weights plus its working memory (napkin's estimate).",
+                    dialog.MlxMemoryLine);
+                Assert.Empty(hub.Requests);
+            });
+
+            // Download… (pointer): the sheet says exactly what would be fetched, and nothing has been.
+            where.Click(CentreOf(dialog, dialog.MlxDownload));
+            DownloadSheet sheet = dialog.ConsentSheet;
+            app.Expect("the consent sheet lists every file with its size, SHA-256 and pinned URL, the licence and the destination; nothing was sent", () =>
+            {
+                Assert.True(dialog.IsConsentSheetOpen);
+                Assert.Equal("Download Qwen3-4B-4bit from huggingface.co", sheet.Title);
+                Assert.Equal($"Repository mlx-community/Qwen3-4B-4bit, at commit {real.Commit} — a fixed commit, never a branch that can move.", sheet.RepositoryLine);
+                Assert.StartsWith($"8 files, {Napkin.Assistant.Mlx.ModelCatalog.Bytes(catalog.TotalBytes)} bytes (", sheet.FilesLine, StringComparison.Ordinal);
+                Assert.Equal(
+                    catalog.Files.Select(file => $"{file.Name} — {Napkin.Assistant.Mlx.ModelCatalog.Bytes(file.Bytes)} bytes\nSHA-256 {file.Sha256}\n{catalog.FileUrl(file)}"),
+                    sheet.FileRows);
+                Assert.Equal($"Licence: apache-2.0, as the model card at that commit states it. The licence: {real.LicenceLink}", sheet.LicenceLine);
+                Assert.Equal(new Uri(real.CardUrl), sheet.CardLinkAddress);
+                Assert.StartsWith($"Into: {destination} ", sheet.DestinationLine, StringComparison.Ordinal);
+                Assert.Equal(DownloadSheet.NetworkSentence, sheet.NetworkLine);
+                Assert.False(sheet.Consent.IsChecked);
+                Assert.False(sheet.DownloadAction.IsEnabled);
+                Assert.Empty(hub.Requests);
+            });
+
+            // Download with the box unticked (pointer): nothing happens.
+            where.Click(CentreOf(dialog, sheet.DownloadAction));
+            app.Expect("an unticked box sends nothing", () =>
+            {
+                Assert.Empty(hub.Requests);
+                Assert.False(sheet.IsRunning);
+                Assert.Equal(string.Empty, sheet.ResultLine);
+            });
+
+            // Tick (pointer), Download (pointer): vocab.json arrives with one wrong byte and is refused.
+            where.Click(CentreOf(dialog, sheet.Consent));
+            app.Expect("the tick enables Download", () => Assert.True(sheet.DownloadAction.IsEnabled));
+            where.Click(CentreOf(dialog, sheet.DownloadAction));
+            Until(() => sheet.ResultLine.Length > 0 && !sheet.IsRunning);
+            app.Expect("a file whose SHA-256 differs is refused by name with both hashes, and no folder appears", () =>
+            {
+                byte[] wrong = [.. bytes["vocab.json"]];
+                wrong[^1] ^= 0x20;
+                Assert.Equal(
+                    $"vocab.json did not match its SHA-256: the catalog says {Sha256(bytes["vocab.json"])}, the bytes that arrived hash to {Sha256(wrong)}. napkin deleted them.",
+                    sheet.ResultLine);
+                Assert.False(Directory.Exists(destination));
+                Assert.False(sheet.Consent.IsChecked);
+                Assert.False(sheet.DownloadAction.IsEnabled);
+                Assert.Equal(string.Empty, dialog.MlxFolderField.Text);
+                OnlyPinnedUrls();
+            });
+
+            // The server put right; tick again (pointer), Download (pointer): the files that passed are
+            // checked again on disk and not fetched, the rest arrive, and the folder appears whole.
+            hub.Corrupt("vocab.json", corrupt: false);
+            int firstRun = hub.Requests.Count;
+            where.Click(CentreOf(dialog, sheet.Consent));
+            where.Click(CentreOf(dialog, sheet.DownloadAction));
+            Until(() => sheet.ResultLine.Length > 0 && !sheet.IsRunning);
+            app.Expect("every file checked, the folder filled in and described with the catalog's licence", () =>
+            {
+                Assert.Equal("Downloaded and checked: 8 files.", sheet.ResultLine);
+                Assert.Equal(100, sheet.ProgressPercent);
+                Assert.StartsWith("special_tokens_map.json (8 of 8): ", sheet.ProgressLine, StringComparison.Ordinal);
+                Assert.Equal(destination, dialog.MlxFolderField.Text);
+                Assert.Equal("qwen3, 4-bit (group 64), licence: apache-2.0", dialog.MlxFolderLine);
+                Assert.All(catalog.Files, file => Assert.Equal(bytes[file.Name], File.ReadAllBytes(Path.Combine(destination, file.Name))));
+                Assert.False(Directory.Exists(destination + ".downloading"));
+                Assert.Equal(
+                    catalog.Files.Skip(2).Select(catalog.FileUrl),
+                    hub.Requests.Skip(firstRun));
+                OnlyPinnedUrls();
+                Assert.Equal("Close", sheet.CancelAction.Content);
+            });
+
+            // Escape (keyboard) puts the sheet away; Download… now reads Downloaded.
+            where.Press(Key.Escape);
+            app.Expect("Escape closes the sheet, and the dialog knows the model is downloaded", () =>
+            {
+                Assert.False(dialog.IsConsentSheetOpen);
+                Assert.Equal("Downloaded", dialog.MlxDownload.Content);
+                Assert.False(dialog.MlxDownload.IsEnabled);
+            });
+
+            // Use these settings (pointer): the downloaded folder is what is saved.
+            string whereabouts = $"In napkin (MLX): Qwen3-4B-4bit from {HomeRelative(destination)} — nothing leaves this machine.";
+            where.Click(CentreOf(dialog, dialog.Use));
+            app.Expect("the settings name the downloaded folder", () =>
+            {
+                Napkin.App.Settings.SettingsStore store = new(window.Settings.Location);
+                Assert.Equal(Napkin.App.Settings.AssistantProvider.Mlx, store.Current.Assistant.Provider);
+                Assert.Equal(destination, store.Current.Assistant.ModelFolder);
+                Assert.Equal(whereabouts, window.AssistantModel.Whereabouts);
+            });
+
+            // Back at the drawing: Ctrl/Cmd+Shift+A, the question, Enter (keyboard) — the downloaded
+            // folder is the model that answers.
+            window.Activate();
+            app.Chord(Key.A, KeyModifiers.Shift);
+            app.Type(question);
+            app.Press(Key.Enter);
+            Until(() => !window.IsAssistantThinking);
+            app.Expect("the downloaded model answers on the note, in napkin", () =>
+            {
+                Assert.Equal(answer, window.AssistantAnswerOnScreen);
+                Assert.Equal(whereabouts, window.AssistantWhereaboutsOnScreen);
+                Assert.Equal(destination, Assert.Single(mlx.Loads));
+            });
+
+            app.Press(Key.Escape);
+            app.Expect("Escape closes the note", () => Assert.False(window.IsAskingAssistant));
+        });
+
+        // Nothing but the stub was ever asked: no socket, and the workflow's folder went with its settings.
+        OnlyPinnedUrls();
+    }
+
+    static string Sha256(byte[] bytes) => Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(bytes));
+
+    /// <summary>A path as the MLX whereabouts line writes it: "~" for the home folder, as <see cref="ModelFolder.HomeRelativePath"/> does.</summary>
+    static string HomeRelative(string path) => ModelFolder.HomeRelative(path, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
 
     // ---- Steps and fixtures ---------------------------------------------------------------
 
