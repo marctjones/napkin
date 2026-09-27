@@ -195,10 +195,10 @@ public partial class MainWindow
             return System.IO.Path.GetFileName(path);
         }
 
-        // A design with a survey image is offered as a project, the only file that keeps the image with it.
+        // A new design is saved as a .napkin project (DESIGN.md §6.4), the file that can carry a survey
+        // image with it; a design opened from a file keeps that file's name and kind.
         string name = Editor.Design.Name;
-        string extension = Editor.Sketch.Site.Underlay is null ? ".scene.json" : ProjectFile.Extension;
-        return name.EndsWith(".json", StringComparison.OrdinalIgnoreCase) || name.EndsWith(ProjectFile.Extension, StringComparison.OrdinalIgnoreCase) ? name : name + extension;
+        return name.EndsWith(".json", StringComparison.OrdinalIgnoreCase) || name.EndsWith(ProjectFile.Extension, StringComparison.OrdinalIgnoreCase) ? name : name + ProjectFile.Extension;
     }
 
     /// <summary>

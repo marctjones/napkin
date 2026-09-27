@@ -168,7 +168,7 @@ public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicke
         {
             Title = "Open a napkin design",
             AllowMultiple = false,
-            FileTypeFilter = [SceneFiles, ProjectFiles],
+            FileTypeFilter = [ProjectFiles, SceneFiles],
         }).ConfigureAwait(true);
 
         // A provider that hands back something with no local path — a cloud item on a phone, say —
@@ -190,8 +190,8 @@ public sealed class StorageProviderScenePicker(TopLevel owner) : ISceneFilePicke
         {
             Title = "Save this napkin design",
             SuggestedFileName = suggestedName,
-            DefaultExtension = "scene.json",
-            FileTypeChoices = [SceneFiles, ProjectFiles],
+            DefaultExtension = "napkin",
+            FileTypeChoices = [ProjectFiles, SceneFiles],
             ShowOverwritePrompt = true,
         }).ConfigureAwait(true);
 

@@ -396,9 +396,9 @@ To calibrate it:
 The image is scaled and turned so they are that far apart. The window then says "Survey underlay:
 survey.png, calibrated to 100'-0" between two points. This site plan is not a survey."
 
-A design with a survey image is saved as a **`.napkin` project**, the zip container that carries
-the image beside the drawing; Save offers that name. A `.scene.json` still saves the drawing, but
-not the image, and says so.
+A design is saved as a **`.napkin` project** by default: the zip container, which carries the
+survey image beside the drawing. A `.scene.json` still saves the drawing, but not the image, and
+says so.
 
 ## Where it shows
 
