@@ -398,6 +398,14 @@
                           Header="Saw _kerf…"
                           Click="OnSawKerfClicked"
                           ToolTip.Tip="How much the blade takes: set on the cut layout, which packs the pieces with it between them." />
+                <!-- What the piece is (furniture-checks §9.1): said by the person, never detected. -->
+                <MenuItem Name="FurnitureKindMenuItem" Header="This _piece is" SubmenuOpened="OnFurnitureMenuOpened">
+                    <MenuItem Name="FurnitureNoneMenuItem" Header="_Nothing in particular" Click="OnFurnitureKindClicked" />
+                    <MenuItem Name="FurnitureClothingMenuItem" Header="_Clothing storage (a dresser, chest or wardrobe)" Click="OnFurnitureKindClicked" />
+                    <MenuItem Name="FurnitureBunkMenuItem" Header="A _bunk bed" Click="OnFurnitureKindClicked" />
+                    <Separator />
+                    <MenuItem Name="FurnitureAnchoredMenuItem" Header="_Anchored to the wall" Click="OnFurnitureAnchoredClicked" />
+                </MenuItem>
                 <Separator />
                 <!-- Which view the next design opens in; the one on screen is not moved. -->
                 <MenuItem Name="OpenInMenuItem" Header="Open designs _in">
@@ -1391,6 +1399,14 @@
                                           ToolTip.Tip="The species napkin has cited properties for (USDA Wood Handbook, Table 5–3b). Anything else can be typed; napkin never interprets typed text." />
                             </Grid>
                             <TextBlock Name="SpeciesReadout" FontSize="10" Opacity="0.8" TextWrapping="Wrap" AutomationProperties.Name="Species properties" />
+                            <!-- A drawer mark (furniture-checks §4.2): the drawer is this part and every part joined to it. -->
+                            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="6">
+                                <CheckBox Name="DrawerCheck" Content="Drawer" FontSize="11" AutomationProperties.Name="Drawer"
+                                          ToolTip.Tip="This part and every part joined to it are a drawer. Slides are the hardware you type; napkin reads only how far it opens." />
+                                <TextBlock Grid.Column="1" Text="opens" FontSize="11" VerticalAlignment="Center" />
+                                <TextBox Name="DrawerExtensionBox" Grid.Column="2" FontSize="11" MinWidth="0" Padding="4,2" PlaceholderText="like 14&quot;"
+                                         AutomationProperties.Name="Drawer extension" />
+                            </Grid>
                             <!-- Shelf sag (furniture-checks §3): an estimate for a part its joints make a shelf. -->
                             <StackPanel Name="ShelfFields" Spacing="4" IsVisible="False">
                                 <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="4">

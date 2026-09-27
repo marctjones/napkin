@@ -3,7 +3,7 @@ using Napkin.Core.Geometry;
 namespace Napkin.Core.Geometry.Tests;
 
 /// <summary>
-/// The deck, roof and opening fill a box carries (format version 13, deck-and-porch §7) are part of its
+/// The deck, roof and opening fill a box carries (format version 14, deck-and-porch §7) are part of its
 /// value: two boxes differing only in one of them are different boxes, and a deck's hardware list
 /// compares by its items, not by reference.
 /// </summary>

@@ -9,8 +9,8 @@ namespace Napkin.Core.Project.Tests;
 /// </summary>
 public class RoughFormatTests
 {
-    private const string FirmPart = "\"hardware\": [], \"rough\": false, \"grain\": null, \"showFace\": null }";
-    private const string RoughPart = "\"hardware\": [], \"rough\": true, \"grain\": null, \"showFace\": null }";
+    private const string FirmPart = "\"hardware\": [], \"rough\": false, \"grain\": null, \"showFace\": null, \"drawer\": null }";
+    private const string RoughPart = "\"hardware\": [], \"rough\": true, \"grain\": null, \"showFace\": null, \"drawer\": null }";
 
     [Fact]
     public void ARoughPartIsReadAsRough()
@@ -37,7 +37,7 @@ public class RoughFormatTests
 
         string text = SceneWriter.WriteToText(sketch);
 
-        Assert.Contains("\"hardware\": [],\n        \"rough\": true,\n        \"grain\": null,\n        \"showFace\": null\n", text, StringComparison.Ordinal);
+        Assert.Contains("\"hardware\": [],\n        \"rough\": true,\n        \"grain\": null,\n        \"showFace\": null,\n        \"drawer\": null\n", text, StringComparison.Ordinal);
         Sketch again = Scenes.Accept(text);
         Assert.True(Assert.Single(again.Entities.Values.OfType<Box>()).Part!.Rough);
     }
@@ -54,7 +54,7 @@ public class RoughFormatTests
     public void APartWithoutRoughIsRefusedAsAMissingField()
     {
         Scenes.RefuseWith(
-            Scenes.OneBox.With(FirmPart, "\"hardware\": [], \"grain\": null, \"showFace\": null }"),
+            Scenes.OneBox.With(FirmPart, "\"hardware\": [], \"grain\": null, \"showFace\": null, \"drawer\": null }"),
             LoadProblemKind.MissingField,
             "rough");
     }
@@ -76,10 +76,10 @@ public class RoughFormatTests
     public void AVersionEightFileIsRefusedWithTheUnsupportedVersionMessage()
     {
         string version8 = Scenes.OneBox
-            .With("\"formatVersion\": 13", "\"formatVersion\": 8")
-            .With(", \"rough\": false, \"grain\": null, \"showFace\": null", string.Empty);
+            .With("\"formatVersion\": 14", "\"formatVersion\": 8")
+            .With(", \"rough\": false, \"grain\": null, \"showFace\": null, \"drawer\": null", string.Empty);
 
-        Scenes.RefuseWith(version8, LoadProblemKind.UnsupportedFormatVersion, "format version 8", "format version 13");
+        Scenes.RefuseWith(version8, LoadProblemKind.UnsupportedFormatVersion, "format version 8", "format version 14");
     }
 
     [Fact]

@@ -335,6 +335,24 @@ public static class SamplesCommand
 
                 break;
 
+            case 14:
+                // Furniture marks (docs/design/furniture-checks.md §4.2, §9.1): no part is marked a
+                // drawer, and the design says nothing about what the piece is.
+                foreach (JsonNode? entity in Entities(root))
+                {
+                    if (entity?["part"] is JsonObject part)
+                    {
+                        EnsureNull(part, "drawer");
+                    }
+                }
+
+                if (root is JsonObject scene && !scene.ContainsKey("furniture"))
+                {
+                    scene["furniture"] = new JsonObject { ["kind"] = "none", ["anchored"] = false };
+                }
+
+                break;
+
             default:
                 throw new InvalidOperationException($"samples restamp does not know what format version {version} added.");
         }

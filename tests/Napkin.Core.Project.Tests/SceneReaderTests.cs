@@ -130,7 +130,7 @@ public sealed class SceneReaderTests
     /// </summary>
     private const string AllReferenceShapes = """
         {
-          "formatVersion": 13,
+          "formatVersion": 14,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -138,7 +138,7 @@ public sealed class SceneReaderTests
               "name": "West square", "phase": "new",
               "anchor": { "x": 0, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0,
               "part": { "stock": null, "species": "white oak", "quantity": 2,
-                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false, "grain": null, "showFace": null }, "wall": null, "room": null, "deck": null, "roof": null, "opening": null, "cuts": [] },
+                        "planAxes": { "x": "length", "y": "width" }, "hardware": [], "rough": false, "grain": null, "showFace": null, "drawer": null }, "wall": null, "room": null, "deck": null, "roof": null, "opening": null, "cuts": [] },
             { "id": "0192f1a0-0000-4000-8000-00000000000b", "type": "box", "layer": "00000000-0000-0000-0000-000000000001",
               "name": "East square", "phase": "new",
               "anchor": { "x": 8192, "y": 0, "z": 0 }, "width": 8192, "height": 8192, "depth": 768, "faceUp": "top", "rotation": 0,
@@ -151,7 +151,7 @@ public sealed class SceneReaderTests
               "name": "Joint line", "phase": "new",
               "start": "0192f1a0-0000-4000-8000-00000000000c", "end": "0192f1a0-0000-4000-8000-00000000000d" }
           ],
-          "fastenerChoices": [], "supplies": [], "code": null, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
+          "fastenerChoices": [], "supplies": [], "code": null, "furniture": { "kind": "none", "anchored": false }, "site": { "groundSnowLoad": null, "ultimateWindSpeed": null, "seismicDesignCategory": null, "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null, "soilBearing": null, "source": null },
           "relationships": [
             { "id": "0192f1a0-0000-4000-8000-000000000001", "kind": "anchored",
               "entity": "0192f1a0-0000-4000-8000-00000000000a" },

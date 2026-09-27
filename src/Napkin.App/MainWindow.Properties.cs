@@ -209,6 +209,8 @@ public partial class MainWindow
         StockBox.Text = part.Stock ?? string.Empty;
         SpeciesBox.Text = part.Species ?? string.Empty;
         ShowSpecies(part.Species);
+        DrawerCheck.IsChecked = part.Drawer is not null;
+        DrawerExtensionBox.Text = part.Drawer is { } drawer ? drawer.Extension.Format(Editor.LabelFormat).Text : string.Empty;
         RoughCheck.IsChecked = part.Rough;
         GrainBox.SelectedIndex = part.Grain is { } grain ? 1 + (int)grain : 0;
         ShowFaceBox.SelectedIndex = part.ShowFace is { } shows ? 1 + Array.IndexOf(ShowFaceChoices, shows) : 0;
@@ -352,6 +354,18 @@ public partial class MainWindow
                 return Complain(problem);
             }
 
+            // A drawer mark (furniture-checks §4.2): ticked, it says how far the drawer opens.
+            DrawerMark? drawer = null;
+            if (DrawerCheck.IsChecked == true)
+            {
+                if (!Length.TryParse(DrawerExtensionBox.Text, out Length opens, out _) || opens <= Length.Zero)
+                {
+                    return Complain("A drawer opens some distance: type how far, like 14\".");
+                }
+
+                drawer = new DrawerMark(opens);
+            }
+
             part = new Part(
                 Blank(StockBox.Text),
                 Blank(SpeciesBox.Text),
@@ -362,6 +376,7 @@ public partial class MainWindow
                 Rough = RoughCheck.IsChecked == true,
                 Grain = GrainBox.SelectedIndex > 0 ? (PartDimension)(GrainBox.SelectedIndex - 1) : null,
                 ShowFace = ShowFaceBox.SelectedIndex > 0 ? ShowFaceChoices[ShowFaceBox.SelectedIndex - 1] : null,
+                Drawer = drawer,
             };
         }
 

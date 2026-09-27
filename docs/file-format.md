@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 13
+# The napkin project file — container version 1, scene format version 14
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -695,6 +695,22 @@ an empty lumber or roofing name; beam plies outside 1–3; a post count below 2,
 stringers or 2 risers, fewer than 1 tread board; an unknown edge, fill or low-end kind; a roofing
 coverage of 0 or less or a negative waste; a `lowEnd.wall` naming no box (a dangling reference). A
 roof's rise is its box's depth; its pitch is derived, never stored.
+
+### Furniture marks and a drawer mark
+
+Format version 14 ([`furniture-checks.md`](./design/furniture-checks.md) §4.2, §9.1, #218). Every
+part carries `"drawer"`: `null`, or the part is marked a drawer and says how far it opens. The drawer
+is that part's jointed group (every part joined to it), derived, never stored. The scene carries
+`"furniture"`: what the piece is, as the person said (napkin never detects it), and whether it is
+anchored to the wall.
+
+```json
+"drawer": null | { "extension": 14336 },
+"furniture": { "kind": "none" | "clothingStorage" | "bunkBed", "anchored": false }
+```
+
+Refused: an `extension` of 0 or less; an unknown `kind`; a non-boolean `anchored`; either field
+missing.
 
 ## An annotated example
 

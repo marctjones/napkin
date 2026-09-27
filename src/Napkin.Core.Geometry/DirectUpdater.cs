@@ -68,6 +68,7 @@ public sealed class DirectUpdater : IGeometryUpdater
             SetSupplies supplies => new Solved(sketch with { Supplies = supplies.Supplies }, ChangeSet.Empty),
             SetCode code => new Solved(sketch with { Code = code.Code }, ChangeSet.Empty),
             SetSite site => new Solved(sketch with { Site = site.Site }, ChangeSet.Empty),
+            SetFurnitureMarks marks => new Solved(sketch with { Furniture = marks.Marks }, ChangeSet.Empty),
             SetWallInputs wall => ApplySetWallInputs(sketch, wall),
             SetPhase phase => sketch.Find(phase.Id) is { } phased
                 ? new Solved(sketch.WithEntity(phased with { Phase = phase.Phase }), ChangeSet.Empty with { Modified = [phase.Id] })
@@ -422,6 +423,12 @@ public sealed class DirectUpdater : IGeometryUpdater
         if (sketch.Find(request.Box) is not { } entity)
         {
             return new Rejected(RejectionReason.UnknownEntity);
+        }
+
+        // A drawer opens some distance: a mark with none is a mistake (furniture-checks §4.2).
+        if (request.Part?.Drawer is { } drawer && drawer.Extension <= Length.Zero)
+        {
+            return new Rejected(RejectionReason.NonPositiveSize);
         }
 
         // A strut is a piece somebody cuts too, its derived dimension named length or width

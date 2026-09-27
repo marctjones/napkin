@@ -160,6 +160,9 @@ public sealed record Sketch(
     /// <summary>The site and hazard values the person typed; every field null until entered (format version 6).</summary>
     public SiteValues Site { get; init; } = SiteValues.NotEntered;
 
+    /// <summary>What the piece of furniture is and whether it is anchored, as the person said (format version 14).</summary>
+    public FurnitureMarks Furniture { get; init; } = FurnitureMarks.None;
+
     /// <summary>
     /// Relationships in id order — never in dictionary order — so that anything iterating them is
     /// reproducible (design &#xA7;4.4 step 3).
@@ -708,7 +711,8 @@ public sealed record Sketch(
                && FastenerChoices.SequenceEqual(other.FastenerChoices)
                && Supplies.SequenceEqual(other.Supplies)
                && Equals(Code, other.Code)
-               && Site.Equals(other.Site);
+               && Site.Equals(other.Site)
+               && Furniture.Equals(other.Furniture);
     }
 
     /// <inheritdoc/>

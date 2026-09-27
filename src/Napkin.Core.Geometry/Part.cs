@@ -136,6 +136,12 @@ public sealed record Part(
     /// </summary>
     public BoxFace? ShowFace { get; init; }
 
+    /// <summary>
+    /// The drawer mark, when the person has marked this part as a drawer (format version 14,
+    /// furniture-checks §4.2); the drawer is this part's jointed group.
+    /// </summary>
+    public DrawerMark? Drawer { get; init; }
+
     /// <summary>Equality by value, with the hardware compared as a sequence (an <see cref="ImmutableList{T}"/> compares by reference).</summary>
     public bool Equals(Part? other)
         => other is not null
@@ -146,6 +152,7 @@ public sealed record Part(
            && Rough == other.Rough
            && Grain == other.Grain
            && ShowFace == other.ShowFace
+           && Drawer == other.Drawer
            && Hardware.SequenceEqual(other.Hardware);
 
     /// <inheritdoc/>
@@ -159,6 +166,7 @@ public sealed record Part(
         hash.Add(Rough);
         hash.Add(Grain);
         hash.Add(ShowFace);
+        hash.Add(Drawer);
         foreach (HardwareItem item in Hardware)
         {
             hash.Add(item);

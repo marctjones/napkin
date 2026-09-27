@@ -1,5 +1,5 @@
 {
-  "formatVersion": 13,
+  "formatVersion": 14,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -38,7 +38,8 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
@@ -95,7 +96,8 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
@@ -131,7 +133,8 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
@@ -167,7 +170,8 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
@@ -203,7 +207,8 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
@@ -239,7 +244,8 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
@@ -275,7 +281,8 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
@@ -311,7 +318,8 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
@@ -347,7 +355,8 @@
         "hardware": [],
         "rough": false,
         "grain": null,
-        "showFace": null
+        "showFace": null,
+        "drawer": null
       },
       "wall": null,
       "room": null,
@@ -426,5 +435,9 @@
     "roofLiveLoad": null,
     "soilBearing": null,
     "source": null
+  },
+  "furniture": {
+    "kind": "none",
+    "anchored": false
   }
 }

@@ -144,6 +144,12 @@ public static class SceneWriter
         WriteCode(writer, sketch.Code);
         WriteSite(writer, sketch.Site);
 
+        // The furniture marks (format version 14), always written.
+        writer.WriteStartObject(SceneNames.Furniture);
+        writer.WriteString(SceneNames.FurnitureKindName, SceneNames.Spell(SceneNames.FurnitureKinds, sketch.Furniture.Kind));
+        writer.WriteBoolean(SceneNames.Anchored, sketch.Furniture.Anchored);
+        writer.WriteEndObject();
+
         writer.WriteEndObject();
     }
 
@@ -602,6 +608,18 @@ public static class SceneWriter
         writer.WriteBoolean(SceneNames.Rough, part.Rough);
         WriteOptionalText(writer, SceneNames.Grain, part.Grain is { } grain ? SceneNames.Of(grain) : null);
         WriteOptionalText(writer, SceneNames.ShowFace, part.ShowFace is { } face ? SceneNames.Of(face) : null);
+
+        // A drawer mark (format version 14), or "drawer": null.
+        if (part.Drawer is { } drawer)
+        {
+            writer.WriteStartObject(SceneNames.Drawer);
+            writer.WriteNumber(SceneNames.Extension, drawer.Extension.Units);
+            writer.WriteEndObject();
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.Drawer);
+        }
 
         writer.WriteEndObject();
     }
