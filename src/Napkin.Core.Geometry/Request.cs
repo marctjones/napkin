@@ -107,6 +107,10 @@ public sealed record SetCode(CodeChoice? Code) : Request;
 /// <param name="Site">The values, as the person now has them.</param>
 public sealed record SetSite(SiteValues Site) : Request;
 
+/// <summary>Replaces the design's furniture marks (furniture-checks §9.1). Exact, moves nothing.</summary>
+/// <param name="Marks">The marks, as the person now has them.</param>
+public sealed record SetFurnitureMarks(FurnitureMarks Marks) : Request;
+
 /// <summary>Sets what the person entered for a wall — what it supports, its stud spacing. Exact, moves nothing.</summary>
 /// <param name="Box">The wall's box.</param>
 /// <param name="Inputs">The inputs; <see langword="null"/>, or both fields null, for none.</param>
