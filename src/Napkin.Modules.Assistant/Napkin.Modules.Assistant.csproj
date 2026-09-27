@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The assistant's seam, Avalonia-free (docs/design/llm-assistant.md §2.1, issue #229): the model
+       interface, the context pack, the answer guard, the prompts and the scripted model. It reads
+       the Modules' rows and results and never references the App. No package dependency: BCL only.
+       Nothing here opens a socket or reads a code pack from disk. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Napkin.Core.Geometry\Napkin.Core.Geometry.csproj" />
+    <ProjectReference Include="..\Napkin.Core.Materials\Napkin.Core.Materials.csproj" />
+    <ProjectReference Include="..\Napkin.Core.RulesEngine\Napkin.Core.RulesEngine.csproj" />
+    <ProjectReference Include="..\Napkin.Modules.Furniture\Napkin.Modules.Furniture.csproj" />
+    <ProjectReference Include="..\Napkin.Modules.Building\Napkin.Modules.Building.csproj" />
+    <ProjectReference Include="..\Napkin.Modules.Editing\Napkin.Modules.Editing.csproj" />
+  </ItemGroup>
+
+  <!-- The help the assistant reads is the help the repo ships (§3.3): linked from docs/, embedded at
+       build time, and a test asserts the embedded text equals the file on disk. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\docs\building.md" LogicalName="Napkin.Modules.Assistant.Help.building.md" Link="Help\building.md" />
+    <EmbeddedResource Include="..\..\docs\rules-engine.md" LogicalName="Napkin.Modules.Assistant.Help.rules-engine.md" Link="Help\rules-engine.md" />
+    <EmbeddedResource Include="..\..\docs\shortcuts.md" LogicalName="Napkin.Modules.Assistant.Help.shortcuts.md" Link="Help\shortcuts.md" />
+    <EmbeddedResource Include="..\..\docs\viewer.md" LogicalName="Napkin.Modules.Assistant.Help.viewer.md" Link="Help\viewer.md" />
+    <EmbeddedResource Include="..\..\docs\first-run.md" LogicalName="Napkin.Modules.Assistant.Help.first-run.md" Link="Help\first-run.md" />
+  </ItemGroup>
+
+  <!-- The system prompts as committed text, one file per task (§4.1), embedded so a test can assert them. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Prompts\*.txt" LogicalName="Napkin.Modules.Assistant.Prompts.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
