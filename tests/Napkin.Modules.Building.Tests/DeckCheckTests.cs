@@ -18,7 +18,7 @@ public class DeckCheckTests
     static readonly CodePacks Synthetic = CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "CodePacks", "deck")]);
     static readonly CodePacks Shipped = CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "RealPacks")]);
     static readonly CodeChoice ZzDeck = new("us-zz-deck", 1, CodeMode.Locked, new DateOnly(2026, 9, 26));
-    static readonly CodeChoice Connecticut = new("us-ct-2022", 3, CodeMode.Locked, new DateOnly(2026, 9, 27));
+    static readonly CodeChoice Connecticut = new("us-ct-2022", 4, CodeMode.Locked, new DateOnly(2026, 9, 27));
 
     static Length In(long whole, long numerator = 0, long denominator = 1) => Length.Inches(whole, numerator, denominator);
 
@@ -26,14 +26,14 @@ public class DeckCheckTests
         JoistDirection.Out, In(16), "2x8", new BeamSpec(2, "2x10"), "4x4", 3, Length.Zero, "5/4x6", In(0, 1, 8), true, "zz-deck", "zz-fir", In(42), null, null);
 
     /// <summary>§9.1: the existing house wall and Deck 1, 144 × 120 × 36, north edge on the house.</summary>
-    static Sketch Drawing(DeckInputs? inputs = null, long depth = 120, CodeChoice? code = null, SiteValues? site = null, long width = 144, params Box[] more)
+    static Sketch Drawing(DeckInputs? inputs = null, long depth = 120, CodeChoice? code = null, SiteValues? site = null, long width = 144, long height = 36, params Box[] more)
     {
         Box house = new(EntityId.New(), WallLayer, new Point3(Length.Zero, Length.Zero, In(36)), In(240), In(5, 1, 2), In(96), BoxFace.Top, Angle.Zero)
         {
             Name = "House",
             Phase = Phase.Existing,
         };
-        Box deck = new(EntityId.New(), DeckLayer, new Point3(In(48), In(-depth), Length.Zero), In(width), In(depth), In(36), BoxFace.Top, Angle.Zero)
+        Box deck = new(EntityId.New(), DeckLayer, new Point3(In(48), In(-depth), Length.Zero), In(width), In(depth), In(height), BoxFace.Top, Angle.Zero)
         {
             Name = "Deck 1",
             Deck = inputs ?? Inputs(),
@@ -75,11 +75,29 @@ public class DeckCheckTests
             "Ledger to the house: zz-bolts, staggered, 1'-5\" on centre (ZZ-DECK-LEDGER row r.2x8.12, synthetic p. 5); 10 fasteners for a 12'-0\" ledger (⌈12'-0\" ÷ 1'-5\"⌉ + 1, napkin's count).",
             Line(checks, DeckCheckKind.Ledger).Text,
             StringComparison.Ordinal);
-        // A middle post carries, by DCA 6 Appendix B Eq. B-1 (pp. B1–B2), B_L 72" (its centreline to the deck's outside edge)
-        // × half of J_L 118 1/2" (ledger face to the rim's outside face) = 72 × 59 1/4 = 4266 sq in = 29.6 sq ft.
+        // The posts stand 36 − 1 − 7 1/4 − 9 1/4 = 18 1/2" from grade to the beam's underside. An end post carries, by DCA 6
+        // Appendix B Eq. B-2, half of B_L 72" (the next post's centreline to the deck's outside edge) × half of J_L 118 1/2"
+        // = 36 × 59 1/4 = 2133 sq in = 14.8 sq ft: the synthetic corner table's ≤ 20 row, 6'-0".
+        Assert.Equal(
+            "End posts 4x4, 1'-6 1/2\" from grade to the beam's underside, zz-fir, each carrying 14.8 sq ft (DCA 6 Appendix B Eq. B-2, pp. B1–B2: half the beam's 6'-0\", "
+            + "the next post's centreline to the deck's outside edge, × half the joists' 9'-10 1/2\", ledger face to the rim's outside face): allowed up to 6'-0\" "
+            + "(ZZ-DECK-POST-CORNER row r.fir.4x4.20, synthetic p. 8 row zz-fir 4x4 20)." + Unreviewed + " Note a: SYNTHETIC footnote a: shown with results, not encoded.",
+            Line(checks, DeckCheckKind.EndPosts).Text);
+
+        // A middle post carries, by Eq. B-1 (pp. B1–B2), B_L 72" (its centreline to the deck's outside edge) × half of J_L
+        // 118 1/2" (ledger face to the rim's outside face) = 72 × 59 1/4 = 4266 sq in = 29.6 sq ft; under napkin's continuous
+        // beam the synthetic centre table multiplies it by its 3/2 (not DCA 6's factor): 6399 sq in = 44.4 sq ft, the ≤ 80 row, 7'-0".
+        Assert.Equal(
+            "Middle post 4x4, 1'-6 1/2\" from grade to the beam's underside, zz-fir, carrying 29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, "
+            + "post centreline to the deck's outside edge, × half the joists' 9'-10 1/2\", ledger face to the rim's outside face) × 1.5, a centre post under a continuous beam "
+            + "(synthetic p. 9 note b) = 44.4 sq ft: allowed up to 7'-0\" (ZZ-DECK-POST-CENTER row r.fir.4x4.80, synthetic p. 9 row zz-fir 4x4 80)." + Unreviewed
+            + " Note a: SYNTHETIC footnote a: shown with results, not encoded. Note b: SYNTHETIC note b: a centre post's area under a continuous beam is multiplied by 3/2.",
+            Line(checks, DeckCheckKind.MiddlePosts).Text);
+
+        // The footing under the middle post: the synthetic footing table declares no factor, so 29.6 sq ft (≤ 40) on 2000 psf.
         Assert.StartsWith(
-            "Footings: zz 15 in square for a middle post's 29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, post centreline to the deck's outside edge, "
-            + "× half the joists' 9'-10 1/2\", ledger face to the rim's outside face) on 2000 psf (ZZ-DECK-FOOTING",
+            "Footings: 17\" round or 15\" square, 7\" thick, for a middle post's 29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, post centreline to the deck's outside edge, "
+            + "× half the joists' 9'-10 1/2\", ledger face to the rim's outside face), on 2000 psf (ZZ-DECK-FOOTING row r.40.2000",
             Line(checks, DeckCheckKind.Footing).Text,
             StringComparison.Ordinal);
         Assert.StartsWith("Frost: footings 3'-6\" below grade; frost line 3'-6\" (site value, Town building department). Note x: SYNTHETIC", Line(checks, DeckCheckKind.Frost).Text, StringComparison.Ordinal);
@@ -148,19 +166,52 @@ public class DeckCheckTests
     {
         // Two posts: an end post, DCA 6 Appendix B Eq. B-2 with no beam overhang (B_O = 0): half of B_L 144" (the deck's
         // outside edge to outside edge) × half of J_L 118 1/2" = 72 × 59 1/4 = 4266 sq in = 29.6 sq ft.
-        DeckCheckLine footing = Line(Only(Drawing(Inputs() with { PostCount = 2 })), DeckCheckKind.Footing);
+        DeckChecks two = Only(Drawing(Inputs() with { PostCount = 2 }));
+        DeckCheckLine footing = Line(two, DeckCheckKind.Footing);
 
         Assert.StartsWith(
-            "Footings: zz 15 in square for an end post's 29.6 sq ft (DCA 6 Appendix B Eq. B-2, pp. B1–B2: half the beam's 12'-0\", the deck's outside edge to outside edge, ",
+            "Footings: 17\" round or 15\" square, 7\" thick, for an end post's 29.6 sq ft (DCA 6 Appendix B Eq. B-2, pp. B1–B2: half the beam's 12'-0\", the deck's outside edge to outside edge, ",
             footing.Text,
             StringComparison.Ordinal);
 
-        // No soil bearing value: asked for, the area and its measure said.
+        // Both posts are end posts, corner posts of Figure B1: the corner table's ≤ 40 row for zz-fir 4x4, 4'-0"; no middle post line.
+        Assert.Contains("each carrying 29.6 sq ft (DCA 6 Appendix B Eq. B-2, pp. B1–B2: half the beam's 12'-0\", the deck's outside edge to outside edge", Line(two, DeckCheckKind.EndPosts).Text, StringComparison.Ordinal);
+        Assert.Equal("r.fir.4x4.40", Assert.IsType<DeckResult.Passes>(Line(two, DeckCheckKind.EndPosts).Result).Row.Id);
+        Assert.DoesNotContain(two.Lines, line => line.Kind == DeckCheckKind.MiddlePosts);
+
+        // No soil bearing value: asked for, where to type it and where it comes from, the area and its measure said.
         DeckCheckLine missing = Line(Only(Drawing(site: SiteValues.NotEntered with { FrostDepth = In(42) })), DeckCheckKind.Footing);
         Assert.Equal(
             "Footings for a middle post's 29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, post centreline to the deck's outside edge, "
-            + "× half the joists' 9'-10 1/2\", ledger face to the rim's outside face): Enter the soil bearing value: table ZZ-DECK-FOOTING bands on it.",
+            + "× half the joists' 9'-10 1/2\", ledger face to the rim's outside face): Enter the site's soil bearing value, from the building department or a soils report, "
+            + "in Project → Adopted code and site: table ZZ-DECK-FOOTING bands on it.",
             missing.Text);
+    }
+
+    [Fact]
+    [Trait("Feature", "DECK-003")]
+    public void A_post_too_tall_for_its_row_is_short_and_a_cell_printed_NP_is_out_of_scope()
+    {
+        // 12'-0" up: the posts stand 144 − 1 − 7 1/4 − 9 1/4 = 126 1/2" = 10'-6 1/2"; a zz-fir 4x4 corner post at ≤ 20 sq ft
+        // may stand 6'-0" (synthetic), so 4'-6 1/2" over.
+        DeckChecks tall = Only(Drawing(height: 144));
+        DeckCheckLine end = Line(tall, DeckCheckKind.EndPosts);
+        Assert.False(end.Passing);
+        Assert.Contains("allowed up to 6'-0\", over by 4'-6 1/2\" (ZZ-DECK-POST-CORNER row r.fir.4x4.20", end.Text, StringComparison.Ordinal);
+        Assert.Contains("Use a larger post, or more posts so each carries less.", end.Text, StringComparison.Ordinal);
+
+        // zz-cedar 4x4 middle post: 44.4 sq ft reads the ≤ 80 row, which prints NP.
+        DeckCheckLine np = Line(Only(Drawing(Inputs() with { Species = "zz-cedar" })), DeckCheckKind.MiddlePosts);
+        Assert.False(np.Passing);
+        Assert.Contains(
+            "= 44.4 sq ft: Table ZZ-DECK-POST-CENTER prints NP, no height, for a 4x4 post of zz-cedar carrying up to 80 sq ft (row r.cedar.4x4.80, synthetic p. 9 row zz-cedar 4x4 80): get it engineered."
+            + Unreviewed + " Note a:",
+            np.Text,
+            StringComparison.Ordinal);
+        Assert.EndsWith("Note b: SYNTHETIC note b: a centre post's area under a continuous beam is multiplied by 3/2.", np.Text, StringComparison.Ordinal);
+
+        // No species: the post tables band on it.
+        Assert.Equal("species", Assert.IsType<DeckResult.InputMissing>(Line(Only(Drawing(Inputs() with { Species = null })), DeckCheckKind.EndPosts).Result).Input);
     }
 
     [Fact]
@@ -192,7 +243,45 @@ public class DeckCheckTests
             StringComparison.Ordinal);
         Assert.Contains(" Note 1: Assumes 40 psf live load, 10 psf dead load, No. 2 grade, and wet service conditions. Note 2: Assumes L/360 deflection.", joists.Text, StringComparison.Ordinal);
         Assert.StartsWith("Deck checks under CT 2022 use DCA 6-2015 (Prescriptive Residential Wood Deck Construction Guide, Based on the 2015 International Residential Code, American Wood Council)", Assert.Single(answered.Guides), StringComparison.Ordinal);
-        Assert.All(answered.Lines.Where(line => line.Kind is DeckCheckKind.Ledger or DeckCheckKind.Footing), line => Assert.IsType<DeckResult.NoData>(line.Result));
+        Assert.IsType<DeckResult.NoData>(Line(answered, DeckCheckKind.Ledger).Result);
+
+        // The posts, 18 1/2" from grade to the beam's underside (#42): an end post is a corner post, 14.8 sq ft (Eq. B-2),
+        // Table B1's ≤ 20 row for a Southern Pine 4x4, 6 ft (p. B3); the middle post a centre post under napkin's continuous
+        // beam, 29.6 sq ft × 1.25 (Table B2 note 4) = 5332 1/2 sq in = 37.0 sq ft, Table B2's ≤ 40 row, 13 ft (p. B4).
+        DeckCheckLine end = Line(answered, DeckCheckKind.EndPosts);
+        Assert.True(end.Passing);
+        Assert.StartsWith(
+            "End posts 4x4, 1'-6 1/2\" from grade to the beam's underside, Southern Pine, each carrying 14.8 sq ft (DCA 6 Appendix B Eq. B-2, pp. B1–B2: half the beam's 6'-0\", "
+            + "the next post's centreline to the deck's outside edge, × half the joists' 9'-10 1/2\", ledger face to the rim's outside face): allowed up to 6'-0\" "
+            + "(DCA 6-2015 Table B1 row r.sp.4x4.20, p. B3, row 20 sq ft, column 4x4 Post Height (ft.) Southern Pine: printed 6; species group \"Southern Pine\", ",
+            end.Text,
+            StringComparison.Ordinal);
+        Assert.EndsWith(
+            Unreviewed + " Note 1: Assumes No 2. Stress grade and wet service conditions. Note 3: Some post heights for 4x4 post sizes show a greater load carrying capacity than 6x6 "
+            + "post sizes since different ASTM Standards are used to develop design values for visually graded dimension lumber vs. visually graded timbers.",
+            end.Text);
+        DeckCheckLine middle = Line(answered, DeckCheckKind.MiddlePosts);
+        Assert.True(middle.Passing);
+        Assert.Contains(
+            "× 1.25, a centre post under a continuous beam (DCA 6-2015 Table B2 note 4, p. B4 (its superscript on the Tributary Area heading)) = 37.0 sq ft: allowed up to 13'-0\" "
+            + "(DCA 6-2015 Table B2 row r.sp.4x4.40, p. B4",
+            middle.Text,
+            StringComparison.Ordinal);
+        Assert.EndsWith(" Note 4: Tributary area shall be multiplied by 1.25 at center posts with beams not spliced (continuous).", middle.Text, StringComparison.Ordinal);
+
+        // The footing under that middle post on 2000 psf: Table B3's ≤ 40 row, 14" round or 13" square, 6" thick (p. B5).
+        DeckCheckLine footing = Line(answered, DeckCheckKind.Footing);
+        Assert.True(footing.Passing);
+        Assert.StartsWith(
+            "Footings: 14\" round or 13\" square, 6\" thick, for a middle post's 29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, post centreline to the deck's outside edge, "
+            + "× half the joists' 9'-10 1/2\", ledger face to the rim's outside face) × 1.25, a centre post under a continuous beam (DCA 6-2015 Table B3 note 2, p. B5 (its superscript on "
+            + "the Tributary Area heading)) = 37.0 sq ft, on 2000 psf (DCA 6-2015 Table B3 row r.40.2000, p. B5, row 40 sq ft, Soil Bearing Capacity column 2000 psf: printed 14, 13, 6 — a guide on the 2015 IRC",
+            footing.Text,
+            StringComparison.Ordinal);
+        Assert.EndsWith(
+            " Note 1: Assumes 40 psf live load, 10 psf dead load, 150 pcf concrete and 2,500 psi compressive strength of concrete. Coordinate footing thickness with post base and anchor requirements."
+            + " Note 2: Tributary area shall be multiplied by 1.25 at center posts with beams not spliced (continuous).",
+            footing.Text);
 
         // The beam: (2) 2x10 Southern Pine carrying 9'-9" of joists is Table 3A's ≤ 10' column, 7'-9" (p. 6); its span
         // L_B between post faces (Figure 3, p. 7), (144 − 3 × 3 1/2) ÷ 2 = 66 3/4", passes.
@@ -242,28 +331,31 @@ public class DeckCheckTests
         Sketch ct = zz with { Code = Connecticut };
         ImmutableArray<DeckChecks> before = DeckCheck.Of(zz, both), after = DeckCheck.Of(ct, both);
 
-        // Connecticut has DCA 6's joist and beam tables, whose scope does not know the synthetic "zz-deck" (newly
-        // flagged), and no ledger or footing table (no longer computable).
+        // Connecticut has DCA 6's joist, beam, post and footing tables, whose scope does not know the synthetic "zz-deck"
+        // (newly flagged), and no ledger table (no longer computable).
         DeckRecomputeReport lost = DeckCheck.Report(before, after);
-        Assert.Equal(["Ledger", "Footing"], lost.NoLongerComputable.Select(change => change.Key.Check));
-        Assert.Equal(["Joists", "Beam"], lost.NewlyFlagged.Select(change => change.Key.Check));
+        Assert.Equal(["Ledger"], lost.NoLongerComputable.Select(change => change.Key.Check));
+        Assert.Equal(["Joists", "Beam", "EndPosts", "MiddlePosts", "Footing"], lost.NewlyFlagged.Select(change => change.Key.Check));
         ImmutableArray<string> said = DeckCheck.Changes(before, after);
         Assert.StartsWith("Deck 1, newly flagged: Joists 2x8 at 16\" o.c., zz-fir, span 9'-9\": Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load", said[0], StringComparison.Ordinal);
         Assert.StartsWith(
             "Deck 1, newly flagged: Beam (2) 2x10 on 3 posts, span 5'-6 3/4\" between post faces, carrying 9'-9\" of joists: Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load",
             said[1],
             StringComparison.Ordinal);
+        Assert.StartsWith("Deck 1, newly flagged: End posts 4x4, 1'-6 1/2\" from grade to the beam's underside, zz-fir, each carrying 14.8 sq ft", said[2], StringComparison.Ordinal);
+        Assert.StartsWith("Deck 1, newly flagged: Footings for a middle post's 29.6 sq ft", said[4], StringComparison.Ordinal);
+        Assert.Contains(": Beyond the scope of DCA 6-2015: \"Assumes 40 psf live load", said[4], StringComparison.Ordinal);
         Assert.Equal(
             "Deck 1, can no longer be checked: Ledger: The loaded pack CT 2022 has no deck ledger table, so napkin cannot check this. "
             + "Nothing is guessed: add it from your copy of the code (docs/rules-engine.md).",
-            said[2]);
+            said[5]);
         Assert.Equal(
-            "Now checking against CT 2022 (IRC 2021, pack us-ct-2022 rev 3): every result recomputed; 4 changed, 2 newly flagged, 2 can no longer be computed.",
+            "Now checking against CT 2022 (IRC 2021, pack us-ct-2022 rev 4): every result recomputed; 6 changed, 5 newly flagged, 1 can no longer be computed.",
             CodeCheck.SwitchSummary(Assert.Single(both.Loaded, pack => pack.Manifest.Id == "us-ct-2022").Code, CodeCheck.Report([], []), BracingCheck.Report([], []), lost));
 
         // And back: every line answers again.
         Assert.All(DeckCheck.Changes(after, before), said => Assert.StartsWith("Deck 1, now answered: ", said, StringComparison.Ordinal));
-        Assert.Equal(4, DeckCheck.Report(after, before).Changes.Count(change => change.Kind == DeckChangeKind.ToAnswer));
+        Assert.Equal(6, DeckCheck.Report(after, before).Changes.Count(change => change.Kind == DeckChangeKind.ToAnswer));
     }
 
     [Fact]
@@ -279,7 +371,14 @@ public class DeckCheckTests
         ImmutableArray<string> flagged = DeckCheck.Changes(was, [cedar]);
         Assert.StartsWith("Deck 1, newly flagged: Joists 2x8 at 16\" o.c., zz-cedar, span 9'-9\": allowed up to 9'-7\", over by 2\"", flagged[0], StringComparison.Ordinal);
         Assert.StartsWith("Deck 1, newly flagged: Beam (2) 2x10 on 3 posts", flagged[1], StringComparison.Ordinal);
-        Assert.All(DeckCheck.Changes([cedar], was), said => Assert.StartsWith("Deck 1, now answered: ", said, StringComparison.Ordinal));
+
+        // The synthetic post tables have zz-cedar rows: the middle post's ≤ 80 row prints NP (flagged); the end posts read
+        // another row, 5'-0" (changed).
+        Assert.StartsWith("Deck 1, newly flagged: Middle post 4x4", flagged[2], StringComparison.Ordinal);
+        Assert.StartsWith("Deck 1, changed: End posts 4x4", flagged[3], StringComparison.Ordinal);
+        Assert.Contains("allowed up to 5'-0\" (ZZ-DECK-POST-CORNER row r.cedar.4x4.20", flagged[3], StringComparison.Ordinal);
+        Assert.Equal(4, flagged.Length);
+        Assert.All(DeckCheck.Changes([cedar], was).Where(said => !said.Contains("End posts", StringComparison.Ordinal)), said => Assert.StartsWith("Deck 1, now answered: ", said, StringComparison.Ordinal));
 
         // At 12" the joists answer from another row.
         Assert.StartsWith("Deck 1, changed: Joists 2x8 at 12\" o.c., zz-fir, span 9'-9\": allowed up to 12'-7\"", Assert.Single(DeckCheck.Changes(was, [After(box => box with { Deck = Inputs() with { JoistSpacing = In(12) } })])), StringComparison.Ordinal);

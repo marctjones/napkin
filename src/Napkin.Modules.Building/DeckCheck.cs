@@ -158,7 +158,7 @@ public static class DeckCheck
             ? new DeckCheckLine(
                 DeckCheckKind.Footing,
                 footing,
-                $"Footings: {Size(size)} for {carried}, on {sketch.Site.SoilBearingPsf} psf ({Cited(foot.Code, foot.Table, foot.Row)}).{foot.Code.UnreviewedSentence}{Notes(foot.Table, foot.Row)}{FactorNote(foot)}",
+                $"Footings: {Size(size)}, for {carried}, on {sketch.Site.SoilBearingPsf} psf ({Cited(foot.Code, foot.Table, foot.Row)}).{foot.Code.UnreviewedSentence}{Notes(foot.Table, foot.Row)}{FactorNote(foot)}",
                 true)
             : Other(DeckCheckKind.Footing, footing, $"Footings for {carried}"));
 
