@@ -1143,7 +1143,13 @@
                                        AutomationProperties.Name="Wall or opening" />
                             <!-- The code check on an opening (#18): derived, never stored. -->
                             <StackPanel Name="CodeCheckFields" Spacing="3" IsVisible="False">
-                                <TextBlock Text="Code check" FontSize="11" FontWeight="SemiBold" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Code check" FontSize="11" FontWeight="SemiBold" />
+                                    <!-- docs/design/llm-assistant.md §8: opens the assistant note with the question filled in and asked. -->
+                                    <Button Name="ExplainCodeCheckButton" Grid.Column="1" Content="Explain"
+                                            FontSize="10" Padding="4,0" Background="Transparent" BorderThickness="0"
+                                            Click="OnExplainClicked" AutomationProperties.Name="Explain the code check" />
+                                </Grid>
                                 <TextBlock Name="CodeCheckHeadline" FontSize="11" TextWrapping="Wrap"
                                            AutomationProperties.Name="Code check" />
                                 <TextBlock Name="CodeCheckInterpolation" FontSize="10" FontStyle="Italic" TextWrapping="Wrap" IsVisible="False"
@@ -1202,7 +1208,12 @@
                             <!-- The wall line's bracing (#39): segments from the drawing, a method per segment
                                  chosen by the person from the adopted code's methods (never assumed), and the check. -->
                             <StackPanel Name="BracingFields" Spacing="3" IsVisible="False">
-                                <TextBlock Text="Bracing" FontSize="11" FontWeight="SemiBold" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Bracing" FontSize="11" FontWeight="SemiBold" />
+                                    <Button Name="ExplainBracingButton" Grid.Column="1" Content="Explain"
+                                            FontSize="10" Padding="4,0" Background="Transparent" BorderThickness="0"
+                                            Click="OnExplainClicked" AutomationProperties.Name="Explain the bracing check" />
+                                </Grid>
                                 <StackPanel Name="BracingSegments" Spacing="2" />
                                 <TextBlock Name="BracingHeadline" FontSize="11" TextWrapping="Wrap"
                                            AutomationProperties.Name="Bracing check" />
@@ -1343,7 +1354,12 @@
                                          ToolTip.Tip="The stair's riser count: empty for the fewest the adopted code's maximum riser allows; typed, it overrides the pack's."
                                          AutomationProperties.Name="Stair risers" />
                             </StackPanel>
-                            <TextBlock Text="Code check" FontSize="11" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                <TextBlock Text="Code check" FontSize="11" FontWeight="SemiBold" />
+                                <Button Name="ExplainDeckButton" Grid.Column="1" Content="Explain"
+                                        FontSize="10" Padding="4,0" Background="Transparent" BorderThickness="0"
+                                        Click="OnExplainClicked" AutomationProperties.Name="Explain the deck check" />
+                            </Grid>
                             <TextBlock Name="DeckSupportsNote" FontSize="10" TextWrapping="Wrap" IsVisible="False"
                                        Foreground="{DynamicResource SystemErrorTextColor}" AutomationProperties.Name="Deck supports note" />
                             <TextBlock Name="DeckCheckText" FontSize="10" TextWrapping="Wrap" AutomationProperties.Name="Deck code check" />
