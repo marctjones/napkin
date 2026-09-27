@@ -1279,7 +1279,8 @@ marshalling's), `MlxStatus`, `MlxStopReason`, `MlxModelHandle`, `MlxDeviceInfo`,
    files once, and both projects that load the bridge import it (the tool, so the smoke loads it
    from `native/` beside itself exactly as the app does). A single-file `osx-arm64` publish
    (`--self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true`) was
-   run: the three files are in `native/` beside `napkin`, not bundled.
+   run: the three files are in `native/` beside `napkin` (`ExcludeFromSingleFile`); the bundle's
+   own contents were not inspected.
 8. **`ModelFolder` is the bridge's check, in its order and words** (a test reads `Bridge.swift` and
    compares), plus one of napkin's own: `config.json` must be a JSON object, since napkin reads
    `model_type` and `quantization` from it. A file napkin cannot read is *"not a JSON object"*, as
@@ -1340,8 +1341,9 @@ Every `NativeMlx` import was also called on the real dylib, with no model, from 
 `tokenizer_config.json` names no class → the bridge's sentence; `generate` with a NULL model →
 *"napkin_mlx_generate was given no model"*, with `max_tokens` 0 → *"max_tokens must be at least 1;
 it was 0."*, on a handle never loaded → *"…a model that is not loaded (unloaded already?)."*; then
-20,000 error round trips with the working set flat at about 98 MB (each sentence freed through
-`napkin_mlx_string_free`). So the string, `SafeHandle` and out-pointer marshalling of the calls
+20,000 error round trips (each sentence handed to `napkin_mlx_string_free`), after which the working
+set was 98 MB — one reading, which rules out nothing small: a leak of every sentence would be about
+2 MB. So the string, `SafeHandle` and out-pointer marshalling of the calls
 that need no model is right against the real library; `napkin_mlx_result_free` and reading a real
 result struct are proved only by the tests until a model is loaded.
 
