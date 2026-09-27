@@ -77,11 +77,11 @@ public class PaperSheetTests
             Assert.Equal(
                 DimensionLayout.Measure(sketch, view).Select(dimension => dimension.Label(Format)),
                 drawn.Dimensions.Select(dimension => dimension.Label));
-            Assert.Empty(PaperSheet.View(sketch, view, Format, hiddenEdges: false).Lines.Where(line => line.Kind == LineKind.Hidden));
+            Assert.DoesNotContain(PaperSheet.View(sketch, view, Format, hiddenEdges: false).Lines, line => line.Kind == LineKind.Hidden);
         }
 
         // Top covers the frame under it, so it has hidden edges; the coffee table has no opening.
-        Assert.NotEmpty(PaperSheet.View(sketch, StandardView.Top, Format, hiddenEdges: true).Lines.Where(line => line.Kind == LineKind.Hidden));
+        Assert.Contains(PaperSheet.View(sketch, StandardView.Top, Format, hiddenEdges: true).Lines, line => line.Kind == LineKind.Hidden);
         Assert.DoesNotContain(PaperSheet.View(sketch, StandardView.Front, Format, true).Lines, line => line.Dashed);
     }
 
