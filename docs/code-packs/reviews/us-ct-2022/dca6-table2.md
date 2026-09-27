@@ -217,3 +217,23 @@ this checklist alone — `frost.json` and `site-values.json` (#210) have no inde
 this table's own review is complete and clean, and `review.checklist` may point at this file.
 
 Sign-off: Claude Fable 5.1 (independent reviewer), 2026-09-27
+
+## Addendum, 2026-09-27 (written during the Table 3A review, slice C2)
+
+Slice B2 (#41, data commit `8d98a93`, on `main` at `e61cbfb`, 0.205.0-beta) changed two of the files this review
+hashed. Re-read by the same reviewer (Claude Fable 5.1) on 2026-09-27:
+
+- `packs/layers/dca6-2015/layer.json`: `65cfd5208d5accb7d50be474c148e0c60510be21f5d46840991b87028e901de1` →
+  `155f818c9797e05115457f02e97d11d77c9b664b055962de634c04c440b9a8f5`. `git diff 8d67597 8d98a93` on it is exactly two
+  hunks: the top-level `notes` sentence (now names Table 3A and both checklists) and two entries appended to
+  `scope.notes`, `n.beam-span` and `n.beam-sides` (verified verbatim against p. 5, with their cites, in
+  `dca6-table3a.md`). Every item this review verified — identity, both caveats, the three limits, `n.single`,
+  `n.stairs`, `n.materials`, the eight species, the source — is byte-identical.
+- `packs/packs/us-ct-2022/pack.json`: `841534b4cf8a2c725928252539287a58ff87c6f9b72d8b755034c5e97a03958d` →
+  `5cfad56ef033ef983af9d39cb90f82ab082411258e0e9d0ca869d353dbd1e92d`: `revision` 2 → 3 and one sentence appended to
+  `notes` ("Revision 3 (2026-09-27, #41 slice B2): the guide adds its deck beam table, Table 3A (p. 6)."), nothing
+  else — the `guides` entry, `review` and the source are unchanged.
+- `packs/layers/dca6-2015/deck/table-2.json` (`7cc3f327…`) and `packs/golden/us-ct-2022/dca6-table-2.golden.json`
+  (`d9c21929…`) are unchanged.
+
+The verdicts above stand. — Claude Fable 5.1, 2026-09-27
