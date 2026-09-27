@@ -198,13 +198,13 @@ public static class TipOver
 
     static decimal Volume(ImmutableArray<Box> members)
     {
-        (Point3 Low, Point3 High)[] e = [.. members.Select(JointGeometry.Extent)];
+        (Point3 Low, Point3 High)[] e = members.Select(JointGeometry.Extent).ToArray();
         return Inches(e.Max(x => x.High.X) - e.Min(x => x.Low.X)) * Inches(e.Max(x => x.High.Y) - e.Min(x => x.Low.Y)) * Inches(e.Max(x => x.High.Z) - e.Min(x => x.Low.Z));
     }
 
     static (decimal Y, decimal Z) Centre(ImmutableArray<Box> members)
     {
-        (Point3 Low, Point3 High)[] e = [.. members.Select(JointGeometry.Extent)];
+        (Point3 Low, Point3 High)[] e = members.Select(JointGeometry.Extent).ToArray();
         return ((Inches(e.Min(x => x.Low.Y)) + Inches(e.Max(x => x.High.Y))) / 2m, (Inches(e.Min(x => x.Low.Z)) + Inches(e.Max(x => x.High.Z))) / 2m);
     }
 }

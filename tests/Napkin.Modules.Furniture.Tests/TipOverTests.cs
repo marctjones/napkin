@@ -119,4 +119,14 @@ public class TipOverTests
 
         Assert.Equal(string.Empty, TipOver.Of(Sketch.Empty, MaterialsLibrary.Shipped).Scope);
     }
+
+    [Theory]
+    // 20" tall and 275 lb: too short. 30" tall but 0.39 ft³ of oak, ≈17 lb: too light.
+    [InlineData(18, 20, "≈20 in. tall, ≈275 lb")]
+    [InlineData(0.75, 30, "≈30 in. tall, ≈17 lb")]
+    public void Too_short_or_too_light_is_out_of_scope(double deep, double tall, string sizes)
+    {
+        Sketch sketch = Sketch.Empty.WithLayer(new Layer(Parts, "Parts")).WithEntity(Part("Block", 0, 0, 0, 30, (decimal)deep, (decimal)tall));
+        Assert.StartsWith($"Not a clothing storage unit by F2057-23's scope ({sizes}, ≈0.0 ft³ of drawers;", TipOver.Of(sketch, MaterialsLibrary.Shipped).Scope, StringComparison.Ordinal);
+    }
 }
