@@ -74,6 +74,15 @@
       "kind": "workflow"
     },
     {
+      "id": "GUI-AST-03",
+      "area": "assistant",
+      "title": "A shopping-list question is answered from the open list's rows",
+      "acceptance": "Opening the stocked-bench sample (whose parts carry stock, unlike coffee-table) and its shopping list with Ctrl/Cmd+Shift+L, then asking Ctrl/Cmd+Shift+A how many 2x4s to buy answers with the shopping list's own row numbers, read from the sample's expected fixture, with the row rendered under the answer; a second scripted answer with a made-up count is refused.",
+      "milestone": "M14",
+      "issue": 232,
+      "kind": "workflow"
+    },
+    {
       "id": "GUI-AST-06",
       "area": "assistant",
       "title": "Choose a model on this machine, test it and ask it",

@@ -1,3 +1,6 @@
+using System.Collections.Immutable;
+using System.Text.Json;
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -5,9 +8,11 @@ using Avalonia.VisualTree;
 
 using Napkin.App.GuiTests.Harness;
 using Napkin.Core.Geometry;
+using Napkin.Core.Materials;
 using Napkin.Core.Project;
 using Napkin.Modules.Assistant;
 using Napkin.Modules.Building;
+using Napkin.Modules.Furniture;
 
 using Xunit;
 
@@ -185,6 +190,77 @@ public class AssistantWorkflows
             model: model);
     }
 
+    [GuiWorkflow("GUI-AST-03")]
+    public void A_shopping_list_question_is_answered_from_the_open_lists_own_row()
+    {
+        // stocked-bench: every part names its stock, so its shopping list has real rows to buy
+        // (§9.3); coffee-table has no stock and buys nothing, so it cannot show this path.
+        Design design = LoadDesign("stocked-bench");
+        ImmutableArray<CutListRow> cutRows = CutList.Of(design.Sketch, MaterialsLibrary.Shipped);
+        OpenList shoppingList = OpenList.ShoppingList(ShoppingList.Of(cutRows));
+        const string question = "how many 2x4s?";
+
+        // The pack the app itself will build once the shopping list's tab is open — no code chosen
+        // and nothing checked, exactly ContextChecks.None (GUI-AST-02's equivalence), and the
+        // shopping list the one open list (§10 slice D, MainWindow.Assistant.cs's OpenAssistantLists).
+        ContextPack referencePack = ContextPack.For(design, [], ContextChecks.None, [shoppingList], question);
+        int row = ItemNumbered(referencePack, item => item.Kind == ContextKind.ListRow && item.Text.StartsWith("Shopping list: 2x4,", StringComparison.Ordinal));
+
+        // The row's own count, read from the fixture's hand-worked numbers, never typed here (#232).
+        using JsonDocument expectedFile = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepositoryLayout.SamplesDirectory, "stocked-bench.expected.json")));
+        JsonElement twoByFour = expectedFile.RootElement.GetProperty("shoppingList").EnumerateArray().Single(item => item.GetProperty("material").GetString() == "2x4");
+        int count = twoByFour.GetProperty("boards")[0].GetProperty("count").GetInt32();
+        string forWhat = twoByFour.GetProperty("for").GetString()!;
+
+        string good = $"The shopping list says to buy {count} 2x4 board{(count == 1 ? string.Empty : "s")}, for {forWhat} [{row}].";
+        Assert.Equal(0, AnswerGuard.Check(good, referencePack).Refused);
+
+        // A made-up count napkin never gave it, chosen (and proved by the refusal below) not to
+        // coincide with a number already in the pack — the row's own "For" text already has a bare
+        // 2 and a bare 4 in it, so "one more than the row" is not itself a safe choice here.
+        string bad = $"The shopping list says to buy 37 2x4 boards, for {forWhat} [{row}].";
+        GuardedAnswer badGuarded = AnswerGuard.Check(bad, referencePack);
+        Assert.NotEqual(0, badGuarded.Refused);
+
+        ScriptedModel model = new(
+            ScriptedReply.Text(good, match: "2x4"),
+            ScriptedReply.Text(bad, match: "2x4"));
+
+        GuiWorkflow.Run(
+            app =>
+            {
+                MainWindow window = (MainWindow)app.Target;
+
+                OpenSample(app, window, "Stocked bench");
+
+                // Ctrl/Cmd+Shift+L opens straight onto the shopping list (keyboard).
+                app.Chord(Key.L, KeyModifiers.Shift);
+                app.Expect("the shopping list's tab is open", () => Assert.True(window.CutList!.IsShowingShoppingList));
+
+                // Ctrl/Cmd+Shift+A, the question, Enter (keyboard): the note opens and asks at once.
+                app.Chord(Key.A, KeyModifiers.Shift);
+                app.Type(question);
+                app.Press(Key.Enter);
+
+                app.Expect("the answer's numbers are the shopping list row's, and the row is rendered under it", () =>
+                {
+                    Assert.Equal(good, window.AssistantAnswerOnScreen);
+                    Assert.Contains(referencePack.Item(row)!.ToString(), window.AssistantReferenceTexts);
+                });
+
+                // A second question (pointer to the box, keyboard to retype and ask) whose scripted
+                // reply says a count napkin never gave it.
+                app.Click(CentreOf(window, window.AssistantQuestionField));
+                app.Chord(Key.A);
+                app.Type("no, exactly how many 2x4s?");
+                app.Press(Key.Enter);
+
+                app.Expect("the made-up count is refused, in napkin's own words", () =>
+                    Assert.Equal(badGuarded.Text, window.AssistantAnswerOnScreen));
+            },
+            model: model);
+    }
+
     [GuiWorkflow("GUI-AST-06")]
     public void Choose_a_model_on_this_machine_test_it_and_ask_it()
     {
@@ -349,6 +425,14 @@ public class AssistantWorkflows
         CodePacks packs = CodePacks.Discover([Shipped]);
         EntityId windowId = Assert.Single(design.Sketch.Entities.Values, entity => entity.Name == "Window 1").Id;
         return (design, packs, windowId);
+    }
+
+    /// <summary>A sample read straight from disk, for a reference pack — no window to find, no packs needed.</summary>
+    static Design LoadDesign(string name)
+    {
+        string path = Path.Combine(AppContext.BaseDirectory, "samples", $"{name}.scene.json");
+        LoadResult result = SceneReader.ReadFile(path);
+        return Design.Named(name, Assert.IsType<Loaded>(result).Sketch);
     }
 
     /// <summary>The number of the one item a pack holds matching <paramref name="predicate"/>.</summary>

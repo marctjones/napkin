@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 
 using Napkin.Core.Geometry;
 using Napkin.Core.Materials;
@@ -142,6 +143,39 @@ public class ContextPackTests
         Assert.Equal(
             RelationshipText.Describe(design.Sketch, firstRelationship, id => DesignWords.NameOf(design, id), LengthFormat.Default),
             pack.Items.First(item => item.Kind == ContextKind.Relationship).Text);
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-001")]
+    public void The_coffee_tables_cut_list_enters_the_pack_as_the_fixtures_own_hand_derived_csv_lines()
+    {
+        // docs/design/llm-assistant.md §10 slice D (#232): the open list's rows in as the CSV napkin
+        // already writes. The expected lines come from coffee-table.expected.json's own cutListCsv —
+        // hand-derived from coffee-table.design.md and never regenerated from napkin's output
+        // (samples/README.md) — read here, not typed, so the CSV's own quoting cannot drift from
+        // what a reviewer already checked.
+        Design design = Fixtures.Sample("coffee-table");
+        ImmutableArray<CutListRow> rows = CutList.Of(design.Sketch, MaterialsLibrary.Shipped);
+        OpenList cutList = OpenList.CutList(rows);
+
+        using JsonDocument expectedFile = JsonDocument.Parse(Fixtures.RepositoryText("samples/coffee-table.expected.json"));
+        string[] expectedCsvLines = [.. expectedFile.RootElement.GetProperty("cutListCsv").EnumerateArray().Select(line => line.GetString()!)];
+        Assert.Equal(expectedCsvLines, cutList.Lines);
+
+        ContextPack pack = ContextPack.For(design, [], ContextChecks.None, [cutList], "how many legs does it have?");
+        List<ContextItem> listItems = [.. pack.Items.Where(item => item.Kind == ContextKind.ListRow)];
+        Assert.Equal(expectedCsvLines.Select(line => "Cut list: " + line), listItems.Select(item => item.Text));
+        Assert.DoesNotContain(pack.Items, item => item.Kind == ContextKind.ListCut);
+
+        // A guard case for a list question (§10 slice D): the Leg row's own count of 4 stands, in
+        // digits and as a number word; a made-up count is refused.
+        ContextItem legRow = listItems.Single(item => item.Text.StartsWith("Cut list: Leg,", StringComparison.Ordinal));
+        Assert.Equal(0, AnswerGuard.Check($"There are 4 legs [{legRow.N}].", pack).Refused);
+        Assert.Equal(0, AnswerGuard.Check($"There are four legs [{legRow.N}].", pack).Refused);
+
+        GuardedAnswer madeUp = AnswerGuard.Check($"There are 37 legs [{legRow.N}].", pack);
+        Assert.Equal(1, madeUp.Refused);
+        Assert.Equal(["37"], madeUp.Sentences.Single().Unsupported);
     }
 
     [Fact]

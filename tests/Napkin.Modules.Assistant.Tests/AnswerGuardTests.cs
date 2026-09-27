@@ -299,6 +299,28 @@ public class AnswerGuardTests
     }
 
     [Fact]
+    [Trait("Feature", "AST-001")]
+    public void A_shopping_list_question_is_answered_from_the_rows_own_count_a_made_up_count_is_refused()
+    {
+        // stocked-bench: every part names its stock, so its shopping list has real rows to buy
+        // (§9.3, §10 slice D, issue #232) — the numbers checked below are Napkin.Modules.Furniture's
+        // own, never typed by hand.
+        var design = Fixtures.Sample("stocked-bench");
+        var rows = CutList.Of(design.Sketch, Napkin.Core.Materials.MaterialsLibrary.Shipped);
+        OpenList shoppingList = OpenList.ShoppingList(ShoppingList.Of(rows));
+        ContextPack pack = ContextPack.For(design, [], ContextChecks.None, [shoppingList], "how many 2x4s do I buy?");
+
+        ContextItem row = pack.Items.Single(item => item.Kind == ContextKind.ListRow && item.Text.StartsWith("Shopping list: 2x4,", StringComparison.Ordinal));
+
+        // The row's own count, in digits and as a number word (§14 item 7: a number word is a token too).
+        Kept($"Buy 1 2x4 board [{row.N}].", pack);
+        Kept($"Buy one 2x4 board [{row.N}].", pack);
+
+        // A count napkin never gave it is refused, whatever else the sentence gets right.
+        Refused($"Buy 37 2x4 boards [{row.N}].", pack, "37");
+    }
+
+    [Fact]
     public void Sentences_end_at_a_stop_before_white_space_or_a_line_break_and_references_after_a_stop_stay_with_it()
     {
         List<string> sentences = [.. AnswerGuard.Sentences("Table R602.7(1) is 3.5 in. It is empty. [4] [6]\nNext line? Yes!\"Quoted.\" Done").Select(s => s.Text)];
