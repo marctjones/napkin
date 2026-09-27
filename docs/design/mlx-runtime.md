@@ -31,7 +31,7 @@ states a code value, a lumber size, a span or a load.
 §0 what exists and what this note does with it; **How to use it**; §1 the bridge (packages,
 versions, licences, toolchain, the C ABI); §2 structured output; §3 build and packaging; §4 the
 .NET side; §5 models; §6 the consented download; §7 tests; §8 risks; §9 slices; §10 try it;
-§11 unverified; §12 decisions for Marc.
+§11 unverified; §12 decisions for Marc; §13 as built in A (#239).
 
 ---
 
@@ -971,3 +971,236 @@ answer.
     person can compare it with the Hub's page. Alternative: sizes only, hashes in a tooltip.
 12. **The name in the dialog.** *Recommended:* *"In napkin, on this Mac (MLX)"* beside *"A program
     on this machine"*. Alternative: *"Built in"*.
+
+---
+
+## 13. As built in A (#239), and where it departs from this note
+
+`native/NapkinMlx/` (a SwiftPM package: `Package.swift`, the committed `Package.resolved`, the C
+target `CNapkinMlx` holding `include/napkin_mlx.h`, the bridge `Sources/NapkinMlx`, the schemas
+`Sources/NapkinMlxSchemas`, the spike harness `Sources/NapkinMlxSpike`, 41 Swift tests in
+`Tests/NapkinMlxTests`, none of which needs weights), `tools/scripts/build-mlx.sh`, and `.gitignore` for `out/`, `.derived/`
+and `.swiftpm/`. Nothing in `dotnet build` or `gate.sh` changed. Every fact below was read on
+**2026-09-27** from the resolved checkout of the package named (the pins in §13.3), or measured on
+Marc's Mac (MacBook Air, Apple M5, 24 GiB, macOS 26.6.2, Xcode 27.0 27A266a, Swift 6.4, Metal
+Toolchain 32023.921).
+
+### 13.1 What the pinned code said that changes this note
+
+1. **`GPU.metallib` does not exist at mlx-swift 0.31.6.** `Source/MLX/GPU+Metal.swift` at the
+   0.31.6 tag has no `metallib` property; it arrived on mlx-swift's `main` in `ab924c8` (*"update for
+   mlx v0.32.2 (#450)"*, 2026-09-01), which no tag contains yet — §1.4 quoted `main`. The MLX that
+   0.31.6 vendors (submodule `ce45c525`, `mlx/version.h`: 0.31.1 — this answers §11's `MLX_VERSION`
+   question) has no override either: `load_default_library` (`mlx/backend/metal/device.cpp`) tries
+   `current_binary_dir()/mlx.metallib` first, where `current_binary_dir()` is `dladdr` on MLX's own
+   code (`mlx/backend/common/utils.cpp`), i.e. the directory of `libNapkinMlx.dylib`. So
+   **`napkin_mlx_init` cannot set the path; it checks it**: the path napkin passes must be the
+   `mlx.metallib` beside the dylib, else `ERROR` with *"MLX loads its Metal library only from beside
+   the bridge, ‹expected›; napkin passed ‹path›."* §3.3's layout (both files in `native/`) is
+   unchanged and is now the only thing that makes MLX find its kernels. Slice B passes exactly
+   `Path.Combine(AppContext.BaseDirectory, "native", "mlx.metallib")`.
+2. **A Mac without Metal is an abort in MLX 0.31.1, not a throw.** `load_device()` reads
+   `MTL::CopyAllDevices()->object(0)` before its *"Failed to load device"* check; on an empty array
+   `objectAtIndex:` raises. The sentence §1.4 quoted (*"No Metal device available…"*) is not in this
+   `device.cpp`. So `init` probes `MTLCreateSystemDefaultDevice()` **before any MLX symbol runs** and
+   returns `NO_METAL` on nil; only then does it let Metal load the library and run one tiny GPU
+   evaluation inside `withError`. The order is: path given → file exists → it is the colocated file
+   → Metal device → Metal loads the library → MLX evaluates `[1,2,3] + 1` and sums to 9. The first
+   three need no GPU, so their `ERROR`s are tested anywhere; `NAPKIN_MLX_NO_DEVICE_PROBE` (§7.1) was
+   not needed and does not exist. `NO_METAL` cannot be provoked on an M5; it is covered by that
+   order, not by a run.
+3. **`GrammarConstraint.clone()` always fails at this pin.** mlx-swift-lm's shim
+   (`Libraries/MLXCXGrammar/shim.cc`, `xg_matcher_fork`) returns an error unconditionally:
+   *"GrammarMatcher::Fork() was introduced in xgrammar v0.1.34. This build is pinned to v0.1.30"*.
+   Each `GrammarConstraint` also builds its own `GrammarCompiler`, so nothing compiled is shared. The
+   bridge therefore compiles each napkin schema once at the end of `load` and hands that constraint
+   to the **first** request with that schema; later requests compile their own. Measured over
+   Qwen3-4B-4bit's real tokenizer (151,669 tokens, byte-level) on a Release build: **sketch 40 ms,
+   edit 41 ms** — about two tokens' time, so nothing is compiled ahead in the background. If a
+   re-pin brings Fork, the load-time constraint becomes a template cloned per request (the note's
+   plan; `Guided.swift` already takes that branch when `clone()` succeeds, and
+   `GrammarTests.testCloneIsUnsupportedAtThePinnedXgrammar` fails to say so). This is
+   MLXFoundationModels' own fallback (`ModelCache.makeConstraint`).
+4. **Every MLX error is `fatalError` unless scoped.** mlx-swift's `ErrorHandler.dispatch` calls
+   `fatalError` when no task-local handler is set (`Source/MLX/ErrorHandler.swift`). The init
+   evaluation, `load` and both generation paths run inside `withError`; a test proves a broadcast
+   error inside it is a Swift throw.
+5. **swift-transformers can abort on a folder that looks fine.** When `tokenizer_config.json` is
+   missing or has no `tokenizer_class`, `LanguageModelConfigurationFromHub.tokenizerConfig` reads a
+   fallback config from its Hub resources through `Bundle.module` (`Sources/Hub/Hub.swift`), whose
+   generated accessor `fatalError`s when `swift-transformers_Hub.bundle` is not beside the host
+   executable — never the case beside napkin. `load` therefore refuses, by name and before anything
+   reads the folder, a folder without `config.json`, `tokenizer.json`, `tokenizer_config.json`, a
+   `tokenizer_class` in it, or any `*.safetensors`. It cannot refuse everything: swift-transformers
+   has 24 `fatalError` sites in `Sources/Tokenizers` and `Sources/Hub` for malformed `tokenizer.json`
+   content (*"BPETokenizer requires merges"*, *"Unsupported PreTokenizer type"*, …). A folder napkin
+   downloaded is hash-checked (§6.2); a hand-made or damaged folder chosen with **Choose…** can still
+   take napkin down at load — one more case of §8.6.
+6. **Loading goes through `LLMModelFactory.shared.loadContainer(from:using:)`,** not the free
+   `loadModelContainer`, which finds its factory by `NSClassFromString("MLXLLM.TrampolineModelFactory")`
+   (`ModelFactory.swift`, `ModelFactoryRegistry`) — a lookup a dynamic library could lose to dead
+   stripping.
+7. **Xcode builds a `.dynamic` SwiftPM product as a framework.** The products are
+   `Build/Products/Release/PackageFrameworks/NapkinMlx.framework/Versions/A/NapkinMlx` (a Mach-O
+   dylib, install name `@rpath/NapkinMlx.framework/Versions/A/NapkinMlx`) and
+   `Build/Products/Release/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib`.
+   `build-mlx.sh` copies them to `out/libNapkinMlx.dylib` and `out/mlx.metallib` unchanged — the
+   install name does not matter to a `dlopen` by path, and changing it would break the signature
+   (item 8). There is no `build.sh` inside the package; the one script is `tools/scripts/build-mlx.sh`.
+8. **The dylib carries the linker's ad-hoc signature** (§3.5's open question): `codesign -dvv` reads
+   `flags=0x20002(adhoc,linker-signed)`, `Signature=adhoc`, `Info.plist=not bound`, `Sealed
+   Resources=none`, `TeamIdentifier=not set`, no `Authority`. Not bound to the framework bundle, so
+   the copied file stands alone; macOS loads it (the spike `dlopen`s it).
+9. **A third file: `libswiftCompatibilitySpan.dylib`.** With the macOS 14 deployment target, the
+   dylib links `@rpath/libswiftCompatibilitySpan.dylib` (`otool -L`; every other dependency is in
+   `/System/Library` or `/usr/lib`). macOS 26 has it in `/usr/lib/swift`, the rpath the Swift driver
+   adds. For macOS 14–15 the bridge target adds the rpath `@loader_path` and `build-mlx.sh` copies
+   the toolchain's copy (`…/usr/lib/swift-6.2/macosx/`, Apple-signed, 188,320 bytes) into `out/`.
+   Not tried on a macOS 14 or 15 machine (none here). **So `out/` holds three files napkin ships, not
+   two**: slice B's conditional `Content` items and slice E's packaging carry all three — or Marc
+   raises the floor to macOS 26 and the file disappears (a decision, not taken here).
+10. **Transitive packages the note did not list** (all read, §13.3): `EventSource` (mattt, MIT),
+    linked through swift-huggingface; `swift-asn1` (Apache-2.0), resolved but not linked;
+    `swift-argument-parser` (Apache-2.0), built only for mlx-swift's `CudaBuild` build-tool plugin
+    (its `encuda` executable), not linked — that plugin is why `-skipPackagePluginValidation` is
+    needed. **swift-syntax (603.0.2) is resolved and not compiled** (§11): no `SwiftSyntax` or
+    `MLXHuggingFaceMacros` target appears in the build log.
+
+### 13.2 Other departures, and why
+
+1. **The header** is `native/NapkinMlx/include/napkin_mlx.h` in a C target `CNapkinMlx` (a Swift
+   target cannot carry a C header), with the §1.4 declarations exactly, plus `extern "C"` guards and
+   the rules as comments. The bridge's `@_cdecl` functions use the header's own types, and both the
+   header's declarations and the Swift implementations are assigned to one set of typealiases, so a
+   mismatch is a compile error. A second header, `napkin_mlx_internal.h`, holds `static inline`
+   helpers (the cancel flag read with `__atomic_load_n(…, __ATOMIC_ACQUIRE)`; Swift's `Atomic` needs
+   macOS 15) and exports nothing: `nm -gU | grep '^_napkin_mlx_'` lists exactly the eight, and
+   `build-mlx.sh` fails otherwise. (The dylib also exports about 25,000 mangled Swift symbols of the
+   linked modules; nothing uses them.)
+2. **Struct layout for slice B** (asserted by a test): `napkin_mlx_device_info` is 136 bytes
+   (`memory_bytes` at 72, `mlx_swift_lm_revision` at 88); `napkin_mlx_result` is 40 bytes
+   (`prompt_seconds` at 24); the status enum is 4 bytes.
+3. **Errors and NULLs.** `error` may be NULL; on OK it is set to NULL. A NULL model, message, or
+   out pointer, `max_tokens < 1`, or a handle that is not live (never loaded, or unloaded) is `ERROR`
+   with a sentence, never a crash. `init` latches only on success, so a failed `init` can be retried
+   after the file is put right. `load` requires a successful `init` (after its file checks).
+4. **The schemas.** #233 and #234 have not landed, so napkin's two proposal schemas do not exist yet.
+   The bridge carries them (`Sources/NapkinMlxSchemas/Schemas.swift`), written from
+   llm-assistant.md §4.4 and §4.5: every member required, no other members; the edit schema is an
+   `anyOf` of the six edits, each tagged with `"edit": {"const": …}`, and `dimension` an `enum` —
+   beyond §2's "objects, arrays, strings, integers and `required` only", and xgrammar v0.1.30
+   compiles all of it (tests; they also run §4.4's example document and each of the six edits through
+   the grammar, and refuse an unknown member, a seventh edit and a wrong dimension). **Slices E and F
+   must send these exact bytes as `ModelRequest.Schema`, or change them here in the same commit**;
+   otherwise the load-time constraint goes unused and the first proposal pays its ~40 ms. The ABI's
+   `load` takes no schema, by design.
+5. **The guided loop gets MLXFoundationModels' budget policy** (`MLXLanguageModel.swift`,
+   `runSchemaGeneration`): `ClosingTokenBias`, `WhitespaceTokenBias`, and reserves soft = max(3 × the
+   schema's minimal completion, a quarter of `max_tokens`), hard = 8 × the minimal completion (for
+   the sketch at 2048: 512 and 56). Greedy decoding under a grammar tends to run out of tokens in
+   runs of whitespace; this is the library's own answer. Sampling is still argmax (§2, Decision 8).
+6. **`prompt_seconds` on the guided path** is the time to the first emitted text (the loop prefills
+   inside `run`); `generation_seconds` the rest. The plain path reports mlx-swift-lm's own
+   `GenerateCompletionInfo` times.
+7. **Cancel.** The caller's thread waits on the detached Task and polls napkin's flag every 2 ms; a
+   set flag cancels that Task. Plain path: a cancellation handler cancels the generation Task
+   (unstructured, so not cancelled by inheritance), whose loop stops at the next token; the bridge
+   then awaits it before returning. Guided path: `GuidedGenerationLoop.run` checks
+   `Task.checkCancellation()` every token and `emit` returns `false` once the flag is set. A test
+   proves the wait returns promptly when the flag flips; the latency on a real model is pending
+   (§13.4).
+8. **`NAPKIN_MLX_DIAGNOSTICS=1`** makes the bridge print, to stderr, what the eight functions
+   cannot carry — init time, load time with the grammar set-up and schema compile times, MLX's
+   active and peak memory (`Memory.peakMemory`), and per request the tokens, seconds, tok/s and
+   where the constraint came from. napkin never sets it; the spike and a person do.
+9. **The spike harness** `napkin-mlx-spike` (`out/`) `dlopen`s `out/libNapkinMlx.dylib` by absolute
+   path and resolves the eight with `dlsym` — what P/Invoke does — so it exercises the real file,
+   its signature, its dependencies and the colocated metallib. It shares only the header and the
+   schemas with the bridge.
+10. **The Swift tests** run as `xcodebuild build-for-testing` then `xcrun xctest` on the bundle
+    (`build-mlx.sh --test`): `xcodebuild test` needs testmanagerd over XPC, which this sandboxed
+    session could not reach (the runner timed out *"while preparing to run tests"*); under `xctest`
+    all 41 pass (40 run; `RealTokenizerTests` is skipped unless `NAPKIN_MLX_TOKENIZER_DIR` names a
+    model's tokenizer files, and the MLX error test is skipped without Metal).
+11. **Swift 5 language mode** for the targets: the C boundary's process-wide state is guarded by
+    locks the Swift 6 checker cannot see.
+
+### 13.3 Pins and licences as resolved
+
+Read from each checkout's licence file at the pinned revision (`Package.resolved`), 2026-09-27.
+"Linked" means its object file is in the dylib's link list.
+
+| Package | Version / revision | Licence (file read) | In the dylib |
+|---|---|---|---|
+| mlx-swift-lm ([github.com/ml-explore/mlx-swift-lm](https://github.com/ml-explore/mlx-swift-lm)) | `main` @ `ee673d6a71d76e67b532dc7eaf91d92edc3bb8bb` | MIT (`LICENSE`: *"Copyright (c) 2024 ml-explore"*) | yes: MLXLLM, MLXLMCommon, MLXGuidedGeneration, MLXCXGrammar |
+| — xgrammar, vendored in MLXCXGrammar | v0.1.30 (`xgrammar/VERSION`) | Apache-2.0 (`xgrammar/LICENSE`); `NOTICE`: *"XGrammar, Copyright (c) 2024 by XGrammar Contributors"* | yes |
+| — picojson, vendored in xgrammar | as vendored | two-clause BSD (header text: *"Copyright 2009-2010 Cybozu Labs, Inc. Copyright 2011-2014 Kazuho Oku"*) | yes |
+| — dlpack header, vendored in xgrammar | as vendored | header carries only *"Copyright (c) 2017 by Contributors"*; upstream [dmlc/dlpack](https://github.com/dmlc/dlpack) `LICENSE` and the GitHub API: Apache-2.0 | yes (header) |
+| mlx-swift ([github.com/ml-explore/mlx-swift](https://github.com/ml-explore/mlx-swift)) | 0.31.6 @ `0bb916c67f4b9e5c682cbe02a42c701c93ab5021` | MIT (`LICENSE`: *"Copyright (c) 2023 ml-explore"*) | yes: MLX, Cmlx, MLXNN, MLXOptimizers |
+| — MLX (C++), vendored in Cmlx | submodule `ce45c525`, 0.31.1 | MIT (`mlx/LICENSE`: *"Copyright © 2023 Apple Inc."*) | yes |
+| — mlx-c, vendored in Cmlx | submodule `0726ca92` | MIT (`mlx-c/LICENSE`: *"Copyright (c) 2023 ml-explore"*) | yes |
+| — fmt, vendored in Cmlx | 12.1.0 (`vendor-README.md`) | MIT text with fmt's *"Optional exception to the license"* (`fmt/LICENSE`) | yes |
+| — nlohmann/json, vendored in Cmlx | 3.11.3 (`vendor-README.md`) | MIT (`json/LICENSE.MIT`: *"Copyright (c) 2013-2022 Niels Lohmann"*) | yes |
+| — metal-cpp, vendored in Cmlx | macOS15/iOS18 beta zip, patched (`vendor-README.md`) | Apache-2.0 (`metal-cpp/LICENSE.txt`) | yes |
+| swift-transformers ([github.com/huggingface/swift-transformers](https://github.com/huggingface/swift-transformers)) | 1.3.4 @ `c21fdcde390313a6d98d8e33a346f2c3486c3ab0` | Apache-2.0 (`LICENSE`) | yes: Tokenizers, Hub |
+| swift-jinja ([github.com/huggingface/swift-jinja](https://github.com/huggingface/swift-jinja)) | 2.5.1 @ `4588064a20f3fc093c95f2f7d3359999bf30cae5` | Apache-2.0 (`LICENSE`) | yes |
+| swift-huggingface ([github.com/huggingface/swift-huggingface](https://github.com/huggingface/swift-huggingface)) | 0.11.0 @ `f2f99991f2d7d8fdb3187e4fd539cd2facf5c13d` | Apache-2.0 (`LICENSE`) | yes (napkin never calls it) |
+| EventSource ([github.com/mattt/EventSource](https://github.com/mattt/EventSource)) | 1.5.1 @ `86b5096ac59ab46e66bd1f6377c604bc1dab0bc2` | MIT (`LICENSE.md`: *"Copyright 2025 Mattt"*, the MIT permission text) | yes |
+| swift-collections ([github.com/apple/swift-collections](https://github.com/apple/swift-collections)) | 1.7.1 @ `98ef3c98609a1e31b7e157b5b619579001a789d6` | Apache-2.0 (`LICENSE.txt`) | yes: OrderedCollections |
+| swift-crypto ([github.com/apple/swift-crypto](https://github.com/apple/swift-crypto)) | 4.5.2 @ `da9d28d69ebe3894b18376c8f2395c2f37b8448f` | Apache-2.0 (`LICENSE.txt`) | yes: Crypto |
+| yyjson ([github.com/ibireme/yyjson](https://github.com/ibireme/yyjson)) | 0.12.0 @ `8b4a38dc994a110abaec8a400615567bd996105f` | MIT (`LICENSE`: *"Copyright (c) 2020 YaoYuan"*) | yes |
+| swift-numerics ([github.com/apple/swift-numerics](https://github.com/apple/swift-numerics)) | 1.1.1 @ `0c0290ff6b24942dadb83a929ffaaa1481df04a2` | Apache-2.0 (`LICENSE.txt`) | yes |
+| swift-asn1 ([github.com/apple/swift-asn1](https://github.com/apple/swift-asn1)) | 1.7.3 @ `3b6410f7dee09eb33cdd26260c5fd47fda19b0e2` | Apache-2.0 (`LICENSE.txt`) | no (resolved only) |
+| swift-argument-parser ([github.com/apple/swift-argument-parser](https://github.com/apple/swift-argument-parser)) | 1.8.2 @ `6a52f3251125d74daf04fcbd5e6f08a75d074382` | Apache-2.0 (`LICENSE.txt`) | no (build tool only) |
+| swift-syntax ([github.com/swiftlang/swift-syntax](https://github.com/swiftlang/swift-syntax)) | 603.0.2 @ `79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1` | Apache-2.0 (`LICENSE.txt`) | no (not compiled) |
+| libswiftCompatibilitySpan.dylib | Xcode 27.0's Swift 6.2 back-deployment library | Apple-signed (`Authority=Software Signing`); part of the Swift runtime — its licence text was **not read** here | shipped beside it (item 9) |
+
+Every licence above is on `licenses/policy.json`'s allowlist (MIT, Apache-2.0, BSD-2-Clause). The
+Swift runtime library's terms are slice E's to read before it ships.
+
+### 13.4 The spike report
+
+**Measured** (this Mac; `out/napkin-mlx-spike` with `NAPKIN_MLX_DIAGNOSTICS=1`, and
+`build-mlx.sh`):
+
+| | |
+|---|---|
+| Toolchain | Xcode 27.0 (27A266a), Swift 6.4, Metal Toolchain 32023.921 installed; mlx-swift's `swift-tools-version: 6.3;(experimentalCGen)` manifest accepted without complaint (§11) |
+| Resolve | 29 s (`xcodebuild -resolvePackageDependencies`, 14 packages, swift-syntax as a prebuilt download) |
+| Cold build, empty DerivedData | 126 s wall, package clones included (119 s in `xcodebuild`; `nice -n 19`, both schemes, Release, arm64); an incremental rebuild of the bridge 20–60 s |
+| Sizes | `libNapkinMlx.dylib` 31,094,040 bytes (31 MB, not stripped — stripping would void the linker signature); `mlx.metallib` 3,836,652 bytes; `libswiftCompatibilitySpan.dylib` 188,320 bytes |
+| Exports | exactly the eight `_napkin_mlx_*` of the header |
+| Dependencies | system frameworks and `/usr/lib` only, plus `@rpath/libswiftCompatibilitySpan.dylib` (item 9) |
+| Signature | `adhoc,linker-signed`, no Authority, no Team (item 8) |
+| `dlopen` | 350–397 ms the first time after a build (the kernel checking and paging in 31 MB), 8–10 ms after |
+| `init` (probe + library + one GPU evaluation) | 406 ms the first time this metallib was ever used (Metal compiling it for the GPU; a rebuild with identical bytes stayed fast), 5–9 ms after — **MLX built by Xcode 27 runs on the GPU and finds its colocated `mlx.metallib`** |
+| `device` | `has_metal 1`, `applegpu_g17g`, 24.0 GiB, Metal recommends 17.8 GiB, revision `ee673d6a…` |
+| `init` with a wrong path | `ERROR`: *"There is no Metal library at /nonexistent/mlx.metallib."* |
+| Qwen3-4B-4bit's tokenizer (files only: `tokenizer.json`, `tokenizer_config.json`, `config.json` at `4dcb3d10…`, 11.4 MB, SHA-256s equal to §6.1's) | loads in 349 ms; grammar tokenizer (151,669 tokens, byte-level) and both biases 331 ms; **sketch schema compiles in 40 ms, edit 41 ms**; its chat template with `enable_thinking: false` renders `…<|im_start|>assistant\n<think>\n\n</think>\n\n` (§5.2 confirmed through swift-jinja) — Release build, `RealTokenizerTests` |
+| swift-syntax | not compiled |
+| No Metal | not provokable on this Mac; `NO_METAL` comes from Metal's own probe before MLX (item 2) |
+
+**Pending a model folder** (no weights were downloaded — that is Marc's decision, §6): load time
+and peak memory for Qwen3-4B-4bit, tokens per second, a text answer, a schema-constrained sketch and
+edit proposal, the second proposal's on-demand compile, `BUSY` from a concurrent request, and the
+cancel latency on both paths. The harness does all of it in one run:
+
+```sh
+tools/scripts/build-mlx.sh            # if native/NapkinMlx/out/ is not there
+NAPKIN_MLX_DIAGNOSTICS=1 native/NapkinMlx/out/napkin-mlx-spike --model <folder>
+```
+
+with `<folder>` an `mlx-community/Qwen3-4B-4bit` folder at commit `4dcb3d10…` (the eight files of
+§6.1). It prints each step's status, time and text, the bridge's diagnostics lines (load seconds,
+schema compile, MLX peak memory, tok/s), and the process's peak physical footprint.
+
+### 13.5 §11, now
+
+Verified by this slice: the `(experimentalCGen)` manifest builds with Xcode 27 / Swift 6.4; the
+build products and the metallib's name and place (item 7); the dylib's ad-hoc signature (item 8);
+build time and sizes (§13.4); `MLX_VERSION` at 0.31.6 is 0.31.1; swift-syntax stays uncompiled;
+dlpack's upstream licence; `metal-cpp`, `fmt`, `json` licences; napkin's two schemas (as written in
+§13.2 item 4) compile under xgrammar v0.1.30. Still unverified: whether a test process linking MLX
+starts on a GitHub runner without a GPU (the MLX test skips there; the rest never touch MLX's
+device); the macOS 14–15 load path (item 9); the runner image's Metal Toolchain; memory and speed
+with weights (§13.4, pending); the Swift runtime compatibility library's licence text.
