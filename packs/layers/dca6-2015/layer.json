@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "notes": "AWC DCA 6, a guide on the 2015 IRC, declared by the Connecticut 2022 pack for its deck tables only (docs/design/deck-guide-pack.md). It is not Connecticut's adopted code (CT 2022 adopts the 2021 IRC). Every text below is verbatim from the PDF named in sources (sha256 checked 2026-09-27), with where it is printed; an ellipsis joins two verbatim passages. Transcribed 2026-09-27: Table 2 (#41 slice B1) and Table 3A, p. 6, with the two beam notes from p. 5 (#41 slice B2); not yet reviewed (docs/code-packs/reviews/us-ct-2022/dca6-table2.md, dca6-table3a.md).",
+  "notes": "AWC DCA 6, a guide on the 2015 IRC, declared by the Connecticut 2022 pack for its deck tables only (docs/design/deck-guide-pack.md). It is not Connecticut's adopted code (CT 2022 adopts the 2021 IRC). Every text below is verbatim from the PDF named in sources (sha256 checked 2026-09-27), with where it is printed; an ellipsis joins two verbatim passages. Transcribed 2026-09-27: Table 2 (#41 slice B1); Table 3A, p. 6, with the two beam notes from p. 5 (#41 slice B2); Appendix B's Tables B1 and B2 (post heights, corner and centre posts, pp. B3-B4) and B3 (footing sizes, p. B5) (#42 slice B3); not yet reviewed (docs/code-packs/reviews/us-ct-2022/dca6-table2.md, dca6-table3a.md, dca6-tableB1.md, dca6-tableB2.md, dca6-tableB3.md).",
   "kind": "guide",
   "id": "dca6-2015",
   "guide": {

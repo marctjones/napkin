@@ -39,63 +39,81 @@
       "id": "r.20.1500",
       "tributaryArea": 20,
       "soilBearing": 1500,
-      "footing": "zz 14 in square",
+      "round": "16in",
+      "square": "14in",
+      "thickness": "6in",
       "location": "synthetic p. 6"
     },
     {
       "id": "r.20.2000",
       "tributaryArea": 20,
       "soilBearing": 2000,
-      "footing": "zz 12 in square",
+      "round": "14in",
+      "square": "12in",
+      "thickness": "6in",
       "location": "synthetic p. 6"
     },
     {
       "id": "r.20.3000",
       "tributaryArea": 20,
       "soilBearing": 3000,
-      "footing": "zz 10 in square",
+      "round": "12in",
+      "square": "10in",
+      "thickness": "6in",
       "location": "synthetic p. 6"
     },
     {
       "id": "r.40.1500",
       "tributaryArea": 40,
       "soilBearing": 1500,
-      "footing": "zz 18 in square",
+      "round": "20in",
+      "square": "18in",
+      "thickness": "7in",
       "location": "synthetic p. 6"
     },
     {
       "id": "r.40.2000",
       "tributaryArea": 40,
       "soilBearing": 2000,
-      "footing": "zz 15 in square",
+      "round": "17in",
+      "square": "15in",
+      "thickness": "7in",
       "location": "synthetic p. 6"
     },
     {
       "id": "r.40.3000",
       "tributaryArea": 40,
       "soilBearing": 3000,
-      "footing": "zz 13 in square",
+      "round": "15in",
+      "square": "13in",
+      "thickness": "7in",
       "location": "synthetic p. 6"
     },
     {
       "id": "r.80.1500",
       "tributaryArea": 80,
       "soilBearing": 1500,
-      "footing": "zz 25 in square",
+      "round": "27in",
+      "square": "25in",
+      "thickness": "9in",
       "location": "synthetic p. 6"
     },
     {
       "id": "r.80.2000",
       "tributaryArea": 80,
       "soilBearing": 2000,
-      "footing": "zz 21 in square",
+      "round": "23in",
+      "square": "21in",
+      "thickness": "9in",
       "location": "synthetic p. 6"
     },
     {
       "id": "r.80.3000",
       "tributaryArea": 80,
       "soilBearing": 3000,
-      "footing": "zz 18 in square",
+      "round": "20in",
+      "square": "18in",
+      "thickness": "9in",
       "location": "synthetic p. 6"
     }
   ]

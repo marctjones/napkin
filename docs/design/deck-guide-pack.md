@@ -92,6 +92,49 @@ at centre posts under a continuous beam), the post-height tables' corner/centre 
 `DeckTributary.Post` already says), and a beam overhang, should napkin ever model one (B_O and B_L to post
 centrelines, and the L_B/4 check).
 
+**As built in slice B3 (#42):** Tables B1 and B2 are **two** `deck-post` tables, keyed by a table-level
+`position` (`corner`, `center`) as `member-span` is keyed by `use` — not one table with a position input column
+as §3.4 drew it: one table cannot carry two designations, two pages and B2's own note 4, and every result cites
+its table, row and page. Designations `"B1"`, `"B2"`, `"B3"`, locations `"p. B3"`, `"p. B4"`, `"p. B5"`; row ids
+`r.sp.4x4.20`, `r.pp-rp-spf.6x6.170` (group, post, area band) and `r.40.1500` (area band, psf column). 250, 250 and
+100 rows, typed from the pages rendered at 500 dpi and cross-checked cell by cell against the text layer (all 800
+agree); the golden files' per-row cases were written from the text layer, so each run cross-checks the two
+readings. B1 prints NP in 13 cells and B2 in 11 (B2's 4x4 Redwood at 250 sq ft prints 1): `notPermitted: true`,
+answered Out of scope citing the row and quoting "NP" as printed — DCA 6 never expands it (pp. B3–B4, Table 4,
+Table C4A), so napkin does not. The five species headings are the groups as printed; "SPF" places the guide's
+Spruce-Pine-Fir (note 2, whose superscript sits on SPF, spells it "spruce-pine-fir"). Notes 1 and 3 sit on the
+title, so apply to every row; note 2 sits on Douglas Fir-Larch, Hem-Fir and SPF, so rides on those three groups'
+rows (B1's precedent); B3's note 1 applies to every row. **The ×1.25 is an operation:** B2 note 4 and B3 note 2 are
+each table's `centerPostFactor` — `{ "note", "text" (verbatim), "multiply": "5/4", "location" }`, not also a
+footnote (bracing's factors are declared the same way), refused on a corner table or any other kind — and the
+evaluator, not `DeckFraming`, multiplies a centre post's area under a continuous beam before the lookup; the
+result carries the area asked, the factor and the area looked up. napkin's beam is one piece the deck's width
+long, so `DeckCheck` always asks with a continuous beam: the larger area, the conservative reading. **Post
+position:** `DeckFraming` now carries `EndPost` (a corner post, Eq. B-2) and, with three or more posts,
+`MiddlePost` (a centre post, Eq. B-1), and `PostLength`, grade to the beam's underside as p. 10 measures post
+height. Without a beam overhang the end post's B_L is the same end span, the next post's centreline to the deck's
+outside edge (the whole width with two posts), so an end post carries half the middle post's area; B1's 4x4
+heights are so much lower than B2's that either may govern, so both are checked, on two lines (**End posts**,
+**Middle posts** — two `DeckCheckKind`s, since a recompute keys a line by kind). The footing line still sizes
+every footing for the most loaded post, the middle one with the factor. The footing sentence reads "14" round or
+13" square, 6" thick, for a middle post's 29.6 sq ft (… Eq. B-1 …) × 1.25, a centre post under a continuous beam
+(DCA 6-2015 Table B3 note 2, p. B5 …) = 37.0 sq ft, on 2000 psf (…)", the note verbatim after the table's notes.
+The soil bearing value is the site's (`SiteValues.SoilBearingPsf`, typed in Project → Adopted code and site),
+never defaulted; its Input missing now says where to type it and that it comes from the building department or
+a soils report. B3's `soilBearing` column is `lower-bound` from 1500 psf (below it, Out of scope) with max the
+last printed column, 3000 psf (a stronger soil reads that column); both area columns' domain min, 1 sq ft, is
+napkin's (the pages print none). The worked example under CT: end posts 14.8 sq ft → B1 `r.sp.4x4.20`, 6'-0";
+middle post 37.0 sq ft → B2 `r.sp.4x4.40`, 13'-0"; posts 1'-6 1/2" pass; footing on 2000 psf → B3 `r.40.2000`.
+Risk 4 stands as designed: a 4x4 answers from B1/B2 with their note 3, and p. 10's "All deck post sizes shall be
+6x6 (nominal) or larger" is not encoded in this slice — whether the guide's scope should say it is Marc's call.
+The golden runner gains post cases (`post`, `height`, `tributaryArea`, `continuousBeam`) and footing cases
+(`position`, `continuousBeam`), the expectations `sized { round, square, thickness }` and `outOfScope {
+notPermitted: true }`, a coverage rule that a table's factor is exercised by a hand case, and boundary pairs
+that ask an area under the factor at the band ÷ the factor. The synthetic pack gains a corner and a centre post
+table (its factor 3/2, not DCA 6's) and its footing table's three outputs. The CT pack goes to revision 4,
+`review` still `unreviewed`; the two locked samples follow. Checklists `dca6-tableB1.md`, `dca6-tableB2.md` and
+`dca6-tableB3.md` are unfilled for the independent review (C3).
+
 Design note written by Fable per [`PLAN.md`](../../PLAN.md) for Marc's decision of 2026-09-26 on
 #209, **"Decks only via DCA 6"**: the deck checks' real data comes from the American Wood
 Council's *Prescriptive Residential Wood Deck Construction Guide* (DCA 6), a free primary source,

@@ -98,6 +98,20 @@ public class DeckFramingTests
         Assert.Equal(
             "29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0\" of beam, post centreline to the deck's outside edge, × half the joists' 9'-10 1/2\", ledger face to the rim's outside face)",
             tributary.Words);
+        Assert.Same(frame.MiddlePost, frame.Tributary);
+        Assert.Equal(PostPosition.Center, tributary.Position);
+
+        // An end post, a corner post, Eq. B-2 (#42): the same end span, B_L 72″ from the middle post's centreline to the
+        // deck's edge, halved, with B_O = 0: A = 59 1/4 × 36 = 2133 sq in = 14.8 sq ft.
+        DeckTributary end = frame.EndPost;
+        Assert.Equal((TributaryPost.Corner, PostPosition.Corner, false), (end.Post, end.Position, end.EdgeToEdge));
+        Assert.Equal(new ExactFraction((Int128)In(59, 1, 4).Units * In(36).Units, 1), end.Area);
+        Assert.Equal(
+            "14.8 sq ft (DCA 6 Appendix B Eq. B-2, pp. B1–B2: half the beam's 6'-0\", the next post's centreline to the deck's outside edge, × half the joists' 9'-10 1/2\", ledger face to the rim's outside face)",
+            end.Words);
+
+        // Each post from grade to the beam's underside, as DCA 6 measures post height (p. 10): 36 − 1 − 7 1/4 − 9 1/4 = 18 1/2″.
+        Assert.Equal(In(18, 1, 2), frame.PostLength);
     }
 
     [Fact]
@@ -111,6 +125,7 @@ public class DeckFramingTests
         Assert.Equal(ExactFraction.Whole(In(137).Units), two.BeamSpan);
         Assert.Equal("11'-5\"", two.BeamSpanText);
         Assert.Equal((TributaryPost.Corner, ExactFraction.Whole(In(144).Units)), (two.Tributary.Post, two.Tributary.BeamSpan));
+        Assert.Equal((true, (DeckTributary?)null), (two.EndPost.EdgeToEdge, two.MiddlePost));
         Assert.Equal(new ExactFraction((Int128)In(59, 1, 4).Units * In(72).Units, 1), two.TributaryArea);
         Assert.Equal(
             "29.6 sq ft (DCA 6 Appendix B Eq. B-2, pp. B1–B2: half the beam's 12'-0\", the deck's outside edge to outside edge, × half the joists' 9'-10 1/2\", ledger face to the rim's outside face)",

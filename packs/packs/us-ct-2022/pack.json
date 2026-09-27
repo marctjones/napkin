@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "notes": "Connecticut 2022 State Building Code. Only Connecticut's own amendments document was read; the IRC 2021 base tables are NOT loaded (see layers/irc-2021/README.md). Revision 2 (2026-09-27, #41): the deck joist table comes from the guide AWC DCA 6-2015 (layers/dca6-2015), declared under guides. Revision 3 (2026-09-27, #41 slice B2): the guide adds its deck beam table, Table 3A (p. 6).",
+  "notes": "Connecticut 2022 State Building Code. Only Connecticut's own amendments document was read; the IRC 2021 base tables are NOT loaded (see layers/irc-2021/README.md). Revision 2 (2026-09-27, #41): the deck joist table comes from the guide AWC DCA 6-2015 (layers/dca6-2015), declared under guides. Revision 3 (2026-09-27, #41 slice B2): the guide adds its deck beam table, Table 3A (p. 6). Revision 4 (2026-09-27, #42 slice B3): the guide adds Appendix B's post-height tables, B1 (corner posts, p. B3) and B2 (centre posts, p. B4), and its footing table, B3 (p. B5).",
   "id": "us-ct-2022",
-  "revision": 3,
+  "revision": 4,
   "jurisdiction": {
     "country": "US",
     "state": "CT",

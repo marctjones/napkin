@@ -400,12 +400,12 @@ public static partial class Recompute
         _ => (((DeckResult.Sized)result).Code, ((DeckResult.Sized)result).Table.Designation, ((DeckResult.Sized)result).Row.Id),
     };
 
-    /// <summary>What an answer says: the allowed and actual span, or the fastener or footing, spacing and count.</summary>
-    private static (Length Allowed, Length Actual, string Text, Length Spacing, int? Count) Values(DeckResult result) => result switch
+    /// <summary>What an answer says: the allowed and actual span or post height, or the fastener, spacing and count, or the footing's sizes.</summary>
+    private static (Length Allowed, Length Actual, string Text, Length Spacing, int? Count, FootingSize? Footing) Values(DeckResult result) => result switch
     {
-        DeckResult.Passes p => (p.Allowed, p.Actual, string.Empty, Length.Zero, null),
-        DeckResult.Short s => (s.Allowed, s.Actual, string.Empty, Length.Zero, null),
-        _ => (Length.Zero, Length.Zero, ((DeckResult.Sized)result).Row.Text, ((DeckResult.Sized)result).Row.Spacing, ((DeckResult.Sized)result).Count),
+        DeckResult.Passes p => (p.Allowed, p.Actual, string.Empty, Length.Zero, null, null),
+        DeckResult.Short s => (s.Allowed, s.Actual, string.Empty, Length.Zero, null, null),
+        _ => (Length.Zero, Length.Zero, ((DeckResult.Sized)result).Row.Text, ((DeckResult.Sized)result).Row.Spacing, ((DeckResult.Sized)result).Count, ((DeckResult.Sized)result).Row.Footing),
     };
 
     private static DeckChangeKind Classify(DeckResult was, DeckResult now) => (was, now) switch

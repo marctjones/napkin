@@ -35,6 +35,7 @@ internal static class DeckGolden
 
         List<ScopeLimit> limits = [.. table.Guide?.Limits ?? ValueList<ScopeLimit>.Empty, .. table.Limits];
         HashSet<string> rows = new(StringComparer.Ordinal), covered = new(StringComparer.Ordinal), overhangs = new(StringComparer.Ordinal);
+        bool factorCovered = false;
         List<string> committed = [];
         for (int index = 0; index < cases.Count; index++)
         {
@@ -62,7 +63,8 @@ internal static class DeckGolden
 
             JsonObj? inputs = c.Obj("inputs");
             bool cantilever = inputs?.Has("cantilever") == true;
-            Func<DeckResult>? request = inputs is null ? null : ReadRequest(inputs, pack, table, problems);
+            bool factored = false;
+            Func<DeckResult>? request = inputs is null ? null : ReadRequest(inputs, pack, table, problems, out factored);
             inputs?.Done();
             JsonObj? expect = c.Obj("expect");
             Expectation? expectation = expect is null ? null : ReadExpectation(expect, row, problems);
@@ -96,6 +98,9 @@ internal static class DeckGolden
                 {
                     covered.Add(id);
                 }
+
+                // A case that asks a centre post under a continuous beam exercises the table's centre-post factor.
+                factorCovered |= factored && table.CenterPostFactor is not null && row is not null;
             }
 
             if (problems.Count > before || request is null || expectation is null)
@@ -112,6 +117,10 @@ internal static class DeckGolden
         fileProblems.AddRange(table.Rows.Where(row => row.Overhang is not null && !overhangs.Contains(row.Id)).Select(row =>
             $"row '{row.Id}' of table {name} has no hand-authored cantilever case expecting its own overhang ({CellValue.Of(row.Overhang!.Value)}); ask with a span long enough that it governs."));
         fileProblems.AddRange(limits.Where(limit => !covered.Contains(limit.Id)).Select(limit => $"scope limit '{limit.Id}' of table {name} is expected by no hand-authored golden case."));
+        if (table.CenterPostFactor is { } factor && !factorCovered)
+        {
+            fileProblems.Add($"the centre-post factor of table {name} (note {factor.Note}) is exercised by no hand-authored golden case naming its row: ask a centre post under a continuous beam.");
+        }
 
         if (problems.Count > 0)
         {
@@ -221,68 +230,115 @@ internal static class DeckGolden
             yield break;
         }
 
-        if (table.Kind == DeckReader.MemberSpanKind)
+        // A span or post-height row: the span (height) exactly at the row's and 1/1024″ over it.
+        if (Measured(table) is { } measure && Allowed(table, row) is { } allowed)
         {
-            yield return Case(row.Id, With(hand, "span", Text(row.Span)), Answer(table, row, hand));
-            yield return Case(row.Id, With(hand, "span", Text(row.Span + new Length(1))), new JsonObject { ["short"] = new JsonObject { ["allowed"] = Text(row.Span), ["over"] = Text(new Length(1)) } });
+            yield return Case(row.Id, With(hand, measure, Text(allowed)), Answer(table, row, hand));
+            yield return Case(row.Id, With(hand, measure, Text(allowed + new Length(1))), new JsonObject { ["short"] = new JsonObject { ["allowed"] = Text(allowed), ["over"] = Text(new Length(1)) } });
         }
 
+        // A centre post asked under a continuous beam is read at its area × the factor, so its bound is asked ÷ the factor.
+        ExactFraction? factor = Factor(table, hand);
         foreach (InputColumn column in table.Inputs.Where(column => column.Band is BandKind.UpperBound or BandKind.LowerBound))
         {
             long bound = row.Inputs[column.Name].Magnitude;
             List<DeckRow> group = [.. table.Rows.Where(other => table.Inputs.Where(c => c.Name != column.Name).All(c => other.Inputs[c.Name] == row.Inputs[c.Name]))];
-            yield return Case(row.Id, Banded(table, row, hand, column, bound), Answer(table, row, hand));
-
             bool up = column.Band == BandKind.UpperBound;
+            (JsonNode At, JsonNode Past)? values = up && column.Type == ColumnType.SquareFeet
+                ? AreaPair(bound, factor)
+                : (Value(new CellValue(column.Type, null, bound)), Value(new CellValue(column.Type, null, up ? bound + 1 : bound - 1)));
+            if (values is not { } pair)
+            {
+                // The bound ÷ the factor is not a whole number of 1/1024″ × 1 ft: no pair is generated for it.
+                continue;
+            }
+
+            yield return Case(row.Id, Set(table, row, With(hand, column.Name, pair.At)), Answer(table, row, hand));
+
             DeckRow? next = up
                 ? group.Where(other => other.Inputs[column.Name].Magnitude > bound).MinBy(other => other.Inputs[column.Name].Magnitude)
                 : group.Where(other => other.Inputs[column.Name].Magnitude < bound).MaxBy(other => other.Inputs[column.Name].Magnitude);
-            JsonObject past = up ? Over(table, row, hand, column, bound) : Banded(table, row, hand, column, bound - 1);
+            JsonObject past = Set(table, row, With(hand, column.Name, pair.Past));
             if (next is null)
             {
                 yield return Case(row.Id, past, new JsonObject { ["outOfScope"] = new JsonObject { ["column"] = column.Name } });
                 continue;
             }
 
-            // The next row answers: a span table is asked about exactly that row's allowed span.
-            yield return Case(next.Id, table.Kind == DeckReader.MemberSpanKind ? With(past, "span", Text(next.Span)) : past, Answer(table, next, past));
+            // The next row answers: a span or post table is asked about exactly that row's allowed span or height.
+            yield return Case(next.Id, Set(table, next, past), Answer(table, next, past));
         }
     }
 
-    /// <summary>The row's answer to a case with these inputs: its allowed span, or its words, spacing and napkin's count.</summary>
-    static JsonObject Answer(DeckTable table, DeckRow row, JsonObject inputs)
+    /// <summary>The input a span or post table's case measures against its row: "span", "height", or none.</summary>
+    static string? Measured(DeckTable table) => table.Kind switch
     {
-        if (table.Kind == DeckReader.MemberSpanKind)
+        DeckReader.MemberSpanKind => "span",
+        DeckReader.PostKind => "height",
+        _ => null,
+    };
+
+    /// <summary>A span row's span or a post row's height; null for another row or one printed NP.</summary>
+    static Length? Allowed(DeckTable table, DeckRow row) => table.Kind == DeckReader.MemberSpanKind ? row.Span : row.Height;
+
+    /// <summary>The case's inputs with the span (height) set to the row's own, so it passes; unchanged for another kind or an NP row.</summary>
+    static JsonObject Set(DeckTable table, DeckRow row, JsonObject inputs)
+        => Measured(table) is { } measure && Allowed(table, row) is { } allowed ? With(inputs, measure, Text(allowed)) : inputs;
+
+    /// <summary>
+    /// The factor's reciprocal a hand case's area bound is divided by: the table's centre-post factor when the case asks a
+    /// centre post under a continuous beam (a centre post table, or a footing case at position "center"); otherwise null.
+    /// </summary>
+    static ExactFraction? Factor(DeckTable table, JsonObject hand)
+    {
+        bool continuous = hand["continuousBeam"] is JsonValue beam && beam.TryGetValue(out bool yes) && yes;
+        bool center = table.Position == PostPosition.Center || (hand["position"] is JsonValue at && at.TryGetValue(out string? name) && name == "center");
+        return table.CenterPostFactor is { } factor && continuous && center ? factor.Multiply : null;
+    }
+
+    /// <summary>
+    /// An area exactly at an upper bound (in whole square feet, or 1 ft × a length when not whole) and one step past it
+    /// (1 ft × that length + 1/1024″), each divided by the factor when one applies; null when the bound ÷ the factor is
+    /// not a whole number of 1/1024″ feet.
+    /// </summary>
+    static (JsonNode At, JsonNode Past)? AreaPair(long bound, ExactFraction? factor)
+    {
+        Int128 n = factor?.Numerator ?? 1, d = factor?.Denominator ?? 1;
+        Int128 units = bound * d * Length.UnitsPerFoot;
+        if (units % n != 0)
         {
-            return new JsonObject { ["passes"] = new JsonObject { ["allowed"] = Text(row.Span) } };
+            return null;
         }
 
-        if (table.Kind == DeckReader.FootingKind)
+        Length side = new((long)(units / n));
+        JsonNode at = (bound * d) % n == 0 ? JsonValue.Create((long)(bound * d / n)) : new JsonArray(Text(Length.Feet(1)), Text(side));
+        return (at, new JsonArray(Text(Length.Feet(1)), Text(side + new Length(1))));
+    }
+
+    /// <summary>
+    /// The row's answer to a case with these inputs: its allowed span or height, "NP" for a post row that prints it, or
+    /// its footing's sizes, or its words, spacing and napkin's count.
+    /// </summary>
+    static JsonObject Answer(DeckTable table, DeckRow row, JsonObject inputs)
+    {
+        if (table.Kind == DeckReader.PostKind && row.NotPermitted)
         {
-            return new JsonObject { ["sized"] = new JsonObject { ["text"] = row.Text } };
+            return new JsonObject { ["outOfScope"] = new JsonObject { ["notPermitted"] = true } };
+        }
+
+        if (Allowed(table, row) is { } allowed && Measured(table) is not null)
+        {
+            return new JsonObject { ["passes"] = new JsonObject { ["allowed"] = Text(allowed) } };
+        }
+
+        if (row.Footing is { } footing)
+        {
+            return new JsonObject { ["sized"] = new JsonObject { ["round"] = Text(footing.Round), ["square"] = Text(footing.Square), ["thickness"] = Text(footing.Thickness) } };
         }
 
         Length ledger = new(ReadLength(inputs["ledgerLength"]!).Magnitude);
         int count = (int)((ledger.Units + row.Spacing.Units - 1) / row.Spacing.Units) + 1;
         return new JsonObject { ["sized"] = new JsonObject { ["text"] = row.Text, ["spacing"] = Text(row.Spacing), ["count"] = count } };
-    }
-
-    /// <summary>The inputs with a banded column set to a bound; a span table's span set to the row's allowed span, so it passes.</summary>
-    static JsonObject Banded(DeckTable table, DeckRow row, JsonObject inputs, InputColumn column, long magnitude)
-    {
-        JsonObject with = With(inputs, column.Name, Value(new CellValue(column.Type, null, magnitude)));
-        return table.Kind == DeckReader.MemberSpanKind ? With(with, "span", Text(row.Span)) : with;
-    }
-
-    /// <summary>One step past an upper bound: 1/1024″, 1 psf, or a square foot and 12/1024 square inch.</summary>
-    static JsonObject Over(DeckTable table, DeckRow row, JsonObject inputs, InputColumn column, long bound)
-    {
-        if (column.Type != ColumnType.SquareFeet)
-        {
-            return Banded(table, row, inputs, column, bound + 1);
-        }
-
-        return With(inputs, column.Name, new JsonArray(Text(Length.Feet(1)), Text(Length.Feet(bound) + new Length(1))));
     }
 
     static JsonNode Value(CellValue value) => value.Type switch
@@ -328,9 +384,13 @@ internal static class DeckGolden
 
     static string Canonicalize(JsonElement element) => JsonNode.Parse(element.GetRawText())!.ToJsonString(Canonical);
 
-    /// <summary>A case's lookup, read strictly: the inputs this table's kind takes, and a guide's scope inputs.</summary>
-    static Func<DeckResult>? ReadRequest(JsonObj inputs, LoadedPack pack, DeckTable table, ProblemList problems)
+    /// <summary>
+    /// A case's lookup, read strictly: the inputs this table's kind takes, and a guide's scope inputs. <paramref name="factored"/>
+    /// says whether it asks a centre post under a continuous beam of a table that declares a centre-post factor.
+    /// </summary>
+    static Func<DeckResult>? ReadRequest(JsonObj inputs, LoadedPack pack, DeckTable table, ProblemList problems, out bool factored)
     {
+        factored = false;
         int before = problems.Count;
         string? Text(string name) => inputs.Has(name) ? inputs.String(name) : Unused(name);
         int? Whole(string name) => inputs.Has(name) ? inputs.Int(name) : UnusedInt(name);
@@ -396,13 +456,56 @@ internal static class DeckGolden
                     : () => DeckEvaluator.SizeLedger(pack, member, joistSpan.Value, ledger.Value, scope);
             }
 
+            case DeckReader.PostKind:
+            {
+                string? post = inputs.String("post");
+                Length? height = Len("height", required: true);
+                ExactFraction? area = ReadArea(inputs, problems);
+                bool continuous = ReadBool(inputs, "continuousBeam", problems);
+                PostPosition position = table.Position!.Value;
+                factored = continuous && position == PostPosition.Center && table.CenterPostFactor is not null;
+                return problems.Count > before || post is null || height is null || area is null
+                    ? null
+                    : () => DeckEvaluator.CheckPost(pack, new PostRequest(post, height.Value, species, new PostArea(area.Value, position, continuous)), scope);
+            }
+
             default:
             {
                 ExactFraction? area = ReadArea(inputs, problems);
                 int? soil = Whole("soilBearing");
-                return problems.Count > before || area is null ? null : () => DeckEvaluator.SizeFooting(pack, area.Value, soil, scope);
+                PostPosition? position = inputs.Get("position") is { } p ? JsonObj.ReadEnum(p, inputs.Child("position"), inputs.Where, problems, Positions) : null;
+                bool continuous = ReadBool(inputs, "continuousBeam", problems);
+                factored = continuous && position == PostPosition.Center && table.CenterPostFactor is not null;
+                return problems.Count > before || area is null || position is null
+                    ? null
+                    : () => DeckEvaluator.SizeFooting(pack, new PostArea(area.Value, position.Value, continuous), soil, scope);
             }
         }
+    }
+
+    static readonly IReadOnlyDictionary<string, PostPosition> Positions = new Dictionary<string, PostPosition>(StringComparer.Ordinal)
+    {
+        ["corner"] = PostPosition.Corner,
+        ["center"] = PostPosition.Center,
+    };
+
+    /// <summary>An optional true/false input, false when absent.</summary>
+    static bool ReadBool(JsonObj inputs, string name, ProblemList problems)
+    {
+        if (!inputs.Has(name))
+        {
+            inputs.MarkUsed(name);
+            return false;
+        }
+
+        JsonElement e = inputs.Get(name)!.Value;
+        if (e.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+        {
+            problems.Add(inputs.Where, $"{inputs.Child(name)}: true or false.");
+            return false;
+        }
+
+        return e.ValueKind == JsonValueKind.True;
     }
 
     /// <summary>A tributary area: whole square feet, or two lengths multiplied, in square 1/1024″.</summary>
@@ -477,6 +580,28 @@ internal static class DeckGolden
                 break;
             }
 
+            case "sized" when e.Has("round") || e.Has("square") || e.Has("thickness"):
+            {
+                // A footing row's three outputs, all three expected.
+                Length? round = Len("round"), square = Len("square"), thickness = Len("thickness");
+                if (round is null || square is null || thickness is null)
+                {
+                    foreach (string name in new[] { "round", "square", "thickness" }.Where(name => !e.Has(name)))
+                    {
+                        problems.Add(e.Where, $"{e.Child(name)}: a footing case expects all three of round, square and thickness.");
+                    }
+
+                    break;
+                }
+
+                FootingSize size = new(round.Value, square.Value, thickness.Value);
+                expectation = new(r => r is DeckResult.Sized s
+                    ? s.Row.Id != row ? $"sized, but from row '{s.Row.Id}', expected '{row}'"
+                    : s.Row.Footing != size ? $"expected {Said(size)}; got {(s.Row.Footing is { } got ? Said(got) : "no footing")}" : null
+                    : $"expected sized from row '{row}'; got {r}", null);
+                break;
+            }
+
             case "sized":
             {
                 string? text = e.String("text");
@@ -497,16 +622,37 @@ internal static class DeckGolden
             {
                 string? limit = e.Has("limit") ? e.String("limit") : null;
                 string? column = e.Has("column") ? e.String("column") : null;
+                bool printedNp = e.Get("notPermitted", required: false) is { ValueKind: JsonValueKind.True };
                 e.MarkUsed("limit");
                 e.MarkUsed("column");
-                if ((limit is null) == (column is null))
+                if (e.Has("notPermitted") && !printedNp)
                 {
-                    problems.Add(e.Where, "expect.outOfScope: exactly one of limit (a scope limit's id) or column (the input no row covers).");
+                    problems.Add(e.Where, "expect.outOfScope.notPermitted: true, when the row's cell prints NP.");
+                    break;
+                }
+
+                if ((limit is null ? 0 : 1) + (column is null ? 0 : 1) + (printedNp ? 1 : 0) != 1)
+                {
+                    problems.Add(e.Where, "expect.outOfScope: exactly one of limit (a scope limit's id), column (the input no row covers) or notPermitted: true (the row prints NP).");
+                    break;
+                }
+
+                if (printedNp)
+                {
+                    if (row is null)
+                    {
+                        problems.Add(e.Where, "an outOfScope notPermitted case names the row it expects (\"row\").");
+                        break;
+                    }
+
+                    expectation = new(r => r is DeckResult.OutOfScope { Row: { NotPermitted: true } np }
+                        ? np.Id != row ? $"NP, but from row '{np.Id}', expected '{row}'" : null
+                        : $"expected out of scope, row '{row}' printing NP; got {r}", null);
                     break;
                 }
 
                 expectation = new(r => r is DeckResult.OutOfScope o
-                    ? o.Limit?.Id != limit || o.Column != column ? $"out of scope for {o.Limit?.Id ?? o.Column}, expected {limit ?? column}: {o.Explanation}" : null
+                    ? o.Limit?.Id != limit || o.Column != column ? $"out of scope for {o.Limit?.Id ?? o.Column ?? $"row {o.Row?.Id}"}, expected {limit ?? column}: {o.Explanation}" : null
                     : $"expected out of scope ({limit ?? column}); got {r}", limit);
                 break;
             }
@@ -528,4 +674,7 @@ internal static class DeckGolden
         e.Done();
         return problems.Count > before ? null : expectation;
     }
+
+    /// <summary>"16in round, 15in square, 6in thick", as a failure says a footing.</summary>
+    static string Said(FootingSize size) => $"{Text(size.Round)} round, {Text(size.Square)} square, {Text(size.Thickness)} thick";
 }

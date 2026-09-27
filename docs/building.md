@@ -290,9 +290,9 @@ Porch on a deck** is the finished example.
   **Roof** block; read the rafters, the cuts, the coverings, the rafter check and the **Sunroom test**.
 - **Buy it**: Ctrl/Cmd+Shift+L — the **Deck** and **Roof** sections, with the sunroom line under Roof.
 - Every check is a cited line, or says **No data** / out of scope and why. Under the shipped
-  Connecticut pack the joists (and their cantilever) answer from AWC's DCA 6-2015 Table 2 and the
-  beam from its Table 3A, a guide (below); the ledger, footing and rafter tables are **No data** until
-  they land (#40, #42, #209).
+  Connecticut pack the joists (and their cantilever) answer from AWC's DCA 6-2015 Table 2, the
+  beam from its Table 3A and the posts and footings from its Appendix B Tables B1–B3, a guide (below);
+  the ledger and rafter tables are **No data** until they land (#40, #209).
 
 ## A deck
 
@@ -311,10 +311,10 @@ assumption); and the decking, the least number of boards whose widths and gaps c
 with how much of the last board shows. The **beam span** L_B is measured between post faces —
 (W − posts × post width) ÷ (posts − 1), the clear span DCA 6's Figure 3 (p. 7) dimensions for its beam
 tables; the beam ends flush with its end posts, so there is no overhang past an end post's outer face.
-The most loaded post's **tributary area** is measured as DCA 6 Appendix B does (pp. B1–B2; #41): a
-middle post (three or more posts) takes Eq. B-1, (½J_L + J_O) × B_L, and an end post (two posts) Eq. B-2,
-(½J_L + J_O) × ½B_L. With no beam overhang B_L runs from a post's centreline to the deck's outside edge
-(the whole width with two posts); J_L runs from the ledger face to the rim's outside face, or with a
+Each post's **tributary area** is measured as DCA 6 Appendix B does (pp. B1–B2; #41, #42): a middle post
+(three or more posts, the one beside an end post, which carries the most) takes Eq. B-1, (½J_L + J_O) × B_L,
+and an end post Eq. B-2, (½J_L + J_O) × ½B_L, half the middle post's. With no beam overhang B_L runs from
+the next post's centreline to the deck's outside edge (the whole width with two posts); J_L runs from the ledger face to the rim's outside face, or with a
 cantilever to the beam's centre, and J_O from there to the deck's edge. Both are kept as exact fractions
 for the code checks and shown rounded, with ≈ when they are not on the grid. Every piece becomes a
 cut-list row, so the shopping list buys decks as it buys walls.
@@ -322,11 +322,18 @@ cut-list row, so the shopping list buys decks as it buys walls.
 **The deck's code check** (`DeckCheck`, deck-and-porch §3) looks each piece up in the adopted
 code's deck tables ([rules-engine.md](rules-engine.md#deck-tables-198)): the joists' span, the
 beam's span between post faces for the joists it carries, the ledger's fastening (with napkin's own
-count, ⌈length ÷ spacing⌉ + 1), and the footing under the most loaded post (a middle one with three
-or more posts, an end one with two) on the site's **soil bearing** value, its line naming the area's
-equation and measures: "Footings: … for a middle post's 29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2:
-6'-0" of beam, post centreline to the deck's outside edge, × half the joists' 9'-10 1/2", ledger face to
-the rim's outside face) on 2000 psf (…)". Each line is exactly one
+count, ⌈length ÷ spacing⌉ + 1), the posts' height — an **End posts** line (corner posts) and, with three
+or more posts, a **Middle posts** line (centre posts), each the frame's post length from grade to the
+beam's underside against its own table with its own area — and the footing under the most loaded post (a
+middle one with three or more posts, an end one with two) on the site's **soil bearing** value, typed in
+**Project → Adopted code and site** from the building department or a soils report and never defaulted
+(until then the line asks for it). The post and footing lines name the area's equation and measures and,
+when the table declares it, the centre-post factor: napkin's beam is one piece the deck's width long, so
+continuous, and DCA 6 multiplies a centre post's area by 1.25 then (Table B2 note 4, Table B3 note 2) —
+the larger area, the conservative reading: "Footings: 14" round or 13" square, 6" thick, for a middle
+post's 29.6 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: 6'-0" of beam, post centreline to the deck's
+outside edge, × half the joists' 9'-10 1/2", ledger face to the rim's outside face) × 1.25, a centre post
+under a continuous beam (DCA 6-2015 Table B3 note 2, p. B5 …) = 37.0 sq ft, on 2000 psf (…)". Each line is exactly one
 of passes, short (by how much), sized, out of scope, input missing or no data, with its table, row
 and page. **Frost** is napkin's comparison of two typed values — the deck's footing depth and the
 site's frost depth — and the adopted code, when it prints a frost depth (Connecticut's Table
@@ -338,8 +345,9 @@ span (DCA 6: L_O or L/4), both said, compared exactly; a table that prints no ov
 not cover one. Under the deck block, napkin lists the words the adopted pack's tables and guide use
 for **Supports** and **Species** — type one; nothing is filled in.
 
-**Under the shipped Connecticut pack** (revision 3) the joist table is **DCA 6-2015 Table 2** (p. 4)
-and the beam table its **Table 3A** (p. 6), from the American Wood Council's *Prescriptive Residential
+**Under the shipped Connecticut pack** (revision 4) the joist table is **DCA 6-2015 Table 2** (p. 4),
+the beam table its **Table 3A** (p. 6), and the post and footing tables its Appendix B **Tables B1, B2
+and B3** (pp. B3–B5), from the American Wood Council's *Prescriptive Residential
 Wood Deck Construction Guide*, a guide on the 2015 IRC — not Connecticut's adopted code (the 2021
 IRC), and the guide says the IRC governs where they differ. The block opens with that paragraph, every
 joist and beam line carries the short clause and **UNREVIEWED** until the transcription is
@@ -352,8 +360,13 @@ and lumber — "(2) 2x10" is Table 3A's "2-2x10", "(1) 4x8" its "4x8" — and Ta
 3x or 4x beam for Southern Pine. Its line reads the beam span between post faces, as Figure 3 (p. 7)
 dimensions Table 3A's L_B, against the column for the joists it carries: "Beam (2) 2x10 on 3 posts, span
 5'-6 3/4" between post faces, carrying 9'-9" of joists: allowed up to 7'-9" (DCA 6-2015 Table 3A row
-r.sp.2-2x10.10, p. 6 …)". The ledger and footing lines are still **No data**: their tables are M10's
-next slices (#40, #42).
+r.sp.2-2x10.10, p. 6 …)". The posts: a Southern Pine 4x4 end post of the worked example carries 14.8 sq ft,
+Table B1's ≤ 20 sq ft row, 6 ft (p. B3); the middle post 29.6 × 1.25 = 37.0 sq ft, Table B2's ≤ 40 row,
+13 ft (p. B4); both stand 1'-6 1/2" and pass. Tables B1 and B2 print 4x4 columns beside the main body's
+"All deck post sizes shall be 6x6 (nominal) or larger" (p. 10); napkin answers from the table as printed,
+with its note 3. A cell printed **NP** is out of scope, quoting NP as the page prints it. The footing on
+2000 psf is Table B3's ≤ 40 sq ft row: 14" round or 13" square, 6" thick (p. B5); below 1,500 psf is out of
+scope. The ledger line is still **No data**: its table is M10's next slice (#40).
 
 **Guard and stair** (§4, napkin's layout, not a code detail). Tick **Guard** and every open edge gets
 posts at both ends of each run and evenly between (at most the typed spacing apart, a corner post

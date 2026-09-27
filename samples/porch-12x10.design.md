@@ -34,13 +34,17 @@ By hand (§9.5): rafter run 120 - 1 1/2 + 12 = 130 1/2"; 12 : 5 : 13, so each ra
 144 x 141 3/8 = 20358 — no side walls, so no rake triangles — 2160 / 34182 = 6.3 %, under the 40 %
 line.
 
-The sample is locked to the shipped Connecticut pack, revision 3, whose deck joists and beam come from
-DCA 6-2015 Tables 2 and 3A, a guide (#41). With Supports and Species empty the joist and beam lines
-ask for them; the panel lists the guide's words. napkin reads the guide as covering a deck carrying
-only its own loads (Table 2 note 1, p. 4; item 8, p. 2), and this deck carries the roof-bearing Front,
-so what it supports is not `deck`: typed as anything else, its joists and beam are out of the guide's
-scope — get it engineered. (The beam line reads its span L_B between post faces, as DCA 6's Figure 3,
-p. 7, dimensions it: three 4x4s under 144", (144 − 3 × 3 1/2) ÷ 2 = 66 3/4". The footing line's middle
-post carries, by DCA 6 Appendix B Eq. B-1, 72" of beam — its centreline to the deck's edge — × half the
-joists' 118 1/2", ledger face to the rim's outside face: 4266 sq in, 29.6 sq ft.) The ledger, footing and
-rafter checks say **No data** (#40, #42, #209).
+The sample is locked to the shipped Connecticut pack, revision 4, whose deck joists, beam, posts and
+footings come from DCA 6-2015 — Tables 2 and 3A, and Appendix B's Tables B1–B3 — a guide (#41, #42).
+With Supports and Species empty the joist, beam, post and footing lines ask for them; the panel lists
+the guide's words. napkin reads the guide as covering a deck carrying only its own loads (Table 2 note
+1, p. 4; item 8, p. 2), and this deck carries the roof-bearing Front, so what it supports is not
+`deck`: typed as anything else, its joists, beam, posts and footings are out of the guide's scope — get
+it engineered. (The beam line reads its span L_B between post faces, as DCA 6's Figure 3, p. 7,
+dimensions it: three 4x4s under 144", (144 − 3 × 3 1/2) ÷ 2 = 66 3/4". The middle post carries, by DCA 6
+Appendix B Eq. B-1, 72" of beam — its centreline to the deck's edge — × half the joists' 118 1/2",
+ledger face to the rim's outside face: 4266 sq in, 29.6 sq ft; napkin's beam is one piece, continuous,
+so Table B2 note 4 and Table B3 note 2 multiply it by 1.25, 5332 1/2 sq in, 37.0 sq ft. Each end post
+carries half the end span by Eq. B-2, 36" × 59 1/4" = 2133 sq in, 14.8 sq ft. The posts stand
+36 − 1 − 7 1/4 − 9 1/4 = 18 1/2" from grade to the beam's underside.) The ledger and rafter checks say
+**No data** (#40, #209).
