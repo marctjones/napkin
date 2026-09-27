@@ -49,7 +49,7 @@ public enum EvalTask
 /// <param name="Forbidden">Tokens that must never appear in a <em>kept</em> sentence — numbers a good answer would not state.</param>
 /// <param name="ExpectParses">Sketch task: whether the reply must parse as a <see cref="SketchProposal"/> (false for a malformed-reply case).</param>
 /// <param name="ExpectedParts">Sketch task: the exact number of accepted (non-refused) plan lines a parsed proposal must produce.</param>
-/// <param name="Description">A one-line note on what the case is testing, for the report; optional.</param>
+/// <param name="Description">A one-line note on what the case is testing, for a person reading the case file; optional, never printed.</param>
 public sealed record EvalCase(
     string Id,
     string FileName,
