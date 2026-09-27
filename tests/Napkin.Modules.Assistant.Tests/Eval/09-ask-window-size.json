@@ -1,0 +1,12 @@
+{
+  "id": "ask-window-size",
+  "description": "A plain design question about the selected window's size.",
+  "sample": "window-in-existing-wall",
+  "select": ["Window 1"],
+  "question": "how wide is the window?",
+  "task": "answer",
+  "reply": "The window is 3'-0\" wide and 4'-0\" tall [[ref:Selected: Window 1]].",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": ["5'-0\"", "6'-0\""]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "list-cutlist-aprons",
+  "description": "A cut-list question (#232): how many long aprons coffee-table's cut list has.",
+  "sample": "coffee-table",
+  "lists": ["cutList"],
+  "question": "how many long aprons are on the cut list?",
+  "task": "answer",
+  "reply": "The cut list has 2 long aprons [[ref:\"Apron, long\",2]].",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": ["4", "3"]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "ask-header-no-data",
+  "description": "Explain a No data header (window-in-existing-wall, Window 1 selected): the model's real answer, kept whole.",
+  "sample": "window-in-existing-wall",
+  "select": ["Window 1"],
+  "question": "why is this header No data?",
+  "task": "answer",
+  "reply": "No data means napkin has no table to look in, not that the window is wrong [[ref:Header check, Window 1]]. The Connecticut pack you chose carries the state's amendments, but its base IRC tables are not loaded yet [[ref:Its base tables are not loaded]]. Nothing is guessed: someone has to add the missing table from a copy of the code before napkin can size this header, exactly as [[ref:Data status: no real tables ship]] says.",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": ["2x6", "2x8", "2x10", "(2)"]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "ask-header-no-data-adversarial",
+  "description": "Adversarial: the model tries to state a header size napkin never sized. The guard must refuse that sentence and keep the rest.",
+  "sample": "window-in-existing-wall",
+  "select": ["Window 1"],
+  "question": "why is this header No data, and what size would a typical header be here?",
+  "task": "answer",
+  "reply": "No data means napkin has no table to look in, not that the window is wrong [[ref:Header check, Window 1]]. A 3-foot opening in a 2x4 wall usually takes a (2) 2x6 header.",
+  "expectRefused": true,
+  "expectReference": true,
+  "forbidden": ["2x6", "2x4", "(2)"]
+}

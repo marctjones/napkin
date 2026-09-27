@@ -1,0 +1,12 @@
+{
+  "id": "ask-deck-joists",
+  "description": "A deck check question (porch-12x10, Deck 1 selected): the joist line, cited.",
+  "sample": "porch-12x10",
+  "select": ["Deck 1"],
+  "question": "what does the deck's joist line say?",
+  "task": "answer",
+  "reply": "The deck's joists are 2x8 at 16 inches on center, spanning 9'-7 1/2\" [[ref:Joists 2x8 at 16]].",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": ["2x10", "24\"", "12\""]
+}

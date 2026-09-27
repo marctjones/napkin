@@ -1,0 +1,10 @@
+{
+  "id": "sketch-quick-bench-partial-refusal",
+  "description": "Sketch from words: one leg proposed with a zero height is refused on its own line; the other three still draw (docs/design/llm-assistant.md §4.4).",
+  "sample": "coffee-table",
+  "question": "a plank bench, 4 feet long and 16 inches tall: a top on two legs with a stretcher between",
+  "task": "sketch",
+  "reply": "{\"parts\":[{\"name\":\"Top\",\"width\":\"4'-0\\\"\",\"height\":\"2\\\"\",\"depth\":\"3/4\\\"\",\"x\":\"0\",\"y\":\"1'-4\\\"\",\"quantity\":1},{\"name\":\"Leg 1\",\"width\":\"4\\\"\",\"height\":\"0\",\"depth\":\"3/4\\\"\",\"x\":\"2\\\"\",\"y\":\"0\",\"quantity\":1},{\"name\":\"Leg 2\",\"width\":\"4\\\"\",\"height\":\"1'-4\\\"\",\"depth\":\"3/4\\\"\",\"x\":\"3'-6\\\"\",\"y\":\"0\",\"quantity\":1},{\"name\":\"Stretcher\",\"width\":\"3'-0\\\"\",\"height\":\"3\\\"\",\"depth\":\"3/4\\\"\",\"x\":\"6\\\"\",\"y\":\"4\\\"\",\"quantity\":1}],\"note\":\"A plank bench: a top on two legs, a stretcher between them.\"}",
+  "expectParses": true,
+  "expectedParts": 3
+}

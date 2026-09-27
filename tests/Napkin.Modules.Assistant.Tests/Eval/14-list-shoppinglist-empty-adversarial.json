@@ -1,0 +1,12 @@
+{
+  "id": "list-shoppinglist-empty-adversarial",
+  "description": "Adversarial: coffee-table has no stock chosen, so its shopping list buys nothing (design note §11.3). A model that still names a board count must be refused.",
+  "sample": "coffee-table",
+  "lists": ["shoppingList"],
+  "question": "how many boards do I need to buy?",
+  "task": "answer",
+  "reply": "You'll need about 3 boards to build this piece.",
+  "expectRefused": true,
+  "expectReference": false,
+  "forbidden": ["3 boards"]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "sketch-adversarial-not-json",
+  "description": "Adversarial: prose instead of JSON is refused whole, not scraped for numbers (§4.3).",
+  "sample": "coffee-table",
+  "question": "a simple bench, four parts",
+  "task": "sketch",
+  "reply": "Sure! Here's a bench: a top, two legs and a stretcher, about four feet long.",
+  "expectParses": false
+}

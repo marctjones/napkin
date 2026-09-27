@@ -1,0 +1,12 @@
+{
+  "id": "ask-bracing-no-data",
+  "description": "Explain a No data bracing check (window-in-existing-wall, Wall 1 selected).",
+  "sample": "window-in-existing-wall",
+  "select": ["Wall 1"],
+  "question": "why is the wall bracing check no data?",
+  "task": "answer",
+  "reply": "The wall's bracing is No data: the loaded Connecticut pack has no wall-bracing provisions yet [[ref:Bracing check, Wall 1]]. Someone needs to add them to the pack directory before napkin can check this wall's bracing.",
+  "expectRefused": false,
+  "expectReference": true,
+  "forbidden": ["R602.10.3", "48\""]
+}
