@@ -41,9 +41,9 @@ versions, licences, toolchain, the C ABI); §2 structured output; §3 build and 
 |---|---|---|
 | `IAssistantModel` — `Whereabouts`, `AskAsync(ModelRequest, CancellationToken) → ModelReply` (`Text` / `Json` / `Refused`); `ModelRequest(System, Context, Question, Schema: string?)` | `Napkin.Modules.Assistant` (§14 item 1: the schema is JSON text) | `MlxModel` is one more implementation; nothing above the seam changes (§4.1) |
 | `Napkin.Assistant.LocalServer` — Ollama / llama-server over loopback; `Guidance` (every fact beside its source); `LocalServerModel.UserMessage` (system alone, then `Context:` + pack + `Question:`); `DefaultTemperature` 0.2; `DefaultTimeout` 30 s | `src/Napkin.Assistant.LocalServer` (§16) | Stays, unchanged, as *A program on this machine*; the MLX runtime sends the same two messages (§1.4) |
-| `AssistantSettings(Provider, Endpoint, Model, Temperature)`, `AssistantProvider { None, LocalServer }`, `UserSettings.CurrentVersion = 3` | `src/Napkin.App/Settings/UserSettings.cs` | Version 4: `Provider` gains `Mlx`, the record gains `ModelFolder` (§4.3) |
-| `AssistantModels.FromSettings(UserSettings, HttpMessageHandler?)` — the only place a runtime assembly is referenced | `src/Napkin.App/AssistantModels.cs` | Gains the `Mlx` case; takes the native seam and the download handler the same way it takes `http` (§4.4) |
-| *Assistant → Where the model runs…*: radios *None* / *A program on this machine*, address, Check, model list, temperature, Test, Use these settings; `Guidance` lines; `MainWindow.AssistantHttp` lets the GUI suite put a stub under it | `src/Napkin.App/AssistantWindow.axaml(.cs)` | A third radio, *In napkin, on this Mac (MLX)*, a folder picker, a *Download…* button that opens the consent sheet (§4.5, §6) |
+| `AssistantSettings(Provider, Endpoint, Model, Temperature)`, `AssistantProvider { None, LocalServer }`, `UserSettings.CurrentVersion = 3` | `src/Napkin.App/Settings/UserSettings.cs` | Version 4: `Provider` gains `Mlx`, the record gains `ModelFolder` (§4.2) |
+| `AssistantModels.FromSettings(UserSettings, HttpMessageHandler?)` — the only place a runtime assembly is referenced | `src/Napkin.App/AssistantModels.cs` | Gains the `Mlx` case; takes the native seam and the download handler the same way it takes `http` (§4.3) |
+| *Assistant → Where the model runs…*: radios *None* / *A program on this machine*, address, Check, model list, temperature, Test, Use these settings; `Guidance` lines; `MainWindow.AssistantHttp` lets the GUI suite put a stub under it | `src/Napkin.App/AssistantWindow.axaml(.cs)` | A third radio, *In napkin, on this Mac (MLX)*, a folder picker, a *Download…* button that opens the consent sheet (§4.4, §6) |
 | `SettingsStore.ConfigDirectory()` → `~/Library/Application Support/napkin` on macOS | `src/Napkin.App/Settings/SettingsStore.cs` | Downloaded models live under it, in `models/` (§6.4) |
 | Release: `dotnet publish … --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true` per RID (`win-x64`, `osx-arm64`, `osx-x64`); the macOS step asserts the executable's ad-hoc signature and refuses any Developer ID or notarization ticket; `ReleaseWorkflowTests.cs` fails if the workflow gains a signing step | `.github/workflows/release.yml` | The `osx-arm64` artifact gains `native/libNapkinMlx.dylib` + `native/mlx.metallib` beside the executable, kept out of the single file; the *check* extends to the dylib; no signing step is added (§3.5) |
 | CI: `windows-latest` + `macos-latest`, restore → build Debug and Release → licences → test → ratchet (macOS gates) | `.github/workflows/ci.yml` | Unchanged; a **separate** macOS job builds the bridge and uploads it (§3.6) |
@@ -230,7 +230,7 @@ What each does, against the library as read:
 - **`device`** fills the struct from `GPU.deviceInfo()` (`architecture`, `memorySize` from
   `hw.memsize`, `maxRecommendedWorkingSetSize`; `"Unknown"` and zeros when
   `MTLCreateSystemDefaultDevice()` is nil — `GPU+Metal.swift`). The dialog's memory line uses it
-  (§4.5).
+  (§4.4).
 - **`load`** calls `loadModelContainer(from: URL, using: TokenizerLoader)` (`MLXLMCommon/ModelFactory.swift`)
   with napkin's adapter over `AutoTokenizer.from(modelFolder:)`. Which files it reads:
   `model.safetensors.index.json` when it names files that exist, else `model*.safetensors`
@@ -402,7 +402,7 @@ not be. Kept beside the executable, `AppContext.BaseDirectory` finds both — th
 
 The bridge is built for `arch=arm64` only and shipped in the **`osx-arm64`** artifact only. `osx-x64`
 is *"a plain cross-architecture publish"* (release.yml) and stays exactly that: no `native/` folder.
-At runtime `MlxAvailability` (§4.2) is true only when `OperatingSystem.IsMacOS()`,
+At runtime `MlxAvailability` (§4.1) is true only when `OperatingSystem.IsMacOS()`,
 `RuntimeInformation.OSArchitecture == Architecture.Arm64`, and both files exist; otherwise the
 dialog's third radio is disabled with its one sentence. napkin never dlopens the bridge on an Intel
 Mac (Rosetta or not), because nothing read says MLX's Metal backend runs there (§1.2).
@@ -560,7 +560,10 @@ state), never a partial. The GUI suite passes a `FakeNativeMlx` the way it passe
 - a folder box + **Choose…** (the window's `StorageProvider` folder picker — `SitePlanWindow`
   already uses the same provider for files), and under it the
   `ModelFolder` line — *"qwen3, 4-bit (group 64), licence: apache-2.0"* or the refusal naming the
-  missing file;
+  missing file. The licence shown is the **catalog's** when the folder's name is one napkin's
+  download made (`<owner>--<name>--<commit12>`, §6.4) — a downloaded folder has no `README.md`,
+  since the card is not a file the loader wants (§6.1) — and otherwise the folder's own
+  `README.md` `license:` line, else *"licence not stated in the folder"*;
 - **Download Qwen3-4B-4bit (2.28 GB, Apache-2.0)…** which opens the consent sheet (§6.3); when the
   folder already exists with every file present the button reads **Downloaded** and is disabled;
 - the memory line, now from `napkin_mlx_device` when available — *"This Mac: 24 GiB memory, Metal
@@ -648,13 +651,41 @@ The default entry:
 | `special_tokens_map.json` | 613 | `76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd` | hashed |
 
 Repo `mlx-community/Qwen3-4B-4bit`, commit `4dcb3d101c2a062e5c1d4bb173588c54ea6c4d25`, total
-**2,277,297,903 bytes**. The same table for the other two repos (their LFS hashes:
-Phi-4-mini `model.safetensors` `9dcfcdc0a579494283f2d2317ad686123782ce461d1111690ede7c904ff3f87b`,
-`tokenizer.json` `382cc235b56c725945e149cc25f191da667c836655efd0857b004320e90e91ea`; 2507-Instruct
-`model.safetensors` `2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f`; every small
-file's hash was computed the same way and goes into the table in slice D from the values recorded
-in this task's report). A test asserts every entry's shape: a 40-hex commit, a size, a 64-hex hash,
-no file outside the loader's patterns, no `.py`.
+**2,277,297,903 bytes**.
+
+The MIT alternative, `mlx-community/Phi-4-mini-instruct-4bit`, commit
+`ac1c269cb4222a4e136a3d09edad301056c1f36a`, total **2,177,574,851 bytes** (the LFS rows from the
+Hub's pointers, every other row hashed from the bytes at the commit, `x-repo-commit` checked):
+
+| File | Bytes | SHA-256 |
+|---|---|---|
+| `model.safetensors` (LFS) | 2,158,100,796 | `9dcfcdc0a579494283f2d2317ad686123782ce461d1111690ede7c904ff3f87b` |
+| `tokenizer.json` (LFS) | 15,524,095 | `382cc235b56c725945e149cc25f191da667c836655efd0857b004320e90e91ea` |
+| `vocab.json` | 3,910,310 | `6cb65a857824fa6615bb1782d95d882617a8bbce1da0317118586b36f39e98bd` |
+| `model.safetensors.index.json` | 32,554 | `958e2e0939857e9fb398e9e3d5344a84e345b00da2e4e7c396024d6a91bc1ab7` |
+| `config.json` | 3,298 | `431eafdf55dc6d4a76dc3e9f22b0d06eac42d9ac6dc7cbd7ff8ca1e38f18cdb1` |
+| `tokenizer_config.json` | 2,962 | `76c79ba1828e98a574123dd5de047587219ed8c1ab20702d340bc10a7a32b6bd` |
+| `special_tokens_map.json` | 587 | `aff38493227d813e29fcf8406e8e90062f1f031aa47d589325e9c31d89ac7cc3` |
+| `added_tokens.json` | 249 | `d4f2aceb0f20b71dd1f4bcc7e052e4412946bf281840b8f83d39f259571af486` |
+
+The never-thinks alternative, `mlx-community/Qwen3-4B-Instruct-2507-4bit`, commit
+`50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b`, total **2,277,297,844 bytes**, the same way:
+
+| File | Bytes | SHA-256 |
+|---|---|---|
+| `model.safetensors` (LFS) | 2,263,022,417 | `2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f` |
+| `tokenizer.json` (LFS) | 11,422,654 | `aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4` |
+| `vocab.json` | 2,776,833 | `ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910` |
+| `model.safetensors.index.json` | 63,964 | `388d811b8b7c2608dd04cce1bcb04a8bf715d19b42790894e6d3427ff429a777` |
+| `tokenizer_config.json` | 5,440 | `4397cc477eb6d79715ccd2000accd6b3531928f30029665832fa1b255f24d2b9` |
+| `chat_template.jinja` | 4,040 | `40c21f34cf67d8c760ef72f8ad3ae5afad514299d4b06e91dd9a8d705af7b541` |
+| `config.json` | 938 | `574349e5a343236546fda55e4744a76e181f534182d7dc60ff1bad7e7a502849` |
+| `added_tokens.json` | 707 | `c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680` |
+| `special_tokens_map.json` | 613 | `76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd` |
+| `generation_config.json` | 238 | `835fffe355c9438e7a25be099b3fccaa98350b83451f9fd2d99512e74f1ade48` |
+
+A test asserts every entry's shape: a 40-hex commit, a size, a 64-hex hash, no file outside the
+loader's patterns, no `.py`; and that each entry's total equals the sum of its sizes.
 
 ### 6.2 The URLs and the wire
 
@@ -844,7 +875,7 @@ starts until Marc signs this note off.**
 | **B** | `Napkin.Assistant.Mlx`: `INativeMlx`, `NativeMlx` (`LibraryImport`, the resolver, `[ExcludeFromCodeCoverage]`), `CancelFlag`, `MlxModel`, `ModelFolder`, `MlxAvailability`, `FakeNativeMlx` in the module (the `ScriptedModel` precedent: the GUI suite needs it); `tests/Napkin.Assistant.Mlx.Tests` §7.2 except the download; `napkin.sln`; the floor; `assistant mlx-smoke` in `Napkin.Tools`; `Napkin.App.csproj`'s conditional `native/` items (§3.1) | **Opus** — the marshalling and the thread/timeout rules of §4.1 | `src/Napkin.Assistant.Mlx/**`, `tests/Napkin.Assistant.Mlx.Tests/**`, `tools/Napkin.Tools/AssistantSmoke.cs`, `src/Napkin.App/Napkin.App.csproj`, `napkin.sln`, `ratchet/baseline.json`, `features/assistant.json` | A (for the smoke to mean anything; B's tests need only the fake) | #240 |
 | **C** | Settings v4 (`Mlx`, `ModelFolder`), `FromSettings`'s `Mlx` case with the injected seam, the dialog's third radio, folder picker, `ModelFolder` line, memory line from `device`, Test with the loading line, the disabled state with its sentence, `Guidance` lines with sources; `GUI-AST-07`; `docs/assistant.md`'s MLX paragraph (if slice G's page exists by then) | Sonnet — well specified; the dialog already has the shape | `src/Napkin.App/Settings/UserSettings.cs`, `SettingsStore.cs`, `AssistantModels.cs`, `AssistantWindow.axaml(.cs)`, `MainWindow.Assistant.cs` (the seam property), `tests/Napkin.App.GuiTests/Workflows/AssistantWorkflows.cs`, `tests/…/SettingsStoreTests.cs` | B | #241 |
 | **D** | The consented download: `ModelCatalog` (the three entries, every hash from this task's report), `ModelDownload` (allow-listed redirects, resume, cancel, SHA-256, size, the `.downloading` rename), the consent sheet and progress in the dialog, *Downloaded* state; tests §7.2's download rows; `GUI-AST-08` | **Opus** — consent and integrity are the whole point; a silent fetch or an unchecked file is the failure this slice exists to make impossible | `src/Napkin.Assistant.Mlx/ModelCatalog.cs`, `ModelDownload.cs`, `AssistantWindow.axaml(.cs)`, `DownloadSheet.axaml(.cs)`, tests, workflows | C | #242 |
-| **E** | Packaging and CI: the `mlx-bridge` job in `ci.yml`, `release.yml`'s artifact download into `native/NapkinMlx/out/` for `osx-arm64`, the signature check on the dylib, `SOURCE.txt`'s line, `docs/third-party-notices.md`'s section (reading `metal-cpp`, `fmt`, `json` and dlpack's licences first — §11), `native/NOTICES.txt`; `assistant eval --mlx`; `ReleaseWorkflowTests.cs` updated to assert the check and still refuse a signing step | Sonnet, with a `review/fable` pass on the notices | `.github/workflows/ci.yml`, `release.yml`, `docs/third-party-notices.md`, `native/NOTICES.txt`, `tests/Napkin.Tools.Tests/ReleaseWorkflowTests.cs`, `tools/Napkin.Tools/AssistantEval.cs` | A, B; #235 for the eval | #243 |
+| **E** | Packaging and CI: the `mlx-bridge` job in `ci.yml`, `release.yml`'s artifact download into `native/NapkinMlx/out/` for `osx-arm64`, the signature check on the dylib, `SOURCE.txt`'s line, `docs/third-party-notices.md`'s section (reading `metal-cpp`, `fmt`, `json` and dlpack's licences first — §11), `native/NOTICES.txt`; `assistant eval --mlx`; `ReleaseWorkflowTests.cs` updated to assert the check and still refuse a signing step | **Opus** — build and release work (the task's rule for the bridge and build), with a `review/fable` pass on the notices | `.github/workflows/ci.yml`, `release.yml`, `docs/third-party-notices.md`, `native/NOTICES.txt`, `tests/Napkin.Tools.Tests/ReleaseWorkflowTests.cs`, `tools/Napkin.Tools/AssistantEval.cs` | A, B; #235 for the eval | #243 |
 
 **Versioning:** each slice bumps the minor. **Ratchet:** B adds `Napkin.Assistant.Mlx`'s floor; C
 and D raise the workflow count. **DESIGN.md §11's one-line change** (the rule lifted for the LLM
