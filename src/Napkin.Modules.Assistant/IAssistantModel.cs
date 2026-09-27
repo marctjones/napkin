@@ -42,6 +42,17 @@ public sealed record ModelRequest(string System, string Context, string Question
         ArgumentNullException.ThrowIfNull(pack);
         return new ModelRequest(system, pack.Text, question, null);
     }
+
+    /// <summary>
+    /// A request for a proposal: JSON that validates against <paramref name="schema"/> — for Sketch
+    /// from words, <see cref="SketchProposal.Schema"/> (§4.3, §4.4).
+    /// </summary>
+    public static ModelRequest ForProposal(string system, ContextPack pack, string question, string schema)
+    {
+        ArgumentNullException.ThrowIfNull(pack);
+        ArgumentNullException.ThrowIfNull(schema);
+        return new ModelRequest(system, pack.Text, question, schema);
+    }
 }
 
 /// <summary>

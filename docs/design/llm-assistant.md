@@ -1352,3 +1352,106 @@ With llama.cpp instead: `llama-server -hf Qwen/Qwen3-4B-GGUF:Q4_K_M --alias qwen
 8. **Features:** `GUI-AST-03` is claimed in `features/assistant.json`. No new `AST-0XX` unit id is
    added: the pack and guard mechanics it would have covered are already `AST-001`'s and
    `AST-003`'s, claimed by slice A (item 1 above).
+
+## 18. As built: slice E (#233), and where it departs from this note
+
+`SketchProposal.cs` and `ProposalPlan.cs` in `Napkin.Modules.Assistant`, `ModelRequest.ForProposal`,
+and *Assistant → Sketch from words…* on the note in `MainWindow.Assistant.cs`. What differs from
+§4.3–§4.4, §8, §9.2 and §11, and why:
+
+1. **The depth does not snap to a whole inch.** §4.4 says all three sizes and both anchor
+   coordinates snap to the rough ladder's inch floor, but §9.2's own sheet reads *"Top: 48 × 2 ×
+   3/4"*, sketch-mode §7.2's bench is ¾″ deep, and a hand-drawn rough plank gets the ¾″ default depth
+   (`Box.DefaultDepth`), never a snapped one. Snapping ¾″ to an inch (half away from zero) would make
+   every plank an inch thick. Built: width, height, x and y snap to the whole inch
+   (`SketchProposal.PlanStepInches`); the depth snaps to the ladder's finest rung, ¼″
+   (`SnapGrid.Ladder[0]`, `DepthStepInches`) — so ¾″ and 1 ½″ stand, 23/32″ becomes ¾″, 1/3″ becomes
+   ¼″, and 1/10″ becomes 0 and is refused as a size of 0. It is still one snap per length, so
+   `wasRounded` still never arises in a sketch. **For Marc:** the alternatives are a whole inch for
+   depth too (breaks §9.2) or refusing a depth off the ¼″ grid (a second rule).
+2. **The plank's plan axes follow the rectangle tool**, not §4.4's literal `PlanAxes(Length,
+   Width)`: the longer plan side is the length (`RoughEntry.PlanAxesFor`, sketch-mode §2.3), so a
+   4 × 16 leg is 16 long and 4 wide exactly as if it had been drawn, and Firm up's stock suggestions
+   (GUI-SKETCH-02's 1x4 for a leg) come out the same. The part is `new Part(null, null, quantity,
+   axes) { Rough = true }` — the constructor, so its at-least-one guard runs.
+3. **Ids ascend in the reply's order.** `EntityId.New()` is a version-7 GUID, not ordered within one
+   millisecond, and Firm up reads the lower id as the older part (the direction of each `Flush` and
+   the order of its lines). The plan makes one id per drawable part, sorts them, and hands them out
+   in order, so Firm up's proposals are §7.2's, *"Top's south face against Leg 1's north face"* first.
+4. **The sheet is on the note**, as §8 says (the tick lines and OK/Cancel inside `AssistantPanel`),
+   not in `FirmUpPanel`; it is Firm up's shape: a tick per line, all ticked; a line napkin refused
+   shows its reason in the pencil colour with a tick that is off and cannot be turned on (Firm up's
+   stock line with no candidate); Enter anywhere but the description box and the Cancel button, or
+   **Draw**, lands the ticked ones — Enter in the description box asks again, and the new proposal
+   replaces the sheet, so a person refines the sentence by clicking back into it; a rejection goes on
+   the message line in the updater's words, every tick is turned off and the rest have landed. Escape or Cancel closes the note and draws nothing. Once everything ticked
+   has landed the lines go, the note shows the closing line, and the drawing gets the keyboard so
+   **F**, Ctrl/Cmd+Z and Ctrl/Cmd+Y reach it; the note stays open until Escape. The note has one task
+   at a time (Ask or Sketch); switching cancels any question still out.
+5. **The sentences.** A line is *"Top: 48 × 2 × 3/4 at (0, 16)"* — whole inches and a reduced
+   fraction, no marks — and a part standing for more than one piece adds *", 2 pieces"*. A refusal is
+   *"Name: refused, reason"*, the first that applies in this order: *"more than 24 parts"* (each part
+   after the 24th, on its own line — §9.2's *"refused: more than 24 parts"* as the reason rather than
+   one line for them all); *"its width is not a length napkin reads"* (or height, depth, x, y — the
+   first that `Length.TryParse` does not read; the model's text is not echoed); *"a size of 0"* or
+   *"a size of -4"* (the first of width, height, depth at zero or less once snapped); *"an anchor at
+   (1001, 0), beyond ±1000"*; *"a quantity of 13, not 1 to 12"* (zero and negatives too). An unnamed
+   part napkin refuses is called *"Unnamed part 3"* by its place in the reply.
+6. **A reply that is not a proposal** is one line, *"The assistant's reply was not a proposal napkin
+   could read."*, and nothing else happens. That is any document that is not exactly the schema: not
+   JSON (a code fence, a trailing comma, a second value), not an object, an unknown or misspelt
+   member (names are case-sensitive), a member written twice, a missing one, a null, a length that
+   is not a string, a quantity that is not a whole-number literal (`"2"`, `1.5`, `1.0`, `1e0`, one
+   past `int`). `SketchProposal.TryParse` names the reason for the tests; the note does not show it.
+   A `Text` reply to a sketch request gets the same line; a `Refused` one shows the runtime's words.
+   A readable reply with no parts says *"The assistant proposed no parts."*
+7. **The model's `note` is parsed and never shown.** It is required by the schema, but showing it
+   honestly means putting it through `AnswerGuard`, and on an empty sheet even §9.2's *"a top on two
+   legs"* is refused (*two* is a number napkin did not give). The planks are the proposal. **For
+   Marc,** if the note is wanted: render it guarded, refusals and all.
+8. **Names are the model's, trimmed, as data** — a person's rename is one `SetName` away, and
+   napkin does not require unique names (two parts called "Leg" are allowed, as a person can type
+   them). An empty name takes `DesignEditor.NextPartName()` when the plan is made, so a line later
+   unticked has still used its number (cosmetic). **A risk, for Marc:** a name can carry a lumber
+   name napkin did not choose (*"2x4 Leg"*); the part still has no stock, the cut list says so, and
+   Firm up suggests stock from the sizes. One rule would close it — refuse a name holding a
+   `NumberTokens` lumber token — not added without your say.
+9. **The stale rule is taken at the moment of asking**, not of the reply: the plan is made against
+   the sketch (and `LayerForNewParts`) as they were when Enter was pressed. A reply that arrives after
+   the drawing changed shows *"The design changed while the assistant was thinking — ask again."* on
+   the message line at once and no sheet; a sheet accepted after the drawing changed is refused the
+   same way and nothing is applied (`ProposalPlan.IsFor`, `Sketch` equality).
+10. **The lines verbatim:** the closing line *"Drew 3 rough parts. Next: F to firm up."* (*"Drew
+    nothing."* when nothing was ticked); the message bar *"Assistant sketch: drew 3 rough parts."*
+    (*"Assistant sketch: drew nothing."*), a problem when the updater refused a line; the undo step
+    *"Assistant sketch"* (*"Undone: Assistant sketch."*); nothing ticked leaves no undo step.
+11. **The schema is byte for byte the one the MLX bridge pre-warms**
+    (`native/NapkinMlx/Sources/NapkinMlxSchemas/Schemas.swift`), and a test holds the two equal. It
+    carries no `maxItems`, `minimum` or `maximum`: which JSON-Schema keywords every runtime's
+    constrained decoding honours is not verified (mlx-runtime.md §2), so the limits are napkin's
+    parser's and plan's alone.
+12. **`ProposalPlan` is F's too:** `ProposalPlan(What, MadeAgainst, Lines)` and `Accept(editor,
+    ticked, summary)` know nothing about sketches — a line of several requests goes to the updater as
+    one `Batch` (tested), a refused line or one from another sheet is never applied, and the summary
+    line is the caller's. The prompt is slice A's `Prompts/sketch.txt` (the issue's `sketch.md`),
+    unchanged.
+13. **Tests:** `SketchProposalTests` and `ProposalPlanTests` (`AST-004`, now claimed) — §9.2's JSON
+    to the four planks with §7.2's exact anchors, sizes, axes and ascending ids; the same drawn
+    through a `DesignEditor` is one undo step and `FirmUpProposals` gives §7.2's four contacts; every
+    refusal and snap above; every whole-document refusal; the stale rule; a rejection through an
+    updater that refuses one plank. **GUI-AST-04** (`AssistantWorkflows.cs`): new sheet (Ctrl/Cmd+N,
+    click); Assistant → Sketch from words… (pointer); the bench sentence, Enter; the four lines
+    ticked, nothing drawn, the model asked with the sketch prompt and schema; untick Leg 2
+    (pointer); Enter; three rough planks at §7.2's anchors and sizes, ¾″, no stock, no
+    relationship, one undo step "Assistant sketch", the closing line; Ctrl/Cmd+Z empties the sheet;
+    Ctrl/Cmd+Y; **F** — Firm up offers *"Top's south face against Leg 1's north face"* and *"Leg 1's
+    east face against Stretcher's west face"*, three stock lines and three size lines.
+
+**What slice F (#234) takes from here.** `ProposalPlan`/`ProposalLine`/`ProposalOutcome` as they
+are, with `What = "Assistant edit"` and its own summary line; `ModelRequest.ForProposal` with the
+edit prompt and the edit schema already in `Schemas.swift` (its `anyOf` form — hold it byte for
+byte as this slice's test does); the note's sheet (`ShowAssistantProposal`, `AcceptAssistantProposal`,
+the Enter/Escape handling, the stale message), which reads only a `ProposalPlan` except for the
+sketch's closing and message lines — F adds an `AssistantTask.Edit` branch in `AskAssistant` and a
+render beside `RenderSketchReply`, and its own closing line. F's rule for a length is the opposite
+of this slice's: refuse on `wasRounded`, never snap (§4.3, §4.5).
