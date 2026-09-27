@@ -48,7 +48,8 @@ Triggered by a pushed tag matching `v*`:
 | Job | What it does |
 |---|---|
 | **Version** | Reads `VersionPrefix` and `VersionSuffix` from `Directory.Build.props`. Fails unless they are `0.N.0` and `beta`, and, on a tag, unless the tag is exactly `v` + that version. |
-| **Build** (one per runtime) | `dotnet publish src/Napkin.App` as a self-contained single file for `win-x64` (Windows runner), `osx-arm64` and `osx-x64` (macOS runner), with the commit SHA in the informational version. Stages the executable with `LICENSE`, `SOURCE.txt` (the written offer of source, naming the commit) and `FIRST-RUN.md`. Zips it. On macOS, unzips the zip again and checks the signature of what came out (below). |
+| **MLX bridge** | Runs [`.github/workflows/mlx-bridge.yml`](../.github/workflows/mlx-bridge.yml) (the same workflow CI runs, #243): builds napkin's Swift MLX bridge from this commit with Xcode on a macOS arm64 runner (`tools/scripts/build-mlx.sh`), checks its exports and signatures, and uploads `libNapkinMlx.dylib`, `mlx.metallib` and `libswiftCompatibilitySpan.dylib` as the `mlx-bridge` artifact. Every build waits for it, so a release whose bridge did not build publishes nothing. |
+| **Build** (one per runtime) | `dotnet publish src/Napkin.App` as a self-contained single file for `win-x64` (Windows runner), `osx-arm64` and `osx-x64` (macOS runner), with the commit SHA in the informational version. For `osx-arm64` only, first downloads the `mlx-bridge` artifact into `native/NapkinMlx/out/`, so the publish puts the three files in `native/` beside the executable, outside the single file ([`docs/design/mlx-runtime.md`](./design/mlx-runtime.md) §3). Stages the executable with `LICENSE`, `SOURCE.txt` (the written offer of source, naming the commit) and `FIRST-RUN.md`, and, beside the bridge, `native/NOTICES.txt` (its third-party licences). Zips it. On macOS, unzips the zip again and checks the signature of what came out (below). |
 | **Checksums and notes** | Collects the three zips, writes `SHA256SUMS.txt`, and fills [`.github/release-notes-template.md`](../.github/release-notes-template.md) into `RELEASE_NOTES.md`. |
 | **Publish pre-release** | Only for a pushed tag, and the only job with `contents: write`. `gh release create` with `--verify-tag --prerelease --latest=false`, the three zips and `SHA256SUMS.txt`. |
 
@@ -72,7 +73,14 @@ napkin-0.N.0-beta-<rid>/
   LICENSE                          AGPL-3.0
   SOURCE.txt                       written offer of source, naming the commit
   FIRST-RUN.md                     a copy of docs/first-run.md
+  native/                          osx-arm64 only: the MLX bridge (mlx-runtime.md §3)
+    libNapkinMlx.dylib             napkin's bridge, with MLX and its libraries compiled in
+    mlx.metallib                   MLX's Metal kernels
+    libswiftCompatibilitySpan.dylib  the Swift runtime's Span library, Apple's, for macOS 14-15
+    NOTICES.txt                    the licence texts of everything in the bridge
 ```
+
+The `osx-x64` and `win-x64` zips have no `native/` folder, and the check steps fail if one appears.
 
 The build logs print the exact layout of each folder. Anything the publish leaves beside the
 executable, other than `*.pdb` symbols, is shipped too; the listing is where to notice that. In the
@@ -88,7 +96,12 @@ signing. The pipeline therefore does not strip it, and the macOS build job asser
 executable as it comes out of the finished zip (`codesign -dvv`), that
 
 - the arm64 binary is ad-hoc signed (`Signature=adhoc`) and the signature verifies;
-- no macOS binary has an `Authority=` line (a certificate chain) or a notarization ticket.
+- no macOS binary has an `Authority=` line (a certificate chain) or a notarization ticket;
+- on `osx-arm64`, `native/` holds the three bridge files and `NOTICES.txt`; `libNapkinMlx.dylib` is
+  arm64, carries the linker's ad-hoc signature (`Signature=adhoc`, `flags=…(adhoc,linker-signed)`)
+  with no `Authority=` and no ticket, and verifies; `libswiftCompatibilitySpan.dylib` is Apple's own
+  signed file, intact (`codesign --verify --strict -R="anchor apple"`) — the one signed file in the
+  zip, signed by Apple when Xcode shipped it, never by napkin. There is still no signing step.
 
 Observed in the first dry run: both `osx-arm64` and `osx-x64` come out of the SDK's single-file
 publish with `Signature=adhoc`, `flags=0x2(adhoc)`, `TeamIdentifier=not set`, and `codesign --verify
@@ -124,7 +137,8 @@ it is a decision for the project owner.
 
 ## The checks over the workflow
 
-`tests/Napkin.Tools.Tests/ReleaseWorkflowTests.cs` reads `release.yml` as text and fails if:
+`tests/Napkin.Tools.Tests/ReleaseWorkflowTests.cs` reads `release.yml` (and `mlx-bridge.yml`, which
+a release runs) as text and fails if:
 
 - `--prerelease` or `--latest=false` is missing from `gh release create`;
 - a signing or notarization step appears: `codesign --sign` with any identity but the ad-hoc `-`,
@@ -132,7 +146,10 @@ it is a decision for the project owner.
 - anything removes a signature (`codesign --remove-signature`, `install_name_tool`);
 - `contents: write` appears anywhere but the one job that publishes, or that job can run on
   anything but a tag;
-- an action from anywhere but GitHub's own `actions/` organisation is used.
+- an action from anywhere but GitHub's own `actions/` organisation is used;
+- the release stops running `mlx-bridge.yml`, stops downloading its artifact into
+  `native/NapkinMlx/out`, or drops any part of the bridge's signature check; or `mlx-bridge.yml`
+  gains a signing step, write permission, or stops uploading the `mlx-bridge` artifact.
 
 Comment lines are ignored, so a comment can say what the pipeline does not do. The tests also run
 each rule against a copy of the workflow with the offending line put back, so the check itself is
