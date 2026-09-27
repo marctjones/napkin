@@ -604,6 +604,8 @@ code locking demonstrable rather than merely designed, which is why it arrives a
 
 ### LLM runtime: native code allowed (decided 2026-09-27)
 
+- The assistant itself — M14, a local model that explains a result and proposes edits you accept —
+  is designed in full in [`docs/design/llm-assistant.md`](./docs/design/llm-assistant.md).
 - The .NET-native rule below is the **solver's**. Marc decided on 2026-09-27 (#237) that the
   assistant's model runtime may run in napkin's process with native code: first **MLX on Apple
   silicon** through a Swift bridge over mlx-swift-lm
