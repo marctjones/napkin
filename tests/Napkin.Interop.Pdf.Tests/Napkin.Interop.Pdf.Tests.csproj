@@ -22,6 +22,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Napkin.Interop.Pdf\Napkin.Interop.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Napkin.Core.Project\Napkin.Core.Project.csproj" />
+  </ItemGroup>
+
+  <!-- The samples the shop set is printed from: every one, so every cut list is compared with its paper. -->
+  <ItemGroup>
+    <Content Include="..\..\samples\*.scene.json"
+             Link="samples\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- The SYNTHETIC code packs the building module's tests check against (their numbers are made up;
