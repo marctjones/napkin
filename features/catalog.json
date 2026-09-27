@@ -254,6 +254,15 @@
       "kind": "unit"
     },
     {
+      "id": "FURN-002",
+      "area": "furniture",
+      "title": "A drawer is a marked part's jointed group, and the piece's kind is said, never detected",
+      "acceptance": "Parts joined to one another form a group, derived from the joints (on the DIY coffee table: the carcass and each drawer box); a part marked a drawer with how far it opens makes its group a drawer, a second mark in the same group is said and not read; the design says whether it is clothing storage, a bunk bed or neither, and whether it is anchored, in scene format 14.",
+      "milestone": "M9",
+      "issue": 218,
+      "kind": "unit"
+    },
+    {
       "id": "CUT-001",
       "area": "furniture",
       "title": "A part resolves its stock through the materials library",
