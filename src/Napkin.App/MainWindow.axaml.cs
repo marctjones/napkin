@@ -13,6 +13,7 @@ using Napkin.App.Settings;
 using Napkin.App.Viewing;
 using Napkin.Core.Geometry;
 using Napkin.Core.Project;
+using Napkin.Modules.Assistant;
 using Napkin.Modules.Furniture;
 using Napkin.Modules.Editing;
 
@@ -84,10 +85,17 @@ public partial class MainWindow : Window
     {
     }
 
-    /// <summary>The window on a given settings store; tests pass one that is not the person's.</summary>
-    public MainWindow(SettingsStore settings)
+    /// <summary>
+    /// The window on a given settings store, and optionally a given assistant model
+    /// (docs/design/llm-assistant.md &#xA7;2.4). Tests pass a settings store that is not the
+    /// person's, and the GUI suite passes a <see cref="ScriptedModel"/> with a script so no
+    /// workflow ever loads weights or opens a socket. <see langword="null"/> — the app's own way of
+    /// opening a window — builds one from the settings through <see cref="AssistantModels.FromSettings"/>.
+    /// </summary>
+    public MainWindow(SettingsStore settings, IAssistantModel? model = null)
     {
         Settings = settings;
+        AssistantModel = model ?? AssistantModels.FromSettings(settings.Current);
         InitializeComponent();
         ExtendTitleBarIntoBench();
 
@@ -160,6 +168,7 @@ public partial class MainWindow : Window
         WireShelf();
         WireNotes();
         WireStruts();
+        WireAssistant();
         DrawingCanvas.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         ModelDrawing.CommandRequested += (_, request) => request.Handled = Run(request.Command);
         DrawingCanvas.ViewRequested += (_, view) => ShowView(view);
@@ -346,6 +355,13 @@ public partial class MainWindow : Window
 
     /// <summary>The drawing being edited, and the one place a sketch is ever replaced.</summary>
     public DesignEditor Editor { get; } = new();
+
+    /// <summary>
+    /// The model the Assistant panel asks (docs/design/llm-assistant.md &#xA7;2.1, &#xA7;2.4): given
+    /// by the caller, or built from settings by <see cref="AssistantModels.FromSettings"/> when none
+    /// was given.
+    /// </summary>
+    public IAssistantModel AssistantModel { get; }
 
     /// <summary>The sample scene files the Samples menu offers, in menu order.</summary>
     public IReadOnlyList<IDesignSource> Samples { get; } = SampleFiles.All;
