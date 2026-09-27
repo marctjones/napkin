@@ -35,7 +35,7 @@
     }
   },
   "gui": {
-    "workflowsPassed": 107,
+    "workflowsPassed": 108,
     "workflowIds": [
       "CVS-011",
       "CVS-012",
@@ -88,6 +88,7 @@
       "GUI-DRAW-08",
       "GUI-DRAW-09",
       "GUI-DRAW-10",
+      "GUI-FURN-01",
       "GUI-JOIN-01",
       "GUI-JOIN-02",
       "GUI-JOIN-03",
