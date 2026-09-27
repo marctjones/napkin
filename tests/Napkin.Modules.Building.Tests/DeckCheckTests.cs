@@ -243,6 +243,12 @@ public class DeckCheckTests
         Assert.Equal("Frost: enter how deep the footings go below grade in the deck panel.", Line(Only(Drawing(Inputs() with { FootingDepth = null })), DeckCheckKind.Frost).Text);
         Assert.Equal("Frost: enter the site's frost depth (Project → Adopted code and site).", Line(Only(Drawing(site: SiteValues.NotEntered with { SoilBearingPsf = 2000 })), DeckCheckKind.Frost).Text);
         Assert.Contains("(site value).", Line(Only(Drawing(site: SiteValues.NotEntered with { SoilBearingPsf = 2000, FrostDepth = In(42) })), DeckCheckKind.Frost).Text, StringComparison.Ordinal);
+
+        // A value asked for is no answer; a comparison, passing or short, is one (a permit set counts the first as not sized).
+        Assert.True(Line(Only(Drawing(Inputs() with { FootingDepth = null })), DeckCheckKind.Frost).Unanswered);
+        Assert.True(Line(Only(Drawing(site: SiteValues.NotEntered with { SoilBearingPsf = 2000 })), DeckCheckKind.Frost).Unanswered);
+        Assert.False(Line(Only(Drawing(Inputs() with { FootingDepth = In(36) })), DeckCheckKind.Frost).Unanswered);
+        Assert.False(Line(Only(Drawing()), DeckCheckKind.Frost).Unanswered);
     }
 
     [Fact]

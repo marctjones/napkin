@@ -13,7 +13,14 @@ namespace Napkin.Interop.Pdf;
 /// <param name="Date">The day the sheet was made.</param>
 /// <param name="Code">The adopted code line (<see cref="SheetNotes.CodeLine"/>), or null with none chosen.</param>
 /// <param name="Disclaimer">The scope disclaimer; napkin's one sentence unless a sheet set adds to it.</param>
-public sealed record TitleBlock(string ProjectName, DateOnly Date, string? Code, string Disclaimer = ScopeDisclaimer.Text);
+public sealed record TitleBlock(string ProjectName, DateOnly Date, string? Code, string Disclaimer = ScopeDisclaimer.Text)
+{
+    /// <summary>
+    /// A banner across the top of every page's title block — a permit set with anything not sized says
+    /// so there (docs/design/permit-set.md §3); null for none.
+    /// </summary>
+    public string? Banner { get; init; }
+}
 
 /// <summary>
 /// The plan-and-elevations sheet (#25): the design's Top, Front and Right views where the on-screen

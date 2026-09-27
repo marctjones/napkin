@@ -695,6 +695,15 @@
       "kind": "unit"
     },
     {
+      "id": "PERMIT-001",
+      "area": "permit",
+      "title": "Every permit sheet shares one title block, and a set with anything unsized says so and asks for it",
+      "acceptance": "Every sheet, on Letter or Tabloid (17 x 11 in), carries the project, its sheet number and title, the scale as a ratio and as an architect or engineer scale reads it, the date, the adopted code and the disclaimer with 'This site plan is not a survey'; C1 lists every rules-engine result with its status and the panel's own words; when any result is not sized every title block carries 'NOT A COMPLETE PERMIT SET — n items are not sized; see C1 and W1', and W1 lists each unsized item with the code and table to look in, the inputs already known, and blank rules for the answer and where it is printed.",
+      "milestone": "M13",
+      "issue": 225,
+      "kind": "unit"
+    },
+    {
       "id": "DECK-001",
       "area": "deck",
       "title": "Ledger attachment is sized from the project's pack",
