@@ -19,8 +19,13 @@ namespace Napkin.App;
 
 public partial class MainWindow
 {
+    /// <summary>Samples → Building, or null when no building sample shipped.</summary>
+    public MenuItem? SamplesBuildingMenuItem { get; private set; }
+
     void BuildSamplesMenu()
     {
+        List<MenuItem> top = [];
+        List<MenuItem> building = [];
         for (int i = 0; i < Samples.Count; i++)
         {
             IDesignSource source = Samples[i];
@@ -39,9 +44,17 @@ public partial class MainWindow
 
             item.Click += (_, _) => OpenSampleCommand(source);
             _sampleItems.Add(item);
+            (i >= 9 && source is FileDesignSource file && SampleFiles.BuildingFiles.Contains(System.IO.Path.GetFileName(file.Path)) ? building : top).Add(item);
         }
 
-        SamplesMenu.ItemsSource = _sampleItems;
+        // The building samples past the ninth sit one level down, so the list fits a small window.
+        if (building.Count > 0)
+        {
+            SamplesBuildingMenuItem = new MenuItem { Name = "SamplesBuildingMenu", Header = "_Building", ItemsSource = building };
+            top.Add(SamplesBuildingMenuItem);
+        }
+
+        SamplesMenu.ItemsSource = top;
         ShowGestures();
         UpdateMenuEnablement();
     }

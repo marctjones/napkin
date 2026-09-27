@@ -130,6 +130,7 @@ public class RenovationWorkflows
             MainWindow window = (MainWindow)app.Target;
             app.Click(CentreOf(window, window.FileMenuItem));
             app.Click(CentreOf(window, window.SamplesMenuItem));
+            app.Click(CentreOf(window, window.SamplesBuildingMenuItem!));
             app.Click(CentreOf(window, window.GetVisualDescendants().OfType<MenuItem>().Single(item => (item.Header as string) == "Basement room")));
 
             // Step 6: Ctrl+Shift+L — framing, the area takeoff, the notes line, and no Demolition.
@@ -251,6 +252,7 @@ public class RenovationWorkflows
             // The basement sample, worked by hand in samples/basement-room.design.md: pick its room.
             app.Click(CentreOf(window, window.FileMenuItem));
             app.Click(CentreOf(window, window.SamplesMenuItem));
+            app.Click(CentreOf(window, window.SamplesBuildingMenuItem!));
             app.Click(CentreOf(window, window.GetVisualDescendants().OfType<MenuItem>().Single(item => (item.Header as string) == "Basement room")));
             app.Click(At(window, Point2.Inches(40, 100)));
             app.Expect("the sample's room is bounded by its four walls, with both openings, and takes off 18 sheets and 10 bags", () =>
