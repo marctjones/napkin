@@ -68,12 +68,16 @@ public class DesignWordsTests
         Node from = new(Id(12), LayerId.Default, new Point2(In(0), In(0)));
         Node to = new(Id(13), LayerId.Default, new Point2(In(10), In(0)));
         Segment line = new(Id(14), LayerId.Default, from.Id, to.Id);
+        Box bareWall = Box(15, WallLayer, 0, 1000, In(96), new Length(3584), In(96)) with { Name = "Wall 3" };
+        Strut bareStrut = new(
+            Id(16), LayerId.Default, new Point3(In(0), In(50), In(0)), new Point3(In(24), In(50), In(24)),
+            EndCut.Square, EndCut.Square, Axis.X, In(3), new Length(768)) { Name = "Brace 2" };
 
         Sketch sketch = Sketch.Empty with
         {
             Layers = [Layer.Default, new Layer(WallLayer, BuildingLayers.Wall), new Layer(OpeningLayer, BuildingLayers.Opening), new Layer(RoomLayer, BuildingLayers.Room)],
         };
-        foreach (Entity entity in new Entity[] { wall, door, loose, room, deck, roof, leg, top, blank, brace, note, from, to, line })
+        foreach (Entity entity in new Entity[] { wall, door, loose, room, deck, roof, leg, top, blank, brace, note, from, to, line, bareWall, bareStrut })
         {
             sketch = sketch.WithEntity(entity);
         }
@@ -103,6 +107,10 @@ public class DesignWordsTests
                 null,
                 null,
                 "Line — construction line, new.",
+
+                // A wall nobody has said anything about says so, input by input; nothing is assumed.
+                "Wall 3 — wall, new, side not said, bearing not said, supports not chosen, stud spacing not entered, 8'-0\" long, 8'-0\" tall, 3 1/2\" thick.",
+                "Brace 2 — angled part, 3\" by 3/4\" in section, new.",
             ],
             lines);
     }
@@ -124,7 +132,7 @@ public class DesignWordsTests
 
         Design unnamed = Design.Unlabelled("bare", bare);
         Assert.Equal(
-            ["Wall", "Door", "Opening", "Room", "Box", "Box", "Part", "Part", "Box", "Angled part", "Note", "Point", "Point", "Line", "Something"],
+            ["Wall", "Door", "Opening", "Room", "Box", "Box", "Part", "Part", "Box", "Angled part", "Note", "Point", "Point", "Line", "Wall", "Angled part", "Something"],
             [.. bare.Entities.Keys.Order().Select(id => DesignWords.NameOf(unnamed, id)), DesignWords.NameOf(unnamed, Id(99))]);
 
         // A name the design has and the sketch does not is used.

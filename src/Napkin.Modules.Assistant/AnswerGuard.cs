@@ -194,14 +194,10 @@ public static class AnswerGuard
 
     private static void Add(List<(string Text, string Separator)> found, string sentence, string separator)
     {
+        // Only a line break before any sentence at all can leave nothing here; it is not shown.
         string trimmed = sentence.Trim();
         if (trimmed.Length == 0)
         {
-            if (found.Count > 0)
-            {
-                found[^1] = (found[^1].Text, found[^1].Separator + sentence + separator);
-            }
-
             return;
         }
 

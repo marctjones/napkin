@@ -249,6 +249,7 @@ public class AnswerGuardTests
 
         Assert.Equal([4, 6], AnswerGuard.Check("It is empty. [4] [6]", Pack("1", "2", "3", "4", "5", "6")).References);
         Assert.Empty(AnswerGuard.Check(string.Empty, Pack("x")).Sentences);
+        Assert.Equal(["One."], AnswerGuard.Check("\n\nOne.", Pack("x")).Sentences.Select(s => s.Text));
         Assert.Equal("One.\r\nTwo.".Replace("\r\n", "\n", StringComparison.Ordinal), AnswerGuard.Check("One.\r\nTwo.", Pack("1", "2")).Text);
     }
 
