@@ -153,12 +153,13 @@ public static class DeckCheck
         // tributary area as DCA 6 Appendix B measures it, which the sentence says (pp. B1–B2; #41); every footing is sized for it.
         DeckTributary tributary = framing.Tributary;
         DeckResult footing = DeckEvaluator.SizeFooting(pack, new PostArea(tributary.Area, tributary.Position, ContinuousBeam: true), sketch.Site.SoilBearingPsf, scope);
-        string carried = $"{tributary.Which}'s {tributary.Words}{Factor(footing)}";
+        (string factor, string note) = Factor(footing);
+        string carried = $"{tributary.Which}'s {tributary.Words}{factor}";
         lines.Add(footing is DeckResult.Sized { Row.Footing: { } size } foot
             ? new DeckCheckLine(
                 DeckCheckKind.Footing,
                 footing,
-                $"Footings: {Size(size)}, for {carried}, on {sketch.Site.SoilBearingPsf} psf ({Cited(foot.Code, foot.Table, foot.Row)}).{foot.Code.UnreviewedSentence}{Notes(foot.Table, foot.Row)}{FactorNote(foot)}",
+                $"Footings: {Size(size)}, for {carried}, on {sketch.Site.SoilBearingPsf} psf ({Cited(foot.Code, foot.Table, foot.Row)}).{foot.Code.UnreviewedSentence}{Notes(foot.Table, foot.Row)}{note}",
                 true)
             : Other(DeckCheckKind.Footing, footing, $"Footings for {carried}"));
 
@@ -219,46 +220,47 @@ public static class DeckCheck
         string who = kind == DeckCheckKind.EndPosts
             ? $"End posts {inputs.Post}, {Text(framing.PostLength)} from grade to the beam's underside{Species(inputs)}, each carrying"
             : $"Middle post{(middles == 1 ? string.Empty : "s")} {inputs.Post}, {Text(framing.PostLength)} from grade to the beam's underside{Species(inputs)}, {(middles == 1 ? "carrying" : "the most loaded carrying")}";
-        string what = $"{who} {tributary.Words}{Factor(result)}";
+        (string factor, string note) = Factor(result);
+        string what = $"{who} {tributary.Words}{factor}";
         return result switch
         {
             DeckResult.Passes passes => new DeckCheckLine(
-                kind, result, $"{what}: allowed up to {Text(passes.Allowed)} ({Cited(passes.Code, passes.Table, passes.Row, passes.Group)}).{passes.Code.UnreviewedSentence}{Notes(passes.Table, passes.Row)}{FactorNote(result)}", true),
+                kind, result, $"{what}: allowed up to {Text(passes.Allowed)} ({Cited(passes.Code, passes.Table, passes.Row, passes.Group)}).{passes.Code.UnreviewedSentence}{Notes(passes.Table, passes.Row)}{note}", true),
             DeckResult.Short over => new DeckCheckLine(
                 kind,
                 result,
                 $"{what}: allowed up to {Text(over.Allowed)}, over by {Text(over.Over)} ({Cited(over.Code, over.Table, over.Row, over.Group)}). Use a larger post, or more posts so each carries less."
-                + $"{over.Code.UnreviewedSentence}{Notes(over.Table, over.Row)}{FactorNote(result)}",
+                + $"{over.Code.UnreviewedSentence}{Notes(over.Table, over.Row)}{note}",
                 false),
             DeckResult.OutOfScope { Row: { } np } printed => new DeckCheckLine(
-                kind, result, $"{what}: {printed.Explanation}{printed.Code.UnreviewedSentence}{Notes(printed.Table, np)}{FactorNote(result)}", false),
+                kind, result, $"{what}: {printed.Explanation}{printed.Code.UnreviewedSentence}{Notes(printed.Table, np)}{note}", false),
             _ => Other(kind, result, what),
         };
     }
 
-    /// <summary>" × 1.25, a centre post under a continuous beam (DCA 6-2015 Table B3 note 2, p. B5) = 37.0 sq ft" when the table's factor applied.</summary>
-    static string Factor(DeckResult result)
+    /// <summary>
+    /// When the table's centre-post factor applied, the clause the area gains — " × 1.25, a centre post under a continuous
+    /// beam (DCA 6-2015 Table B3 note 2, p. B5 …) = 37.0 sq ft" — and the note, verbatim, said after the table's own notes
+    /// (" Note 2: Tributary area shall be multiplied …"); both empty otherwise. Only a result that reached a post or footing
+    /// table's rows carries an area, so only a passes, short, sized or out-of-scope one can carry a factor.
+    /// </summary>
+    static (string Clause, string Note) Factor(DeckResult result)
     {
         if (result.Area is not { Factor: { } factor } area)
         {
-            return string.Empty;
+            return (string.Empty, string.Empty);
         }
 
-        string guide = result switch
+        DeckTable table = result switch
         {
-            DeckResult.Passes p => Prefix(p.Table),
-            DeckResult.Short s => Prefix(s.Table),
-            DeckResult.Sized z => Prefix(z.Table),
-            DeckResult.OutOfScope o => Prefix(o.Table),
-            _ => string.Empty,
+            DeckResult.Passes p => p.Table,
+            DeckResult.Short s => s.Table,
+            DeckResult.Sized z => z.Table,
+            _ => ((DeckResult.OutOfScope)result).Table,
         };
-        return $" × {factor.Words}, a centre post under a continuous beam ({guide}{factor.Location}) = {DeckFrame.SquareFeet(area.Looked)}";
-
-        static string Prefix(DeckTable table) => table.Guide is { } from ? $"{from.ShortName} " : string.Empty;
+        string guide = table.Guide is { } from ? $"{from.ShortName} " : string.Empty;
+        return ($" × {factor.Words}, a centre post under a continuous beam ({guide}{factor.Location}) = {DeckFrame.SquareFeet(area.Looked)}", $" Note {factor.Note}: {factor.Text}");
     }
-
-    /// <summary>The applied factor's note, verbatim, after the table's own notes: " Note 2: Tributary area shall be multiplied …".</summary>
-    static string FactorNote(DeckResult result) => result.Area?.Factor is { } factor ? $" Note {factor.Note}: {factor.Text}" : string.Empty;
 
     /// <summary>"16\" round or 15\" square, 6\" thick": a footing row's three outputs.</summary>
     static string Size(FootingSize size)

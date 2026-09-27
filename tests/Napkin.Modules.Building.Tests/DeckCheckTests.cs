@@ -190,6 +190,21 @@ public class DeckCheckTests
 
     [Fact]
     [Trait("Feature", "DECK-003")]
+    public void Four_posts_check_the_middle_post_beside_an_end_the_one_that_carries_the_most()
+    {
+        // Four posts: the middle post beside an end post takes the end span, 1 3/4 + 46 5/6 = 48 7/12" (p. B2: the greater
+        // of its two), × 59 1/4" = 2878 9/16 sq in = 20.0 sq ft; × the synthetic 3/2 = 30.0 sq ft, the ≤ 40 row, 8'-0".
+        DeckCheckLine middle = Line(Only(Drawing(Inputs() with { PostCount = 4 })), DeckCheckKind.MiddlePosts);
+        Assert.StartsWith(
+            "Middle posts 4x4, 1'-6 1/2\" from grade to the beam's underside, zz-fir, the most loaded carrying 20.0 sq ft (DCA 6 Appendix B Eq. B-1, pp. B1–B2: ≈4'-0 9/16\" of beam",
+            middle.Text,
+            StringComparison.Ordinal);
+        Assert.Contains("× 1.5, a centre post under a continuous beam (synthetic p. 9 note b) = 30.0 sq ft: allowed up to 8'-0\"", middle.Text, StringComparison.Ordinal);
+        Assert.Equal("r.fir.4x4.40", Assert.IsType<DeckResult.Passes>(middle.Result).Row.Id);
+    }
+
+    [Fact]
+    [Trait("Feature", "DECK-003")]
     public void A_post_too_tall_for_its_row_is_short_and_a_cell_printed_NP_is_out_of_scope()
     {
         // 12'-0" up: the posts stand 144 − 1 − 7 1/4 − 9 1/4 = 126 1/2" = 10'-6 1/2"; a zz-fir 4x4 corner post at ≤ 20 sq ft
@@ -199,6 +214,11 @@ public class DeckCheckTests
         Assert.False(end.Passing);
         Assert.Contains("allowed up to 6'-0\", over by 4'-6 1/2\" (ZZ-DECK-POST-CORNER row r.fir.4x4.20", end.Text, StringComparison.Ordinal);
         Assert.Contains("Use a larger post, or more posts so each carries less.", end.Text, StringComparison.Ordinal);
+
+        // The middle post under the factor: 44.4 sq ft, the ≤ 80 row, 7'-0"; 10'-6 1/2" is 3'-6 1/2" over, the note said.
+        DeckCheckLine tallMiddle = Line(tall, DeckCheckKind.MiddlePosts);
+        Assert.Contains("= 44.4 sq ft: allowed up to 7'-0\", over by 3'-6 1/2\" (ZZ-DECK-POST-CENTER row r.fir.4x4.80", tallMiddle.Text, StringComparison.Ordinal);
+        Assert.EndsWith("Note b: SYNTHETIC note b: a centre post's area under a continuous beam is multiplied by 3/2.", tallMiddle.Text, StringComparison.Ordinal);
 
         // zz-cedar 4x4 middle post: 44.4 sq ft reads the ≤ 80 row, which prints NP.
         DeckCheckLine np = Line(Only(Drawing(Inputs() with { Species = "zz-cedar" })), DeckCheckKind.MiddlePosts);
@@ -448,6 +468,10 @@ public class DeckCheckTests
         Assert.Empty(DeckCheck.SupportsOffered(null));
         Assert.Empty(DeckCheck.SpeciesOffered(null));
         Assert.Null(DeckCheck.InputsOffered(null));
+
+        // A pack with no deck tables names neither.
+        LoadedPack brace = CodePacks.Discover([Path.Combine(AppContext.BaseDirectory, "CodePacks", "brace")]).Loaded.First();
+        Assert.Null(DeckCheck.InputsOffered(brace));
     }
 
     [Fact]
