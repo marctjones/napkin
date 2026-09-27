@@ -61,6 +61,9 @@ internal sealed class JsonObj
 
     public string Child(string name) => path.Length == 0 ? name : $"{path}.{name}";
 
+    /// <summary>This object's own path in the file, as problems print it.</summary>
+    public string Path => Display(path);
+
     public bool Has(string name) => properties.ContainsKey(name);
 
     public IEnumerable<string> Names => properties.Keys;

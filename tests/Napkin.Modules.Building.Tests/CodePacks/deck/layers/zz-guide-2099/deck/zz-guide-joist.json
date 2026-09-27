@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "notes": "SYNTHETIC TEST DATA - NOT CODE VALUES. A guide's joist table: no supports column (the guide's scope answers that), species groups instead of species.",
+  "kind": "member-span",
+  "use": "deck-joist",
+  "table": "ZZ-GUIDE-JOIST",
+  "title": "SYNTHETIC GUIDE JOIST SPANS - NOT CODE VALUES",
+  "source": "zz-synth-guide",
+  "location": "synthetic guide p. 3",
+  "inputs": [
+    {
+      "name": "species",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "zz-fir, zz-hem",
+        "zz-cedar"
+      ]
+    },
+    {
+      "name": "member",
+      "type": "enum",
+      "band": "exact",
+      "values": [
+        "2x8",
+        "2x10"
+      ]
+    },
+    {
+      "name": "spacing",
+      "type": "length",
+      "band": "exact"
+    }
+  ],
+  "speciesGroups": [
+    {
+      "group": "zz-fir, zz-hem",
+      "species": [
+        "zz-fir",
+        "zz-hem"
+      ],
+      "location": "synthetic guide p. 3, first row heading"
+    },
+    {
+      "group": "zz-cedar",
+      "species": [
+        "zz-cedar"
+      ],
+      "location": "synthetic guide p. 3, second row heading"
+    }
+  ],
+  "limits": [
+    {
+      "id": "t.member",
+      "when": {
+        "input": "member",
+        "in": [
+          "2x6"
+        ]
+      },
+      "text": "SYNTHETIC note 6: joists are 2x8 or deeper.",
+      "location": "synthetic guide p. 3, note 6"
+    }
+  ],
+  "footnotes": [
+    {
+      "id": "a",
+      "text": "SYNTHETIC footnote a: shown with results, not encoded.",
+      "encodedAs": "not-encoded",
+      "appliesTo": "table"
+    }
+  ],
+  "rows": [
+    {
+      "id": "r.fir.2x8.12",
+      "species": "zz-fir, zz-hem",
+      "member": "2x8",
+      "spacing": "12in",
+      "span": "12ft 7in",
+      "location": "synthetic guide p. 3 row zz-fir 2x8 12"
+    },
+    {
+      "id": "r.fir.2x8.16",
+      "species": "zz-fir, zz-hem",
+      "member": "2x8",
+      "spacing": "16in",
+      "span": "11ft 1in",
+      "location": "synthetic guide p. 3 row zz-fir 2x8 16"
+    },
+    {
+      "id": "r.fir.2x10.12",
+      "species": "zz-fir, zz-hem",
+      "member": "2x10",
+      "spacing": "12in",
+      "span": "15ft 2in",
+      "location": "synthetic guide p. 3 row zz-fir 2x10 12"
+    },
+    {
+      "id": "r.fir.2x10.16",
+      "species": "zz-fir, zz-hem",
+      "member": "2x10",
+      "spacing": "16in",
+      "span": "13ft 5in",
+      "location": "synthetic guide p. 3 row zz-fir 2x10 16"
+    },
+    {
+      "id": "r.cedar.2x8.12",
+      "species": "zz-cedar",
+      "member": "2x8",
+      "spacing": "12in",
+      "span": "10ft 11-1/2in",
+      "location": "synthetic guide p. 3 row zz-cedar 2x8 12"
+    },
+    {
+      "id": "r.cedar.2x8.16",
+      "species": "zz-cedar",
+      "member": "2x8",
+      "spacing": "16in",
+      "span": "9ft 7in",
+      "location": "synthetic guide p. 3 row zz-cedar 2x8 16"
+    }
+  ]
+}

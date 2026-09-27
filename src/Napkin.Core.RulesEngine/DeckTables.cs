@@ -52,7 +52,23 @@ public sealed record DeckTable(
     ValueList<InputColumn> Inputs,
     ValueList<DeckRow> Rows,
     ValueList<Footnote> Footnotes,
-    SourceRef Source);
+    SourceRef Source)
+{
+    /// <summary>The guide the table comes from (deck-guide-pack §1.2), or null for the base layer's own.</summary>
+    public DeckGuide? Guide { get; init; }
+
+    /// <summary>The table's own scope limits, tried after its guide's, before every lookup (deck-guide-pack §2).</summary>
+    public ValueList<ScopeLimit> Limits { get; init; } = ValueList<ScopeLimit>.Empty;
+
+    /// <summary>The species groups its rows carry (deck-guide-pack §3.6); empty when its rows name species.</summary>
+    public ValueList<SpeciesGroup> SpeciesGroups { get; init; } = ValueList<SpeciesGroup>.Empty;
+
+    /// <summary>The pack file it was read from, for a load problem that names two files.</summary>
+    public string File { get; init; } = string.Empty;
+
+    /// <summary>Which layer a citation names: the base layer's model code, or a guide.</summary>
+    public CitationLayer Layer => Guide is null ? CitationLayer.ModelCode : CitationLayer.Guide;
+}
 
 /// <summary>A guard's provisions (§3.5); any item may be null — "not covered by this pack".</summary>
 public sealed record GuardProvisions(Length? TriggerHeight, Length? MinimumHeight, Length? MaximumOpening, SourceRef Source);
@@ -62,7 +78,14 @@ public sealed record StairProvisions(
     Length? MaximumRiser, Length? MinimumTread, Length? MaximumRiserDifference, int? HandrailWhenRisersAtLeast, Length? MinimumWidth, SourceRef Source);
 
 /// <summary>A pack's guard and stair provisions file (<c>kind: deck-guard-stair</c>).</summary>
-public sealed record GuardStairProvisions(string Section, GuardProvisions? Guard, StairProvisions? Stair, ValueList<Footnote> Footnotes);
+public sealed record GuardStairProvisions(string Section, GuardProvisions? Guard, StairProvisions? Stair, ValueList<Footnote> Footnotes)
+{
+    /// <summary>The guide the provisions come from, or null for the base layer's own.</summary>
+    public DeckGuide? Guide { get; init; }
+
+    /// <summary>The pack file they were read from.</summary>
+    public string File { get; init; } = string.Empty;
+}
 
 /// <summary>
 /// A pack's frost line depth (<c>frost.json</c>, §3.4): offered to the person as a cited suggestion,
@@ -79,6 +102,10 @@ public sealed record DeckProvisions(
 {
     /// <summary>No deck tables at all.</summary>
     public static readonly DeckProvisions None = new(ImmutableDictionary<SpanUse, DeckTable>.Empty, null, null, null);
+
+    /// <summary>Every deck table, in kind order: the span tables by use, the ledger, the footing.</summary>
+    public IEnumerable<DeckTable> Tables
+        => Spans.OrderBy(pair => pair.Key).Select(pair => pair.Value).Concat(new[] { Ledger, Footing }.OfType<DeckTable>());
 }
 
 /// <summary>
@@ -138,7 +165,11 @@ internal static class DeckReader
         },
     };
 
-    public static DeckProvisions Read(IPackSource source, string directory, IReadOnlyDictionary<string, SourceDocument> sources, ProblemList problems)
+    /// <summary>
+    /// Reads a layer's <c>deck/</c> files: a base layer's (<paramref name="guide"/> null) or a guide's, whose
+    /// tables then carry the guide and meet its species list (deck-guide-pack §1.2, §3.6).
+    /// </summary>
+    public static DeckProvisions Read(IPackSource source, string directory, IReadOnlyDictionary<string, SourceDocument> sources, ProblemList problems, DeckGuide? guide = null)
     {
         Dictionary<SpanUse, DeckTable> spans = [];
         DeckTable? ledger = null, footing = null;
@@ -158,11 +189,12 @@ internal static class DeckReader
                 switch (kind)
                 {
                     case MemberSpanKind or LedgerKind or FootingKind:
-                        if (ReadTable(root, kind, sources, problems) is not { } table)
+                        if (ReadTable(root, kind, sources, guide, problems) is not { } read)
                         {
                             break;
                         }
 
+                        DeckTable table = read with { Guide = guide, File = file };
                         bool twice = kind switch
                         {
                             MemberSpanKind => !spans.TryAdd(table.Use!.Value, table),
@@ -171,7 +203,7 @@ internal static class DeckReader
                         };
                         if (twice)
                         {
-                            problems.Add(root.Where, $"a second {kind}{(table.Use is { } u ? $" table for '{UseName(u)}'" : " table")}: a base layer has one of each.");
+                            problems.Add(root.Where, $"a second {kind}{(table.Use is { } u ? $" table for '{UseName(u)}'" : " table")}: a layer has one of each.");
                         }
                         else if (kind == LedgerKind)
                         {
@@ -187,12 +219,12 @@ internal static class DeckReader
                     case GuardStairKind:
                         if (guardStair is not null)
                         {
-                            problems.Add(root.Where, "a second deck-guard-stair file: a base layer has one.");
+                            problems.Add(root.Where, "a second deck-guard-stair file: a layer has one.");
                             root.Done();
                             break;
                         }
 
-                        guardStair = ReadGuardStair(root, sources, problems);
+                        guardStair = ReadGuardStair(root, sources, problems) is { } provisions ? provisions with { Guide = guide, File = file } : null;
                         break;
 
                     case null:
@@ -214,9 +246,49 @@ internal static class DeckReader
         return new DeckProvisions(spans.ToImmutableDictionary(), ledger, footing, guardStair);
     }
 
+    /// <summary>
+    /// The base layer's deck provisions with a guide's added (deck-guide-pack §1.2). Precedence is none:
+    /// a kind (and for a span table, a use) both declare is a load problem naming both files.
+    /// </summary>
+    public static DeckProvisions Merge(DeckProvisions into, DeckProvisions guide, Where where, ProblemList problems)
+    {
+        string Clash(string what, string first, string second)
+            => $"{first} and {second} both declare {what}: a pack's layers may not both carry it, and neither wins; remove the guide's (or the pack's guides entry) when the adopted code's table arrives (deck-guide-pack §1.2).";
+
+        Dictionary<SpanUse, DeckTable> spans = new(into.Spans);
+        foreach ((SpanUse use, DeckTable table) in guide.Spans.OrderBy(pair => pair.Key))
+        {
+            if (!spans.TryAdd(use, table))
+            {
+                problems.Add(where, Clash($"a {MemberSpanKind} table for '{UseName(use)}'", spans[use].File, table.File));
+            }
+        }
+
+        DeckTable? One(DeckTable? first, DeckTable? second, string kind)
+        {
+            if (first is not null && second is not null)
+            {
+                problems.Add(where, Clash($"a {kind} table", first.File, second.File));
+            }
+
+            return first ?? second;
+        }
+
+        if (into.GuardStair is { } a && guide.GuardStair is { } b)
+        {
+            problems.Add(where, Clash($"a {GuardStairKind} file", a.File, b.File));
+        }
+
+        return new DeckProvisions(
+            spans.ToImmutableDictionary(),
+            One(into.Ledger, guide.Ledger, LedgerKind),
+            One(into.Footing, guide.Footing, FootingKind),
+            into.GuardStair ?? guide.GuardStair);
+    }
+
     public static string UseName(SpanUse use) => Uses.First(pair => pair.Value == use).Key;
 
-    static DeckTable? ReadTable(JsonObj root, string kind, IReadOnlyDictionary<string, SourceDocument> sources, ProblemList problems)
+    static DeckTable? ReadTable(JsonObj root, string kind, IReadOnlyDictionary<string, SourceDocument> sources, DeckGuide? guide, ProblemList problems)
     {
         int before = problems.Count;
         SpanUse? use = null;
@@ -236,6 +308,12 @@ internal static class DeckReader
         string? location = root.String("location");
         List<InputColumn> inputs = kind == MemberSpanKind && use is null ? [] : ReadInputs(root, Allowed(kind, use), problems);
         List<Footnote> footnotes = ReadFootnotes(root, problems);
+
+        // The table's own limits (deck-guide-pack §2), whose ids may not repeat its guide's.
+        HashSet<string> ids = new(guide is null ? [] : guide.Limits.Select(limit => limit.Id).Concat(guide.Notes.Select(note => note.Id)), StringComparer.Ordinal);
+        List<ScopeLimit> limits = ScopeReader.ReadLimits(root, "limits", required: false, ids, problems);
+        List<SpeciesGroup> groups = ReadSpeciesGroups(root, problems);
+        CheckSpeciesGroups(root.Where, inputs.FirstOrDefault(column => column.Name == "species"), groups, guide, problems);
         List<DeckRow> rows = [];
         IReadOnlyList<JsonElement>? items = root.Array("rows", minItems: 1);
         for (int i = 0; items is not null && doc is not null && i < items.Count; i++)
@@ -260,7 +338,110 @@ internal static class DeckReader
         BandValidator.Validate(root.Where, inputs, [.. rows.Select(row => new BandRow(row.Id, row.Inputs))], problems);
         return problems.Count > before
             ? null
-            : new DeckTable(kind, use, designation, title, inputs.ToValueList(), rows.ToValueList(), footnotes.ToValueList(), TableTyper.SourceOf(doc, location));
+            : new DeckTable(kind, use, designation, title, inputs.ToValueList(), rows.ToValueList(), footnotes.ToValueList(), TableTyper.SourceOf(doc, location))
+            {
+                Limits = limits.ToValueList(),
+                SpeciesGroups = groups.ToValueList(),
+            };
+    }
+
+    /// <summary>A table's printed species groups (deck-guide-pack §3.6), each with its species and where it is printed.</summary>
+    static List<SpeciesGroup> ReadSpeciesGroups(JsonObj root, ProblemList problems)
+    {
+        List<SpeciesGroup> groups = [];
+        IReadOnlyList<JsonElement>? items = root.Array("speciesGroups", required: false);
+        for (int i = 0; items is not null && i < items.Count; i++)
+        {
+            string path = root.Child($"speciesGroups[{i}]");
+            JsonObj? g = JsonObj.Create(items[i], path, root.Where, problems);
+            if (g is null)
+            {
+                continue;
+            }
+
+            int before = problems.Count;
+            string? name = g.String("group");
+            List<string> species = [];
+            IReadOnlyList<JsonElement>? listed = g.Array("species", minItems: 1);
+            for (int j = 0; listed is not null && j < listed.Count; j++)
+            {
+                if (JsonObj.ReadString(listed[j], $"{path}.species[{j}]", g.Where, problems) is { } one)
+                {
+                    species.Add(one);
+                }
+            }
+
+            string? location = g.String("location");
+            g.Done();
+            if (name is not null && groups.Any(group => group.Group == name))
+            {
+                problems.Add(g.Where, $"{path}.group: '{name}' is declared twice.");
+            }
+            else if (problems.Count == before && name is not null && location is not null)
+            {
+                groups.Add(new SpeciesGroup(name, species.ToValueList(), location));
+            }
+        }
+
+        return groups;
+    }
+
+    /// <summary>
+    /// The groups name exactly the species column's values, place each species once, and under a guide
+    /// place every species the guide covers and no other; a table under a guide with a species column
+    /// must declare its groups (deck-guide-pack §3.6).
+    /// </summary>
+    static void CheckSpeciesGroups(Where where, InputColumn? column, List<SpeciesGroup> groups, DeckGuide? guide, ProblemList problems)
+    {
+        if (column is null)
+        {
+            if (groups.Count > 0)
+            {
+                problems.Add(where, "speciesGroups: the table has no 'species' column to group.");
+            }
+
+            return;
+        }
+
+        if (groups.Count == 0)
+        {
+            if (guide is not null)
+            {
+                problems.Add(where, $"speciesGroups: a table under guide '{guide.Id}' with a 'species' column declares the species groups it prints (deck-guide-pack §3.6).");
+            }
+
+            return;
+        }
+
+        foreach (string value in column.Values.Where(value => groups.All(group => group.Group != value)))
+        {
+            problems.Add(where, $"speciesGroups: the species column's value '{value}' is not one of the table's groups.");
+        }
+
+        foreach (SpeciesGroup group in groups.Where(group => !column.Values.Contains(group.Group)))
+        {
+            problems.Add(where, $"speciesGroups: group '{group.Group}' is not one of the species column's values.");
+        }
+
+        foreach (IGrouping<string, SpeciesGroup> twice in groups.SelectMany(group => group.Species.Select(species => (species, group))).GroupBy(pair => pair.species, pair => pair.group).Where(same => same.Count() > 1))
+        {
+            problems.Add(where, $"speciesGroups: '{twice.Key}' is placed in {string.Join(" and ", twice.Select(group => $"'{group.Group}'"))}; a species is in one group of a table.");
+        }
+
+        if (guide is null)
+        {
+            return;
+        }
+
+        foreach (string species in groups.SelectMany(group => group.Species).Distinct().Where(species => !guide.Species.Contains(species)))
+        {
+            problems.Add(where, $"speciesGroups: '{species}' is not one of guide '{guide.Id}''s species.");
+        }
+
+        foreach (string species in guide.Species.Where(species => groups.All(group => !group.Species.Contains(species))))
+        {
+            problems.Add(where, $"speciesGroups: guide '{guide.Id}' covers '{species}' but no group of this table places it; every species the guide covers is placed.");
+        }
     }
 
     static List<InputColumn> ReadInputs(JsonObj o, IReadOnlyDictionary<string, (ColumnType Type, BandKind Band)> allowed, ProblemList problems)

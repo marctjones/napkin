@@ -56,6 +56,18 @@ public static class GoldenRunner
         return Run(pack, json, Path.GetFileName(goldenFile));
     }
 
+    /// <summary>
+    /// The boundary cases a deck golden file (<c>"deck"</c>) must carry, generated from its table's rows and
+    /// limits and its own hand-authored cases (rules-engine-model §8.1), one compact JSON object each, in
+    /// order: commit them as the file's <c>"generated": "boundary"</c> cases. The runner fails a file whose
+    /// committed pairs differ, and prints these.
+    /// </summary>
+    public static ValueList<string> DeckBoundaries(LoadedPack pack, string goldenJson)
+    {
+        ArgumentNullException.ThrowIfNull(goldenJson);
+        return DeckGolden.Boundaries(pack, goldenJson);
+    }
+
     /// <summary>Reads the pack id a golden file names, or null when it cannot be read.</summary>
     public static string? PeekPack(string json)
     {
@@ -104,7 +116,8 @@ public static class GoldenRunner
             root.MarkUsed("notes");
             string? packId = root.String("pack");
             bool bracing = root.Has("section");
-            string? tableName = bracing ? root.String("section") : root.String("table");
+            bool deck = !bracing && root.Has("deck");
+            string? tableName = bracing ? root.String("section") : deck ? root.String("deck") : root.String("table");
             root.String("source");
             JsonObj? transcriber = root.Obj("transcriber");
             if (transcriber is not null)
@@ -136,6 +149,12 @@ public static class GoldenRunner
             if (bracing)
             {
                 RunBracing(loaded, packId, tableName, cases, where, problems, fileProblems, results);
+                return Finish(fileName, problems, fileProblems, results);
+            }
+
+            if (deck)
+            {
+                DeckGolden.Run(loaded, packId, tableName, cases, where, problems, fileProblems, results);
                 return Finish(fileName, problems, fileProblems, results);
             }
 

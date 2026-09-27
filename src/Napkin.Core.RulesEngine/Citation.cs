@@ -13,10 +13,16 @@ public sealed record AdoptedCodeRef(
     string BaseCode,
     ReviewStatus Review)
 {
+    /// <summary>What a result from an unreviewed pack says, "UNREVIEWED: values not yet checked against the source".</summary>
+    public const string UnreviewedText = "UNREVIEWED: values not yet checked against the source";
+
     /// <summary>"CT 2022 (IRC 2021), pack us-ct-2022 rev 1", plus "UNREVIEWED" until signed off (design §13 Decision 5).</summary>
     public override string ToString()
         => $"{ShortName} ({BaseCode}), pack {PackId} rev {Revision}"
-           + (Review == ReviewStatus.SignedOff ? string.Empty : " — UNREVIEWED: values not yet checked against the source");
+           + (Review == ReviewStatus.SignedOff ? string.Empty : $" — {UnreviewedText}");
+
+    /// <summary>" UNREVIEWED: values not yet checked against the source." until the pack is signed off; empty after.</summary>
+    public string UnreviewedSentence => Review == ReviewStatus.SignedOff ? string.Empty : $" {UnreviewedText}.";
 }
 
 /// <summary>How one input landed in its band: the "show your work" line (design §2, §4.2).</summary>
@@ -113,7 +119,8 @@ public sealed record Citation(
         {
             CitationLayer.ModelCode => $"{Code.BaseCode} {what} {Table}, as adopted by {Code.ShortName}",
             CitationLayer.StateAmendment => $"{Code.ShortName} state amendment to {what} {Table}",
-            _ => $"{Code.ShortName} municipal amendment to {what} {Table}",
+            CitationLayer.MunicipalAmendment => $"{Code.ShortName} municipal amendment to {what} {Table}",
+            _ => $"{what} {Table} of a guide, not {Code.ShortName}'s adopted {Code.BaseCode}",
         };
         string row = RowId is null ? string.Empty : $" row {RowId}";
         return $"{layer}{row} ({RowLabel}); {Source.Title}, {Source.Printing}, {Source.Location}";

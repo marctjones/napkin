@@ -1,0 +1,481 @@
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Napkin.Core.Geometry;
+
+namespace Napkin.Core.RulesEngine;
+
+/// <summary>
+/// Deck golden files (<c>"deck"</c> instead of <c>"table"</c>, deck-guide-pack §4 item 4): each case is a
+/// deck lookup's inputs and the answer the source prints, run through the real evaluator over the real
+/// composed pack. Every row, and every scope limit of the table and its guide, needs a hand-authored case;
+/// the boundary pairs are generated from the rows' own bounds and committed, and a file whose committed
+/// pairs are not the generator's fails (<see cref="GoldenRunner.DeckBoundaries"/> prints them).
+/// </summary>
+internal static class DeckGolden
+{
+    static readonly JsonSerializerOptions Canonical = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+    static readonly string[] Kinds = ["passes", "short", "sized", "outOfScope", "inputMissing", "noData"];
+
+    /// <summary>What a case expects, read strictly: the check, and the limit it covers when it expects one.</summary>
+    sealed record Expectation(Func<DeckResult, string?> Check, string? Limit);
+
+    public static void Run(
+        LoadedPack pack, string packId, string name, IReadOnlyList<JsonElement> cases, Where fileWhere, ProblemList problems, List<string> fileProblems, List<GoldenCaseResult> results)
+    {
+        if (pack.Deck.Tables.FirstOrDefault(table => table.Designation == name) is not { } table)
+        {
+            fileProblems.Add($"deck table '{name}' is not in pack '{packId}' (renamed or removed? re-read the source).");
+            return;
+        }
+
+        List<ScopeLimit> limits = [.. table.Guide?.Limits ?? ValueList<ScopeLimit>.Empty, .. table.Limits];
+        HashSet<string> rows = new(StringComparer.Ordinal), covered = new(StringComparer.Ordinal);
+        List<string> committed = [];
+        for (int index = 0; index < cases.Count; index++)
+        {
+            string path = $"cases[{index}]";
+            JsonObj? c = JsonObj.Create(cases[index], path, fileWhere with { Row = path }, problems);
+            if (c is null)
+            {
+                continue;
+            }
+
+            int before = problems.Count;
+            string? row = c.Has("row") ? c.String("row") : null;
+            c.MarkUsed("row");
+            string? generated = c.Has("generated") ? c.String("generated") : null;
+            c.MarkUsed("generated");
+            if (generated is null)
+            {
+                c.String("location");
+            }
+            else
+            {
+                c.MarkUsed("location");
+                committed.Add(Canonicalize(cases[index]));
+            }
+
+            JsonObj? inputs = c.Obj("inputs");
+            Func<DeckResult>? request = inputs is null ? null : ReadRequest(inputs, pack, table, problems);
+            inputs?.Done();
+            JsonObj? expect = c.Obj("expect");
+            Expectation? expectation = expect is null ? null : ReadExpectation(expect, row, problems);
+            expect?.Done();
+            c.Done();
+
+            if (row is not null && table.Rows.All(r => r.Id != row))
+            {
+                fileProblems.Add($"{path}: row '{row}' is not in table {name} (renamed or deleted? re-read the source).");
+            }
+
+            if (expectation?.Limit is { } limit && limits.All(l => l.Id != limit))
+            {
+                fileProblems.Add($"{path}: '{limit}' is not a scope limit of table {name} or its guide.");
+            }
+
+            if (generated is null)
+            {
+                if (row is not null)
+                {
+                    rows.Add(row);
+                }
+
+                if (expectation?.Limit is { } id)
+                {
+                    covered.Add(id);
+                }
+            }
+
+            if (problems.Count > before || request is null || expectation is null)
+            {
+                continue;
+            }
+
+            DeckResult result = request();
+            string? failure = expectation.Check(result);
+            results.Add(new GoldenCaseResult($"{packId}/{name}/{row ?? "-"}/{index}", failure is null, failure ?? $"got {result}"));
+        }
+
+        fileProblems.AddRange(table.Rows.Where(row => !rows.Contains(row.Id)).Select(row => $"row '{row.Id}' of table {name} has no hand-authored golden case."));
+        fileProblems.AddRange(limits.Where(limit => !covered.Contains(limit.Id)).Select(limit => $"scope limit '{limit.Id}' of table {name} is expected by no hand-authored golden case."));
+
+        if (problems.Count > 0)
+        {
+            return;
+        }
+
+        List<string> expected = [.. Boundaries(table, cases)];
+        if (!expected.SequenceEqual(committed))
+        {
+            fileProblems.Add(
+                $"the committed boundary cases ({committed.Count}) are not the generator's ({expected.Count}); replace every \"generated\" case with these, in this order:"
+                + Environment.NewLine + string.Join("," + Environment.NewLine, expected));
+        }
+    }
+
+    /// <summary>The boundary pairs for a deck golden file's table, one compact JSON case each, in order.</summary>
+    public static ValueList<string> Boundaries(LoadedPack pack, string json)
+    {
+        ArgumentNullException.ThrowIfNull(pack);
+        using JsonDocument document = JsonDocument.Parse(json, JsonFile.Options);
+        JsonElement root = document.RootElement;
+        string name = root.GetProperty("deck").GetString()!;
+        DeckTable table = pack.Deck.Tables.First(candidate => candidate.Designation == name);
+        return Boundaries(table, [.. root.GetProperty("cases").EnumerateArray()]).ToValueList();
+    }
+
+    /// <summary>
+    /// The generator (rules-engine-model §8.1): for each row, from its first hand-authored answered case —
+    /// a span exactly at the row's allowed span and 1/1024″ over it; each banded input exactly at the row's
+    /// bound and one step past it (the next row, or out of scope naming the column); then, from the file's
+    /// first answered case, each <c>above</c> or <c>aboveInput</c> limit at its bound and one step over.
+    /// </summary>
+    static IEnumerable<string> Boundaries(DeckTable table, IReadOnlyList<JsonElement> cases)
+    {
+        List<(string Row, JsonObject Inputs, JsonObject Expect)> answered = [];
+        foreach (JsonElement element in cases)
+        {
+            if (element.ValueKind == JsonValueKind.Object
+                && !element.TryGetProperty("generated", out _)
+                && element.TryGetProperty("row", out JsonElement row) && row.ValueKind == JsonValueKind.String
+                && element.TryGetProperty("inputs", out JsonElement inputs) && inputs.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty("expect", out JsonElement expect) && expect.ValueKind == JsonValueKind.Object
+                && (expect.TryGetProperty("passes", out _) || expect.TryGetProperty("short", out _) || expect.TryGetProperty("sized", out _)))
+            {
+                answered.Add((row.GetString()!, (JsonObject)JsonNode.Parse(inputs.GetRawText())!, (JsonObject)JsonNode.Parse(expect.GetRawText())!));
+            }
+        }
+
+        foreach (DeckRow row in table.Rows)
+        {
+            if (answered.FirstOrDefault(c => c.Row == row.Id) is not { Inputs: not null } hand)
+            {
+                continue;
+            }
+
+            if (table.Kind == DeckReader.MemberSpanKind)
+            {
+                yield return Case(row.Id, With(hand.Inputs, "span", Text(row.Span)), Answer(table, row, hand.Inputs));
+                yield return Case(row.Id, With(hand.Inputs, "span", Text(row.Span + new Length(1))), new JsonObject { ["short"] = new JsonObject { ["allowed"] = Text(row.Span), ["over"] = Text(new Length(1)) } });
+            }
+
+            foreach (InputColumn column in table.Inputs.Where(column => column.Band is BandKind.UpperBound or BandKind.LowerBound))
+            {
+                long bound = row.Inputs[column.Name].Magnitude;
+                List<DeckRow> group = [.. table.Rows.Where(other => table.Inputs.Where(c => c.Name != column.Name).All(c => other.Inputs[c.Name] == row.Inputs[c.Name]))];
+                yield return Case(row.Id, Banded(table, row, hand.Inputs, column, bound), Answer(table, row, hand.Inputs));
+
+                bool up = column.Band == BandKind.UpperBound;
+                DeckRow? next = up
+                    ? group.Where(other => other.Inputs[column.Name].Magnitude > bound).MinBy(other => other.Inputs[column.Name].Magnitude)
+                    : group.Where(other => other.Inputs[column.Name].Magnitude < bound).MaxBy(other => other.Inputs[column.Name].Magnitude);
+                JsonObject past = up ? Over(table, row, hand.Inputs, column, bound) : Banded(table, row, hand.Inputs, column, bound - 1);
+                if (next is null)
+                {
+                    yield return Case(row.Id, past, new JsonObject { ["outOfScope"] = new JsonObject { ["column"] = column.Name } });
+                    continue;
+                }
+
+                // The next row answers: a span table is asked about exactly that row's allowed span.
+                yield return Case(next.Id, table.Kind == DeckReader.MemberSpanKind ? With(past, "span", Text(next.Span)) : past, Answer(table, next, past));
+            }
+        }
+
+        if (answered.Count == 0)
+        {
+            yield break;
+        }
+
+        (string first, JsonObject inputs0, JsonObject expect0) = answered[0];
+        foreach (ScopeLimit limit in (table.Guide?.Limits ?? ValueList<ScopeLimit>.Empty).Concat(table.Limits))
+        {
+            ScopeCondition when = limit.When;
+            JsonNode? at = when.Form switch
+            {
+                ScopeForm.Above => Value(when.Value!.Value),
+                ScopeForm.AboveInput => inputs0[when.OtherInput!]?.DeepClone(),
+                _ => null,
+            };
+            if (at is null)
+            {
+                continue;
+            }
+
+            CellValue bound = when.Form == ScopeForm.Above ? when.Value!.Value : ReadLength(at);
+            if (table.Inputs.All(column => column.Name != when.Input))
+            {
+                yield return Case(first, With(inputs0, when.Input, at), (JsonObject)expect0.DeepClone());
+            }
+
+            yield return Case(first, With(inputs0, when.Input, Value(bound with { Magnitude = bound.Magnitude + 1 })), new JsonObject { ["outOfScope"] = new JsonObject { ["limit"] = limit.Id } });
+        }
+    }
+
+    /// <summary>The row's answer to a case with these inputs: its allowed span, or its words, spacing and napkin's count.</summary>
+    static JsonObject Answer(DeckTable table, DeckRow row, JsonObject inputs)
+    {
+        if (table.Kind == DeckReader.MemberSpanKind)
+        {
+            return new JsonObject { ["passes"] = new JsonObject { ["allowed"] = Text(row.Span) } };
+        }
+
+        if (table.Kind == DeckReader.FootingKind)
+        {
+            return new JsonObject { ["sized"] = new JsonObject { ["text"] = row.Text } };
+        }
+
+        Length ledger = new(ReadLength(inputs["ledgerLength"]!).Magnitude);
+        int count = (int)((ledger.Units + row.Spacing.Units - 1) / row.Spacing.Units) + 1;
+        return new JsonObject { ["sized"] = new JsonObject { ["text"] = row.Text, ["spacing"] = Text(row.Spacing), ["count"] = count } };
+    }
+
+    /// <summary>The inputs with a banded column set to a bound; a span table's span set to the row's allowed span, so it passes.</summary>
+    static JsonObject Banded(DeckTable table, DeckRow row, JsonObject inputs, InputColumn column, long magnitude)
+    {
+        JsonObject with = With(inputs, column.Name, Value(new CellValue(column.Type, null, magnitude)));
+        return table.Kind == DeckReader.MemberSpanKind ? With(with, "span", Text(row.Span)) : with;
+    }
+
+    /// <summary>One step past an upper bound: 1/1024″, 1 psf, or a square foot and 12/1024 square inch.</summary>
+    static JsonObject Over(DeckTable table, DeckRow row, JsonObject inputs, InputColumn column, long bound)
+    {
+        if (column.Type != ColumnType.SquareFeet)
+        {
+            return Banded(table, row, inputs, column, bound + 1);
+        }
+
+        return With(inputs, column.Name, new JsonArray(Text(Length.Feet(1)), Text(Length.Feet(bound) + new Length(1))));
+    }
+
+    static JsonNode Value(CellValue value) => value.Type switch
+    {
+        ColumnType.Length => Text(new Length(value.Magnitude)),
+        _ => JsonValue.Create(value.Magnitude),
+    };
+
+    /// <summary>A length the runner has already read strictly from this file.</summary>
+    static CellValue ReadLength(JsonNode node)
+    {
+        Length.TryParse(node.GetValue<string>(), out Length length, out _);
+        return CellValue.Of(length);
+    }
+
+    /// <summary>A length as pack files write it: "11ft 1in", "22ft 0-1/1024in", "8-1/4in", "1/1024in".</summary>
+    internal static string Text(Length length)
+    {
+        long feet = length.Units / Length.UnitsPerFoot;
+        long rest = length.Units % Length.UnitsPerFoot;
+        long inches = rest / Length.UnitsPerInch;
+        long fraction = rest % Length.UnitsPerInch;
+        long denominator = Length.UnitsPerInch;
+        while (fraction != 0 && fraction % 2 == 0)
+        {
+            fraction /= 2;
+            denominator /= 2;
+        }
+
+        string inch = fraction == 0 ? $"{inches}" : feet == 0 && inches == 0 ? $"{fraction}/{denominator}" : $"{inches}-{fraction}/{denominator}";
+        return feet == 0 ? $"{inch}in" : $"{feet}ft {inch}in";
+    }
+
+    static JsonObject With(JsonObject inputs, string name, JsonNode? value)
+    {
+        JsonObject copy = (JsonObject)inputs.DeepClone();
+        copy[name] = value;
+        return copy;
+    }
+
+    static string Case(string row, JsonObject inputs, JsonObject expect)
+        => new JsonObject { ["row"] = row, ["generated"] = "boundary", ["inputs"] = inputs, ["expect"] = expect }.ToJsonString(Canonical);
+
+    static string Canonicalize(JsonElement element) => JsonNode.Parse(element.GetRawText())!.ToJsonString(Canonical);
+
+    /// <summary>A case's lookup, read strictly: the inputs this table's kind takes, and a guide's scope inputs.</summary>
+    static Func<DeckResult>? ReadRequest(JsonObj inputs, LoadedPack pack, DeckTable table, ProblemList problems)
+    {
+        int before = problems.Count;
+        string? Text(string name) => inputs.Has(name) ? inputs.String(name) : Unused(name);
+        int? Whole(string name) => inputs.Has(name) ? inputs.Int(name) : UnusedInt(name);
+        Length? Len(string name, bool required = false)
+        {
+            if (!inputs.Has(name) && !required)
+            {
+                inputs.MarkUsed(name);
+                return null;
+            }
+
+            return inputs.Get(name) is { } e ? JsonObj.ReadLength(e, inputs.Child(name), inputs.Where, problems) : null;
+        }
+
+        string? Unused(string name)
+        {
+            inputs.MarkUsed(name);
+            return null;
+        }
+
+        int? UnusedInt(string name)
+        {
+            inputs.MarkUsed(name);
+            return null;
+        }
+
+        string? supports = Text("supports"), species = Text("species");
+        int? snow = Whole("groundSnowLoad");
+        Length? deckLength = Len("deckLength"), deckWidth = Len("deckWidth");
+        DeckScopeInputs scope = new(supports, species, snow, deckLength, deckWidth);
+        switch (table.Kind)
+        {
+            case DeckReader.MemberSpanKind:
+            {
+                string? member = inputs.String("member");
+                Length? span = Len("span", required: true), spacing = Len("spacing"), joistSpan = Len("joistSpan");
+                int? live = Whole("roofLiveLoad");
+                return problems.Count > before || member is null || span is null
+                    ? null
+                    : () => DeckEvaluator.CheckSpan(pack, table.Use!.Value, new SpanRequest(member, span.Value, supports, species, spacing, joistSpan, snow, live, deckLength, deckWidth));
+            }
+
+            case DeckReader.LedgerKind:
+            {
+                string? member = inputs.String("member");
+                Length? joistSpan = Len("joistSpan", required: true), ledger = Len("ledgerLength", required: true);
+                return problems.Count > before || member is null || joistSpan is null || ledger is null
+                    ? null
+                    : () => DeckEvaluator.SizeLedger(pack, member, joistSpan.Value, ledger.Value, scope);
+            }
+
+            default:
+            {
+                ExactFraction? area = ReadArea(inputs, problems);
+                int? soil = Whole("soilBearing");
+                return problems.Count > before || area is null ? null : () => DeckEvaluator.SizeFooting(pack, area.Value, soil, scope);
+            }
+        }
+    }
+
+    /// <summary>A tributary area: whole square feet, or two lengths multiplied, in square 1/1024″.</summary>
+    static ExactFraction? ReadArea(JsonObj inputs, ProblemList problems)
+    {
+        if (inputs.Get("tributaryArea") is not { } e)
+        {
+            return null;
+        }
+
+        string path = inputs.Child("tributaryArea");
+        if (e.ValueKind == JsonValueKind.Number)
+        {
+            return JsonObj.ReadInt(e, path, inputs.Where, problems) is { } feet
+                ? new ExactFraction((Int128)feet * Length.UnitsPerFoot * Length.UnitsPerFoot, 1)
+                : null;
+        }
+
+        List<JsonElement> sides = e.ValueKind == JsonValueKind.Array ? [.. e.EnumerateArray()] : [];
+        if (sides.Count != 2)
+        {
+            problems.Add(inputs.Where, $"{path}: whole square feet, or two lengths whose product is the area.");
+            return null;
+        }
+
+        Length? a = JsonObj.ReadLength(sides[0], $"{path}[0]", inputs.Where, problems), b = JsonObj.ReadLength(sides[1], $"{path}[1]", inputs.Where, problems);
+        return a is null || b is null ? null : new ExactFraction((Int128)a.Value.Units * b.Value.Units, 1);
+    }
+
+    static Expectation? ReadExpectation(JsonObj expect, string? row, ProblemList problems)
+    {
+        List<string> present = [.. Kinds.Where(expect.Has)];
+        if (present.Count != 1)
+        {
+            problems.Add(expect.Where, $"expect: exactly one of {string.Join(", ", Kinds)}.");
+            return null;
+        }
+
+        JsonObj? e = expect.Obj(present[0]);
+        if (e is null)
+        {
+            return null;
+        }
+
+        int before = problems.Count;
+        Length? Len(string name) => e.Get(name) is { } element ? JsonObj.ReadLength(element, e.Child(name), e.Where, problems) : null;
+        if (present[0] is "passes" or "short" or "sized" && row is null)
+        {
+            problems.Add(e.Where, $"a {present[0]} case names the row it expects (\"row\").");
+        }
+
+        Expectation? expectation = null;
+        switch (present[0])
+        {
+            case "passes":
+            {
+                Length? allowed = Len("allowed");
+                expectation = allowed is null ? null : new(r => r is DeckResult.Passes p
+                    ? p.Row.Id != row ? $"passes, but from row '{p.Row.Id}', expected '{row}'"
+                    : p.Allowed != allowed ? $"expected allowed {CellValue.Of(allowed.Value)}; got {CellValue.Of(p.Allowed)}" : null
+                    : $"expected passes from row '{row}'; got {r}", null);
+                break;
+            }
+
+            case "short":
+            {
+                Length? allowed = Len("allowed"), over = Len("over");
+                expectation = allowed is null || over is null ? null : new(r => r is DeckResult.Short s
+                    ? s.Row.Id != row ? $"short, but from row '{s.Row.Id}', expected '{row}'"
+                    : s.Allowed != allowed || s.Over != over ? $"expected allowed {CellValue.Of(allowed.Value)}, over by {CellValue.Of(over.Value)}; got {CellValue.Of(s.Allowed)}, over by {CellValue.Of(s.Over)}" : null
+                    : $"expected short from row '{row}'; got {r}", null);
+                break;
+            }
+
+            case "sized":
+            {
+                string? text = e.String("text");
+                Length? spacing = e.Has("spacing") ? Len("spacing") : null;
+                e.MarkUsed("spacing");
+                int? count = e.Has("count") ? e.Int("count", min: 1) : null;
+                e.MarkUsed("count");
+                expectation = text is null ? null : new(r => r is DeckResult.Sized s
+                    ? s.Row.Id != row ? $"sized, but from row '{s.Row.Id}', expected '{row}'"
+                    : s.Row.Text != text || (spacing is not null && s.Row.Spacing != spacing) || (count is not null && s.Count != count)
+                        ? $"expected {text}{(spacing is { } g ? $", {CellValue.Of(g)}" : string.Empty)}{(count is { } n ? $", {n}" : string.Empty)}; got {s.Row.Text}, {CellValue.Of(s.Row.Spacing)}, {s.Count}"
+                        : null
+                    : $"expected sized from row '{row}'; got {r}", null);
+                break;
+            }
+
+            case "outOfScope":
+            {
+                string? limit = e.Has("limit") ? e.String("limit") : null;
+                string? column = e.Has("column") ? e.String("column") : null;
+                e.MarkUsed("limit");
+                e.MarkUsed("column");
+                if ((limit is null) == (column is null))
+                {
+                    problems.Add(e.Where, "expect.outOfScope: exactly one of limit (a scope limit's id) or column (the input no row covers).");
+                    break;
+                }
+
+                expectation = new(r => r is DeckResult.OutOfScope o
+                    ? o.Limit?.Id != limit || o.Column != column ? $"out of scope for {o.Limit?.Id ?? o.Column}, expected {limit ?? column}: {o.Explanation}" : null
+                    : $"expected out of scope ({limit ?? column}); got {r}", limit);
+                break;
+            }
+
+            case "inputMissing":
+            {
+                string? input = e.String("input");
+                expectation = input is null ? null : new(r => r is DeckResult.InputMissing m
+                    ? m.Input == input ? null : $"expected {input} missing; got {m.Input} missing"
+                    : $"expected {input} missing; got {r}", null);
+                break;
+            }
+
+            default:
+                expectation = new(r => r is DeckResult.NoData ? null : $"expected no data; got {r}", null);
+                break;
+        }
+
+        e.Done();
+        return problems.Count > before ? null : expectation;
+    }
+}

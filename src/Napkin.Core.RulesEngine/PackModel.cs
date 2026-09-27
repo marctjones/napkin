@@ -40,6 +40,12 @@ public enum CitationLayer
 
     /// <summary>A municipal amendment overlay.</summary>
     MunicipalAmendment,
+
+    /// <summary>
+    /// A guide layer the pack declares for its deck tables (deck-guide-pack §1.2): a document that is
+    /// not the adopted code, cited as itself.
+    /// </summary>
+    Guide,
 }
 
 /// <summary>What a wall is, which selects the header table (design §3.2).</summary>
@@ -162,7 +168,11 @@ public sealed record PackManifest(
     BaseCode BaseCode,
     ValueList<string> Layers,
     ValueList<SourceDocument> Sources,
-    PackReview Review);
+    PackReview Review)
+{
+    /// <summary>The guide layers the pack declares for its deck tables (deck-guide-pack §1.2); empty when none.</summary>
+    public ValueList<GuideEntry> Guides { get; init; } = ValueList<GuideEntry>.Empty;
+}
 
 /// <summary>
 /// One value in a table cell or a request: a category, a whole number of psf or mph, or an exact
@@ -332,11 +342,21 @@ public sealed record LoadedPack(
     /// <summary>The per-municipality site values the pack carries (#210), or null.</summary>
     public SiteValuesTable? Site { get; init; }
 
+    /// <summary>The guides the pack declares, in its <c>guides</c> order (deck-guide-pack §1.2); empty when none.</summary>
+    public ValueList<DeckGuide> Guides { get; init; } = ValueList<DeckGuide>.Empty;
+
     /// <summary>Whether this pack can size any header at all.</summary>
     public bool HasHeaderTables => Tables.Count > 0;
 
-    /// <summary>A short status for the UI: empty when the pack has any data, else <see cref="BaseTablesNotLoaded"/>.</summary>
-    public string StatusLabel => HasHeaderTables || Bracing is not null ? string.Empty : BaseTablesNotLoaded;
+    /// <summary>
+    /// A short status for the UI: <see cref="BaseTablesNotLoaded"/> when the base layer has no header
+    /// table and no bracing, and a clause per guide, "deck tables from DCA 6-2015, a guide"; empty when
+    /// neither applies.
+    /// </summary>
+    public string StatusLabel => string.Join(
+        "; ",
+        (HasHeaderTables || Bracing is not null ? [] : new[] { BaseTablesNotLoaded })
+            .Concat(Guides.Select(guide => $"deck tables from {guide.ShortName}, a guide")));
 
     /// <summary>The identity a citation prints.</summary>
     public AdoptedCodeRef Code => new(

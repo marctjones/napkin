@@ -288,3 +288,140 @@ public static partial class Recompute
         _ => BracingChangeKind.NoAnswerChanged,
     };
 }
+
+/// <summary>Which deck lookup a result answers: the deck (or roof) and the check, "Joists", "Beam", "Ledger", "Footing".</summary>
+public readonly record struct DeckCheckKey(EntityId Element, string Check);
+
+/// <summary>How one deck lookup's result changed between two computations (design §7.3, deck-guide-pack §6 slice A).</summary>
+public enum DeckChangeKind
+{
+    /// <summary>Passed; now short. Newly flagged, shown first.</summary>
+    PassToShort,
+
+    /// <summary>Was out of scope or had no answer; now short. Newly flagged.</summary>
+    ToShort,
+
+    /// <summary>Passed, fell short or was sized; now out of scope. Flagged.</summary>
+    ToOutOfScope,
+
+    /// <summary>Had a result (passes, short, sized or out of scope); now input missing or no data: it can no longer be computed.</summary>
+    ToNoAnswer,
+
+    /// <summary>Still passes, short or sized, with another allowed span, fastener, spacing, count or footing.</summary>
+    RowChanged,
+
+    /// <summary>Still out of scope, for another limit or reason.</summary>
+    OutOfScopeChanged,
+
+    /// <summary>Fell short; now passes.</summary>
+    ShortToPass,
+
+    /// <summary>Was out of scope or had no answer; now passes or is sized.</summary>
+    ToAnswer,
+
+    /// <summary>Had no answer; now out of scope.</summary>
+    NoAnswerToOutOfScope,
+
+    /// <summary>Still no answer, for another reason.</summary>
+    NoAnswerChanged,
+
+    /// <summary>The same row and the same answer; only the span asked about moved within it. Not a change of the answer.</summary>
+    SpanMoved,
+
+    /// <summary>The same answer from another code, table or row (a revision, a renumbered row, another pack).</summary>
+    CitationOnly,
+}
+
+/// <summary>One deck lookup whose result differs.</summary>
+public sealed record DeckChange(DeckCheckKey Key, DeckResult Before, DeckResult After, DeckChangeKind Kind);
+
+/// <summary>What a total deck recompute changed: every lookup is either in <see cref="Changes"/> or counted in <see cref="Unchanged"/>.</summary>
+public sealed record DeckRecomputeReport(ValueList<DeckChange> Changes, int Unchanged)
+{
+    /// <summary>The lookups that became flagged: newly short, or newly out of scope.</summary>
+    public IEnumerable<DeckChange> NewlyFlagged
+        => Changes.Where(c => c.Kind is DeckChangeKind.PassToShort or DeckChangeKind.ToShort
+                              || (c.Kind == DeckChangeKind.ToOutOfScope && c.Before is not DeckResult.Short));
+
+    /// <summary>The lookups that had a result and can no longer be computed.</summary>
+    public IEnumerable<DeckChange> NoLongerComputable => Changes.Where(c => c.Kind == DeckChangeKind.ToNoAnswer);
+}
+
+/// <summary>The deck lookups' diff, the counterpart of the header and bracing functions above.</summary>
+public static partial class Recompute
+{
+    /// <summary>Compares two computations over the same deck lookups, most serious first.</summary>
+    /// <exception cref="ArgumentException">The two sets of lookups differ: a recompute that dropped or invented one.</exception>
+    public static DeckRecomputeReport DiffDeck(
+        IReadOnlyList<KeyValuePair<DeckCheckKey, DeckResult>> before, IReadOnlyList<KeyValuePair<DeckCheckKey, DeckResult>> after)
+    {
+        ArgumentNullException.ThrowIfNull(before);
+        ArgumentNullException.ThrowIfNull(after);
+        Dictionary<DeckCheckKey, DeckResult> old = before.ToDictionary(p => p.Key, p => p.Value);
+        if (old.Count != after.Count || after.Any(p => !old.ContainsKey(p.Key)))
+        {
+            throw new ArgumentException("Before and after must cover exactly the same deck lookups; a recompute is total.", nameof(after));
+        }
+
+        List<DeckChange> changes = [];
+        int unchanged = 0;
+        foreach ((DeckCheckKey key, DeckResult now) in after)
+        {
+            DeckResult was = old[key];
+            if (Same(was, now))
+            {
+                unchanged++;
+                continue;
+            }
+
+            changes.Add(new DeckChange(key, was, now, Classify(was, now)));
+        }
+
+        return new DeckRecomputeReport(changes.OrderBy(c => c.Kind).ToValueList(), unchanged);
+    }
+
+    /// <summary>
+    /// The same result: the same answer from the same code, table and row, about the same span. Compared by
+    /// what a person reads, never by reference (two loads of one pack are different objects).
+    /// </summary>
+    private static bool Same(DeckResult was, DeckResult now) => (was, now) switch
+    {
+        (DeckResult.Passes or DeckResult.Short or DeckResult.Sized, _) when was.GetType() == now.GetType()
+            => Cited(was) == Cited(now) && Values(was) == Values(now),
+        (DeckResult.OutOfScope a, DeckResult.OutOfScope b) => a.Code == b.Code && a.Explanation == b.Explanation,
+        _ => was.Equals(now),
+    };
+
+    /// <summary>Where an answer came from: code, table and row.</summary>
+    private static (AdoptedCodeRef Code, string Table, string Row) Cited(DeckResult result) => result switch
+    {
+        DeckResult.Passes p => (p.Code, p.Table.Designation, p.Row.Id),
+        DeckResult.Short s => (s.Code, s.Table.Designation, s.Row.Id),
+        _ => (((DeckResult.Sized)result).Code, ((DeckResult.Sized)result).Table.Designation, ((DeckResult.Sized)result).Row.Id),
+    };
+
+    /// <summary>What an answer says: the allowed and actual span, or the fastener or footing, spacing and count.</summary>
+    private static (Length Allowed, Length Actual, string Text, Length Spacing, int? Count) Values(DeckResult result) => result switch
+    {
+        DeckResult.Passes p => (p.Allowed, p.Actual, string.Empty, Length.Zero, null),
+        DeckResult.Short s => (s.Allowed, s.Actual, string.Empty, Length.Zero, null),
+        _ => (Length.Zero, Length.Zero, ((DeckResult.Sized)result).Row.Text, ((DeckResult.Sized)result).Row.Spacing, ((DeckResult.Sized)result).Count),
+    };
+
+    private static DeckChangeKind Classify(DeckResult was, DeckResult now) => (was, now) switch
+    {
+        (DeckResult.Passes or DeckResult.Short or DeckResult.Sized, _) when was.GetType() == now.GetType() =>
+            Values(was) with { Actual = Length.Zero } != Values(now) with { Actual = Length.Zero } ? DeckChangeKind.RowChanged
+            : Cited(was) != Cited(now) ? DeckChangeKind.CitationOnly
+            : DeckChangeKind.SpanMoved,
+        (DeckResult.Passes, DeckResult.Short) => DeckChangeKind.PassToShort,
+        (_, DeckResult.Short) => DeckChangeKind.ToShort,
+        (DeckResult.Short, DeckResult.Passes) => DeckChangeKind.ShortToPass,
+        (_, DeckResult.Passes or DeckResult.Sized) => DeckChangeKind.ToAnswer,
+        (DeckResult.OutOfScope, DeckResult.OutOfScope) => DeckChangeKind.OutOfScopeChanged,
+        (DeckResult.Passes or DeckResult.Short or DeckResult.Sized, DeckResult.OutOfScope) => DeckChangeKind.ToOutOfScope,
+        (_, DeckResult.OutOfScope) => DeckChangeKind.NoAnswerToOutOfScope,
+        (DeckResult.Passes or DeckResult.Short or DeckResult.Sized or DeckResult.OutOfScope, _) => DeckChangeKind.ToNoAnswer,
+        _ => DeckChangeKind.NoAnswerChanged,
+    };
+}

@@ -21,6 +21,7 @@ public partial class MainWindow
     CodePacks? _packs;
     ImmutableArray<OpeningCheck> _checksShown = [];
     ImmutableArray<WallBracingCheck> _bracingShown = [];
+    ImmutableArray<DeckChecks> _decksShown = [];
     AdoptedCodeRef? _codeShown;
     bool _sayingRecompute;
     bool _fillingBracing;
@@ -200,6 +201,7 @@ public partial class MainWindow
     {
         _checksShown = CodeCheck.Of(Editor.Sketch, Packs);
         _bracingShown = BracingCheck.Of(Editor.Sketch, Packs);
+        _decksShown = DeckCheck.Of(Editor.Sketch, Packs);
         _codeShown = Packs.Resolve(Editor.Sketch.Code).Pack?.Code;
     }
 
@@ -217,6 +219,7 @@ public partial class MainWindow
 
         ImmutableArray<OpeningCheck> now = CodeCheck.Of(Editor.Sketch, Packs);
         ImmutableArray<WallBracingCheck> bracing = BracingCheck.Of(Editor.Sketch, Packs);
+        ImmutableArray<DeckChecks> decks = DeckCheck.Of(Editor.Sketch, Packs);
         AdoptedCodeRef? code = Packs.Resolve(Editor.Sketch.Code).Pack?.Code;
         List<string> changes = [];
 
@@ -224,14 +227,16 @@ public partial class MainWindow
         // many changed, how many became flagged and how many can no longer be computed (#19, #39).
         if (code != _codeShown)
         {
-            changes.Add(CodeCheck.SwitchSummary(code, CodeCheck.Report(_checksShown, now), BracingCheck.Report(_bracingShown, bracing)));
+            changes.Add(CodeCheck.SwitchSummary(code, CodeCheck.Report(_checksShown, now), BracingCheck.Report(_bracingShown, bracing), DeckCheck.Report(_decksShown, decks)));
         }
 
         changes.AddRange(BracingCheck.Changes(_bracingShown, bracing));
         changes.AddRange(CodeCheck.Changes(_checksShown, now));
+        changes.AddRange(DeckCheck.Changes(_decksShown, decks));
         changes.AddRange(BracingCheck.Unassigned(_bracingShown, bracing));
         _checksShown = now;
         _bracingShown = bracing;
+        _decksShown = decks;
         _codeShown = code;
         if (changes.Count == 0)
         {
