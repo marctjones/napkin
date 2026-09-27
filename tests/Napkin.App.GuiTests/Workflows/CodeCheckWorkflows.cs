@@ -92,7 +92,7 @@ public class CodeCheckWorkflows
             Assert.Equal(CodeCheck.HeaderText("(2) 2x10", 1, 2), window.CodeCheckText);
             Assert.Contains("row r.s30.b", window.CodeCheckCitationText, StringComparison.Ordinal);
             Assert.Contains(
-                "Header for Window 1 changed: (1) 2x8 → (2) 2x10, 1 jack and 2 king each side (Table ZZ-HEADER row r.s30.b).",
+                "Header for Window 1 changed: (1) 2x8 → (2) 2x10, 1 jack and 2 king each side (Table ZZ-HEADER row r.s30.b) — UNREVIEWED: values not yet checked against the source.",
                 window.MessageOnScreen,
                 StringComparison.Ordinal);
             Assert.Contains("4 king studs", window.FramingText, StringComparison.Ordinal);
@@ -197,7 +197,7 @@ public class CodeCheckWorkflows
             // us-zz-other's o.a: zz-roof, snow ≤ 60, ≤ 5'-1": (3) 2x10.
             Assert.Equal("us-zz-other", window.CurrentDesign!.Sketch.Code!.PackId);
             Assert.Contains(
-                "Header for Window 1 changed: (2) 2x12 → (3) 2x10, 1 jack and 1 king each side (Table ZZ-OTHER-HEADER row o.a).",
+                "Header for Window 1 changed: (2) 2x12 → (3) 2x10, 1 jack and 1 king each side (Table ZZ-OTHER-HEADER row o.a) — UNREVIEWED: values not yet checked against the source.",
                 window.MessageOnScreen,
                 StringComparison.Ordinal);
             Assert.Contains("Table ZZ-OTHER-HEADER", window.CodeCheckCitationText, StringComparison.Ordinal);
@@ -224,7 +224,7 @@ public class CodeCheckWorkflows
         CodeWindow code = OpenCode(app, window);
         AppDriver site = AppDriver.Attach(code, "check-04-code");
         app.Expect("the shipped Connecticut pack is listed as having no base tables", () =>
-            Assert.Contains(code.PackRows, row => row.StartsWith("CT 2022 — IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 3): base tables not loaded; deck tables from DCA 6-2015, a guide", StringComparison.Ordinal)));
+            Assert.Contains(code.PackRows, row => row.StartsWith("CT 2022 — IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 5): base tables not loaded; deck tables from DCA 6-2015, a guide", StringComparison.Ordinal)));
 
         PickPack(site, code, "CT 2022");
         TypeSnow(site, code, "30");

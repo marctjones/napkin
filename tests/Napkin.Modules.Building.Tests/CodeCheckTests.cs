@@ -165,6 +165,45 @@ public class CodeCheckTests
         Assert.Null(Assert.Single(framing.Pieces, piece => piece.Role == FramingRole.Header).Stock);
     }
 
+    /// <summary>
+    /// #255: every string form of a Sized or an Out of scope result carries UNREVIEWED while the
+    /// adopted pack (here us-zz-frame, CodePacks/one) is unreviewed, the same way a deck line already
+    /// does (design §13 Decision 5) — and none of them do once the pack is signed off.
+    /// </summary>
+    [Fact]
+    [Trait("Feature", "RUL-002")]
+    public void The_unreviewed_label_marks_every_form_of_a_sized_or_out_of_scope_result_and_drops_once_signed_off()
+    {
+        HeaderResult.Sized sized = Assert.IsType<HeaderResult.Sized>(Check(Design(In(36)).Sketch));
+        HeaderResult.OutOfScope beyond = Assert.IsType<HeaderResult.OutOfScope>(Check(Design(In(98)).Sketch));
+        Assert.Equal(ReviewStatus.Unreviewed, sized.Citation.Code.Review);
+
+        CheckWords sizedWords = CodeCheck.Words(sized, Library);
+        CheckWords beyondWords = CodeCheck.Words(beyond, Library);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, sized.ToString(), StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, beyond.ToString(), StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, sizedWords.Citation, StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, beyondWords.Citation, StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, sizedWords.Details, StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, beyondWords.Details, StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, CodeCheck.Short(sized), StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, CodeCheck.Short(beyond), StringComparison.Ordinal);
+
+        // Signed off (GuideLayerTests' pattern: no loader needed, just the code ref's own Review): the label is nowhere.
+        HeaderResult.Sized signedSized = sized with { Citation = sized.Citation with { Code = sized.Citation.Code with { Review = ReviewStatus.SignedOff } } };
+        HeaderResult.OutOfScope signedBeyond = beyond with { Limit = beyond.Limit with { Code = beyond.Limit.Code with { Review = ReviewStatus.SignedOff } } };
+        CheckWords signedSizedWords = CodeCheck.Words(signedSized, Library);
+        CheckWords signedBeyondWords = CodeCheck.Words(signedBeyond, Library);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedSized.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedBeyond.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedSizedWords.Citation, StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedBeyondWords.Citation, StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedSizedWords.Details, StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedBeyondWords.Details, StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, CodeCheck.Short(signedSized), StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, CodeCheck.Short(signedBeyond), StringComparison.Ordinal);
+    }
+
     [Fact]
     [Trait("Feature", "BLD-001")]
     public void A_snow_load_not_entered_is_input_missing_never_a_default()
@@ -251,13 +290,13 @@ public class CodeCheckTests
         // Widened to 60: (1) 2x8 → (2) 2x10, r.s30.b.
         Sketch wider = small.WithEntity(small.Find<Box>(window)! with { Width = In(60) });
         Assert.Equal(
-            ["Header for Window 1 changed: (1) 2x8 → (2) 2x10, 1 jack and 2 king each side (Table ZZ-HEADER row r.s30.b)."],
+            ["Header for Window 1 changed: (1) 2x8 → (2) 2x10, 1 jack and 2 king each side (Table ZZ-HEADER row r.s30.b) — UNREVIEWED: values not yet checked against the source."],
             CodeCheck.Changes(before, CodeCheck.Of(wider, One)));
 
         // Switching packs: us-zz-other's o.a, (3) 2x10, needs snow ≤ 60 and span ≤ 61: 36 is in.
         Sketch other = small with { Code = new CodeChoice("us-zz-other", 1, CodeMode.Following, null) };
         Assert.Equal(
-            ["Header for Window 1 changed: (1) 2x8 → (3) 2x10, 1 jack and 1 king each side (Table ZZ-OTHER-HEADER row o.a)."],
+            ["Header for Window 1 changed: (1) 2x8 → (3) 2x10, 1 jack and 1 king each side (Table ZZ-OTHER-HEADER row o.a) — UNREVIEWED: values not yet checked against the source."],
             CodeCheck.Changes(before, CodeCheck.Of(other, One)));
 
         // Past the table, and the snow cleared: each said, nothing kept.
@@ -268,7 +307,7 @@ public class CodeCheckTests
             ["Header for Window 1 is no longer sized: not checked: the ground snow load not entered."],
             CodeCheck.Changes(before, CodeCheck.Of(cleared, One)));
         Assert.Equal(
-            ["Header for Window 1 is now sized: (1) 2x8, 1 jack and 1 king each side (Table ZZ-HEADER row r.s30.a)."],
+            ["Header for Window 1 is now sized: (1) 2x8, 1 jack and 1 king each side (Table ZZ-HEADER row r.s30.a) — UNREVIEWED: values not yet checked against the source."],
             CodeCheck.Changes(CodeCheck.Of(cleared, One), before));
 
         // Out of scope, then the snow cleared: it can no longer be checked; then no code at all: still not.
@@ -403,8 +442,8 @@ public class CodeCheckTests
     {
         HeaderResult.Sized sized = Assert.IsType<HeaderResult.Sized>(Check(Design(In(36)).Sketch));
         HeaderResult.OutOfScope beyond = Assert.IsType<HeaderResult.OutOfScope>(Check(Design(In(98)).Sketch));
-        Assert.Equal("(1) 2x8, 1 jack and 1 king each side (Table ZZ-HEADER row r.s30.a)", CodeCheck.Short(sized));
-        Assert.Equal("beyond Table ZZ-HEADER: get it engineered", CodeCheck.Short(beyond));
+        Assert.Equal("(1) 2x8, 1 jack and 1 king each side (Table ZZ-HEADER row r.s30.a) — UNREVIEWED: values not yet checked against the source", CodeCheck.Short(sized));
+        Assert.Equal("beyond Table ZZ-HEADER: get it engineered — UNREVIEWED: values not yet checked against the source", CodeCheck.Short(beyond));
 
         // Two inputs missing at once: both named, and both places to enter them said.
         HeaderResult.InputMissing both = new(new ValueList<string>(["groundSnowLoad", "supports"]), "ZZ-HEADER", sized.Citation.Code, "SYNTHETIC");
@@ -444,7 +483,7 @@ public class CodeCheckTests
 
         // Out of scope → sized; no answer → out of scope; out of scope at another limit (snow 45:
         // r.s60.b's 61 in instead of r.s30.c's 97 in).
-        Assert.Equal(["Header for Window 1 is now sized: (1) 2x8, 1 jack and 1 king each side (Table ZZ-HEADER row r.s30.a)."], CodeCheck.Changes(CodeCheck.Of(beyond, One), CodeCheck.Of(small, One)));
+        Assert.Equal(["Header for Window 1 is now sized: (1) 2x8, 1 jack and 1 king each side (Table ZZ-HEADER row r.s30.a) — UNREVIEWED: values not yet checked against the source."], CodeCheck.Changes(CodeCheck.Of(beyond, One), CodeCheck.Of(small, One)));
         Assert.Equal(["Header for Window 1 is now beyond Table ZZ-HEADER: get it engineered."], CodeCheck.Changes(CodeCheck.Of(missing, One), CodeCheck.Of(beyond, One)));
         Assert.Equal(
             ["Header for Window 1 is now beyond Table ZZ-HEADER: get it engineered."],
@@ -458,7 +497,7 @@ public class CodeCheckTests
         Assert.Equal(
             [
                 "Header for Window 1 is now beyond Table ZZ-HEADER: get it engineered.",
-                "Header for Window 2 changed: (1) 2x8 → (2) 2x10, 1 jack and 2 king each side (Table ZZ-HEADER row r.s30.b).",
+                "Header for Window 2 changed: (1) 2x8 → (2) 2x10, 1 jack and 2 king each side (Table ZZ-HEADER row r.s30.b) — UNREVIEWED: values not yet checked against the source.",
             ],
             CodeCheck.Changes(CodeCheck.Of(two, One), CodeCheck.Of(after.WithEntity(second with { Width = In(60) }), One)));
         Assert.Single(CodeCheck.Changes(CodeCheck.Of(two, One), CodeCheck.Of(grown, One)));

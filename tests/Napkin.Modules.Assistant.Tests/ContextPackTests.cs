@@ -28,7 +28,7 @@ public class ContextPackTests
 
         // Preconditions, named, so a change to the shipped pack fails here rather than as a diff of help text.
         LoadedPack ct = Assert.Single(packs.Loaded);
-        Assert.Equal(("us-ct-2022", 3), (ct.Code.PackId, ct.Code.Revision));
+        Assert.Equal(("us-ct-2022", 5), (ct.Code.PackId, ct.Code.Revision));
         Assert.Equal(LoadedPack.BaseTablesNotLoaded + "; deck tables from DCA 6-2015, a guide", ct.StatusLabel);
 
         CodeResolution code = packs.Resolve(design.Sketch.Code);
@@ -104,7 +104,7 @@ public class ContextPackTests
         Assert.Equal([true, false, true], guarded.Sentences.Select(sentence => sentence.Kept));
         GuardedSentence refused = guarded.Sentences[1];
         // The 3-foot opening is the window's 3'-0" [1]; the pack has no 2x4, no 2 and no 2x6. Item
-        // [4]'s "revision 3" does not count: AnswerGuard.IsMetadata (the #41 carry-over) restricts
+        // [4]'s "revision 5" does not count: AnswerGuard.IsMetadata (the #41 carry-over) restricts
         // the adopted-code line to its own designations, the same rule a help item's numbers get.
         Assert.Equal(["2x4", "2", "2x6"], refused.Unsupported);
         Assert.Equal("[one sentence refused: it said 2x4, 2 and 2x6, which napkin did not give it]", refused.Shown);

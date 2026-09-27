@@ -30,7 +30,10 @@ header can be bought; the spans, loads and stud counts beside them are not from 
   t.member, no 2x6). The base layer carries ZZ-DECK-BEAM
   ((2) 2x10 carrying joists up to 10'-0": 6'-10"), ZZ-RAFTER, ZZ-DECK-LEDGER (zz-bolts, staggered, 17" up to a
   12'-0" joist span), ZZ-DECK-FOOTING (a lower-bound soil column: up to 40 sq ft on at least 2000 psf,
-  "zz 15 in square"), ZZ-GUARD.1 (guard trigger 28", minimum 34", opening 5"; riser 8 1/4", tread 9",
+  17" round or 15" square, 7" thick; no centre-post factor), ZZ-DECK-POST-CORNER and ZZ-DECK-POST-CENTER
+  (#42: deck-post tables for zz-fir and zz-cedar 4x4 and 6x6 up to 20, 40 and 80 sq ft — a zz-fir 4x4 corner
+  post up to 20 sq ft 6'-0", centre post up to 80 sq ft 7'-0" —, zz-cedar 4x4 at 80 sq ft printed NP in both;
+  the centre table's synthetic centre-post factor, note b, is 3/2, not DCA 6's), ZZ-GUARD.1 (guard trigger 28", minimum 34", opening 5"; riser 8 1/4", tread 9",
   difference 1/2", handrail at 3 risers, width 32") and a frost.json of 3'-6". It also carries ZZ-DECK-HEADER,
   a copy of ZZ-RENO-HEADER, so a porch's walls size under the same pack. Golden files for every deck table,
   hand-worked from these tables and with their generated boundary pairs, are under `deck/golden/us-zz-deck/`.

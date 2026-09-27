@@ -8,10 +8,14 @@
 napkin ships **no IRC header, bracing or base-layer table values**. Transcribed tables may ship when
 each is read from a primary or official source in the same task and cited beside the data (Marc,
 2026-09-25, #157; DESIGN.md §2.1), and only these do: Connecticut's Appendix AY (#210) and **DCA
-6-2015 Tables 2 and 3A**, the deck joist spans and overhangs and the deck beam spans (#41, below). The engine is tested on synthetic
+6-2015 Tables 2 and 3A**, the deck joist spans and overhangs and the deck beam spans (#41, below), and
+its **Appendix B Tables B1–B3**, deck post heights and footing sizes (#42, below). The engine is tested on synthetic
 fixtures (`tests/Napkin.Core.RulesEngine.Tests/Fixtures`, `Golden/`, marked `SYNTHETIC TEST DATA - NOT
 CODE VALUES`) and on the shipped Connecticut pack described below, whose own golden files are in
 `packs/golden/`. With no pack, or a pack without a table, the answer is `NoData` - napkin never guesses.
+A header's Sized/Out of scope and a wall line's Passes/Fails/Out of scope results carry `UNREVIEWED:
+values not yet checked against the source` in their citation, details and short forms until the
+adopted pack is signed off (§13 Decision 5; #255), the same as the deck lines described below.
 
 **`packs/` (repo root, shipped beside the executable)** holds the first real pack, **Connecticut
 2022** (`packs/packs/us-ct-2022`, on the 2021 IRC as amended; CT 2026 is not in force yet). It was
@@ -47,8 +51,27 @@ read from Connecticut's own document (2022 CSBC w/ Errata #1, ED October 1, 2022
   upper-bound bands of 6' to 18', each note verbatim; and two scope notes from p. 5 (the beam may extend
   L_B/4 past the post face; joists do not frame in from opposite sides). Table 3B (glulam) is not
   transcribed. Golden file `packs/golden/us-ct-2022/dca6-table-3a.golden.json`; checklist
-  `docs/code-packs/reviews/us-ct-2022/dca6-table3a.md`, unfilled until the independent review is done.
-  `review.status` is pack-wide and stays `unreviewed`, so every line says UNREVIEWED.
+  `docs/code-packs/reviews/us-ct-2022/dca6-table3a.md` (reviewed clean, #41 C2).
+- **Revision 4** (#42 slice B3, 2026-09-27) adds Appendix B, offered "As an alternative to Table 4" (p. B2)
+  and used instead of Table 4 (1,500 psf soil only) by the design note's decision 2: **Table B1** (post
+  heights for corner posts, p. B3) and **Table B2** (centre posts, p. B4), 250 rows each — 25 tributary-area
+  bands (10 to 250 sq ft) × the 6x6 and 4x4 columns × five species headings, 13 and 11 cells printed "NP" —
+  and **Table B3** (footing sizes, p. B5), 100 rows — 25 area bands × 1,500 / 2,000 / 2,500 / 3,000 psf,
+  each a round diameter, a square side and a thickness. Every note verbatim where its superscript sits;
+  Table B2 note 4 and Table B3 note 2, "Tributary area shall be multiplied by 1.25 at center posts with
+  beams not spliced (continuous)", are the tables' **centre-post factor** (below), applied, not shown as a
+  footnote. Golden files `packs/golden/us-ct-2022/dca6-table-b1.golden.json`, `-b2`, `-b3`; checklists
+  `docs/code-packs/reviews/us-ct-2022/dca6-tableB1.md`, `dca6-tableB2.md`, `dca6-tableB3.md`, unfilled until
+  the independent review is done. `review.status` is pack-wide and stays `unreviewed`, so every line says
+  UNREVIEWED.
+- **Revision 5** (#42, 2026-09-27, a correction to revision 4) enforces DCA 6's minimum post size, which
+  revision 4 had left out: p. 10 opens "All deck post sizes shall be 6x6 (nominal) or larger", and Appendix B
+  is an alternative to Table 4's height and footing assumptions (pp. B1–B2), not to that minimum — yet a 4x4
+  post answered from Tables B1/B2's 4x4 columns. Each of the two post tables now carries the limit
+  `t.post-size` (`member` `notIn` 6x6, 6x8, 8x8 — every materials-library size 6x6 nominal or larger in both
+  dimensions), tried before its lookup, so a smaller post is **Out of scope** citing p. 10; the 4x4 columns
+  stay transcribed as printed. The guide adds item 3, p. 2 ("Minimum post size is 6x6 nominal …") as the scope
+  note `n.post-size`, shown in the paragraph at the top of the deck block.
 
 **Where the app looks for packs roots** (`PackLocations.All()`): `packs/` beside the executable, then
 the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application Support/napkin`, or
@@ -58,7 +81,7 @@ the per-user `<config>/napkin/packs` (`%APPDATA%\napkin`, `~/Library/Application
 
 **Project → Adopted code and site…** lists every pack found in those folders as "<shortName> —
 <baseCode>, in force <from>" with its id, revision, status and review state, for example "CT 2022
-— IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 3): base tables not loaded; deck tables from
+— IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 5): base tables not loaded; deck tables from
 DCA 6-2015, a guide (UNREVIEWED)".
 A pack that fails to load is shown with its problems, not hidden. napkin never picks one: the
 choice is stored with the design (format 6), locked to a revision (with the date) or following
@@ -288,7 +311,8 @@ schema then, with its own load checks and golden cases.
 ## Deck tables (#198)
 
 A base layer may carry a `deck/` directory ([`deck-and-porch.md`](./design/deck-and-porch.md) §3), each
-file one of four kinds, at most one of each (and one `member-span` table per `use`):
+file one of five kinds, at most one of each (one `member-span` table per `use`, one `deck-post` table per
+`position`):
 
 | `kind` | inputs it may declare | outputs per row |
 |---|---|---|
@@ -296,7 +320,8 @@ file one of four kinds, at most one of each (and one `member-span` table per `us
 | `member-span`, `use: deck-beam` | `supports`, `species`, `member` ("(2) 2x10"); `joistSpan` (length, upper-bound) | `span` |
 | `member-span`, `use: rafter` | `species`, `member`; `spacing` (exact); `groundSnowLoad`, `roofLiveLoad` (psf, upper-bound) | `span` |
 | `deck-ledger` | `member`; `joistSpan` (upper-bound) | `fastener` (text as printed), `spacing` |
-| `deck-footing` | `tributaryArea` (`sqft`, upper-bound); `soilBearing` (psf, **`lower-bound`**) | `footing` (text as printed) |
+| `deck-footing` | `tributaryArea` (`sqft`, upper-bound); `soilBearing` (psf, **`lower-bound`**) | `round`, `square`, `thickness` (lengths as printed) |
+| `deck-post`, `position: corner` or `center` | `species` (category, exact); `post` ("6x6", "4x4"); `tributaryArea` (`sqft`, upper-bound) | `height`, or `notPermitted: true` where the cell prints NP |
 | `deck-guard-stair` | none: a provisions file, `guard` and `stair` objects whose items may each be `null` ("not covered by this pack") | — |
 
 A **`lower-bound`** column selects the largest bound *at most* the input — a stronger soil is never
@@ -328,13 +353,38 @@ L_B that DCA 6's Figure 3 (p. 7) dimensions face to face of posts (p. 5: "past t
 decision of 2026-09-27) — and the line says "between post faces". Appendix B's centreline measure, B_L, is a
 different quantity, for posts' and footings' tributary areas (`DeckFraming.Tributary`, pp. B1–B2).
 
-`DeckEvaluator.CheckSpan` answers **Passes** or **Short** (by how much), `SizeLedger` and `SizeFooting`
-**Sized** (the ledger with napkin's own fastener count, ⌈length ÷ spacing⌉ + 1), and every one of
-them **Out of scope** (citing the scope limit that held, or naming the column no row covers),
-**Input missing** or **No data** as the header check does. Every deck line that answers from a
-pack's data says `UNREVIEWED: values not yet checked against the source.` until the pack is signed
+**Posts and footings** (#42 slice B3, deck-guide-pack §3.4). Post tables are keyed by a table-level
+`position`, `corner` or `center`, as span tables are by `use`, so each printed table keeps its own
+designation, page and notes (DCA 6's Table B1 is the corner table, B2 the centre table). A row prints a
+`height` or, where the cell prints "NP", `notPermitted: true` — exactly one; a post there is **Out of
+scope**, citing the row and quoting "NP" as printed (the page does not expand it). A footing row prints
+three lengths, `round` (diameter), `square` (side) and `thickness`. A footing table or a centre post table
+may declare a **centre-post factor**, the operation a note prints:
+`"centerPostFactor": { "note": "2", "text": "<verbatim>", "multiply": "5/4", "location": "…" }` — the
+multiplier an exact fraction, the note carried here and not also among the footnotes; a corner post table
+or any other kind may not declare one. `DeckEvaluator.SizeFooting(pack, area, soilBearing, scope)` and
+`CheckPost(pack, request, scope)` take a `PostArea` — the tributary area (square 1/1024″, exact), the
+position and whether the beam over the post is continuous — and multiply the area by the factor, exactly,
+for a centre post under a continuous beam before the lookup; the result's `Area` says the area asked, the
+factor and the area looked up. `CheckPost` picks the table by position, tries the guide's scope limits and
+then the table's own — DCA 6's post tables refuse a post under 6x6 nominal there, citing p. 10, before any row
+is read, so that answer carries no area — and answers **Passes** or **Short** against the row's height. The
+deck check (`DeckCheck`) asks, under napkin's beam — one piece the deck's width long, so continuous — an **End
+posts** line (a corner post, Eq. B-2) and, with three or more posts, a
+**Middle posts** line (a centre post, Eq. B-1), each with the frame's post length from grade to the beam's
+underside (DCA 6 p. 10), and a **Footings** line for the most loaded post, each saying its area, the
+equation and measures, and the factor ("× 1.25, a centre post under a continuous beam (DCA 6-2015 Table B3
+note 2, p. B5 …) = 37.0 sq ft"). The soil bearing value is the site's, typed in **Project → Adopted code and
+site** and never defaulted; until it is, the footing line is **Input missing** and says where to type it.
+
+`DeckEvaluator.CheckSpan` and `CheckPost` answer **Passes** or **Short** (by how much), `SizeLedger` and
+`SizeFooting` **Sized** (the ledger with napkin's own fastener count, ⌈length ÷ spacing⌉ + 1), and every
+one of them **Out of scope** (citing the scope limit that held, naming the column no row covers, or a post
+row printed NP), **Input missing** or **No data** as the header check does. Every deck line that answers
+from a pack's data says `UNREVIEWED: values not yet checked against the source.` until the pack is signed
 off. The synthetic tables are in `tests/Napkin.Modules.Building.Tests/CodePacks/deck` (NOT CODE VALUES);
-the real tables are DCA 6-2015 Tables 2 and 3A under the Connecticut pack (above); the rest are M10's (#40, #42, #43).
+the real tables are DCA 6-2015 Tables 2, 3A, B1, B2 and B3 under the Connecticut pack (above); the ledger
+and the guard and stair provisions are M10's (#40, #43).
 
 ## Guide layers, scope limits and species groups (#238)
 
@@ -377,8 +427,9 @@ my-packs/
   table's own `limits` (any deck table may carry them, same shape), in order. The first whose input is not
   entered is **Input missing** naming it; the first that holds is **Out of scope** citing its text and
   location ("Beyond the scope of ZZ GUIDE: "…" (ZZ GUIDE p. 2, item 9). Get it engineered."). Inputs:
-  `supports`, `species`, `member` (categories; `member` is the lookup's own member, so a footing has none —
-  put member limits on the table they concern), `groundSnowLoad` (the site's, psf), `deckLength` (out from
+  `supports`, `species`, `member` (categories; `member` is the lookup's own member — for a post table, the
+  post — so a footing has none: put member limits on the table they concern, as DCA 6's Tables B1 and B2 carry
+  p. 10's 6x6 minimum, `t.post-size`), `groundSnowLoad` (the site's, psf), `deckLength` (out from
   the house) and `deckWidth` (along it). Forms, exactly one per limit: `above` (a number or length, strictly
   greater), `equals`, `in`, `notIn` (categories), `aboveInput` (a length above another length). The deck
   check supplies them (`DeckScopeInputs`; `SizeLedger`/`SizeFooting` take them as an argument, `SpanRequest`
@@ -399,18 +450,25 @@ my-packs/
 **Deck golden files** use `"deck": "<table>"` (in place of `"table"`). A case's `inputs` are the table
 kind's own — `member`, `span` (the actual span), `spacing`, `joistSpan`, `roofLiveLoad` for a span table;
 `member`, `joistSpan`, `ledgerLength` for the ledger; `tributaryArea` (whole square feet, or two lengths
-multiplied) and `soilBearing` for a footing — plus a guide's scope inputs `supports`, `species`,
-`groundSnowLoad`, `deckLength`, `deckWidth`. `expect` is one of `passes { allowed }`, `short { allowed,
-over }`, `sized { text, spacing?, count? }` (each with the case's `row`), `outOfScope { limit }` or
-`outOfScope { column }`, `inputMissing { input }` or `noData {}`. A deck-joist case may add `cantilever`:
+multiplied), `soilBearing`, `position` (`corner` or `center`) and `continuousBeam` (true or false, false
+when absent) for a footing; `post`, `height`, `tributaryArea` and `continuousBeam` for a post table (its
+position is the table's) — plus a guide's scope inputs `supports`, `species`, `groundSnowLoad`,
+`deckLength`, `deckWidth`. `expect` is one of `passes { allowed }`, `short { allowed, over }` (a post's
+`allowed` is its row's height), `sized { text, spacing?, count? }` for a ledger or `sized { round, square,
+thickness }` for a footing (each with the case's `row`), `outOfScope { limit }`, `outOfScope { column }` or
+`outOfScope { notPermitted: true }` (a post row printed NP, with the case's `row`), `inputMissing { input }`
+or `noData {}`. A deck-joist case may add `cantilever`:
 it then asks the cantilever check, `span` being the actual joist span, and `allowed` is the lesser of
 the row's overhang and the cap. Every row and every scope limit of the
 table **and its guide** needs a hand-authored case, so each table proves it applies the scope; a row with
 an overhang also needs a hand-authored cantilever case whose `allowed` is the row's own overhang (ask on a
-span long enough that it governs), so the transcribed overhang is checked, not only the cap. The boundary
-pairs (each row's span at and 1/1024″ past its allowed span; each row's cantilever at and 1/1024″ past
-what it allows on its first cantilever case's span; each banded input at its bound and one step
-past; each `above`/`aboveInput` limit at its bound and one step over) are generated by
+span long enough that it governs), so the transcribed overhang is checked, not only the cap; a table with
+a centre-post factor needs a hand-authored case, naming its row, that asks a centre post under a
+continuous beam, so the factor is applied, not only declared. The boundary
+pairs (each row's span or post height at and 1/1024″ past its allowed one; each row's cantilever at and
+1/1024″ past what it allows on its first cantilever case's span; each banded input at its bound and one
+step past — an area asked under the factor at the bound ÷ the factor, so the multiplied area lands on it;
+each `above`/`aboveInput` limit at its bound and one step over) are generated by
 `GoldenRunner.DeckBoundaries(pack, json)` from the rows and the file's own hand cases, and committed with
 `"generated": "boundary"`; a file whose committed pairs are not the generator's fails and prints them. The
 synthetic files are in `tests/Napkin.Modules.Building.Tests/CodePacks/deck/golden/`; the shipped packs'

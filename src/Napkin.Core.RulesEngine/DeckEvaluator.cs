@@ -12,6 +12,13 @@ public abstract record DeckResult
     {
     }
 
+    /// <summary>
+    /// For a post or footing lookup that reached its table's rows, the tributary area it was asked with and, when the
+    /// table's centre-post factor applied, the factor and the area looked up (deck-guide-pack §3.4); null for the other
+    /// lookups and for an input missing, so two answers that say the same are the same.
+    /// </summary>
+    public AreaAsked? Area { get; init; }
+
     /// <summary>The span is within the row's allowed span.</summary>
     /// <param name="Code">The adopted code it was computed under.</param>
     /// <param name="Table">The table.</param>
@@ -41,7 +48,11 @@ public abstract record DeckResult
     /// The request is outside what the table covers, and the table (or its guide) says so: a scope
     /// <paramref name="Limit"/> that held, or the <paramref name="Column"/> whose value no row covers.
     /// </summary>
-    public sealed record OutOfScope(AdoptedCodeRef Code, DeckTable Table, string Explanation, ScopeLimit? Limit, string? Column) : DeckResult;
+    public sealed record OutOfScope(AdoptedCodeRef Code, DeckTable Table, string Explanation, ScopeLimit? Limit, string? Column) : DeckResult
+    {
+        /// <summary>The row that answered with no value — a post table's cell printed NP (deck-guide-pack §3.4) — or null.</summary>
+        public DeckRow? Row { get; init; }
+    }
 
     /// <summary>An input the table bands on, or a scope limit tests, is not entered.</summary>
     public sealed record InputMissing(string Input, string Explanation) : DeckResult;
@@ -83,6 +94,29 @@ public sealed record SpanRequest(
     int? RoofLiveLoad = null,
     Length? DeckLength = null,
     Length? DeckWidth = null);
+
+/// <summary>
+/// A post's tributary area as a post-height or footing lookup asks it (deck-guide-pack §3.4): the area in square
+/// 1/1024″, exact, where the post stands, and whether the beam over it is continuous (not spliced), which decides
+/// whether a table's centre-post factor applies.
+/// </summary>
+/// <param name="Area">The tributary area, Eq. B-1 or Eq. B-2 of DCA 6 Appendix B for napkin's deck, in square 1/1024″.</param>
+/// <param name="Position">A corner post or a centre post.</param>
+/// <param name="ContinuousBeam">Whether the beam runs over the post unspliced.</param>
+public sealed record PostArea(ExactFraction Area, PostPosition Position, bool ContinuousBeam);
+
+/// <summary>The tributary area a post or footing lookup was asked with, and what it looked up.</summary>
+/// <param name="Area">The area asked, in square 1/1024″.</param>
+/// <param name="Factor">The table's centre-post factor when it applied (a centre post under a continuous beam); otherwise null.</param>
+/// <param name="Looked">The area the table was read at: <paramref name="Area"/> × the factor, or the area itself.</param>
+public sealed record AreaAsked(ExactFraction Area, CenterPostFactor? Factor, ExactFraction Looked);
+
+/// <summary>What a post-height check asks (deck-guide-pack §3.4): the post as the table names it, its height, the species and its area.</summary>
+/// <param name="Post">The post, "4x4" or "6x6".</param>
+/// <param name="Height">The post's height, measured as the table's guide measures it (DCA 6 p. 10: grade to the beam's underside).</param>
+/// <param name="Species">The species, or null when not entered.</param>
+/// <param name="Area">Its tributary area and position; the position picks the table.</param>
+public sealed record PostRequest(string Post, Length Height, string? Species, PostArea Area);
 
 /// <summary>
 /// The deck checks' lookups (§3.1–§3.3): a banded lookup in the adopted pack's deck tables, strictly
@@ -236,11 +270,14 @@ public static class DeckEvaluator
     }
 
     /// <summary>
-    /// The footing (§3.3) for a post's tributary area, in square 1/1024″, and the site's soil bearing value.
-    /// <paramref name="deck"/> carries what a guide's scope may test; null means nothing entered.
+    /// The footing (§3.3, deck-guide-pack §3.4) for a post's tributary area and the site's soil bearing value: the area
+    /// multiplied by the table's centre-post factor for a centre post under a continuous beam, then the row. The result
+    /// carries the area asked and looked up. <paramref name="deck"/> carries what a guide's scope may test; null means
+    /// nothing entered.
     /// </summary>
-    public static DeckResult SizeFooting(LoadedPack? pack, ExactFraction tributaryArea, int? soilBearing, DeckScopeInputs? deck = null)
+    public static DeckResult SizeFooting(LoadedPack? pack, PostArea area, int? soilBearing, DeckScopeInputs? deck = null)
     {
+        ArgumentNullException.ThrowIfNull(area);
         if (NoTable(pack, pack?.Deck.Footing, "deck footing table") is { } none)
         {
             return none;
@@ -252,19 +289,97 @@ public static class DeckEvaluator
             return stopped;
         }
 
-        Int128 perFoot = (Int128)Length.UnitsPerFoot * Length.UnitsPerFoot;
+        AreaAsked asked = Factored(table, area);
         Dictionary<string, (string? Symbol, ExactFraction? Magnitude)?> inputs = new(StringComparer.Ordinal)
         {
-            ["tributaryArea"] = (null, new ExactFraction(tributaryArea.Numerator, tributaryArea.Denominator * perFoot)),
+            ["tributaryArea"] = (null, SquareFeet(asked.Looked)),
             ["soilBearing"] = soilBearing is { } psf ? (null, ExactFraction.Whole(psf)) : null,
         };
 
         return Lookup(pack.Code, table, inputs) switch
         {
-            (DeckRow row, _) => new DeckResult.Sized(pack.Code, table, row, null),
+            (DeckRow row, _) => new DeckResult.Sized(pack.Code, table, row, null) { Area = asked },
+            (_, DeckResult.OutOfScope scope) => scope with { Area = asked },
             (_, DeckResult other) => other,
         };
     }
+
+    /// <summary>
+    /// A post's height against the post table for its position (deck-guide-pack §3.4): the guide's scope, the species read
+    /// as the table's group, the area multiplied by the table's centre-post factor when it applies, then the row — passes
+    /// or short against the row's height, or Out of scope citing a row that prints NP. <paramref name="deck"/> carries
+    /// what a guide's scope may test; null means nothing entered.
+    /// </summary>
+    public static DeckResult CheckPost(LoadedPack? pack, PostRequest request, DeckScopeInputs? deck = null)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        PostPosition position = request.Area.Position;
+        string what = position == PostPosition.Corner ? "corner post table" : "centre post table";
+        if (NoTable(pack, pack?.Deck.Posts.GetValueOrDefault(position), what) is { } none)
+        {
+            return none;
+        }
+
+        DeckTable table = pack!.Deck.Posts[position];
+        if (Scope(pack.Code, table, deck ?? DeckScopeInputs.NotEntered, request.Post) is { } stopped)
+        {
+            return stopped;
+        }
+
+        (SpeciesGroup? group, DeckResult? unplaced) = Group(pack.Code, table, request.Species);
+        if (unplaced is not null)
+        {
+            return unplaced;
+        }
+
+        AreaAsked asked = Factored(table, request.Area);
+        Dictionary<string, (string? Symbol, ExactFraction? Magnitude)?> inputs = new(StringComparer.Ordinal)
+        {
+            ["species"] = request.Species is { } sp ? (group?.Group ?? sp, null) : null,
+            ["post"] = (request.Post, null),
+            ["tributaryArea"] = (null, SquareFeet(asked.Looked)),
+        };
+
+        (DeckRow? found, DeckResult? other) = Lookup(pack.Code, table, inputs);
+        if (other is not null)
+        {
+            return other is DeckResult.OutOfScope scope ? scope with { Area = asked } : other;
+        }
+
+        DeckRow row = found!;
+        if (row.NotPermitted)
+        {
+            string area = new CellValue(ColumnType.SquareFeet, null, row.Inputs["tributaryArea"].Magnitude).ToString();
+            return new DeckResult.OutOfScope(
+                pack.Code,
+                table,
+                $"Table {table.Designation} prints NP, no height, for a {request.Post} post of {group?.Group ?? request.Species} carrying up to {area} (row {row.Id}, {row.Source.Location}): get it engineered.",
+                null,
+                null)
+            {
+                Row = row,
+                Area = asked,
+            };
+        }
+
+        Length allowed = row.Height!.Value;
+        return request.Height <= allowed
+            ? new DeckResult.Passes(pack.Code, table, row, allowed, request.Height, group) { Area = asked }
+            : new DeckResult.Short(pack.Code, table, row, allowed, request.Height, group) { Area = asked };
+    }
+
+    /// <summary>
+    /// The area a post or footing table is read at (deck-guide-pack §3.4): multiplied, exactly, by the table's centre-post
+    /// factor when the post is a centre post under a continuous beam and the table declares one; otherwise the area.
+    /// </summary>
+    static AreaAsked Factored(DeckTable table, PostArea area)
+        => table.CenterPostFactor is { } factor && area.Position == PostPosition.Center && area.ContinuousBeam
+            ? new AreaAsked(area.Area, factor, new ExactFraction(area.Area.Numerator * factor.Multiply.Numerator, area.Area.Denominator * factor.Multiply.Denominator))
+            : new AreaAsked(area.Area, null, area.Area);
+
+    /// <summary>Square 1/1024″ as square feet, exact.</summary>
+    static ExactFraction SquareFeet(ExactFraction squareUnits)
+        => new(squareUnits.Numerator, squareUnits.Denominator * Length.UnitsPerFoot * Length.UnitsPerFoot);
 
     /// <summary>No code chosen, or a pack without the table: the honest no-data sentence.</summary>
     static DeckResult.NoData? NoTable(LoadedPack? pack, DeckTable? table, string what)
@@ -415,8 +530,16 @@ public static class DeckEvaluator
         return (rows.Single(), null);
     }
 
-    /// <summary>"Enter the species", "Enter what the deck supports".</summary>
-    static string Enter(string input) => input == "supports" ? $"Enter {Spoken(input)}" : $"Enter the {Spoken(input)}";
+    /// <summary>
+    /// "Enter the species", "Enter what the deck supports"; the soil bearing value, never defaulted, says where it is typed
+    /// and where it comes from (#42).
+    /// </summary>
+    static string Enter(string input) => input switch
+    {
+        "supports" => $"Enter {Spoken(input)}",
+        "soilBearing" => "Enter the site's soil bearing value, from the building department or a soils report, in Project → Adopted code and site",
+        _ => $"Enter the {Spoken(input)}",
+    };
 
     /// <summary>An input's name in a sentence.</summary>
     public static string Spoken(string input) => input switch

@@ -220,6 +220,51 @@ public class BracingCheckTests
         Assert.Empty(BracingCheck.Methods(null));
     }
 
+    /// <summary>
+    /// #255: every string form of a Passes, a Fails or an Out of scope bracing result carries
+    /// UNREVIEWED while the adopted pack (us-zz-brace-a, CodePacks/brace) is unreviewed, the same way
+    /// a deck line already does (design §13 Decision 5) — and none of them do once signed off.
+    /// </summary>
+    [Fact]
+    [Trait("Feature", "BLD-005")]
+    public void The_unreviewed_label_marks_every_form_of_a_passes_fails_or_out_of_scope_result_and_drops_once_signed_off()
+    {
+        BracingResult.Passes passes = Assert.IsType<BracingResult.Passes>(AllPanels(Design()).Result());
+        BracingResult.Fails fails = Assert.IsType<BracingResult.Fails>(Design().Result());
+        BracingResult.OutOfScope beyond = Assert.IsType<BracingResult.OutOfScope>(AllPanels(Design(height: In(145))).Result());
+        Assert.Equal(ReviewStatus.Unreviewed, passes.Citation.Code.Review);
+
+        CheckWords passesWords = BracingCheck.Words(passes);
+        CheckWords failsWords = BracingCheck.Words(fails);
+        CheckWords beyondWords = BracingCheck.Words(beyond);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, passes.ToString(), StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, fails.ToString(), StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, beyond.ToString(), StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, passesWords.Citation, StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, failsWords.Citation, StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, beyondWords.Citation, StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, passesWords.Details, StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, failsWords.Details, StringComparison.Ordinal);
+        Assert.Contains(AdoptedCodeRef.UnreviewedText, beyondWords.Details, StringComparison.Ordinal);
+
+        // Signed off (GuideLayerTests' pattern: no loader needed, just the code ref's own Review): the label is nowhere.
+        BracingResult.Passes signedPasses = passes with { Citation = passes.Citation with { Code = passes.Citation.Code with { Review = ReviewStatus.SignedOff } } };
+        BracingResult.Fails signedFails = fails with { Citation = fails.Citation with { Code = fails.Citation.Code with { Review = ReviewStatus.SignedOff } } };
+        BracingResult.OutOfScope signedBeyond = beyond with { Limit = beyond.Limit with { Code = beyond.Limit.Code with { Review = ReviewStatus.SignedOff } } };
+        CheckWords signedPassesWords = BracingCheck.Words(signedPasses);
+        CheckWords signedFailsWords = BracingCheck.Words(signedFails);
+        CheckWords signedBeyondWords = BracingCheck.Words(signedBeyond);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedPasses.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedFails.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedBeyond.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedPassesWords.Citation, StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedFailsWords.Citation, StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedBeyondWords.Citation, StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedPassesWords.Details, StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedFailsWords.Details, StringComparison.Ordinal);
+        Assert.DoesNotContain(AdoptedCodeRef.UnreviewedText, signedBeyondWords.Details, StringComparison.Ordinal);
+    }
+
     [Fact]
     [Trait("Feature", "RUL-008")]
     public void Switching_to_pack_B_recomputes_the_wall_and_names_the_newly_flagged_result()

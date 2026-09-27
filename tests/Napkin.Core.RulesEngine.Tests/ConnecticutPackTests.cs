@@ -33,9 +33,10 @@ public class ConnecticutPackTests
         Assert.Equal("w/ Errata #1, ED: October 1, 2022", pack.Manifest.Sources[0].Printing);
         Assert.Equal(ReviewStatus.Unreviewed, pack.Manifest.Review.Status);
 
-        // Revision 2 (#41) declares the DCA 6 guide for its deck tables and revision 3 adds its beam table (#41 B2);
+        // Revision 2 (#41) declares the DCA 6 guide for its deck tables, revision 3 adds its beam table (#41 B2), revision 4
+        // its Appendix B post and footing tables (#42 B3) and revision 5 their 6x6 minimum post (p. 10, #42);
         // still unreviewed, so every line says so.
-        Assert.Equal(3, pack.Manifest.Revision);
+        Assert.Equal(5, pack.Manifest.Revision);
         Assert.Equal(" UNREVIEWED: values not yet checked against the source.", pack.Code.UnreviewedSentence);
     }
 

@@ -92,6 +92,88 @@ at centre posts under a continuous beam), the post-height tables' corner/centre 
 `DeckTributary.Post` already says), and a beam overhang, should napkin ever model one (B_O and B_L to post
 centrelines, and the L_B/4 check).
 
+**As built in slice B3 (#42):** Tables B1 and B2 are **two** `deck-post` tables, keyed by a table-level
+`position` (`corner`, `center`) as `member-span` is keyed by `use` — not one table with a position input column
+as §3.4 drew it: one table cannot carry two designations, two pages and B2's own note 4, and every result cites
+its table, row and page. Designations `"B1"`, `"B2"`, `"B3"`, locations `"p. B3"`, `"p. B4"`, `"p. B5"`; row ids
+`r.sp.4x4.20`, `r.pp-rp-spf.6x6.170` (group, post, area band) and `r.40.1500` (area band, psf column). 250, 250 and
+100 rows, typed from the pages rendered at 500 dpi and cross-checked cell by cell against the text layer (all 800
+agree); the golden files' per-row cases were written from the text layer, so each run cross-checks the two
+readings. B1 prints NP in 13 cells and B2 in 11 (B2's 4x4 Redwood at 250 sq ft prints 1): `notPermitted: true`,
+answered Out of scope citing the row and quoting "NP" as printed — DCA 6 never expands it (pp. B3–B4, Table 4,
+Table C4A), so napkin does not. The five species headings are the groups as printed; "SPF" places the guide's
+Spruce-Pine-Fir (note 2, whose superscript sits on SPF, spells it "spruce-pine-fir"). Notes 1 and 3 sit on the
+title, so apply to every row; note 2 sits on Douglas Fir-Larch, Hem-Fir and SPF, so rides on those three groups'
+rows (B1's precedent); B3's note 1 applies to every row. **The ×1.25 is an operation:** B2 note 4 and B3 note 2 are
+each table's `centerPostFactor` — `{ "note", "text" (verbatim), "multiply": "5/4", "location" }`, not also a
+footnote (bracing's factors are declared the same way), refused on a corner table or any other kind — and the
+evaluator, not `DeckFraming`, multiplies a centre post's area under a continuous beam before the lookup; the
+result carries the area asked, the factor and the area looked up. napkin's beam is one piece the deck's width
+long, so `DeckCheck` always asks with a continuous beam: the larger area, the conservative reading. **Post
+position:** `DeckFraming` now carries `EndPost` (a corner post, Eq. B-2) and, with three or more posts,
+`MiddlePost` (a centre post, Eq. B-1), and `PostLength`, grade to the beam's underside as p. 10 measures post
+height. Without a beam overhang the end post's B_L is the same end span, the next post's centreline to the deck's
+outside edge (the whole width with two posts), so an end post carries half the middle post's area; B1's 4x4
+heights are so much lower than B2's that either may govern, so both are checked, on two lines (**End posts**,
+**Middle posts** — two `DeckCheckKind`s, since a recompute keys a line by kind). The footing line still sizes
+every footing for the most loaded post, the middle one with the factor. The footing sentence reads "14" round or
+13" square, 6" thick, for a middle post's 29.6 sq ft (… Eq. B-1 …) × 1.25, a centre post under a continuous beam
+(DCA 6-2015 Table B3 note 2, p. B5 …) = 37.0 sq ft, on 2000 psf (…)", the note verbatim after the table's notes.
+The soil bearing value is the site's (`SiteValues.SoilBearingPsf`, typed in Project → Adopted code and site),
+never defaulted; its Input missing now says where to type it and that it comes from the building department or
+a soils report. B3's `soilBearing` column is `lower-bound` from 1500 psf (below it, Out of scope) with max the
+last printed column, 3000 psf (a stronger soil reads that column); both area columns' domain min, 1 sq ft, is
+napkin's (the pages print none). The worked example under CT: end posts 14.8 sq ft → B1 `r.sp.4x4.20`, 6'-0";
+middle post 37.0 sq ft → B2 `r.sp.4x4.40`, 13'-0"; posts 1'-6 1/2" pass; footing on 2000 psf → B3 `r.40.2000`.
+Risk 4 stands as designed: a 4x4 answers from B1/B2 with their note 3, and p. 10's "All deck post sizes shall be
+6x6 (nominal) or larger" is not encoded in this slice — whether the guide's scope should say it is Marc's call.
+*(Corrected the same day: p. 10 is now enforced — see "Corrected after slice B3" below.)*
+The golden runner gains post cases (`post`, `height`, `tributaryArea`, `continuousBeam`) and footing cases
+(`position`, `continuousBeam`), the expectations `sized { round, square, thickness }` and `outOfScope {
+notPermitted: true }`, a coverage rule that a table's factor is exercised by a hand case, and boundary pairs
+that ask an area under the factor at the band ÷ the factor. The synthetic pack gains a corner and a centre post
+table (its factor 3/2, not DCA 6's) and its footing table's three outputs. The CT pack goes to revision 4,
+`review` still `unreviewed`; the two locked samples follow. Checklists `dca6-tableB1.md`, `dca6-tableB2.md` and
+`dca6-tableB3.md` are unfilled for the independent review (C3).
+
+**Corrected after slice B3 (#42, 2026-09-27): p. 10's 6x6 minimum is enforced.** Found right after B3 landed at
+0.216.0-beta, and a correctness fix, not a scope choice: read again at 300 dpi, p. 10 (POST REQUIREMENTS) opens
+"All deck post sizes shall be 6x6 (nominal) or larger, and the maximum height shall be in accordance with Table 4
+and measured from grade or top of foundation, whichever is highest, to the underside of the beam" — every deck post,
+not one position — and item 3, p. 2 says "Minimum post size is 6x6 nominal and maximum post height shall be in
+accordance with Table 4." Appendix B does not lift it: it is "an alternative to the assumptions of Table 4 Post
+Height for 6x6 and Footings Sizes for all Posts" (p. B1), and "As an alternative to Table 4 of DCA 6, the post height
+and footing size may be in accordance with Table B1 through B3" (p. B2) — heights and footings, not the minimum
+size. B1/B2's 4x4 columns serve the commentary's alternative (C2 item 3, "In some instances, this commentary provides
+a 4x4 nominal post alternative"; C7, other post sizes under alternative methods a building official approves), which
+napkin does not model. So §3.4's "tension to transcribe as printed" and risk 4 gave a wrong answer: a 4x4 post
+answered Passes from its column. **As built:** Tables B1 and B2 each carry a table limit `t.post-size` — `"when": {
+"input": "member", "notIn": ["6x6", "6x8", "8x8"] }`, its text p. 10's opening clause verbatim, "All deck post sizes
+shall be 6x6 (nominal) or larger", its location "POST REQUIREMENTS, p. 10" — tried after the guide's limits and before
+the lookup, so a post under 6x6 nominal in either dimension is **Out of scope** citing p. 10 and never reaches its
+column; the 4x4 columns stay transcribed as printed. The list is every materials-library size 6x6 nominal or larger
+in both dimensions (a deck post's name can come from nowhere else: the frame refuses any other), so 4x4, 4x6, 2x4 and
+5/4x6 are refused, and a 6x8 or 8x8 passes the limit to find no column in Appendix B (p. 10's "8x8 nominal posts can
+be substituted anywhere in Table 4 but are limited to a maximum height of 14'-0"" is Table 4's, not encoded). It is
+a **table** limit, not a guide scope limit as the fix was first framed: `member` in a guide-level limit is every
+lookup's own member, so every footing (no member) would be Input missing, and each of the guide's other tables'
+goldens would have to cover a limit that cannot apply to it (slice A's deviations, above). The guide gains item 3 as
+the scope note `n.post-size`, so the paragraph at the top of the block shows it beside items 1, 2, 4, 8 and 9. No
+engine change. The footing check is independent of it: Table B3 bands on area and soil, and every footing is still
+sized for the most loaded post. **The worked example under CT (4x4 posts, Southern Pine):** "End posts 4x4, 1'-6 1/2"
+from grade to the beam's underside, Southern Pine, each carrying 14.8 sq ft (DCA 6 Appendix B Eq. B-2, …): Beyond
+table B1: "All deck post sizes shall be 6x6 (nominal) or larger" (DCA 6-2015 POST REQUIREMENTS, p. 10). Get it
+engineered. UNREVIEWED: …", and the **Middle post** line the same citing B2, with its 29.6 sq ft (Eq. B-1) but no
+× 1.25, since no table was read; the footing line is word for word what it was, 14" round or 13" square, 6" thick for
+37.0 sq ft (B3 `r.40.2000`). As 6x6s the posts read B1 `r.sp.6x6.20` and B2 `r.sp.6x6.40` (at 37.0 sq ft), 14'-0"
+each, and pass. The goldens' 125 4x4 row cases per table now expect `t.post-size` — they still name their rows and
+record the printed cell, but the run no longer cross-checks the 4x4 cells (the checklists do) and generates no
+boundary pair for them; the worked example is asked both as a 4x4 and as a 6x6, the inputs-asked and column cases ask
+a 6x6, and a 4x6 case is added. The CT pack goes to revision 5 and the two samples relock; checklists B1 and B2 gain
+the limit and the reading above for the reviewer to confirm, and all three the new revision and scope note. napkin's
+deck tool still starts a deck on 4x4 posts, so a new deck under CT shows both post lines out of scope until they are
+typed as 6x6: whether the starting value should change is Marc's call.
+
 Design note written by Fable per [`PLAN.md`](../../PLAN.md) for Marc's decision of 2026-09-26 on
 #209, **"Decks only via DCA 6"**: the deck checks' real data comes from the American Wood
 Council's *Prescriptive Residential Wood Deck Construction Guide* (DCA 6), a free primary source,
@@ -452,7 +534,9 @@ centre post, 40 sq ft, Southern Pine 6x6: 14 ft (Table B2, p. B4). The check com
 or top of foundation, whichever is highest, to the underside of the beam", p. 10) on a new
 **Posts** line. B2 note 4 is the same 1.25 factor as B3's. A tension to transcribe as printed, not
 resolve: the main body's minimum post is 6x6 (item 3, p. 2; p. 10) while B1/B2 tabulate 4x4
-heights with their own note 3; both are the document.
+heights with their own note 3; both are the document. *(Resolved after B3, #42, 2026-09-27: Appendix B
+replaces Table 4's heights and footings, not the minimum, so B1/B2 refuse a post under 6x6 before the
+lookup, citing p. 10, and keep their 4x4 columns as printed — "Corrected after slice B3" at the top.)*
 
 **Frost and depth.** The frost line stays napkin's comparison of two typed values with CT 2022's
 42" offered (deck-and-porch §3.4); DCA 6 adds two notes for the frost line, `not-encoded`: "at
@@ -606,7 +690,9 @@ paths are untouched throughout.
    right as the clear span — Figure 3 measures L_B face to face; only the tributary area needed the
    centreline measures, done in B2-fix.)*
 4. **4x4 posts in Appendix B vs the 6x6 minimum of the main body.** Transcribed as printed; the
-   Posts line under a 4x4 cites B1/B2 and their note 3.
+   Posts line under a 4x4 cites B1/B2 and their note 3. *(Corrected, #42, 2026-09-27: that answered
+   a 4x4 deck post Passes, which p. 10 forbids. The 4x4 columns stay as printed, and B1/B2's limit
+   `t.post-size` refuses a post under 6x6 nominal before the lookup, citing p. 10.)*
 5. **Figures carry the guard and stair values and the beam-span definition**; pdftotext does not
    extract them. Both roles read the rendered page; a citation names the figure.
 6. **Two tables designated 3A.** Citations carry the page; a golden file names p. 6.
@@ -615,9 +701,19 @@ paths are untouched throughout.
    it. This is the cost of #40–#43 being real; it is spread over five landable slices, and no
    slice ships a value without its review. If the post-height tables prove too much, B3 can land
    B3-the-footing-table first and the `deck-post` kind after.
-8. **AWC's terms.** The PDF is free to download; its permissions flag says `copy: no`; AWC's terms
-   of use were not read for this note. Marc's 2026-09-25 decision covered code tables read from a
-   primary source; a trade association's guide is a different document. A Decision (§8.6).
+8. **AWC's terms — now read, and open again.** Checked 2026-09-27 while researching the
+   safe-default-pack question (`docs/research/safe-default-header-sources.md` §1):
+   [awc.org/about/end-user-license-agreement](https://awc.org/about/end-user-license-agreement/)
+   states (fragments; the page is Cloudflare-blocked to automated fetch, read only in part,
+   **Marc should read it directly**): one printed copy only, no reproduction/resale/modification,
+   "proprietary to the American Wood Council... protected under U.S. copyright law", and "INPUTTING
+   THE PRODUCT OR ANY PORTION THEREOF INTO ANY ARTIFICIAL INTELLIGENCE OR SIMILAR PROGRAM, SUCH AS
+   CHAT GPT, IS PROHIBITED." Whether "the Product" reaches a freely-downloadable guide like DCA 6,
+   and what the AI clause means for a citation/computation use rather than reproducing the
+   document, is Marc's reading, not a transcriber's or reviewer's. **Landed slices B1–B3 (Tables
+   2, 3A, B1–B3) are not being revisited or retracted on this alone** — that is also Marc's call.
+   **Ledger (#40, Table 5) and guards/stairs (#43) are held and must not start until Marc has read
+   the page and said how this applies**, since they would repeat the same act now in question.
 9. **The porch's Supports vocabulary** moves from "what the joist table declares" to "what the
    guide's scope declares"; the panel's `SupportsNote` and the free-text box must follow, or the
    person has nothing to choose from.

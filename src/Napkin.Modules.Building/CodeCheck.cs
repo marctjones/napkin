@@ -444,11 +444,17 @@ public static class CodeCheck
             ? new CheckWords($"{n.Explanation} {WhereToAddTables}", code.ToString(), string.Empty, string.Empty)
             : new CheckWords(n.Explanation, string.Empty, string.Empty, string.Empty);
 
-    /// <summary>A short form of a result for a list or the message bar: "(2) 2x10 (Table T row R)".</summary>
+    /// <summary>
+    /// A short form of a result for a list or the message bar: "(2) 2x10 (Table T row R)", plus
+    /// UNREVIEWED (design §13 Decision 5) until the adopted pack is signed off. Uses
+    /// <see cref="AdoptedCodeRef.UnreviewedFragment"/>, not <see cref="AdoptedCodeRef.UnreviewedSentence"/>:
+    /// callers (the shopping list's Framing note, <see cref="Sentence"/>) supply their own closing
+    /// period, so the fragment must not add a second one.
+    /// </summary>
     public static string Short(HeaderResult result) => result switch
     {
-        HeaderResult.Sized s => $"{s.Header}, {s.JackStuds} jack and {s.KingStuds} king each side (Table {s.Citation.Table} row {s.Citation.RowId})",
-        HeaderResult.OutOfScope o => $"beyond Table {o.Limit.Table}: get it engineered",
+        HeaderResult.Sized s => $"{s.Header}, {s.JackStuds} jack and {s.KingStuds} king each side (Table {s.Citation.Table} row {s.Citation.RowId}){s.Citation.Code.UnreviewedFragment}",
+        HeaderResult.OutOfScope o => $"beyond Table {o.Limit.Table}: get it engineered{o.Limit.Code.UnreviewedFragment}",
         HeaderResult.InputMissing m => $"not checked: {Named(m.Inputs)} not entered",
         _ => "no data to check it against",
     };
@@ -520,13 +526,15 @@ public static class CodeCheck
 
     private static int Rank(ChangeKind kind) => Array.IndexOf(Ranked, kind);
 
+    /// <summary>The band trace, interpolation, footnotes and source behind a result, plus UNREVIEWED (design §13 Decision 5) until the pack is signed off.</summary>
     private static string Details(Napkin.Core.RulesEngine.Citation citation)
         => string.Join(
             "\n",
             citation.Trace.Select(match => $"How it was found: {match}")
                 .Concat(citation.Interpolation is { } working ? [$"Interpolation: {working}"] : [])
                 .Concat(citation.Footnotes.Select(note => $"Footnote {note.Id}: {note.Text}"))
-                .Append($"Source: {citation.Source.Title}, {citation.Source.Location} ({citation.Source.Url}, retrieved {citation.Source.RetrievedOn:yyyy-MM-dd})"));
+                .Append($"Source: {citation.Source.Title}, {citation.Source.Location} ({citation.Source.Url}, retrieved {citation.Source.RetrievedOn:yyyy-MM-dd})"))
+           + citation.Code.UnreviewedSentence;
 
     /// <summary>The explanation's first sentence, the one that names the limit; the "get an engineer" sentence is said by the headline.</summary>
     private static string Limit(string explanation)

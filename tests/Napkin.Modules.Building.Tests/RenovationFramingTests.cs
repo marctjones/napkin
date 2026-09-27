@@ -77,7 +77,7 @@ public class RenovationFramingTests
         Assert.Equal(new MemberSpec(2, "2x6"), sized.Header);
         Assert.Equal("ZZ-RENO-HEADER", sized.Citation.Table);
         Assert.Equal("Header (2) 2x6, 1 jack stud and 1 king stud each side.", CodeCheck.Words(Only(sketch, Reno), Library).Headline);
-        Assert.Equal("(2) 2x6, 1 jack and 1 king each side (Table ZZ-RENO-HEADER row reno.a)", CodeCheck.Short(Only(sketch, Reno)));
+        Assert.Equal("(2) 2x6, 1 jack and 1 king each side (Table ZZ-RENO-HEADER row reno.a) — UNREVIEWED: values not yet checked against the source", CodeCheck.Short(Only(sketch, Reno)));
     }
 
     [Fact]
