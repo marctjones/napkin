@@ -290,8 +290,9 @@ Porch on a deck** is the finished example.
   **Roof** block; read the rafters, the cuts, the coverings, the rafter check and the **Sunroom test**.
 - **Buy it**: Ctrl/Cmd+Shift+L — the **Deck** and **Roof** sections, with the sunroom line under Roof.
 - Every check is a cited line, or says **No data** / out of scope and why. Under the shipped
-  Connecticut pack the joists (and their cantilever) answer from AWC's DCA 6-2015 Table 2, a guide
-  (below); the beam, ledger, footing and rafter tables are **No data** until they land (#40–#42, #209).
+  Connecticut pack the joists (and their cantilever) answer from AWC's DCA 6-2015 Table 2 and the
+  beam from its Table 3A, a guide (below); the ledger, footing and rafter tables are **No data** until
+  they land (#40, #42, #209).
 
 ## A deck
 
@@ -307,14 +308,15 @@ the house; joists out from the house at the typed spacing (faces at k·s while k
 end joist), each D − 2t; one row of blocking at mid-span, a piece per bay; the beam's plies; the
 posts, each the deck's height less the decking, a joist and the beam (pier top at grade, a stated
 assumption); and the decking, the least number of boards whose widths and gaps cover the depth,
-with how much of the last board shows. The **beam span** between posts and a middle post's
-**tributary area** are kept as exact fractions for the code checks (slice E) and shown rounded, with
-≈ when they are not on the grid. Every piece becomes a cut-list row, so the shopping list buys
+with how much of the last board shows. The **beam span**, measured post centreline to post centreline
+((W − post width) ÷ (posts − 1), the way the deck tables' source measures it), and a middle post's
+**tributary area** (that span × half the joist span plus the cantilever) are kept as exact fractions for
+the code checks (slice E) and shown rounded, with ≈ when they are not on the grid. Every piece becomes a cut-list row, so the shopping list buys
 decks as it buys walls.
 
 **The deck's code check** (`DeckCheck`, deck-and-porch §3) looks each piece up in the adopted
 code's deck tables ([rules-engine.md](rules-engine.md#deck-tables-198)): the joists' span, the
-beam's span between posts for the joists it carries, the ledger's fastening (with napkin's own
+beam's span post centre to post centre for the joists it carries, the ledger's fastening (with napkin's own
 count, ⌈length ÷ spacing⌉ + 1), and the footing under the most loaded post (a middle one with three
 or more posts, an end one with two) on the site's **soil bearing** value. Each line is exactly one
 of passes, short (by how much), sized, out of scope, input missing or no data, with its table, row
@@ -328,16 +330,21 @@ span (DCA 6: L_O or L/4), both said, compared exactly; a table that prints no ov
 not cover one. Under the deck block, napkin lists the words the adopted pack's tables and guide use
 for **Supports** and **Species** — type one; nothing is filled in.
 
-**Under the shipped Connecticut pack** (revision 2) the joist table is **DCA 6-2015 Table 2** (p. 4),
-from the American Wood Council's *Prescriptive Residential Wood Deck Construction Guide*, a guide on
-the 2015 IRC — not Connecticut's adopted code (the 2021 IRC), and the guide says the IRC governs
-where they differ. The block opens with that paragraph, every joist line carries the short clause and
-**UNREVIEWED** until the transcription is independently checked, and the guide's scope is checked
-first: Supports must be `deck` (a porch roof on the deck is out of scope: get it engineered), the
-site's ground snow load at most 40 psf, and the deck no longer out from the house than it is wide.
-Species is one of the eight DCA 6 names (Southern Pine, Douglas Fir-Larch, Hem-Fir, Spruce-Pine-Fir,
-Redwood, Western Cedars, Ponderosa Pine, Red Pine), read as Table 2's printed group. The beam, ledger
-and footing lines are still **No data**: their tables are M10's next slices (#40–#42).
+**Under the shipped Connecticut pack** (revision 3) the joist table is **DCA 6-2015 Table 2** (p. 4)
+and the beam table its **Table 3A** (p. 6), from the American Wood Council's *Prescriptive Residential
+Wood Deck Construction Guide*, a guide on the 2015 IRC — not Connecticut's adopted code (the 2021
+IRC), and the guide says the IRC governs where they differ. The block opens with that paragraph, every
+joist and beam line carries the short clause and **UNREVIEWED** until the transcription is
+independently checked, and the guide's scope is checked first: Supports must be `deck` (a porch roof
+on the deck is out of scope: get it engineered), the site's ground snow load at most 40 psf, and the
+deck no longer out from the house than it is wide. Species is one of the eight DCA 6 names (Southern
+Pine, Douglas Fir-Larch, Hem-Fir, Spruce-Pine-Fir, Redwood, Western Cedars, Ponderosa Pine, Red Pine),
+read as each table's printed group (Table 2 prints three, Table 3A two). The beam is typed as plies
+and lumber — "(2) 2x10" is Table 3A's "2-2x10", "(1) 4x8" its "4x8" — and Table 3A prints no solid
+3x or 4x beam for Southern Pine. Its line reads the beam span post centre to post centre against the
+column for the joists it carries: "Beam (2) 2x10 on 3 posts, span 5'-10 1/4" post centre to post
+centre, carrying 9'-9" of joists: allowed up to 7'-9" (DCA 6-2015 Table 3A row r.sp.2-2x10.10, p. 6
+…)". The ledger and footing lines are still **No data**: their tables are M10's next slices (#40, #42).
 
 **Guard and stair** (§4, napkin's layout, not a code detail). Tick **Guard** and every open edge gets
 posts at both ends of each run and evenly between (at most the typed spacing apart, a corner post

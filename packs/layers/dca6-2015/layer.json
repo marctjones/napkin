@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "notes": "AWC DCA 6, a guide on the 2015 IRC, declared by the Connecticut 2022 pack for its deck tables only (docs/design/deck-guide-pack.md). It is not Connecticut's adopted code (CT 2022 adopts the 2021 IRC). Every text below is verbatim from the PDF named in sources (sha256 checked 2026-09-27), with where it is printed; an ellipsis joins two verbatim passages. Transcribed 2026-09-27 (#41 slice B1); not yet reviewed (docs/code-packs/reviews/us-ct-2022/dca6-table2.md).",
+  "notes": "AWC DCA 6, a guide on the 2015 IRC, declared by the Connecticut 2022 pack for its deck tables only (docs/design/deck-guide-pack.md). It is not Connecticut's adopted code (CT 2022 adopts the 2021 IRC). Every text below is verbatim from the PDF named in sources (sha256 checked 2026-09-27), with where it is printed; an ellipsis joins two verbatim passages. Transcribed 2026-09-27: Table 2 (#41 slice B1) and Table 3A, p. 6, with the two beam notes from p. 5 (#41 slice B2); not yet reviewed (docs/code-packs/reviews/us-ct-2022/dca6-table2.md, dca6-table3a.md).",
   "kind": "guide",
   "id": "dca6-2015",
   "guide": {
@@ -72,6 +72,16 @@
         "id": "n.materials",
         "text": "All lumber and glued laminated timber shall be a naturally durable species (such as Redwood or Western Cedars where 90 percent or more of the width of each side is heartwood); or be preservatively treated with an approved process in accordance with American Wood Protection Association standards (Table 1) [R317 and R318].",
         "location": "MINIMUM REQUIREMENTS & LIMITATIONS item 4, p. 2; Table 1, p. 3"
+      },
+      {
+        "id": "n.beam-span",
+        "text": "Deck beam spans shall be in accordance with Table 3 and can extend past the post face up to LB/4 as shown in Figure 3.",
+        "location": "BEAM SIZE & ASSEMBLY REQUIREMENTS, p. 5; Figure 3, p. 7"
+      },
+      {
+        "id": "n.beam-sides",
+        "text": "Joists shall not frame in from opposite sides of the same beam. See JOIST-TO-BEAM CONNECTION details, Figure 6.",
+        "location": "BEAM SIZE & ASSEMBLY REQUIREMENTS, p. 5"
       }
     ]
   },

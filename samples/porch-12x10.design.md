@@ -34,10 +34,11 @@ By hand (§9.5): rafter run 120 - 1 1/2 + 12 = 130 1/2"; 12 : 5 : 13, so each ra
 144 x 141 3/8 = 20358 — no side walls, so no rake triangles — 2160 / 34182 = 6.3 %, under the 40 %
 line.
 
-The sample is locked to the shipped Connecticut pack, revision 2, whose deck joists come from DCA
-6-2015 Table 2, a guide (#41). With Supports and Species empty the joist line asks for them; the
-panel lists the guide's words. napkin reads the guide as covering a deck carrying only its own loads
-(Table 2 note 1, p. 4; item 8, p. 2), and this deck carries the roof-bearing Front, so what it
-supports is not `deck`: typed as anything else, its joists are out of the guide's scope — get it
-engineered. The beam, ledger, footing and rafter checks say **No
-data** (#40–#42, #209).
+The sample is locked to the shipped Connecticut pack, revision 3, whose deck joists and beam come from
+DCA 6-2015 Tables 2 and 3A, a guide (#41). With Supports and Species empty the joist and beam lines
+ask for them; the panel lists the guide's words. napkin reads the guide as covering a deck carrying
+only its own loads (Table 2 note 1, p. 4; item 8, p. 2), and this deck carries the roof-bearing Front,
+so what it supports is not `deck`: typed as anything else, its joists and beam are out of the guide's
+scope — get it engineered. (The beam line reads its span post centre to post centre: three 4x4s under
+144", (144 − 3 1/2) ÷ 2 = 70 1/4".) The ledger, footing and rafter checks say **No data** (#40, #42,
+#209).
