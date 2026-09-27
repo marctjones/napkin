@@ -269,7 +269,8 @@ public class ContextPackTests
             new DeckRefusal(DeckProblem.NoInputs, "none"),
             [new DeckCheckLine(DeckCheckKind.Joists, null, "Joists: synthetic line.", false)],
             "Say what the deck supports.",
-            new FrostSuggestion(new Length(1024), "ZZ FRAME says 1\" — use it?"));
+            new FrostSuggestion(new Length(1024), "ZZ FRAME says 1\" — use it?"),
+            []);
 
         ContextChecks checks = new(
             new CodeResolution(null, "Code pack us-zz-frame, which this project chose, is not installed (docs/rules-engine.md says where packs go)."),
