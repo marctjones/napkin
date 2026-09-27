@@ -1251,12 +1251,13 @@ window size?", "Setting environment variables on Mac") and the model's library p
    on macOS or Linux: `curl -fsSL https://ollama.com/install.sh | sh`.
 2. **Pull the model:** `ollama pull qwen3:4b-q4_K_M` (2.6 GB, Apache-2.0). `ollama ls` then lists
    it.
-3. **Start Ollama local-only, with room for napkin's context:** quit the Ollama app if it is
-   running, then in a terminal, and leave it open:
-   `OLLAMA_NO_CLOUD=1 OLLAMA_CONTEXT_LENGTH=16384 ollama serve`.
-   (To keep using the app instead: `launchctl setenv OLLAMA_NO_CLOUD 1` and
-   `launchctl setenv OLLAMA_CONTEXT_LENGTH 16384`, then restart the app. 16,384 is napkin's
-   suggestion, 16.1.3; a larger window takes more memory.)
+3. **Start Ollama local-only:** quit the Ollama app if it is running, then in a terminal, and leave
+   it open: `OLLAMA_NO_CLOUD=1 ollama serve`. (To keep using the app instead:
+   `launchctl setenv OLLAMA_NO_CLOUD 1`, then restart the app.) `OLLAMA_CONTEXT_LENGTH` is no
+   longer needed for napkin's own room: every question now asks for it with `options.num_ctx`
+   (§17), 16,384 as before. Setting `OLLAMA_CONTEXT_LENGTH` yourself still works — it is Ollama's
+   own floor, and `num_ctx` cannot ask for less than it — and is worth doing if another program
+   also talks to this Ollama and wants more room than napkin asks for.
 4. **Point napkin at it:** in napkin (this branch until it lands: `dotnet run --project
    src/Napkin.App`), **Assistant → Where the model runs…** → *A program on this machine* → the
    address is already `http://127.0.0.1:11434` → **Check** → click `qwen3:4b-q4_K_M` → **Test**
@@ -1271,3 +1272,82 @@ With llama.cpp instead: `llama-server -hf Qwen/Qwen3-4B-GGUF:Q4_K_M --alias qwen
 `-hf` fetches from a Hugging Face repository — the publisher's lists `Qwen3-4B-Q4_K_M.gguf`,
 `license: apache-2.0` — and `--alias` names the model for the API), then the address
 `http://127.0.0.1:8080` and the model `qwen3-4b` in the dialog.
+
+---
+
+## 17. As built: slice D (#232), and where it departs from this note
+
+`MainWindow.Assistant.cs`'s `OpenAssistantLists`, and the Ollama `num_ctx` carry-over from slice C
+(§16.1 item 3). What differs from §3.2, §9.3, §10 and §16.1, and why:
+
+1. **Most of §3.2 was already built in slice A, ahead of its own slice.** `ContextPack.For`'s
+   `lists` parameter, the CSV-rows-as-items behaviour, the "… N more rows not shown; napkin's list
+   has M" truncation line, and the number words in the guard (`NumberTokens`, zero through
+   nineteen, the tens, hundred, thousand, dozen) all landed with #229 and are tested under
+   `AST-001`/`AST-003` (§14 items 7 and 9). Nothing at the `ContextPack`/`AnswerGuard` level needed
+   writing for D; what was still `[]` was the one call site, `MainWindow.Assistant.cs`'s
+   `BuildAssistantPack`, which slice B left empty on purpose pending this issue.
+2. **"The list is open" means the tab on screen, not any list a window merely has.** napkin's four
+   lists (§3.2: cut list, shopping list, cut layout, fasteners and supplies) are tabs of one
+   `CutListWindow`, never four windows, so at most one can be "open" to look at, at a time.
+   `OpenAssistantLists` reads `MainWindow.CutList` and, when it is not null, sends exactly the tab
+   `IsShowingShoppingList`/`IsShowingCutLayout`/`IsShowingSizes` says is showing (cut list is the
+   default when none of those is). §3.2's "or the question names one" is **not implemented**: a
+   question about the shopping list asked while the cut-list tab is showing gets the cut list's
+   rows, not the shopping list's, exactly as GUI-AST-03 requires opening the shopping list with
+   Ctrl/Cmd+Shift+L before asking about it. Term-matching a question against "shopping", "cut
+   list", "layout" and "fasteners"/"supplies" would add one more guess the guard cannot check
+   ($3.3's term-overlap risk, §12.4, all over again); left for a real need to justify it.
+3. **The shopping list's own `ShoppingCsv` property, not `OpenList.ShoppingList`'s row factory.**
+   `CutListWindow.ShoppingCsv` is `ShoppingListCsv.ToCsv(rows, kerf, ShoppingCost.Lines(rows,
+   prices))`, which appends the priced estimate's lines once anything has a price (#141);
+   `OpenList.ShoppingList(rows, kerf)` calls the two-argument overload and never sees a price. Using
+   the window's own property means the pack always carries exactly the CSV on screen, prices
+   included, rather than a second, unpriced rebuild. The other three tabs (`Csv`, `LayoutCsv`,
+   `ExtrasCsv`) have no such second form, so they go in directly the same way.
+4. **A known limitation, not fixed here:** `OpenList.HeaderLines` defaults to 2 (the statement and
+   the column line) for every list, which is right for a cut list, a cut layout, the supplies list
+   and an unpriced shopping list, but undercounts once `ShoppingCsv` appends its priced section (a
+   blank line, a second header, one line per priced thing, and a summary sentence — `ShoppingListCsv.ToCsv`'s
+   three-argument overload). The pack still carries every line verbatim and the guard still checks
+   every number in it; only the "… N more rows not shown" truncation count would read low for a
+   priced, over-budget shopping list. None of the fixtures used here price anything, so it is not
+   exercised; §12.8's word-budget risk already covers a wrong count under truncation.
+5. **Framing, deck and roof sections are not sent.** The shopping-list tab shows a building's framing
+   (and a deck's or a roof's, when the design has one) below the furniture shopping list in their
+   own sections; `OpenAssistantLists` sends only the tab's main `ShoppingCsv` (furniture parts) or
+   `Csv`/`LayoutCsv` (parts only, likewise). This slice's own examples (`coffee-table`,
+   `stocked-bench`) are furniture with no walls, so the gap is undemonstrated; a person asking about
+   a wall's framing while the shopping list is open gets an accurate refusal (the pack has no
+   framing row to cite), never a wrong number. Extending `OpenAssistantLists` to the framing/deck/roof
+   `ShoppingListTable`s is straightforward if a real design needs it.
+6. **Tests:** `ContextPackTests.cs` adds a hand-checked pack for `coffee-table`'s cut list, its
+   expected CSV lines read from `coffee-table.expected.json`'s own `cutListCsv` at test time (never
+   typed into the test, so the CSV's own quoting cannot drift from what a reviewer already checked),
+   plus a guard case on the Leg row's count (digits and the word "four", a made-up "37" refused).
+   `AnswerGuardTests.cs` adds the shopping-list case named in the issue: `stocked-bench`'s 2x4 row
+   answers "how many 2x4s do I buy?" in digits or as the word "one", a made-up count refused.
+   `GUI-AST-03` (`AssistantWorkflows.cs`) opens `stocked-bench` (the sample with stock; `coffee-table`
+   has none and buys nothing, §9.3), Ctrl/Cmd+Shift+L, asks "how many 2x4s?", and checks the answer
+   and the rendered row against a reference pack built the same way `MainWindow.Assistant.cs` builds
+   one — the `GUI-AST-01`/`-02` pattern — with the row's count read from
+   `stocked-bench.expected.json` at test time rather than typed. The made-up second answer uses "37
+   2x4 boards", a number chosen (and checked, by the assertion that it *is* refused) not to
+   coincide with any digit already in the pack — the shopping row's own "For" text
+   ("Stretcher × 2, Leg × 4") already puts a bare 2 and a bare 4 in the pack, so "one more than the
+   row" (2) would not in fact be refused; §9.3's prose is illustrative, not the literal script.
+7. **The `num_ctx` carry-over (§16.1 item 3, decided on the recommended basis):** Ollama's FAQ,
+   re-read 2026-09-27 (<https://docs.ollama.com/faq>), still says *"By default, Ollama uses a
+   context window size of 4096 tokens"* and *"When using the API, specify the `num_ctx`
+   parameter"*. `Wire.OllamaChat` now writes `options.num_ctx` =
+   `LocalServerModel.OllamaContextLength` (16384, a named constant, citing the FAQ) on every
+   question, alongside `options.temperature`; `DialectTests.cs`'s stub-handler test asserts it is
+   there and that `options` holds exactly `temperature` and `num_ctx`. `Wire.OpenAiChat`
+   (llama-server) sends nothing for it — llama-server's context is fixed by its own
+   `-c`/`--ctx-size` at server start, so there is no per-request field — and the same test now
+   asserts neither `num_ctx` nor `options` appears in that body. §16.4's Try-it text no longer
+   tells Marc to set `OLLAMA_CONTEXT_LENGTH` (napkin asks for the room itself); it stays mentioned
+   as optional, since it is Ollama's own floor and raising it further costs only memory.
+8. **Features:** `GUI-AST-03` is claimed in `features/assistant.json`. No new `AST-0XX` unit id is
+   added: the pack and guard mechanics it would have covered are already `AST-001`'s and
+   `AST-003`'s, claimed by slice A (item 1 above).
