@@ -1151,7 +1151,8 @@ getting a model). Every fact below about Ollama, llama-server or a model was rea
    specify the `num_ctx` parameter"*) — at the cost of memory (*"Setting a larger context length will
    increase the amount of memory required"*); (b) lower the word budget; (c) tell the person to start
    Ollama with `OLLAMA_CONTEXT_LENGTH` (the Try-it below does this). Recommended: (a) with 16,384,
-   measured by the eval set (§11.4) before it is fixed.
+   measured by the eval set (§11.4) before it is fixed. **Done in slice D, on this recommended basis
+   (§17 item 7):** (a) is now what napkin sends; (b) and (c) were not taken.
 4. **llama-server's `/v1/models` is documented** (§5.2 said unverified): *"Returns information about
    the loaded model… The returned list always has one single element. The `meta` field can be `null`
    (for example, while the model is still loading)"*; `id` is the `-m` path unless `--alias` sets it;
