@@ -51,9 +51,13 @@ started=$(date +%s)
 echo "== xcodebuild: NapkinMlx and napkin-mlx-spike (Release, arm64); log: $log"
 : > "$log"
 for scheme in NapkinMlx napkin-mlx-spike; do
+  # Xcode's generated scheme for the executable links it with -profile-generate, and the
+  # instrumented spike would leave default.profraw wherever it runs.
+  extra=()
+  [ "$scheme" = napkin-mlx-spike ] && extra=(CLANG_COVERAGE_MAPPING=NO CLANG_ENABLE_CODE_COVERAGE=NO)
   (cd "$package" && nice -n 19 xcodebuild build -scheme "$scheme" -configuration Release \
       -destination 'platform=macOS,arch=arm64' -derivedDataPath .derived \
-      -skipPackagePluginValidation) >> "$log" 2>&1
+      -skipPackagePluginValidation "${extra[@]}") >> "$log" 2>&1
   build_status=$?
   if [ $build_status -ne 0 ]; then
     grep -E "error:" "$log" | head -20

@@ -349,7 +349,7 @@ final class LoadedModel: @unchecked Sendable {
                 from: directory, using: TransformersTokenizerLoader())
             let tokenizer = await container.tokenizer
             let guided = try GuidedEngine(tokenizer: tokenizer)
-            try guided.prewarm(NapkinSchemas.all)
+            guided.prewarm(NapkinSchemas.all)
             return LoadedModel(folder: folder, container: container, guided: guided)
         }
     }
@@ -496,7 +496,6 @@ final class LoadedModel: @unchecked Sendable {
                 generationSeconds: finished.timeIntervalSince(firstEmit ?? finished))
         }
         Diagnostics.logGeneration("guided", reply, constraint: taken.provenance)
-        engine.replenish(after: taken)
         return reply
     }
 }
