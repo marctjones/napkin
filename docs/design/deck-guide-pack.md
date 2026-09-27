@@ -4,6 +4,28 @@ Status: **Signed off by Marc 2026-09-27 with the recommended decisions (§8)**, 
 shipping transcribed DCA 6 tables, cited to AWC's document, is within the #157 stance (recorded in
 [`DESIGN.md`](../../DESIGN.md) §2.1).
 
+**Deviations found while building slice A (#238):** the per-line clause cites the `irc-governs`
+caveat's *location*, not its text ("…; the IRC governs where they differ (p. 1)"), and `irc-governs`
+is a reserved caveat id — a guide without it gets a clause that says only what it is based on; the
+paragraph at the top prints every caveat verbatim. `member` in a guide-level limit is the lookup's own
+member, so a footing (which has none) is Input missing under a guide-level member limit: member limits
+belong on the table (§3.3's ledger minimum is). The scope gates the table lookups — joists, beam,
+rafters, ledger, footing — only; guard and stair lines from a guide carry the clause and UNREVIEWED but
+are not scope-gated, which is B5's call. UNREVIEWED is on every line that answers from pack data, the
+base layer's as well as a guide's (passes, short, sized, out of scope, and guard/stair lines citing a
+provision), never on Input missing or No data. Limit ids share one namespace across a guide's limits
+and notes and a table's own limits (a golden case names one unambiguously). A table under a guide with a
+species column *must* declare `speciesGroups`; a base-layer table *may*. The deck golden runner covers
+`member-span` (all three uses), `deck-ledger` and `deck-footing`; `deck-post` (B3) and
+`deck-guard-stair` (B5) extend it, and B3 adds factor coverage with `centerPostFactor`. Each table's
+golden file must cover its guide's limits as well as its own, so each table proves it applies the scope.
+The boundary generator is `GoldenRunner.DeckBoundaries` (no CLI): the runner fails a file whose committed
+pairs are not its output and prints them. `Recompute.DiffDeck` compares results by what they say (code,
+table, row, values), and a span that moved within its row (`SpanMoved`) is not announced. The deck
+panel's Supports box stays free text — offering the scope's `supports` values (risk 9) waits for B1,
+the first real guide. The synthetic guide's snow limit is 77 psf, not DCA 6's number; no DCA 6 value
+and no change to the CT pack are in this slice.
+
 Design note written by Fable per [`PLAN.md`](../../PLAN.md) for Marc's decision of 2026-09-26 on
 #209, **"Decks only via DCA 6"**: the deck checks' real data comes from the American Wood
 Council's *Prescriptive Residential Wood Deck Construction Guide* (DCA 6), a free primary source,

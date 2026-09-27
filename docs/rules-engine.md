@@ -288,9 +288,92 @@ applies.
 
 `DeckEvaluator.CheckSpan` answers **Passes** or **Short** (by how much), `SizeLedger` and `SizeFooting`
 **Sized** (the ledger with napkin's own fastener count, ⌈length ÷ spacing⌉ + 1), and every one of
-them **Out of scope**, **Input missing** or **No data** as the header check does. The only tables
-are synthetic (`tests/Napkin.Modules.Building.Tests/CodePacks/deck`, NOT CODE VALUES); real rows
-are M10's (#40–#43). Golden files and `Recompute` diffs for the deck kinds are not built yet.
+them **Out of scope** (citing the scope limit that held, or naming the column no row covers),
+**Input missing** or **No data** as the header check does. Every deck line that answers from a
+pack's data says `UNREVIEWED: values not yet checked against the source.` until the pack is signed
+off. The only tables are synthetic (`tests/Napkin.Modules.Building.Tests/CodePacks/deck`, NOT CODE
+VALUES); real rows are M10's (#40–#43).
+
+## Guide layers, scope limits and species groups (#238)
+
+Design: [`design/deck-guide-pack.md`](design/deck-guide-pack.md). A pack's deck tables may come from a
+**guide**: a document that is not the adopted code (AWC's DCA 6, a guide on the 2015 IRC, under a pack
+adopting the 2021 IRC). A guide is never a pack's identity and never a base layer; the pack declares it:
+
+```
+my-packs/
+  layers/<guide-id>/layer.json         kind "guide": what it is, its caveats, scope, species, sources
+  layers/<guide-id>/deck/<table>.json  the same deck kinds a base layer's deck/ may carry
+  packs/<id>/pack.json                 "guides": [ { "id": "<guide-id>", "notes": "…" } ]
+```
+
+```json
+{ "schemaVersion": 1, "kind": "guide", "id": "zz-guide-2099",
+  "guide": { "shortName": "ZZ GUIDE", "title": "…", "publisher": "…", "basis": { "publisher": "ICC", "code": "IRC", "year": 2098 } },
+  "caveats": [ { "id": "irc-governs", "text": "<verbatim>", "location": "p. 1" } ],
+  "scope": { "limits": [ { "id": "s.loads", "when": { "input": "supports", "notIn": ["zz-deck"] }, "text": "<verbatim>", "location": "…" },
+                         { "id": "s.snow",  "when": { "input": "groundSnowLoad", "above": 77 }, "text": "…", "location": "…" },
+                         { "id": "s.shape", "when": { "input": "deckLength", "aboveInput": "deckWidth" }, "text": "…", "location": "…" } ],
+             "notes":  [ { "id": "n.single", "text": "<verbatim>", "location": "…" } ] },
+  "species": [ "zz-fir", "zz-hem", "zz-cedar" ],
+  "sources": [ { "id": "…", "title": "…", "publisher": "…", "url": "…", "printing": "…", "retrievedOn": "2026-09-27", "sha256": "…" } ] }
+```
+
+(The synthetic guide's words and numbers, made up.)
+
+- **What every answer says.** A line from a guide's table cites the table and row and adds napkin's own
+  clause, composed from the manifests: "… — a guide on the 2098 IRC, not ZZ DECK's adopted IRC 2099; the
+  IRC governs where they differ (p. 1)". The last part appears only when the guide has a caveat with the
+  reserved id `irc-governs` (its own statement that the model code governs), citing its location. The
+  deck's code check starts with the guide's paragraph: what it is and is not, every caveat, limit and note
+  verbatim with its location (`DeckGuide.Paragraph`). The picker's status adds "deck tables from ZZ GUIDE,
+  a guide". Guard and stair provisions from a guide carry the clause too.
+- **No precedence.** A kind (for `member-span`, a `use`) that both the base layer and a guide declare,
+  or two guides, makes the pack invalid, naming both files: remove the guide entry when the adopted code's
+  table arrives.
+- **Scope limits**, before every lookup in the guide's tables: the guide's `scope.limits`, then the
+  table's own `limits` (any deck table may carry them, same shape), in order. The first whose input is not
+  entered is **Input missing** naming it; the first that holds is **Out of scope** citing its text and
+  location ("Beyond the scope of ZZ GUIDE: "…" (ZZ GUIDE p. 2, item 9). Get it engineered."). Inputs:
+  `supports`, `species`, `member` (categories; `member` is the lookup's own member, so a footing has none —
+  put member limits on the table they concern), `groundSnowLoad` (the site's, psf), `deckLength` (out from
+  the house) and `deckWidth` (along it). Forms, exactly one per limit: `above` (a number or length, strictly
+  greater), `equals`, `in`, `notIn` (categories), `aboveInput` (a length above another length). The deck
+  check supplies them (`DeckScopeInputs`; `SizeLedger`/`SizeFooting` take them as an argument, `SpanRequest`
+  carries `DeckLength`/`DeckWidth`).
+- **Species groups.** A table may print its species in groups (`speciesGroups`: `group`, `species`,
+  `location`), its `species` column's values then being the group names; the typed species is read as its
+  group, and the line says which. Under a guide a table with a species column must declare its groups,
+  and they place every species the guide lists, each once.
+- **Load checks** (all listed at once): a guide listed twice, not resolving, naming the base layer, with no
+  `deck/` files, or whose `layer.json` is not `kind: "guide"`; a `kind` on a base layer; a guide without a
+  `supports` limit (the porch case must always have an answer); an unknown input or form, two forms, `above`
+  on a category, `in`/`notIn`/`equals` on a number or length, `aboveInput` not between two lengths; a limit,
+  note or caveat without its text or location; an id used twice among a guide's limits and notes and a
+  table's limits; empty or repeated species; species groups that are not the column's values, place a
+  species twice, place one the guide does not list, or miss one it does; a deck file whose source is not
+  the guide's.
+
+**Deck golden files** use `"deck": "<table>"` (in place of `"table"`). A case's `inputs` are the table
+kind's own — `member`, `span` (the actual span), `spacing`, `joistSpan`, `roofLiveLoad` for a span table;
+`member`, `joistSpan`, `ledgerLength` for the ledger; `tributaryArea` (whole square feet, or two lengths
+multiplied) and `soilBearing` for a footing — plus a guide's scope inputs `supports`, `species`,
+`groundSnowLoad`, `deckLength`, `deckWidth`. `expect` is one of `passes { allowed }`, `short { allowed,
+over }`, `sized { text, spacing?, count? }` (each with the case's `row`), `outOfScope { limit }` or
+`outOfScope { column }`, `inputMissing { input }` or `noData {}`. Every row and every scope limit of the
+table **and its guide** needs a hand-authored case, so each table proves it applies the scope. The boundary
+pairs (each row's span at and 1/1024″ past its allowed span; each banded input at its bound and one step
+past; each `above`/`aboveInput` limit at its bound and one step over) are generated by
+`GoldenRunner.DeckBoundaries(pack, json)` from the rows and the file's own hand cases, and committed with
+`"generated": "boundary"`; a file whose committed pairs are not the generator's fails and prints them. The
+synthetic files are in `tests/Napkin.Modules.Building.Tests/CodePacks/deck/golden/`.
+
+**Recompute**: `Recompute.DiffDeck(before, after)` over `DeckCheckKey(element, check)` —
+`PassToShort`, `ToShort`, `ToOutOfScope` (newly flagged), `ToNoAnswer` (no longer computable),
+`RowChanged`, `OutOfScopeChanged`, `ShortToPass`, `ToAnswer`, `NoAnswerToOutOfScope`, `NoAnswerChanged`,
+`SpanMoved` (the same row, only the span asked about moved; not said) and `CitationOnly` — comparing what
+a result says, never object identity. `DeckCheck.Report`/`Changes` say them per deck on every edit and on a
+code switch, whose summary counts them.
 
 ## Using it from code
 
