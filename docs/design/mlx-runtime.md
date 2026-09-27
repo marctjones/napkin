@@ -31,7 +31,8 @@ states a code value, a lumber size, a span or a load.
 §0 what exists and what this note does with it; **How to use it**; §1 the bridge (packages,
 versions, licences, toolchain, the C ABI); §2 structured output; §3 build and packaging; §4 the
 .NET side; §5 models; §6 the consented download; §7 tests; §8 risks; §9 slices; §10 try it;
-§11 unverified; §12 decisions for Marc; §13 as built in A (#239); §14 as built in B (#240).
+§11 unverified; §12 decisions for Marc; §13 as built in A (#239); §14 as built in B (#240);
+§15 as built in C (#241).
 
 ---
 
@@ -1366,3 +1367,155 @@ proposal, `BUSY` and cancel through `MlxModel` on the real bridge — `assistant
 - The GUI suite passes a `FakeNativeMlx` (the `AssistantHttp` pattern: `MainWindow.AssistantMlx`)
   — `LoadDelay` or `LoadGate` to watch *"loading…"*, `FakeMlxReply.Answer("ok")` for Test — and
   forces availability through a seam C adds (the note's §7.3), so the workflows run on Windows too.
+
+---
+
+## 15. As built in C (#241), and where it departs from this note
+
+`Napkin.App.csproj` gained the `ProjectReference` to `Napkin.Assistant.Mlx` (the `NapkinMlx.props`
+import already there from slice B); settings version 4; `AssistantModels.FromSettings`'s `Mlx`
+case; the dialog's third radio, folder picker and MLX Test; `MainWindow.AssistantMlx` /
+`AssistantMlxAvailable`. No file in `src/Napkin.Assistant.Mlx/**` changed — slice B's 100%-covered
+assembly and its floor are untouched, exactly as the slice table's file list says. Built and
+verified on Marc's Mac (M5, macOS 26.6.2); the bridge itself was never loaded (`FakeNativeMlx`
+throughout), so this slice needed no Metal Toolchain and no model.
+
+### 15.1 Settings version 4, exactly as built
+
+```csharp
+public enum AssistantProvider { None, LocalServer, Mlx }
+
+public sealed record AssistantSettings(
+    AssistantProvider Provider,
+    string? Endpoint,      // kept when the provider is None or Mlx, so choosing Local again restores it
+    string? Model,         // kept when the provider is None or Mlx
+    double Temperature,    // shared by both runtimes; a proposal is greedy under its schema regardless (§2)
+    string? ModelFolder);  // kept when the provider is None or LocalServer
+```
+
+`UserSettings.CurrentVersion = 4`. A version-3 file (slice C of `llm-assistant.md`'s own
+LocalServer settings) gives the defaults and *"Settings file is version 3, which this napkin does
+not read; using defaults."* — the identical pattern the version-2 test already held, now a sibling
+test for version 3 (beta policy: no migration, §16.2 item 2's precedent repeated one version up).
+`ModelFolder` is a fifth positional member, not an optional parameter with a default: every call
+site (the dialog's three settings-building paths, `AssistantSettings.None`, every test) names it
+explicitly, so a hand-added call cannot silently forget it.
+
+### 15.2 `AssistantModels.FromSettings`, exactly as built
+
+```csharp
+public static IAssistantModel FromSettings(
+    UserSettings settings, HttpMessageHandler? http = null, INativeMlx? mlx = null, Func<string?>? mlxAvailable = null)
+```
+
+The `Mlx` branch: `(mlxAvailable ?? MlxAvailability.ForThisProcess)()` must be null, the
+temperature finite and non-negative (LocalServer's own defensive check, repeated so a hand-edited
+file can never construct `MlxModel` with a bad value), and `ModelFolder.TryParse(assistant.ModelFolder,
+…)` must succeed — otherwise `ScriptedModel()`, never a partial model. `mlxAvailable` is the
+departure from §14.3's sketch (which named only `MlxAvailability.ForThisProcess()` directly): a
+literal call to the real platform check would have made an MLX GUI workflow un-runnable on
+non-Apple-silicon CI, so `FromSettings` — not only the dialog — takes the override, and
+`MainWindow.AssistantMlxAvailable` threads it through both the constructor path and
+`UseAssistantSettings`.
+
+### 15.3 The dialog, exactly as built
+
+- **The third radio**, *"In napkin, on this Mac (MLX)"* (decision 12), disabled with
+  `MlxUnavailable()`'s sentence (`MlxAvailability.ForThisProcess` by default) shown in a line
+  beneath it.
+- **A real folder picker**: `StorageProvider.OpenFolderPickerAsync` (the `SitePlanWindow` pattern
+  the note named), filling the folder box; the GUI suite types the path directly instead (headless
+  has no platform picker to drive, the same reason `SitePlanWindow.SetUnderlay` exists as a public
+  bypass) — no equivalent bypass method was needed here since the folder `TextBox` is already public
+  API (`MlxFolderField`) and typable.
+- **The folder line** (`MlxFolderText` / `MlxFolderLine`): `ModelFolder.Description` on every
+  keystroke (`TextBox.TextChanged`) or the `TryParse` refusal — live feedback, not only on Test.
+- **The memory line** (`MlxMemoryText` / `MlxMemoryLine`): `MlxAvailability.Probe(Mlx ?? new
+  NativeMlx())` on a thread-pool thread, kicked off the first time the MLX radio becomes checked
+  (lazily, like `CheckAsync`/`TestAsync` are already lazy on a button press, rather than dlopening
+  the bridge the moment the dialog opens even if the person never looks at MLX) and cached for the
+  dialog's lifetime. **Deviation from §4.4's example wording**: the note's sample line names a
+  specific model's *"needs about 2.3 GB"*; since any folder can be chosen in this slice (no catalog
+  yet — that's slice D), the built line says *"a model's weights plus its working memory must fit
+  (napkin's estimate)"* without a folder-specific figure. Slice D, once `ModelCatalog` exists, is
+  the natural place to fold the chosen or downloaded model's own size back into this sentence.
+- **Test** (`MlxTestButton` / `MlxTest`): builds a fresh `MlxModel` and calls
+  `TestAsync`, polling `LoadingLine` in a plain `while (!testTask.IsCompleted) { … await
+  Task.WhenAny(testTask, Task.Delay(100)); }` loop rather than a `DispatcherTimer` — the same
+  `ConfigureAwait(true)`-continuation-through-`Dispatcher.UIThread.RunJobs()` mechanism GUI-AST-06
+  already relies on for its stubbed-Ollama awaits, proven under Avalonia.Headless; a `DispatcherTimer`
+  was not attempted since nothing in the existing suite proves one fires under a manual `RunJobs()`
+  poll. The model this builds is disposed (unloaded) right after Test, same as `LocalServerModel`'s
+  Test; **Use these settings** rebuilds a separate one through `FromSettings`, which loads again.
+- **The temperature field** is one shared control (`TemperaturePanel`), moved out of `LocalPanel`
+  rather than duplicated per provider — the note speaks of "the temperature field" in the singular,
+  and nothing reads its position, so one control shared by both runtimes is simpler than two kept in
+  sync. Its hint (`TemperatureHintText`) still names both napkin's 0.2 and Qwen3's card figure, from
+  slice B's precedent; it was not re-worded to add the "decoded greedily under its schema" sentence
+  §4.4 asks for — a small follow-up, not load-bearing for GUI-AST-07 and not done here to keep this
+  slice to what its tests exercise.
+- **Download…** is **omitted** rather than shown disabled (the note's own "leave a disabled
+  Download… or omit" allowance, §4 file list heading): `ModelCatalog` does not exist until slice D
+  (#242), so a disabled button here would have nothing truthful to say about size or licence.
+
+### 15.4 The seams
+
+- `MainWindow.AssistantMlx : INativeMlx?` and `MainWindow.AssistantMlxAvailable : Func<string?>`
+  (default `MlxAvailability.ForThisProcess`), the `AssistantHttp` pattern exactly: threaded into the
+  dialog's `Mlx` / `MlxUnavailable` properties when it opens, and into every `FromSettings` call
+  (construction and `UseAssistantSettings`).
+- `AssistantWindow.Mlx : INativeMlx?` and `AssistantWindow.MlxUnavailable : Func<string?>` (same
+  default), read by `ShowSettings` (the radio's enabled state and sentence), `ProbeMlxDeviceAsync`
+  (the memory line) and `MlxTestAsync` (which bridge Test loads).
+
+### 15.5 GUI-AST-07, exactly as built
+
+Opens the dialog by menu (pointer); asserts the third radio is enabled (the availability seam
+forces this off Apple silicon too); clicks it (pointer); types a temp folder holding the three
+required files plus a small `model.safetensors` into the folder box (keyboard) and asserts the
+folder's own words show; clicks Test (pointer), asserts the loading line names the weight size
+while `FakeNativeMlx.LoadDelay` holds the "load" open, then asserts the final *"loaded in … s and
+replied in … s: “ok”."* line; clicks Use these settings (pointer) and asserts settings version 4 on
+disk with `Provider = Mlx` and the folder, and the window's model's whereabouts line; asks a real
+question with Ctrl/Cmd+Shift+A (keyboard) and asserts the answer, its From-napkin item and the
+in-napkin whereabouts line; Escape closes the note. Ten input actions, keyboard and pointer, three
+assertions after distinct state changes — comfortably past GUI-AST's ≥5-action, both-input-kinds
+floor. `tools/scripts/gui-ratchet.sh` raised the workflow floor to 116 with `GUI-AST-07` added to
+the id list; no coverage floor moved (the script restores `coverage` from HEAD by design).
+
+A second, App-level unit test (`SettingsStoreTests.The_window_builds_an_mlx_model_only_when_available_and_the_folder_parses`)
+exercises `FromSettings`'s `Mlx` branch directly against a `FakeNativeMlx` and a temp folder,
+independent of the GUI suite — `Napkin.App` carries no coverage floor (CLAUDE.md), so this is
+belt-and-braces regression coverage, not something the ratchet would have required.
+
+### 15.6 Deviations, gathered
+
+1. `mlxAvailable` on `FromSettings` itself, not only on the dialog (§15.2) — needed for the GUI
+   workflow to build a real `MlxModel` (not a `ScriptedModel`) on non-Apple-silicon CI.
+2. The memory line's wording is generic, not naming a specific model's size (§15.3) — no catalog
+   exists yet to name one honestly.
+3. One shared temperature field instead of one per provider (§15.3) — a layout simplification; no
+   behavioural change from what the note asks for the value itself.
+4. The temperature hint's "decoded greedily under its schema" sentence (§4.4) was not added — left
+   for a small follow-up.
+5. **Download…** omitted rather than shown disabled (§15.3) — the note names both as acceptable.
+6. Test's loading line is polled by a plain awaited loop, not a `DispatcherTimer` (§15.3) — an
+   implementation choice proven to work under the existing headless-test mechanism, not a behaviour
+   difference the person would see.
+
+### 15.7 What slice D (#242) must plug into
+
+- `ModelCatalog` and `ModelDownload` are new files in `Napkin.Assistant.Mlx` (slice D's own list,
+  §9); nothing in slice C stops them existing — `Napkin.Assistant.Mlx.csproj` is otherwise
+  untouched.
+- The dialog already has the third radio, the folder box, `MlxFolderText`/`MlxFolderLine`, and the
+  seams (`Mlx`, `MlxUnavailable`) slice D's `GUI-AST-08` will reuse; it adds the **Download…**
+  button (currently absent, §15.3 item 5) wired to a consent sheet, and should fold a downloaded or
+  catalog-known folder's actual size into the memory line in place of §15.3's generic sentence
+  (closing deviation 2).
+- `AssistantModels.FromSettings`'s signature (`settings, http, mlx, mlxAvailable`) is stable for
+  slice D to build on; a download does not change which model gets built, only how the folder came
+  to exist on disk.
+- The GUI suite's stub `HttpMessageHandler` pattern (`MainWindow.AssistantHttp`) is already exactly
+  what slice D's `GUI-AST-08` needs for the download's own HTTP traffic — no new seam required there,
+  only a catalog whose URLs the stub can match.
