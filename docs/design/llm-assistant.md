@@ -1,6 +1,6 @@
 # The assistant: a local model that explains napkin's answers and proposes edits you accept
 
-Status: **DRAFT awaiting Marc's sign-off.** Milestone **M14 Assistant (local LLM)** (GitHub
+Status: **Signed off by Marc 2026-09-27 with the recommended decisions (§13).** Milestone **M14 Assistant (local LLM)** (GitHub
 milestone 25; umbrella #228; slices A–I are #229–#237, §10; the two that are decisions of their own
 are #236 and #237).
 
