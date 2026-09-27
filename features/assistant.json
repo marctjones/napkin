@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "features": [
+    {
+      "id": "AST-001",
+      "area": "assistant",
+      "title": "The context pack is what napkin already says, numbered, under a budget",
+      "acceptance": "The context pack for samples/window-in-existing-wall with the window selected and the shipped Connecticut pack loaded equals a hand-written golden item by item in the design note's order, its header item is the engine's No data explanation character for character after its label, and a pack over its word budget cuts the open lists first and the help second and never a design line.",
+      "milestone": "M14",
+      "issue": 229,
+      "kind": "unit"
+    },
+    {
+      "id": "AST-002",
+      "area": "assistant",
+      "title": "The assistant's help is the help the repository ships",
+      "acceptance": "The help embedded in the assistant module equals docs/building.md, rules-engine.md, shortcuts.md, viewer.md and first-run.md on disk, each splits at its level-two headings, the result-kind map returns its named sections, and the question \"what is ground snow load\" picks rules-engine.md's \"In the app\" among its three sections.",
+      "milestone": "M14",
+      "issue": 229,
+      "kind": "unit"
+    },
+    {
+      "id": "AST-003",
+      "area": "assistant",
+      "title": "The answer guard refuses a sentence with a number napkin did not give",
+      "acceptance": "The answer guard keeps a sentence whose every number token (integer, decimal, fraction, feet-inch length, lumber name, table or section designation, percentage or number word) occurs normalised in the context pack, and refuses any other sentence, and any reference to an item the pack does not have, in napkin's words naming what was said.",
+      "milestone": "M14",
+      "issue": 229,
+      "kind": "unit"
+    },
+    {
+      "id": "AST-004",
+      "area": "assistant",
+      "title": "Sketch from words proposes rough planks only",
+      "acceptance": "The design note's quick-bench sketch proposal becomes four rough-plank AddEntity requests with the exact snapped sizes and anchors, each malformed or over-limit part is refused line by line with its reason, an unknown member fails to parse, and a plan made against a sketch that has since changed is refused.",
+      "milestone": "M14",
+      "issue": 233,
+      "kind": "unit"
+    },
+    {
+      "id": "AST-005",
+      "area": "assistant",
+      "title": "Edit in words proposes only the requests the panel already makes",
+      "acceptance": "Each of the six edits in words maps to the request the panel makes on samples/coffee-table, a size off the 1/1024-inch grid, a stock not in the materials library or a part name matching two parts refuses its line, and an edit outside the closed set fails to parse.",
+      "milestone": "M14",
+      "issue": 234,
+      "kind": "unit"
+    }
+  ]
+}
