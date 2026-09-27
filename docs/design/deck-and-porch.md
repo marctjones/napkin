@@ -173,13 +173,24 @@ unchanged. With `t` the joist stock's thickness (1 1/2"), `W` the deck's length 
 - **Joists**: layout positions along the ledger exactly as studs along a wall — start faces at
   `k·s` while `k·s + t ≤ W`, plus an end joist at `W − t` unless the last is already there — each
   `D − 2t` long (ledger face to rim's inner face). The first and last are the end joists.
-- **Beam**: `plies` pieces, `W`, under the joists, its outer face `c` in from the rim's outer face.
+- **Beam**: `plies` pieces, `W`, under the joists, its outer face `c` in from the rim's outer face
+  (so its centre is `c + plies·thickness ÷ 2` in from the deck's outside edge — the tributary area's
+  joist side reads this position).
 - **Posts**: `n` pieces, one at each end of the beam and the rest evenly between; each
   `Depth − decking thickness − joist width − beam width` long (pier top at grade: a design
   assumption the panel states; a typed "pier top above grade" is a one-line follow-up if wanted).
-  **Beam span** = post centreline to post centreline, `(W − postWidth) / (n − 1)`, exact — as the
-  deck tables' source measures it (deck-guide-pack §3.2, Decision 8, since #41 slice B2; it was the
-  clear length between posts, `(W − n·postWidth) / (n − 1)`, one post width shorter).
+  **Beam span** L_B = the clear length between adjacent posts, face to face, `(W − n·postWidth) / (n − 1)`,
+  exact — as DCA 6's Figure 3 (p. 7) dimensions its beam tables' L_B. The beam ends flush with its end
+  posts' outer faces, so it has no overhang (DCA 6 measures one from the end post's outer face, p. 5).
+  (#41: slice B2 measured it post centre to post centre, one post width longer; Marc's decision of
+  2026-09-27 restored the face-to-face span the source draws — deck-guide-pack, "Decision 8 corrected".)
+- **Tributary area** of the most loaded post, as DCA 6 Appendix B measures it (pp. B1–B2): a middle post
+  (n ≥ 3) by Eq. B-1, `(½J_L + J_O) × B_L`; an end post (n = 2) by Eq. B-2, `(½J_L + J_O) × (½B_L + B_O)`.
+  No beam overhang, so `B_O = 0` and B_L runs to the deck's outside edges: `W` with two posts; with more,
+  the middle post beside an end takes its greater span, `(W − postWidth) / (n − 1) + postWidth / 2`
+  (its centreline to the deck's edge). `J_L` = `D − t` (ledger face to the rim's outside face) and
+  `J_O = 0` with no cantilever; with one, `J_L` runs from the ledger face to the beam's centre and `J_O`
+  from there to the deck's edge, `c + plies·thickness ÷ 2`.
 - **Blocking**: one row at mid-span, one piece per bay between adjacent joists, each the bay's
   clear width (`s − t`, and the odd last bay its own width).
 - **Decking**: boards across the joists, each `W` long; count `n` = the least with
@@ -282,9 +293,9 @@ Inputs: `tributaryArea` (`upper-bound`, square feet, whole) and `soilBearing` �
 `lower-bound`**: the largest column bound *at most* the site's value (a stronger soil is never
 rounded up to a column it does not reach; a site value below the smallest column is
 **Out of scope**, "below the table's lowest bearing value"). Output: `footing` (text as printed:
-"zz 15 in square" in the synthetic pack — always the pack's words). **Tributary area** is derived: for an interior
-post, half the beam span each side × (half the joist span + the cantilever); for an end post, its
-one side; the check runs for the **largest**, and says which post. The band kind, its load checks
+"zz 15 in square" in the synthetic pack — always the pack's words). **Tributary area** is derived as DCA 6
+Appendix B defines it (§2.3; #41): Eq. B-1 for a middle post, Eq. B-2 for an end post; the check runs for the
+**largest**, and says which post, the equation and its measures. The band kind, its load checks
 (a `lower-bound` column's bands must ascend and be gap-free like any other) and its golden cases
 are the engine slice's (§10 D).
 
@@ -651,16 +662,18 @@ depth 42", snow 30 psf, wind 115 mph, SDC B, roof live load 20 psf.
 - **Joists**: positions 0, 16, … 128 (nine; 128 + 1 1/2 ≤ 144, 144 is not), end joist at 142 1/2:
   **10 joists 2x8 × 117"** (120 − 3). Bays: 8 × 14 1/2" and the last 142 1/2 − 129 1/2 = 13".
 - **Ledger** 1 × 144" 2x8; **rim** 1 × 144" 2x8; **blocking** 8 × 14 1/2" + 1 × 13" 2x8.
-- **Beam** 2 × 144" 2x10; **beam span** post centre to post centre (144 − 3 1/2) ÷ 2 = **70 1/4"**
-  (the clear 66 3/4" between posts plus one post width; #41 slice B2).
+- **Beam** 2 × 144" 2x10; **beam span** L_B between post faces (144 − 3 × 3 1/2) ÷ 2 = 133 1/2 ÷ 2 =
+  **66 3/4"** (DCA 6 Figure 3, p. 7; #41 — slice B2's 70 1/4" centre to centre is withdrawn).
 - **Posts** 3 × 4x4, each 36 − 1 − 7 1/4 − 9 1/4 = **18 1/2"**.
 - **Decking**: n with 5 1/2 n + 1/8 (n − 1) ≥ 120 → 5 5/8 n ≥ 120 1/8 → n ≥ 21.36 → **22 boards
   × 144"**, the 22nd covering 120 − 118 − 1/8 = **1 7/8"** ("adjust the gaps or the overhang").
   Listed as 22 boards 12'-0", no stock length read (#155).
 - **Ledger fasteners** (synthetic row: zz-bolts staggered at 17"): ⌈144 ÷ 17⌉ + 1 = **10**.
-- **Tributary area**, middle post: 70 1/4" × (117 ÷ 2 = 58 1/2") = 4109.625 sq in = **28.5 sq ft**
-  (shown to one decimal; the table's band reads the exact value). The joist side still runs to the
-  beam's face; its centreline measure is deck-guide-pack slice B3's.
+- **Tributary area**, middle post, DCA 6 Appendix B Eq. B-1 (pp. B1–B2): no beam overhang, so B_L runs
+  from the middle post's centreline (1 3/4 + 70 1/4 = 72" from either end) to the deck's outside edge,
+  **72"**; no cantilever, so J_L runs from the ledger face (1 1/2" out) to the rim's outside face (120"
+  out), **118 1/2"**, and J_O = 0. A = (118 1/2 ÷ 2 + 0) × 72 = 59 1/4 × 72 = 4266 sq in = 29.625 sq ft,
+  shown **29.6 sq ft** (the table's band reads the exact value).
 
 Pieces: 2x8 — 2 × 144, 10 × 117, 8 × 14 1/2, 1 × 13 (21 pieces); 2x10 — 2 × 144; 4x4 — 3 × 18 1/2.
 
@@ -671,7 +684,7 @@ implementer**; one hand pass): 2x8: each 144" alone on a 12' (nothing else fits 
 3 × 18 1/2 + 2 kerfs = 55 3/4" → **1 × 6'**, 8.0 board feet.
 
 **Checks** (synthetic): joists 2x8 at 16", zz-fir, span 9'-9": passes (row); beam (2) 2x10 span
-5'-10 1/4" post centre to post centre for a joist span of 9'-9": passes; ledger as above; footing at 28.5 sq ft and 2000 psf:
+5'-6 3/4" between post faces for a joist span of 9'-9": passes; ledger as above; footing at 29.6 sq ft and 2000 psf:
 "zz 15 in square" (row); frost 42" of 42": passes; guard: 36" is above the synthetic 28" trigger
 and three edges are open → required.
 
@@ -828,7 +841,7 @@ Building (`Napkin.Modules.Building.Tests`):
 7. `DECK-002` joists and beam: passes, over by 1'-2" (a 12'-6" deck: joists 12'-3"), out of scope for Supports
    `zz-deck-and-roof` when the table lacks the row, input missing for species; the rafter use
    with snow 30 and with snow not entered.
-8. `DECK-003` footing: 28.5 sq ft at 2000 psf → the row; 1999 psf takes the lower column; below the
+8. `DECK-003` footing: 29.6 sq ft at 2000 psf → the row; 1999 psf takes the lower column; below the
    lowest column → out of scope; frost 42 of 42 passes, 41 short by 1", missing site value named;
    the CT suggestion's text is exactly Table R301.2's value and citation.
 9. `DECK-004` guard: 8 posts, the three bay clears, 11/13/7 balusters and the three gaps of §9.3;
