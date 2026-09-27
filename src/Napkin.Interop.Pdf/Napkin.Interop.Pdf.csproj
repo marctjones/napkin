@@ -5,12 +5,9 @@
   </ItemGroup>
 
   <!-- Excise.Core comes from vendor/excise, never nuget.org (nuget.config). The version names the
-       pushed excise commit it was packed from; tools/scripts/excise-pack.sh moves it.
-       NOT YET WITHIN POLICY (2026-09-27): Excise.Core depends on CSJ2K 3.0.0, whose nuspec names only
-       a BSD URL but whose repository licence file is the JJ2000 notice (cureos/csj2k,
-       COPYRIGHT-JJ2000-5.1), which grants no right outside JPEG 2000-conforming products. Whether
-       that clears DESIGN.md §2.1 is Marc's decision; until then `licenses check` fails on it. -->
-
+       pushed excise commit it was packed from; tools/scripts/excise-pack.sh moves it. Its CSJ2K
+       dependency is pruned for every project (Directory.Build.targets says why); what remains is
+       BouncyCastle.Cryptography, MIT. -->
   <ItemGroup>
     <PackageReference Include="Excise.Core" Version="3.1.0-napkin.g9501059" />
   </ItemGroup>
