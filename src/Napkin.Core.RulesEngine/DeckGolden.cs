@@ -18,8 +18,11 @@ internal static class DeckGolden
 
     static readonly string[] Kinds = ["passes", "short", "sized", "outOfScope", "inputMissing", "noData"];
 
-    /// <summary>What a case expects, read strictly: the check, and the limit it covers when it expects one.</summary>
-    sealed record Expectation(Func<DeckResult, string?> Check, string? Limit);
+    /// <summary>
+    /// What a case expects, read strictly: the check, the limit it covers when it expects one, and the allowed
+    /// length a passes or short case names (for a cantilever case, whether the row's own overhang governs).
+    /// </summary>
+    sealed record Expectation(Func<DeckResult, string?> Check, string? Limit, Length? Allowed = null);
 
     public static void Run(
         LoadedPack pack, string packId, string name, IReadOnlyList<JsonElement> cases, Where fileWhere, ProblemList problems, List<string> fileProblems, List<GoldenCaseResult> results)
@@ -31,7 +34,7 @@ internal static class DeckGolden
         }
 
         List<ScopeLimit> limits = [.. table.Guide?.Limits ?? ValueList<ScopeLimit>.Empty, .. table.Limits];
-        HashSet<string> rows = new(StringComparer.Ordinal), covered = new(StringComparer.Ordinal);
+        HashSet<string> rows = new(StringComparer.Ordinal), covered = new(StringComparer.Ordinal), overhangs = new(StringComparer.Ordinal);
         List<string> committed = [];
         for (int index = 0; index < cases.Count; index++)
         {
@@ -58,6 +61,7 @@ internal static class DeckGolden
             }
 
             JsonObj? inputs = c.Obj("inputs");
+            bool cantilever = inputs?.Has("cantilever") == true;
             Func<DeckResult>? request = inputs is null ? null : ReadRequest(inputs, pack, table, problems);
             inputs?.Done();
             JsonObj? expect = c.Obj("expect");
@@ -77,9 +81,15 @@ internal static class DeckGolden
 
             if (generated is null)
             {
-                if (row is not null)
+                // A span case covers its row's span; a cantilever case covers the row's overhang only when it
+                // expects exactly that overhang, so the transcribed value is what governs (deck-guide-pack §3.1).
+                if (row is not null && !cantilever)
                 {
                     rows.Add(row);
+                }
+                else if (row is not null && table.Rows.FirstOrDefault(r => r.Id == row) is { Overhang: { } own } && expectation?.Allowed == own)
+                {
+                    overhangs.Add(row);
                 }
 
                 if (expectation?.Limit is { } id)
@@ -99,6 +109,8 @@ internal static class DeckGolden
         }
 
         fileProblems.AddRange(table.Rows.Where(row => !rows.Contains(row.Id)).Select(row => $"row '{row.Id}' of table {name} has no hand-authored golden case."));
+        fileProblems.AddRange(table.Rows.Where(row => row.Overhang is not null && !overhangs.Contains(row.Id)).Select(row =>
+            $"row '{row.Id}' of table {name} has no hand-authored cantilever case expecting its own overhang ({CellValue.Of(row.Overhang!.Value)}); ask with a span long enough that it governs."));
         fileProblems.AddRange(limits.Where(limit => !covered.Contains(limit.Id)).Select(limit => $"scope limit '{limit.Id}' of table {name} is expected by no hand-authored golden case."));
 
         if (problems.Count > 0)
@@ -134,7 +146,8 @@ internal static class DeckGolden
     /// </summary>
     static IEnumerable<string> Boundaries(DeckTable table, IReadOnlyList<JsonElement> cases)
     {
-        List<(string Row, JsonObject Inputs, JsonObject Expect)> answered = [];
+        // Span (or ledger, footing) cases and cantilever cases, each hand-authored and answered.
+        List<(string Row, JsonObject Inputs, JsonObject Expect)> answered = [], cantilevers = [];
         foreach (JsonElement element in cases)
         {
             if (element.ValueKind == JsonValueKind.Object
@@ -144,42 +157,26 @@ internal static class DeckGolden
                 && element.TryGetProperty("expect", out JsonElement expect) && expect.ValueKind == JsonValueKind.Object
                 && (expect.TryGetProperty("passes", out _) || expect.TryGetProperty("short", out _) || expect.TryGetProperty("sized", out _)))
             {
-                answered.Add((row.GetString()!, (JsonObject)JsonNode.Parse(inputs.GetRawText())!, (JsonObject)JsonNode.Parse(expect.GetRawText())!));
+                (inputs.TryGetProperty("cantilever", out _) ? cantilevers : answered)
+                    .Add((row.GetString()!, (JsonObject)JsonNode.Parse(inputs.GetRawText())!, (JsonObject)JsonNode.Parse(expect.GetRawText())!));
             }
         }
 
         foreach (DeckRow row in table.Rows)
         {
-            if (answered.FirstOrDefault(c => c.Row == row.Id) is not { Inputs: not null } hand)
+            foreach (string pair in RowPairs(table, row, answered.FirstOrDefault(c => c.Row == row.Id).Inputs))
             {
-                continue;
+                yield return pair;
             }
 
-            if (table.Kind == DeckReader.MemberSpanKind)
+            // The cantilever exactly at what the row allows on the case's span, and 1/1024″ over it.
+            if (table.OverhangLimit is not null && row.Overhang is not null
+                && cantilevers.FirstOrDefault(c => c.Row == row.Id) is { Inputs: not null } asked
+                && asked.Inputs["span"] is { } spanNode)
             {
-                yield return Case(row.Id, With(hand.Inputs, "span", Text(row.Span)), Answer(table, row, hand.Inputs));
-                yield return Case(row.Id, With(hand.Inputs, "span", Text(row.Span + new Length(1))), new JsonObject { ["short"] = new JsonObject { ["allowed"] = Text(row.Span), ["over"] = Text(new Length(1)) } });
-            }
-
-            foreach (InputColumn column in table.Inputs.Where(column => column.Band is BandKind.UpperBound or BandKind.LowerBound))
-            {
-                long bound = row.Inputs[column.Name].Magnitude;
-                List<DeckRow> group = [.. table.Rows.Where(other => table.Inputs.Where(c => c.Name != column.Name).All(c => other.Inputs[c.Name] == row.Inputs[c.Name]))];
-                yield return Case(row.Id, Banded(table, row, hand.Inputs, column, bound), Answer(table, row, hand.Inputs));
-
-                bool up = column.Band == BandKind.UpperBound;
-                DeckRow? next = up
-                    ? group.Where(other => other.Inputs[column.Name].Magnitude > bound).MinBy(other => other.Inputs[column.Name].Magnitude)
-                    : group.Where(other => other.Inputs[column.Name].Magnitude < bound).MaxBy(other => other.Inputs[column.Name].Magnitude);
-                JsonObject past = up ? Over(table, row, hand.Inputs, column, bound) : Banded(table, row, hand.Inputs, column, bound - 1);
-                if (next is null)
-                {
-                    yield return Case(row.Id, past, new JsonObject { ["outOfScope"] = new JsonObject { ["column"] = column.Name } });
-                    continue;
-                }
-
-                // The next row answers: a span table is asked about exactly that row's allowed span.
-                yield return Case(next.Id, table.Kind == DeckReader.MemberSpanKind ? With(past, "span", Text(next.Span)) : past, Answer(table, next, past));
+                Length allowed = DeckEvaluator.AllowedOverhang(table, row, new Length(ReadLength(spanNode).Magnitude));
+                yield return Case(row.Id, With(asked.Inputs, "cantilever", Text(allowed)), new JsonObject { ["passes"] = new JsonObject { ["allowed"] = Text(allowed) } });
+                yield return Case(row.Id, With(asked.Inputs, "cantilever", Text(allowed + new Length(1))), new JsonObject { ["short"] = new JsonObject { ["allowed"] = Text(allowed), ["over"] = Text(new Length(1)) } });
             }
         }
 
@@ -210,6 +207,45 @@ internal static class DeckGolden
             }
 
             yield return Case(first, With(inputs0, when.Input, Value(bound with { Magnitude = bound.Magnitude + 1 })), new JsonObject { ["outOfScope"] = new JsonObject { ["limit"] = limit.Id } });
+        }
+    }
+
+    /// <summary>
+    /// One row's pairs from its first hand-authored answered case (none without one): a span table's span at
+    /// the row's allowed span and 1/1024″ over, then each banded input at the row's bound and one step past.
+    /// </summary>
+    static IEnumerable<string> RowPairs(DeckTable table, DeckRow row, JsonObject? hand)
+    {
+        if (hand is null)
+        {
+            yield break;
+        }
+
+        if (table.Kind == DeckReader.MemberSpanKind)
+        {
+            yield return Case(row.Id, With(hand, "span", Text(row.Span)), Answer(table, row, hand));
+            yield return Case(row.Id, With(hand, "span", Text(row.Span + new Length(1))), new JsonObject { ["short"] = new JsonObject { ["allowed"] = Text(row.Span), ["over"] = Text(new Length(1)) } });
+        }
+
+        foreach (InputColumn column in table.Inputs.Where(column => column.Band is BandKind.UpperBound or BandKind.LowerBound))
+        {
+            long bound = row.Inputs[column.Name].Magnitude;
+            List<DeckRow> group = [.. table.Rows.Where(other => table.Inputs.Where(c => c.Name != column.Name).All(c => other.Inputs[c.Name] == row.Inputs[c.Name]))];
+            yield return Case(row.Id, Banded(table, row, hand, column, bound), Answer(table, row, hand));
+
+            bool up = column.Band == BandKind.UpperBound;
+            DeckRow? next = up
+                ? group.Where(other => other.Inputs[column.Name].Magnitude > bound).MinBy(other => other.Inputs[column.Name].Magnitude)
+                : group.Where(other => other.Inputs[column.Name].Magnitude < bound).MaxBy(other => other.Inputs[column.Name].Magnitude);
+            JsonObject past = up ? Over(table, row, hand, column, bound) : Banded(table, row, hand, column, bound - 1);
+            if (next is null)
+            {
+                yield return Case(row.Id, past, new JsonObject { ["outOfScope"] = new JsonObject { ["column"] = column.Name } });
+                continue;
+            }
+
+            // The next row answers: a span table is asked about exactly that row's allowed span.
+            yield return Case(next.Id, table.Kind == DeckReader.MemberSpanKind ? With(past, "span", Text(next.Span)) : past, Answer(table, next, past));
         }
     }
 
@@ -332,9 +368,23 @@ internal static class DeckGolden
                 string? member = inputs.String("member");
                 Length? span = Len("span", required: true), spacing = Len("spacing"), joistSpan = Len("joistSpan");
                 int? live = Whole("roofLiveLoad");
-                return problems.Count > before || member is null || span is null
-                    ? null
-                    : () => DeckEvaluator.CheckSpan(pack, table.Use!.Value, new SpanRequest(member, span.Value, supports, species, spacing, joistSpan, snow, live, deckLength, deckWidth));
+
+                // A cantilever asks the joists' overhang check instead, the span being the actual joist span.
+                Length? cantilever = Len("cantilever");
+                if (cantilever is not null && table.Use != SpanUse.DeckJoist)
+                {
+                    problems.Add(inputs.Where, $"{inputs.Child("cantilever")}: only a deck-joist table's case asks about a cantilever.");
+                }
+
+                if (problems.Count > before || member is null || span is null)
+                {
+                    return null;
+                }
+
+                SpanRequest request = new(member, span.Value, supports, species, spacing, joistSpan, snow, live, deckLength, deckWidth);
+                return cantilever is { } past
+                    ? () => DeckEvaluator.CheckCantilever(pack, request, past)
+                    : () => DeckEvaluator.CheckSpan(pack, table.Use!.Value, request);
             }
 
             case DeckReader.LedgerKind:
@@ -413,7 +463,7 @@ internal static class DeckGolden
                 expectation = allowed is null ? null : new(r => r is DeckResult.Passes p
                     ? p.Row.Id != row ? $"passes, but from row '{p.Row.Id}', expected '{row}'"
                     : p.Allowed != allowed ? $"expected allowed {CellValue.Of(allowed.Value)}; got {CellValue.Of(p.Allowed)}" : null
-                    : $"expected passes from row '{row}'; got {r}", null);
+                    : $"expected passes from row '{row}'; got {r}", null, allowed);
                 break;
             }
 
@@ -423,7 +473,7 @@ internal static class DeckGolden
                 expectation = allowed is null || over is null ? null : new(r => r is DeckResult.Short s
                     ? s.Row.Id != row ? $"short, but from row '{s.Row.Id}', expected '{row}'"
                     : s.Allowed != allowed || s.Over != over ? $"expected allowed {CellValue.Of(allowed.Value)}, over by {CellValue.Of(over.Value)}; got {CellValue.Of(s.Allowed)}, over by {CellValue.Of(s.Over)}" : null
-                    : $"expected short from row '{row}'; got {r}", null);
+                    : $"expected short from row '{row}'; got {r}", null, allowed);
                 break;
             }
 

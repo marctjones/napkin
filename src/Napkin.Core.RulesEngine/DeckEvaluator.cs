@@ -104,22 +104,87 @@ public static class DeckEvaluator
     public static DeckResult CheckSpan(LoadedPack? pack, SpanUse use, SpanRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
+        (DeckTable? table, DeckRow? row, SpeciesGroup? group, DeckResult? other) = SpanRow(pack, use, request, null);
+        if (other is not null)
+        {
+            return other;
+        }
+
+        return request.ActualSpan <= row!.Span
+            ? new DeckResult.Passes(pack!.Code, table!, row, row.Span, request.ActualSpan, group)
+            : new DeckResult.Short(pack!.Code, table!, row, row.Span, request.ActualSpan, group);
+    }
+
+    /// <summary>
+    /// The joists' cantilever past the beam (deck-guide-pack §3.1), checked against the row the joists answer
+    /// from: allowed up to the lesser of the row's overhang and the table's fraction of the actual span
+    /// (<see cref="SpanRequest.ActualSpan"/>), compared exactly. The scope, the species group and the lookup
+    /// are the span check's; a joist table that prints no overhang does not cover one, and says so.
+    /// </summary>
+    public static DeckResult CheckCantilever(LoadedPack? pack, SpanRequest joists, Length cantilever)
+    {
+        ArgumentNullException.ThrowIfNull(joists);
+        (DeckTable? table, DeckRow? row, SpeciesGroup? group, DeckResult? other) = SpanRow(pack, SpanUse.DeckJoist, joists, cantilever);
+        if (other is not null)
+        {
+            return other;
+        }
+
+        Length allowed = AllowedOverhang(table!, row!, joists.ActualSpan);
+        return cantilever <= allowed
+            ? new DeckResult.Passes(pack!.Code, table!, row!, allowed, cantilever, group)
+            : new DeckResult.Short(pack!.Code, table!, row!, allowed, cantilever, group);
+    }
+
+    /// <summary>
+    /// The overhang a row allows on this span: the lesser of the row's own and the table's fraction of the span,
+    /// the latter rounded down to 1/1024″ — exact for the verdict, since a cantilever is whole 1/1024″ units.
+    /// </summary>
+    public static Length AllowedOverhang(DeckTable table, DeckRow row, Length span)
+    {
+        ArgumentNullException.ThrowIfNull(table);
+        ArgumentNullException.ThrowIfNull(row);
+        if (table.OverhangLimit is not { } cap || row.Overhang is not { } own)
+        {
+            throw new ArgumentException($"table {table.Designation} does not cover an overhang.", nameof(table));
+        }
+
+        Length share = new((long)(span.Units * cap.Fraction.Numerator / cap.Fraction.Denominator));
+        return share < own ? share : own;
+    }
+
+    /// <summary>
+    /// The row a span table answers from, or why none: no table, a scope limit, an unplaced species, the
+    /// lookup's own answer — and for a cantilever, a table that does not cover an overhang.
+    /// </summary>
+    static (DeckTable? Table, DeckRow? Row, SpeciesGroup? Group, DeckResult? Result) SpanRow(LoadedPack? pack, SpanUse use, SpanRequest request, Length? cantilever)
+    {
         if (NoTable(pack, pack?.Deck.Spans.GetValueOrDefault(use), Words(use)) is { } none)
         {
-            return none;
+            return (null, null, null, none);
         }
 
         DeckTable table = pack!.Deck.Spans[use];
         DeckScopeInputs scope = new(request.Supports, request.Species, request.GroundSnowLoad, request.DeckLength, request.DeckWidth);
         if (Scope(pack.Code, table, scope, request.Member) is { } stopped)
         {
-            return stopped;
+            return (null, null, null, stopped);
+        }
+
+        if (cantilever is { } past && table.OverhangLimit is null)
+        {
+            return (null, null, null, new DeckResult.OutOfScope(
+                pack.Code,
+                table,
+                $"Table {table.Designation} does not cover an overhang, so a cantilever of {CellValue.Of(past)} past the beam is not checked: get it engineered.",
+                null,
+                "cantilever"));
         }
 
         (SpeciesGroup? group, DeckResult? unplaced) = Group(pack.Code, table, request.Species);
         if (unplaced is not null)
         {
-            return unplaced;
+            return (null, null, null, unplaced);
         }
 
         Dictionary<string, (string? Symbol, ExactFraction? Magnitude)?> inputs = new(StringComparer.Ordinal)
@@ -135,9 +200,8 @@ public static class DeckEvaluator
 
         return Lookup(pack.Code, table, inputs) switch
         {
-            (DeckRow row, _) when request.ActualSpan <= row.Span => new DeckResult.Passes(pack.Code, table, row, row.Span, request.ActualSpan, group),
-            (DeckRow row, _) => new DeckResult.Short(pack.Code, table, row, row.Span, request.ActualSpan, group),
-            (_, DeckResult other) => other,
+            (DeckRow row, _) => (table, row, group, null),
+            (_, DeckResult other) => (null, null, null, other),
         };
     }
 
