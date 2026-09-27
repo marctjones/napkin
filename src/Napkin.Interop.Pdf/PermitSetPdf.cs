@@ -74,12 +74,23 @@ public static class PermitSetPdf
     /// <summary>The set as a PDF: its drawn sheets, then C1, then W1 when anything is not sized.</summary>
     internal static PdfDocument Document(PermitSet set, IReadOnlyList<PermitSheet> sheets)
     {
-        ArgumentNullException.ThrowIfNull(set);
         ArgumentNullException.ThrowIfNull(sheets);
+        return Document(set, _ => sheets);
+    }
+
+    /// <summary>
+    /// The set as a PDF, its drawn sheets made for the drawing area every sheet has — so a sheet can
+    /// choose the scale its title block prints before it is drawn.
+    /// </summary>
+    internal static PdfDocument Document(PermitSet set, Func<PageRect, IReadOnlyList<PermitSheet>> drawn)
+    {
+        ArgumentNullException.ThrowIfNull(set);
+        ArgumentNullException.ThrowIfNull(drawn);
         TitleBlock title = set.Title with { Banner = PermitItems.Banner(set.Items) };
         SheetFonts fonts = SheetFonts.Load();
         SheetFrame frame = SheetFrame.For(title, fonts, set.Paper);
         PageRect area = frame.DrawingArea.Inset(DrawingPad);
+        IReadOnlyList<PermitSheet> sheets = drawn(frame.DrawingArea);
 
         List<SetPage> pages = [.. sheets.Select(sheet => new SetPage($"{sheet.Number} {sheet.Title}", sheet.Scale, ink => sheet.Draw(ink, frame.DrawingArea)))];
         pages.AddRange(Flowed(CodePage, CodePageItems(set.Items, fonts), area));

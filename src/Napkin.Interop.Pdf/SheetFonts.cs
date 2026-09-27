@@ -39,6 +39,44 @@ internal sealed class SheetFonts
         return font;
     }
 
+    /// <summary>
+    /// What stands on paper for a character IBM Plex has no glyph for. Excise.Core refuses to write a
+    /// character its font cannot show rather than print a silent "?", and every Plex face napkin bundles
+    /// lacks only ⌈ and ⌉ of the characters napkin's sentences use (read from the fonts' cmap tables,
+    /// 2026-09-27) — the ceiling brackets of the deck ledger's fastener count, "⌈W ÷ spacing⌉ + 1". On
+    /// paper they read "ceil(" and ")", the same arithmetic in words a reader can type.
+    /// </summary>
+    public static IReadOnlyDictionary<char, string> Substitutes { get; } = new Dictionary<char, string> { ['⌈'] = "ceil(", ['⌉'] = ")" };
+
+    /// <summary>
+    /// The text as the font can print it: each character it has no glyph for replaced by its
+    /// <see cref="Substitutes"/> entry, or, for one with none, by its code point in brackets, "[U+2603]" —
+    /// said, never dropped or turned into a silent "?".
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="font">The font it will be set in.</param>
+    public static string Printable(string text, PdfFont font)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(font);
+        if (font.CanEncodeFully(text))
+        {
+            return text;
+        }
+
+        System.Text.StringBuilder printable = new(text.Length + 8);
+        foreach (System.Text.Rune rune in text.EnumerateRunes())
+        {
+            string one = rune.ToString();
+            printable.Append(
+                font.CanEncodeFully(one) ? one
+                : rune.IsBmp && Substitutes.TryGetValue((char)rune.Value, out string? substitute) ? substitute
+                : $"[U+{rune.Value:X4}]");
+        }
+
+        return printable.ToString();
+    }
+
     static PdfFont Read(string file)
     {
         using Stream stream = typeof(SheetFonts).Assembly.GetManifestResourceStream("Napkin.Interop.Pdf.Fonts." + file)

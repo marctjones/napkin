@@ -38,9 +38,9 @@ public sealed record SheetPaper(string Name, PageSize Size)
     public static SheetPaper Letter { get; } = new("Letter", PageSize.Letter.Landscape());
 
     /// <summary>
-    /// Tabloid, 17 × 11 in landscape: "11-inch by 17-inch (279.4 mm by 431.8 mm)", the least paper San
-    /// Francisco's building department takes plans on (sf.gov, "Building project plans for full permits",
-    /// read 2026-09-27); docs/design/permit-set.md §4 offers Letter or Tabloid.
+    /// Tabloid, 17 × 11 in landscape: "11 inches by 17 inches", "classified as ANSI B under the
+    /// ANSI/ASME Y14.1 standard" (Ricoh USA's glossary, "11x17 paper", read 2026-09-27; the standard
+    /// itself is not free to read); docs/design/permit-set.md §4 offers Letter or Tabloid.
     /// </summary>
     public static SheetPaper Tabloid { get; } = new("Tabloid", new PageSize(17 * SheetScale.PointsPerPaperInch, 11 * SheetScale.PointsPerPaperInch));
 }
@@ -177,6 +177,7 @@ public sealed record SheetFrame(PageSize Page, PageRect TitleBlock, PageRect Dra
     /// <summary>Greedy word wrap to a width, by the font's own measure; a word wider than the line is broken where it must be.</summary>
     internal static IReadOnlyList<string> Wrap(string text, PdfFont font, double width)
     {
+        text = SheetFonts.Printable(text, font);
         List<string> lines = [];
         string current = string.Empty;
         foreach (string word in text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
