@@ -1077,6 +1077,50 @@ internal sealed class SceneBinder
         return kind is { } k && anchored is { } a ? new FurnitureMarks(k, a) : null;
     }
 
+    /// <summary>
+    /// A survey underlay (format version 16, permit-set §5.4). On its own a scene cannot check that the
+    /// image it names is there; the container loader does.
+    /// </summary>
+    private SurveyUnderlay? ReadUnderlay(JsonFields fields)
+    {
+        int before = problems.Count;
+        string? asset = ReadText(fields, SceneNames.Asset);
+        string? name = ReadText(fields, SceneNames.Name);
+        Pixel? imageA = ReadPixel(fields, SceneNames.ImageA);
+        Pixel? imageB = ReadPixel(fields, SceneNames.ImageB);
+        Point2? worldA = ReadPoint(fields, SceneNames.WorldA);
+        Point2? worldB = ReadPoint(fields, SceneNames.WorldB);
+        long? distance = ReadInteger(fields, SceneNames.Distance);
+        RejectUnknownFields(fields);
+        if (problems.Count > before || asset is null || name is null || imageA is not { } a || imageB is not { } b || worldA is not { } wa || worldB is not { } wb || distance is not { } d)
+        {
+            return null;
+        }
+
+        SurveyUnderlay underlay = new(asset, a, b, wa, wb, new Length(d), name);
+        if (SurveyUnderlayRules.Refusal(underlay) is { } why)
+        {
+            Add(LoadProblemKind.InvalidValue, fields.Path, $"The survey underlay is refused: {why}.");
+            return null;
+        }
+
+        return underlay;
+    }
+
+    private Pixel? ReadPixel(JsonFields parent, string name)
+    {
+        JsonFields? fields = ReadObject(parent, name);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        long? x = ReadInteger(fields, SceneNames.X);
+        long? y = ReadInteger(fields, SceneNames.Y);
+        RejectUnknownFields(fields);
+        return x is { } px && y is { } py ? new Pixel(px, py) : null;
+    }
+
     private SiteValues? ReadSite(JsonFields document)
     {
         JsonFields? fields = ReadObject(document, SceneNames.Site);
@@ -1094,6 +1138,7 @@ internal sealed class SceneBinder
         (bool liveRead, long? live) = ReadIntegerOrNull(fields, SceneNames.SiteRoofLiveLoad);
         (bool bearingRead, long? bearing) = ReadIntegerOrNull(fields, SceneNames.SiteSoilBearing);
         long? north = ReadInteger(fields, SceneNames.SiteNorth);
+        (bool underlayRead, SurveyUnderlay? underlay) = ReadNullable(fields, SceneNames.Underlay, ReadUnderlay);
         (bool sourceRead, SiteSource? source) = ReadSiteSource(fields);
         RejectUnknownFields(fields);
         if (problems.Count > before || !snowRead || !windRead || !sdcRead || !frostRead || !widthRead || !liveRead || !bearingRead || !sourceRead)
@@ -1150,6 +1195,7 @@ internal sealed class SceneBinder
             {
                 SoilBearingPsf = (int?)bearing,
                 North = new Angle(north ?? 0),
+                Underlay = underlayRead ? underlay : null,
             };
     }
 

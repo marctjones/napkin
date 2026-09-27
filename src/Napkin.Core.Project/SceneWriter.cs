@@ -182,6 +182,22 @@ public static class SceneWriter
         WriteOptionalNumber(writer, SceneNames.SiteRoofLiveLoad, site.RoofLiveLoadPsf);
         WriteOptionalNumber(writer, SceneNames.SiteSoilBearing, site.SoilBearingPsf);
         writer.WriteNumber(SceneNames.SiteNorth, site.North.Arcseconds);
+        if (site.Underlay is { } underlay)
+        {
+            writer.WriteStartObject(SceneNames.Underlay);
+            writer.WriteString(SceneNames.Asset, underlay.Asset);
+            writer.WriteString(SceneNames.Name, underlay.Name);
+            WritePixel(writer, SceneNames.ImageA, underlay.ImageA);
+            WritePixel(writer, SceneNames.ImageB, underlay.ImageB);
+            WritePoint(writer, SceneNames.WorldA, underlay.WorldA);
+            WritePoint(writer, SceneNames.WorldB, underlay.WorldB);
+            writer.WriteNumber(SceneNames.Distance, underlay.Distance.Units);
+            writer.WriteEndObject();
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.Underlay);
+        }
         if (site.Source is { } source)
         {
             writer.WriteStartObject(SceneNames.SiteSource);
@@ -1029,6 +1045,14 @@ public static class SceneWriter
     // ---------------------------------------------------------------------------------------
     // Primitives
     // ---------------------------------------------------------------------------------------
+
+    private static void WritePixel(Utf8JsonWriter writer, string name, Pixel pixel)
+    {
+        writer.WriteStartObject(name);
+        writer.WriteNumber(SceneNames.X, pixel.X);
+        writer.WriteNumber(SceneNames.Y, pixel.Y);
+        writer.WriteEndObject();
+    }
 
     private static void WritePoint(Utf8JsonWriter writer, string name, Point2 point)
     {

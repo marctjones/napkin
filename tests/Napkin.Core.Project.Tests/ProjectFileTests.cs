@@ -195,8 +195,8 @@ public sealed class ProjectFileTests
     [InlineData(9)]
     [InlineData(10)]
     [InlineData(11)]
-    [InlineData(14)]
-    [InlineData(16)]
+    [InlineData(15)]
+    [InlineData(17)]
     [Trait("Feature", "PRJ-004")]
     public void A_scene_from_another_format_version_is_refused_naming_both_versions(int version)
     {

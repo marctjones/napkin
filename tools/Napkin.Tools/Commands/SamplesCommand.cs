@@ -363,6 +363,15 @@ public static class SamplesCommand
 
                 break;
 
+            case 16:
+                // A survey underlay (docs/design/permit-set.md §5.4): no sample has one.
+                if (root["site"] is JsonObject underlay)
+                {
+                    EnsureNull(underlay, "underlay");
+                }
+
+                break;
+
             default:
                 throw new InvalidOperationException($"samples restamp does not know what format version {version} added.");
         }

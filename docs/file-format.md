@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 15
+# The napkin project file — container version 1, scene format version 16
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -730,6 +730,26 @@ never stored. The site carries `north`: arcseconds clockwise from the drawing's 
 
 Refused: an unknown `from`, `toward` or setback `kind`; an angle outside 0 to 324000; a distance
 or setback of 0 or less; fewer than three courses; an unknown field; `north` missing.
+
+### A survey underlay
+
+Format version 16 ([`permit-set.md`](./design/permit-set.md) §5.4, #224). The site carries
+`"underlay"`: `null`, or the survey image behind the site plan and its two-point calibration. The
+image is named by the SHA-256 of its bytes (64 lowercase hex digits); its `name` is the file it came
+from, for display only. `imageA` and `imageB` are whole pixels from the image's top-left, x right and
+y down. `worldA` and `worldB` are where those points are on the drawing, `distance` apart as typed.
+The image's placement is derived from these for drawing only.
+
+```json
+"underlay": null | { "asset": "<sha-256>", "name": "survey.png",
+                     "imageA": { "x": 10, "y": 20 }, "imageB": { "x": 410, "y": 20 },
+                     "worldA": { "x": 0, "y": 0 }, "worldB": { "x": 1228800, "y": 0 },
+                     "distance": 1228800 }
+```
+
+Refused: a hash that is not 64 lowercase hex digits; the same pixel or the same world point twice;
+a distance of 0 or less; an empty name; an unknown or missing field. A scene read on its own cannot
+check that the image it names is there; the container loader does (container version 2).
 
 ## An annotated example
 
