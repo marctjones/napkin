@@ -10,7 +10,7 @@ namespace Napkin.Modules.Building;
 /// <summary>
 /// A deck's frame, derived every time from the box and its inputs (<c>docs/design/deck-and-porch.md</c>
 /// §2.3): ledger, joists, rim, blocking, beam, posts and decking, with the numbers the code checks
-/// read — the joist span, the beam span between posts and a middle post's tributary area — kept
+/// read — the joist span, the beam span between post centres and a middle post's tributary area — kept
 /// exact.
 /// </summary>
 /// <param name="Deck">The deck.</param>
@@ -19,8 +19,16 @@ namespace Napkin.Modules.Building;
 /// <param name="Depth">D: its depth out from the house.</param>
 /// <param name="Joists">Each joist's near face, from the start of the ledger.</param>
 /// <param name="JoistSpan">The joists' clear span, ledger face to beam: D − 2t − cantilever.</param>
-/// <param name="BeamSpan">The clear length between adjacent posts, in 1/1024″, exact.</param>
-/// <param name="TributaryArea">A middle post's tributary area, in square 1/1024″, exact: beam span × (joist span ÷ 2 + cantilever).</param>
+/// <param name="BeamSpan">
+/// The beam span, post centreline to post centreline, in 1/1024″, exact: (W − post width) ÷ (posts − 1), the end
+/// posts flush with the deck's ends and the rest evenly between. Measured as the source defines it (deck-guide-pack
+/// §3.2, Decision 8: DCA 6 Appendix B, p. B2, "centerline of post to centerline of post"), one post width longer than
+/// the clear length between posts.
+/// </param>
+/// <param name="TributaryArea">
+/// A middle post's tributary area, in square 1/1024″, exact: beam span (centre to centre) × (joist span ÷ 2 +
+/// cantilever). The joist side still runs to the beam's face; its centreline measure is slice B3's (deck-guide-pack §3.4).
+/// </param>
 /// <param name="DeckingBoards">How many decking boards cover the depth.</param>
 /// <param name="LastBoardWidth">How much of the last board shows: "adjust the gaps or the overhang".</param>
 /// <param name="Pieces">Every piece, as boards to buy.</param>
@@ -37,7 +45,7 @@ public sealed record DeckFraming(
     Length LastBoardWidth,
     ImmutableArray<FramingPiece> Pieces)
 {
-    /// <summary>The beam span in words, with ≈ when it is not on the grid: "5'-6 3/4\"".</summary>
+    /// <summary>The beam span, post centre to post centre, in words, with ≈ when it is not on the grid: "5'-10 1/4\"".</summary>
     public string BeamSpanText => DeckFrame.Words(BeamSpan);
 
     /// <summary>The tributary area in square feet to one decimal, as the panel shows it: "27.1 sq ft".</summary>
@@ -144,7 +152,8 @@ public static class DeckFrame
         Length last = d - (pitch * (boards - 1));
         pieces.Add(new FramingPiece(FramingRole.DeckingBoard, (int)boards, w, board));
 
-        ExactFraction beamSpan = new(w.Units - (inputs.PostCount * (Int128)post.Width.Units), inputs.PostCount - 1);
+        // Post centreline to post centreline: the end posts' centres are half a post in from each end.
+        ExactFraction beamSpan = new(w.Units - (Int128)post.Width.Units, inputs.PostCount - 1);
         ExactFraction depth = new(joistSpan.Units + (2 * (Int128)inputs.Cantilever.Units), 2);
         ExactFraction area = new(beamSpan.Numerator * depth.Numerator, beamSpan.Denominator * depth.Denominator);
 

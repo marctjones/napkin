@@ -79,38 +79,41 @@ public class DeckFramingTests
         Assert.Equal((22, In(144)), (Piece(frame, FramingRole.DeckingBoard).Quantity, Piece(frame, FramingRole.DeckingBoard).Length));
         Assert.Equal((22, In(1, 7, 8)), (frame.DeckingBoards, frame.LastBoardWidth));
 
-        // Beam span (144 − 3 × 3 1/2) ÷ 2 = 66 3/4″ exactly; tributary area 66 3/4 × 58 1/2 = 3904.875 sq in = 27.1 sq ft.
-        Assert.Equal(ExactFraction.Whole(In(66, 3, 4).Units), frame.BeamSpan);
-        Assert.Equal("5'-6 3/4\"", frame.BeamSpanText);
-        Assert.Equal(new ExactFraction((Int128)In(66, 3, 4).Units * In(58, 1, 2).Units, 1), frame.TributaryArea);
-        Assert.Equal("27.1 sq ft", frame.TributaryAreaText);
+        // Beam span post centreline to post centreline (DCA 6 p. B2; deck-guide-pack Decision 8): the end posts'
+        // centres are 1 3/4″ in from each end, so (144 − 3 1/2) ÷ 2 = 70 1/4″ exactly — the clear 66 3/4″ between
+        // posts plus one post width. Tributary area 70 1/4 × 58 1/2 = 4109.625 sq in = 28.54 sq ft, shown 28.5.
+        Assert.Equal(ExactFraction.Whole(In(70, 1, 4).Units), frame.BeamSpan);
+        Assert.Equal("5'-10 1/4\"", frame.BeamSpanText);
+        Assert.Equal(new ExactFraction((Int128)In(70, 1, 4).Units * In(58, 1, 2).Units, 1), frame.TributaryArea);
+        Assert.Equal("28.5 sq ft", frame.TributaryAreaText);
         Assert.Equal(In(117), frame.JoistSpan);
     }
 
     [Theory]
     [Trait("Feature", "DECK-005")]
-    // Two posts: 144 − 7 = 137″ between them.
-    [InlineData(2, 137 * 1024, 1)]
-    // Four posts: (144 − 14) ÷ 3 = 43 1/3″ — not on the grid, kept exact.
-    [InlineData(4, 130 * 1024, 3)]
-    public void The_beam_span_between_posts_is_exact_for_any_count(int posts, long numerator, long denominator)
+    // Two posts: centre to centre 144 − 3 1/2 = 140 1/2″.
+    [InlineData(2, (140 * 1024) + 512, 1)]
+    // Four posts: (144 − 3 1/2) ÷ 3 = 46 5/6″ — not on the grid, kept exact; shown to the nearest 1/16″, 46 13/16″.
+    [InlineData(4, (140 * 1024) + 512, 3)]
+    public void The_beam_span_between_post_centres_is_exact_for_any_count(int posts, long numerator, long denominator)
     {
         DeckFraming frame = Frame(Drawing(House(), DeckBox(Inputs(posts))));
 
         Assert.Equal(new ExactFraction(numerator, denominator), frame.BeamSpan);
-        Assert.Equal(denominator == 1 ? "11'-5\"" : "≈3'-7 5/16\"", frame.BeamSpanText);
+        Assert.Equal(denominator == 1 ? "11'-8 1/2\"" : "≈3'-10 13/16\"", frame.BeamSpanText);
     }
 
     [Fact]
     [Trait("Feature", "DECK-005")]
     public void A_cantilever_shortens_the_joist_span_and_moves_load_onto_the_beam()
     {
-        // 12″ cantilever: joist span 117 − 12 = 105″; tributary depth 105 ÷ 2 + 12 = 64 1/2″; area 66 3/4 × 64 1/2.
+        // 12″ cantilever: joist span 117 − 12 = 105″; tributary depth 105 ÷ 2 + 12 = 64 1/2″; area 70 1/4 × 64 1/2
+        // = 4531.125 sq in = 31.47 sq ft, shown 31.5.
         DeckFraming frame = Frame(Drawing(House(), DeckBox(Inputs(cantilever: In(12)))));
 
         Assert.Equal(In(105), frame.JoistSpan);
-        Assert.Equal(new ExactFraction((Int128)In(66, 3, 4).Units * In(64, 1, 2).Units, 1), frame.TributaryArea);
-        Assert.Equal("29.9 sq ft", frame.TributaryAreaText);
+        Assert.Equal(new ExactFraction((Int128)In(70, 1, 4).Units * In(64, 1, 2).Units, 1), frame.TributaryArea);
+        Assert.Equal("31.5 sq ft", frame.TributaryAreaText);
     }
 
     [Fact]
