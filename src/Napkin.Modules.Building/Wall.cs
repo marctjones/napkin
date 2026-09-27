@@ -24,6 +24,9 @@ public static class BuildingLayers
 
     /// <summary>The layer a porch roof is drawn on (deck-and-porch §5.3).</summary>
     public const string Roof = "Roof";
+
+    /// <summary>The site plan's layer: property lines, setbacks and north (permit-set §5.1).</summary>
+    public const string Site = "Site";
 }
 
 /// <summary>Whether an opening is a window or a door.</summary>
