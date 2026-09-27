@@ -37,7 +37,7 @@ public class FakeNativeMlxTests
     }
 
     [Fact]
-    public void ACancelSeenBeforeOrAfterTheLoadIsCancelled()
+    public async Task ACancelSeenBeforeOrAfterTheLoadIsCancelled()
     {
         FakeNativeMlx native = Initialised();
         using CancelFlag set = new();
@@ -50,10 +50,11 @@ public class FakeNativeMlxTests
         native.LoadGate = gate;
         using CancelFlag during = new();
         Task<MlxStatus> loading = Task.Run(() => native.Load("/m", during, out _, out _));
+        await Eventually.True(() => native.Loads.Count == 2, "the second load to start");
         during.Set();
         gate.Set();
 
-        Assert.Equal(MlxStatus.Cancelled, loading.Result);
+        Assert.Equal(MlxStatus.Cancelled, await loading);
         Assert.Equal(0, native.LiveModels);
     }
 

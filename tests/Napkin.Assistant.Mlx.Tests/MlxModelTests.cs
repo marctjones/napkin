@@ -179,6 +179,17 @@ public sealed class MlxModelTests : IDisposable
     }
 
     [Fact]
+    public async Task ALoadTheBridgeCallsCancelledOnItsOwnIsRefusedInItsWords()
+    {
+        // napkin never set the flag, so this is not napkin closing the model: it is the bridge's say.
+        FakeNativeMlx native = new() { LoadStatus = MlxStatus.Cancelled };
+        using MlxModel model = new(native, _model.Folder());
+
+        Assert.Equal(new ModelReply.Refused("Cancelled; nothing was produced."), await model.AskAsync(Answer, CancellationToken.None));
+        Assert.Equal(MlxLoadState.NotLoaded, model.State);
+    }
+
+    [Fact]
     public async Task ABridgeOfAnotherInterfaceVersionIsNotInitialised()
     {
         FakeNativeMlx native = new() { Abi = 3 };
@@ -260,8 +271,10 @@ public sealed class MlxModelTests : IDisposable
     [Fact]
     public async Task TheTimeLimitStartsAfterTheLoad()
     {
-        FakeNativeMlx native = new(FakeMlxReply.Answer("ok", TimeSpan.FromMilliseconds(50))) { LoadDelay = TimeSpan.FromMilliseconds(900) };
-        using MlxModel model = new(native, _model.Folder(), timeout: TimeSpan.FromMilliseconds(400));
+        // A load half as long again as the limit, then a quick reply: not a time-out (§7.2's "a fake
+        // load of 40 s followed by a 1 s generate", scaled down with room to spare on a busy machine).
+        FakeNativeMlx native = new(FakeMlxReply.Answer("ok", TimeSpan.FromMilliseconds(20))) { LoadDelay = TimeSpan.FromMilliseconds(1500) };
+        using MlxModel model = new(native, _model.Folder(), timeout: TimeSpan.FromSeconds(1));
 
         Assert.Equal(new ModelReply.Text("ok"), await model.AskAsync(Answer, CancellationToken.None));
     }

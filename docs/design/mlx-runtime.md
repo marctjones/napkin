@@ -1219,7 +1219,7 @@ sandboxed session's XPC and not the package — on an ordinary Mac it may just w
 
 `src/Napkin.Assistant.Mlx` (BCL only; references `Napkin.Modules.Assistant` and
 `Napkin.Assistant.LocalServer`; `AllowUnsafeBlocks`), `tests/Napkin.Assistant.Mlx.Tests` (AST-007,
-170 tests, all through the fake), `native/NapkinMlx/NapkinMlx.props` imported by `Napkin.App` and
+171 tests, all through the fake; 100% line and branch, the floor), `native/NapkinMlx/NapkinMlx.props` imported by `Napkin.App` and
 `Napkin.Tools`, `napkin-tools assistant mlx-smoke`, and the assembly's floor. Nothing in the app's
 behaviour changes: the app does not reference the assembly yet (slice C). §13's corrections are
 followed: the metallib passed to `init` is exactly `native/mlx.metallib` beside the dylib; the three
