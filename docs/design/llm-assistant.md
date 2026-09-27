@@ -1021,3 +1021,79 @@ rendered *From napkin* items would show where the number came from, but a skimmi
 note. Options: (a) accept, as now; (b) let help items support designations only, and every other
 number only from the project's own items; (c) keep numbers out of the help docs' examples. (b) is
 one rule in `AnswerGuard` and the §9.1 good answer still stands under it.
+
+## 15. As built: slice B (#230), and where it departs from this note
+
+`MainWindow.Assistant.cs`, the `AssistantPanel` note, the `_Assistant` menu, Ctrl/Cmd+Shift+A. What
+differs from §8 and §11.3, and why:
+
+1. **(b) from §14 item 13, decided 2026-09-27**: `AnswerGuard` gained
+   `IsMetadata(ContextKind)`, true for `Help` and (since — see item 8 below) `Code`: either
+   contributes only a designation's key; every other number must come from a project item that
+   states a fact about the design — the design, the site, a check result or a list row.
+2. **The Assistant menu, after Lists**: `Ask…` (Ctrl/Cmd+Shift+A), `Explain this result` (enabled
+   only when the selection is one entity with a header, bracing or deck check —
+   `SelectionHasCheckResult`), `Sketch from words…` and, past a separator, `Where the model
+   runs…`, both `IsEnabled="False"` until slices E and C build them. Matches §8 and §13.7's
+   decision exactly.
+3. **The note**: a `Border` docked right (`HorizontalAlignment="Right"`, width 340) rather than
+   centred as Firm up's is — §8 says "docked right", Firm up's sheet is centred, so this slice
+   follows §8 over the sibling shape it otherwise copies. Question box mono 12.5
+   (`AssistantQuestionBox`, `AcceptsReturn="False"`, wraps up to `MaxHeight="54"`, roughly three
+   lines); a thinking line with elapsed seconds (`DispatcherTimer`, one-second tick); the answer as
+   `TextBlock.Inlines`, one `Run` per guarded sentence, a refused one's `Run.Foreground` set to
+   `palette.Dimension` (the pencil colour) and a kept one left unset so it inherits the body
+   colour; `From napkin:` then each referenced item's `ContextItem.ToString()` verbatim, mono;
+   the disclaimer and the whereabouts line, both always shown once any reply — text, refused or
+   unreadable — has rendered.
+4. **The constructor**: `MainWindow(SettingsStore settings, IAssistantModel? model = null)`;
+   `AssistantModels.FromSettings(UserSettings)` in `Napkin.App` — the only place a runtime
+   assembly would be referenced — always answers `new ScriptedModel()` (the no-model state) in
+   this slice, because `UserSettings` carries no provider to read until slice C's settings
+   version 3 (#231) exists. `GuiWorkflow.Run` gained an optional `model` parameter so
+   `AssistantWorkflows.cs` can pass a scripted one with a script; every other workflow keeps the
+   window's own default.
+5. **Escape and Enter are a window-level `KeyDownEvent` tunnel handler** (`OnAssistantKeyDown`),
+   the `OnFirmUpKeyDown`/`PropertiesPanel` pattern: Escape while a request is out cancels it
+   (`CancellationTokenSource.Cancel()`) and hides the thinking line, leaving the note open with the
+   question box's text untouched, so asking again needs only Enter; Escape while idle closes the
+   note. An `int` generation counter guards a cancelled or superseded reply from touching the note
+   once a later question (or a close) has moved on — belt and suspenders alongside the
+   `OperationCanceledException` catch, since a `ScriptedModel` with `Delay: TimeSpan.Zero` (the
+   common case in tests) never truly yields, so `AskAssistant` usually completes synchronously
+   within the key handler and the generation check matters only for the genuinely delayed case
+   GUI-AST-02 exercises.
+6. **The pack passes no open lists** (`ContextPack.For(Editor.Design, Editor.Selection, checks,
+   [], question)`): §3.2's list rows are slice D's (#232), not B's; `AssistantWorkflows.cs`'s
+   GUI-AST-03 stays that slice's to write.
+7. **Explain links**: small `Button`s beside the Code check, Bracing and Deck check section
+   headers in the Part panel (`ExplainCodeCheckButton`, `ExplainBracingButton`,
+   `ExplainDeckButton`), all wired to the same `OnExplainClicked` handler as the menu item, which
+   asks about whatever is selected. The shopping list's Framing section (`CutListWindow`, a
+   separate window and file the slice's file list does not name) does not get one: its Framing
+   text is one paragraph per opening's result, not a per-result control a link attaches beside,
+   and restructuring it is more than a `_Explain` link needs. Left for a later slice if Marc wants
+   it there too.
+8. **A carry-over this slice found, fixed here rather than filed forward.** While #41 slice B1
+   bumped the shipped Connecticut pack to revision 2 (landed on `main` while this slice was in
+   progress), its own `ContextPackTests.cs` update noticed that `AnswerGuard` let the adopted-code
+   line's own revision number — "pack us-ct-2022 rev 2 … revision 2" — support an unrelated `(2)`
+   ply or stud count, and weakened §9.1's refused-sentence assertion from three tokens to two to
+   keep it passing rather than fix the guard. This slice restores the strong assertion by treating
+   `ContextKind.Code` the same way item 1 above treats `ContextKind.Help`: metadata about the pack
+   is not a fact about the design, so a help item's worked example and the adopted-code line's own
+   id, revision and lock date both support only a designation, never a size, count or length. A
+   test (`The_adopted_codes_own_number_never_supports_a_sentence_by_itself`) proves it with a pack
+   whose only "2" is the code line's revision number. The same B1 pass also flagged
+   `docs/rules-engine.md`'s "Data status: no real tables ship" heading as possibly stale now that
+   DCA 6 Table 2 ships real deck data; B1 had already restored the exact heading text itself
+   (`HelpSections.cs` keys the No-data help map on it verbatim), so nothing was needed here.
+9. **`GUI-AST-01`'s script text is computed, not copied from §9.1's prose.** The real app's pack
+   for `samples/window-in-existing-wall` carries a ninth item §9.1's hand-derived example does
+   not: Wall 1's bracing check (also No data under the shipped pack, since `ContextChecks` now
+   always carries `BracingCheck.Of` and `DeckCheck.Of` alongside `CodeCheck.Of`, per this slice's
+   own `BuildAssistantPack`), which shifts every help reference by one. The workflow builds its
+   own reference `ContextPack` the same way `MainWindow.Assistant.cs` does and reads the good
+   answer's `[n]`s off it, so a future pack change (another check added, another help section)
+   moves the workflow's expectations with it instead of silently drifting from what the app
+   actually renders.

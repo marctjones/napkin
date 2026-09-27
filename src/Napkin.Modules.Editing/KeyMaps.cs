@@ -221,6 +221,9 @@ public enum ShellCommand
     /// <summary>The shopping list.</summary>
     ShoppingList,
 
+    /// <summary>Ask the assistant, or Explain this result with the question filled in (docs/design/llm-assistant.md &#xA7;8).</summary>
+    Ask,
+
     /// <summary>The first sample.</summary>
     Sample1,
 
@@ -315,6 +318,7 @@ public static class KeyMaps
             new(Command(KeyName.Y), ShellCommand.Redo),
             new(Command(KeyName.L), ShellCommand.CutList),
             new(Command(KeyName.L, KeyMods.Shift), ShellCommand.ShoppingList),
+            new(Command(KeyName.A, KeyMods.Shift), ShellCommand.Ask),
             .. Enumerable.Range(0, 9).Select(i => new Shortcut<ShellCommand>(Command(KeyName.D1 + i), ShellCommand.Sample1 + i)),
         ],
         new Dictionary<ShellCommand, string>
@@ -327,6 +331,7 @@ public static class KeyMaps
             [ShellCommand.Redo] = "Redo (the platform's own keys: Ctrl+Y first on Windows, Cmd+Shift+Z on macOS)",
             [ShellCommand.CutList] = "Cut list",
             [ShellCommand.ShoppingList] = "Shopping list",
+            [ShellCommand.Ask] = "Ask the assistant a question about the design on screen",
             [ShellCommand.Sample1] = "Open the first sample",
             [ShellCommand.Sample2] = "Open the second sample",
             [ShellCommand.Sample3] = "Open the third sample",

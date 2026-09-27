@@ -39,7 +39,7 @@ public partial class MainWindow
         foreach (Control note in (Control[])
         [
             RefusalPanel, UnsavedPanel, ToolBar, ViewSnapBar, RelationshipsPanel, PropertiesPanel,
-            StockToolboxPanel, DimensionEditor, .. WorkshopSheet.Notes,
+            StockToolboxPanel, DimensionEditor, AssistantPanel, .. WorkshopSheet.Notes,
         ])
         {
             note.SetValue(ThemeVariantScope.RequestedThemeVariantProperty, noteTheme);
@@ -57,6 +57,12 @@ public partial class MainWindow
         FirmUpPanel.BorderBrush = edge;
         FirmUpTitle.Foreground = edge;
         JoinMessage.Foreground = edge;
+        AssistantPanel.Background = paper;
+        AssistantPanel.BorderBrush = edge;
+        AssistantTitle.Foreground = edge;
+        AssistantThinkingText.Foreground = new SolidColorBrush(palette.Label);
+        AssistantDisclaimerText.Foreground = new SolidColorBrush(palette.Label);
+        AssistantWhereaboutsText.Foreground = new SolidColorBrush(palette.Label);
         UnsavedPanel.Background = paper;
         UnsavedPanel.BorderBrush = edge;
         UnsavedHeadline.Foreground = edge;

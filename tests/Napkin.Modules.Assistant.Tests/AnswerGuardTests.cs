@@ -106,6 +106,63 @@ public class AnswerGuardTests
 
     [Fact]
     [Trait("Feature", "AST-003")]
+    public void A_help_item_supports_only_a_designation_never_a_size_count_or_length()
+    {
+        // Carry-over from slice A (#229, issue #230 comment 2026-09-27, decided option (b)):
+        // building.md's "The code check on an opening" section is added to the pack for every
+        // sized, out-of-scope or not-checked header and carries the worked example "Header (2)
+        // 2x10, 1 jack stud and 2 king studs each side." Without this rule, that example's own
+        // numbers would let an answer claim (2) 2x10 for a header napkin sized differently, because
+        // the guard would find the token — in the help text, never in what napkin computed.
+        HelpSection section = HelpSections.Find("docs/building.md", "The code check on an opening");
+        Assert.Contains("2x10", section.Text, StringComparison.Ordinal);
+        ContextPack pack = ContextPack.Of(
+        [
+            (ContextKind.Check, "Header check, Window 1: Sized: (2) 2x8, 1 jack stud and 1 king stud each side."),
+            (ContextKind.Help, section.ItemText),
+        ]);
+
+        // The header napkin actually sized: every number is the check result's own [1].
+        Kept("The header is (2) 2x8, 1 jack stud and 1 king stud each side [1].", pack);
+
+        // 2x10 is only in the help item's worked example [2]; it never stands for the header napkin sized.
+        Refused("A header like this is usually (2) 2x10 [2].", pack, "2x10");
+
+        // A designation from a help item alone still stands (§9.1's good answer relies on exactly
+        // this): the check item here carries no designation at all, so [2] is the only source.
+        ContextPack designationOnlyInHelp = ContextPack.Of(
+        [
+            (ContextKind.Check, "Header check, Window 1: Sized: (2) 2x8."),
+            (ContextKind.Help, "Help, docs/rules-engine.md \"Data status\": the header table is R602.7(1)."),
+        ]);
+        Kept("The header table is R602.7(1) [2].", designationOnlyInHelp);
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-003")]
+    public void The_adopted_codes_own_number_never_supports_a_sentence_by_itself()
+    {
+        // Carry-over found while bumping the shipped Connecticut pack to revision 2 (#41 slice B1,
+        // 2026-09-27): the adopted-code line names its pack's revision number ("pack us-ct-2022 rev
+        // 2 … revision 2"), and without this rule that "2" alone would let an answer claim an
+        // unrelated ply or stud count the pack never gave — the guard found it in the code's own
+        // metadata, not in anything napkin computed. Same rule, same reason, as a help item's.
+        ContextPack pack = ContextPack.Of(
+        [
+            (ContextKind.Check, "Header check, Window 1: Sized: (1) 2x8."),
+            (ContextKind.Code, "Adopted code: Checking against CT 2022 (IRC 2021), pack us-ct-2022 rev 2 — UNREVIEWED. Locked on 2026-09-27 to pack us-ct-2022 revision 2."),
+        ]);
+
+        // The header napkin actually sized: its own number stands.
+        Kept("The header is (1) 2x8 [1].", pack);
+
+        // The pack's only "2" is the code line's revision number [2]; it never stands for a ply or stud count.
+        Refused("A header like this usually takes (2) 2x10.", pack, "2", "2x10");
+        Refused("This would need (2) plies.", pack, "2");
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-003")]
     public void A_percentage_stands_only_as_a_percentage()
     {
         ContextPack pack = Pack("Waste 15%, 15 boards.");

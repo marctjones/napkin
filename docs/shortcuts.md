@@ -19,6 +19,7 @@ text: no shortcut below except the window's fires while a field has the keyboard
 | `Ctrl/Cmd+Shift+Z`, `Ctrl/Cmd+Y` | Redo (the platform's own keys: Ctrl+Y first on Windows, Cmd+Shift+Z on macOS) |
 | `Ctrl/Cmd+L` | Cut list |
 | `Ctrl/Cmd+Shift+L` | Shopping list |
+| `Ctrl/Cmd+Shift+A` | Ask the assistant a question about the design on screen |
 | `Ctrl/Cmd+1` | Open the first sample |
 | `Ctrl/Cmd+2` | Open the second sample |
 | `Ctrl/Cmd+3` | Open the third sample |

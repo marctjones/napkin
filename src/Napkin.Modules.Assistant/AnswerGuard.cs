@@ -72,6 +72,20 @@ public sealed record GuardedAnswer(ImmutableArray<GuardedSentence> Sentences)
 /// line break; so <c>R602.7(1)</c> and <c>3.5</c> stay whole. Item references written after the full
 /// stop, "… empty. [4]", belong to the sentence before them.
 /// </para>
+/// <para>
+/// A help item, and the adopted-code line, support only a table or section designation, never a
+/// size, count or length (§14 item 13, decided option (b), issue #230, and the #41 carry-over
+/// found while bumping the shipped Connecticut pack to revision 2): building.md's "The code check
+/// on an opening" section is added to the pack for every sized, out-of-scope or not-checked header
+/// and carries the worked example "Header (2) 2x10, 1 jack stud and 2 king studs each side.", and
+/// the code line's own "pack us-ct-2022 rev 2 … revision 2" names its pack's revision number — so
+/// without this rule an answer could claim <c>(2) 2x10</c> for a header napkin sized differently,
+/// or <c>(2)</c> plies for a beam it never counted, and the guard would find the number in the help
+/// text or the code's metadata, never in what napkin computed. A designation from either still
+/// stands (§9.1's good answer cites <c>R602.7(1)</c> from a help item); every other number must
+/// come from a project item that states a fact about the design on screen — the design, the site,
+/// a check result or a list row.
+/// </para>
 /// </remarks>
 public static class AnswerGuard
 {
@@ -83,7 +97,7 @@ public static class AnswerGuard
         ArgumentNullException.ThrowIfNull(answer);
         ArgumentNullException.ThrowIfNull(pack);
 
-        ImmutableHashSet<string> given = pack.Keys;
+        ImmutableHashSet<string> given = SupportedKeys(pack);
         List<GuardedSentence> sentences = [];
         foreach ((string text, string separator) in Sentences(answer))
         {
@@ -217,6 +231,39 @@ public static class AnswerGuard
         string rest = System.Text.RegularExpressions.Regex.Replace(text, @"\[\s*\d+(?:\s*,\s*\d+)*\s*\]", string.Empty);
         return rest.Length < text.Length && rest.All(c => char.IsWhiteSpace(c) || c is '.' or ',' or ';');
     }
+
+    /// <summary>
+    /// The keys a sentence may cite: every key from a project item, and only a designation's key
+    /// from a help item or the adopted-code line — metadata about the pack, not a fact about the
+    /// design (see the class remarks). A key still counts when it also occurs in a project item,
+    /// however many metadata items carry it too.
+    /// </summary>
+    /// <param name="pack">The context pack.</param>
+    private static ImmutableHashSet<string> SupportedKeys(ContextPack pack)
+    {
+        HashSet<string> keys = [];
+        foreach (ContextItem item in pack.Items)
+        {
+            foreach (string key in NumberTokens.KeysIn(item.Text))
+            {
+                if (IsMetadata(item.Kind) && !key.StartsWith(NumberTokens.DesignationPrefix, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                keys.Add(key);
+            }
+        }
+
+        return [.. keys];
+    }
+
+    /// <summary>
+    /// Whether an item's numbers are about the pack, not the design: a help section's own worked
+    /// example, or the adopted-code line's pack id, revision and lock date (§14 item 13, and the
+    /// #41 carry-over). Neither ever states a fact napkin computed about the project on screen.
+    /// </summary>
+    private static bool IsMetadata(ContextKind kind) => kind is ContextKind.Help or ContextKind.Code;
 
     private static string Listed(List<string> items) => items.Count switch
     {

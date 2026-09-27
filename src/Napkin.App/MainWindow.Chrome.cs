@@ -39,6 +39,10 @@ public partial class MainWindow
         TurnYMenuItem.IsEnabled = TurnYToolButton.IsEnabled = turnable;
         TurnZMenuItem.IsEnabled = TurnZToolButton.IsEnabled = turnable;
 
+        // Explain this result (docs/design/llm-assistant.md §8): only when the selection is one
+        // entity with a header, bracing or deck check to explain.
+        ExplainMenuItem.IsEnabled = SelectionHasCheckResult;
+
         // The shape workshop covers the paper and takes the toolbar's stock icons with it, so the
         // menu's way in to the same stock goes too: there is no paper to drag it onto.
         StockMenu.IsEnabled = !IsShapingPart && !IsShowingStandardView;
