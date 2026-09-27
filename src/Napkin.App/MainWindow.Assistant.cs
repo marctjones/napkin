@@ -239,12 +239,51 @@ public partial class MainWindow
     /// <summary>
     /// Builds the context pack for a question (docs/design/llm-assistant.md &#xA7;3) from what the
     /// app already computed: the design, the selection, every header, bracing and deck check on
-    /// screen, and — until slice D (#232) — no open lists.
+    /// screen, and the rows of whichever list is open (&#xA7;3.2, &#xA7;10 slice D, #232).
     /// </summary>
     ContextPack BuildAssistantPack(string question)
     {
         ContextChecks checks = new(Packs.Resolve(Editor.Sketch.Code), Checks, BracingChecks, DeckCheck.Of(Editor.Sketch, Packs));
-        return ContextPack.For(Editor.Design, Editor.Selection, checks, [], question);
+        return ContextPack.For(Editor.Design, Editor.Selection, checks, OpenAssistantLists(), question);
+    }
+
+    /// <summary>
+    /// The open list's rows (docs/design/llm-assistant.md &#xA7;3.2): when the cut-list window is
+    /// open, exactly the CSV of the tab on screen — the list the person is looking at when they
+    /// ask, and nothing else, so the pack never carries more than what is actually shown. Napkin's
+    /// four lists live in one window's tabs rather than four windows of their own (&#xA7;10 slice D
+    /// as built, docs/design/llm-assistant.md), so "the shopping list is open" means that tab is
+    /// the one showing.
+    /// </summary>
+    /// <remarks>
+    /// The shopping list's own CSV property, not <see cref="OpenList.ShoppingList"/>'s row-based
+    /// factory, because the window's <see cref="CutListWindow.ShoppingCsv"/> also carries the
+    /// estimate lines once the person has priced anything (#141) — exactly what is on screen, which
+    /// a rebuild from rows alone would miss.
+    /// </remarks>
+    IEnumerable<OpenList> OpenAssistantLists()
+    {
+        if (CutList is not { } window)
+        {
+            return [];
+        }
+
+        if (window.IsShowingShoppingList)
+        {
+            return [new OpenList("Shopping list", window.ShoppingCsv)];
+        }
+
+        if (window.IsShowingCutLayout)
+        {
+            return [new OpenList("Cut layout", window.LayoutCsv)];
+        }
+
+        if (window.IsShowingSizes)
+        {
+            return [new OpenList("Fasteners and supplies", window.ExtrasCsv)];
+        }
+
+        return [new OpenList("Cut list", window.Csv)];
     }
 
     /// <summary>

@@ -47,14 +47,14 @@ public class Dca6Table3aTests
 
     [Fact]
     [Trait("Feature", "DECK-002")]
-    public void The_worked_example_passes_on_its_post_centre_to_post_centre_span()
+    public void The_worked_example_passes_on_its_span_between_post_faces()
     {
         // (2) 2x10 Southern Pine carrying 9'-9" of joists: the ≤ 10' column, 7'-9" (p. 6). Three 4x4 posts under
-        // a 12'-0" deck, (144 − 3 1/2) ÷ 2 = 70 1/4" centre to centre: passes.
-        DeckResult.Passes passes = Assert.IsType<DeckResult.Passes>(Check(Beam("(2) 2x10", In(70, 1, 4), Ft(9, 9))));
+        // a 12'-0" deck, L_B face to face of posts (Figure 3, p. 7): (144 − 3 × 3 1/2) ÷ 2 = 66 3/4": passes.
+        DeckResult.Passes passes = Assert.IsType<DeckResult.Passes>(Check(Beam("(2) 2x10", In(66, 3, 4), Ft(9, 9))));
         Assert.Equal(("r.sp.2-2x10.10", Ft(7, 9), "Southern Pine"), (passes.Row.Id, passes.Allowed, passes.Group!.Group));
 
-        // Hem-Fir reads as the second group: its (2) 2x10 at ≤ 10' allows 6'-3", so 70 1/4" passes, 75 1/4" is 1/4" over.
+        // Hem-Fir reads as the second group: its (2) 2x10 at ≤ 10' allows 6'-3", so 66 3/4" passes, 75 1/4" is 1/4" over.
         DeckResult.Short hem = Assert.IsType<DeckResult.Short>(Check(Beam("(2) 2x10", In(75, 1, 4), Ft(9, 9), "Hem-Fir")));
         Assert.Equal(("r.dfl-rw.2-2x10.10", Ft(6, 3), In(0, 1, 4)), (hem.Row.Id, hem.Allowed, hem.Over));
     }

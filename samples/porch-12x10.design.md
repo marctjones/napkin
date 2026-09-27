@@ -39,6 +39,8 @@ DCA 6-2015 Tables 2 and 3A, a guide (#41). With Supports and Species empty the j
 ask for them; the panel lists the guide's words. napkin reads the guide as covering a deck carrying
 only its own loads (Table 2 note 1, p. 4; item 8, p. 2), and this deck carries the roof-bearing Front,
 so what it supports is not `deck`: typed as anything else, its joists and beam are out of the guide's
-scope — get it engineered. (The beam line reads its span post centre to post centre: three 4x4s under
-144", (144 − 3 1/2) ÷ 2 = 70 1/4".) The ledger, footing and rafter checks say **No data** (#40, #42,
-#209).
+scope — get it engineered. (The beam line reads its span L_B between post faces, as DCA 6's Figure 3,
+p. 7, dimensions it: three 4x4s under 144", (144 − 3 × 3 1/2) ÷ 2 = 66 3/4". The footing line's middle
+post carries, by DCA 6 Appendix B Eq. B-1, 72" of beam — its centreline to the deck's edge — × half the
+joists' 118 1/2", ledger face to the rim's outside face: 4266 sq in, 29.6 sq ft.) The ledger, footing and
+rafter checks say **No data** (#40, #42, #209).

@@ -66,6 +66,32 @@ so the conservative measure: a beam that passes face to face by less than one po
 the checklist asks the reviewer to confirm the figure, and whether Table 3A's L_B is face to face is
 Marc's call to revisit.
 
+**Decision 8 corrected (#41, Marc, 2026-09-27; slice B2-fix).** The independent review of Table 3A (C2,
+[`dca6-table3a.md`](../code-packs/reviews/us-ct-2022/dca6-table3a.md), "Figure 3") confirmed the finding
+above: Figure 3 (p. 7) draws each post as two face lines, with L_B's arrow tips on adjacent posts' inner
+faces and the L_B/4 overhang's on the deck edge and the end post's outer face; p. 5 says the beam "can
+extend past the post face up to LB/4". Appendix B's centreline measure is a different quantity, B_L,
+defined "for posts or footings being considered" (p. B2). Marc decided: follow the source. Decision 8's
+principle — measure as the source defines it, and say so — stands; its reading of Figure 3 and §3.2's
+"centre-to-centre" were wrong. As built: `DeckFraming.BeamSpan` is L_B between post faces, (W − posts ×
+post width) ÷ (posts − 1), and the beam line says "between post faces" (the worked example's 5'-6 3/4",
+not 5'-10 1/4"); napkin's beam ends flush with its end posts' outer faces, so it has no overhang to check.
+The tributary area (`DeckFraming.Tributary`) now follows Appendix B on both sides, since p. B1 defines the
+joist side as plainly as p. B2 the beam side and neither needs B3's schema: B_L "from either centerline of
+post to centerline of post, if there are overhangs, or to the outside edges of the deck, if there are no
+overhangs", the greater of two unequal adjacent spans (p. B2) — with napkin's overhang-free beam, a middle
+post's centreline to the deck's edge, or the whole width with two posts; J_L "from the ledger face to
+either the center point of the beam, if there is an overhang, or to the outside face of the rimboard if
+there is not an overhang", and J_O from the deck's outside edge to the beam's centreline, zero without an
+overhang (p. B1). The equations are Eq. B-1, A = (½J_L + J_O)(B_L), for a centre post and Eq. B-2,
+A = (½J_L + J_O)(½B_L + B_O), for a corner post (p. B1) — the ½ is on J_L alone, not on (J_L + J_O) as
+§3.4 below wrote it. napkin's middle post (three or more posts) takes B-1 and its end post (two) B-2 with
+B_O = 0; the footing line names the equation and both measures. The worked example's middle post is
+72" × (118 1/2" ÷ 2) = 4266 sq in = 29.6 sq ft (was 28.5). Left for B3: Table B3's note 2 factor (×1.25
+at centre posts under a continuous beam), the post-height tables' corner/centre position (which
+`DeckTributary.Post` already says), and a beam overhang, should napkin ever model one (B_O and B_L to post
+centrelines, and the L_B/4 check).
+
 Design note written by Fable per [`PLAN.md`](../../PLAN.md) for Marc's decision of 2026-09-26 on
 #209, **"Decks only via DCA 6"**: the deck checks' real data comes from the American Wood
 Council's *Prescriptive Residential Wood Deck Construction Guide* (DCA 6), a free primary source,
@@ -340,7 +366,8 @@ Sample, as printed: Southern Pine, 2-2x8, joist span ≤ 10': 6'-6" (Table 3A, p
   request must ask the table the number the table is about: slice B2 changes the derived beam span
   to **centre-to-centre**, (W − post width) ÷ (posts − 1), says so in the sentence, and the
   synthetic goldens follow. napkin's beam has no overhang past its end posts, so L_B/4 needs no
-  check; a note says the table allows one.
+  check; a note says the table allows one. *(Corrected, #41, 2026-09-27: Figure 3 dimensions L_B face to
+  face of posts, and napkin now measures it so; see "Decision 8 corrected" at the top.)*
 - Note 4 (beam depth ≥ joist depth with hangers) rides `not-encoded`; "Joists shall not frame in
   from opposite sides of the same beam" (p. 5) is a scope note. Note 1 (40/10 psf, L/360 simple
   span, cantilever length/180, No. 2, wet service) rides with every row.
@@ -411,7 +438,9 @@ document over another.
   post, ½(J_L + J_O)·B_L, and Eq. B-2 for a corner post (pp. B1–B2). `DeckFraming.TributaryArea`
   today uses the clear beam span and the joist span to the beam face, so it under-counts by half a
   beam thickness one way and a post width the other. Slice B3 changes the derivation to the
-  centreline definitions, keeps it exact, and the check's sentence names the equation.
+  centreline definitions, keeps it exact, and the check's sentence names the equation. *(Done in
+  slice B2-fix, #41, 2026-09-27, both sides; Eq. B-1 as printed is (½J_L + J_O)(B_L), and without
+  overhangs B_L and J_L run to the deck's outside edges — see "Decision 8 corrected" at the top.)*
 
 **Tables B1/B2 → a new kind, `deck-post`.** Inputs: species group (five: Southern Pine; Douglas
 Fir-Larch; Hem-Fir, Western Cedars; Redwood; Ponderosa Pine, Red Pine, SPF), post (`6x6`, `4x4`),
@@ -553,7 +582,7 @@ collision points.
 | **A** | §4 items 1–4 on the **synthetic** pack: `us-zz-deck` gains a guide layer `zz-guide-2099` (NOT CODE VALUES) carrying a scope limit on `supports`, a snow limit, a `speciesGroups` table and the joist table moved under it (the picker clause and the caveat line are proven there; the CT pack is untouched until B1 adds its `guides` entry with the first table); deck golden runner and `Recompute` deck diffs; `docs/rules-engine.md` | #238 | Opus (loader strictness, as #198) | goldens for every synthetic row and limit; the conflict rule; a guide without a `supports` limit refused; the caveat clause on every deck line; the porch's Supports → Out of scope citing the limit; recompute to No data on switch |
 | **B1** | Table 2 → `deck-joist` with `overhang`/`overhangLimit`; the Cantilever line | #41 | Opus | 36 goldens + boundaries; the worked example's 9'-9" joists |
 | **B2** | Table 3A (p. 6) → `deck-beam`; beam span centre-to-centre | #41 | Opus | 168 goldens + boundaries; a two-name cell's two rows |
-| **B3** | Table B3 → `deck-footing` (three outputs, `centerPostFactor`, centreline tributary area); Tables B1/B2 → `deck-post`; the Posts line | #42 | Opus | 100 + 500 goldens incl. NP rows (25 areas × 5 groups × 2 posts × 2 positions); the ×1.25 sentence; below 1,500 psf → Out of scope |
+| **B3** | Table B3 → `deck-footing` (three outputs, `centerPostFactor`; the Appendix B tributary area landed in B2-fix); Tables B1/B2 → `deck-post`; the Posts line | #42 | Opus | 100 + 500 goldens incl. NP rows (25 areas × 5 groups × 2 posts × 2 positions); the ×1.25 sentence; below 1,500 psf → Out of scope |
 | **B4** | Table 5 → `deck-ledger` with fastener and band-joist columns; the two deck inputs, panel boxes, format bump, samples | #40 | Opus (format and engine) | 49 goldens; Input missing names the new inputs; 2x6 ledger → the 2x8 limit; the notes shown |
 | **B5** | pp. 19–22 → `deck-guard-stair`, plus the optional fields Marc picks | #43 | Opus | a golden per field; 30" trigger boundary; 4 risers → handrail |
 | **C1–C5** | The independent review of each B slice, checklist committed, `review.status` per §5 | #40–#43 | **Fable** | the checklist test of rules-engine-model §8.3 |
@@ -573,7 +602,9 @@ paths are untouched throughout.
 2. **Ground snow load stands in for deck snow load** (§2). Conservative; a Decision.
 3. **Two derivations were subtly off** against this source: the beam span (clear vs centreline)
    and the tributary area (faces vs centrelines). Both are fixed in B2/B3; the synthetic goldens
-   change with them, which is a visible diff for the reviewer.
+   change with them, which is a visible diff for the reviewer. *(Corrected, #41: the beam span was
+   right as the clear span — Figure 3 measures L_B face to face; only the tributary area needed the
+   centreline measures, done in B2-fix.)*
 4. **4x4 posts in Appendix B vs the 6x6 minimum of the main body.** Transcribed as printed; the
    Posts line under a 4x4 cites B1/B2 and their note 3.
 5. **Figures carry the guard and stair values and the beam-span definition**; pdftotext does not
@@ -623,7 +654,10 @@ Each in plain words with the default I recommend, so a "yes" is enough.
    kind.
 8. **Beam span and tributary area are measured the way the source defines them (post and beam
    centrelines), and the sentences say so.** Recommended: yes; the current face-to-face numbers
-   under-count.
+   under-count. *(Corrected by Marc, 2026-09-27, #41: the principle stands, the parenthesis was a
+   misreading — the beam tables' L_B is face to face of posts (Figure 3, p. 7), and only the tributary
+   area is measured to centrelines and the deck's edges (Appendix B, pp. B1–B2). See "Decision 8
+   corrected" at the top.)*
 9. **Opus transcribes, Fable reviews.** PLAN.md's table has Opus implementing #40–#43 with a
    Fable review against the source, while the four issues carry `model/sonnet`; the two disagree.
    Recommended: PLAN.md's rule, for the independence it argues.

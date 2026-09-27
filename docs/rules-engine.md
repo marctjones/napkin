@@ -323,9 +323,10 @@ without `overhangLimit` does not cover an overhang: a cantilever under it is **O
 beam, plies and nominal size ("(2) 2x10", "(1) 4x8"); a printed "2-2x10" is `(2) 2x10`, and a cell printed
 with two sizes is two rows citing the same cell. Its `joistSpan` column bands on the joists' span L as the
 joist table defines it (face of support to face of support). The deck check asks it about the **beam span
-post centreline to post centreline** — `DeckFraming.BeamSpan`, (deck width − post width) ÷ (posts − 1),
-exact, the source's own measure (DCA 6 Appendix B, p. B2; Decision 8 of the design note) — and the line
-says "post centre to post centre".
+between post faces** — `DeckFraming.BeamSpan`, (deck width − posts × post width) ÷ (posts − 1), exact, the
+L_B that DCA 6's Figure 3 (p. 7) dimensions face to face of posts (p. 5: "past the post face"; #41, Marc's
+decision of 2026-09-27) — and the line says "between post faces". Appendix B's centreline measure, B_L, is a
+different quantity, for posts' and footings' tributary areas (`DeckFraming.Tributary`, pp. B1–B2).
 
 `DeckEvaluator.CheckSpan` answers **Passes** or **Short** (by how much), `SizeLedger` and `SizeFooting`
 **Sized** (the ledger with napkin's own fastener count, ⌈length ÷ spacing⌉ + 1), and every one of

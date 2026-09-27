@@ -112,8 +112,9 @@ public class DeckTableTests
     [Trait("Feature", "DECK-003")]
     public void The_footing_takes_the_largest_bearing_column_at_most_the_sites()
     {
-        // 66 3/4" × 58 1/2" = 3904.875 sq in = 27.1 sq ft (≤ 40) on 2000 psf: "zz 15 in square".
-        ExactFraction area = new((Int128)In(66, 3, 4).Units * In(58, 1, 2).Units, 1);
+        // The worked example's middle post, DCA 6 Appendix B Eq. B-1: 72" × 59 1/4" = 4266 sq in = 29.6 sq ft (≤ 40) on
+        // 2000 psf: "zz 15 in square".
+        ExactFraction area = new((Int128)In(72).Units * In(59, 1, 4).Units, 1);
         Assert.Equal("zz 15 in square", Assert.IsType<DeckResult.Sized>(DeckEvaluator.SizeFooting(Deck(), area, 2000)).Row.Text);
 
         // 1999 psf is never rounded up to the 2000 column: the 1500 one, "zz 18 in square".

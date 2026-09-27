@@ -37,7 +37,11 @@ public class DialectTests
         Assert.False(body.GetProperty("stream").GetBoolean());
         Assert.Equal(JsonValueKind.False, body.GetProperty("think").ValueKind);
         Assert.Equal(0.2, body.GetProperty("options").GetProperty("temperature").GetDouble());
-        Assert.Equal(["temperature"], body.GetProperty("options").EnumerateObject().Select(property => property.Name));
+        // §16.1 item 3, §17 (the slice-C carry-over, issue #232): Ollama's own default context
+        // window (4,096 tokens) is smaller than napkin's 6,000-word pack can need, so every
+        // question raises it through the FAQ's own options.num_ctx.
+        Assert.Equal(LocalServerModel.OllamaContextLength, body.GetProperty("options").GetProperty("num_ctx").GetInt32());
+        Assert.Equal(["temperature", "num_ctx"], body.GetProperty("options").EnumerateObject().Select(property => property.Name));
         Assert.False(body.TryGetProperty("format", out _));
         AssertMessages(body, Answer);
         Assert.Equal(Dialect.Ollama, model.KnownDialect);
@@ -78,6 +82,11 @@ public class DialectTests
         Assert.Equal(0.5, body.GetProperty("temperature").GetDouble());
         Assert.Equal("""{"enable_thinking":false}""", body.GetProperty("chat_template_kwargs").GetRawText());
         Assert.False(body.TryGetProperty("response_format", out _));
+
+        // §16.1 item 3, §17: llama-server's context is fixed at server start (-c/--ctx-size), so
+        // napkin sends nothing for it here — unlike Ollama's options.num_ctx above.
+        Assert.False(body.TryGetProperty("num_ctx", out _));
+        Assert.False(body.TryGetProperty("options", out _));
         AssertMessages(body, Answer);
         Assert.Equal(Dialect.OpenAiCompatible, model.KnownDialect);
     }

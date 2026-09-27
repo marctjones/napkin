@@ -71,7 +71,7 @@ public static class DeckTool
 
     /// <summary>
     /// The frame in one line, as the panel shows it: "ledger, 10 joists 2x8 at 16", rim, (2) 2x10 beam on 3 posts spanning
-    /// 5'-10 1/4" between post centres, 22 boards …".
+    /// 5'-6 3/4" between post faces, 22 boards …".
     /// </summary>
     public static string FrameLine(DeckFraming framing)
     {
@@ -79,6 +79,6 @@ public static class DeckTool
         DeckInputs inputs = framing.Deck.Box.Deck!;
         string spacing = inputs.JoistSpacing.Format(new InchesOnlyFormat(16)).Text;
         return $"ledger, {framing.Joists.Length} joists {inputs.Joist} at {spacing}, rim, ({inputs.Beam.Plies}) {inputs.Beam.Lumber} beam on {inputs.PostCount} posts "
-               + $"spanning {framing.BeamSpanText} between post centres, {framing.DeckingBoards} boards (the last {framing.LastBoardWidth.Format(new FeetInchesFormat(16)).Text} wide)";
+               + $"spanning {framing.BeamSpanText} between post faces, {framing.DeckingBoards} boards (the last {framing.LastBoardWidth.Format(new FeetInchesFormat(16)).Text} wide)";
     }
 }
