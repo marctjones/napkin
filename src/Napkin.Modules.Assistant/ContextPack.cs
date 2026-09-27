@@ -21,6 +21,10 @@ namespace Napkin.Modules.Assistant;
 /// reformatted: a check item is a label and the result's own text, character for character.
 /// </para>
 /// <para>
+/// Help: the result-kind map's sections for the selection's check results when it has any,
+/// otherwise the question's three best sections by shared words — one or the other, not both.
+/// </para>
+/// <para>
 /// Budget: <see cref="WordBudget"/> words. Over it, the lists are cut first — each cut list ends in
 /// "… N more rows not shown; napkin's list has M" — the help sections second, from the last; the
 /// design's own lines, the site, the code, the checks and the disclaimer never.
@@ -139,9 +143,15 @@ public sealed class ContextPack
         List<(bool Selected, ResultKind Kind, string Text)> ordered = [.. checkLines.Where(c => c.Selected), .. checkLines.Where(c => !c.Selected)];
         fixedItems.AddRange(ordered.Select(c => (ContextKind.Check, c.Text)));
 
-        // The help (§3.3): by the kind of each result on screen, then by the question's words.
+        // The help (§3.3): by the kind of each of the selection's results when it has any — the
+        // question is about them, "Explain this result" always is — and otherwise by the question's
+        // words. Never both: a section picked by a word carries its own example numbers into the pack.
+        List<(bool Selected, ResultKind Kind, string Text)> selectedChecks = [.. ordered.Where(c => c.Selected)];
+        IEnumerable<HelpSection> picked = selectedChecks.Count > 0
+            ? selectedChecks.SelectMany(c => HelpSections.For(c.Kind))
+            : HelpSections.ForQuestion(question);
         List<HelpSection> help = [];
-        foreach (HelpSection section in ordered.SelectMany(c => HelpSections.For(c.Kind)).Concat(HelpSections.ForQuestion(question)))
+        foreach (HelpSection section in picked)
         {
             if (!help.Contains(section))
             {
