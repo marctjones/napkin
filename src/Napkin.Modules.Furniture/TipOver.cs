@@ -198,13 +198,27 @@ public static class TipOver
 
     static decimal Volume(ImmutableArray<Box> members)
     {
-        (Point3 Low, Point3 High)[] e = members.Select(JointGeometry.Extent).ToArray();
-        return Inches(e.Max(x => x.High.X) - e.Min(x => x.Low.X)) * Inches(e.Max(x => x.High.Y) - e.Min(x => x.Low.Y)) * Inches(e.Max(x => x.High.Z) - e.Min(x => x.Low.Z));
+        (Point3 low, Point3 high) = Bounds(members);
+        return Inches(high.X - low.X) * Inches(high.Y - low.Y) * Inches(high.Z - low.Z);
     }
 
     static (decimal Y, decimal Z) Centre(ImmutableArray<Box> members)
     {
-        (Point3 Low, Point3 High)[] e = members.Select(JointGeometry.Extent).ToArray();
-        return ((Inches(e.Min(x => x.Low.Y)) + Inches(e.Max(x => x.High.Y))) / 2m, (Inches(e.Min(x => x.Low.Z)) + Inches(e.Max(x => x.High.Z))) / 2m);
+        (Point3 low, Point3 high) = Bounds(members);
+        return ((Inches(low.Y) + Inches(high.Y)) / 2m, (Inches(low.Z) + Inches(high.Z)) / 2m);
+    }
+
+    /// <summary>The world box around a drawer's parts.</summary>
+    static (Point3 Low, Point3 High) Bounds(ImmutableArray<Box> members)
+    {
+        (Point3 low, Point3 high) = JointGeometry.Extent(members[0]);
+        foreach (Box member in members)
+        {
+            (Point3 l, Point3 h) = JointGeometry.Extent(member);
+            low = new Point3(Length.Min(low.X, l.X), Length.Min(low.Y, l.Y), Length.Min(low.Z, l.Z));
+            high = new Point3(Length.Max(high.X, h.X), Length.Max(high.Y, h.Y), Length.Max(high.Z, h.Z));
+        }
+
+        return (low, high);
     }
 }
