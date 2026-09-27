@@ -268,7 +268,7 @@ each of which does the wrong thing quietly for a member it does not know:
 | `CodeCheck.Sentence` | `_ => "… still cannot be checked"` | the new sentences (§6.3) |
 | `CodeCheck.SwitchSummary` | counts flagged and lost by kind | `EnteredToOutOfScope` counted as flagged; `EnteredToNoAnswer` as lost |
 | `CodeCheck.Framing` | only `Sized` feeds jack/king/header | `Entered` feeds them the same way (`TryFindLumber`; the "not in the materials library" sentence reused) |
-| `HelpSections.KindOf` | `_ => NotChecked` | `ResultKind.Entered`, mapped to the new help section (§9) |
+| `HelpSections.KindOf` | `_ => NotChecked` — compiles, mislabels the check as not checked | `ResultKind.Entered`, mapped to the new help section (§9; slice C) |
 | `CutListWindow.CodeCheckNote` | `CodeCheck.Short` per opening | the tag arrives through `Short` |
 | the closed-union test | exactly four, sorted by name | exactly five: `Entered, InputMissing, NoData, OutOfScope, Sized` |
 
@@ -425,7 +425,7 @@ converter (beta policy): a format-16 file is refused with the usual message; sam
 ```json
 "opening": { "fill": "glass",
              "enteredHeader": null | {
-               "plies": 2, "lumber": "2x10", "jackStuds": 1, "kingStuds": 2,
+               "plies": 9, "lumber": "2x99", "jackStuds": 9, "kingStuds": 9,
                "citation": { "code": "SYNTHETIC — Test Code 2099", "table": "Table T-99",
                              "location": "p. 99, row 9", "notes": null },
                "enteredBy": "A. Person", "enteredOn": "2026-09-27",
@@ -435,8 +435,8 @@ converter (beta policy): a format-16 file is refused with the usual message; sam
                         "frostDepth": null, "buildingWidth": null, "roofLiveLoad": null } } }
 ```
 
-(The values show the shape; the citation is marked synthetic because a real-looking one in a document
-is exactly what this note must not ship.) Refused: a missing field; `plies` below 1; a stud count below
+(The values show the shape and are chosen to look unlike any real row, as the rules-engine note's
+examples are; a real-looking row in a document is exactly what this note must not ship.) Refused: a missing field; `plies` below 1; a stud count below
 0; empty `code`, `table`, `location`, `enteredBy` or `supports`; an empty `lumber`; a date not
 `yyyy-MM-dd`; a `for.pack` that is not a pack id; a `span` of 0 or less; a negative load or length;
 `side` not `exterior` or `interior`. The lumber is not checked against the library at load, for the
@@ -494,7 +494,8 @@ numbers in the pack, and the assistant may discuss it. One rule is added, in one
 - `ask.txt` (the system prompt): *"A check marked ENTERED BY HAND is a value a person typed from their
   own copy of the code. Whenever you mention it, say it was entered by hand and that napkin did not
   compute or check it."*
-- `ResultKind.Entered` in `HelpSections`, mapped by `KindOf`, pointing at a new section of
+- `ResultKind.Entered` in `HelpSections`, with its `KindOf` arm (today's `_ => NotChecked` would
+  compile and quietly call an entered check "not checked"), pointing at a new section of
   `docs/building.md`, *"A header row you entered by hand"*, so the help item the pack carries for such
   a check explains what the label means.
 - One eval case in the offline set (#235) once that exists: a question about an entered header, whose
@@ -552,9 +553,9 @@ which B and D touch in sequence. No slice starts before Marc signs this note off
 
 | Slice | What | Model | Files | Depends on | Issue |
 |---|---|---|---|---|---|
-| **A** | Model, format and routing: `EnteredHeader`, `EnteredCitation`, `EnteredHeaderInputs`, `OpeningInputs` in Core.Geometry; `SetEnteredHeader`; scene format **17** strict both ways, samples restamped, version theories; `HeaderResult.Entered`, `EnteredRow` with `Tag`; the closed-union test to five; the engine-never-constructs-it tests; `ChangeKind` ×5, `Classify`, rank; `CodeCheck.For` routing (live / stale / superseded / not bearing), `OpeningCheck.Stale/Superseded`, `Words`, `Short`, `Sentence`, `SwitchSummary`, `Framing`; the synthetic fixture scene; `docs/file-format.md`, `docs/building.md` (the help section), `docs/rules-engine.md` one paragraph | **Opus** — a fifth member through every fall-through in §3.4, a format bump, and the routing rule that is the whole guarantee; a missed default is a thrown cast or a silent mislabel | `Core.Geometry/BuildingInputs.cs`, `Request.cs`; `Core.Project/FormatStamp.cs`, `SceneNames.cs`, `SceneReader.cs`, `SceneWriter.cs`, `SceneBinder.cs`; `Core.RulesEngine/HeaderSizing.cs`, `CodeSelection.cs`; `Modules.Building/CodeCheck.cs`; `Modules.Assistant/HelpSections.cs` (the `KindOf` arm only, to keep the build green); tests in Core.Project, Core.RulesEngine, Modules.Building; `samples/*.scene.json` restamp; `features/entered-rows.json` | sign-off | #246 |
+| **A** | Model, format and routing: `EnteredHeader`, `EnteredCitation`, `EnteredHeaderInputs`, `OpeningInputs` in Core.Geometry; `SetEnteredHeader`; scene format **17** strict both ways, samples restamped, version theories; `HeaderResult.Entered`, `EnteredRow` with `Tag`; the closed-union test to five; the engine-never-constructs-it tests; `ChangeKind` ×5, `Classify`, rank; `CodeCheck.For` routing (live / stale / superseded / not bearing), `OpeningCheck.Stale/Superseded`, `Words`, `Short`, `Sentence`, `SwitchSummary`, `Framing`; the synthetic fixture scene; `docs/file-format.md`, `docs/building.md` (the help section), `docs/rules-engine.md` one paragraph | **Opus** — a fifth member through every fall-through in §3.4, a format bump, and the routing rule that is the whole guarantee; a missed default is a thrown cast or a silent mislabel | `Core.Geometry/BuildingInputs.cs`, `Request.cs`; `Core.Project/FormatStamp.cs`, `SceneNames.cs`, `SceneReader.cs`, `SceneWriter.cs`, `SceneBinder.cs`; `Core.RulesEngine/HeaderSizing.cs`, `CodeSelection.cs`; `Modules.Building/CodeCheck.cs`; tests in Core.Project, Core.RulesEngine, Modules.Building; `samples/*.scene.json` restamp; `features/entered-rows.json` | sign-off | #246 |
 | **B** | The person's hands: the **I have the code: enter this row…** button under No data; `EnteredHeaderWindow` (the fixed text, the pending-amendment line from `LoadedPack.Pending`, the read-only inputs, the fields, the library lumber picker, the name with its `UserSettings` default and settings version bump, **Use this row** enabled only when complete); **Edit row…**, **Enter the row again…**, **Remove row**; the stale and superseded lines in the Code check block; the Framing note; `GUI-ENTERED-01` (No data → enter → tag shown → resize → stale → undo → live), `GUI-ENTERED-02` (edit, remove, undo each) | Sonnet | `Napkin.App/EnteredHeaderWindow.axaml(.cs)` (new), `MainWindow.Building.cs`, `MainWindow.axaml`, `CutListWindow.axaml.cs`, `Settings/UserSettings.cs`, `SettingsStore.cs`; `tests/Napkin.App.GuiTests/Workflows/EnteredRowWorkflows.cs`; `docs/building.md` | A | #247 |
-| **C** | Assistant: `ResultKind.Entered` → the help section; the `ask.txt` sentence; a `ContextPackTests` case on the fixture asserting the tag in the line and the kind; `AssistantPromptsTests` asserting the sentence; the eval case if #235 has landed | Sonnet | `Modules.Assistant/HelpSections.cs`, `Prompts/ask.txt`; tests; `tests/…/Eval/*.json` if present | A | #248 |
+| **C** | Assistant: `ResultKind.Entered` and the `KindOf` arm (until then `_ => NotChecked` mislabels an entered check) → the help section; the `ask.txt` sentence; a `ContextPackTests` case on the fixture asserting the tag in the line and the kind; `AssistantPromptsTests` asserting the sentence; the eval case if #235 has landed | Sonnet | `Modules.Assistant/HelpSections.cs`, `Prompts/ask.txt`; tests; `tests/…/Eval/*.json` if present | A | #248 |
 | **D** | Bracing, if Decision 7: `EnteredBracing` on `WallInputs`, scene format **18**, `BracingResult.Entered`, `BracingChangeKind` ×5, `BracingCheck` routing on `NoData(NoProvisions)`, the form (required and provided lengths, citation, name), `GUI-ENTERED-03` | **Opus** | `Core.Geometry/BuildingInputs.cs`, `Core.Project/*`, `Core.RulesEngine/Bracing.cs`, `CodeSelection.cs`, `Modules.Building/BracingCheck.cs`, `Napkin.App/*`, tests | A, B, Marc's yes | #249 |
 
 **Versioning:** each slice bumps the minor. **Ratchet:** A raises Core.Geometry, Core.Project,
