@@ -1,6 +1,6 @@
 # Permit set: the sheets for a deck or a window move, and the site plan they start from
 
-Status: **DRAFT awaiting Marc's sign-off.** Milestone **M13 Permit set**: this note is #212's
+Status: **Signed off by Marc 2026-09-26** with the §9 defaults (in chat, recorded on #212). Milestone **M13 Permit set**: this note is #212's
 step 2, and it also designs #21, the site plan. §8 lists the slices (#223–#227); none starts before
 sign-off. Every sheet is a PDF page, so every slice after A also waits on #25. That work is
 parked, and Marc picks it up.

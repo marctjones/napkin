@@ -1,6 +1,6 @@
 # Furniture checks: shelf sag, tip-over, bunk-bed guards and screw hold, honestly scoped
 
-Status: **DRAFT awaiting Marc's sign-off.** Milestone **M9 Shape**, issue #154. §8 lists the
+Status: **Signed off by Marc 2026-09-26** with the §9 defaults (in chat, recorded on #154). Milestone **M9 Shape**, issue #154. §8 lists the
 slices, filed as #216–#222; none starts before sign-off. §9 lists the decisions
 that are Marc's, each with the default I recommend, so a "yes" is enough.
 
