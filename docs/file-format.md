@@ -1,4 +1,4 @@
-# The napkin project file — container version 1, scene format version 16
+# The napkin project file — container version 2, scene format version 16
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -750,6 +750,15 @@ The image's placement is derived from these for drawing only.
 Refused: a hash that is not 64 lowercase hex digits; the same pixel or the same world point twice;
 a distance of 0 or less; an empty name; an unknown or missing field. A scene read on its own cannot
 check that the image it names is there; the container loader does (container version 2).
+
+### Container version 2: the underlay's image
+
+A `.napkin` container holds `manifest.json`, `scene.json` and, when the site has an underlay, its
+image as `assets/<sha256>.png` or `assets/<sha256>.jpg`, written after the scene. The loader checks
+the image against its name. The PNG or JPEG signature in its first bytes must match its extension,
+and the SHA-256 of its bytes must match the name. The scene and the images must agree: the image the
+underlay names must be there, and an image nothing refers to is refused. An image is read up to
+8 MiB (a labelled default; a scanned survey page is a few MB).
 
 ## An annotated example
 

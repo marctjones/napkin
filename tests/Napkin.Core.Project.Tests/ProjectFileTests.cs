@@ -166,7 +166,8 @@ public sealed class ProjectFileTests
 
     [Theory]
     [InlineData(0)]
-    [InlineData(2)]
+    [InlineData(1)]
+    [InlineData(3)]
     [InlineData(99)]
     [Trait("Feature", "PRJ-004")]
     public void A_container_from_another_version_is_refused_naming_both_versions(int version)

@@ -9,11 +9,10 @@ namespace Napkin.Core.Project;
 /// naming the entry.
 /// </para>
 /// <para>
-/// <strong>Reserved, and not written yet.</strong> DESIGN.md &#xA7;6.4 sketches a
-/// <c>thumbnail.png</c> and an <c>assets/</c> directory. A thumbnail means rendering, which lives
-/// in the app; neither is written or read by this build, so a container holding one is refused
-/// like any other unknown entry. Adding them is a container-version bump (PRJ-006 stays
-/// unclaimed until then).
+/// <strong><c>assets/</c> (container version 2).</strong> The survey underlay's image, named
+/// <c>assets/&lt;sha256&gt;.png</c> or <c>.jpg</c> (docs/design/permit-set.md §5.4). DESIGN.md &#xA7;6.4's
+/// <c>thumbnail.png</c> is still not written or read: a thumbnail means rendering, which lives in the
+/// app, so a container holding one is refused like any other unknown entry.
 /// </para>
 /// </remarks>
 internal static class ContainerNames
@@ -27,8 +26,14 @@ internal static class ContainerNames
     /// <summary>The file extension the app saves under.</summary>
     internal const string Extension = ".napkin";
 
-    /// <summary>The entries, in the order they are written. Fixed, so that the bytes are.</summary>
+    /// <summary>The entries every container holds, in the order they are written. Fixed, so that the bytes are.</summary>
     internal static readonly string[] InWriteOrder = [Manifest, Scene];
+
+    /// <summary>
+    /// Where images go (container version 2): <c>assets/&lt;sha256&gt;.png</c> or <c>.jpg</c>, written after
+    /// the scene in name order, each one the scene refers to and nothing else.
+    /// </summary>
+    internal const string AssetsDirectory = "assets/";
 }
 
 /// <summary>
@@ -65,10 +70,17 @@ public static class ContainerLimits
     /// </summary>
     public const int MaxEntries = 16;
 
+    /// <summary>
+    /// The largest image this build will decompress: 8 MiB. A labelled default, well under
+    /// <see cref="MaxContainerBytes"/>: a scanned survey page is a few MB.
+    /// </summary>
+    public const long MaxAssetBytes = 8L * 1024 * 1024;
+
     /// <summary>The limit that applies to one entry.</summary>
     internal static long For(string entry) => entry switch
     {
         ContainerNames.Manifest => MaxManifestBytes,
-        _ => MaxSceneBytes,
+        ContainerNames.Scene => MaxSceneBytes,
+        _ => MaxAssetBytes,
     };
 }
