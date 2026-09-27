@@ -73,14 +73,18 @@ public sealed record GuardedAnswer(ImmutableArray<GuardedSentence> Sentences)
 /// stop, "… empty. [4]", belong to the sentence before them.
 /// </para>
 /// <para>
-/// A help item supports only a table or section designation, never a size, count or length (§14
-/// item 13, decided option (b), issue #230): building.md's "The code check on an opening" section
-/// is added to the pack for every sized, out-of-scope or not-checked header and carries the worked
-/// example "Header (2) 2x10, 1 jack stud and 2 king studs each side.", so without this rule an
-/// answer could claim <c>(2) 2x10</c> for a header napkin sized differently and the guard would find
-/// it — in the help text, not in what napkin computed. A designation from a help item still stands
-/// (§9.1's good answer cites <c>R602.7(1)</c> from a help item); every other number must come from
-/// the project's own items — the design, the site, the code, a check result or a list row.
+/// A help item, and the adopted-code line, support only a table or section designation, never a
+/// size, count or length (§14 item 13, decided option (b), issue #230, and the #41 carry-over
+/// found while bumping the shipped Connecticut pack to revision 2): building.md's "The code check
+/// on an opening" section is added to the pack for every sized, out-of-scope or not-checked header
+/// and carries the worked example "Header (2) 2x10, 1 jack stud and 2 king studs each side.", and
+/// the code line's own "pack us-ct-2022 rev 2 … revision 2" names its pack's revision number — so
+/// without this rule an answer could claim <c>(2) 2x10</c> for a header napkin sized differently,
+/// or <c>(2)</c> plies for a beam it never counted, and the guard would find the number in the help
+/// text or the code's metadata, never in what napkin computed. A designation from either still
+/// stands (§9.1's good answer cites <c>R602.7(1)</c> from a help item); every other number must
+/// come from a project item that states a fact about the design on screen — the design, the site,
+/// a check result or a list row.
 /// </para>
 /// </remarks>
 public static class AnswerGuard
@@ -230,8 +234,9 @@ public static class AnswerGuard
 
     /// <summary>
     /// The keys a sentence may cite: every key from a project item, and only a designation's key
-    /// from a help item (see the class remarks). A key still counts when it also occurs in a
-    /// project item, however many help items carry it too.
+    /// from a help item or the adopted-code line — metadata about the pack, not a fact about the
+    /// design (see the class remarks). A key still counts when it also occurs in a project item,
+    /// however many metadata items carry it too.
     /// </summary>
     /// <param name="pack">The context pack.</param>
     private static ImmutableHashSet<string> SupportedKeys(ContextPack pack)
@@ -241,7 +246,7 @@ public static class AnswerGuard
         {
             foreach (string key in NumberTokens.KeysIn(item.Text))
             {
-                if (item.Kind == ContextKind.Help && !key.StartsWith(NumberTokens.DesignationPrefix, StringComparison.Ordinal))
+                if (IsMetadata(item.Kind) && !key.StartsWith(NumberTokens.DesignationPrefix, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -252,6 +257,13 @@ public static class AnswerGuard
 
         return [.. keys];
     }
+
+    /// <summary>
+    /// Whether an item's numbers are about the pack, not the design: a help section's own worked
+    /// example, or the adopted-code line's pack id, revision and lock date (§14 item 13, and the
+    /// #41 carry-over). Neither ever states a fact napkin computed about the project on screen.
+    /// </summary>
+    private static bool IsMetadata(ContextKind kind) => kind is ContextKind.Help or ContextKind.Code;
 
     private static string Listed(List<string> items) => items.Count switch
     {

@@ -140,6 +140,29 @@ public class AnswerGuardTests
 
     [Fact]
     [Trait("Feature", "AST-003")]
+    public void The_adopted_codes_own_number_never_supports_a_sentence_by_itself()
+    {
+        // Carry-over found while bumping the shipped Connecticut pack to revision 2 (#41 slice B1,
+        // 2026-09-27): the adopted-code line names its pack's revision number ("pack us-ct-2022 rev
+        // 2 … revision 2"), and without this rule that "2" alone would let an answer claim an
+        // unrelated ply or stud count the pack never gave — the guard found it in the code's own
+        // metadata, not in anything napkin computed. Same rule, same reason, as a help item's.
+        ContextPack pack = ContextPack.Of(
+        [
+            (ContextKind.Check, "Header check, Window 1: Sized: (1) 2x8."),
+            (ContextKind.Code, "Adopted code: Checking against CT 2022 (IRC 2021), pack us-ct-2022 rev 2 — UNREVIEWED. Locked on 2026-09-27 to pack us-ct-2022 revision 2."),
+        ]);
+
+        // The header napkin actually sized: its own number stands.
+        Kept("The header is (1) 2x8 [1].", pack);
+
+        // The pack's only "2" is the code line's revision number [2]; it never stands for a ply or stud count.
+        Refused("A header like this usually takes (2) 2x10.", pack, "2", "2x10");
+        Refused("This would need (2) plies.", pack, "2");
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-003")]
     public void A_percentage_stands_only_as_a_percentage()
     {
         ContextPack pack = Pack("Waste 15%, 15 boards.");
