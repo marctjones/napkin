@@ -149,7 +149,7 @@ final class GrammarTests: XCTestCase {
 
     func testTheEditSchemaAcceptsEachOfTheSixEditsAndNothingElse() throws {
         let edits = [
-            #"{"edit":"resize","part":"[1]","dimension":"height","length":"1'-6\""}"#,
+            #"{"edit":"resize","part":"[1]","dimension":"length","length":"1'-6\""}"#,
             #"{"edit":"move","part":"Leg","x":"0","y":"2'-0\""}"#,
             #"{"edit":"rename","part":"[2]","name":"Seat"}"#,
             #"{"edit":"stock","part":"[2]","stock":"2x12"}"#,
@@ -161,8 +161,8 @@ final class GrammarTests: XCTestCase {
             try accepts(#"{"edits":[{"edit":"joint","part":"[1]"}]}"#, schema: NapkinSchemas.edit),
             "not one of the six")
         XCTAssertFalse(
-            try accepts(#"{"edits":[{"edit":"resize","part":"[1]","dimension":"length","length":"1\""}]}"#, schema: NapkinSchemas.edit),
-            "a dimension outside width/height/depth")
+            try accepts(#"{"edits":[{"edit":"resize","part":"[1]","dimension":"height","length":"1\""}]}"#, schema: NapkinSchemas.edit),
+            "a dimension outside length/width/thickness")
     }
 }
 
