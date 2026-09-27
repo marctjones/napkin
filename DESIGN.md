@@ -218,6 +218,16 @@ constants, and not copied verbatim from any single publisher's compiled table:
   before/after report of everything that changed, so nothing that no longer holds under the new
   pack's tables survives unflagged. A silent carryover of stale results across a code change is
   exactly the class of quiet error this design is meant to prevent.
+- **Manual code values (decided 2026-09-27).** When no pack table covers a wall opening, the
+  project's own owner may type in one row's answer read from their own copy of the code —
+  never napkin's own computed data. It is a distinct, always-labeled result
+  (`HeaderResult.Entered`, "ENTERED BY HAND") that the engine itself can never produce, is offered
+  only in place of a real *No data*, is invalidated the moment its recorded inputs or the
+  project's adopted code no longer match, and is superseded automatically the moment a real pack
+  table covers the same row. Designed in
+  [`docs/design/manual-code-values.md`](./docs/design/manual-code-values.md) (#245); this does not
+  change the transcription stance in §2.1/#157, and does not let napkin ship the row to anyone
+  else — it stays a fact about one person's own drawing, entered by them.
 
 ### 5.5 Import / export
 - **Native project file**: documented, versioned, zip container (JSON scene graph + thumbnail +

@@ -1,6 +1,6 @@
 # Manual code values: a row you read, entered into your project
 
-Status: **DRAFT awaiting Marc's sign-off.** Design note by Fable, 2026-09-27; umbrella issue **#245**,
+Status: **Signed off by Marc 2026-09-27 with the recommended decisions (§15).** Design note by Fable, 2026-09-27; umbrella issue **#245**,
 slices #246–#249 (§12), milestone M10 Real code. Written for the capability Marc asked for on 2026-09-27: *"Is it possible to put [the code-compliance data question] aside and make it
 so that there is a mode for having someone manually confirm certain values against the code so we don't
 have to be blocked on getting the code or shipping the code."* Marc chose **"Yes, design it"** over a
@@ -644,7 +644,10 @@ resolves.
 
 ## 15. Decisions for Marc
 
-In plain words, each with the default recommended, so a "yes" is enough. Decision 1 is already made.
+In plain words, each with the default recommended. **Decided by Marc 2026-09-27:** 1 (already made,
+recorded below), 2 (`Entered`), 6 (sized rows only in v1), 7 (bracing as a later slice D, not with
+A-C), 9 (OS user name as an editable default). The rest follow the same recommended defaults, not yet
+individually asked.
 
 1. **An entered row lives in the shared project file.** Decided 2026-09-27 ("Yes, design it"); recorded
    here with why it is safe (§7.2). Nothing to decide.
