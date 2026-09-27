@@ -80,7 +80,7 @@
   "supplies": [],
   "code": {
     "pack": "us-ct-2022",
-    "revision": 4,
+    "revision": 5,
     "mode": "locked",
     "lockedOn": "2026-09-27"
   },

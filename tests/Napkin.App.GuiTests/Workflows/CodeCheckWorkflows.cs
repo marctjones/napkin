@@ -224,7 +224,7 @@ public class CodeCheckWorkflows
         CodeWindow code = OpenCode(app, window);
         AppDriver site = AppDriver.Attach(code, "check-04-code");
         app.Expect("the shipped Connecticut pack is listed as having no base tables", () =>
-            Assert.Contains(code.PackRows, row => row.StartsWith("CT 2022 — IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 4): base tables not loaded; deck tables from DCA 6-2015, a guide", StringComparison.Ordinal)));
+            Assert.Contains(code.PackRows, row => row.StartsWith("CT 2022 — IRC 2021, in force Oct 1, 2022 (pack us-ct-2022 rev 5): base tables not loaded; deck tables from DCA 6-2015, a guide", StringComparison.Ordinal)));
 
         PickPack(site, code, "CT 2022");
         TypeSnow(site, code, "30");

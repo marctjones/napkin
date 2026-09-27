@@ -98,14 +98,23 @@ public class Dca6AppendixBTests
     {
         LoadedPack ct = Ct();
 
-        // End post, a corner post: 2133 sq in = 14.8 sq ft, the ≤ 20 row; a Southern Pine 4x4 may stand 6 ft (p. B3).
-        DeckResult.Passes end = Assert.IsType<DeckResult.Passes>(DeckEvaluator.CheckPost(ct, new PostRequest("4x4", In(18, 1, 2), "Southern Pine", new PostArea(End, PostPosition.Corner, true)), Scope));
-        Assert.Equal(("B1", "r.sp.4x4.20", Ft(6)), (end.Table.Designation, end.Row.Id, end.Allowed));
+        // The worked example's 4x4 posts are under p. 10's 6x6 minimum: refused before either table is read, so no area
+        // is looked up (B1's ≤ 20 row would have said 6 ft, B2's ≤ 40 row 13 ft).
+        foreach (PostArea area in new[] { new PostArea(End, PostPosition.Corner, true), new PostArea(Middle, PostPosition.Center, true) })
+        {
+            DeckResult.OutOfScope small = Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckPost(ct, new PostRequest("4x4", In(18, 1, 2), "Southern Pine", area), Scope));
+            Assert.Equal("t.post-size", small.Limit!.Id);
+            Assert.Null(small.Area);
+        }
+
+        // As 6x6s. End post, a corner post: 2133 sq in = 14.8 sq ft, the ≤ 20 row; a Southern Pine 6x6 may stand 14 ft (p. B3).
+        DeckResult.Passes end = Assert.IsType<DeckResult.Passes>(DeckEvaluator.CheckPost(ct, new PostRequest("6x6", In(18, 1, 2), "Southern Pine", new PostArea(End, PostPosition.Corner, true)), Scope));
+        Assert.Equal(("B1", "r.sp.6x6.20", Ft(14)), (end.Table.Designation, end.Row.Id, end.Allowed));
         Assert.Null(end.Area!.Factor);
 
-        // Middle post under a continuous beam: 4266 × 5/4 = 5332 1/2 sq in = 37.0 sq ft, the ≤ 40 row, 13 ft (p. B4).
-        DeckResult.Passes middle = Assert.IsType<DeckResult.Passes>(DeckEvaluator.CheckPost(ct, new PostRequest("4x4", In(18, 1, 2), "Southern Pine", new PostArea(Middle, PostPosition.Center, true)), Scope));
-        Assert.Equal(("B2", "r.sp.4x4.40", Ft(13)), (middle.Table.Designation, middle.Row.Id, middle.Allowed));
+        // Middle post under a continuous beam: 4266 × 5/4 = 5332 1/2 sq in = 37.0 sq ft, the ≤ 40 row, 14 ft (p. B4).
+        DeckResult.Passes middle = Assert.IsType<DeckResult.Passes>(DeckEvaluator.CheckPost(ct, new PostRequest("6x6", In(18, 1, 2), "Southern Pine", new PostArea(Middle, PostPosition.Center, true)), Scope));
+        Assert.Equal(("B2", "r.sp.6x6.40", Ft(14)), (middle.Table.Designation, middle.Row.Id, middle.Allowed));
         Assert.Equal(new ExactFraction((Int128)In(72).Units * In(59, 1, 4).Units * 5, 4), middle.Area!.Looked);
 
         // Its footing on 2000 psf: the ≤ 40 row, 14" round or 13" square, 6" thick (p. B5); on a spliced beam, 29.6 sq ft reads
@@ -141,6 +150,60 @@ public class Dca6AppendixBTests
         // The guide's scope comes first for posts and footings too.
         Assert.Equal("s.loads", Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckPost(ct, new PostRequest("6x6", Ft(2), "Southern Pine", corner), Scope with { Supports = "porch-roof" })).Limit!.Id);
         Assert.Equal("s.snow", Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.SizeFooting(ct, corner, 2000, Scope with { GroundSnowLoad = 41 })).Limit!.Id);
+    }
+
+    [Fact]
+    [Trait("Feature", "DECK-003")]
+    public void A_post_under_6x6_nominal_is_refused_citing_p_10_before_either_post_table_is_read()
+    {
+        LoadedPack ct = Ct();
+        PostArea corner = new(SquareFeet(20), PostPosition.Corner, true), center = new(SquareFeet(20), PostPosition.Center, true);
+
+        // p. 10, POST REQUIREMENTS: "All deck post sizes shall be 6x6 (nominal) or larger" — a limit on each post table, the
+        // same on both, naming the sizes that are 6x6 nominal or larger in both dimensions. The guide shows item 3, p. 2 once.
+        foreach (DeckTable table in new[] { ct.Deck.Posts[PostPosition.Corner], ct.Deck.Posts[PostPosition.Center] })
+        {
+            ScopeLimit limit = Assert.Single(table.Limits);
+            Assert.Equal(("t.post-size", "All deck post sizes shall be 6x6 (nominal) or larger", "POST REQUIREMENTS, p. 10"), (limit.Id, limit.Text, limit.Location));
+            Assert.Equal(("member", ScopeForm.NotIn), (limit.When.Input, limit.When.Form));
+            Assert.Equal(["6x6", "6x8", "8x8"], limit.When.Values);
+        }
+
+        Assert.Empty(ct.Deck.Footing!.Limits);
+        Assert.DoesNotContain(ct.Guides.Single().Limits, limit => limit.When.Input == "member");
+
+        // A 4x4 — printed in both tables' 4x4 columns — is out of scope citing p. 10, not answered from its column.
+        DeckResult.OutOfScope four = Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckPost(ct, new PostRequest("4x4", Ft(2), "Southern Pine", corner), Scope));
+        Assert.Equal(("t.post-size", "B1"), (four.Limit!.Id, four.Table.Designation));
+        Assert.Null(four.Column);
+        Assert.Null(four.Row);
+        Assert.Null(four.Area);
+        Assert.Equal("Beyond table B1: \"All deck post sizes shall be 6x6 (nominal) or larger\" (DCA 6-2015 POST REQUIREMENTS, p. 10). Get it engineered.", four.Explanation);
+        Assert.Equal(
+            "Beyond table B2: \"All deck post sizes shall be 6x6 (nominal) or larger\" (DCA 6-2015 POST REQUIREMENTS, p. 10). Get it engineered.",
+            Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckPost(ct, new PostRequest("4x4", Ft(2), "Southern Pine", center), Scope)).Explanation);
+
+        // Under 6x6 in either dimension, whatever the table prints: a 4x6, a 2x4, a 5/4x6 deck board.
+        foreach (string post in new[] { "4x6", "2x4", "5/4x6" })
+        {
+            Assert.Equal("t.post-size", Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckPost(ct, new PostRequest(post, Ft(2), "Southern Pine", center), Scope)).Limit!.Id);
+        }
+
+        // Tried after the guide's scope and before the table's own inputs: a porch roof is s.loads, a 4x4 with no species
+        // typed is still refused for its size.
+        Assert.Equal("s.loads", Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckPost(ct, new PostRequest("4x4", Ft(2), "Southern Pine", corner), Scope with { Supports = "porch-roof" })).Limit!.Id);
+        Assert.Equal("t.post-size", Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckPost(ct, new PostRequest("4x4", Ft(2), null, corner), Scope)).Limit!.Id);
+
+        // A 6x6 goes on to the lookup as before: Southern Pine at ≤ 20 sq ft, 14 ft on either table (pp. B3–B4).
+        DeckResult.Passes six = Assert.IsType<DeckResult.Passes>(DeckEvaluator.CheckPost(ct, new PostRequest("6x6", Ft(14), "Southern Pine", corner), Scope));
+        Assert.Equal(("B1", "r.sp.6x6.20", Ft(14)), (six.Table.Designation, six.Row.Id, six.Allowed));
+        Assert.Equal(Ft(14), Assert.IsType<DeckResult.Passes>(DeckEvaluator.CheckPost(ct, new PostRequest("6x6", Ft(14), "Southern Pine", center), Scope)).Allowed);
+
+        // An 8x8 meets p. 10's minimum, and Appendix B prints no 8x8 column: the lookup says so.
+        DeckResult.OutOfScope eight = Assert.IsType<DeckResult.OutOfScope>(DeckEvaluator.CheckPost(ct, new PostRequest("8x8", Ft(2), "Southern Pine", corner), Scope));
+        Assert.Equal("post", eight.Column);
+        Assert.Null(eight.Limit);
+        Assert.Equal("Table B1 has no row for post 8x8: get it engineered.", eight.Explanation);
     }
 
     [Fact]
