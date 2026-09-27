@@ -113,14 +113,16 @@ public class AssistantEvalTests
     [Fact]
     public void Without_the_bridge_mlx_is_refused_the_same_way_mlx_smoke_is()
     {
+        using var tree = Fixture.NewDirectory();
+        string missing = Path.Combine(tree.Path, "nowhere");
         var output = new StringWriter();
         var error = new StringWriter();
         MlxSmokeHost host = new(new FakeNativeMlx(), "/app", true, Architecture.Arm64, _ => false);
 
-        int code = AssistantEval.Eval(["--mlx", "/nowhere", "--root", RepositoryRoot()], output, error, host);
+        int code = AssistantEval.Eval(["--mlx", missing, "--root", RepositoryRoot()], output, error, host);
 
         Assert.Equal(ExitCode.InputError, code);
-        Assert.Contains("There is no folder at /nowhere.", error.ToString(), StringComparison.Ordinal);
+        Assert.Contains($"There is no folder at {missing}.", error.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
