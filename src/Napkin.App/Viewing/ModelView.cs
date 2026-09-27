@@ -2138,7 +2138,7 @@ public sealed class ModelView : Control
                 Pen pen = new(new SolidColorBrush(style.Stroke), visible.Pixels)
                 {
                     LineCap = PenLineCap.Round,
-                    DashStyle = style.Dashed ? new DashStyle([4, 3], 0) : null,
+                    DashStyle = style.Dashed ? new DashStyle(DrawingLines.DashedOutline, 0) : null,
                 };
                 context.DrawLine(pen, _camera.Project(p), _camera.Project(q));
             }

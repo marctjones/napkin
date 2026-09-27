@@ -22,13 +22,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Napkin.Interop.Pdf\Napkin.Interop.Pdf.csproj" />
-    <ProjectReference Include="..\..\src\Napkin.Core.Project\Napkin.Core.Project.csproj" />
   </ItemGroup>
 
-  <!-- The samples the sheets are drawn from. -->
+  <!-- The SYNTHETIC code packs the building module's tests check against (their numbers are made up;
+       see that folder's README), so a sheet's notes are read against rows worked out by hand. -->
   <ItemGroup>
-    <Content Include="..\..\samples\*.scene.json"
-             Link="samples\%(Filename)%(Extension)"
+    <Content Include="..\Napkin.Modules.Building.Tests\CodePacks\**\*"
+             Link="CodePacks\%(RecursiveDir)%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

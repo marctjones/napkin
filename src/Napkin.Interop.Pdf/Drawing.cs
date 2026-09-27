@@ -12,16 +12,20 @@ namespace Napkin.Interop.Pdf;
 public readonly record struct DrawingPoint(double Along, double Across);
 
 /// <summary>One line of a view, drawn as the line table (#134) says its kind is drawn.</summary>
-/// <param name="Kind">Visible, hidden, dimension, extension or centre.</param>
+/// <param name="Kind">Visible or hidden: an edge of a part.</param>
 /// <param name="From">One end.</param>
 /// <param name="To">The other end.</param>
-public readonly record struct DrawingLine(LineKind Kind, DrawingPoint From, DrawingPoint To);
+/// <param name="Dashed">
+/// A visible outline whose layer's style is dashed — an opening, which is a cut rather than a part —
+/// drawn in <see cref="DrawingLines.DashedOutline"/>, as the standard views draw it.
+/// </param>
+public readonly record struct DrawingLine(LineKind Kind, DrawingPoint From, DrawingPoint To, bool Dashed = false);
 
 /// <summary>
 /// A dimension as a view lays it out: what is measured, where its line runs, and the label the
 /// canvas shows for it, unchanged, so the screen and the sheet cannot read differently.
 /// </summary>
-/// <param name="Label">What the dimension reads, e.g. 2′ 1 1⁄2″.</param>
+/// <param name="Label">What the dimension reads, e.g. 2'-0".</param>
 /// <param name="From">One measured end.</param>
 /// <param name="To">The other measured end.</param>
 /// <param name="LineFrom">Where the dimension line starts.</param>
@@ -33,31 +37,33 @@ public sealed record DrawingDimension(
     DrawingPoint LineFrom,
     DrawingPoint LineTo);
 
-/// <summary>One standard view of a design, ready for paper: its name, its lines and its dimensions.</summary>
-/// <param name="Name">What the title block calls it, e.g. Front.</param>
-/// <param name="Lines">Every line the view draws.</param>
-/// <param name="Dimensions">Every dimension the view shows.</param>
-public sealed record DrawingView(string Name, IReadOnlyList<DrawingLine> Lines, IReadOnlyList<DrawingDimension> Dimensions)
+/// <summary>One standard view of a design, ready for paper: which view, its lines and its dimensions.</summary>
+/// <param name="View">Which of the six it is.</param>
+/// <param name="Lines">Every edge it draws, hidden ones included when they are shown.</param>
+/// <param name="Dimensions">Every dimension it shows.</param>
+public sealed record DrawingView(StandardView View, IReadOnlyList<DrawingLine> Lines, IReadOnlyList<DrawingDimension> Dimensions)
 {
+    /// <summary>What the pane's caption calls it: the view's own name.</summary>
+    public string Name => StandardViewFrame.Name(View);
+
     /// <summary>
     /// The smallest rectangle, in inches of the design, holding every line and every dimension's
-    /// line; null for a view with nothing in it.
+    /// ends and line; null for a view with nothing in it.
     /// </summary>
     public DrawingExtent? Extent()
     {
-        IEnumerable<DrawingPoint> points = Lines.SelectMany(line => (DrawingPoint[])[line.From, line.To])
-            .Concat(Dimensions.SelectMany(dimension =>
-                (DrawingPoint[])[dimension.From, dimension.To, dimension.LineFrom, dimension.LineTo]));
         DrawingExtent? extent = null;
-        foreach (DrawingPoint point in points)
+        foreach (DrawingLine line in Lines)
         {
-            extent = extent is { } grown
-                ? new DrawingExtent(
-                    Math.Min(grown.Left, point.Along),
-                    Math.Min(grown.Bottom, point.Across),
-                    Math.Max(grown.Right, point.Along),
-                    Math.Max(grown.Top, point.Across))
-                : new DrawingExtent(point.Along, point.Across, point.Along, point.Across);
+            extent = DrawingExtent.Grow(DrawingExtent.Grow(extent, line.From), line.To);
+        }
+
+        foreach (DrawingDimension dimension in Dimensions)
+        {
+            foreach (DrawingPoint point in (DrawingPoint[])[dimension.From, dimension.To, dimension.LineFrom, dimension.LineTo])
+            {
+                extent = DrawingExtent.Grow(extent, point);
+            }
         }
 
         return extent;
@@ -76,10 +82,13 @@ public readonly record struct DrawingExtent(double Left, double Bottom, double R
 
     /// <summary>Inches from bottom to top.</summary>
     public double Height => Top - Bottom;
-}
 
-/// <summary>What every sheet's title block says (DESIGN.md §7: the disclaimer travels with the sheet).</summary>
-/// <param name="ProjectName">The design's name.</param>
-/// <param name="Date">The day the sheet was made.</param>
-/// <param name="Disclaimer">The tool's scope disclaimer, printed in full.</param>
-public sealed record TitleBlock(string ProjectName, DateOnly Date, string Disclaimer);
+    /// <summary>An extent grown to hold a point; a point's own extent when there was none.</summary>
+    public static DrawingExtent Grow(DrawingExtent? extent, DrawingPoint point) => extent is { } grown
+        ? new DrawingExtent(
+            Math.Min(grown.Left, point.Along),
+            Math.Min(grown.Bottom, point.Across),
+            Math.Max(grown.Right, point.Along),
+            Math.Max(grown.Top, point.Across))
+        : new DrawingExtent(point.Along, point.Across, point.Along, point.Across);
+}

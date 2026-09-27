@@ -86,20 +86,20 @@ public sealed class CanvasView : Control
     /// <summary>How much of the viewport an arrow key pans across with Shift held.</summary>
     internal const double FastPanFractionPerKeyPress = 0.5;
 
-    /// <summary>Text size for dimension labels and part names, in pixels.</summary>
-    const double LabelTextSize = 12;
+    /// <summary>Text size for dimension labels and part names, in pixels (the one table, shared with the PDF sheet).</summary>
+    const double LabelTextSize = DimensionMarks.LabelSize;
 
     /// <summary>How long an arrowhead is, in pixels.</summary>
-    const double ArrowLength = 9;
+    const double ArrowLength = DimensionMarks.ArrowLength;
 
     /// <summary>Half the width of an arrowhead, in pixels.</summary>
-    const double ArrowHalfWidth = 2.75;
+    const double ArrowHalfWidth = DimensionMarks.ArrowHalfWidth;
 
     /// <summary>The gap between what is measured and the start of its extension line, in pixels.</summary>
-    const double ExtensionGap = 3;
+    const double ExtensionGap = DimensionMarks.ExtensionGap;
 
     /// <summary>How far an extension line runs past the dimension line, in pixels.</summary>
-    const double ExtensionOvershoot = 5;
+    const double ExtensionOvershoot = DimensionMarks.ExtensionOvershoot;
 
     /// <summary>Half the width of a resize handle, in pixels.</summary>
     const double HandleHalfSize = 4;
@@ -3197,7 +3197,7 @@ public sealed class CanvasView : Control
 
         // A dimension too short for two arrowheads gets them outside, pointing in, and the line
         // stubbed past each end — which is what a draughtsman does with a 1" gap.
-        bool tight = length < 3.5 * ArrowLength;
+        bool tight = length < DimensionMarks.TightArrowheads * ArrowLength;
         if (tight)
         {
             Draw(lineFrom - (direction * ArrowLength), lineTo + (direction * ArrowLength));
@@ -3222,10 +3222,10 @@ public sealed class CanvasView : Control
                    * Matrix.CreateTranslation(centre.X, centre.Y)))
         {
             Rect chip = new(
-                -(text.Width / 2) - 3,
-                -(text.Height / 2) - 1,
-                text.Width + 6,
-                text.Height + 2);
+                -(text.Width / 2) - DimensionMarks.ChipPadAlong,
+                -(text.Height / 2) - DimensionMarks.ChipPadAcross,
+                text.Width + (2 * DimensionMarks.ChipPadAlong),
+                text.Height + (2 * DimensionMarks.ChipPadAcross));
 
             // The chip breaks the dimension line behind the text, which is what a drawing does.
             context.DrawRectangle(

@@ -1,5 +1,7 @@
 using System.Globalization;
 
+using Napkin.Core.Geometry;
+
 namespace Napkin.Interop.Pdf;
 
 /// <summary>
@@ -10,53 +12,57 @@ namespace Napkin.Interop.Pdf;
 /// <param name="Denominator">Inches of design per inch of paper; 1 or more.</param>
 public readonly record struct SheetScale(int Denominator)
 {
-    /// <summary>PDF user space: 72 points to the inch.</summary>
+    /// <summary>PDF user space: 72 points to the inch, as Excise.Core's <c>PageSize</c> states it ("1 pt = 1/72 inch").</summary>
     public const double PointsPerPaperInch = 72;
 
     /// <summary>
-    /// The scales a sheet picks from, largest first: full, half, quarter and eighth size for
-    /// furniture, then the 1″ = 1′, ¾″ = 1′, ½″ = 1′, ¼″ = 1′ and ⅛″ = 1′ ratios for
-    /// rooms and buildings. Past the last, each further scale halves the one before.
+    /// The ratios a sheet picks from, largest first — napkin's own list, not a standard's: full, half,
+    /// quarter and eighth size for furniture, then 1:12, 1:16, 1:24, 1:48 and 1:96 (one inch, three
+    /// quarters, a half, a quarter and an eighth of an inch of paper to the foot) for rooms and
+    /// buildings. Past the last, each further scale halves the one before.
     /// </summary>
-    public static IReadOnlyList<SheetScale> Standard { get; } =
+    public static IReadOnlyList<SheetScale> Ratios { get; } =
         [new(1), new(2), new(4), new(8), new(12), new(16), new(24), new(48), new(96)];
 
     /// <summary>Points on the sheet for one inch of the design.</summary>
     public double PointsPerInch => PointsPerPaperInch / Denominator;
 
-    /// <summary>What the title block prints, e.g. 1:8.</summary>
+    /// <summary>What the title block prints first, e.g. 1:12.</summary>
     public string Label => "1:" + Denominator.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// The largest scale at which every extent fits the space, in points. One scale serves every
-    /// view, so the sheets of a set can be read against each other.
+    /// The scale said as a length of paper and what it stands for, in the canvas's own words:
+    /// 1" = 1'-0" at 1:12.
     /// </summary>
-    /// <param name="extents">Each view's extent, in inches of the design; empty views are skipped.</param>
-    /// <param name="width">The width available, in points.</param>
-    /// <param name="height">The height available, in points.</param>
-    public static SheetScale Fit(IEnumerable<DrawingExtent> extents, double width, double height)
+    /// <param name="format">How lengths are written, as the canvas writes them.</param>
+    public string InWords(LengthFormat format)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
-        DrawingExtent[] all = [.. extents];
-        if (all.Any(extent => !double.IsFinite(extent.Width) || !double.IsFinite(extent.Height)))
+        ArgumentNullException.ThrowIfNull(format);
+        return $"{Length.Inches(1).Format(format).Text} = {Length.Inches(Denominator).Format(format).Text}";
+    }
+
+    /// <summary>
+    /// The largest scale no larger than <paramref name="pointsPerInch"/>: the first of
+    /// <see cref="Ratios"/> that fits, or the last halved until it does.
+    /// </summary>
+    /// <param name="pointsPerInch">The most points of paper an inch of the design may take.</param>
+    public static SheetScale AtMost(double pointsPerInch)
+    {
+        if (!(pointsPerInch > 0))
         {
-            throw new ArgumentException("A view reaches infinitely far; no scale fits it.", nameof(extents));
+            throw new ArgumentOutOfRangeException(nameof(pointsPerInch), pointsPerInch, "A scale needs a positive size to fit.");
         }
 
-        bool Fits(SheetScale scale) => all.All(extent =>
-            extent.Width * scale.PointsPerInch <= width && extent.Height * scale.PointsPerInch <= height);
-
-        foreach (SheetScale scale in Standard)
+        foreach (SheetScale scale in Ratios)
         {
-            if (Fits(scale))
+            if (scale.PointsPerInch <= pointsPerInch)
             {
                 return scale;
             }
         }
 
-        SheetScale smaller = Standard[^1];
-        while (!Fits(smaller))
+        SheetScale smaller = Ratios[^1];
+        while (smaller.PointsPerInch > pointsPerInch)
         {
             smaller = new SheetScale(checked(smaller.Denominator * 2));
         }
