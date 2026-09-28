@@ -372,6 +372,21 @@ public static class SamplesCommand
 
                 break;
 
+            case 17:
+                // A header row entered by hand (docs/design/manual-code-values.md §7.1): an opening
+                // that says its fill now also says it has no entered row. No sample has one, and
+                // none ever may (§11): a sample is shipped, and a real-looking row in one would be
+                // napkin shipping a code value.
+                foreach (JsonNode? entity in Entities(root))
+                {
+                    if (entity?["opening"] is JsonObject opening)
+                    {
+                        EnsureNull(opening, "enteredHeader");
+                    }
+                }
+
+                break;
+
             default:
                 throw new InvalidOperationException($"samples restamp does not know what format version {version} added.");
         }

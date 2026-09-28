@@ -334,17 +334,69 @@ public static class SceneWriter
         writer.WriteEndObject();
     }
 
-    /// <summary>An opening's fill (format version 13), or <c>"opening": null</c> for a box that is not an opening.</summary>
-    private static void WriteOpening(Utf8JsonWriter writer, OpeningFill? fill)
+    /// <summary>
+    /// An opening's fill (format version 13) and its header row entered by hand (format version 17),
+    /// each a value or null, or <c>"opening": null</c> when it has neither — the one spelling of that.
+    /// </summary>
+    private static void WriteOpening(Utf8JsonWriter writer, OpeningFill? fill, EnteredHeader? entered)
     {
-        if (fill is not { } value)
+        if (fill is null && entered is null)
         {
             writer.WriteNull(SceneNames.Opening);
             return;
         }
 
         writer.WriteStartObject(SceneNames.Opening);
-        writer.WriteString(SceneNames.Fill, SceneNames.Spell(SceneNames.Fills, value));
+        if (fill is { } value)
+        {
+            writer.WriteString(SceneNames.Fill, SceneNames.Spell(SceneNames.Fills, value));
+        }
+        else
+        {
+            writer.WriteNull(SceneNames.Fill);
+        }
+
+        if (entered is null)
+        {
+            writer.WriteNull(SceneNames.EnteredHeader);
+        }
+        else
+        {
+            WriteEnteredHeader(writer, entered);
+        }
+
+        writer.WriteEndObject();
+    }
+
+    /// <summary>An entered header row (format version 17, manual-code-values §7.1): every field written, every time.</summary>
+    private static void WriteEnteredHeader(Utf8JsonWriter writer, EnteredHeader row)
+    {
+        writer.WriteStartObject(SceneNames.EnteredHeader);
+        writer.WriteNumber(SceneNames.Plies, row.Plies);
+        writer.WriteString(SceneNames.Lumber, row.Lumber);
+        writer.WriteNumber(SceneNames.JackStuds, row.JackStuds);
+        writer.WriteNumber(SceneNames.KingStuds, row.KingStuds);
+        writer.WriteStartObject(SceneNames.EnteredCitation);
+        writer.WriteString(SceneNames.Code, row.Citation.Code);
+        writer.WriteString(SceneNames.CitationTable, row.Citation.Table);
+        writer.WriteString(SceneNames.CitationLocation, row.Citation.Location);
+        WriteOptionalText(writer, SceneNames.CitationNotes, row.Citation.Notes);
+        writer.WriteEndObject();
+        writer.WriteString(SceneNames.EnteredBy, row.EnteredBy);
+        writer.WriteString(SceneNames.EnteredOn, row.EnteredOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        EnteredHeaderInputs inputs = row.For;
+        writer.WriteStartObject(SceneNames.EnteredFor);
+        writer.WriteString(SceneNames.CodePack, inputs.Pack);
+        writer.WriteString(SceneNames.WallSide, SceneNames.Spell(SceneNames.WallSides, inputs.Side));
+        writer.WriteString(SceneNames.WallSupports, inputs.Supports);
+        writer.WriteNumber(SceneNames.EnteredSpan, inputs.Span.Units);
+        WriteOptionalNumber(writer, SceneNames.SiteGroundSnowLoad, inputs.GroundSnowLoadPsf);
+        WriteOptionalNumber(writer, SceneNames.SiteUltimateWindSpeed, inputs.UltimateWindSpeedMph);
+        WriteOptionalText(writer, SceneNames.SiteSeismicDesignCategory, inputs.SeismicDesignCategory);
+        WriteOptionalNumber(writer, SceneNames.SiteFrostDepth, inputs.FrostDepth?.Units);
+        WriteOptionalNumber(writer, SceneNames.SiteBuildingWidth, inputs.BuildingWidth?.Units);
+        WriteOptionalNumber(writer, SceneNames.SiteRoofLiveLoad, inputs.RoofLiveLoadPsf);
+        writer.WriteEndObject();
         writer.WriteEndObject();
     }
 
@@ -557,7 +609,7 @@ public static class SceneWriter
                 WriteRoom(writer, box.Room);
                 WriteDeck(writer, box.Deck);
                 WriteRoof(writer, box.Roof);
-                WriteOpening(writer, box.Opening);
+                WriteOpening(writer, box.Opening, box.EnteredHeader);
                 WriteCuts(writer, box.Cuts);
                 break;
 

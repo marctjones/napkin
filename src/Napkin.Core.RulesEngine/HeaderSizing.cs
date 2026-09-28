@@ -204,4 +204,52 @@ public abstract record HeaderResult
         /// <inheritdoc/>
         public override string ToString() => Explanation;
     }
+
+    /// <summary>
+    /// A row a person typed from their own copy of the code, for exactly the inputs on screen
+    /// (docs/design/manual-code-values.md §3.1). Never napkin's data: it carries who, when, where
+    /// they read it and the inputs it was entered for, and every string form starts with
+    /// <see cref="EnteredRow.Tag"/>. The rules engine never constructs one (§3.3): only the
+    /// building module's code check does, and only where the engine had no table.
+    /// </summary>
+    public sealed record Entered(MemberSpec Header, int JackStuds, int KingStuds, EnteredRow Entry) : HeaderResult
+    {
+        /// <inheritdoc/>
+        public override string ToString() => $"{EnteredRow.Tag} — {Header}, {JackStuds} jack, {KingStuds} king — {Entry}";
+    }
+}
+
+/// <summary>
+/// Where an entered row came from (docs/design/manual-code-values.md §3.1). Not a
+/// <see cref="Citation"/>: it has no row id, no source hash and no layer, and nothing in it is
+/// napkin's — it is what one person says they read.
+/// </summary>
+/// <param name="Code">The code and edition, as typed: "2021 IRC as adopted by CT 2022".</param>
+/// <param name="Table">The table, as typed.</param>
+/// <param name="Location">The page and row, as typed.</param>
+/// <param name="Notes">A footnote applied or an interpolation done by hand, as typed; null when none.</param>
+/// <param name="EnteredBy">Who typed it.</param>
+/// <param name="EnteredOn">The day it was typed.</param>
+/// <param name="PackId">The project's pack when it was typed: what "under CT 2022" means.</param>
+/// <param name="Inputs">The inputs it was entered for, in words, one per line.</param>
+public sealed record EnteredRow(
+    string Code,
+    string Table,
+    string Location,
+    string? Notes,
+    string EnteredBy,
+    DateOnly EnteredOn,
+    string PackId,
+    ValueList<string> Inputs)
+{
+    /// <summary>The label every string form of an entered row starts with (§4): one constant, like <see cref="AdoptedCodeRef.UnreviewedText"/>.</summary>
+    public const string Tag = "ENTERED BY HAND";
+
+    /// <summary>What the provenance sentence ends with.</summary>
+    public const string NotNapkins = "Typed from a copy of the code; not napkin's data, not reviewed by napkin.";
+
+    /// <summary>"ENTERED BY HAND — A. Person, 2026-09-27, from …, Table …, p. …. Typed from a copy of the code; not napkin's data, not reviewed by napkin."</summary>
+    public override string ToString()
+        => $"{Tag} — {EnteredBy}, {EnteredOn.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)}, "
+           + $"from {Code}, {Table}, {Location.TrimEnd('.')}. {NotNapkins}";
 }

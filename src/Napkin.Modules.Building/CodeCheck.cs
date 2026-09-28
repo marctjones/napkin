@@ -98,6 +98,34 @@ public sealed record OpeningCheck(Opening Opening, HeaderResult? Result)
 {
     /// <summary>Why the header is not checked — "Wall 1 is marked not bearing, …" — or null when it is.</summary>
     public string? NotChecked { get; init; }
+
+    /// <summary>
+    /// The row a person entered for this opening that no longer applies, and which of its inputs
+    /// moved (docs/design/manual-code-values.md §6.4); null when there is none. The result beside it
+    /// is the engine's own: a stale row never shows a number.
+    /// </summary>
+    public StaleRow? Stale { get; init; }
+
+    /// <summary>
+    /// The row a person entered for this opening, now that napkin answers it from its own table
+    /// (§5.2): the result beside it is napkin's, never the row's. Null when there is none.
+    /// </summary>
+    public EnteredHeader? Superseded { get; init; }
+}
+
+/// <summary>An entered row that no longer applies, and what moved since it was entered (manual-code-values §6.4).</summary>
+/// <param name="Row">The row.</param>
+/// <param name="Moved">Each input that differs from what the row was entered for, in the order §6.1 lists them.</param>
+public sealed record StaleRow(EnteredHeader Row, ValueList<MovedInput> Moved);
+
+/// <summary>One input that moved since a row was entered: "the header span moved from 3'-0" to 3'-6"".</summary>
+/// <param name="Input">Which input, as the tables name it: <c>headerSpan</c>, <c>side</c>, <c>groundSnowLoad</c>, … and <c>pack</c> and <c>bearing</c>.</param>
+/// <param name="Was">What it was when the row was entered, in words.</param>
+/// <param name="Now">What it is now, in words.</param>
+public sealed record MovedInput(string Input, string Was, string Now)
+{
+    /// <summary>"the header span moved from 3'-0" to 3'-6"".</summary>
+    public override string ToString() => $"{CodeCheck.Input(Input)} moved from {Was} to {Now}";
 }
 
 /// <summary>
@@ -126,9 +154,11 @@ public static class CodeCheck
         int changed = headers.Changes.Count(change => change.Kind is not (ChangeKind.CitationOnly or ChangeKind.NoAnswerChanged))
                       + bracing.Changes.Count(change => change.Kind is not (BracingChangeKind.CitationOnly or BracingChangeKind.NoAnswerChanged))
                       + deckChanges.Count(change => change.Kind is not (DeckChangeKind.CitationOnly or DeckChangeKind.NoAnswerChanged or DeckChangeKind.SpanMoved));
-        int flagged = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope) + bracing.NewlyFlagged.Count()
+        int flagged = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToOutOfScope or ChangeKind.NoAnswerToOutOfScope or ChangeKind.EnteredToOutOfScope)
+                      + bracing.NewlyFlagged.Count()
                       + (decks?.NewlyFlagged.Count() ?? 0);
-        int lost = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToNoAnswer or ChangeKind.OutOfScopeToNoAnswer) + bracing.NoLongerComputable.Count()
+        int lost = headers.Changes.Count(change => change.Kind is ChangeKind.SizedToNoAnswer or ChangeKind.OutOfScopeToNoAnswer or ChangeKind.EnteredToNoAnswer)
+                   + bracing.NoLongerComputable.Count()
                    + (decks?.NoLongerComputable.Count() ?? 0);
         string under = code is null ? "No code resolves now" : $"Now checking against {PackLabel(code)}";
         return $"{under}: every result recomputed; {Tally(changed, "changed")}, {Tally(flagged, "newly flagged")}, "
@@ -299,10 +329,126 @@ public static class CodeCheck
     public static OpeningCheck Check(Sketch sketch, Opening opening, CodeResolution code)
     {
         ArgumentNullException.ThrowIfNull(opening);
-        return opening.Wall.Box.WallInputs?.Bearing == false
-            ? new OpeningCheck(opening, null) { NotChecked = NotBearingText(opening.Wall) }
-            : new OpeningCheck(opening, For(sketch, opening, code));
+        EnteredHeader? row = opening.Box.EnteredHeader;
+        if (opening.Wall.Box.WallInputs?.Bearing == false)
+        {
+            return new OpeningCheck(opening, null) { NotChecked = NotBearingText(opening.Wall) + (row is null ? string.Empty : " " + EnteredKeptText) };
+        }
+
+        HeaderResult engine = For(sketch, opening, code);
+        if (row is null)
+        {
+            return new OpeningCheck(opening, engine);
+        }
+
+        // manual-code-values §5.1: a row is consulted only where napkin has nothing — a pack chosen,
+        // the wall's side and bearing said, and no table — and only while every input it was
+        // entered for is exactly the live one. Wherever a table exists, napkin's answer stands and
+        // the row is superseded (§5.2); it is never an override (§5.3).
+        ValueList<MovedInput> moved = Moved(sketch, opening, code, row);
+        return engine switch
+        {
+            HeaderResult.NoData { Reason: NoDataReason.NoTableForWallKind } when moved.Count == 0 => new OpeningCheck(opening, Entered(row)),
+            HeaderResult.NoData => new OpeningCheck(opening, engine) { Stale = new StaleRow(row, moved) },
+            HeaderResult.InputMissing missing when missing.Inputs.Any(input => input is "side" or "bearing") =>
+                new OpeningCheck(opening, engine) { Stale = new StaleRow(row, moved) },
+
+            // Sized, OutOfScope, or InputMissing for a table's own input (what the wall supports, a
+            // site value): each means a table exists.
+            _ => new OpeningCheck(opening, engine) { Superseded = row },
+        };
     }
+
+    /// <summary>What a not-bearing wall's Not checked sentence adds for an opening that carries an entered row (§5.1): it is kept, and not used.</summary>
+    public const string EnteredKeptText = "The header row entered by hand for this opening is kept but not used: napkin does not check a not-bearing wall's headers.";
+
+    /// <summary>
+    /// The entered row as a result: its member and counts, and where it came from, with the inputs
+    /// it was entered for in words — never a citation, never napkin's (§3.1).
+    /// </summary>
+    private static HeaderResult.Entered Entered(EnteredHeader row)
+        => new(
+            new MemberSpec(row.Plies, row.Lumber),
+            row.JackStuds,
+            row.KingStuds,
+            new EnteredRow(
+                row.Citation.Code,
+                row.Citation.Table,
+                row.Citation.Location,
+                row.Citation.Notes,
+                row.EnteredBy,
+                row.EnteredOn,
+                row.For.Pack,
+                new ValueList<string>([.. Recorded(row.For).Select(input => $"{Input(input.Name)}: {input.Words}")])));
+
+    /// <summary>
+    /// Every input an entered row records, with what it was, in the order §6.1 lists them: the
+    /// pack, the wall's side, what it supports, the header span and the six site values.
+    /// </summary>
+    private static IEnumerable<(string Name, string Words)> Recorded(EnteredHeaderInputs was)
+    {
+        yield return ("pack", $"pack {was.Pack}");
+        yield return ("side", SideWords(was.Side));
+        yield return ("supports", $"\"{was.Supports}\"");
+        yield return ("headerSpan", LengthWords(was.Span));
+        yield return ("groundSnowLoad", Psf(was.GroundSnowLoadPsf));
+        yield return ("ultimateWindSpeed", Mph(was.UltimateWindSpeedMph));
+        yield return ("seismicDesignCategory", was.SeismicDesignCategory ?? NotEnteredWords);
+        yield return ("frostDepth", LengthWords(was.FrostDepth));
+        yield return ("buildingWidth", LengthWords(was.BuildingWidth));
+        yield return ("roofLiveLoad", Psf(was.RoofLiveLoadPsf));
+    }
+
+    /// <summary>
+    /// Which of a row's recorded inputs differ from the live ones, compared exactly, field by field
+    /// (§6.1): a site value going from not entered to entered is a move; so is another pack, and a
+    /// wall whose side or bearing is no longer said.
+    /// </summary>
+    private static ValueList<MovedInput> Moved(Sketch sketch, Opening opening, CodeResolution code, EnteredHeader row)
+    {
+        WallInputs? wall = opening.Wall.Box.WallInputs;
+        SiteValues site = sketch.Site;
+        EnteredHeaderInputs was = row.For;
+
+        // Compared as values, never as their words: a length 1/1024″ off still moved.
+        (bool Same, string Now)[] live =
+        [
+            (code.Pack?.Manifest.Id == was.Pack, code.Pack is { } pack ? $"pack {pack.Manifest.Id}" : "no code"),
+            (wall?.Side == was.Side, wall?.Side is { } side ? SideWords(side) : "not said"),
+            (wall?.Supports == was.Supports, wall?.Supports is { } supports ? $"\"{supports}\"" : "not chosen"),
+            (opening.Width == was.Span, LengthWords(opening.Width)),
+            (site.GroundSnowLoadPsf == was.GroundSnowLoadPsf, Psf(site.GroundSnowLoadPsf)),
+            (site.UltimateWindSpeedMph == was.UltimateWindSpeedMph, Mph(site.UltimateWindSpeedMph)),
+            (site.SeismicDesignCategory == was.SeismicDesignCategory, site.SeismicDesignCategory ?? NotEnteredWords),
+            (site.FrostDepth == was.FrostDepth, LengthWords(site.FrostDepth)),
+            (site.BuildingWidth == was.BuildingWidth, LengthWords(site.BuildingWidth)),
+            (site.RoofLiveLoadPsf == was.RoofLiveLoadPsf, Psf(site.RoofLiveLoadPsf)),
+        ];
+
+        List<MovedInput> moved =
+        [
+            .. Recorded(was).Zip(live)
+                .Where(pair => !pair.Second.Same)
+                .Select(pair => new MovedInput(pair.First.Name, pair.First.Words, pair.Second.Now)),
+        ];
+
+        if (wall?.Bearing is null)
+        {
+            moved.Add(new MovedInput("bearing", "bearing", "not said"));
+        }
+
+        return new ValueList<MovedInput>([.. moved]);
+    }
+
+    private const string NotEnteredWords = "not entered";
+
+    private static string SideWords(WallSide side) => side == WallSide.Interior ? "interior" : "exterior";
+
+    private static string Psf(int? psf) => psf is { } value ? $"{value} psf" : NotEnteredWords;
+
+    private static string Mph(int? mph) => mph is { } value ? $"{value} mph" : NotEnteredWords;
+
+    private static string LengthWords(Length? length) => length is { } value ? value.Format(LengthFormat.Default).Text : NotEnteredWords;
 
     /// <summary>One opening's header result under a resolved code.</summary>
     public static HeaderResult For(Sketch sketch, Opening opening, CodeResolution code)
@@ -355,17 +501,26 @@ public static class CodeCheck
 
     /// <summary>
     /// The framing options with the code check plugged in: a sized opening's jack and king counts
-    /// and its header member (the library lumber the result names, as many plies as it says);
-    /// anything else stays unsized.
+    /// and its header member (the library lumber the result names, as many plies as it says) — and
+    /// an entered row's the same way (manual-code-values §3.4); anything else stays unsized.
     /// </summary>
     public static FramingOptions Framing(IEnumerable<OpeningCheck> checks, MaterialsLibrary library, FramingOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(checks);
         ArgumentNullException.ThrowIfNull(library);
         List<OpeningCheck> all = [.. checks];
-        Dictionary<EntityId, HeaderResult.Sized> sized = all
-            .Where(check => check.Result is HeaderResult.Sized)
-            .ToDictionary(check => check.Opening.Id, check => (HeaderResult.Sized)check.Result!);
+        Dictionary<EntityId, (MemberSpec Header, int JackStuds, int KingStuds)> sized = [];
+        foreach (OpeningCheck check in all)
+        {
+            if (check.Result is HeaderResult.Sized s)
+            {
+                sized[check.Opening.Id] = (s.Header, s.JackStuds, s.KingStuds);
+            }
+            else if (check.Result is HeaderResult.Entered e)
+            {
+                sized[check.Opening.Id] = (e.Header, e.JackStuds, e.KingStuds);
+            }
+        }
 
         // A not-bearing wall's openings take the header the person typed, with napkin's placeholder
         // jack and king (one each side), said so (renovation-sketches §4.3).
@@ -375,9 +530,9 @@ public static class CodeCheck
 
         return (options ?? new FramingOptions()) with
         {
-            JacksPerSide = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s) ? s.JackStuds : chosen.ContainsKey(opening.Id) ? 1 : null,
-            KingsPerSide = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s) ? s.KingStuds : null,
-            Header = opening => sized.TryGetValue(opening.Id, out HeaderResult.Sized? s)
+            JacksPerSide = opening => sized.TryGetValue(opening.Id, out var s) ? s.JackStuds : chosen.ContainsKey(opening.Id) ? 1 : null,
+            KingsPerSide = opening => sized.TryGetValue(opening.Id, out var s) ? s.KingStuds : null,
+            Header = opening => sized.TryGetValue(opening.Id, out var s)
                 ? library.TryFindLumber(s.Header.Nominal, out LumberStock lumber) ? new HeaderMember(s.Header.Plies, lumber) : null
                 : chosen.TryGetValue(opening.Id, out TypedHeader? typed) && typed is { } t && library.TryFindLumber(t.Lumber, out LumberStock picked)
                     ? new HeaderMember(t.Plies, picked)
@@ -390,10 +545,39 @@ public static class CodeCheck
     public static CheckWords Words(OpeningCheck check, MaterialsLibrary library)
     {
         ArgumentNullException.ThrowIfNull(check);
-        return check.Result is { } result
-            ? Words(result, library)
-            : new CheckWords($"Not checked: {check.NotChecked}", string.Empty, string.Empty, string.Empty);
+        if (check.Result is not { } result)
+        {
+            return new CheckWords($"Not checked: {check.NotChecked}", string.Empty, string.Empty, string.Empty);
+        }
+
+        CheckWords words = Words(result, library);
+        return check.Stale is { } stale ? words with { Headline = $"{words.Headline} {StaleText(stale)}" }
+            : check.Superseded is { } row ? words with { Headline = $"{words.Headline} {SupersededText(row)}" }
+            : words;
     }
+
+    /// <summary>
+    /// "The row ENTERED BY HAND by A. Person on 2026-09-27 no longer applies: the header span moved
+    /// from 3'-0" to 3'-6". Enter the row again, or remove it." (manual-code-values §6.4).
+    /// </summary>
+    public static string StaleText(StaleRow stale)
+    {
+        ArgumentNullException.ThrowIfNull(stale);
+        return $"The row {EnteredRow.Tag} by {By(stale.Row)} no longer applies: {string.Join("; ", stale.Moved)}. Enter the row again, or remove it.";
+    }
+
+    /// <summary>
+    /// "napkin now answers this from its own table. The row ENTERED BY HAND by A. Person on
+    /// 2026-09-27 said (2) 2x10, 1 jack and 2 king each side; remove it." (§5.2).
+    /// </summary>
+    public static string SupersededText(EnteredHeader row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        return $"napkin now answers this from its own table. The row {EnteredRow.Tag} by {By(row)} said "
+               + $"({row.Plies}) {row.Lumber}, {row.JackStuds} jack and {row.KingStuds} king each side; remove it.";
+    }
+
+    private static string By(EnteredHeader row) => $"{row.EnteredBy} on {row.EnteredOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}";
 
     /// <summary>A check's short form for a list: <see cref="Short(HeaderResult)"/>, or "not checked: not bearing, (2) 2x6 your choice".</summary>
     public static string Short(OpeningCheck check)
@@ -435,6 +619,14 @@ public static class CodeCheck
                 $"Table {m.Table}, {m.Code}",
                 string.Empty,
                 string.Empty),
+            HeaderResult.Entered e => new CheckWords(
+                $"{EnteredRow.Tag} — {HeaderText(e.Header.ToString(), e.JackStuds, e.KingStuds)}"
+                + (library.TryFindLumber(e.Header.Nominal, out _) ? string.Empty : $" {e.Header.Nominal} is not in the materials library, so the header is not on the shopping list."),
+                e.Entry.ToString(),
+                string.Join("\n", e.Entry.Inputs.Select(input => $"Entered for {input}").Concat(e.Entry.Notes is { } notes ? [$"Notes: {notes}"] : [])),
+                string.Empty),
+
+            // Only NoData is left: the union is closed at five (the reflection test holds it there).
             _ => NoDataWords((HeaderResult.NoData)result),
         };
     }
@@ -456,6 +648,8 @@ public static class CodeCheck
         HeaderResult.Sized s => $"{s.Header}, {s.JackStuds} jack and {s.KingStuds} king each side (Table {s.Citation.Table} row {s.Citation.RowId}){s.Citation.Code.UnreviewedFragment}",
         HeaderResult.OutOfScope o => $"beyond Table {o.Limit.Table}: get it engineered{o.Limit.Code.UnreviewedFragment}",
         HeaderResult.InputMissing m => $"not checked: {Named(m.Inputs)} not entered",
+        HeaderResult.Entered e => $"{e.Header}, {e.JackStuds} jack and {e.KingStuds} king each side "
+                                  + $"({EnteredRow.Tag} — {e.Entry.EnteredBy}, {e.Entry.Code} {e.Entry.Table} {e.Entry.Location}; not napkin's data)",
         _ => "no data to check it against",
     };
 
@@ -466,14 +660,14 @@ public static class CodeCheck
     public static ImmutableArray<string> Changes(IReadOnlyList<OpeningCheck> before, IReadOnlyList<OpeningCheck> after)
     {
         RecomputeReport report = Report(before, after);
-        Dictionary<EntityId, string> names = after.ToDictionary(check => check.Opening.Id, check => check.Opening.Name);
+        Dictionary<EntityId, OpeningCheck> now = after.ToDictionary(check => check.Opening.Id);
 
         return
         [
             .. report.Changes
                 .Where(change => !SameRow(change))
                 .OrderBy(change => Rank(change.Kind))
-                .Select(change => Sentence(names[change.Element], change)),
+                .Select(change => Sentence(now[change.Element], change)),
         ];
     }
 
@@ -501,6 +695,27 @@ public static class CodeCheck
         => change is { Kind: ChangeKind.CitationOnly, Before: HeaderResult.Sized a, After: HeaderResult.Sized b }
            && a.Citation with { Trace = ValueList<BandMatch>.Empty } == b.Citation with { Trace = ValueList<BandMatch>.Empty };
 
+    private static string Sentence(OpeningCheck after, ResultChange change)
+    {
+        string name = after.Opening.Name;
+        return change.Kind switch
+        {
+            ChangeKind.EnteredToOutOfScope when change.After is HeaderResult.OutOfScope o =>
+                $"Header for {name} is now beyond Table {o.Limit.Table} under {o.Limit.Code.ShortName}'s own table: get it engineered. "
+                + $"The row {EnteredRow.Tag} ({((HeaderResult.Entered)change.Before).Header}) is superseded; remove it.",
+            ChangeKind.EnteredToNoAnswer => after.Stale is { } stale
+                ? $"Header for {name}: the row {EnteredRow.Tag} no longer applies ({string.Join("; ", stale.Moved.Select(m => $"{Input(m.Input)} {m.Was} → {m.Now}"))}); {Short(change.After)}."
+                : $"Header for {name}: the row {EnteredRow.Tag} was removed; {Short(change.After)}.",
+            ChangeKind.EnteredToSized when change.Before is HeaderResult.Entered e && change.After is HeaderResult.Sized b =>
+                b.Header == e.Header && b.JackStuds == e.JackStuds && b.KingStuds == e.KingStuds
+                    ? $"Header for {name} is now sized by napkin: {Short(b)} — the same as the row {EnteredRow.Tag}. Remove the entered row."
+                    : $"Header for {name} is now sized by napkin: {Short(b)} — instead of the row {EnteredRow.Tag} ({e.Header}). Remove the entered row.",
+            ChangeKind.EnteredChanged => $"Header for {name}'s entered row changed: {((HeaderResult.Entered)change.Before).Header} → {Short(change.After)}.",
+            ChangeKind.ToEntered => $"Header for {name} is now entered by hand: {Short(change.After)}.",
+            _ => Sentence(name, change),
+        };
+    }
+
     private static string Sentence(string name, ResultChange change) => change.Kind switch
     {
         ChangeKind.CitationOnly => $"Header for {name} is unchanged, {Cited((HeaderResult.Sized)change.After)}.",
@@ -517,11 +732,13 @@ public static class CodeCheck
         => $"{b.Header}, now cited from {b.Citation.Code.ShortName} rev {b.Citation.Code.Revision} Table {b.Citation.Table} row {b.Citation.RowId}";
 
     /// <summary>The order changes are said in: losing a size first (design §7.3), a citation-only change last.</summary>
+    /// <remarks>An entered row's kinds sit beside their sized twins (manual-code-values §6.3).</remarks>
     private static readonly ChangeKind[] Ranked =
     [
-        ChangeKind.SizedToOutOfScope, ChangeKind.SizedToNoAnswer, ChangeKind.NoAnswerToOutOfScope, ChangeKind.OutOfScopeChanged,
-        ChangeKind.SizedToSized, ChangeKind.OutOfScopeToSized, ChangeKind.NoAnswerToSized, ChangeKind.OutOfScopeToNoAnswer,
-        ChangeKind.NoAnswerChanged, ChangeKind.CitationOnly,
+        ChangeKind.SizedToOutOfScope, ChangeKind.EnteredToOutOfScope, ChangeKind.SizedToNoAnswer, ChangeKind.EnteredToNoAnswer,
+        ChangeKind.NoAnswerToOutOfScope, ChangeKind.OutOfScopeChanged, ChangeKind.SizedToSized, ChangeKind.EnteredToSized,
+        ChangeKind.EnteredChanged, ChangeKind.OutOfScopeToSized, ChangeKind.NoAnswerToSized, ChangeKind.ToEntered,
+        ChangeKind.OutOfScopeToNoAnswer, ChangeKind.NoAnswerChanged, ChangeKind.CitationOnly,
     ];
 
     private static int Rank(ChangeKind kind) => Array.IndexOf(Ranked, kind);
@@ -582,6 +799,8 @@ public static class CodeCheck
         "roofLiveLoad" => "the roof live load",
         "side" => "which side the wall is on",
         "bearing" => "whether the wall is bearing",
+        "headerSpan" => "the header span",
+        "pack" => "the adopted code",
         _ => name,
     };
 

@@ -106,6 +106,21 @@ public enum ChangeKind
 
     /// <summary>Same member and studs; only the citation differs (a revision, a renumbered row, another pack).</summary>
     CitationOnly,
+
+    /// <summary>Was a row entered by hand; napkin's own table now says it is beyond the table (manual-code-values §6.3). Shown first.</summary>
+    EnteredToOutOfScope,
+
+    /// <summary>Was a row entered by hand; the row no longer applies, so there is no answer.</summary>
+    EnteredToNoAnswer,
+
+    /// <summary>Was a row entered by hand; napkin's own table now sizes it.</summary>
+    EnteredToSized,
+
+    /// <summary>Still a row entered by hand, edited.</summary>
+    EnteredChanged,
+
+    /// <summary>Is now a row entered by hand: entered, or applies again.</summary>
+    ToEntered,
 }
 
 /// <summary>One element whose result differs.</summary>
@@ -160,8 +175,14 @@ public static partial class Recompute
         return new RecomputeReport(changes.ToValueList(), unchanged);
     }
 
+    // An entered row's arms come first: the fallbacks below would read one as "no answer" (§6.3).
     private static ChangeKind Classify(HeaderResult was, HeaderResult now) => (was, now) switch
     {
+        (HeaderResult.Entered, HeaderResult.Entered) => ChangeKind.EnteredChanged,
+        (HeaderResult.Entered, HeaderResult.OutOfScope) => ChangeKind.EnteredToOutOfScope,
+        (HeaderResult.Entered, HeaderResult.Sized) => ChangeKind.EnteredToSized,
+        (HeaderResult.Entered, _) => ChangeKind.EnteredToNoAnswer,
+        (_, HeaderResult.Entered) => ChangeKind.ToEntered,
         (HeaderResult.Sized a, HeaderResult.Sized b) =>
             a.Header == b.Header && a.JackStuds == b.JackStuds && a.KingStuds == b.KingStuds ? ChangeKind.CitationOnly : ChangeKind.SizedToSized,
         (HeaderResult.Sized, HeaderResult.OutOfScope) => ChangeKind.SizedToOutOfScope,

@@ -472,7 +472,9 @@ public class CodeCheckTests
     [InlineData("seismicDesignCategory", "the seismic design category")]
     [InlineData("frostDepth", "the frost depth")]
     [InlineData("buildingWidth", "the building width")]
-    [InlineData("headerSpan", "headerSpan")]
+    [InlineData("headerSpan", "the header span")]
+    [InlineData("pack", "the adopted code")]
+    [InlineData("anUndeclaredInput", "anUndeclaredInput")]
     public void Every_table_input_has_plain_words(string name, string words) => Assert.Equal(words, CodeCheck.Input(name));
 
     [Fact]

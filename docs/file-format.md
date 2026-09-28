@@ -1,4 +1,4 @@
-# The napkin project file — container version 2, scene format version 16
+# The napkin project file — container version 2, scene format version 17
 
 This is the public description of what napkin reads and writes. The format is documented
 regardless of the app's own license, because an open, documented format is what keeps a project
@@ -688,7 +688,7 @@ design default.
 "roof": { "rafterSpacing": 16384, "rafter": "2x8", "ledger": "2x8", "overhang": 12288, "blocking": true,
           "sheathing": null, "roofing": { "name": "…", "coverage": null, "waste": 0 },
           "lowEnd": { "kind": "wall", "wall": "<a box id>" } | { "kind": "beam", "beam": { "plies", "lumber" }, "post", "postCount" } },
-"opening": { "fill": "glass" | "screen" | "solid" }
+"opening": { "fill": "glass" | "screen" | "solid" | null, "enteredHeader": null | { … } }
 ```
 
 Refused: `joistDirection` other than `out` (`along` is reserved); a spacing, width, run, guard height
@@ -696,7 +696,8 @@ or post spacing of 0 or less; a cantilever, gap, clearance, overhang, footing de
 an empty lumber or roofing name; beam plies outside 1–3; a post count below 2, fewer than 2
 stringers or 2 risers, fewer than 1 tread board; an unknown edge, fill or low-end kind; a roofing
 coverage of 0 or less or a negative waste; a `lowEnd.wall` naming no box (a dangling reference). A
-roof's rise is its box's depth; its pitch is derived, never stored.
+roof's rise is its box's depth; its pitch is derived, never stored. Since format version 17 an
+opening's `fill` may be `null` (not said) inside the object, beside its `enteredHeader` (below).
 
 ### Furniture marks and a drawer mark
 
@@ -752,6 +753,37 @@ The image's placement is derived from these for drawing only.
 Refused: a hash that is not 64 lowercase hex digits; the same pixel or the same world point twice;
 a distance of 0 or less; an empty name; an unknown or missing field. A scene read on its own cannot
 check that the image it names is there; the container loader does (container version 2).
+
+### A header row entered by hand
+
+Format version 17 ([`manual-code-values.md`](./design/manual-code-values.md) §7.1, #246). An
+opening carries `"opening": null` when it says neither its fill nor an entered row, and otherwise
+`{ "fill", "enteredHeader" }`, both required, each a value or `null`; `{ "fill": null,
+"enteredHeader": null }` is refused, so there is one spelling of "neither". `enteredHeader` is one
+header row a person typed from their own copy of the code, for this opening only: the header, the
+jack and king studs each side, where they read it, who typed it and when, and the ten inputs it was
+typed for. It is never napkin's data and nothing in napkin ever writes one for them; napkin uses it
+only while every recorded input equals the live one, under a pack with no header table, and labels
+it ENTERED BY HAND wherever it appears. Every field is written, every time. The values below only
+show the shape.
+
+```json
+"enteredHeader": { "plies": 9, "lumber": "2x99", "jackStuds": 9, "kingStuds": 9,
+                   "citation": { "code": "SYNTHETIC — Test Code 2099", "table": "Table T-99",
+                                 "location": "p. 99, row 9", "notes": null },
+                   "enteredBy": "A. Person", "enteredOn": "2026-09-27",
+                   "for": { "pack": "us-zz-test", "side": "exterior", "supports": "test-roof",
+                            "span": 36864, "groundSnowLoad": 99, "ultimateWindSpeed": null,
+                            "seismicDesignCategory": null, "frostDepth": null,
+                            "buildingWidth": null, "roofLiveLoad": null } }
+```
+
+Refused: plies below 1; a stud count below 0; an empty `lumber`, `code`, `table`, `location`,
+`enteredBy` or `supports`, or empty `notes` (write `null`); an `enteredOn` that is not `yyyy-MM-dd`;
+a `for.pack` that is not a pack id; a `side` other than `exterior` or `interior`; a `span` of 0 or
+less; a negative load, wind speed or frost depth, or a building width of 0 or less; an unknown or
+missing field; a row on a box that is also a wall, deck or roof. The lumber is not checked against
+the materials library, as a part's stock name is not.
 
 ### Container version 2: the underlay's image
 

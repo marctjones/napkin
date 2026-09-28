@@ -37,6 +37,8 @@
        from disk by the loader path the app uses. -->
   <ItemGroup>
     <Content Include="CodePacks/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Synthetic scenes (SYNTHETIC TEST DATA - NOT CODE VALUES): never a sample, never shipped. -->
+    <Content Include="Fixtures/**/*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\packs\**\*" Link="RealPacks\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

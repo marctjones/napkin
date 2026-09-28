@@ -42,13 +42,13 @@ public class DeckFormatTests
 
     static readonly string Porch = $$"""
         {
-          "formatVersion": 16,
+          "formatVersion": 17,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "{{Layer}}", "name": "Default" } ],
           "entities": [
             {{Box(DeckId, "Deck 1", "0", "147456", "122880", "36864", deck: Deck)}},
             {{Box(WallId, "Front wall", "36864", "147456", "3584", "98304", wall: "{ \"supports\": null, \"studSpacing\": null, \"bracing\": null, \"side\": \"exterior\", \"bearing\": true, \"header\": null }")}},
-            {{Box(WindowId, "Screen 1", "36864", "36864", "3584", "61440", opening: "{ \"fill\": \"screen\" }")}},
+            {{Box(WindowId, "Screen 1", "36864", "36864", "3584", "61440", opening: "{ \"fill\": \"screen\", \"enteredHeader\": null }")}},
             {{Box(RoofId, "Roof", "135168", "147456", "122880", "51200", roof: Roof)}}
           ],
           "fastenerChoices": [], "supplies": [], "code": null,
@@ -118,7 +118,8 @@ public class DeckFormatTests
     {
         // The reflection list: every public settable property of Box is set here, so a new one that
         // the writer forgets fails this test rather than vanishing from saved files.
-        string[] covered = ["Name", "Phase", "Part", "WallInputs", "Room", "Deck", "Roof", "Opening", "Cuts"];
+        // EnteredHeader's round trip is EnteredHeaderFormatTests' (format version 17).
+        string[] covered = ["Name", "Phase", "Part", "WallInputs", "Room", "Deck", "Roof", "Opening", "EnteredHeader", "Cuts"];
         string[] settable = [.. typeof(Box).GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(property => property.SetMethod is not null && property.DeclaringType != typeof(object))
             .Where(property => property.Name is not ("Id" or "Layer" or "Anchor" or "Width" or "Height" or "Depth" or "FaceUp" or "Rotation" or "EqualityContract"))
@@ -167,11 +168,11 @@ public class DeckFormatTests
     // A deck that is also a part, a roof that is also a deck, an opening that is also a wall.
     [InlineData("\"part\": null, \"wall\": null, \"room\": null, \"deck\": {", "\"part\": { \"stock\": null, \"species\": null, \"quantity\": 1, \"planAxes\": { \"x\": \"length\", \"y\": \"width\" }, \"hardware\": [], \"rough\": false, \"grain\": null, \"showFace\": null, \"drawer\": null }, \"wall\": null, \"room\": null, \"deck\": {", "deck")]
     [InlineData("\"deck\": null, \"roof\": { \"rafterSpacing\"", "\"deck\": " + "{ \"joistDirection\": \"out\", \"joistSpacing\": 16384, \"joist\": \"2x8\", \"beam\": { \"plies\": 1, \"lumber\": \"2x8\" }, \"post\": \"4x4\", \"postCount\": 2, \"cantilever\": 0, \"decking\": \"5/4x6\", \"deckingGap\": 0, \"blocking\": false, \"supports\": null, \"species\": null, \"footingDepth\": null, \"hardware\": [], \"guard\": null, \"stair\": null }" + ", \"roof\": { \"rafterSpacing\"", "deck")]
-    [InlineData("\"header\": null }, \"room\": null, \"deck\": null, \"roof\": null, \"opening\": null", "\"header\": null }, \"room\": null, \"deck\": null, \"roof\": null, \"opening\": { \"fill\": \"glass\" }", "opening")]
+    [InlineData("\"header\": null }, \"room\": null, \"deck\": null, \"roof\": null, \"opening\": null", "\"header\": null }, \"room\": null, \"deck\": null, \"roof\": null, \"opening\": { \"fill\": \"glass\", \"enteredHeader\": null }", "opening")]
     public void A_box_that_is_two_things_at_once_is_refused(string original, string replacement, string named)
         => Scenes.RefuseWith(Porch.With(original, replacement), LoadProblemKind.InvalidValue, named);
 
     [Fact]
     public void A_version_12_file_is_refused_naming_both_versions()
-        => Scenes.RefuseWith(Scenes.OneBox.With("\"formatVersion\": 16", "\"formatVersion\": 12"), LoadProblemKind.UnsupportedFormatVersion, "format version 12", "format version 16");
+        => Scenes.RefuseWith(Scenes.OneBox.With("\"formatVersion\": 17", "\"formatVersion\": 12"), LoadProblemKind.UnsupportedFormatVersion, "format version 12", "format version 17");
 }

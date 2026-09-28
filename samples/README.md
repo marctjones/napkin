@@ -205,6 +205,13 @@ references, which no sample holds; every scene and expectation changed only its 
 meaning.** Every box gained `"deck": null`, `"roof": null` and `"opening": null`, and the site
 `"soilBearing": null`, by `samples restamp`.
 
+**Format version 17 (a header row entered by hand, `docs/design/manual-code-values.md` §7.1, #246)
+changed no sample's meaning.** Every opening that says its fill gained `"enteredHeader": null`, by
+`samples restamp`; every other box already says `"opening": null`. **No sample may ever carry an
+entered row** (§11): samples ship, and a real-looking row in one would be napkin shipping a code
+value; the tests' synthetic fixture is where one lives. Rewriting through the real `SceneWriter` also
+put `porch-12x10`'s site `"underlay"` before `"source"`, the order a fresh save writes.
+
 **A purely additive bump — a null field or an empty list, no sample's meaning changed, as every
 bump from version 5 on has been — no longer needs 15 scenes and 15 expectations rewritten by hand
 (#181).** Run

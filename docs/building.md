@@ -98,6 +98,31 @@ Undo takes it back and says so again. A result that can no longer be computed be
 missing, no data or out of scope; nothing is kept from before. The shopping list's **Framing**
 section names the code and each opening's result.
 
+## A header row you entered by hand
+
+When napkin says **No data** for a header because the adopted code's pack has no header table, a
+person with their own copy of the code can put the one row their opening needs into the project:
+the header, the jack and king studs each side, and where they read it — the code and its edition,
+the table, the page and the row — with their name and the date. (The window to type it comes in a
+later beta; a project file can already carry one.)
+
+napkin uses that row for that opening only, and labels it **ENTERED BY HAND** everywhere it
+appears: the part panel's headline starts with it, the citation line says who entered it, when and
+from what, and *"Typed from a copy of the code; not napkin's data, not reviewed by napkin."*, and
+the message bar and the shopping list's Framing section say the same. **How it was found** lists
+the inputs it was entered for. The frame uses the member and the counts. napkin does not check the
+row; apply your state's amendments yourself.
+
+The row keeps the inputs it was entered for: the adopted code, the wall's side, what the wall
+supports, the header span and the site values, each as it was, "not entered" included. The moment
+any one changes — a wider window, another code, a site value typed where there was none — the row
+stops applying: the check says No data again and names what moved, from what to what, and never
+shows the row's number. Enter the row again for the new inputs, or remove it; undo brings it back.
+
+If the adopted code's pack gains a header table, napkin answers from its own table and says the
+entered row is superseded: an entered row never overrides napkin's own answer, even one that says
+get it engineered. A wall marked not bearing keeps the row and does not use it.
+
 ## Wall bracing
 
 Issue #39. Cutting or widening an opening shortens the solid wall beside it, and that can leave the

@@ -24,7 +24,7 @@
       "type": "box",
       "layer": "61000000-0000-4000-8000-000000000001",
       "name": "Wall 1",
-      "phase": "existing",
+      "phase": "new",
       "anchor": {
         "x": 0,
         "y": 0,
@@ -37,7 +37,7 @@
       "rotation": 0,
       "part": null,
       "wall": {
-        "supports": null,
+        "supports": "synthetic-roof",
         "studSpacing": null,
         "bracing": null,
         "side": "exterior",
@@ -71,7 +71,35 @@
       "room": null,
       "deck": null,
       "roof": null,
-      "opening": null,
+      "opening": {
+        "fill": null,
+        "enteredHeader": {
+          "plies": 2,
+          "lumber": "2x10",
+          "jackStuds": 1,
+          "kingStuds": 2,
+          "citation": {
+            "code": "SYNTHETIC TEST DATA - NOT CODE VALUES, Test Code 2099",
+            "table": "Table T-99",
+            "location": "p. 99, row 9",
+            "notes": null
+          },
+          "enteredBy": "A. Person",
+          "enteredOn": "2026-09-27",
+          "for": {
+            "pack": "us-ct-2022",
+            "side": "exterior",
+            "supports": "synthetic-roof",
+            "span": 36864,
+            "groundSnowLoad": 99,
+            "ultimateWindSpeed": 999,
+            "seismicDesignCategory": "Z",
+            "frostDepth": null,
+            "buildingWidth": 1216512,
+            "roofLiveLoad": null
+          }
+        }
+      },
       "cuts": []
     }
   ],
@@ -80,16 +108,16 @@
   "supplies": [],
   "code": {
     "pack": "us-ct-2022",
-    "revision": 6,
-    "mode": "locked",
-    "lockedOn": "2026-09-27"
+    "revision": 1,
+    "mode": "following",
+    "lockedOn": null
   },
   "site": {
-    "groundSnowLoad": null,
-    "ultimateWindSpeed": null,
-    "seismicDesignCategory": null,
+    "groundSnowLoad": 99,
+    "ultimateWindSpeed": 999,
+    "seismicDesignCategory": "Z",
     "frostDepth": null,
-    "buildingWidth": null,
+    "buildingWidth": 1216512,
     "roofLiveLoad": null,
     "soilBearing": null,
     "north": 0,

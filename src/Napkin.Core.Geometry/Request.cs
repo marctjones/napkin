@@ -140,6 +140,14 @@ public sealed record SetRoomInputs(EntityId Box, RoomInputs? Inputs) : Request;
 /// <param name="Fill">The fill, or <see langword="null"/> for none said.</param>
 public sealed record SetOpeningFill(EntityId Box, OpeningFill? Fill) : Request;
 
+/// <summary>
+/// Sets, edits or removes the header row a person typed for an opening from their own copy of the
+/// code (manual-code-values §7.1): each one undo step. Exact, moves nothing.
+/// </summary>
+/// <param name="Box">The opening's box.</param>
+/// <param name="Row">The row, or <see langword="null"/> to remove it.</param>
+public sealed record SetEnteredHeader(EntityId Box, EnteredHeader? Row) : Request;
+
 /// <summary>Sets a deck's inputs (deck-and-porch §2.2). Exact, moves nothing.</summary>
 /// <param name="Box">The deck's box.</param>
 /// <param name="Inputs">The inputs, or <see langword="null"/> for none.</param>

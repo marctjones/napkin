@@ -153,6 +153,96 @@ public sealed record TypedHeader(int Plies, string Lumber)
     public override string ToString() => $"({Plies}) {Lumber}";
 }
 
+/// <summary>
+/// Where a person says they read an entered header row (docs/design/manual-code-values.md §2.2),
+/// every field as typed. The first three are required: no citation, no row.
+/// </summary>
+/// <param name="Code">The code and edition: "2021 IRC as adopted by CT 2022".</param>
+/// <param name="Table">The table as printed.</param>
+/// <param name="Location">The page and row as printed.</param>
+/// <param name="Notes">A footnote applied or an interpolation done by hand; null when none.</param>
+public sealed record EnteredCitation(string Code, string Table, string Location, string? Notes);
+
+/// <summary>
+/// The inputs an entered header row was typed for (manual-code-values §6.1): the pack id, the
+/// wall's side, what it supports, the header span and the six site values, each as it was — a
+/// value, or null for "not entered". The row applies only while every one equals the live value.
+/// </summary>
+/// <param name="Pack">The project's pack id when the row was entered (not its revision, §6.2).</param>
+/// <param name="Side">The wall's side.</param>
+/// <param name="Supports">What the wall supports, as typed: the table's column heading.</param>
+/// <param name="Span">The header span: the opening's rough width.</param>
+/// <param name="GroundSnowLoadPsf">Ground snow load, or null.</param>
+/// <param name="UltimateWindSpeedMph">Wind speed, or null.</param>
+/// <param name="SeismicDesignCategory">Seismic design category, or null.</param>
+/// <param name="FrostDepth">Frost depth, or null.</param>
+/// <param name="BuildingWidth">Building width, or null.</param>
+/// <param name="RoofLiveLoadPsf">Roof live load, or null.</param>
+public sealed record EnteredHeaderInputs(
+    string Pack,
+    WallSide Side,
+    string Supports,
+    Length Span,
+    int? GroundSnowLoadPsf,
+    int? UltimateWindSpeedMph,
+    string? SeismicDesignCategory,
+    Length? FrostDepth,
+    Length? BuildingWidth,
+    int? RoofLiveLoadPsf);
+
+/// <summary>
+/// One header row a person typed from their own copy of the code, for one opening
+/// (manual-code-values §2, §7.1): the header, the jack and king studs each side, where they read
+/// it, who typed it and when, and the inputs it was typed for. Never napkin's data; the lumber is
+/// not checked against the library here, as a part's stock is not.
+/// </summary>
+/// <param name="Plies">How many pieces side by side; at least 1.</param>
+/// <param name="Lumber">The lumber's nominal name, e.g. <c>2x10</c>.</param>
+/// <param name="JackStuds">Jack studs each side; not negative.</param>
+/// <param name="KingStuds">King studs each side; not negative.</param>
+/// <param name="Citation">Where they read it.</param>
+/// <param name="EnteredBy">Who typed it; never empty.</param>
+/// <param name="EnteredOn">The day it was typed.</param>
+/// <param name="For">The inputs it was typed for.</param>
+public sealed record EnteredHeader(
+    int Plies,
+    string Lumber,
+    int JackStuds,
+    int KingStuds,
+    EnteredCitation Citation,
+    string EnteredBy,
+    DateOnly EnteredOn,
+    EnteredHeaderInputs For);
+
+/// <summary>What an entered header row may not be: the rules the loader and the updater share (manual-code-values §7.1).</summary>
+public static class EnteredHeaderRules
+{
+    /// <summary>Why this row is refused, or null when it is fine.</summary>
+    public static string? Refusal(EnteredHeader row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        EnteredHeaderInputs inputs = row.For;
+        return row.Plies < 1 ? "a header has at least one ply"
+            : row.JackStuds < 0 || row.KingStuds < 0 ? "a stud count is not negative"
+            : Blank(row.Lumber) ? "the header's lumber is named"
+            : Blank(row.Citation.Code) || Blank(row.Citation.Table) || Blank(row.Citation.Location)
+                ? "an entered row says the code, the table and the page and row it was read from"
+            : Blank(row.EnteredBy) ? "an entered row says who entered it"
+            : Blank(inputs.Supports) ? "an entered row says what the wall supports"
+            : !IsPackId(inputs.Pack) ? $"\"{inputs.Pack}\" is not a code pack id (lower case, like us-ct-2022)"
+            : inputs.Span <= Length.Zero ? "a header span is longer than zero"
+            : inputs.GroundSnowLoadPsf < 0 || inputs.UltimateWindSpeedMph < 0 || inputs.RoofLiveLoadPsf < 0 ? "a load or a wind speed is not negative"
+            : inputs.FrostDepth < Length.Zero || inputs.BuildingWidth <= Length.Zero ? "a frost depth is not negative, and a building width is longer than zero"
+            : null;
+    }
+
+    /// <summary>A code pack id as the rules engine spells one (PackLoader): lower case letters, digits, dots and hyphens, not starting with a dot or hyphen.</summary>
+    public static bool IsPackId(string id)
+        => id.Length > 0 && id[0] is not ('.' or '-') && id.All(c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '.' or '-');
+
+    private static bool Blank(string text) => text.Trim().Length == 0;
+}
+
 /// <summary>Which of a room's surfaces a finish goes on.</summary>
 public enum RoomSurfaces
 {

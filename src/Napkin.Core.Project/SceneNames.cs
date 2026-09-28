@@ -125,6 +125,19 @@ internal static class SceneNames
     internal const string LowEndBeam = "beam";
     internal const string Opening = "opening";
     internal const string Fill = "fill";
+
+    // An opening's header row entered by hand (format version 17, manual-code-values §7.1).
+    internal const string EnteredHeader = "enteredHeader";
+    internal const string JackStuds = "jackStuds";
+    internal const string KingStuds = "kingStuds";
+    internal const string EnteredCitation = "citation";
+    internal const string CitationTable = "table";
+    internal const string CitationLocation = "location";
+    internal const string CitationNotes = "notes";
+    internal const string EnteredBy = "enteredBy";
+    internal const string EnteredOn = "enteredOn";
+    internal const string EnteredFor = "for";
+    internal const string EnteredSpan = "span";
     internal const string SiteSoilBearing = "soilBearing";
     internal const string BoundaryType = "boundary";
     internal const string Courses = "courses";

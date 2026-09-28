@@ -677,3 +677,64 @@ individually asked.
     *Recommended:* yes; it is the pack's own cited text and the most likely thing to be missed.
 11. **Milestone M10 Real code**, since it is what lets #14's and #158's answers be real for one person
     at a time before a shipped pack exists. *Recommended:* yes.
+
+---
+
+## 16. As built: slice A (#246), and where it departs from this note
+
+The model, format 17 and the routing landed as §12's slice A describes, tests 1–10 of §13 included
+(test 10: `mutate.sh` dropping `Tag` from `EnteredRow.ToString` fails
+`EnteredHeaderCheckTests.Where_napkin_has_no_table_and_nothing_moved…`). What differs, and why:
+
+1. **`Box.EnteredHeader` is its own property, not `Box.Opening` as `OpeningInputs(Fill, EnteredHeader)`.**
+   §7.1's record has a non-nullable `Fill`, but a window in an existing wall need not say its fill —
+   this note's own walkthrough window, in `samples/window-in-existing-wall`, has `"opening": null` —
+   so the fill had to stay nullable anyway. And `Box.Opening` is read as the fill in about forty
+   places across the App, the PDF sheets, the assistant and editing, none of them in this slice's
+   files; a separate property changes none of them. The *file* is exactly §7.1's: `enteredHeader`
+   sits inside `opening`, beside a `fill` that may now be `null`; `"opening": null` is the one
+   spelling of "neither", and `{ "fill": null, "enteredHeader": null }` is refused. `Box`'s
+   hand-written `Equals`/`GetHashCode` carry the new property (tested), so undo and the recompute
+   see an edited row.
+2. **`OpeningCheck.Stale` carries `ValueList<MovedInput>`, not `ImmutableArray<string>`.** Each moved
+   input keeps its name, what it was and what it is now, in words, so the panel says "the header
+   span moved from 3'-0" to 3'-6"" and the message bar "(the header span 3'-0" → 3'-6")", as §6.4
+   and §6.3 want; `ValueList` keeps `OpeningCheck` comparable by value. Inputs are compared as values,
+   never as their words: a span one 1024th wider, which reads the same, is a move (tested).
+3. **Two rows §5.1's table did not have.** `InputMissing` for a table's own input — what the wall
+   supports, or a site value the table needs — means a table exists, so napkin's answer stands with
+   `Superseded`, like `Sized` and `OutOfScope`; only `InputMissing(side|bearing)` and every `NoData`
+   give `Stale`. A wall whose bearing is no longer said is a move named `bearing`, though bearing is
+   not one of the ten recorded inputs (a row is only ever entered on a bearing wall).
+4. **The routing is in `CodeCheck.Check`; `CodeCheck.For` stays the engine's own answer.** Nothing
+   else calls `For`; every check the app, the sheets and the assistant use comes through `Check`.
+5. **Four consumers §3.4 did not list**, found by grepping `src/` on 2026-09-28; none shows a number
+   without the tag, and none is in this slice's files, so each is left for its own slice:
+   `PermitItems` (the permit set, #225) files an entered header as *not sized* — honest, napkin did
+   not size it — with its tagged words; `WindowSetPdf.HeaderSize` (#227) falls through to
+   `CodeCheck.Short`, which carries the tag, but the C1 code page does not yet list entered rows
+   under their own heading (§10's acceptance line); `ContextPack.Working` gives an entered check no
+   working lines, while its line is `ToString`, tagged (slice C); and `MainWindow.Building`'s framing
+   headline says "not yet sized" for an opening framed from an entered row (slice B should say
+   "entered by hand").
+6. **Feature ids are `ENTR-001…007`, not `ENTERED-…`**: `features/README.md` holds a unit id to two to
+   five letters (`^[A-Z]{2,5}-\d{3}$`) and a workflow family to two to six, so slice B's workflows
+   are `GUI-ENTR-NN`, not `GUI-ENTERED-NN`.
+7. **For slice B (#247): the form must write the wall's Supports with the row, in the same undo
+   step.** The recorded `supports` is compared exactly with the wall's live `Supports`; with no
+   table, the wall's Supports picker is empty, so the typed text in the form is the only way the wall
+   comes to say it. A form that writes only `SetEnteredHeader` leaves a row that is stale the moment
+   it is saved ("what the wall supports moved from "…" to not chosen").
+8. **The fixture follows the CT pack rather than locking a revision**, so the pack's revision moving
+   (it goes to 6 when the DCA 6 guide layer comes out) cannot break it; nothing asserts the CT
+   pack's revision. The code-switch and superseded tests use the building tests' own synthetic packs
+   — `us-zz-brace-a`/`-b` (no header table) and `us-zz-frame` (ZZ-HEADER) — rather than the rules
+   engine's `fx-base`, which that test project does not load.
+9. **Smaller things.** `CodeCheck.Input` names `headerSpan` ("the header span") and `pack` ("the
+   adopted code"); `CodeCheck.Words(HeaderResult)` keeps its `_ => NoDataWords((NoData)result)`
+   fallback, now safe — `Entered` has its own arm, so only `NoData` reaches the cast, and the
+   closed-union test holds the union at five (a throwing arm there could never be covered). The stale and superseded
+   sentences say `ENTERED BY HAND` too, since the superseded one repeats the row's number (§7.2).
+   A removed row says "was removed" rather than "no longer applies". `samples restamp`'s case 17 wrote
+   the samples through the real `SceneWriter`, which also put `porch-12x10`'s site fields in the
+   writer's own order.
