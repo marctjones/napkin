@@ -53,10 +53,15 @@ public class GoldenTests
             yield return (Fx.DeckRoot, file);
         }
 
-        // The shipped packs' own golden files (packs/golden at the repo root), written from their sources.
-        foreach (string file in Directory.GetFiles(Path.Combine(Fx.RealRoot, "golden"), "*.golden.json", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+        // The shipped packs' own golden files (packs/golden at the repo root), written from their sources. None ship now
+        // (the DCA 6 goldens were removed with its tables), and git keeps no empty directory, so a fresh checkout has no folder.
+        string shippedGolden = Path.Combine(Fx.RealRoot, "golden");
+        if (Directory.Exists(shippedGolden))
         {
-            yield return (Fx.RealRoot, file);
+            foreach (string file in Directory.GetFiles(shippedGolden, "*.golden.json", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+            {
+                yield return (Fx.RealRoot, file);
+            }
         }
 
         string? own = Environment.GetEnvironmentVariable("NAPKIN_PACKS_ROOT");
