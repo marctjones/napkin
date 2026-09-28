@@ -387,6 +387,10 @@ public class DeckCheckTests
 
         Assert.Equal(["zz-deck"], DeckCheck.SupportsOffered(zz));
         Assert.Equal(["zz-fir", "zz-hem", "zz-cedar"], DeckCheck.SpeciesOffered(zz));
+        Assert.Equal(
+            "ZZ DECK's deck tables name what a deck supports as: zz-deck (anything else it carries is beyond the scope of ZZ GUIDE, synthetic guide p. 2, item 8); "
+            + "and species as: zz-fir, zz-hem, zz-cedar. Type one in each box; nothing is filled in for you.",
+            DeckCheck.InputsOffered(zz));
         Assert.Empty(DeckCheck.SupportsOffered(null));
         Assert.Empty(DeckCheck.SpeciesOffered(null));
         Assert.Null(DeckCheck.InputsOffered(null));

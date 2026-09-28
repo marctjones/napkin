@@ -5,7 +5,7 @@
   "select": ["Deck 1"],
   "question": "how tall are the deck posts, and how much does the middle one carry?",
   "task": "answer",
-  "reply": "Both post lines are No data: the loaded Connecticut pack has no deck post table [[ref:has no deck post]], so napkin cannot say a height or a carried area from a table. Nothing is guessed.",
+  "reply": "Both post lines are No data: the loaded Connecticut pack has no corner post table [[ref:has no corner post table]] and no centre post table [[ref:has no centre post table]], so napkin cannot say a height from a table. Nothing is guessed.",
   "expectRefused": false,
   "expectReference": true,
   "forbidden": ["4x4", "6x6", "29.6", "37.0"]
