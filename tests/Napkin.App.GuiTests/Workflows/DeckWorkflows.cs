@@ -46,18 +46,17 @@ public class DeckWorkflows
             Assert.StartsWith("Frame: ledger, 7 joists 2x8 at 16\", rim, (2) 2x10 beam on 3 posts spanning 3'-3 3/4\" between post faces", window.DeckFrameLine, StringComparison.Ordinal);
             Assert.Contains("its north edge is the ledger", window.MessageOnScreen, StringComparison.Ordinal);
 
-            // The sample is locked to CT 2022, whose deck joists come from DCA 6: the panel offers its words, filling in none.
-            Assert.StartsWith("CT 2022's deck tables name what a deck supports as: deck (anything else it carries is beyond the scope of DCA 6-2015", window.DeckInputsOfferLine, StringComparison.Ordinal);
-            Assert.Contains("and species as: Southern Pine,", window.DeckInputsOfferLine, StringComparison.Ordinal);
+            // The sample is locked to CT 2022, which carries no deck tables (revision 6 removed DCA 6): nothing to offer.
+            Assert.Empty(window.DeckInputsOfferLine);
             Assert.Null(deck.Deck!.Supports);
         });
 
-        // Typed as DCA 6 names it, the joists' check moves on to the next thing its scope asks: the site's snow load (item 9, p. 2).
+        // What the deck supports is still typed freely; the joists' check stays honestly no data.
         TypeInto(app, window, window.DeckControls.Supports, "deck");
-        app.Expect("with what the deck supports typed, the joists ask for the ground snow load", () =>
+        app.Expect("with what the deck supports typed, the joists are still no data", () =>
         {
             Assert.Equal("deck", window.CurrentDesign!.Sketch.Entities.Values.OfType<Box>().Single(box => box.Deck is not null).Deck!.Supports);
-            Assert.Contains("Enter the ground snow load: DCA 6-2015 scope limit s.snow", window.DeckCheckLines, StringComparison.Ordinal);
+            Assert.Contains("has no deck joist span", window.DeckCheckLines, StringComparison.Ordinal);
         });
 
         // Two 6x6 posts: 96 − 2 × 5 1/2 = 85″ between their faces.
@@ -73,9 +72,8 @@ public class DeckWorkflows
         {
             CutListWindow list = window.CutList!;
             Assert.True(list.IsShowingDeck);
-            // Under CT 2022 the guide's paragraph is said once, first, then the deck's line.
-            Assert.StartsWith("Deck checks under CT 2022 use DCA 6-2015", list.DeckNoteText, StringComparison.Ordinal);
-            Assert.Contains(" Deck 1: ledger, 7 joists 2x8", list.DeckNoteText, StringComparison.Ordinal);
+            // Under CT 2022 no guide paragraph is said: the deck's line comes first.
+            Assert.StartsWith("Deck 1: ledger, 7 joists 2x8", list.DeckNoteText, StringComparison.Ordinal);
             Assert.Contains(list.DeckRows.Sorted, row => row.Material == "2x8");
             Assert.Contains(list.DeckRows.Sorted, row => row.Material == "5/4x6");
         });

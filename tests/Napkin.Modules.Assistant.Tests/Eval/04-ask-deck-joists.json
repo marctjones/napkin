@@ -1,12 +1,12 @@
 {
   "id": "ask-deck-joists",
-  "description": "A deck check question (porch-12x10, Deck 1 selected): the joist line, cited.",
+  "description": "A deck check question (porch-12x10, Deck 1 selected): No data, since revision 6 removed the DCA 6 guide (AWC's EULA, docs/research/safe-default-header-sources.md §1).",
   "sample": "porch-12x10",
   "select": ["Deck 1"],
   "question": "what does the deck's joist line say?",
   "task": "answer",
-  "reply": "The deck's joists are 2x8 at 16 inches on center, spanning 9'-7 1/2\" [[ref:Joists 2x8 at 16]].",
+  "reply": "The joist line is No data: the loaded Connecticut pack has no deck joist span table [[ref:has no deck joist]], so napkin has nothing to size it from. Nothing is guessed.",
   "expectRefused": false,
   "expectReference": true,
-  "forbidden": ["2x10", "24\"", "12\""]
+  "forbidden": ["2x8", "2x10", "16\"", "24\"", "12\""]
 }

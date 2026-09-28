@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "notes": "Connecticut 2022 State Building Code. Only Connecticut's own amendments document was read; the IRC 2021 base tables are NOT loaded (see layers/irc-2021/README.md). Revision 2 (2026-09-27, #41): the deck joist table comes from the guide AWC DCA 6-2015 (layers/dca6-2015), declared under guides. Revision 3 (2026-09-27, #41 slice B2): the guide adds its deck beam table, Table 3A (p. 6). Revision 4 (2026-09-27, #42 slice B3): the guide adds Appendix B's post-height tables, B1 (corner posts, p. B3) and B2 (centre posts, p. B4), and its footing table, B3 (p. B5). Revision 5 (2026-09-27, #42): Tables B1 and B2 refuse a post under 6x6 nominal before their lookup, citing p. 10 ('All deck post sizes shall be 6x6 (nominal) or larger'), and the guide shows item 3, p. 2, among its scope notes; a 4x4 post had answered from the tables' 4x4 columns.",
+  "notes": "Connecticut 2022 State Building Code. Only Connecticut's own amendments document was read; the IRC 2021 base tables are NOT loaded (see layers/irc-2021/README.md). Revision 2 (2026-09-27, #41): the deck joist table comes from the guide AWC DCA 6-2015 (layers/dca6-2015), declared under guides. Revision 3 (2026-09-27, #41 slice B2): the guide adds its deck beam table, Table 3A (p. 6). Revision 4 (2026-09-27, #42 slice B3): the guide adds Appendix B's post-height tables, B1 (corner posts, p. B3) and B2 (centre posts, p. B4), and its footing table, B3 (p. B5). Revision 5 (2026-09-27, #42): Tables B1 and B2 refuse a post under 6x6 nominal before their lookup, citing p. 10 ('All deck post sizes shall be 6x6 (nominal) or larger'), and the guide shows item 3, p. 2, among its scope notes; a 4x4 post had answered from the tables' 4x4 columns. Revision 6 (2026-09-28, Marc's decision): the dca6-2015 guide and its tables are removed. docs/research/safe-default-header-sources.md §1, read while researching a different question, found AWC's End User License Agreement prohibits inputting its Product into an AI program and restricts copying/modifying/reproducing it; that reading was never done before revisions 2-5 transcribed DCA 6 with an AI. Deck joist/beam/footing checks return to 'base tables not loaded' until a source that clears the license question is found (#209).",
   "id": "us-ct-2022",
-  "revision": 5,
+  "revision": 6,
   "jurisdiction": {
     "country": "US",
     "state": "CT",
@@ -28,12 +28,7 @@
     "irc-2021",
     "amendments"
   ],
-  "guides": [
-    {
-      "id": "dca6-2015",
-      "notes": "Deck tables only. A guide, not Connecticut's adopted code: CT 2022 adopts the 2021 IRC; DCA 6 is based on the 2015 IRC and says the IRC governs where they differ. Remove this entry when the IRC 2021 R507 tables are transcribed into layers/irc-2021/deck."
-    }
-  ],
+  "guides": [],
   "sources": [
     {
       "id": "ct-csbc-2022",

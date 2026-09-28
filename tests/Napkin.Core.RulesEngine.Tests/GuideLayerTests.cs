@@ -60,11 +60,11 @@ public class GuideLayerTests
     {
         Assert.Equal("deck tables from ZZ GUIDE, a guide", Deck().StatusLabel);
 
-        // The shipped Connecticut pack declares DCA 6 for its deck tables (#41): both clauses.
+        // The shipped Connecticut pack declares no guide (revision 6 removed DCA 6: no clause, just the base label).
         LoadedPack ct = Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "RealPacks"), "us-ct-2022"));
-        Assert.Equal("base tables not loaded; deck tables from DCA 6-2015, a guide", ct.StatusLabel);
-        Assert.Equal("dca6-2015", Assert.Single(ct.Guides).Id);
-        Assert.Equal("dca6-2015", Assert.Single(ct.Manifest.Guides).Id);
+        Assert.Equal("base tables not loaded", ct.StatusLabel);
+        Assert.Empty(ct.Guides);
+        Assert.Empty(ct.Manifest.Guides);
 
         // A pack without a guide is unchanged.
         Assert.Empty(Fx.Load("us-zz-state").Guides);
