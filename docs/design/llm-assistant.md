@@ -985,7 +985,9 @@ why, so B–F build on what exists rather than on the text above:
    a last size followed by a foot or inch mark, `ft`/`foot`/`feet`/`inch`/`inches` (not `in`: "a 2x4
    in the wall") or a decimal point is a length, so `1 × 14'-0"` is a count and a length and
    `2x8 × 11'-9"` is `2x8` and a length; a double quote after a quoted `"2x4"` is its closing quote,
-   but doubled (a CSV's escaped inch mark, `"2 × 8"""`) it is inches (added 2026-09-27, §20 item 5);
+   but doubled (a CSV's escaped inch mark, `"2 × 8"""`) it is inches, so a quoted count times bare
+   inches with a single closing quote, `"1 × 14"` or `“1 × 14”`, still reads as `1x14` — the two
+   cannot be told apart, and napkin never writes it (added 2026-09-27, §20 item 5);
    a designation matches case- and space-insensitively and `§` is ignored, and `R602.7(1)-(3)` in
    the pack supports `R602.7(1)` but not `R602.7(3)`; `foot` reads as `ft`; `Wall 1's` is not feet; vulgar fractions
    fold to digits; number words are zero to nineteen, the tens and their compounds, hundred,
