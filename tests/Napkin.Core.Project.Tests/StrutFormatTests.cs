@@ -20,7 +20,7 @@ public class StrutFormatTests
     // width meeting it at the top: run 7″, rise 24″, 2x2 stock.
     private static readonly string Scene = $$"""
         {
-          "formatVersion": 16,
+          "formatVersion": 17,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "{{Layer}}", "name": "Default" } ],
           "entities": [
@@ -260,9 +260,9 @@ public class StrutFormatTests
     public void A_version_10_file_is_refused_naming_both_versions()
     {
         Scenes.RefuseWith(
-            Scene.With("\"formatVersion\": 16", "\"formatVersion\": 10"),
+            Scene.With("\"formatVersion\": 17", "\"formatVersion\": 10"),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 10",
-            "format version 16");
+            "format version 17");
     }
 }

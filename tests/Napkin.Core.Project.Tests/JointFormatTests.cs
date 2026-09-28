@@ -19,7 +19,7 @@ public class JointFormatTests
     // face and the apron's west face are the plane x = 2, and they share a 2 in by 4 in rectangle.
     private const string Joined = """
         {
-          "formatVersion": 16,
+          "formatVersion": 17,
           "units": { "length": "inch/1024", "angle": "arcsecond" },
           "layers": [ { "id": "00000000-0000-0000-0000-000000000001", "name": "Default" } ],
           "entities": [
@@ -235,10 +235,10 @@ public class JointFormatTests
     public void A_version_4_file_is_refused_with_the_unsupported_version_message_and_no_converter()
     {
         LoadProblem problem = Scenes.RefuseWith(
-            Variant(("\"formatVersion\": 16", "\"formatVersion\": 4")),
+            Variant(("\"formatVersion\": 17", "\"formatVersion\": 4")),
             LoadProblemKind.UnsupportedFormatVersion,
             "format version 4",
-            "format version 16");
+            "format version 17");
 
         Assert.Contains("no migration", problem.Message, StringComparison.Ordinal);
     }

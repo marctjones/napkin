@@ -492,14 +492,14 @@ internal sealed class SceneBinder
         (bool roomRead, RoomInputs? room) = ReadRoom(fields);
         (bool deckRead, DeckInputs? deck) = ReadNullable(fields, SceneNames.Deck, ReadDeck);
         (bool roofRead, RoofInputs? roof) = ReadNullable(fields, SceneNames.Roof, ReadRoof);
-        (bool openingRead, OpeningFill? opening) = ReadOpening(fields);
+        (bool openingRead, OpeningFill? opening, EnteredHeader? entered) = ReadOpening(fields);
         (bool cutsRead, ImmutableList<Cut> cuts) = ReadCuts(fields);
 
         // A deck or a roof is a framed structure of its own, never also a part, wall, room or opening;
         // an opening is not also a wall (format version 13, deck-and-porch §7).
         foreach ((string name, bool present) in new[] { (SceneNames.Deck, deck is not null), (SceneNames.Roof, roof is not null) })
         {
-            if (present && (part is not null || wall is not null || room is not null || opening is not null || (deck is not null && roof is not null)))
+            if (present && (part is not null || wall is not null || room is not null || opening is not null || entered is not null || (deck is not null && roof is not null)))
             {
                 Add(
                     LoadProblemKind.InvalidValue,
@@ -510,7 +510,7 @@ internal sealed class SceneBinder
             }
         }
 
-        if (opening is not null && wall is not null)
+        if ((opening is not null || entered is not null) && wall is not null)
         {
             Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.Opening}", "A box that is an opening is not also a wall: its \"wall\" must be null.");
             openingRead = false;
@@ -550,6 +550,7 @@ internal sealed class SceneBinder
                 Deck = deck,
                 Roof = roof,
                 Opening = opening,
+                EnteredHeader = entered,
                 Cuts = cuts,
             }
             : null;
@@ -1584,29 +1585,220 @@ internal sealed class SceneBinder
             : new RoofInputs(s, rafter, ledger, o, b, sheathing, roofing, low);
     }
 
-    /// <summary>An opening's fill (format version 13), or <c>"opening": null</c>.</summary>
-    private (bool Read, OpeningFill? Fill) ReadOpening(JsonFields box)
+    /// <summary>
+    /// An opening's fill (format version 13) and its header row entered by hand (format version
+    /// 17), both required and each a value or null; <c>"opening": null</c> when it has neither, and
+    /// an object holding two nulls is refused, so there is one spelling of that.
+    /// </summary>
+    private (bool Read, OpeningFill? Fill, EnteredHeader? Entered) ReadOpening(JsonFields box)
     {
         JsonElement? element = Take(box, SceneNames.Opening);
         if (element is not { } value)
         {
-            return (false, null);
+            return (false, null, null);
         }
 
         if (value.ValueKind == JsonValueKind.Null)
         {
-            return (true, null);
+            return (true, null, null);
         }
 
         JsonFields? fields = ReadFields(value, $"{box.Path}/{SceneNames.Opening}", $"\"{SceneNames.Opening}\"");
         if (fields is null)
         {
-            return (false, null);
+            return (false, null, null);
         }
 
-        OpeningFill? fill = ReadEnum(fields, SceneNames.Fill, SceneNames.Fills, "fill");
+        int before = problems.Count;
+        (bool fillRead, OpeningFill? fill) = ReadEnumOrNull(fields, SceneNames.Fill, SceneNames.Fills, "fill");
+        (bool enteredRead, EnteredHeader? entered) = ReadNullable(fields, SceneNames.EnteredHeader, ReadEnteredHeader);
         RejectUnknownFields(fields);
-        return fill is { } f ? (true, f) : (false, null);
+        if (problems.Count > before || !fillRead || !enteredRead)
+        {
+            return (false, null, null);
+        }
+
+        if (fill is null && entered is null)
+        {
+            Add(LoadProblemKind.InvalidValue, fields.Path, "An opening with no fill and no entered header row is written \"opening\": null.");
+            return (false, null, null);
+        }
+
+        return (true, fill, entered);
+    }
+
+    /// <summary>
+    /// A header row a person entered from their own copy of the code (format version 17,
+    /// manual-code-values §7.1): every field required, the citation's three texts and the name
+    /// never empty, each refusal naming its field. The lumber is not checked against the library.
+    /// </summary>
+    private EnteredHeader? ReadEnteredHeader(JsonFields fields)
+    {
+        int before = problems.Count;
+        long? plies = ReadInteger(fields, SceneNames.Plies);
+        string? lumber = ReadText(fields, SceneNames.Lumber);
+        long? jacks = ReadInteger(fields, SceneNames.JackStuds);
+        long? kings = ReadInteger(fields, SceneNames.KingStuds);
+        EnteredCitation? citation = ReadObject(fields, SceneNames.EnteredCitation) is { } cited ? ReadEnteredCitation(cited) : null;
+        string? by = ReadText(fields, SceneNames.EnteredBy);
+        (bool onRead, DateOnly? on) = ReadDateOrNull(fields, SceneNames.EnteredOn);
+        EnteredHeaderInputs? inputs = ReadObject(fields, SceneNames.EnteredFor) is { } entered ? ReadEnteredFor(entered) : null;
+        RejectUnknownFields(fields);
+        if (problems.Count > before || plies is null || lumber is null || jacks is null || kings is null || citation is null || by is null || !onRead || inputs is null)
+        {
+            return null;
+        }
+
+        void Refuse(string name, string why) => Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", why);
+        if (plies is < 1 or > int.MaxValue)
+        {
+            Refuse(SceneNames.Plies, "An entered header has at least one ply.");
+        }
+
+        if (jacks is < 0 or > int.MaxValue)
+        {
+            Refuse(SceneNames.JackStuds, "An entered row's jack stud count is a whole number, not negative.");
+        }
+
+        if (kings is < 0 or > int.MaxValue)
+        {
+            Refuse(SceneNames.KingStuds, "An entered row's king stud count is a whole number, not negative.");
+        }
+
+        if (lumber.Trim().Length == 0)
+        {
+            Refuse(SceneNames.Lumber, "An entered header names its lumber; this one is empty.");
+        }
+
+        if (by.Trim().Length == 0)
+        {
+            Refuse(SceneNames.EnteredBy, "An entered row says who entered it; this one is empty.");
+        }
+
+        if (on is null)
+        {
+            Refuse(SceneNames.EnteredOn, "An entered row has the date it was entered, written yyyy-MM-dd; this one is null.");
+        }
+
+        if (problems.Count > before)
+        {
+            return null;
+        }
+
+        EnteredHeader row = new((int)plies, lumber, (int)jacks, (int)kings, citation, by, on!.Value, inputs);
+
+        // Every refusal above is the rules' own, named by field; this is the net under them, so the
+        // loader and the updater can never disagree about what a row may be.
+        if (EnteredHeaderRules.Refusal(row) is { } why)
+        {
+            Add(LoadProblemKind.InvalidValue, fields.Path, $"This entered header row is refused: {why}.");
+            return null;
+        }
+
+        return row;
+    }
+
+    /// <summary>Where an entered row was read: the code, table and location, never empty, and notes or null.</summary>
+    private EnteredCitation? ReadEnteredCitation(JsonFields fields)
+    {
+        int before = problems.Count;
+        string? code = ReadText(fields, SceneNames.Code);
+        string? table = ReadText(fields, SceneNames.CitationTable);
+        string? location = ReadText(fields, SceneNames.CitationLocation);
+        (bool notesRead, string? notes) = ReadTextOrNull(fields, SceneNames.CitationNotes);
+        RejectUnknownFields(fields);
+        if (problems.Count > before || code is null || table is null || location is null || !notesRead)
+        {
+            return null;
+        }
+
+        foreach ((string name, string text) in new[] { (SceneNames.Code, code), (SceneNames.CitationTable, table), (SceneNames.CitationLocation, location) })
+        {
+            if (text.Trim().Length == 0)
+            {
+                Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", $"An entered row says where it was read: its \"{name}\" is empty.");
+            }
+        }
+
+        if (notes is { Length: 0 })
+        {
+            Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{SceneNames.CitationNotes}", "An entered row's notes are text, or null when there are none; these are empty.");
+        }
+
+        return problems.Count > before ? null : new EnteredCitation(code, table, location, notes);
+    }
+
+    /// <summary>The inputs an entered row was entered for: the pack, the wall's side and supports, the span and the six site values, each a value or null.</summary>
+    private EnteredHeaderInputs? ReadEnteredFor(JsonFields fields)
+    {
+        int before = problems.Count;
+        string? pack = ReadText(fields, SceneNames.CodePack);
+        WallSide? side = ReadEnum(fields, SceneNames.WallSide, SceneNames.WallSides, "wall side");
+        string? supports = ReadText(fields, SceneNames.WallSupports);
+        long? span = ReadInteger(fields, SceneNames.EnteredSpan);
+        (bool snowRead, long? snow) = ReadIntegerOrNull(fields, SceneNames.SiteGroundSnowLoad);
+        (bool windRead, long? wind) = ReadIntegerOrNull(fields, SceneNames.SiteUltimateWindSpeed);
+        (bool sdcRead, string? sdc) = ReadTextOrNull(fields, SceneNames.SiteSeismicDesignCategory);
+        (bool frostRead, long? frost) = ReadIntegerOrNull(fields, SceneNames.SiteFrostDepth);
+        (bool widthRead, long? width) = ReadIntegerOrNull(fields, SceneNames.SiteBuildingWidth);
+        (bool liveRead, long? live) = ReadIntegerOrNull(fields, SceneNames.SiteRoofLiveLoad);
+        RejectUnknownFields(fields);
+        if (problems.Count > before || pack is null || side is null || supports is null || span is null
+            || !snowRead || !windRead || !sdcRead || !frostRead || !widthRead || !liveRead)
+        {
+            return null;
+        }
+
+        void Refuse(string name, string why) => Add(LoadProblemKind.InvalidValue, $"{fields.Path}/{name}", why);
+        if (!EnteredHeaderRules.IsPackId(pack))
+        {
+            Refuse(SceneNames.CodePack, $"\"{pack}\" is not a code pack id (lower case, like us-ct-2022).");
+        }
+
+        if (supports.Trim().Length == 0)
+        {
+            Refuse(SceneNames.WallSupports, "An entered row says what the wall supports; this one is empty.");
+        }
+
+        if (span <= 0)
+        {
+            Refuse(SceneNames.EnteredSpan, "An entered row's header span is longer than zero.");
+        }
+
+        foreach ((string name, long? value) in new[] { (SceneNames.SiteGroundSnowLoad, snow), (SceneNames.SiteUltimateWindSpeed, wind), (SceneNames.SiteRoofLiveLoad, live) })
+        {
+            if (value is < 0 or > int.MaxValue)
+            {
+                Refuse(name, "A load or a wind speed is a whole number, not negative, or null when it was not entered.");
+            }
+        }
+
+        if (sdc is { Length: 0 })
+        {
+            Refuse(SceneNames.SiteSeismicDesignCategory, "A seismic design category is text, or null when it was not entered; this one is empty.");
+        }
+
+        if (frost is < 0)
+        {
+            Refuse(SceneNames.SiteFrostDepth, "A frost depth is not negative, or null when it was not entered.");
+        }
+
+        if (width is <= 0)
+        {
+            Refuse(SceneNames.SiteBuildingWidth, "A building width is longer than zero, or null when it was not entered.");
+        }
+
+        return problems.Count > before ? null : new EnteredHeaderInputs(
+            pack,
+            side.Value,
+            supports,
+            new Length(span.Value),
+            (int?)snow,
+            (int?)wind,
+            sdc,
+            frost is { } f ? new Length(f) : null,
+            width is { } w ? new Length(w) : null,
+            (int?)live);
     }
 
     /// <summary>A room's finishes and measurements (format version 10), or <c>"room": null</c>.</summary>

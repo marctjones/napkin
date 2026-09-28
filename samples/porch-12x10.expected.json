@@ -3,7 +3,7 @@
   "scene": "porch-12x10.scene.json",
   "design": "porch-12x10.design.md",
   "derivedBy": "hand, from docs/design/deck-and-porch.md §9 and porch-12x10.design.md; never regenerated from napkin's output",
-  "formatVersion": 16,
+  "formatVersion": 17,
   "unitsPerInch": 1024,
   "counts": {
     "layers": 5,

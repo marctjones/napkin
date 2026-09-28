@@ -1,5 +1,5 @@
 {
-  "formatVersion": 16,
+  "formatVersion": 17,
   "units": {
     "length": "inch/1024",
     "angle": "arcsecond"
@@ -155,7 +155,8 @@
       "deck": null,
       "roof": null,
       "opening": {
-        "fill": "glass"
+        "fill": "glass",
+        "enteredHeader": null
       },
       "cuts": []
     },
@@ -217,9 +218,9 @@
     "buildingWidth": null,
     "roofLiveLoad": null,
     "soilBearing": null,
-    "source": null,
     "north": 0,
-    "underlay": null
+    "underlay": null,
+    "source": null
   },
   "furniture": {
     "kind": "none",
