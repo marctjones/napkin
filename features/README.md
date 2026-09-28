@@ -17,6 +17,7 @@ that comes from the test suite rather than from a status report.
 | `features/gui-shell.json` | the GUI-automation workstream (#33): the `GUI-SHELL-*` shell workflows |
 | `features/assembly.json` | the 3D view (`docs/design/assembly-model.md` §9.3): the `GUI-ASSEM-*` workflows |
 | `features/assistant.json` | the assistant (`docs/design/llm-assistant.md` §10, M14): the `AST-*` features |
+| `features/entered-rows.json` | a header row entered by hand (`docs/design/manual-code-values.md` §12, M10): the `ENTR-*` features |
 
 Add a new file rather than editing someone else's; the tool merges them and fails on a duplicate
 id across files.
@@ -67,7 +68,7 @@ id across files.
   because test traits and old CI runs refer to it.
 
 Area tokens in use: `GEO`, `PRJ`, `MAT`, `CUT`, `CVS`, `RUL`, `CODE`, `BLD`, `SITE`, `DECK`,
-`IOP`, `PKG`, `REL`, `SOLV`, `AST`.
+`IOP`, `PKG`, `REL`, `SOLV`, `AST`, `ENTR`.
 
 ## Kinds
 

@@ -57,6 +57,7 @@ public class EnteredHeaderCheckTests
     }
 
     [Fact]
+    [Trait("Feature", "ENTR-002")]
     public void Where_napkin_has_no_table_and_nothing_moved_the_check_is_the_entered_row_labelled_in_every_string_form()
     {
         OpeningCheck check = Check(Fixture());
@@ -126,6 +127,7 @@ public class EnteredHeaderCheckTests
 
     [Theory]
     [MemberData(nameof(Moves))]
+    [Trait("Feature", "ENTR-003")]
     public void Moving_any_one_of_the_ten_recorded_inputs_makes_the_row_stale_naming_exactly_that_input(string input, string was, string now)
     {
         Sketch sketch = Fixture();
@@ -229,6 +231,7 @@ public class EnteredHeaderCheckTests
     }
 
     [Fact]
+    [Trait("Feature", "ENTR-004")]
     public void Where_napkin_has_a_table_its_own_answer_stands_and_the_row_is_superseded_never_an_override()
     {
         // 36" under ZZ-HEADER, snow ≤ 30, zz-roof: ≤ 4'-1" is (1) 2x8 j1 k1, row r.s30.a — every
@@ -273,6 +276,7 @@ public class EnteredHeaderCheckTests
     }
 
     [Fact]
+    [Trait("Feature", "ENTR-006")]
     public void The_message_bar_says_each_change_to_an_entered_row()
     {
         Sketch live = Fixture();
@@ -346,6 +350,7 @@ public class EnteredHeaderCheckTests
     }
 
     [Fact]
+    [Trait("Feature", "ENTR-006")]
     public void When_napkin_gains_a_table_the_changes_are_said_the_most_serious_first_and_the_switch_summary_counts_them()
     {
         Sketch braced = FourWindows();
@@ -382,6 +387,7 @@ public class EnteredHeaderCheckTests
     }
 
     [Fact]
+    [Trait("Feature", "ENTR-007")]
     public void An_entered_row_frames_the_opening_as_a_sized_one_does()
     {
         OpeningCheck check = Check(Fixture());

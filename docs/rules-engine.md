@@ -13,6 +13,15 @@ its **Appendix B Tables B1–B3**, deck post heights and footing sizes (#42, bel
 fixtures (`tests/Napkin.Core.RulesEngine.Tests/Fixtures`, `Golden/`, marked `SYNTHETIC TEST DATA - NOT
 CODE VALUES`) and on the shipped Connecticut pack described below, whose own golden files are in
 `packs/golden/`. With no pack, or a pack without a table, the answer is `NoData` - napkin never guesses.
+
+**A row you entered by hand** (#246, [`design/manual-code-values.md`](design/manual-code-values.md))
+is not data napkin ships or reads from a pack. A person with their own copy of the code can put the
+one header row an opening needs into their project file, with where they read it. The engine never
+returns it (`RulesEngine.SizeHeader` answers only its own four results). The building module's
+code check consults it only where the engine said `NoData` for want of a table and only while every
+input it was entered for is exactly the live one; labels it `ENTERED BY HAND` in every string form
+(`HeaderResult.Entered`, `EnteredRow.Tag`); and puts napkin's own answer in its place the day the
+pack gains the table ([building.md](building.md), "A header row you entered by hand").
 A header's Sized/Out of scope and a wall line's Passes/Fails/Out of scope results carry `UNREVIEWED:
 values not yet checked against the source` in their citation, details and short forms until the
 adopted pack is signed off (§13 Decision 5; #255), the same as the deck lines described below.

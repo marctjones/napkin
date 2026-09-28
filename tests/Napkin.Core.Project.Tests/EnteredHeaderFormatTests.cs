@@ -36,6 +36,7 @@ public class EnteredHeaderFormatTests
     static Box Shelf(Sketch sketch) => sketch.Find<Box>(new EntityId(new Guid(Scenes.BoxId)))!;
 
     [Fact]
+    [Trait("Feature", "ENTR-001")]
     public void A_row_loads_as_written_and_round_trips()
     {
         Sketch sketch = Scenes.Accept(WithRow);
@@ -109,6 +110,7 @@ public class EnteredHeaderFormatTests
     [InlineData("\"roofLiveLoad\": null", "\"roofLiveLoad\": -1", LoadProblemKind.InvalidValue, "roofLiveLoad")]
     [InlineData("\"plies\": 9, ", "", LoadProblemKind.MissingField, "plies")]
     [InlineData("\"roofLiveLoad\": null }", "\"roofLiveLoad\": null, \"bearing\": true }", LoadProblemKind.UnknownField, "bearing")]
+    [Trait("Feature", "ENTR-001")]
     public void Each_refusal_names_the_field(string original, string replacement, LoadProblemKind kind, string named)
         => Scenes.RefuseWith(WithRowText(Row.With(original, replacement)), kind, named);
 

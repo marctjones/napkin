@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "features": [
+    {
+      "id": "ENTR-001",
+      "area": "project-file",
+      "title": "A header row entered by hand, saved in the project file",
+      "acceptance": "An opening's entered header row (plies, lumber, jack and king studs, the code, table and page it was read from, who entered it and when, and the ten inputs it was entered for) loads from a format 17 file and writes back byte-identical, and a file whose row has an empty citation, a stud count below zero, a span of zero or any other malformed field is refused with a message naming that field.",
+      "milestone": "M10",
+      "issue": 246,
+      "kind": "unit"
+    },
+    {
+      "id": "ENTR-002",
+      "area": "building",
+      "title": "An entered row is the check where napkin has no table, labelled ENTERED BY HAND",
+      "acceptance": "Under a pack with no header table, a bearing wall's opening whose entered row was entered for exactly the live inputs checks as that row's header and studs, and its headline, citation line, short form and result text each start with ENTERED BY HAND and name who entered it, when and from what.",
+      "milestone": "M10",
+      "issue": 246,
+      "kind": "unit"
+    },
+    {
+      "id": "ENTR-003",
+      "area": "building",
+      "title": "An entered row goes stale the moment an input it was entered for moves",
+      "acceptance": "Moving any one of the header span, the wall's side, what it supports, the adopted code or any of the six site values (a value going from not entered to entered included) makes the check No data with the row stale, naming exactly that input with what it was and what it is now, and never showing the row's number.",
+      "milestone": "M10",
+      "issue": 246,
+      "kind": "unit"
+    },
+    {
+      "id": "ENTR-004",
+      "area": "building",
+      "title": "napkin's own table supersedes an entered row, never the reverse",
+      "acceptance": "Under a pack whose header table covers the opening, the check is napkin's own sized, out-of-scope or input-missing answer with the entered row marked superseded, even when every input the row records is exactly live.",
+      "milestone": "M10",
+      "issue": 246,
+      "kind": "unit"
+    },
+    {
+      "id": "ENTR-005",
+      "area": "rules-engine",
+      "title": "The rules engine never answers with an entered row",
+      "acceptance": "Over every fixture and shipped pack and a grid of requests, the rules engine's header answer is always one of its own four results, and a golden file expecting an entered row is refused.",
+      "milestone": "M10",
+      "issue": 246,
+      "kind": "unit"
+    },
+    {
+      "id": "ENTR-006",
+      "area": "building",
+      "title": "The message bar says each change to an entered row, the most serious first",
+      "acceptance": "Entering, editing, removing or staling a row, and a code switch that gives napkin a table, each produce one message-bar sentence that says the row was entered by hand, with napkin's own out-of-scope ranked first and the switch summary counting it as newly flagged.",
+      "milestone": "M10",
+      "issue": 246,
+      "kind": "unit"
+    },
+    {
+      "id": "ENTR-007",
+      "area": "building",
+      "title": "An entered row frames the opening",
+      "acceptance": "An opening whose check is an entered row gets that row's jack and king studs each side and its header from the materials library, as a sized one does, while a stale row frames nothing.",
+      "milestone": "M10",
+      "issue": 246,
+      "kind": "unit"
+    }
+  ]
+}

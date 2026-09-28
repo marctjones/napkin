@@ -31,6 +31,7 @@ public class EnteredResultTests
     }
 
     [Fact]
+    [Trait("Feature", "ENTR-005")]
     public void The_engine_never_answers_with_an_entered_row()
     {
         // Every pack every fixture root holds, real and synthetic, against a grid of requests: the
@@ -74,6 +75,7 @@ public class EnteredResultTests
     }
 
     [Fact]
+    [Trait("Feature", "ENTR-005")]
     public void A_golden_file_cannot_expect_an_entered_row()
     {
         // The golden vocabulary is the engine's four answers and gains no "entered" (§3.3).
