@@ -26,7 +26,10 @@ public readonly record struct NumberToken(string Text, string Key);
 /// upper-case with spaces and the section sign removed, so <c>r602.7(1)</c> is <c>R602.7(1)</c>.</item>
 /// <item>A lumber name — <c>2x4</c>, <c>2 x 4</c>, <c>2×4s</c>, <c>5/4x6</c> — keyed lower-case with no
 /// spaces and no plural. It matches only a lumber name: <c>2x6</c> is not supported by a <c>2</c> and a
-/// <c>6</c> elsewhere.</item>
+/// <c>6</c> elsewhere. Its sizes are bare nominal numbers, so a number with a foot or inch mark,
+/// a unit word or a decimal point after it is a length, not a size: <c>1 × 14'-0"</c> (the shopping
+/// list's Buy cell) is a count and a length, and <c>2x8 × 11'-9"</c> is a lumber name and a length.
+/// A lumber name in quotes, <c>"2x4"</c>, is still a lumber name.</item>
 /// <item>A percentage — <c>12%</c>, <c>12 percent</c> — keyed by its number.</item>
 /// <item>A length in any form <see cref="Length.TryParse"/> reads — <c>4'-0"</c>, <c>48″</c>,
 /// <c>48 in</c>, <c>4 ft</c>, <c>3-foot</c> — and a bare number — <c>48</c>, <c>3/4</c>, <c>2.5</c>,
@@ -59,6 +62,19 @@ public static partial class NumberTokens
     private const string Fraction = @"(?:\.\d+|\s*-?\s*\d+/\d+|/\d+)";
     private const string Before = @"(?<![A-Za-z0-9./])";
 
+    // A lumber name's second or third size: atomic, so a size a length claims is never cut back
+    // to fit (14 to 1, 3/4 to 3).
+    private const string Size = @"(?>\d+(?:/\d+)?)";
+
+    // What makes a lumber name's last size a length instead: a foot mark (not a plural's 's), an
+    // inch mark, a unit word or a decimal point. Not "in", which after a lumber name is nearly
+    // always the preposition ("a 2x4 in the wall").
+    private const string LengthAfter = """(?:['′’](?!s\b)|″|\.\d|\s*-?\s*(?:feet|foot|ft|inches|inch)\b)""";
+
+    // A double quote is an inch mark too, unless the lumber name opened with one ("2x4"): then a
+    // single closing quote is the quote, and only a doubled one — a CSV's escaped inch mark — is inches.
+    private const string QuoteAfter = """(?(quoted)(?!"")|(?!["”]))""";
+
     private static readonly Regex Tokens = new(
         string.Join(
             "|",
@@ -68,8 +84,10 @@ public static partial class NumberTokens
             + @"|(?<![A-Za-z0-9.])\d+(?:\.\d+){2,}(?:\([0-9A-Za-z]{1,3}\))*"
             + @"|(?<![A-Za-z0-9.])\d+\.\d+(?:\([0-9A-Za-z]{1,3}\))+)",
 
-            // Lumber names: 2x4, 2 x 4, 2×4s, 5/4x6, 4x8.
-            $@"(?<lum>{Before}\d+(?:/\d+)?\s*[x×]\s*\d+(?:/\d+)?(?:\s*[x×]\s*\d+(?:/\d+)?)?(?:['’]?s)?(?![A-Za-z0-9]))",
+            // Lumber names: 2x4, 2 x 4, 2×4s, 5/4x6, 4x8 — but not a count times a length,
+            // 1 × 14'-0", which is a count and a length.
+            $@"(?<lum>{Before}(?:(?<=[""“])(?<quoted>))?\d+(?:/\d+)?\s*[x×]\s*{Size}(?:\s*[x×]\s*{Size})?"
+            + $@"(?!{LengthAfter}){QuoteAfter}(?:['’]?s)?(?![A-Za-z0-9]))",
 
             // Percentages.
             $@"(?<pct>{Before}\d+(?:\.\d+)?\s*(?:%|percent\b))",

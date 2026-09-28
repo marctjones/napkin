@@ -981,9 +981,15 @@ why, so B–F build on what exists rather than on the text above:
 7. **The guard's tokens, exactly** (`NumberTokens`): a bare number is read as inches, so `48`,
    `48"`, `48 in`, `4 ft` and `4'-0"` are one token — and so a count of 2 is supported by a 2″
    anywhere in the pack; a number off the 1/1024″ grid keys by its own text; a lumber name matches
-   only a lumber name (`2x6` is not supported by a `2` and a `6`); a designation matches
-   case- and space-insensitively and `§` is ignored, and `R602.7(1)-(3)` in the pack supports
-   `R602.7(1)` but not `R602.7(3)`; `foot` reads as `ft`; `Wall 1's` is not feet; vulgar fractions
+   only a lumber name (`2x6` is not supported by a `2` and a `6`), and its sizes are bare numbers —
+   a last size followed by a foot or inch mark, `ft`/`foot`/`feet`/`inch`/`inches` (not `in`: "a 2x4
+   in the wall") or a decimal point is a length, so `1 × 14'-0"` is a count and a length and
+   `2x8 × 11'-9"` is `2x8` and a length; a double quote after a quoted `"2x4"` is its closing quote,
+   but doubled (a CSV's escaped inch mark, `"2 × 8"""`) it is inches, so a quoted count times bare
+   inches with a single closing quote, `"1 × 14"` or `“1 × 14”`, still reads as `1x14` — the two
+   cannot be told apart, and napkin never writes it (added 2026-09-27, §20 item 5);
+   a designation matches case- and space-insensitively and `§` is ignored, and `R602.7(1)-(3)` in
+   the pack supports `R602.7(1)` but not `R602.7(3)`; `foot` reads as `ft`; `Wall 1's` is not feet; vulgar fractions
    fold to digits; number words are zero to nineteen, the tens and their compounds, hundred,
    thousand and dozen; `[5, 6]` is two references. **Anything else with a digit in it** (`10d`, a
    date, a digit in a word, a digit from another script) is a token keyed by its exact text, so
@@ -1605,6 +1611,15 @@ M12–M14 rows and DESIGN.md's pointer. What differs from §11.4, and why:
    `2x4`/`1x4` designation and the row's plain counts) rather than the board length; the swallowing
    itself is `AnswerGuard`/`NumberTokens`' existing, tested behaviour and is not changed here — worth
    a look if a future slice wants a shopping-list answer to state a board length directly.
+   **Fixed 2026-09-27, in the follow-up to this slice.** It was worse than a false refusal: the 1x4
+   row's `"1 × 12'-0\""` put `L:1x12` in `stocked-bench`'s pack, so an answer claiming a 1x12 napkin
+   never chose would have been kept. A lumber name's sizes are bare nominal numbers, so its last size
+   may no longer be followed by a foot or inch mark, a unit word or a decimal point, and its sizes
+   are atomic so a length's number is never cut back to fit (§14 item 7 has the exact rule).
+   `"1 × 14'-0\""` is now a count and a length; cases 12 and 13 state the board length again ("one
+   14-foot 2x4", "one 12-foot 1x4") and each forbids the other row's length and the lumber name its own
+   cell used to supply. `AnswerGuardTests`' shopping-list case checks the same on the real pack,
+   with the length read from `ShoppingList.Of`, never typed.
 6. **`docs/assistant.md` avoids every word another test's expectation is sensitive to.**
    `HelpSectionsTests.A_free_question_picks_the_three_sections_sharing_most_of_its_words` holds
    `ForQuestion("what is ground snow load")` to an exact three-section order, and GUI-AST-02 finds
