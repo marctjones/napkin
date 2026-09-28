@@ -703,7 +703,7 @@ public static class CodeCheck
                 $"Header for {name} is now beyond Table {o.Limit.Table} under {o.Limit.Code.ShortName}'s own table: get it engineered. "
                 + $"The row {EnteredRow.Tag} ({((HeaderResult.Entered)change.Before).Header}) is superseded; remove it.",
             ChangeKind.EnteredToNoAnswer => after.Stale is { } stale
-                ? $"Header for {name}: the row {EnteredRow.Tag} no longer applies ({string.Join("; ", stale.Moved.Select(m => $"{m.Input} {m.Was} → {m.Now}"))}); {Short(change.After)}."
+                ? $"Header for {name}: the row {EnteredRow.Tag} no longer applies ({string.Join("; ", stale.Moved.Select(m => $"{Input(m.Input)} {m.Was} → {m.Now}"))}); {Short(change.After)}."
                 : $"Header for {name}: the row {EnteredRow.Tag} was removed; {Short(change.After)}.",
             ChangeKind.EnteredToSized when change.Before is HeaderResult.Entered e && change.After is HeaderResult.Sized b =>
                 b.Header == e.Header && b.JackStuds == e.JackStuds && b.KingStuds == e.KingStuds
