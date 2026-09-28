@@ -90,6 +90,60 @@ public class AnswerGuardTests
 
     [Fact]
     [Trait("Feature", "AST-003")]
+    public void A_count_times_a_length_is_a_count_and_a_length_never_a_lumber_name()
+    {
+        // A lumber name's sizes are bare nominal numbers; a number with a foot or inch mark after it
+        // is a length. So "1 × 14'-0\"" — the shopping list's Buy cell, ShoppingListRow.BuyText — is
+        // one board 14 feet long, not a 1x14 (design note §20 item 5, found by #235's eval set).
+        (string Text, string[] Tokens)[] cases =
+        [
+            ("1 × 14'-0\"", ["1", "14'-0\""]),
+            ("\"1 × 14'-0\"\"\"", ["1", "14'-0\""]),
+            ("1 x 14 ft", ["1", "14 ft"]),
+            ("1 × 14-foot", ["1", "14-foot"]),
+            ("2 × 36 inches", ["2", "36 inches"]),
+            ("1 × 96\"", ["1", "96\""]),
+            ("1 × 96″", ["1", "96″"]),
+            ("\"2 × 8\"\"\"", ["2", "8\""]),
+            ("1 × 3/4\"", ["1", "3/4\""]),
+            ("1 × 14.5'", ["1", "14.5'"]),
+            ("2 × 24\" × 3 1/2\"", ["2", "24\"", "3 1/2\""]),
+
+            // Roof's "10 rafters 2x8 × 11'-9 3/8\"": a lumber name ends before a length's number.
+            ("10 rafters 2x8 × 11'-9 3/8\"", ["10", "2x8", "11'-9 3/8\""]),
+        ];
+        foreach ((string text, string[] tokens) in cases)
+        {
+            Assert.Equal([.. tokens.SelectMany(NumberTokens.KeysIn)], NumberTokens.KeysIn(text));
+        }
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-003")]
+    public void A_lumber_name_before_a_word_a_plural_or_its_own_closing_quote_is_still_a_lumber_name()
+    {
+        // Only a unit mark or a unit word makes the last number a length: "in" is not one (it is a
+        // preposition far more often than a unit after a lumber name), and a quoted lumber name's
+        // closing quote is a quote, not an inch mark. A count times a bare number is still a lumber
+        // name: nothing in "1 × 14 board" says the 14 is a length.
+        (string Text, string[] Tokens)[] cases =
+        [
+            ("(1) 1x14 board", ["1", "1x14"]),
+            ("a 2x4 in the wall", ["2x4"]),
+            ("the \"2x4\" row", ["2x4"]),
+            ("the “2x4” row", ["2x4"]),
+            ("2x4's and 2x4s", ["2x4", "2x4"]),
+            ("a 2x4x8.", ["2x4x8"]),
+            ("1 × 14 board", ["1x14"]),
+        ];
+        foreach ((string text, string[] tokens) in cases)
+        {
+            Assert.Equal([.. tokens.SelectMany(NumberTokens.KeysIn)], NumberTokens.KeysIn(text));
+        }
+    }
+
+    [Fact]
+    [Trait("Feature", "AST-003")]
     public void A_table_or_section_stands_only_as_that_designation_in_any_case()
     {
         ContextPack pack = Pack("fill it from your own copy of the IRC (Tables R602.7(1)-(3), R602.3, R602.10.3 ...)");
@@ -318,6 +372,22 @@ public class AnswerGuardTests
 
         // A count napkin never gave it is refused, whatever else the sentence gets right.
         Refused($"Buy 37 2x4 boards [{row.N}].", pack, "37");
+
+        // The Buy cell, "1 × 14'-0\"", is a count and a board length (§20 item 5): the length
+        // stands in any form, and neither row's cell supports a lumber name napkin never chose —
+        // before this was fixed, the 1x4 row's "1 × 12'-0\"" let an answer claim a 1x12.
+        ShoppingListRow twoByFour = ShoppingList.Of(rows).Single(candidate => candidate.Material == "2x4");
+        Length board = Assert.Single(twoByFour.Boards).StockLength;
+        Kept($"Buy one {board.Format(LengthFormat.Default).Text} 2x4 [{row.N}].", pack);
+        Kept($"Buy one {board.Format(new InchesOnlyFormat(16)).Text} 2x4 [{row.N}].", pack);
+        string longer = (board + Length.Feet(1)).Format(LengthFormat.Default).Text;
+        Refused($"Buy one {longer} 2x4 [{row.N}].", pack, longer);
+        foreach (ShoppingListRow boards in ShoppingList.Of(rows).Where(candidate => candidate.Kind == ShoppingListKind.Boards))
+        {
+            BoardsOfLength bought = Assert.Single(boards.Boards);
+            string swallowed = $"{bought.Count}x{bought.StockLength.Units / Length.UnitsPerFoot}";
+            Refused($"A {swallowed} would do [{row.N}].", pack, swallowed);
+        }
     }
 
     [Fact]
