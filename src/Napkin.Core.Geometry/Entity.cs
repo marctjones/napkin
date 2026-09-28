@@ -158,6 +158,13 @@ public sealed record Box(
     public OpeningFill? Opening { get; init; }
 
     /// <summary>
+    /// The header row a person typed for this box as an opening, from their own copy of the code,
+    /// or <see langword="null"/> when none (format version 17, docs/design/manual-code-values.md §7.1).
+    /// Never napkin's data; nothing in the kernel reads it.
+    /// </summary>
+    public EnteredHeader? EnteredHeader { get; init; }
+
+    /// <summary>
     /// What has been cut off the blank, in site order. Empty for a plain rectangle
     /// (<c>docs/design/shaped-parts-model.md</c> §1.1).
     /// </summary>
@@ -319,6 +326,7 @@ public sealed record Box(
            && Deck == other.Deck
            && Roof == other.Roof
            && Opening == other.Opening
+           && EnteredHeader == other.EnteredHeader
            && _cuts.SequenceEqual(other._cuts);
 
     /// <inheritdoc/>
@@ -338,6 +346,7 @@ public sealed record Box(
         hash.Add(Deck);
         hash.Add(Roof);
         hash.Add(Opening);
+        hash.Add(EnteredHeader);
         foreach (Cut cut in _cuts)
         {
             hash.Add(cut);

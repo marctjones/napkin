@@ -86,6 +86,14 @@ public sealed class DirectUpdater : IGeometryUpdater
                 null => new Rejected(RejectionReason.UnknownEntity),
                 _ => new Rejected(RejectionReason.DanglingReference),
             },
+            SetEnteredHeader entered => sketch.Find(entered.Box) switch
+            {
+                Box when entered.Row is { } row && EnteredHeaderRules.Refusal(row) is not null => new Rejected(RejectionReason.NonPositiveSize),
+                Box box when box.WallInputs is null && box.Deck is null && box.Roof is null => new Solved(sketch.WithEntity(box with { EnteredHeader = entered.Row }), ChangeSet.Empty with { Modified = [box.Id] }),
+                Box => new Rejected(RejectionReason.DanglingReference),
+                null => new Rejected(RejectionReason.UnknownEntity),
+                _ => new Rejected(RejectionReason.DanglingReference),
+            },
             SetStrutCuts cuts => ApplySetStrutCuts(sketch, cuts),
             SetNote note => sketch.Find(note.Id) switch
             {

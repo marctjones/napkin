@@ -299,11 +299,13 @@ public class EvaluatorTests
 
     [Fact]
     [Trait("Feature", "RUL-003")]
-    public void The_result_union_is_closed_with_exactly_four_named_members()
+    public void The_result_union_is_closed_with_exactly_five_named_members()
     {
+        // The fifth, Entered, is a row a person typed (docs/design/manual-code-values.md §3): every
+        // consumer that switches on a result must visit it, and this test is what makes them.
         Type[] members = [.. typeof(HeaderResult).Assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(HeaderResult))).OrderBy(t => t.Name, StringComparer.Ordinal)];
         Assert.Equal(
-            [typeof(HeaderResult.InputMissing), typeof(HeaderResult.NoData), typeof(HeaderResult.OutOfScope), typeof(HeaderResult.Sized)],
+            [typeof(HeaderResult.Entered), typeof(HeaderResult.InputMissing), typeof(HeaderResult.NoData), typeof(HeaderResult.OutOfScope), typeof(HeaderResult.Sized)],
             members);
         Assert.All(members, t => Assert.True(t.IsSealed));
         // Only the private constructor and the compiler's copy constructor exist; closure is by
