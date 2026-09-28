@@ -284,14 +284,14 @@ public class DeckLoaderTests
     }
 
     [Fact]
-    public void A_pack_whose_base_layer_has_no_deck_files_has_only_its_guides_deck_tables()
+    public void A_pack_whose_base_layer_has_no_deck_files_and_no_guide_has_no_deck_tables()
     {
-        // Connecticut's base layer irc-2021 has no deck/ directory; its deck tables are DCA 6's Tables 2 and 3A (#41) and
-        // Appendix B's B1, B2 and B3 (#42).
+        // Connecticut's base layer irc-2021 has no deck/ directory, and revision 6 removed the DCA 6 guide
+        // (docs/research/safe-default-header-sources.md §1: AWC's EULA, read for a different question, found it
+        // prohibits inputting its Product into an AI program). No deck tables load from any source.
         LoadedPack ct = Fx.Loaded(PackLoader.Load(Path.Combine(AppContext.BaseDirectory, "RealPacks"), "us-ct-2022"));
-        Assert.Equal([SpanUse.DeckJoist, SpanUse.DeckBeam], ct.Deck.Spans.Keys.Order());
-        Assert.All(ct.Deck.Tables, table => Assert.Equal("dca6-2015", table.Guide!.Id));
-        Assert.Equal(["2", "3A", "B3", "B1", "B2"], ct.Deck.Tables.Select(table => table.Designation));
+        Assert.Empty(ct.Deck.Spans);
+        Assert.Empty(ct.Deck.Tables);
         Assert.Equal((null, null), (ct.Deck.Ledger, ct.Deck.GuardStair));
         Assert.Empty(DeckProvisions.None.Spans);
         Assert.NotNull(ct.Frost);

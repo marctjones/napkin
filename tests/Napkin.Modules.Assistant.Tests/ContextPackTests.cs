@@ -28,8 +28,8 @@ public class ContextPackTests
 
         // Preconditions, named, so a change to the shipped pack fails here rather than as a diff of help text.
         LoadedPack ct = Assert.Single(packs.Loaded);
-        Assert.Equal(("us-ct-2022", 5), (ct.Code.PackId, ct.Code.Revision));
-        Assert.Equal(LoadedPack.BaseTablesNotLoaded + "; deck tables from DCA 6-2015, a guide", ct.StatusLabel);
+        Assert.Equal(("us-ct-2022", 6), (ct.Code.PackId, ct.Code.Revision));
+        Assert.Equal(LoadedPack.BaseTablesNotLoaded, ct.StatusLabel);
 
         CodeResolution code = packs.Resolve(design.Sketch.Code);
         ImmutableArray<OpeningCheck> headers = CodeCheck.Of(design.Sketch, packs);

@@ -1,12 +1,12 @@
 {
   "id": "ask-deck-posts",
-  "description": "A deck check question (porch-12x10, Deck 1 selected): the end and middle post lines, cited.",
+  "description": "A deck check question (porch-12x10, Deck 1 selected): the posts are No data too, for the same reason as the joists.",
   "sample": "porch-12x10",
   "select": ["Deck 1"],
   "question": "how tall are the deck posts, and how much does the middle one carry?",
   "task": "answer",
-  "reply": "The end posts are 4x4s reaching 1'-6 1/2\" from grade to the beam's underside [[ref:End posts 4x4]], and the middle post carries 29.6 square feet [[ref:Middle post 4x4]].",
+  "reply": "Both post lines are No data: the loaded Connecticut pack has no deck post table [[ref:has no deck post]], so napkin cannot say a height or a carried area from a table. Nothing is guessed.",
   "expectRefused": false,
   "expectReference": true,
-  "forbidden": ["6x6", "37.0"]
+  "forbidden": ["4x4", "6x6", "29.6", "37.0"]
 }
