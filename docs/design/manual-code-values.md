@@ -731,8 +731,9 @@ The model, format 17 and the routing landed as §12's slice A describes, tests 1
    — `us-zz-brace-a`/`-b` (no header table) and `us-zz-frame` (ZZ-HEADER) — rather than the rules
    engine's `fx-base`, which that test project does not load.
 9. **Smaller things.** `CodeCheck.Input` names `headerSpan` ("the header span") and `pack` ("the
-   adopted code"); `CodeCheck.Words(HeaderResult)` reaches `NoData` by a pattern, not a cast, and
-   throws `ArgumentOutOfRangeException` for a member it does not know. The stale and superseded
+   adopted code"); `CodeCheck.Words(HeaderResult)` keeps its `_ => NoDataWords((NoData)result)`
+   fallback, now safe — `Entered` has its own arm, so only `NoData` reaches the cast, and the
+   closed-union test holds the union at five (a throwing arm there could never be covered). The stale and superseded
    sentences say `ENTERED BY HAND` too, since the superseded one repeats the row's number (§7.2).
    A removed row says "was removed" rather than "no longer applies". `samples restamp`'s case 17 wrote
    the samples through the real `SceneWriter`, which also put `porch-12x10`'s site fields in the

@@ -52,7 +52,7 @@ public class EnteredHeaderCheckTests
     {
         string text = File.ReadAllText(FixturePath);
         Assert.Equal(text, SceneWriter.WriteToText(Fixture()));
-        Assert.StartsWith(Row(Fixture()).Citation.Code, "SYNTHETIC TEST DATA - NOT CODE VALUES, Test Code 2099", StringComparison.Ordinal);
+        Assert.StartsWith("SYNTHETIC TEST DATA - NOT CODE VALUES", Row(Fixture()).Citation.Code, StringComparison.Ordinal);
         Assert.IsType<Refused>(SceneReader.Read(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(text.Replace("\"formatVersion\": 17", "\"formatVersion\": 16", StringComparison.Ordinal)))));
     }
 
@@ -184,6 +184,26 @@ public class EnteredHeaderCheckTests
     }
 
     [Fact]
+    [Trait("Feature", "ENTR-003")]
+    public void A_value_cleared_or_changed_from_one_value_to_another_is_a_move_and_the_same_value_is_not()
+    {
+        // Entered → not entered moves as surely as not entered → entered (§6.1).
+        Sketch cleared = Fixture() with { Site = Fixture().Site with { SeismicDesignCategory = null } };
+        Assert.Equal([new MovedInput("seismicDesignCategory", "Z", "not entered")], Check(cleared).Stale!.Moved);
+        Sketch unwidened = Fixture() with { Site = Fixture().Site with { BuildingWidth = null } };
+        Assert.Equal([new MovedInput("buildingWidth", "99'-0\"", "not entered")], Check(unwidened).Stale!.Moved);
+
+        // A row entered with a frost depth of 3'-6": 4'-0" now is a move; 3'-6" again applies.
+        Sketch frosted = WithWindow(Fixture(), window => window with
+        {
+            EnteredHeader = window.EnteredHeader! with { For = window.EnteredHeader.For with { FrostDepth = Length.Inches(42) } },
+        });
+        Sketch deeper = frosted with { Site = frosted.Site with { FrostDepth = Length.Inches(48) } };
+        Assert.Equal([new MovedInput("frostDepth", "3'-6\"", "4'-0\"")], Check(deeper).Stale!.Moved);
+        Assert.IsType<HeaderResult.Entered>(Check(frosted with { Site = frosted.Site with { FrostDepth = Length.Inches(42) } }).Result);
+    }
+
+    [Fact]
     public void No_code_an_unsaid_side_or_an_unsaid_bearing_makes_the_row_stale_naming_it()
     {
         OpeningCheck noCode = Check(Fixture() with { Code = null });
@@ -200,6 +220,13 @@ public class EnteredHeaderCheckTests
 
         OpeningCheck notChosen = Check(WithWall(Fixture(), wall => wall with { Supports = null }));
         Assert.Equal([new MovedInput("supports", "\"synthetic-roof\"", "not chosen")], notChosen.Stale!.Moved);
+
+        // A wall that says nothing at all: every wall input the row recorded has moved.
+        OpeningCheck nothingSaid = Check(Fixture().WithEntity(WallBox(Fixture()) with { WallInputs = null }));
+        Assert.Equal(["side", "bearing"], Assert.IsType<HeaderResult.InputMissing>(nothingSaid.Result).Inputs);
+        Assert.Equal(
+            [new MovedInput("side", "exterior", "not said"), new MovedInput("supports", "\"synthetic-roof\"", "not chosen"), new MovedInput("bearing", "bearing", "not said")],
+            nothingSaid.Stale!.Moved);
     }
 
     [Fact]

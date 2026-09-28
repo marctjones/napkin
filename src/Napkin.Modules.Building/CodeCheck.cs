@@ -625,8 +625,9 @@ public static class CodeCheck
                 e.Entry.ToString(),
                 string.Join("\n", e.Entry.Inputs.Select(input => $"Entered for {input}").Concat(e.Entry.Notes is { } notes ? [$"Notes: {notes}"] : [])),
                 string.Empty),
-            HeaderResult.NoData n => NoDataWords(n),
-            _ => throw new ArgumentOutOfRangeException(nameof(result), result, "A header result napkin does not know how to say."),
+
+            // Only NoData is left: the union is closed at five (the reflection test holds it there).
+            _ => NoDataWords((HeaderResult.NoData)result),
         };
     }
 
