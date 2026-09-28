@@ -38,8 +38,8 @@
       "branch": 95.68
     },
     "Napkin.Modules.Building": {
-      "line": 100,
-      "branch": 99.82
+      "line": 99.47,
+      "branch": 99.19
     },
     "Napkin.Modules.Editing": {
       "line": 98.23,
@@ -178,5 +178,10 @@
       "GUI-WALL-02"
     ]
   },
-  "log": []
+  "log": [
+    {
+      "date": "2026-09-28",
+      "reason": "Removed the DCA 6 deck guide (AWC EULA, Marc 2026-09-28) and its value tests; CantileverLine\u0027s answered path was covered only by DCA 6\u0027s overhang column, and no synthetic table prints an overhang yet"
+    }
+  ]
 }
