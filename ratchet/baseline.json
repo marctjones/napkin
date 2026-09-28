@@ -10,16 +10,16 @@
       "branch": 100
     },
     "Napkin.Core.Geometry": {
-      "line": 96.07,
-      "branch": 92.56
+      "line": 96.17,
+      "branch": 93.19
     },
     "Napkin.Core.Materials": {
       "line": 98.28,
       "branch": 90.46
     },
     "Napkin.Core.Project": {
-      "line": 93.56,
-      "branch": 87.81
+      "line": 94.58,
+      "branch": 88.83
     },
     "Napkin.Core.RulesEngine": {
       "line": 95.78,
@@ -38,8 +38,8 @@
       "branch": 95.68
     },
     "Napkin.Modules.Building": {
-      "line": 99.47,
-      "branch": 99.19
+      "line": 99.49,
+      "branch": 99.25
     },
     "Napkin.Modules.Editing": {
       "line": 98.23,
